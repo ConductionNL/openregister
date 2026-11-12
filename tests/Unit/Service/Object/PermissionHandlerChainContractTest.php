@@ -20,10 +20,12 @@ use Error;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -55,6 +57,7 @@ use Stringable;
  * Every call to a collaborator is recorded in order in `$trace`.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent
@@ -67,6 +70,8 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerChainContractTest extends TestCase {
 
@@ -158,7 +163,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 		$record->setUuid(self::UUID);
 		$record->setOrganisation('org-1');
 		$record->setOwner('bea');
-		$self = $record->getObjectArray();
+		$self = $record->getMatchEnvelope()['@self'];
 		self::assertSame(expected: ['id' => self::UUID, 'owner' => 'bea', 'organisation' => 'org-1'], actual: array_intersect_key($self, ['id' => 0, 'owner' => 0, 'organisation' => 0]));
 		self::assertArrayNotHasKey(key: 'x', array: $self);
 
@@ -463,7 +468,12 @@ class PermissionHandlerChainContractTest extends TestCase {
 
 		$method = new ReflectionMethod(PermissionHandler::class, 'evaluatePermission');
 
-		return $method->invoke($this->handler(case: $case), $schema, ($case['action'] ?? 'read'), $userId, $object?->getOwner(), $object);
+		return $method->invoke(
+			$this->handler(case: $case),
+			(new PermissionAsk(schema: $schema, action: ($case['action'] ?? 'read')))
+				->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
+		);
 	}//end evaluate()
 
 	/**
@@ -505,7 +515,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 
 		$derived = ($case['derived'] ?? []);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession(case: $case),
 			userManager: $this->userManager(case: $case),
 			groupManager: $this->groupManager(case: $case),
@@ -650,7 +660,7 @@ class PermissionHandlerChainContractTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($registerMapper): mixed {
-				if ($id === RegisterMapper::class) {
+				if ($id === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 

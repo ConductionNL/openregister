@@ -46,16 +46,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
-use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
-use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
+use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Daily DPIA pattern-detection sweep over DSAR cases.
@@ -100,26 +105,64 @@ class DsarDpiaDetectionJob extends TimedJob {
 	public const AUDIT_ACTION = 'dpia.detected';
 
 	/**
+	 * Object read/write path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Active-pack resolution per jurisdiction.
+	 *
+	 * @var DsarPolicyPackResolverInterface
+	 */
+	private readonly DsarPolicyPackResolverInterface $packResolver;
+
+	/**
+	 * Pure grouping/threshold engine.
+	 *
+	 * @var DpiaPatternDetectorInterface
+	 */
+	private readonly DpiaPatternDetectorInterface $detectionService;
+
+	/**
+	 * Immutable detection audit rows.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param ObjectService $objectService Object read/write path.
-	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
-	 * @param DpiaPatternDetectionService $detectionService Pure grouping/threshold engine.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable detection audit rows.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param DsarDpiaDetectionServices $services Object path, policy packs, pattern detector and audit trail.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
-		private readonly ObjectService $objectService,
-		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly DpiaPatternDetectionService $detectionService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		DsarDpiaDetectionServices $services,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		$this->objectService = $services->objectService;
+		$this->packResolver = $services->packResolver;
+		$this->detectionService = $services->detectionService;
+		$this->auditTrailMapper = $services->auditTrailMapper;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 
 	}//end __construct()
@@ -217,10 +260,13 @@ class DsarDpiaDetectionJob extends TimedJob {
 				continue;
 			}
 
-			$groups = $this->detectionService->detect(cases: $partitionCases, config: $config, now: $now);
+			$request = new DpiaDetectionRequest(cases: $partitionCases, config: $config, now: $now);
+			$groups = $this->detectionService->detect(request: $request);
 			foreach ($groups as $group) {
 				$summary['groupsTriggered']++;
-				$this->flagGroup(group: $group, config: $config, summary: $summary);
+				$outcome = $this->flagGroup(group: $group, config: $config);
+				$summary['flagged'] += $outcome['flagged'];
+				$summary['errors'] += $outcome['errors'];
 			}
 		}//end foreach
 
@@ -232,26 +278,26 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @param array{key: string, count: int, caseUuids: list<string>, unflaggedUuids: list<string>} $group The triggering group.
 	 * @param array<string, mixed> $config The pack's `dpiaDetection` block.
-	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
-	 * @return void
+	 * @return array{flagged: int, errors: int} How many cases were flagged and how many failed.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function flagGroup(array $group, array $config, array &$summary): void {
+	private function flagGroup(array $group, array $config): array {
+		$outcome = ['flagged' => 0, 'errors' => 0];
 		foreach ($group['unflaggedUuids'] as $uuid) {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
+					options: new ObjectFindOptions(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
 					_rbac: false,
 					_multitenancy: false
 				));
-				if ($entity === null) {
+				// A row without a uuid has nothing to be written under.
+				if ($entity === null || (string) $entity->getUuid() === '') {
 					continue;
 				}
 
@@ -265,28 +311,31 @@ class DsarDpiaDetectionJob extends TimedJob {
 
 				$saved = $this->objectService->saveObject(
 					object: $data,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
-					uuid: $uuid,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
+						uuid: $entity->getUuid()
+					),
 					_rbac: false,
 					_multitenancy: false
 				);
 
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $saved,
-					action: self::AUDIT_ACTION,
-					context: [
-						'rule' => 'dpia-pattern-detection',
-						'groupKey' => $group['key'],
-						'windowDays' => (int)($config['windowDays'] ?? 0),
-						'threshold' => (int)($config['threshold'] ?? 0),
-						'count' => $group['count'],
-					]
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $saved,
+						action: self::AUDIT_ACTION,
+						context: [
+							'rule' => 'dpia-pattern-detection',
+							'groupKey' => $group['key'],
+							'windowDays' => (int)($config['windowDays'] ?? 0),
+							'threshold' => (int)($config['threshold'] ?? 0),
+							'count' => $group['count'],
+						]
+					)
 				);
 
-				$summary['flagged']++;
+				$outcome['flagged']++;
 			} catch (\Throwable $e) {
-				$summary['errors']++;
+				$outcome['errors']++;
 				$this->logger->warning(
 					message: '[DsarDpiaDetectionJob] flagging failed for case ' . $uuid . ': ' . $e->getMessage(),
 					context: ['file' => __FILE__, 'line' => __LINE__]
@@ -294,6 +343,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 			}//end try
 		}//end foreach
 
+		return $outcome;
 	}//end flagGroup()
 
 	/**
@@ -307,8 +357,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 			$rows = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => CaseObjectAccessor::REGISTER_SLUG,
-						'schema' => CaseObjectAccessor::SCHEMA_SLUG,
+						'register' => CaseObjectAccessorInterface::REGISTER_SLUG,
+						'schema' => CaseObjectAccessorInterface::SCHEMA_SLUG,
 					],
 				],
 				_rbac: false,

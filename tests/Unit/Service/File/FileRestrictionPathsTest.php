@@ -21,16 +21,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Controller\FilesController;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileReadScope;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
-use OCA\OpenRegister\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\ObjectService;
@@ -154,8 +159,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		return new FilesController(
-			'openregister',
+		return FilesControllerFactory::create(
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$objectService,
@@ -194,7 +198,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$root->method('getId')->willReturn(7);
 		$root->method('getFirstNodeById')->willReturn($this->restricted);
 		$this->fileService->method('getObjectFolder')->willReturn($root);
-		$this->fileService->expects($this->never())->method('renameFile');
+		$this->fileService->expects($this->never())->method('renameAttachedFile');
 
 		$this->expectException(NotFoundException::class);
 		(new ObjectFolderBrowser($this->fileService, $this->guard(admitted: false)))->rename($this->object, self::RESTRICTED, 'x.pdf');
@@ -262,7 +266,18 @@ class FileRestrictionPathsTest extends TestCase {
 		$rootFolder = $this->createMock(IRootFolder::class);
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 
-		$scope = new FileReadScope($rootFolder, $session, new NullLogger(), null, null, $this->guard(admitted: false));
+		$scope = new FileReadScope(
+			tree: new FileReadScopeTree(
+				rootFolder: $rootFolder,
+				userSession: $session
+			),
+			rules: new FileReadScopeRules(
+				objectFileAccess: null,
+				restrictions: $this->guard(admitted: false)
+			),
+			logger: new NullLogger(),
+			fileService: null
+		);
 		$hits = [
 			['entity_type' => 'file', 'entity_id' => self::RESTRICTED],
 			['entity_type' => 'file', 'entity_id' => (string)self::OPEN],
@@ -283,12 +298,12 @@ class FileRestrictionPathsTest extends TestCase {
 		$guard = $this->guard(admitted: false);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): object => $id === FileRestrictionGuard::class ? $guard : $mapper
+			static fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $guard : $mapper
 		);
 		$this->fileService->method('getFilesForEntity')->willReturn([$this->restricted, $this->open]);
 
 		$rows = (new FilesProvider($this->fileService, $container, $this->createMock(IL10N::class)))
-			->list('7', '42', self::OBJECT_UUID);
+			->list(new ObjectRef(register: '7', schema: '42', id: self::OBJECT_UUID));
 
 		$this->assertSame([self::OPEN], array_column($rows, 'id'));
 	}//end testTheIntegrationFilesLeafLeavesTheRestrictedFileOut()

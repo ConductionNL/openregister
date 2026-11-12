@@ -1,0 +1,582 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`chart options with empty chart data RegisterDetail.auditTrailChartOptions: RegisterDetail.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "dark",
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with empty chart data RegisterDetail.schemaChartOptions: RegisterDetail.schemaChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with empty chart data RegisterDetail.sizeChartOptions: RegisterDetail.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;
+
+exports[`chart options with empty chart data SchemaDetails.auditTrailChartOptions: SchemaDetails.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "light",
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with empty chart data SchemaDetails.registerChartOptions: SchemaDetails.registerChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with empty chart data SchemaDetails.sizeChartOptions: SchemaDetails.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;
+
+exports[`chart options with filled chart data RegisterDetail.auditTrailChartOptions: RegisterDetail.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "dark",
+  },
+  "xaxis": {
+    "categories": [
+      "Mon",
+      "Tue",
+    ],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with filled chart data RegisterDetail.schemaChartOptions: RegisterDetail.schemaChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [
+    "A",
+    "B",
+  ],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with filled chart data RegisterDetail.sizeChartOptions: RegisterDetail.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [
+      "0-1KB",
+      "1-10KB",
+    ],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;
+
+exports[`chart options with filled chart data SchemaDetails.auditTrailChartOptions: SchemaDetails.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "light",
+  },
+  "xaxis": {
+    "categories": [
+      "Mon",
+      "Tue",
+    ],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with filled chart data SchemaDetails.registerChartOptions: SchemaDetails.registerChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [
+    "R1",
+  ],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with filled chart data SchemaDetails.sizeChartOptions: SchemaDetails.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [
+      "0-1KB",
+      "1-10KB",
+    ],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;
+
+exports[`chart options with nulls chart data RegisterDetail.auditTrailChartOptions: RegisterDetail.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "dark",
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with nulls chart data RegisterDetail.schemaChartOptions: RegisterDetail.schemaChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with nulls chart data RegisterDetail.sizeChartOptions: RegisterDetail.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;
+
+exports[`chart options with nulls chart data SchemaDetails.auditTrailChartOptions: SchemaDetails.auditTrailChartOptions 1`] = `
+{
+  "chart": {
+    "toolbar": {
+      "show": true,
+    },
+    "type": "line",
+    "zoom": {
+      "enabled": true,
+    },
+  },
+  "colors": [
+    "#41B883",
+    "#E46651",
+    "#00D8FF",
+  ],
+  "legend": {
+    "position": "top",
+  },
+  "stroke": {
+    "curve": "smooth",
+    "width": 2,
+  },
+  "theme": {
+    "mode": "light",
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Date",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Actions",
+    },
+  },
+}
+`;
+
+exports[`chart options with nulls chart data SchemaDetails.registerChartOptions: SchemaDetails.registerChartOptions 1`] = `
+{
+  "chart": {
+    "type": "pie",
+  },
+  "labels": [],
+  "legend": {
+    "position": "bottom",
+  },
+  "responsive": [
+    {
+      "breakpoint": 480,
+      "options": {
+        "chart": {
+          "width": 200,
+        },
+        "legend": {
+          "position": "bottom",
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`chart options with nulls chart data SchemaDetails.sizeChartOptions: SchemaDetails.sizeChartOptions 1`] = `
+{
+  "chart": {
+    "type": "bar",
+  },
+  "fill": {
+    "opacity": 1,
+  },
+  "plotOptions": {
+    "bar": {
+      "columnWidth": "55%",
+      "endingShape": "rounded",
+      "horizontal": false,
+    },
+  },
+  "xaxis": {
+    "categories": [],
+    "title": {
+      "text": "Size Range",
+    },
+  },
+  "yaxis": {
+    "title": {
+      "text": "Number of Objects",
+    },
+  },
+}
+`;

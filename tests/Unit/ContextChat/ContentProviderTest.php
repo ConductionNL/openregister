@@ -26,17 +26,25 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * @covers \OCA\OpenRegister\ContextChat\ContentProvider
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\ContextChat\Support\ContentProviderLinks
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ContentProviderTest extends TestCase {
 	private ContextChatSubmissionListener $submissionListener;
@@ -65,11 +73,8 @@ class ContentProviderTest extends TestCase {
 
 		$this->provider = new ContentProvider(
 			$this->submissionListener,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->magicMapper,
-			$this->deepLinkRegistry,
-			$this->urlGenerator,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
+			new ContentProviderLinks($this->deepLinkRegistry, $this->urlGenerator),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

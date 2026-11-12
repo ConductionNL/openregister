@@ -1,0 +1,10 @@
+{
+    "auditTrailMapper": "auditTrailMapper",
+    "chunkMapper": "chunkMapper",
+    "db": "db",
+    "entityRelationMapper": "entityRelationMapper",
+    "gdprEntityMapper": "gdprEntityMapper",
+    "logger": "logger",
+    "matcher": "matcher",
+    "rootFolder": "rootFolder"
+}

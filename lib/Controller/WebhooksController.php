@@ -31,10 +31,16 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\RequestListPage;
+use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
+use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
-use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookEvent;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -388,9 +394,9 @@ class WebhooksController extends Controller {
 	/**
 	 * Webhook mapper
 	 *
-	 * @var WebhookMapper
+	 * @var WebhookMapperInterface
 	 */
-	private WebhookMapper $webhookMapper;
+	private WebhookMapperInterface $webhookMapper;
 
 	/**
 	 * Webhook service
@@ -402,9 +408,9 @@ class WebhooksController extends Controller {
 	/**
 	 * Webhook log mapper
 	 *
-	 * @var WebhookLogMapper
+	 * @var WebhookLogMapperInterface
 	 */
-	private WebhookLogMapper $webhookLogMapper;
+	private WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * Logger
@@ -432,30 +438,20 @@ class WebhooksController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param WebhookMapper $webhookMapper Webhook mapper
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
-	 * @param WebhookService $webhookService Webhook service
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession|null $userSession User session (for write-endpoint admin gate)
-	 * @param IGroupManager|null $groupManager Group manager (for admin check)
+	 * @param WebhooksControllerServices $services The webhooks controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		WebhookMapper $webhookMapper,
-		WebhookLogMapper $webhookLogMapper,
-		WebhookService $webhookService,
-		LoggerInterface $logger,
-		?IUserSession $userSession = null,
-		?IGroupManager $groupManager = null,
+		WebhooksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->webhookMapper = $webhookMapper;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->webhookService = $webhookService;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->webhookMapper = $services->mappers->webhookMapper;
+		$this->webhookLogMapper = $services->mappers->webhookLogMapper;
+		$this->webhookService = $services->mappers->webhookService;
+		$this->logger = $services->mappers->logger;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**
@@ -498,6 +494,30 @@ class WebhooksController extends Controller {
 	}//end forbiddenResponse()
 
 	/**
+	 * The 404 answer for a webhook id that does not exist.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function webhookNotFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Webhook not found'], statusCode: 404);
+	}//end webhookNotFound()
+
+	/**
+	 * Log a failed webhook action as an error and answer 500.
+	 *
+	 * @param string               $logMessage The error line to log.
+	 * @param array<string, mixed> $context    The log context after the file and line.
+	 * @param array<string, mixed> $data       The 500 response body.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function loggedFailure(string $logMessage, array $context, array $data): JSONResponse {
+		$this->logger->error(message: $logMessage, context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context));
+
+		return new JSONResponse(data: $data, statusCode: 500);
+	}//end loggedFailure()
+
+	/**
 	 * List all webhooks
 	 *
 	 * Returns a JSON response containing an array of all webhooks in the system.
@@ -536,49 +556,20 @@ class WebhooksController extends Controller {
 			// Get request parameters for filtering and searching.
 			$params = $this->request->getParams();
 
-			// Extract pagination and search parameters.
-			$limit = null;
-			if (isset($params['_limit']) === true) {
-				$limit = (int)$params['_limit'];
-			}
-
-			$offset = null;
-			if (isset($params['_offset']) === true) {
-				$offset = (int)$params['_offset'];
-			}
-
-			$page = null;
-			if (isset($params['_page']) === true) {
-				$page = (int)$params['_page'];
-			}
-
-			// Extract extend parameter for additional properties.
-			$extend = $params['_extend'] ?? [];
-			if (is_string($extend) === true) {
-				$extend = [$extend];
-			}
-
-			// Convert page to offset if provided (page-based pagination).
-			if ($page !== null && $limit !== null) {
-				$offset = ($page - 1) * $limit;
-			}
+			$listPage = new RequestListPage(params: $params);
+			$limit = $listPage->limit();
+			$offset = $listPage->offset();
 
 			// Extract filters from request parameters.
 			$filters = $params['filters'] ?? [];
 
 			// Retrieve webhooks using mapper with pagination and filters.
 			$webhooks = $this->webhookMapper->findAll(
-				limit: $limit,
-				offset: $offset,
-				filters: $filters
+				new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filters)
 			);
 
 			// Get total count for pagination (without limit/offset but with filters).
-			$allWebhooks = $this->webhookMapper->findAll(
-				limit: null,
-				offset: null,
-				filters: $filters
-			);
+			$allWebhooks = $this->webhookMapper->findAll(ListQuery::unbounded(filters: $filters));
 			$total = count($allWebhooks);
 
 			// Serialize webhooks to arrays.
@@ -597,20 +588,14 @@ class WebhooksController extends Controller {
 				statusCode: 200
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error listing webhooks: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error listing webhooks: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to list webhooks',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end index()
@@ -651,28 +636,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end show()
@@ -684,12 +658,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// Webhooks let the holder direct outbound HTTP from the server,
 		// so write access is admin-only (wave-3 C10).
@@ -742,21 +713,15 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook, statusCode: 201);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error creating webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error creating webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'data' => $this->request->getParams(),
+					'fields' => array_keys($this->request->getParams()),
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to create webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end create()
@@ -770,12 +735,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		// Webhook reconfiguration is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -802,29 +764,18 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error updating webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error updating webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
-					'data' => $this->request->getParams(),
+					'fields' => array_keys($this->request->getParams()),
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to update webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end update()
@@ -837,8 +788,6 @@ class WebhooksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     204,
@@ -853,7 +802,6 @@ class WebhooksController extends Controller {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		// Webhook deletion is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -876,28 +824,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: null, statusCode: 204);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error deleting webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error deleting webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to delete webhook',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end destroy()
@@ -913,12 +850,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function preview(): JSONResponse {
 		// A mapping can read any field of the event, so the preview is as
 		// privileged as editing the webhook.
@@ -941,7 +875,7 @@ class WebhooksController extends Controller {
 			]
 		);
 
-		$preview = $this->webhookService->previewPayload(webhook: $webhook, eventName: $eventName, payload: $payload);
+		$preview = $this->webhookService->previewPayload(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
 
 		return new JSONResponse(data: $preview + ['event' => $eventName]);
 	}//end preview()
@@ -974,12 +908,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(int $id): JSONResponse {
 		// The /test endpoint actually fires an outbound HTTP request to the
 		// configured URL, so it triggers the same SSRF surface as a normal
@@ -999,10 +930,7 @@ class WebhooksController extends Controller {
 			];
 
 			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: 'OCA\OpenRegister\Event\TestEvent',
-				payload: $testPayload,
-				attempt: 1
+				new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'OCA\OpenRegister\Event\TestEvent', payload: $testPayload), attempt: 1)
 			);
 
 			if ($success === true) {
@@ -1016,46 +944,29 @@ class WebhooksController extends Controller {
 
 			return $this->failedDeliveryResponse(webhookId: $id, message: 'Test webhook delivery failed');
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'success' => false,
 					'message' => 'Test webhook delivery failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'trace' => $e->getTraceAsString(),
 				]
 			);
-
-			return new JSONResponse(
+		} catch (\Exception $e) {
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
+				context: [
+					'id' => $id,
+					'trace' => $e->getTraceAsString(),
+				],
 				data: [
 					'error' => 'Failed to test webhook: ' . $e->getMessage(),
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end test()
@@ -1124,7 +1035,7 @@ class WebhooksController extends Controller {
 			$limit = (int)($this->request->getParam('limit') ?? 50);
 			$offset = (int)($this->request->getParam('offset') ?? 0);
 
-			$logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: $limit, offset: $offset);
+			$logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, page: new ListQuery(limit: $limit, offset: $offset));
 
 			return new JSONResponse(
 				data: [
@@ -1134,28 +1045,17 @@ class WebhooksController extends Controller {
 				statusCode: 200
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook logs',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end logs()
@@ -1199,28 +1099,17 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $stats);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook not found',
-				],
-				statusCode: 404
-			);
+			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook log statistics: ' . $e->getMessage(),
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook log statistics: ' . $e->getMessage(),
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
 					'id' => $id,
 					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
+				],
 				data: [
 					'error' => 'Failed to retrieve webhook log statistics',
-				],
-				statusCode: 500
+				]
 			);
 		}//end try
 	}//end logStats()
@@ -1247,101 +1136,103 @@ class WebhooksController extends Controller {
 		}
 
 		try {
-			$webhookId = $this->request->getParam('webhook_id');
-			$limit = (int)($this->request->getParam('limit') ?? 50);
-			$offset = (int)($this->request->getParam('offset') ?? 0);
-			$success = $this->request->getParam('success');
-
-			// Get all logs by default.
-			$logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
-			// Get total count for all logs.
-			$allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
-			$total = count($allLogs);
-
-			// If webhook_id is provided and valid, use findByWebhook method instead.
-			if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
-				$webhookIdInt = (int)$webhookId;
-				$logs = $this->webhookLogMapper->findByWebhook(
-					webhookId: $webhookIdInt,
-					limit: $limit,
-					offset: $offset
-				);
-				// Get total count for this webhook.
-				$allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
-					webhookId: $webhookIdInt,
-					limit: null,
-					offset: null
-				);
-				$total = count($allLogsForWebhook);
-			}
-
-			// Filter by success status if provided.
-			if ($success !== null && $success !== ''
-				&& ($success === 'true' || $success === '1' || $success === 'false' || $success === '0')
-			) {
-				$successBool = $success === 'true' || $success === '1';
-				$filteredLogs = array_filter(
-					$logs,
-					function ($log) use ($successBool) {
-						return $log->getSuccess() === $successBool;
-					}
-				);
-				$logs = array_values($filteredLogs);
-				// Re-index array.
-				// Recalculate total if filtering by success.
-				$allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
-				$total = count(
-					array_filter(
-						$allLogs,
-						function ($log) use ($successBool) {
-							return $log->getSuccess() === $successBool;
-						}
-					)
-				);
-
-				if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
-					$webhookIdInt = (int)$webhookId;
-					$allLogsForWebhook = $this->webhookLogMapper->findByWebhook(
-						webhookId: $webhookIdInt,
-						limit: null,
-						offset: null
-					);
-					$total = count(
-						array_filter(
-							$allLogsForWebhook,
-							function ($log) use ($successBool) {
-								return $log->getSuccess() === $successBool;
-							}
-						)
-					);
-				}
-			}//end if
-
-			return new JSONResponse(
-				data: [
-					'results' => $logs,
-					'total' => $total,
-				],
-				statusCode: 200
-			);
+			return new JSONResponse(data: $this->logPage(query: $this->readLogQuery()), statusCode: 200);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve webhook logs: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->logsFailed(e: $e);
+		}
 	}//end allLogs()
+
+	/**
+	 * Read the webhook, page and outcome filters of a log listing.
+	 *
+	 * A webhook id of null, '' or '0' lists every webhook; an outcome other
+	 * than 'true', '1', 'false' or '0' lists both outcomes.
+	 *
+	 * @return WebhookLogQuery The query.
+	 */
+	private function readLogQuery(): WebhookLogQuery {
+		$query     = new WebhookLogQuery();
+		$webhookId = $this->request->getParam('webhook_id');
+		if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
+			$query->webhookId = (int)$webhookId;
+		}
+
+		$query->limit  = (int)($this->request->getParam('limit') ?? 50);
+		$query->offset = (int)($this->request->getParam('offset') ?? 0);
+		$success       = $this->request->getParam('success');
+		if (in_array($success, ['true', '1', 'false', '0'], true) === true) {
+			$query->success = $success === 'true' || $success === '1';
+		}
+
+		return $query;
+	}//end readLogQuery()
+
+	/**
+	 * One page of delivery logs and the total the filters match.
+	 *
+	 * @param WebhookLogQuery $query The query.
+	 *
+	 * @return array{results: array, total: int} The page.
+	 */
+	private function logPage(WebhookLogQuery $query): array {
+		$logs  = $this->webhookLogMapper->findAll(limit: $query->limit, offset: $query->offset);
+		$total = count($this->webhookLogMapper->findAll(limit: null, offset: null));
+		if ($query->webhookId !== null) {
+			$logs  = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: new ListQuery(limit: $query->limit, offset: $query->offset));
+			$total = count($this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: ListQuery::unbounded()));
+		}
+
+		if ($query->success !== null) {
+			$logs  = $this->withOutcome(logs: $logs, success: $query->success);
+			$total = $this->outcomeTotal(query: $query);
+		}
+
+		return ['results' => $logs, 'total' => $total];
+	}//end logPage()
+
+	/**
+	 * The number of logs, of every webhook or the query's one, with the query's outcome.
+	 *
+	 * @param WebhookLogQuery $query The query; its outcome is set.
+	 *
+	 * @return int The total.
+	 */
+	private function outcomeTotal(WebhookLogQuery $query): int {
+		$total = count($this->withOutcome(logs: $this->webhookLogMapper->findAll(limit: null, offset: null), success: $query->success));
+		if ($query->webhookId !== null) {
+			$all   = $this->webhookLogMapper->findByWebhook(webhookId: $query->webhookId, page: ListQuery::unbounded());
+			$total = count($this->withOutcome(logs: $all, success: $query->success));
+		}
+
+		return $total;
+	}//end outcomeTotal()
+
+	/**
+	 * The logs with the given outcome, re-indexed.
+	 *
+	 * @param array $logs    The logs.
+	 * @param bool  $success The outcome.
+	 *
+	 * @return array The matching logs.
+	 */
+	private function withOutcome(array $logs, bool $success): array {
+		return array_values(array_filter($logs, fn ($log) => $log->getSuccess() === $success));
+	}//end withOutcome()
+
+	/**
+	 * Log a failed listing and answer 500.
+	 *
+	 * @param \Exception $e The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function logsFailed(\Exception $e): JSONResponse {
+		return $this->loggedFailure(
+			logMessage: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
+			context: ['trace' => $e->getTraceAsString()],
+			data: ['error' => 'Failed to retrieve webhook logs: ' . $e->getMessage()]
+		);
+	}//end logsFailed()
 
 	/**
 	 * Retry a failed webhook delivery
@@ -1352,16 +1243,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(int $logId): JSONResponse {
 		// The retry() endpoint re-fires an outbound webhook delivery, so it
 		// shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).
@@ -1370,92 +1254,70 @@ class WebhooksController extends Controller {
 		}
 
 		try {
-			// Get the log entry.
-			$log = $this->webhookLogMapper->find($logId);
-
-			// Only allow retry for failed webhooks.
-			if ($log->getSuccess() === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Cannot retry a successful webhook delivery',
-					],
-					statusCode: 400
-				);
-			}
-
-			// Call getWebhook(), not getWebhookId(): the log entity's property is
-			// named `webhook`, so the `Id` spelling threw out of Entity::__call
-			// and answered this endpoint with a 500.
-			$webhook = $this->webhookMapper->find($log->getWebhook());
-
-			$payload = $this->retryPayload(log: $log);
-			if (empty($payload) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'No payload available for retry',
-					],
-					statusCode: 400
-				);
-			}
-
-			// Extract original event data from payload if available.
-			$eventName = $log->getEventClass();
-			$originalPayload = $payload['data'] ?? $payload;
-
-			// Retry the webhook delivery.
-			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: $eventName,
-				payload: $originalPayload,
-				attempt: $log->getAttempt() + 1
-			);
-
-			if ($success === true) {
-				return new JSONResponse(
-					data: [
-						'success' => true,
-						'message' => 'Webhook retry delivered successfully',
-					]
-				);
-			}
-
-			return $this->failedDeliveryResponse(webhookId: $webhook->getId(), message: 'Webhook retry delivery failed');
+			return $this->retryLog(logId: $logId);
 		} catch (DoesNotExistException $e) {
 			$this->logger->error(
 				message: '[WebhooksController] Webhook log not found for retry: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'log_id' => $logId,
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'log_id' => $logId, 'trace' => $e->getTraceAsString()]
 			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook log not found',
-				],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Webhook log not found'], statusCode: 404);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhooksController] Error retrying webhook: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'log_id' => $logId,
-					'trace' => $e->getTraceAsString(),
-				]
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrying webhook: ' . $e->getMessage(),
+				context: ['log_id' => $logId, 'trace' => $e->getTraceAsString()],
+				data: ['error' => 'Failed to retry webhook']
 			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retry webhook',
-				],
-				statusCode: 500
-			);
-		}//end try
+		}
 	}//end retry()
+
+	/**
+	 * Retry the delivery a failed log entry records.
+	 *
+	 * The log entity's property is named `webhook`, so its id is read with getWebhook().
+	 *
+	 * @param int $logId Log entry ID
+	 *
+	 * @return JSONResponse The retry result, or 400 for a successful delivery
+	 *
+	 * @throws DoesNotExistException When no log entry has this id; retry() answers 404.
+	 */
+	private function retryLog(int $logId): JSONResponse {
+		$log = $this->webhookLogMapper->find($logId);
+		if ($log->getSuccess() === true) {
+			return new JSONResponse(data: ['error' => 'Cannot retry a successful webhook delivery'], statusCode: 400);
+		}
+
+		$webhook = $this->webhookMapper->find($log->getWebhook());
+		return $this->redeliver(log: $log, webhook: $webhook);
+	}//end retryLog()
+
+	/**
+	 * Deliver a logged payload again, as the next attempt; the original event data when the payload wraps it.
+	 *
+	 * @param WebhookLog $log     The failed delivery's log entry.
+	 * @param Webhook    $webhook The webhook it was delivered to.
+	 *
+	 * @return JSONResponse The retry result, or 400 when the log holds no payload
+	 */
+	private function redeliver(WebhookLog $log, Webhook $webhook): JSONResponse {
+		$payload = $this->retryPayload(log: $log);
+		if (empty($payload) === true) {
+			return new JSONResponse(data: ['error' => 'No payload available for retry'], statusCode: 400);
+		}
+
+		$success = $this->webhookService->deliverWebhook(
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: $log->getEventClass(), payload: $payload['data'] ?? $payload),
+				attempt: $log->getAttempt() + 1
+			)
+		);
+		if ($success === true) {
+			return new JSONResponse(data: ['success' => true, 'message' => 'Webhook retry delivered successfully']);
+		}
+
+		return $this->failedDeliveryResponse(webhookId: $webhook->getId(), message: 'Webhook retry delivery failed');
+	}//end redeliver()
 
 	/**
 	 * The payload a failed delivery is retried with: the logged request body, else the stored payload.
@@ -1490,7 +1352,7 @@ class WebhooksController extends Controller {
 	 * @return JSONResponse The error response.
 	 */
 	private function failedDeliveryResponse(int $webhookId, string $message): JSONResponse {
-		$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhookId, limit: 1, offset: 0);
+		$latestLogs = $this->webhookLogMapper->findByWebhook(webhookId: $webhookId, page: new ListQuery(limit: 1, offset: 0));
 		$responseData = [
 			'success' => false,
 			'message' => $message,

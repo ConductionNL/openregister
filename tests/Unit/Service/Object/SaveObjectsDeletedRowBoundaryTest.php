@@ -25,9 +25,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -53,6 +60,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @covers \OCA\OpenRegister\Service\Object\BulkSafeguardRun
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
@@ -67,6 +75,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
@@ -76,7 +86,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
 	private const FOREIGN_LIVE = '99999999-9999-9999-9999-999999999999';
 
+	private const OWN_DELETED_DRAFT = '55555555-5555-5555-5555-555555555555';
+
 	private const ROWS = [
+		self::OWN_DELETED_DRAFT => ['org' => 'org-a', 'deleted' => true, 'status' => 'draft'],
 		self::FOREIGN_DELETED => ['org' => 'org-b', 'deleted' => true],
 		self::OWN_DELETED => ['org' => 'org-a', 'deleted' => true],
 		self::FOREIGN_LIVE => ['org' => 'org-b', 'deleted' => false],
@@ -121,6 +134,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$entity->setObject(['title' => 'stored']);
 		$entity->setRegister('10');
 		$entity->setSchema('681');
+		$entity->setStatus(self::ROWS[$uuid]['status'] ?? null);
 		if (self::ROWS[$uuid]['deleted'] === true) {
 			$entity->setDeleted(['deleted' => '2026-11-01T00:00:00+00:00', 'deletedBy' => 'bob']);
 		}
@@ -168,13 +182,13 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnCallback(static fn (string $app, string $key, bool $default = false): bool => $default);
 		$container = $this->createMock(ContainerInterface::class);
 		$logger = new NullLogger();
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $container, new OperatorEvaluator($logger), $logger),
+			new ConditionMatcher(new ConditionUserResolvers($session), $container, new OperatorEvaluator($logger), $logger),
 			$appConfig,
 			$logger,
 			$container
@@ -214,16 +228,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			objectEntityMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $session,
-			organisationService: $organisations,
-			logger: $logger,
-			groupManager: $groups,
-			permissionHandler: $permissions,
-			validateHandler: $this->createMock(ValidateObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $organisations, groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $logger),
+			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $this->createMock(ValidateObject::class))
 		);
 	}//end handler()
 
@@ -252,8 +260,9 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
 		$rows = array_map(static fn (array $row): array => $row + ['title' => 'overwritten'], $rows);
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
-		$args = [$rows, $register, $schema, $flags + ['validation' => false], &$result];
-		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), $args);
+		$batch = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($register, $schema), flags: $flags + ['validation' => false], result: $result);
+		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 		$passedIds = array_map(static fn (array $row): mixed => $row['id'] ?? $row['@self']['id'] ?? null, $passed);
 
 		$answers = [];
@@ -337,6 +346,10 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 		$createOnly = ['create' => ['planners'], 'read' => ['planners']];
 
 		$this->assertSame(expected: [null], actual: $this->screenBatch(rows: [['id' => self::OWN_DELETED]], rules: $createOnly));
+	}
+
+	public function testADeletedRowIsNotJudgedAsTheRowBeingUpdated(): void {
+		$this->assertNull($this->screen(row: ['id' => self::OWN_DELETED_DRAFT]));
 	}
 
 	public function testARefusedDeletedRowDoesNotRefuseTheNextRow(): void {

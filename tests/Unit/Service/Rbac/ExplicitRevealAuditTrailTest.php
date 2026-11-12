@@ -23,19 +23,24 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -56,22 +61,28 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\LogService
  * @covers \OCA\OpenRegister\Controller\AuditTrailController
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailMappers
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailLog
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailReaders
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\AuditTrailControllerServices
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker
- * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Db\Register
- * @uses \OCA\OpenRegister\Db\ObjectEntity
- * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
- * @uses \OCA\OpenRegister\Db\AuditTrail
- * @uses \OCA\OpenRegister\Db\Schema
- * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders
  * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
@@ -119,9 +130,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		return new LogService(
 			$trails,
-			$this->createMock(originalClassName: MagicMapper::class),
-			$this->createMock(originalClassName: RegisterMapper::class),
-			$schemas
+			new SchemaCatalog($this->createMock(originalClassName: RegisterMapper::class), $schemas, $this->createMock(originalClassName: MagicMapper::class))
 		);
 	}//end logService()
 
@@ -142,7 +151,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$controller = new AuditTrailController(
+		$controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->createMock(originalClassName: IRequest::class),
 			$logService,
@@ -187,7 +196,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	 */
 	public function testTheListExportShowsItMasked(): void {
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturn([$this->entry()]);
+		$trails->method('findTrail')->willReturn([$this->entry()]);
 
 		$file = $this->logService(trails: $trails)->exportLogs(format: 'json', config: ['includeChanges' => true]);
 
@@ -223,7 +232,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			($request ?? $this->createMock(originalClassName: IRequest::class)),
 			$logService,
@@ -246,7 +255,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$entry = $this->entry();
 		$entry->setObjectUuid('obj-1');
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturnCallback(
+		$trails->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit = null, ?int $offset = null) use ($entry): array {
 				if (($offset ?? 0) > 0) {
 					return [];
@@ -254,7 +263,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 				return [$entry];
 			}
-		);
+		));
 		$object = new ObjectEntity();
 		$object->setUuid('obj-1');
 		$object->setRegister('5');
@@ -270,28 +279,24 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$reads->method('maySeeReadEvents')->willReturn(true);
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
-		$properties = new PropertyRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(originalClassName: ConditionMatcher::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groups)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(originalClassName: ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(originalClassName: LoggerInterface::class));
 
 		$lister = new ReadableAuditTrailLister(
 			auditTrailMapper: $trails,
 			objectMapper: $objects,
 			history: new ObjectHistoryForReaders(
 				$access,
-				$trails,
-				new HistoryEntryRedactor($properties),
-				$registers,
+				new ObjectHistoryServices(
+					$trails,
+					new HistoryEntryRedactor($properties),
+					$registers
+				),
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),
 			cursors: $this->auditCursors()
 		);
-		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
+		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20)));
 
 		$this->assertStringContainsString(needle: 'obj-1', haystack: $encoded);
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: $encoded);

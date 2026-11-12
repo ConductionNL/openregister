@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
@@ -22,12 +23,15 @@ use Psr\Log\LoggerInterface;
  * Also pins that a write endpoint refuses when no session collaborators are wired.
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
+ * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  */
 class WebhooksControllerEventsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-events-golden.json';
 
 	public function testEventsMatchTheRecordedCatalogue(): void {
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
@@ -56,7 +60,7 @@ class WebhooksControllerEventsGoldenTest extends TestCase {
 	public function testWriteEndpointsFailClosedWithoutTheSessionCollaborators(): void {
 		$webhookMapper = $this->createMock(WebhookMapper::class);
 		$webhookMapper->expects($this->never())->method('insert');
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$webhookMapper,

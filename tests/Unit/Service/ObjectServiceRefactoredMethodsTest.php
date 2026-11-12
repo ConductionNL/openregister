@@ -27,7 +27,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -68,6 +69,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Unit tests for ObjectService refactored methods.
@@ -142,7 +144,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 		$this->mockSchema->setHardValidation(false);
 
 		// Create ObjectService with all required constructor parameters.
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
@@ -181,7 +183,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// Set up reflection for accessing private methods.
 		$this->reflection = new ReflectionClass(ObjectService::class);
@@ -335,50 +337,108 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 	// ==================== checkSavePermissions() Tests ====================
 
 	/**
-	 * Test checkSavePermissions with RBAC disabled.
+	 * Point the service at the test schema and register, as setSchema() would.
+	 *
+	 * @return void
+	 */
+	private function selectSchema(): void {
+		$this->reflection->getProperty('currentSchema')->setValue($this->objectService, $this->mockSchema);
+		$this->reflection->getProperty('currentRegister')->setValue($this->objectService, $this->mockRegister);
+	}//end selectSchema()
+
+	/**
+	 * With RBAC switched off for the call, the save still asks the permission
+	 * handler, and hands it the off-switch rather than deciding itself.
 	 *
 	 * @return void
 	 */
 	public function testCheckSavePermissionsWithRbacDisabled(): void {
-		// Should not throw exception when RBAC is disabled.
-		$this->expectNotToPerformAssertions();
+		$this->selectSchema();
+		$this->permissionHandler->expects($this->once())
+			->method('checkPermission')
+			->with(
+				$this->identicalTo($this->mockSchema),
+				'create',
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->userId === null && $options->objectOwner === null && $options->register === '1'),
+				false
+			);
 
-		$this->invokePrivateMethod(
-			'checkSavePermissions',
-			['some-uuid', false]
-		);
+		$result = $this->invokePrivateMethod('checkSavePermissions', [null, false]);
+
+		$this->assertNull($result, 'A create lands on no stored row.');
 	}
 
 	/**
-	 * Test checkSavePermissions with RBAC enabled and create scenario.
+	 * Without a uuid the save is a create: the create permission is asked on
+	 * the schema and register being written to.
 	 *
 	 * @return void
 	 */
 	public function testCheckSavePermissionsCreateScenario(): void {
-		// UUID is null, so it's a create operation.
-		// Should check create permissions.
-		$this->expectNotToPerformAssertions();
+		$this->selectSchema();
+		$this->permissionHandler->expects($this->once())
+			->method('checkPermission')
+			->with(
+				$this->identicalTo($this->mockSchema),
+				'create',
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->userId === null && $options->objectOwner === null && $options->register === '1'),
+				true
+			);
 
-		$this->invokePrivateMethod(
-			'checkSavePermissions',
-			[null, true]
-		);
+		$result = $this->invokePrivateMethod('checkSavePermissions', [null, true]);
+
+		$this->assertNull($result, 'A create lands on no stored row.');
 	}
 
 	/**
-	 * Test checkSavePermissions with RBAC enabled and update scenario.
+	 * With a uuid the caller can see, the save is an update: the update
+	 * permission is asked, never the create one.
 	 *
 	 * @return void
 	 */
 	public function testCheckSavePermissionsUpdateScenario(): void {
-		// UUID is provided, so it's an update operation.
-		// Should check update permissions.
-		$this->expectNotToPerformAssertions();
+		$this->selectSchema();
+		$actions = [];
+		$this->permissionHandler->expects($this->once())
+			->method('checkPermission')
+			->willReturnCallback(
+				function (Schema $schema, string $action) use (&$actions): void {
+					$actions[] = $action;
+				}
+			);
 
-		$this->invokePrivateMethod(
-			'checkSavePermissions',
-			['existing-uuid', true]
-		);
+		$this->invokePrivateMethod('checkSavePermissions', ['existing-uuid', true]);
+
+		$this->assertSame(['update'], $actions);
+	}
+
+	/**
+	 * The refusal pair: when the permission handler refuses, the save does
+	 * not go on — the refusal reaches the caller unchanged.
+	 *
+	 * @return void
+	 */
+	public function testCheckSavePermissionsPropagatesARefusal(): void {
+		$this->selectSchema();
+		$this->permissionHandler->method('checkPermission')
+			->willThrowException(new Exception('not allowed to create'));
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('not allowed to create');
+
+		$this->invokePrivateMethod('checkSavePermissions', [null, true]);
+	}
+
+	/**
+	 * Without a schema there is nothing to authorise against: no permission
+	 * is asked and no stored row is named.
+	 *
+	 * @return void
+	 */
+	public function testCheckSavePermissionsWithoutASchemaAsksNothing(): void {
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+
+		$this->assertNull($this->invokePrivateMethod('checkSavePermissions', ['some-uuid', true]));
 	}
 
 	// ==================== validateObjectIfRequired() Tests ====================
@@ -431,7 +491,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 		);
 		$this->validateHandler->expects($this->once())
 			->method('validateObject')
-			->with($this->anything(), $schema, $this->anything(), $this->anything(), ['title' => 'draft', 'description' => 'draft'])
+			->with($this->anything(), $schema, $this->anything(), ['title' => 'draft', 'description' => 'draft'])
 			->willReturn($invalid);
 		$this->validateHandler->method('generateErrorMessage')->willReturn('preferredDate must match format date-time');
 

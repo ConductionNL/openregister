@@ -4,7 +4,12 @@ import type { Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useSearchStore = defineStore('search', () => {
+/**
+ * The legacy search: one query string, its raw results and its error.
+ *
+ * @return The legacy state and actions
+ */
+function useLegacySearch() {
 	/*
 		I would rather not have this legacy code here.
         But other pages require this code as to not break and spam errors.
@@ -62,19 +67,78 @@ export const useSearchStore = defineStore('search', () => {
 	}
 	// END OF LEGACY CODE
 
-	// new, used by search page
-	// search data
-	const searchObjectsDataRegister = ref<{ label: string; id: string } | null>(null)
-	const searchObjectsDataSchema = ref<{ label: string; id: string } | null>(null)
-	const searchObjectsDataPagination = ref<number>(1)
-	const searchObjectsDataPaginationLimit = ref<number>(14)
+	return {
+		search,
+		searchResults,
+		searchError,
+		setSearch,
+		setSearchResults,
+		getSearchResults,
+		clearSearch,
+	}
+}
 
-	// search objects
-	const searchObjectsSuccess = ref(false)
-	const searchObjectsLoading = ref(false)
-	const searchObjectsResult = ref<Record<string, any>[]>([])
-	const searchObjectsError = ref('')
+/**
+ * What the search page searches in: the register, the schema and the page.
+ *
+ * @return The selection refs
+ */
+function objectSearchSelection() {
+	return {
+		searchObjectsDataRegister: ref<{ label: string; id: string } | null>(null),
+		searchObjectsDataSchema: ref<{ label: string; id: string } | null>(null),
+		searchObjectsDataPagination: ref<number>(1),
+		searchObjectsDataPaginationLimit: ref<number>(14),
+	}
+}
 
+/**
+ * The outcome of the search page's latest object search.
+ *
+ * @return The outcome refs
+ */
+function objectSearchState() {
+	return {
+		searchObjectsSuccess: ref(false),
+		searchObjectsLoading: ref(false),
+		searchObjectsResult: ref<Record<string, any>[]>([]),
+		searchObjectsError: ref(''),
+	}
+}
+
+/**
+ * The refs an object search hands its caller, updated as the answer comes in.
+ */
+type TObjectSearchOutcome = {
+	success: Ref<boolean>
+	loading: Ref<boolean>
+	result: Ref<Record<string, any>[]>
+	error: Ref<string>
+}
+
+/**
+ * The outcome refs under the names an object search returns them by.
+ *
+ * @param state - The object search outcome refs
+ * @return The refs a caller watches
+ */
+function searchOutcome(state: ReturnType<typeof objectSearchState>): TObjectSearchOutcome {
+	return {
+		success: state.searchObjectsSuccess,
+		loading: state.searchObjectsLoading,
+		result: state.searchObjectsResult,
+		error: state.searchObjectsError,
+	}
+}
+
+/**
+ * The search page's object search, with what it searches in and its outcome.
+ *
+ * @return The object search state and actions
+ */
+function useObjectSearch() {
+	const selection = objectSearchSelection()
+	const state = objectSearchState()
 	const oldSearchQuery = ref<Record<string, any>>({})
 
 	/**
@@ -87,8 +151,8 @@ export const useSearchStore = defineStore('search', () => {
 	function objectsEndpoint(searchQuery: Record<string, string>): string {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
-		const register = searchObjectsDataRegister.value?.id || ''
-		const schema = searchObjectsDataSchema.value?.id || ''
+		const register = selection.searchObjectsDataRegister.value?.id || ''
+		const schema = selection.searchObjectsDataSchema.value?.id || ''
 		return `/index.php/apps/openregister/api/objects/${register}/${schema}${queryPart}`
 	}
 
@@ -100,12 +164,9 @@ export const useSearchStore = defineStore('search', () => {
 	 * @return Object containing refs that will be updated with search results
 	 * @spec exclude Search page object fetch that only fills the search refs: no standalone behavioural contract.
 	 */
-	function searchObjects(searchQuery: Record<string, string> = {}): {
-		success: Ref<boolean>
-		loading: Ref<boolean>
-		result: Ref<Record<string, any>[]>
-		error: Ref<string>
-	} {
+	function searchObjects(
+		searchQuery: Record<string, string> = {},
+	): TObjectSearchOutcome {
 		oldSearchQuery.value = searchQuery
 
 		console.group('search objects')
@@ -113,40 +174,35 @@ export const useSearchStore = defineStore('search', () => {
 		console.group('Fetching search results with params:')
 		console.groupEnd()
 
-		searchObjectsLoading.value = true
+		state.searchObjectsLoading.value = true
 
 		fetch(objectsEndpoint(searchQuery), { method: 'GET' })
 			.then(async (response) => {
 				// Clear any previous errors
-				searchObjectsError.value = ''
+				state.searchObjectsError.value = ''
 
 				const data = await response.json()
 
 				if (!response.ok && response.statusText) {
-					searchObjectsError.value = response.statusText
-					console.error(searchObjectsError.value)
+					state.searchObjectsError.value = response.statusText
+					console.error(state.searchObjectsError.value)
 					return
 				}
 
-				searchObjectsSuccess.value = true
-				searchObjectsResult.value = data
+				state.searchObjectsSuccess.value = true
+				state.searchObjectsResult.value = data
 			})
 			.catch((error) => {
 				console.error('Error fetching search results:', error)
-				searchObjectsSuccess.value = false
-				searchObjectsError.value = error
+				state.searchObjectsSuccess.value = false
+				state.searchObjectsError.value = error
 			})
 			.finally(() => {
-				searchObjectsLoading.value = false
+				state.searchObjectsLoading.value = false
 				console.groupEnd()
 			})
 
-		return {
-			success: searchObjectsSuccess,
-			loading: searchObjectsLoading,
-			result: searchObjectsResult,
-			error: searchObjectsError,
-		}
+		return searchOutcome(state)
 	}
 
 	/**
@@ -162,40 +218,22 @@ export const useSearchStore = defineStore('search', () => {
 	 *
 	 */
 	function clearObjectSearchResults() {
-		searchObjectsSuccess.value = false
-		searchObjectsLoading.value = false
-		searchObjectsResult.value = []
-		searchObjectsError.value = ''
+		state.searchObjectsSuccess.value = false
+		state.searchObjectsLoading.value = false
+		state.searchObjectsResult.value = []
+		state.searchObjectsError.value = ''
 	}
 
 	return {
-		// LEGACY
-		// state
-		search,
-		searchResults,
-		searchError,
-
-		// functions
-		setSearch,
-		setSearchResults,
-		getSearchResults,
-		clearSearch,
-
-		// NEW
-		// state
-		searchObjectsSuccess,
-		searchObjectsLoading,
-		searchObjectsResult,
-		searchObjectsError,
-
-		searchObjectsDataRegister,
-		searchObjectsDataSchema,
-		searchObjectsDataPagination,
-		searchObjectsDataPaginationLimit,
-
-		// functions
+		...state,
+		...selection,
 		searchObjects,
 		reDoSearch,
 		clearObjectSearchResults,
 	}
-})
+}
+
+export const useSearchStore = defineStore('search', () => ({
+	...useLegacySearch(),
+	...useObjectSearch(),
+}))

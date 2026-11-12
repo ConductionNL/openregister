@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Verwerkingsactiviteit\VerwerkingsactiviteitFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -88,6 +89,9 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class Verwerkingsactiviteit extends Entity implements JsonSerializable {
+	use StatusVocabularyTrait;
+	// Serialises as the canonical AVG Art 30 JSON shape: every registered field, in registration order.
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Article 6 GDPR legal-basis vocabulary.
@@ -247,26 +251,9 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'code', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'purpose', type: 'string');
-		$this->addType(fieldName: 'legalBasis', type: 'string');
-		$this->addType(fieldName: 'dataSubjectCategories', type: 'json');
-		$this->addType(fieldName: 'personalDataCategories', type: 'json');
-		$this->addType(fieldName: 'retentionPeriod', type: 'string');
-		$this->addType(fieldName: 'recipients', type: 'json');
-		$this->addType(fieldName: 'internationalTransfers', type: 'json');
-		$this->addType(fieldName: 'technicalMeasures', type: 'string');
-		$this->addType(fieldName: 'organisationalMeasures', type: 'string');
-		$this->addType(fieldName: 'controller', type: 'json');
-		$this->addType(fieldName: 'dpoContactDetails', type: 'json');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (VerwerkingsactiviteitFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -283,50 +270,4 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 
 		return in_array(needle: $legalBasis, haystack: self::LEGAL_BASIS_VOCABULARY, strict: true);
 	}//end isValidLegalBasis()
-
-	/**
-	 * Whether the supplied status string is in the lifecycle vocabulary.
-	 *
-	 * @param string|null $status Candidate status string.
-	 *
-	 * @return bool
-	 */
-	public static function isValidStatus(?string $status): bool {
-		if ($status === null || $status === '') {
-			return false;
-		}
-
-		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
-	}//end isValidStatus()
-
-	/**
-	 * Render the entity as the canonical AVG Art 30 JSON shape.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'code' => $this->code,
-			'name' => $this->name,
-			'description' => $this->description,
-			'purpose' => $this->purpose,
-			'legalBasis' => $this->legalBasis,
-			'dataSubjectCategories' => $this->dataSubjectCategories,
-			'personalDataCategories' => $this->personalDataCategories,
-			'retentionPeriod' => $this->retentionPeriod,
-			'recipients' => $this->recipients,
-			'internationalTransfers' => $this->internationalTransfers,
-			'technicalMeasures' => $this->technicalMeasures,
-			'organisationalMeasures' => $this->organisationalMeasures,
-			'controller' => $this->controller,
-			'dpoContactDetails' => $this->dpoContactDetails,
-			'organisationId' => $this->organisationId,
-			'status' => $this->status,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
-
-	}//end jsonSerialize()
 }//end class

@@ -6,7 +6,7 @@
  * Seen on cloud.conduction.nl on 9 October 2026: pipelinq's "Client changed"
  * notification carried the Open action
  * `/index.php/apps/pipelinq#/registers/20/schemas/42/objects/<uuid>`. The deep
- * link registry had no pipelinq route, so `buildObjectDetailLink()` fell back
+ * link registry had no pipelinq route, so `ObjectDetailLinks::objectLink()` fell back
  * to a hash route on the origin app, which pipelinq is not and redirects to
  * its dashboard. The fallback is now OpenRegister's object view, and the
  * registry fills itself when OpenRegister was never booted in the process
@@ -33,14 +33,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -55,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Locks where an `object-detail` action target leads.
@@ -94,8 +111,8 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				RegisterMapper::class => $registerMapper,
-				SchemaMapper::class => $schemaMapper,
+				RegisterMapperInterface::class => $registerMapper,
+				SchemaMapperInterface::class => $schemaMapper,
 				IEventDispatcher::class => $dispatcher,
 				default => null,
 			}
@@ -119,17 +136,50 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(static fn (string $url): string => self::BASE . $url);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			urlGenerator: $urlGenerator,
-			deepLinkRegistry: $registry
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->createMock(INotificationManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					userManager: $this->createMock(IUserManager::class)
+				),
+				emailSender: new EmailSender(
+					userManager: $this->createMock(IUserManager::class),
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->createMock(IUserManager::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					serverContainer: $this->createMock(IServerContainer::class)
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				urlGenerator: $urlGenerator,
+				deepLinkRegistry: $registry
+			)
 		);
 	}//end makeDispatcher()
 
@@ -147,9 +197,13 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$object->setSchema((string) $schemaId);
 		$object->setUuid('29a4dd68-71a3-40a8-860d-9b53f9701588');
 
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveActionTarget');
+		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'actionLinks');
+		$links = $method->invoke($dispatcher)->resolve(
+			spec: ['actions' => [['target' => ['kind' => 'object-detail']]]],
+			context: new ActionTargetContext(object: $object, data: [], originApp: 'pipelinq')
+		);
 
-		return $method->invoke($dispatcher, ['kind' => 'object-detail'], $object, [], 'pipelinq');
+		return ($links[0]['url'] ?? null);
 	}//end resolveOpen()
 
 	public function testAnUnclaimedSchemaOpensTheObjectInOpenRegister(): void {
@@ -163,12 +217,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 
 	public function testAClaimedSchemaOpensTheAppsDetailPage(): void {
 		$registry = $this->makeRegistry();
-		$registry->register(
-			appId: 'pipelinq',
-			registerSlug: 'pipelinq',
-			schemaSlug: 'client',
-			urlTemplate: '/apps/pipelinq/clients/{uuid}'
-		);
+		$registry->add(registration: new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'pipelinq', schemaSlug: 'client', urlTemplate: '/apps/pipelinq/clients/{uuid}'));
 
 		$link = $this->resolveOpen($this->makeDispatcher($registry), 42);
 

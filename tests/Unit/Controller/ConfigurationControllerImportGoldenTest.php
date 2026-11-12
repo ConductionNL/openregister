@@ -7,12 +7,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
@@ -23,6 +25,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Golden test for the configuration import pipeline behind importFromGitHub(),
@@ -36,7 +39,16 @@ use Psr\Log\LoggerInterface;
  * by a marker. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ConfigurationController
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationImport
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
+ * @uses \OCA\OpenRegister\Service\Configuration\GitLabProjectRef
  */
 class ConfigurationControllerImportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/configuration-import-golden.json';
@@ -121,7 +133,7 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			return $uid === 'alice';
 		});
 
-		$controller = new ConfigurationController(
+		$controller = ConfigurationControllerFactory::create(
 			'openregister',
 			$request,
 			$this->mapper($case),
@@ -146,8 +158,8 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 	 */
 	private function github(array $case): GitHubClientInterface {
 		$github = $this->createMock(GitHubClientInterface::class);
-		$github->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['github.getFileContent' => $args];
+		$github->method('getFileContent')->willReturnCallback(function (GitHubFileLocation $file) use ($case) {
+			$this->calls[] = ['github.getFileContent' => [$file->owner, $file->repo, $file->path, $file->branch]];
 			if (isset($case['fetchThrows']) === true) {
 				throw new Exception($case['fetchThrows'][0], $case['fetchThrows'][1]);
 			}
@@ -166,8 +178,8 @@ class ConfigurationControllerImportGoldenTest extends TestCase {
 			$this->calls[] = ['gitlab.getProjectByPath' => $args];
 			return ['id' => 77];
 		});
-		$gitlab->method('getFileContent')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['gitlab.getFileContent' => $args];
+		$gitlab->method('fileContent')->willReturnCallback(function (GitLabProjectRef $project, string $path) use ($case) {
+			$this->calls[] = ['gitlab.getFileContent' => [$project->projectId, $path, $project->ref]];
 			return $case['config'] ?? [];
 		});
 		$gitlab->method('getApiBase')->willReturnCallback(function () {

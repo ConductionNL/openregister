@@ -49,14 +49,15 @@ final class MagicMetadataColumn {
 	 * the table holds one column of that name and the metadata is what it was
 	 * made for.
 	 *
-	 * @param string                $column              The column name.
+	 * @param int|string            $column              The column name; PHP keeps a numeric row key as an int.
 	 * @param array<string, string> $columnToPropertyMap The schema's column-to-property map.
 	 *
 	 * @return string|null The metadata field without its prefix (`schema_version`), or null.
 	 *
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
-	public function field(string $column, array $columnToPropertyMap): ?string {
+	public function field(int|string $column, array $columnToPropertyMap): ?string {
+		$column = (string)$column;
 		if (str_starts_with($column, self::PREFIX) === false) {
 			return null;
 		}

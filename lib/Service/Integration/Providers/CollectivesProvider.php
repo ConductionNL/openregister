@@ -35,15 +35,17 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\CollectiveLink;
-use OCA\OpenRegister\Db\CollectiveLinkMapper;
+use OCA\OpenRegister\Db\CollectiveLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class CollectivesProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'collectives';
@@ -51,21 +53,61 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Where the legacy `[or:{uuid}]` marker lives: table, marker column, extra
+	 * columns, id column, and the app URL a row's id is appended to.
+	 *
+	 * @var array{table: string, column: string, extra: list<string>, id: string, url: string}
+	 */
+	private const MARKER_SOURCE = [
+		'table' => 'collectives_pages',
+		'column' => 'slug',
+		'extra' => ['emoji', 'last_user_id'],
+		'id' => 'id',
+		'url' => '/index.php/apps/collectives/',
+	];
+
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param CollectiveLinkMapper $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning            $leaf                 The DB connection, app manager, localisation and marker-scan logger.
+	 * @param CollectiveLinkMapperInterface $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private CollectiveLinkMapper $collectiveLinkMapper,
-		private LoggerInterface $logger,
+		LeafMarkerScanning $leaf,
+		private CollectiveLinkMapperInterface $collectiveLinkMapper,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -84,78 +126,14 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 		return 'docs';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List linked Knowledge pages for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `collectives_pages.slug` so pages that pre-date the link table
-	 * still surface.
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>> List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-collectives/spec.md
+	 * @return CollectiveLinkMapperInterface
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->collectiveLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (CollectiveLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]`
-		// marker in `collectives_pages.slug`.
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: 'collectives_pages',
-			markerColumn: 'slug',
-			marker: $marker,
-			extraColumns: ['emoji', 'last_user_id'],
-			idColumn: 'id',
-		);
-
-		return array_map(
-			static function (array $row): array {
-				return [
-					'id' => (string)($row['id'] ?? ''),
-					'title' => (string)($row['slug'] ?? ''),
-					'url' => '/index.php/apps/collectives/' . (string)($row['id'] ?? ''),
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+	protected function linkMapper(): CollectiveLinkMapperInterface {
+		return $this->collectiveLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert a CollectiveLink row into the registry leaf-row shape.
@@ -164,23 +142,32 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(CollectiveLink $link): array {
-		$pageId = (int)$link->getPageId();
-		$data = $link->jsonSerialize();
-		$url = $link->getUrl();
-		if ($url === null || $url === '') {
-			$url = '/index.php/apps/collectives/?fileId=' . $pageId;
-		}
-
+	protected function rowFromLink(CollectiveLink $link): array {
 		return [
-			'id' => (string)$pageId,
+			'id' => (string)(int)$link->getPageId(),
 			'title' => (string)$link->getPageTitle(),
-			'url' => $url,
+			'url' => $this->pageUrl(link: $link),
 			'emoji' => $link->getEmoji(),
 			'collectiveName' => $link->getCollectiveName(),
-			'data' => $data,
+			'data' => $link->jsonSerialize(),
 		];
 	}//end rowFromLink()
+
+	/**
+	 * The page URL the link stored, or the Collectives file URL of its page.
+	 *
+	 * @param CollectiveLink $link The link.
+	 *
+	 * @return string
+	 */
+	private function pageUrl(CollectiveLink $link): string {
+		$url = $link->getUrl();
+		if ($url === null || $url === '') {
+			return '/index.php/apps/collectives/?fileId=' . (int)$link->getPageId();
+		}
+
+		return $url;
+	}//end pageUrl()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).
@@ -191,18 +178,6 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->isEnabled();
-		$status = 'unavailable';
-		$message = 'NC Knowledge app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Knowledge app is not installed');
 	}//end health()
 }//end class

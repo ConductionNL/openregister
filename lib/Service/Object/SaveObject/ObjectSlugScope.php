@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Schema;
  * The register is null only on a single save whose register did not resolve;
  * the slug is then not written and the log line names the schema alone.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
  */
 final class ObjectSlugScope {
 
@@ -54,7 +54,7 @@ final class ObjectSlugScope {
 	 *
 	 * @return bool True when `objectSlugSuffix` is on.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function suffixOn(): bool {
 		return ((($this->schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
@@ -65,7 +65,7 @@ final class ObjectSlugScope {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function describe(): string {
 		return sprintf(
@@ -84,7 +84,7 @@ final class ObjectSlugScope {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function context(string $path): array {
 		return [

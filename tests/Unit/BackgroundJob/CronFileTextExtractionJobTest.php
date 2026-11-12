@@ -16,10 +16,10 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\BackgroundJob\CronFileTextExtractionJob;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

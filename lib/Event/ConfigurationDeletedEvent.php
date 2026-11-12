@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Configuration;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when a configuration is deleted.
  */
-class ConfigurationDeletedEvent extends Event {
-
-	/**
-	 * The deleted configuration.
-	 *
-	 * @var Configuration The configuration that was deleted.
-	 */
-	private Configuration $configuration;
-
-	/**
-	 * Constructor for ConfigurationDeletedEvent.
-	 *
-	 * @param Configuration $configuration The configuration that was deleted.
-	 *
-	 * @return void
-	 */
-	public function __construct(Configuration $configuration) {
-		parent::__construct();
-		$this->configuration = $configuration;
-	}//end __construct()
-
-	/**
-	 * Get the deleted configuration.
-	 *
-	 * @return Configuration The configuration that was deleted.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getConfiguration(): Configuration {
-		return $this->configuration;
-	}//end getConfiguration()
+class ConfigurationDeletedEvent extends AbstractConfigurationEvent {
 }//end class

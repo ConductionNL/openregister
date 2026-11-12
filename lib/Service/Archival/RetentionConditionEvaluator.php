@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use Closure;
 use InvalidArgumentException;
 
 /**
@@ -93,7 +94,7 @@ final class RetentionConditionEvaluator {
 		$left = $row[$field];
 		$right = $this->parseLiteral(source: $literalSource);
 
-		return $this->compare(left: $left, right: $right, operator: $operator);
+		return $this->comparator(operator: $operator)($left, $right);
 	}//end evaluate()
 
 	/**
@@ -111,29 +112,47 @@ final class RetentionConditionEvaluator {
 		$trim = trim($source);
 
 		// Bool / null sentinels.
-		if ($trim === 'true') {
-			return true;
-		}
-
-		if ($trim === 'false') {
-			return false;
-		}
-
-		if ($trim === 'null') {
-			return null;
+		$sentinels = ['true' => true, 'false' => false, 'null' => null];
+		if (array_key_exists($trim, $sentinels) === true) {
+			return $sentinels[$trim];
 		}
 
 		// Single- or double-quoted string literal.
-		$length = strlen($trim);
-		if ($length >= 2) {
-			$first = $trim[0];
-			$last = $trim[($length - 1)];
-			if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
-				return substr($trim, 1, ($length - 2));
-			}
+		if ($this->isQuoted(text: $trim) === true) {
+			return substr($trim, 1, (strlen($trim) - 2));
 		}
 
-		// Numeric literal — int or float.
+		return $this->parseNumber(trim: $trim, source: $source);
+	}//end parseLiteral()
+
+	/**
+	 * Whether a literal is wrapped in matching single or double quotes.
+	 *
+	 * @param string $text The trimmed literal.
+	 *
+	 * @return bool True for a quoted string literal.
+	 */
+	private function isQuoted(string $text): bool {
+		if (strlen($text) < 2) {
+			return false;
+		}
+
+		$first = $text[0];
+
+		return ($first === '"' || $first === "'") && $text[(strlen($text) - 1)] === $first;
+	}//end isQuoted()
+
+	/**
+	 * Parse a numeric literal, int or float.
+	 *
+	 * @param string $trim   The trimmed literal.
+	 * @param string $source The raw literal, for the refusal.
+	 *
+	 * @return int|float The number.
+	 *
+	 * @throws InvalidArgumentException When the literal is not a number either.
+	 */
+	private function parseNumber(string $trim, string $source): int|float {
 		if (preg_match('/^-?\d+$/', $trim) === 1) {
 			return (int)$trim;
 		}
@@ -145,11 +164,10 @@ final class RetentionConditionEvaluator {
 		throw new InvalidArgumentException(
 			sprintf('Unrecognised literal in retention condition: "%s".', $source)
 		);
-
-	}//end parseLiteral()
+	}//end parseNumber()
 
 	/**
-	 * Compare two values under the given operator.
+	 * The comparison of two values under the given operator.
 	 *
 	 * PHP's loose comparison semantics are used for `==` / `!=` so
 	 * `200 == 200.0 → true`. Strict-typed equality is not part of
@@ -159,26 +177,24 @@ final class RetentionConditionEvaluator {
 	 * pairs we fall back to PHP's native comparison rules; this is
 	 * documented as DSL behaviour, not a bug.
 	 *
-	 * @param mixed $left Left-hand value (from row).
-	 * @param mixed $right Right-hand literal.
 	 * @param string $operator One of the supported operators.
 	 *
-	 * @return bool
+	 * @return Closure(mixed, mixed): bool The comparison of a row value (left) with a literal (right).
 	 *
 	 * @throws InvalidArgumentException When the operator is not in the supported set.
 	 */
-	private function compare(mixed $left, mixed $right, string $operator): bool {
+	private function comparator(string $operator): Closure {
 		return match ($operator) {
-			'==' => $left == $right,
-			'!=' => $left != $right,
-			'<' => $left < $right,
-			'<=' => $left <= $right,
-			'>' => $left > $right,
-			'>=' => $left >= $right,
+			'==' => static fn (mixed $left, mixed $right): bool => $left == $right,
+			'!=' => static fn (mixed $left, mixed $right): bool => $left != $right,
+			'<' => static fn (mixed $left, mixed $right): bool => $left < $right,
+			'<=' => static fn (mixed $left, mixed $right): bool => $left <= $right,
+			'>' => static fn (mixed $left, mixed $right): bool => $left > $right,
+			'>=' => static fn (mixed $left, mixed $right): bool => $left >= $right,
 			default => throw new InvalidArgumentException(
 				sprintf('Unsupported retention operator: "%s".', $operator)
 			),
 		};
 
-	}//end compare()
+	}//end comparator()
 }//end class

@@ -280,6 +280,15 @@ A change MAY name `object: <key>` of an object declared earlier in the same frag
 - **WHEN** the set is installed
 - **THEN** the case SHALL point at the result, and remove SHALL leave neither
 
+### Requirement: A moment placeholder keeps its local time once stored
+
+`{{datetime:<n> HH:MM}}` SHALL fill the moment's UTC instant (`2026-10-12T07:12:00+00:00` for 09:12 in Amsterdam in summer time). A datetime column keeps the wall time without its offset and Nextcloud reads it back as UTC, so a moment filled in any other offset SHALL NOT be written.
+
+#### Scenario: A claim at 09:05 reads 09:05
+- **GIVEN** a fragment's task with `claimedAt` `{{datetime:-1 09:05}}` and a set whose time zone is Europe/Amsterdam
+- **WHEN** the set is installed and the task's audit is read
+- **THEN** the claim SHALL read 09:05 in Amsterdam, in summer and in winter time, not 10:05 or 11:05
+
 ### Requirement: A date may be pinned to a weekday (REQ-EXS-019)
 
 `{{date:<n>@<mon..sun>}}` and `{{datetime:<n>@<mon..sun> HH:MM}}` SHALL fill the first given weekday on or after the day n days from the install day, so a council meeting stays on a Thursday.
@@ -934,7 +943,7 @@ An administrator MAY mark a set for a daily refresh with `--daily` on the instal
 
 ### Requirement: A fragment flow may carry finished runs
 
-A `flows` entry MAY declare `runs`, each a finished run (`status` one of completed, stopped, dead_letter, failed) on a `subject` object uuid, with optional `subjectRegister`, `subjectSchema`, `trigger`, `triggeredBy`, `error`, `created` and `updated`. The set SHALL store each run for the flow in the flow's organisation, and SHALL delete the runs with the flow on remove. A run that is not finished, has no subject or carries another field SHALL be refused at check time.
+A fragment's flow MAY carry runs on a subject object. A run is finished (its status is terminal) unless it is a waiting run as the requirement above describes; a queued or running run SHALL be refused, because the flow worker would execute it.
 
 #### Scenario: a case's run history
 - **GIVEN** a flow entry with a completed and a failed run on a case
@@ -942,7 +951,11 @@ A `flows` entry MAY declare `runs`, each a finished run (`status` one of complet
 - **THEN** the case's finished runs read both, and removing the set removes them
 
 #### Scenario: a waiting run
-- **WHEN** a run declares status `suspended`
+- **WHEN** a run declares status `suspended` without a key or a user-task step
+- **THEN** the check refuses it and nothing is written
+
+#### Scenario: a running run
+- **WHEN** a run declares status `running`
 - **THEN** the check refuses it and nothing is written
 
 ### Requirement: An app config entry may name its type
@@ -1212,6 +1225,38 @@ A fragment's task MAY declare `requester` and `expiresAt`. The check SHALL refus
 - **WHEN** the set is checked
 - **THEN** the check SHALL refuse the task and write nothing
 
+### Requirement: A fragment's flow may quote its own uuid
+
+Inside a fragment's flow, `{{flow:self.uuid}}` and its alias `{{flow:self}}` SHALL fill to the uuid the flow is written with, so a step can stamp it on what it makes later (a case's `handoffSource: planned-series:<uuid>`). A refresh SHALL keep the same uuid, so it counts as no change. Outside a flow the token names no flow and SHALL be refused like any unresolvable placeholder.
+
+#### Scenario: A yearly series stamps its cases
+- **GIVEN** a fragment's flow whose case-opening step sets `handoffSource` to `planned-series:{{flow:self.uuid}}`
+- **WHEN** the set is installed
+- **THEN** that step SHALL carry `planned-series:` followed by the flow's own uuid
+
+### Requirement: A fragment's flow may name its application and be switched on
+
+A fragment's flow MAY declare `applicationSlug` (text) and `enabled` (true or false, default false). Install SHALL write the slug on the flow, publish the flow, and only then switch it on when `enabled` is true. The check SHALL refuse an `enabled` or `publish` that is not true or false, an `applicationSlug` that is not text, and a flow that is switched on but not published. A refresh SHALL leave a held flow on or off as it is.
+
+#### Scenario: A planned quarterly follow-up
+- **GIVEN** a fragment declares a schedule flow with `applicationSlug` `dossiq-planned-follow-up` and `enabled` true
+- **WHEN** the set is installed
+- **THEN** the flow SHALL carry that slug, be published, and be switched on, and it SHALL first run at its next cron date, not at install
+
+### Requirement: A fragment's task may carry the moment it was created
+
+A fragment's task MAY declare `createdAt`. The check SHALL refuse a `createdAt` that is not a date or lies in the future, and a `claimedAt` or `completedAt` before it. Install SHALL write the task with that moment as its creation, and its create audit entry with the same moment, since the audit cannot be changed afterwards. A task created over HTTP SHALL NOT name its creation moment.
+
+#### Scenario: A hearing task made two days before the install day
+- **GIVEN** a fragment declares task "Hoorzitting inplannen" with `createdAt` `{{datetime:-2 16:20}}` and `claimedAt` `{{datetime:-1 09:05}}`
+- **WHEN** the set is installed
+- **THEN** the task SHALL read as created two days before the install day at 16:20, and its history SHALL list the create entry before the claim
+
+#### Scenario: A claim before the task existed
+- **GIVEN** a fragment's task declares a `claimedAt` that lies before its `createdAt`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the task and write nothing
+
 ### Requirement: The record lets go of a held entry the set no longer declares
 
 When a fragment is installed, the record SHALL let go of every change and every engine row (task, view, watcher, party, note, read state, flow and the other parts) of that fragment's app that the fragment no longer declares. The proof and remove SHALL leave what such an entry wrote alone, and the install report SHALL name each entry under "Left as it is". An entry of an app whose fragment is not in the plan SHALL stay in the record.
@@ -1268,3 +1313,36 @@ Every object write an example set install or refresh makes SHALL be recorded wit
 - WHEN the daily refresh rewrites it the next day
 - THEN the audit row of that update has cause `import` and run `example-set:zuiddrecht`
 - AND the seeded row "Version 4 published" by Lars de Koning keeps its own run
+
+### Requirement: A fragment's flow may carry a run that waits on a task
+
+A fragment's flow MAY declare, besides finished runs, a waiting run: `status` `suspended`, a `key`, and a `node` that is an `openregister.user-task` step of that flow. Install SHALL write it as the user-task step leaves a live wait: parked on that step with one item, its resume slot empty until a task of the same fragment names it. The flow's record entry SHALL carry the run's uuid under its key, so a task quotes it as `{{flow:<flow>.runs.<run>}}`. The check SHALL refuse a waiting run on any other step type, a waiting run without a key, and a waiting run that no task in its fragment names.
+
+#### Scenario: A hearing step waits on its task
+- **GIVEN** a fragment declares the bezwaar flow with a waiting run `wacht` on the user-task step `hoorzitting`, and a task with `runUuid` `{{flow:bezwaar.runs.wacht}}` and `nodeId` `hoorzitting`
+- **WHEN** the set is installed
+- **THEN** the run SHALL be `suspended` with a token on `hoorzitting`, its slot SHALL hold the task's uuid, its heartbeat SHALL be set, and the task SHALL carry the run's uuid and the step
+
+#### Scenario: A waiting run no task names
+- **GIVEN** a fragment's flow declares a waiting run and no task of the fragment quotes it
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the run and write nothing
+
+#### Scenario: A waiting run on a step that is not a user task
+- **GIVEN** a fragment's flow declares a waiting run on a step of type `dossiq.askPerson`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the run and write nothing
+
+### Requirement: A fragment's task may name the run it waits in and carry its claim
+
+A fragment's task MAY declare `runUuid` and `nodeId`, always together, where `nodeId` is the step its run waits on. A task MAY declare `claimedBy`, the task's assignee, and `claimedAt`, a date that is not in the future. Install SHALL write one `claim` entry in the task's audit by `claimedBy` at `claimedAt`, after the `create` entry.
+
+#### Scenario: A claimed task reads as picked up
+- **GIVEN** a fragment's task assigned to Pieter declares `claimedBy` Pieter and `claimedAt` yesterday at 09:05
+- **WHEN** the set is installed
+- **THEN** the task's audit SHALL hold a `claim` entry by Pieter dated yesterday at 09:05
+
+#### Scenario: A task names a run and no step
+- **GIVEN** a fragment's task declares `runUuid` and no `nodeId`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the task and write nothing

@@ -30,38 +30,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\ContextChat;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\ContextChat\IContentProvider;
-use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * Content provider surfacing OpenRegister objects to Context Chat.
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContentProvider implements IContentProvider {
-
-	/**
-	 * The app id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'openregister';
-
-	/**
-	 * The provider id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_ID = 'openregister_objects';
+class ContentProvider implements IContentProvider, ContentProviderInterface {
 
 	/**
 	 * Batch size used when walking a (register, schema) pair during import.
@@ -73,25 +59,19 @@ class ContentProvider implements IContentProvider {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ContextChatSubmissionListener $submissionListener Shared submission logic (single object).
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param MagicMapper $magicMapper Object lookup/walk mapper.
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
-	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ContextChatSubmissionListenerInterface $submissionListener Shared submission logic (single object).
+	 * @param SchemaCatalogInterface                 $catalog            Schema, register and magic-table lookups.
+	 * @param ContentProviderLinks                   $links              Deep-link resolver and URL generator.
+	 * @param LoggerInterface                        $logger             PSR logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
 	public function __construct(
-		private readonly ContextChatSubmissionListener $submissionListener,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $magicMapper,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
-		private readonly IURLGenerator $urlGenerator,
+		private readonly ContextChatSubmissionListenerInterface $submissionListener,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly ContentProviderLinks $links,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -121,7 +101,7 @@ class ContentProvider implements IContentProvider {
 	/**
 	 * Resolve the absolute URL a user would reach this content item at.
 	 *
-	 * Resolves via {@see DeepLinkRegistryService::resolveUrl()} — the same
+	 * Resolves via {@see DeepLinkResolverInterface::resolveUrl()} — the same
 	 * mechanism `ObjectsProvider` already uses for unified-search result
 	 * URLs — and falls back to the `openregister.objects.show` route when no
 	 * app has claimed a deep link for the object's (register, schema) pair.
@@ -134,7 +114,7 @@ class ContentProvider implements IContentProvider {
 	 */
 	public function getItemUrl(string $id): string {
 		try {
-			$object = $this->magicMapper->find(
+			$object = $this->catalog->tables()->find(
 				identifier: $id,
 				includeDeleted: false,
 				_rbac: false,
@@ -150,7 +130,7 @@ class ContentProvider implements IContentProvider {
 					'error' => $e->getMessage(),
 				]
 			);
-			return $this->urlGenerator->linkToRoute(
+			return $this->links->urlGenerator->linkToRoute(
 				'openregister.objects.show',
 				['register' => 0, 'schema' => 0, 'id' => $id]
 			);
@@ -169,7 +149,7 @@ class ContentProvider implements IContentProvider {
 			]
 		);
 
-		$url = $this->deepLinkRegistry->resolveUrl(
+		$url = $this->links->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
 			objectData: $flatData
@@ -178,7 +158,7 @@ class ContentProvider implements IContentProvider {
 			return $url;
 		}
 
-		return $this->urlGenerator->linkToRoute(
+		return $this->links->urlGenerator->linkToRoute(
 			'openregister.objects.show',
 			['register' => $registerId, 'schema' => $schemaId, 'id' => $object->getUuid()]
 		);
@@ -216,11 +196,9 @@ class ContentProvider implements IContentProvider {
 
 			$offset = 0;
 			do {
-				$batch = $this->magicMapper->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: self::BATCH_SIZE,
-					offset: $offset
+				$batch = $this->catalog->tables()->findAllInRegisterSchemaTable(
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(limit: self::BATCH_SIZE, offset: $offset)
 				);
 
 				// Counted once per page, not re-counted by the loop condition.
@@ -255,8 +233,25 @@ class ContentProvider implements IContentProvider {
 	private function resolveOptedInPairs(?int $registerId, ?int $schemaId): array {
 		$pairs = [];
 
+		foreach ($this->schemasForReindex() as $schema) {
+			if (self::isSchemaInScope(schema: $schema, schemaId: $schemaId) === false) {
+				continue;
+			}
+
+			$pairs = array_merge($pairs, $this->pairsForSchema(schema: $schema, registerId: $registerId));
+		}
+
+		return $pairs;
+	}//end resolveOptedInPairs()
+
+	/**
+	 * Every schema, unfiltered by RBAC or tenancy, or none when they cannot be listed.
+	 *
+	 * @return Schema[] The schemas.
+	 */
+	private function schemasForReindex(): array {
 		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			return $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ContentProvider] Failed to enumerate schemas for reindex',
@@ -264,36 +259,78 @@ class ContentProvider implements IContentProvider {
 			);
 			return [];
 		}
+	}//end schemasForReindex()
 
-		foreach ($schemas as $schema) {
-			if ($schema->isContextChatIndexingEnabled() === false) {
+	/**
+	 * Whether a schema takes part in the reindex: opted in and, when a schema
+	 * id is given, that schema.
+	 *
+	 * @param Schema   $schema   The schema.
+	 * @param int|null $schemaId Optional schema id filter.
+	 *
+	 * @return bool True when the schema is walked.
+	 */
+	private static function isSchemaInScope(Schema $schema, ?int $schemaId): bool {
+		if ($schema->isContextChatIndexingEnabled() === false) {
+			return false;
+		}
+
+		return $schemaId === null || $schema->getId() === $schemaId;
+	}//end isSchemaInScope()
+
+	/**
+	 * The (register, schema) pairs of one schema, optionally narrowed to one register id.
+	 *
+	 * @param Schema   $schema     The opted-in schema.
+	 * @param int|null $registerId Optional register id filter.
+	 *
+	 * @return array<int, array{0: Register, 1: Schema}> List of (register, schema) pairs.
+	 */
+	private function pairsForSchema(Schema $schema, ?int $registerId): array {
+		$pairs = [];
+		$registerIds = $this->catalog->registers()->getAllRegisterIdsWithSchema((int)$schema->getId());
+		foreach ($registerIds as $candidateRegisterId) {
+			if (self::isRegisterInScope(candidateRegisterId: $candidateRegisterId, registerId: $registerId) === false) {
 				continue;
 			}
 
-			if ($schemaId !== null && $schema->getId() !== $schemaId) {
-				continue;
-			}
-
-			$registerIds = $this->registerMapper->getAllRegisterIdsWithSchema((int)$schema->getId());
-			foreach ($registerIds as $candidateRegisterId) {
-				if ($registerId !== null && (int)$candidateRegisterId !== $registerId) {
-					continue;
-				}
-
-				try {
-					$register = $this->registerMapper->find(
-						id: $candidateRegisterId,
-						_rbac: false,
-						_multitenancy: false
-					);
-				} catch (Throwable $e) {
-					continue;
-				}
-
+			$register = $this->findRegisterForReindex(registerId: $candidateRegisterId);
+			if ($register !== null) {
 				$pairs[] = [$register, $schema];
 			}
-		}//end foreach
+		}
 
 		return $pairs;
-	}//end resolveOptedInPairs()
+	}//end pairsForSchema()
+
+	/**
+	 * Whether a candidate register id passes the optional register id filter.
+	 *
+	 * @param int|string $candidateRegisterId A register id that holds the schema.
+	 * @param int|null   $registerId          Optional register id filter.
+	 *
+	 * @return bool True when no filter is given or the ids match as integers.
+	 */
+	private static function isRegisterInScope(int|string $candidateRegisterId, ?int $registerId): bool {
+		return $registerId === null || (int)$candidateRegisterId === $registerId;
+	}//end isRegisterInScope()
+
+	/**
+	 * Load a register unfiltered by RBAC or tenancy, or null when it cannot be loaded.
+	 *
+	 * @param int|string $registerId The register id.
+	 *
+	 * @return Register|null The register, or null.
+	 */
+	private function findRegisterForReindex(int|string $registerId): ?Register {
+		try {
+			return $this->catalog->registers()->find(
+				id: $registerId,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findRegisterForReindex()
 }//end class

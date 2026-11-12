@@ -42,7 +42,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
  *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
  */
-class FileWriteGuard {
+class FileWriteGuard implements FileWriteGuardInterface {
 
 	/**
 	 * Refuse when the object is archived or frozen.

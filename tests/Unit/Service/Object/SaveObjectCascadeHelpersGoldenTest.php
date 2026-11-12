@@ -25,17 +25,32 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
- * Recorded on the code before the identifier test and the orphan scope were extracted.
+ * Recorded on the code before the identifier test and the orphan scope were extracted; orphan cleanup of pointers later dropped.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture, then run again without it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -77,12 +92,12 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->trace[] = ['save', $register, $schema, $data, $uuid];
 				$saved = new ObjectEntity();
 				$saved->setUuid('33333333-3333-3333-3333-333333333333');
 				return $saved;
-			}
+			})
 		);
 
 		$mapper = $this->createMock(MagicMapper::class);
@@ -108,14 +123,22 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$register = new Register();
 		$register->setId(10);
 		$registers = $this->createMock(RegisterMapper::class);
-		$registers->method('find')->willReturn($register);
+		$registers->method('find')->willReturnCallback(
+			function ($id) use ($register): Register {
+				$this->trace[] = ['register', $id];
+				return $register;
+			}
+		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => $note]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('objectEntityMapper')->setValue($handler, $mapper);
 		$reflection->getProperty('registerMapper')->setValue($handler, $registers);
+		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->method('findAll')->willReturn([$note]);
+		$reflection->getProperty('schemaMapper')->setValue($handler, $schemas);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note]);
 		$reflection->getProperty('userSession')->setValue($handler, $this->createMock(IUserSession::class));
 		$reflection->getProperty('logger')->setValue($handler, new NullLogger());
 		if ($reflection->hasProperty('permissionHandler') === true) {
@@ -146,9 +169,17 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setId(1);
 		$schema->setProperties($properties);
 
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data);
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		$run->stored = $stored;
+		$answer = match ($method) {
+			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $run, $schema),
+		};
+		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
-		return ['answer' => $answer, 'trace' => $this->trace];
+		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];
 	}//end run()
 
 	/**
@@ -162,15 +193,35 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$writeBack = ['tags' => ['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true]]];
 		$single = ['note' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true]];
 		$old = ['notes' => ['old-1', self::IDS[0], 'old-2', 7]];
+		$singleCascade = ['lead' => ['type' => 'object', '$ref' => 'note', 'objectConfiguration' => ['handling' => 'cascade']]];
+		$singleInverse = ['lead' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incidents']];
+		$itemsWriteBack = ['tags' => ['type' => 'array', 'register' => '12', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'writeBack' => true, 'register' => '11', 'removeAfterWriteBack' => true]]];
+		$listWriteBack = ['tags' => ['type' => 'array', 'writeBack' => true, 'register' => '12', 'removeAfterWriteBack' => true, 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents', 'register' => '11']]];
+		$listInverse = ['kids' => ['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'incidents']]];
 		$mixed = array_merge(self::IDS, [['text' => 'new'], ['id' => ''], [], 7]);
 
 		return [
-			'related ids kept and orphans deleted' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => $mixed], stored: $old),
-			'related list emptied deletes every orphan' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => []], stored: $old),
+			'related ids kept and plain pointers stay' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => $mixed], stored: $old),
+			'related list emptied keeps plain pointers' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => []], stored: $old),
 			'related with no stored list' => $this->runOnParent(method: 'cascadeObjects', properties: $related, data: ['notes' => self::IDS]),
-			'cascade list emptied deletes every orphan' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => []], stored: $old),
+			'cascade list emptied keeps plain pointers' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => []], stored: $old),
 			'cascade ids only' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => self::IDS], stored: $old),
 			'cascade objects created' => $this->runOnParent(method: 'cascadeObjects', properties: $cascade, data: ['notes' => $mixed], stored: $old),
+			'single cascade stores the created id' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => ['text' => 'new'], 'keep' => 1]),
+			'single cascade of an object value' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => (object)['text' => 'new']]),
+			'single cascade skips an effectively empty object' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => ['text' => '', 'list' => []]]),
+			'single cascade skips a scalar' => $this->runOnParent(method: 'cascadeObjects', properties: $singleCascade, data: ['lead' => 'abc']),
+			'single inversedBy drops the property' => $this->runOnParent(method: 'cascadeObjects', properties: $singleInverse, data: ['lead' => ['text' => 'new']]),
+			'single write-back is left to the write-back pass' => $this->runOnParent(method: 'cascadeObjects', properties: $single, data: ['note' => ['text' => 'new']]),
+			'list write-back is left to the write-back pass' => $this->runOnParent(method: 'cascadeObjects', properties: $writeBack, data: ['tags' => [['text' => 'new']]]),
+			'list inversedBy drops the property' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => [['text' => 'new']]], stored: ['kids' => ['old-1']]),
+			'list inversedBy emptied' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => []], stored: ['kids' => ['old-1']]),
+			'list without a value' => $this->runOnParent(method: 'cascadeObjects', properties: $listInverse, data: ['kids' => 'old-1']),
+			'write-back items carry register and removal' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $itemsWriteBack, data: ['tags' => ['42', 'not-an-id'], 'keep' => 1]),
+			'write-back at list level for items' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $listWriteBack, data: ['tags' => '42']),
+			'write-back to an unknown schema' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: ['tags' => ['type' => 'array', 'items' => ['$ref' => 'missing', 'inversedBy' => 'incidents', 'writeBack' => true, 'removeAfterWriteBack' => true]]], data: ['tags' => ['42']]),
+			'write-back with an empty schema reference' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: ['tags' => ['type' => 'array', 'items' => ['$ref' => '', 'inversedBy' => 'incidents', 'writeBack' => true, 'removeAfterWriteBack' => true]]], data: ['tags' => ['42']]),
+			'write-back of an empty list' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $itemsWriteBack, data: ['tags' => []]),
 			'write-back to valid ids' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $writeBack, data: ['tags' => $mixed]),
 			'write-back single id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => '42']),
 			'write-back single non-id' => $this->runOnParent(method: 'handleInverseRelationsWriteBack', properties: $single, data: ['note' => 'not-an-id']),

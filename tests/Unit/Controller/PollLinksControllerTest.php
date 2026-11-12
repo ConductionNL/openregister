@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\PollLinksController;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Service\ObjectService;
@@ -37,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * PollLinksControllerTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class PollLinksControllerTest extends TestCase {
 	private IRequest&MockObject $request;
@@ -52,10 +54,11 @@ class PollLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new PollLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\PollLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			)
 		);
 	}
 
@@ -123,7 +126,7 @@ class PollLinksControllerTest extends TestCase {
 		$link->setPollId(99);
 
 		$this->service->method('linkPoll')
-			->with('abc-123', 1, 2, 99)
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 99)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');

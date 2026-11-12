@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
  * fixtures/aggregation-query-create-golden.json. Set UPDATE_GOLDEN=1 to
  * rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Aggregation\AggregationQuery
+ * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  */
 class AggregationQueryCreateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-query-create-golden.json';

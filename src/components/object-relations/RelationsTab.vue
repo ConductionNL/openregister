@@ -22,14 +22,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load related entities')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Empty state -->
 		<NcEmptyContent
@@ -94,15 +90,16 @@ SPDX-License-Identifier: EUPL-1.2
 <script>
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import { relationLoad } from './relationLoad.js'
+import { relationTab } from './relationTab.js'
 
 /**
  * Fallback counter for the timeline row key below.
@@ -157,14 +154,70 @@ function firstSet(raw, fields) {
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/unified-relations-api/spec.md
  */
+/**
+ * The title and subtitle of a relation entry: the shared fields first, then
+ * the fallback fields of its type.
+ *
+ * @param {object} raw The entry as the API returned it
+ * @param {string} type The entry's type
+ * @return {{title: string, subtitle: string}} The texts
+ */
+function entryTexts(raw, type) {
+	const fallback = TYPE_FALLBACK_FIELDS.get(type) || NO_FALLBACK_FIELDS
+	const title =
+		firstSet(raw, [...RELATION_FIELDS.title, ...fallback.title]) || ''
+	const subtitle =
+		firstSet(raw, [...RELATION_FIELDS.subtitle, ...fallback.subtitle])
+		|| ''
+	return { title, subtitle }
+}
+
+/**
+ * The items of a typed envelope, each marked with its type, in bucket order:
+ * emails, events, contacts, then deck cards.
+ *
+ * @param {object|null} data The envelope
+ * @return {Array<object>} The items
+ */
+function typedItems(data) {
+	const buckets = {
+		email: data?.emails || [],
+		event: data?.events || [],
+		contact: data?.contacts || [],
+		deck: data?.deck || data?.deckCards || [],
+	}
+	const items = []
+	for (const [type, bucket] of Object.entries(buckets)) {
+		for (const item of bucket) {
+			items.push({ ...item, type })
+		}
+	}
+	return items
+}
+
+/**
+ * Sort entries newest first, undated last.
+ *
+ * @param {Array<object>} entries The entries; sorted in place
+ * @return {Array<object>} The entries
+ */
+function newestFirst(entries) {
+	entries.sort((a, b) => {
+		const aT = a.timestamp ? new Date(a.timestamp).getTime() : 0
+		const bT = b.timestamp ? new Date(b.timestamp).getTime() : 0
+		return bT - aT
+	})
+	return entries
+}
+
 export default {
 	name: 'RelationsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		AlertCircleOutline,
 		LinkVariant,
 		LinkVariantOff,
 		EmailOutline,
@@ -173,28 +226,11 @@ export default {
 		TableLargePlus,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab, relationLoad],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			relations: [],
 			selectedTypes: ['email', 'event', 'contact', 'deck'],
 			typeLabels: {
@@ -233,55 +269,20 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId
-			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchRelations()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * Fetch the unified relations payload (view=timeline) for the current object.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
-		async fetchRelations() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
-
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/relations',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
-
-			try {
-				const response = await axios.get(url, {
+		async load() {
+			await this.runLoad(async () => {
+				const response = await axios.get(this.objectApiUrl('/relations'), {
 					params: { view: 'timeline' },
 				})
 				this.relations = this.normaliseResponse(response.data)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -300,27 +301,8 @@ export default {
 				return data.results.map(this.normaliseEntry)
 			}
 
-			const out = []
-			const buckets = {
-				email: data?.emails || [],
-				event: data?.events || [],
-				contact: data?.contacts || [],
-				deck: data?.deck || data?.deckCards || [],
-			}
-
-			for (const [type, items] of Object.entries(buckets)) {
-				for (const item of items) {
-					out.push(this.normaliseEntry({ ...item, type }))
-				}
-			}
-
-			out.sort((a, b) => {
-				const aT = a.timestamp ? new Date(a.timestamp).getTime() : 0
-				const bT = b.timestamp ? new Date(b.timestamp).getTime() : 0
-				return bT - aT
-			})
-
-			return out
+			const out = typedItems(data).map(this.normaliseEntry)
+			return newestFirst(out)
 		},
 
 		/**
@@ -329,12 +311,7 @@ export default {
 		 */
 		normaliseEntry(raw) {
 			const type = firstSet(raw, ['type', 'entityType']) || 'unknown'
-			const fallback = TYPE_FALLBACK_FIELDS.get(type) || NO_FALLBACK_FIELDS
-			const title =
-				firstSet(raw, [...RELATION_FIELDS.title, ...fallback.title]) || ''
-			const subtitle =
-				firstSet(raw, [...RELATION_FIELDS.subtitle, ...fallback.subtitle])
-				|| ''
+			const { title, subtitle } = entryTexts(raw, type)
 			const timestamp = firstSet(raw, RELATION_FIELDS.timestamp) || null
 
 			// Hoisted so the property stays on one line: prettier wraps a long
@@ -363,27 +340,6 @@ export default {
 				this.selectedTypes = this.selectedTypes.filter((t) => t !== type)
 			} else {
 				this.selectedTypes = [...this.selectedTypes, type]
-			}
-		},
-
-		/**
-		 * @param {string} value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch {
-				return value
 			}
 		},
 	},

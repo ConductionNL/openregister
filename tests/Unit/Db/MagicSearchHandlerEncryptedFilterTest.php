@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 	private IDBConnection&MockObject $db;
@@ -72,7 +74,7 @@ class MagicSearchHandlerEncryptedFilterTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $qb, $filters, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $qb, query: [], table: new MagicReadTable(schema: $schema)), $filters);
 	}//end invokeApplyObjectFilters()
 
 	public function testFilteringOnEncryptedPropertyThrows(): void {

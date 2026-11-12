@@ -1,0 +1,2266 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditSource golden closes and resets the form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_pgsql",
+    "label": "PostgreSQL",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "databaseUrl": "",
+    "description": "",
+    "id": "",
+    "title": "",
+  },
+  "success": null,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden introspect: badJson 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Not JSON",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: failed 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Denied",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: failedBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: ok 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Virtual register created: {created} new and {updated} updated schemas {"created":0,"updated":0}",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: okCounts 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Virtual register created: {created} new and {updated} updated schemas {"created":2,"updated":1}",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: thrown 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Offline",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden introspect: thrownBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/introspect",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden opens on a internal source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Main" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea modelvalue="d" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a internal source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "description": "d",
+    "id": 7,
+    "title": "Main",
+    "type": "internal",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a mysql source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a mysql source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "cred",
+    "dbname": "shop",
+    "host": "db",
+    "path": "",
+    "port": 5432,
+    "user": "u",
+    "writable": true,
+  },
+  "driver": {
+    "id": "pdo_pgsql",
+    "label": "PostgreSQL",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "credential": "cred",
+      "dbname": "shop",
+      "driver": "pdo_pgsql",
+      "host": "db",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "databaseUrl": "ignored",
+    "id": 9,
+    "title": "Shop",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a noDriver source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Bare" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="h" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a noDriver source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "h",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "driver": "oracle",
+      "host": "h",
+    },
+    "id": 11,
+    "title": "Bare",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a none source: dom 1`] = `
+"<x-ncdialog name="Add Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-plus size="20"></x-plus>
+      </slot-icon>
+      <slot-default> Create</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea modelvalue="" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="" disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a none source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "databaseUrl": "",
+    "description": "",
+    "title": "",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a sqlite source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Local" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="/x.db" disabled="false" label="Database file path *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a sqlite source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "/x.db",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_sqlite",
+    "label": "SQLite",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "authConfig": {
+      "driver": "pdo_sqlite",
+      "path": "/x.db",
+      "writable": "yes",
+    },
+    "id": 10,
+    "title": "Local",
+    "type": "database",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "database",
+    "label": "Database (virtual register)",
+  },
+}
+`;
+
+exports[`EditSource golden opens on a unknownType source: dom 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Odd" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden opens on a unknownType source: form 1`] = `
+{
+  "actionLoading": false,
+  "actionMessage": "",
+  "actionMessageType": "success",
+  "connection": {
+    "credential": "",
+    "dbname": "",
+    "host": "",
+    "path": "",
+    "port": "",
+    "user": "",
+    "writable": false,
+  },
+  "driver": {
+    "id": "pdo_mysql",
+    "label": "MySQL / MariaDB",
+  },
+  "error": false,
+  "hasUpdated": false,
+  "loading": false,
+  "sourceItem": {
+    "id": 8,
+    "title": "Odd",
+    "type": "ftp",
+  },
+  "success": false,
+  "timer": null,
+  "type": {
+    "id": "internal",
+    "label": "Internal",
+  },
+}
+`;
+
+exports[`EditSource golden renders the result notes 1`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden renders the result notes 2`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databasecheckoutline size="20"></x-databasecheckoutline>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-databaseimportoutline size="20"></x-databaseimportoutline>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="false" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="false" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="false" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="false" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="false" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden renders the result notes 3`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Test connection</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Create virtual register</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Broken</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="Shop" disabled="true" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextarea disabled="true" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="true" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Driver" disabled="true" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="db" disabled="true" label="Host *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="5432" disabled="true" label="Port" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="shop" disabled="true" label="Database name *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="u" disabled="true" label="User" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="cred" disabled="true" label="Credential (UUID from the credential store)" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>Allow writes (create, update and delete push through to the external database)</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="databaseHint">Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run "Create virtual register" to unlock existing schemas.</p>
+      <p class="databaseHint">The database password is never stored on the source; reference a credential from the credential store instead.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden renders the result notes 4`] = `
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Source successfully updated</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Fine</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditSource golden saves a internal source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a internal source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_mysql",
+      "label": "MySQL / MariaDB",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "description": "d",
+      "id": 7,
+      "title": "Main",
+      "type": "internal",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "internal",
+      "label": "Internal",
+    },
+  },
+  "sent": [
+    [
+      {
+        "description": "d",
+        "id": 7,
+        "title": "Main",
+        "type": "internal",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a mysql source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "cred",
+          "dbname": "shop",
+          "driver": "pdo_pgsql",
+          "host": "db",
+          "path": "",
+          "port": 5432,
+          "user": "u",
+          "writable": true,
+        },
+        "id": 9,
+        "title": "Shop",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: refused 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: saved 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": true,
+    "timer": "number",
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: thrown 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": "Network",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden saves a sqlite source: thrownBare 1`] = `
+{
+  "during": true,
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "",
+      "dbname": "",
+      "host": "",
+      "path": "/x.db",
+      "port": "",
+      "user": "",
+      "writable": false,
+    },
+    "driver": {
+      "id": "pdo_sqlite",
+      "label": "SQLite",
+    },
+    "error": "An error occurred while saving the source",
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "driver": "pdo_sqlite",
+        "path": "/x.db",
+        "writable": "yes",
+      },
+      "id": 10,
+      "title": "Local",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+  "sent": [
+    [
+      {
+        "authConfig": {
+          "credential": "",
+          "dbname": "",
+          "driver": "pdo_sqlite",
+          "host": "",
+          "path": "/x.db",
+          "port": "",
+          "user": "",
+          "writable": false,
+        },
+        "id": 10,
+        "title": "Local",
+        "type": "database",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`EditSource golden testConnection: badJson 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Not JSON",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: failed 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Denied",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: failedBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: ok 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Connection successful",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: okCounts 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Connection successful",
+    "actionMessageType": "success",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: thrown 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "Offline",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;
+
+exports[`EditSource golden testConnection: thrownBare 1`] = `
+{
+  "during": {
+    "actionLoading": true,
+    "actionMessage": "",
+  },
+  "fetched": [
+    [
+      "/apps/openregister/api/sources/9/test-connection",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "form": {
+    "actionLoading": false,
+    "actionMessage": "The action failed",
+    "actionMessageType": "error",
+    "connection": {
+      "credential": "cred",
+      "dbname": "shop",
+      "host": "db",
+      "path": "",
+      "port": 5432,
+      "user": "u",
+      "writable": true,
+    },
+    "driver": {
+      "id": "pdo_pgsql",
+      "label": "PostgreSQL",
+    },
+    "error": false,
+    "hasUpdated": false,
+    "loading": false,
+    "sourceItem": {
+      "authConfig": {
+        "credential": "cred",
+        "dbname": "shop",
+        "driver": "pdo_pgsql",
+        "host": "db",
+        "port": 5432,
+        "user": "u",
+        "writable": true,
+      },
+      "databaseUrl": "ignored",
+      "id": 9,
+      "title": "Shop",
+      "type": "database",
+    },
+    "success": false,
+    "timer": null,
+    "type": {
+      "id": "database",
+      "label": "Database (virtual register)",
+    },
+  },
+}
+`;

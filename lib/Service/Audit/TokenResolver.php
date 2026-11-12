@@ -23,10 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -61,13 +62,13 @@ class TokenResolver {
 	 * @param ISession       $session       The current session.
 	 * @param ITokenProvider $tokenProvider Resolves an app password to its token record.
 	 * @param IUserSession   $userSession   The authenticated principal.
-	 * @param ConsumerMapper $consumerMapper Registered API consumers.
+	 * @param ConsumerMapperInterface $consumerMapper Registered API consumers.
 	 */
 	public function __construct(
 		private readonly ISession $session,
 		private readonly ITokenProvider $tokenProvider,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapper $consumerMapper,
+		private readonly ConsumerMapperInterface $consumerMapper,
 	) {
 	}//end __construct()
 
@@ -87,12 +88,8 @@ class TokenResolver {
 		$ownerUid = $this->ownerUid(token: $token);
 		$identity = new TokenIdentity(
 			mechanism: 'app-password',
-			reference: (string)$token->getId(),
-			name: $this->tokenName(token: $token),
-			ownerUid: $ownerUid,
-			ownerName: $this->ownerName(ownerUid: $ownerUid),
-			consumerUuid: null,
-			consumerName: null,
+			token: new NamedIdentifier(id: (string)$token->getId(), name: $this->tokenName(token: $token)),
+			owner: new NamedIdentifier(id: $ownerUid, name: $this->ownerName(ownerUid: $ownerUid)),
 		);
 
 		return $this->withConsumer(identity: $identity, ownerUid: $ownerUid);
@@ -188,12 +185,7 @@ class TokenResolver {
 			return null;
 		}
 
-		try {
-			$user = $this->userSession->getUser();
-		} catch (Throwable $sessionUnavailable) {
-			return null;
-		}
-
+		$user = $this->sessionUser();
 		if ($user === null || $user->getUID() !== $ownerUid) {
 			return null;
 		}
@@ -205,6 +197,19 @@ class TokenResolver {
 
 		return $displayName;
 	}//end ownerName()
+
+	/**
+	 * The user of the current session, or null when there is none or the session cannot be read.
+	 *
+	 * @return IUser|null The user.
+	 */
+	private function sessionUser(): ?IUser {
+		try {
+			return $this->userSession->getUser();
+		} catch (Throwable $sessionUnavailable) {
+			return null;
+		}
+	}//end sessionUser()
 
 	/**
 	 * Add the registered consumer the token belongs to, when there is one.
@@ -232,15 +237,7 @@ class TokenResolver {
 			return $identity;
 		}
 
-		return new TokenIdentity(
-			mechanism: $identity->mechanism(),
-			reference: $identity->reference(),
-			name: $identity->name(),
-			ownerUid: $identity->ownerUid(),
-			ownerName: $identity->ownerName(),
-			consumerUuid: $consumer->getUuid(),
-			consumerName: $consumer->getName(),
-		);
+		return $identity->withConsumer(consumer: new NamedIdentifier(id: $consumer->getUuid(), name: $consumer->getName()));
 	}//end withConsumer()
 
 	/**
@@ -257,12 +254,7 @@ class TokenResolver {
 			return null;
 		}
 
-		try {
-			$consumers = $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
-		} catch (Throwable $lookupFailed) {
-			return null;
-		}
-
+		$consumers = $this->consumersOf(ownerUid: $ownerUid);
 		if (count($consumers) !== 1) {
 			return null;
 		}
@@ -274,4 +266,19 @@ class TokenResolver {
 
 		return $consumer;
 	}//end findConsumer()
+
+	/**
+	 * The consumers registered for a user, or none when the lookup fails.
+	 *
+	 * @param string $ownerUid The token owner.
+	 *
+	 * @return array<int, mixed> The consumers.
+	 */
+	private function consumersOf(string $ownerUid): array {
+		try {
+			return $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
+		} catch (Throwable $lookupFailed) {
+			return [];
+		}
+	}//end consumersOf()
 }//end class

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -26,12 +27,14 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The save handler would take a nested object's `id` or `@self.id` as the uuid to write to, and
  * look it up past the read filters. So the cascade hands it the nested object without them.
  *
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
+ * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  */
@@ -60,12 +63,12 @@ class CascadingHandlerNestedIdentityTest extends TestCase {
 
 		$save = $this->createMock(SaveObject::class);
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->saves[] = [$data, $uuid];
 				$created = new ObjectEntity();
 				$created->setUuid('33333333-3333-3333-3333-333333333333');
 				return $created;
-			}
+			})
 		);
 
 		$utility = $this->createMock(UtilityHandler::class);
@@ -84,12 +87,7 @@ class CascadingHandlerNestedIdentityTest extends TestCase {
 	 * @return string|null The created uuid.
 	 */
 	private function createNote(array $note): ?string {
-		return $this->handler()->createRelatedObject(
-			objectData: $note,
-			definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 10
-		);
+		return $this->handler()->createRelatedObject(objectData: $note, target: (new CascadeTarget(parentUuid: 'p-1', register: 10))->with(definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident']));
 	}//end createNote()
 
 	public function testANestedIdIsNotHandedToTheSave(): void {

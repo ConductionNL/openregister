@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -49,7 +50,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass Registered through the container and used by ApiCallRecorder.
  */
-class ApiCallRecordMapper extends QBMapper {
+class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterface {
 
 	/**
 	 * The table this mapper owns.
@@ -79,75 +80,72 @@ class ApiCallRecordMapper extends QBMapper {
 	 * is retried as an increment, which is why the insert failure is not simply
 	 * swallowed.
 	 *
-	 * @param string $principal The caller, or the empty string for anonymous.
-	 * @param string $route The route pattern.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime $moment When the call happened.
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
 	 *
 	 * @return bool True when the call was counted.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function count(
-		string $principal,
-		string $route,
-		string $method,
-		string $apiVersion,
-		DateTime $moment,
-	): bool {
-		if ($this->increment(principal: $principal, route: $route, method: $method, apiVersion: $apiVersion, moment: $moment) > 0) {
+	public function count(ApiCallKey $key, DateTime $moment): bool {
+		if ($this->increment(key: $key, moment: $moment) > 0) {
 			return true;
 		}
 
 		try {
-			$record = new ApiCallRecord();
-			$record->setPrincipal($principal);
-			$record->setRoute($route);
-			$record->setMethod($method);
-			$record->setApiVersion($apiVersion);
-			$record->setCallCount(1);
-			$record->setFirstSeen($moment);
-			$record->setLastSeen($moment);
-			$this->insert(entity: $record);
+			$this->insert(entity: $this->newRecord(key: $key, moment: $moment));
 
 			return true;
 		} catch (Throwable) {
 			// Another request inserted the same combination between our update
 			// and our insert. The row exists now, so the increment that failed
 			// to find it a moment ago will find it.
-			return ($this->increment(
-				principal: $principal,
-				route: $route,
-				method: $method,
-				apiVersion: $apiVersion,
-				moment: $moment
-			) > 0);
+			return ($this->increment(key: $key, moment: $moment) > 0);
 		}//end try
 
 	}//end count()
 
 	/**
+	 * A first record for a combination, counting its first call.
+	 *
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
+	 *
+	 * @return ApiCallRecord The record, not yet inserted.
+	 */
+	private function newRecord(ApiCallKey $key, DateTime $moment): ApiCallRecord {
+		$record = new ApiCallRecord();
+		$record->setPrincipal($key->principal);
+		$record->setRoute($key->route);
+		$record->setMethod($key->method);
+		$record->setApiVersion($key->apiVersion);
+		$record->setCallCount(1);
+		$record->setFirstSeen($moment);
+		$record->setLastSeen($moment);
+
+		return $record;
+
+	}//end newRecord()
+
+	/**
 	 * The records whose last call falls in a period.
 	 *
-	 * @param DateTime $from The start of the period.
-	 * @param DateTime $to The end of the period.
-	 * @param string|null $apiVersion Narrow to one contract version, or null for all.
-	 * @param int $limit The most rows to return.
+	 * @param ApiCallPeriod $period The period, the optional contract version and the row cap.
 	 *
 	 * @return array<int, ApiCallRecord> The records, busiest first.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function findInPeriod(DateTime $from, DateTime $to, ?string $apiVersion = null, int $limit = 500): array {
+	public function findInPeriod(ApiCallPeriod $period): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from(self::TABLE)
-			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
-			->andWhere($qb->expr()->lte('last_seen', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($period->from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('last_seen', $qb->createNamedParameter($period->to, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->orderBy('call_count', 'DESC')
-			->setMaxResults(max(1, $limit));
+			->setMaxResults(max(1, $period->limit));
 
+		$apiVersion = $period->apiVersion;
 		if ($apiVersion !== null && $apiVersion !== '') {
 			$qb->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($apiVersion)));
 		}
@@ -181,29 +179,22 @@ class ApiCallRecordMapper extends QBMapper {
 	/**
 	 * Increment an existing row, if there is one.
 	 *
-	 * @param string $principal The caller.
-	 * @param string $route The route pattern.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version.
-	 * @param DateTime $moment When the call happened.
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
 	 *
 	 * @return int The number of rows updated: one, or none.
+	 *
+	 * @phpstan-impure
 	 */
-	private function increment(
-		string $principal,
-		string $route,
-		string $method,
-		string $apiVersion,
-		DateTime $moment,
-	): int {
+	private function increment(ApiCallKey $key, DateTime $moment): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update(self::TABLE)
 			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + 1'))
 			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('principal', $qb->createNamedParameter($principal)))
-			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($route)))
-			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($method)))
-			->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($apiVersion)));
+			->where($qb->expr()->eq('principal', $qb->createNamedParameter($key->principal)))
+			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($key->route)))
+			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($key->method)))
+			->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($key->apiVersion)));
 
 		return (int)$qb->executeStatement();
 

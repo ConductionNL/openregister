@@ -26,11 +26,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant;
 use Psr\Log\LoggerInterface;
 
@@ -45,9 +45,9 @@ use Psr\Log\LoggerInterface;
  * (design D11); instead a run that changes at least one slug writes one
  * audit-trail entry with the old to new slugs. A second run changes nothing.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
-class ObjectSlugBackfillService {
+class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 
 	/**
 	 * Rows per page when reading the table.
@@ -57,13 +57,13 @@ class ObjectSlugBackfillService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper              $magicMapper Reads the magic table.
+	 * @param MagicSlugStoreInterface              $magicMapper Reads the magic table.
 	 * @param ObjectSlugHandler        $slugHandler Candidate, suffix and collision rules.
 	 * @param ObjectSlugBackfillWriter $writer      Writes a plan, evicts the cache and records the audit entry.
 	 * @param LoggerInterface          $logger      Receives the duplicate warnings.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicSlugStoreInterface $magicMapper,
 		private readonly ObjectSlugHandler $slugHandler,
 		private readonly ObjectSlugBackfillWriter $writer,
 		private readonly LoggerInterface $logger,
@@ -71,26 +71,22 @@ class ObjectSlugBackfillService {
 	}//end __construct()
 
 	/**
-	 * Run the backfill.
+	 * Check the schema, report the duplicates, plan the fill and write it unless dry.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema; must set `objectSlugField`.
-	 * @param bool     $dryRun   Plan only, write nothing.
+	 * @param ObjectSlugBackfillRequest $request The run's register, schema (which must set `objectSlugField`) and
+	 *                                           whether to plan only and write nothing.
 	 *
-	 * @return array{
-	 *     duplicates: array<string, list<string>>,
-	 *     plan: list<array{uuid: string, old: ?string, new: ?string}>,
-	 *     summary: array{scanned: int, assigned: int, collisions: int, unchanged: int, duplicates: int, skipped: int}
-	 * } What was found and what was (or would be) written.
+	 * @return array{duplicates: array<string, list<string>>, plan: list<array>, summary: array<string, int>}
+	 *         What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
 	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function run(Register $register, Schema $schema, bool $dryRun=false): array {
+	public function run(ObjectSlugBackfillRequest $request): array {
+		$register = $request->register;
+		$schema = $request->schema;
 		if ($this->slugHandler->isManaged(schema: $schema) === false) {
 			throw new InvalidArgumentException(
 				sprintf('Schema %s has no objectSlugField; there is nothing to backfill', (string)($schema->getSlug() ?? $schema->getId()))
@@ -98,6 +94,39 @@ class ObjectSlugBackfillService {
 		}
 
 		$duplicates = $this->magicMapper->findDuplicateSlugs(register: $register, schema: $schema);
+		$this->logDuplicates(request: $request, duplicates: $duplicates);
+
+		$rows = $this->loadRows(register: $register, schema: $schema);
+		$fill = $this->planFill(rows: $rows, request: $request);
+		$plan = $fill['plan'];
+		$summary = [
+			'scanned' => count($rows),
+			'assigned' => $fill['assigned'],
+			'collisions' => $fill['collisions'],
+			'unchanged' => $fill['unchanged'],
+			'duplicates' => count($duplicates),
+			'skipped' => 0,
+		];
+
+		if ($request->dryRun === false) {
+			$planned = new ObjectSlugChangeSet(register: $register, schema: $schema, changes: $plan, summary: $summary);
+			$summary['skipped'] = $this->writer->write(planned: $planned);
+		}
+
+		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
+	}//end run()
+
+	/**
+	 * Warn about every slug more than one object holds already; they stay as they are.
+	 *
+	 * @param ObjectSlugBackfillRequest   $request    The run's register and schema.
+	 * @param array<string, list<string>> $duplicates Slug => holder uuids.
+	 *
+	 * @return void
+	 */
+	private function logDuplicates(ObjectSlugBackfillRequest $request, array $duplicates): void {
+		$register = $request->register;
+		$schema = $request->schema;
 		foreach ($duplicates as $slug => $uuids) {
 			$this->logger->warning(
 				message: sprintf(
@@ -119,25 +148,7 @@ class ObjectSlugBackfillService {
 				]
 			);
 		}
-
-		$rows = $this->loadRows(register: $register, schema: $schema);
-		$summary = [
-			'scanned' => count($rows),
-			'assigned' => 0,
-			'collisions' => 0,
-			'unchanged' => 0,
-			'duplicates' => count($duplicates),
-			'skipped' => 0,
-		];
-
-		$plan = $this->planFill(rows: $rows, scope: new ObjectSlugScope(register: $register, schema: $schema), summary: $summary, log: ($dryRun === false));
-
-		if ($dryRun === false) {
-			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, summary: $summary);
-		}
-
-		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
-	}//end run()
+	}//end logDuplicates()
 
 	/**
 	 * Read every live row without a slug, oldest first (`_created`, then `_id`).
@@ -167,7 +178,7 @@ class ObjectSlugBackfillService {
 					'uuid' => $row['uuid'],
 					'slug' => $row['slug'],
 					'created' => $row['created'] ?? null,
-					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null),
+					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema),
 				];
 			}
 
@@ -212,52 +223,66 @@ class ObjectSlugBackfillService {
 	/**
 	 * Give objects without a slug their candidate when it is free.
 	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
-	 * @param ObjectSlugScope $scope   The register and schema.
-	 * @param array           $summary Counters, by reference.
-	 * @param bool            $log     Log collisions (false on a dry run).
+	 * Collisions are logged unless the run is a dry run.
 	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}>
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
+	 * @param ObjectSlugBackfillRequest $request The run's register, schema and mode.
+	 *
+	 * @return array{plan: list<array{uuid: string, old: ?string, new: ?string}>, assigned: int, collisions: int, unchanged: int}
 	 */
-	private function planFill(array $rows, ObjectSlugScope $scope, array &$summary, bool $log): array {
-		$register = $scope->register;
-		if ($register === null) {
-			return [];
-		}
-
-		$taken = $this->takenSlugs(register: $register, schema: $scope->schema);
-		$plan = [];
+	private function planFill(array $rows, ObjectSlugBackfillRequest $request): array {
+		$scope = $request->scope();
+		$taken = $this->takenSlugs(register: $request->register, schema: $request->schema);
+		$fill = ['plan' => [], 'assigned' => 0, 'collisions' => 0, 'unchanged' => 0];
 		foreach ($rows as $row) {
 			$candidate = $row['candidate'];
 			if ($candidate === null) {
-				$summary['unchanged']++;
+				$fill['unchanged']++;
 				continue;
 			}
 
 			$uuid = $row['uuid'];
 			$slug = $this->slugHandler->decide(
-				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
-				holderOf: function (string $wanted) use (&$taken, $uuid): ?string {
-					foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
-						if ($holder !== $uuid) {
-							return $holder;
-						}
-					}
-
-					return null;
-				},
-				log: $log
+				decision: new ObjectSlugDecision(
+					want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
+					holderOf: $this->holderOf(taken: $taken, uuid: $uuid),
+					log: ($request->dryRun === false)
+				)
 			);
 			if ($slug === null) {
-				$summary['collisions']++;
+				$fill['collisions']++;
 				continue;
 			}
 
 			$taken[$this->slugHandler->foldKey(slug: $slug)][] = $uuid;
-			$plan[] = ['uuid' => $uuid, 'old' => null, 'new' => $slug];
-			$summary['assigned']++;
+			$fill['plan'][] = ['uuid' => $uuid, 'old' => null, 'new' => $slug];
+			$fill['assigned']++;
 		}//end foreach
 
-		return $plan;
+		return $fill;
 	}//end planFill()
+
+	/**
+	 * The holder lookup for one object: the first other object holding a folded slug.
+	 *
+	 * Reads the run's taken map by reference, so slugs planned earlier in the run count.
+	 *
+	 * @param array  $taken Holder uuids per folded slug (by reference).
+	 * @param mixed  $uuid  The object the slug is decided for.
+	 *
+	 * @return \Closure(string): ?string The lookup
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	private function holderOf(array &$taken, mixed $uuid): \Closure {
+		return function (string $wanted) use (&$taken, $uuid): ?string {
+			foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
+				if ($holder !== $uuid) {
+					return $holder;
+				}
+			}
+
+			return null;
+		};
+	}//end holderOf()
 }//end class

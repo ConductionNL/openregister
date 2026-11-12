@@ -20,8 +20,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use PHPUnit\Framework\TestCase;
 
 class TaskNotificationRulesTest extends TestCase {
@@ -107,7 +107,7 @@ class TaskNotificationRulesTest extends TestCase {
 
 		$this->assertCount(1, $rule['recipients']);
 		$this->assertSame('expression', $rule['recipients'][0]['kind']);
-		$this->assertSame(\OCA\OpenRegister\Service\Notification\TaskPoolRecipientResolver::class, $rule['recipients'][0]['resolver']);
+		$this->assertSame(\OCA\OpenRegister\Notifications\Service\Notification\TaskPoolRecipientResolver::class, $rule['recipients'][0]['resolver']);
 	}
 
 	public function testTheRefusalRuleAddressesTheActorAndCarriesTheReason(): void {

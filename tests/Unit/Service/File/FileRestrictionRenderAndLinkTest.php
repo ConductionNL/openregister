@@ -20,15 +20,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -38,7 +38,10 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\SystemTag\ISystemTagManager;
@@ -84,12 +87,17 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 	/**
 	 * A renderer for a caller who is not admitted to the restricted file.
 	 *
+	 * @param FileService|null $fileService The file service, a bare double when null.
+	 *
 	 * @return RenderObject
 	 */
-	private function renderer(): RenderObject {
+	private function renderer(?FileService $fileService = null): RenderObject {
 		$fileMapper = $this->createMock(FileMapper::class);
 		$fileMapper->method('getFilesForObject')->willReturn([$this->record(self::RESTRICTED), $this->record(self::OPEN)]);
 		$fileMapper->method('getFile')->willReturnCallback(fn (int $id): array => $this->record($id));
+		$fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, [self::RESTRICTED, self::OPEN])
+		);
 
 		$guard = $this->createMock(FileRestrictionGuard::class);
 		$guard->method('readable')->willReturnCallback(
@@ -99,26 +107,38 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $guard);
 
 		return new RenderObject(
-			fileMapper: $fileMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			systemTagManager: $this->createMock(ISystemTagManager::class),
-			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			objectCacheService: $this->createMock(CacheHandler::class),
-			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			logger: new NullLogger(),
-			fileService: $this->createMock(FileService::class),
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(CalculationEvaluator::class),
-			urnService: $this->createMock(UrnService::class),
-			translationStatusService: $this->createMock(TranslationStatusService::class),
-			translationMapper: $this->createMock(TranslationMapper::class),
-			languageService: $this->createMock(LanguageService::class),
-			container: $container,
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $fileMapper,
+					fileService: $fileService ?? $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(TranslationHandler::class),
+					translationStatusService: $this->createMock(TranslationStatusService::class),
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
+					urnService: $this->createMock(UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: new NullLogger(),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end renderer()
 
@@ -147,6 +167,34 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$this->assertSame([(string)self::OPEN], array_column($rendered->getFiles(), 'id'));
 	}//end testTheRenderedFilesLeaveTheRestrictedFileOut()
 
+	public function testTheLightweightFileIdsLeaveTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+
+		$rendered = $this->call($this->renderer(), 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testTheLightweightFileIdsLeaveTheRestrictedFileOut()
+
+	public function testThePagePrefetchLeavesTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+		$renderer = $this->renderer();
+
+		$this->call($renderer, 'prefetchPageFileIds', [[$object], []]);
+		$rendered = $this->call($renderer, 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testThePagePrefetchLeavesTheRestrictedFileOut()
+
+	public function testTheListRowsLeaveTheRestrictedFileOut(): void {
+		$rows = [['@self' => ['id' => 'c0ffee00-0000-4000-8000-000000000001']]];
+
+		$this->renderer()->attachLightweightFilesToRows($rows);
+
+		$this->assertSame([self::OPEN], $rows[0]['@self']['files']);
+	}//end testTheListRowsLeaveTheRestrictedFileOut()
+
 	public function testAFileTypedPropertyDoesNotHydrateTheRestrictedFile(): void {
 		$renderer = $this->renderer();
 
@@ -154,13 +202,42 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$this->assertSame((string)self::OPEN, $this->call($renderer, 'getFileObject', [self::OPEN])['id']);
 	}//end testAFileTypedPropertyDoesNotHydrateTheRestrictedFile()
 
+	public function testABase64PropertyDoesNotReadTheRestrictedFile(): void {
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getSize')->willReturn(4);
+		$file->method('getContent')->willReturn('body');
+		$file->method('getMimeType')->willReturn('application/pdf');
+
+		$fileService = $this->createMock(FileService::class);
+		$reads = [];
+		$fileService->method('getFileById')->willReturnCallback(
+			static function (int $id) use (&$reads, $file): \OCP\Files\File {
+				$reads[] = $id;
+				return $file;
+			}
+		);
+		$renderer = $this->renderer($fileService);
+
+		$this->assertNull($this->call($renderer, 'getFileAsBase64', [self::RESTRICTED]));
+		$this->assertSame(
+			'data:application/pdf;base64,' . base64_encode('body'),
+			$this->call($renderer, 'getFileAsBase64', [self::OPEN])
+		);
+		$this->assertSame([self::OPEN], $reads);
+	}//end testABase64PropertyDoesNotReadTheRestrictedFile()
+
 	public function testAnAccessLinkNeverDescribesARestrictedFile(): void {
 		$store = $this->createMock(FileRestrictionStore::class);
 		$store->method('find')->willReturnCallback(static fn (int $id): ?array => $id === self::RESTRICTED ? ['fileId' => $id] : null);
 		$reader = (new \ReflectionClass(AccessLinkReader::class))->newInstanceWithoutConstructor();
-		$property = new \ReflectionProperty(AccessLinkReader::class, 'restrictions');
+		$sources = new AccessLinkReaderSources(
+			objects: $this->createMock(ObjectOperationsInterface::class),
+			subjects: $this->createMock(AccessLinkSubjectInterface::class),
+			restrictions: $store
+		);
+		$property = new \ReflectionProperty(AccessLinkReader::class, 'sources');
 		$property->setAccessible(true);
-		$property->setValue($reader, $store);
+		$property->setValue($reader, $sources);
 
 		$object = new ObjectEntity();
 		$object->setFiles([['id' => (string)self::RESTRICTED], ['id' => (string)self::OPEN]]);

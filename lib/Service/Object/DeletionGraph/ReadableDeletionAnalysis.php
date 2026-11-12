@@ -20,8 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\DeletionGraph;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 
 /**
  * Redacts the objects of a deletion analysis that the caller cannot read.
@@ -57,9 +58,9 @@ final class ReadableDeletionAnalysis {
 	/**
 	 * Start a redaction for the signed-in caller.
 	 *
-	 * @param MagicMapper $mapper The mapper whose default read is the caller's own.
+	 * @param MagicMapperInterface $mapper The mapper whose default read is the caller's own.
 	 */
-	public function __construct(private readonly MagicMapper $mapper) {
+	public function __construct(private readonly MagicMapperInterface $mapper) {
 	}//end __construct()
 
 	/**
@@ -72,6 +73,28 @@ final class ReadableDeletionAnalysis {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function analysisFor(DeletionAnalysis $analysis): DeletionAnalysis {
+		$this->readEveryEntry(analysis: $analysis);
+
+		return new DeletionAnalysis(
+			deletable: $analysis->deletable,
+			effects: new DeletionEffects(
+				cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
+				nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
+				defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets)
+			),
+			blockers: $this->redactEntries(entries: $analysis->blockers),
+			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
+		);
+	}//end analysisFor()
+
+	/**
+	 * Ask, for every object the analysis names, whether the caller may read it.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis.
+	 *
+	 * @return void
+	 */
+	private function readEveryEntry(DeletionAnalysis $analysis): void {
 		$entries = array_merge($analysis->cascadeTargets, $analysis->nullifyTargets, $analysis->defaultTargets, $analysis->blockers);
 		foreach ($entries as $entry) {
 			$uuid = (string) ($entry['objectUuid'] ?? '');
@@ -79,16 +102,7 @@ final class ReadableDeletionAnalysis {
 				$this->callerReads(uuid: $uuid);
 			}
 		}
-
-		return new DeletionAnalysis(
-			deletable: $analysis->deletable,
-			cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
-			nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
-			defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets),
-			blockers: $this->redactEntries(entries: $analysis->blockers),
-			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
-		);
-	}//end analysisFor()
+	}//end readEveryEntry()
 
 	/**
 	 * The entries the caller reads, then one counting entry per schema for the rest.
@@ -103,31 +117,59 @@ final class ReadableDeletionAnalysis {
 		foreach ($entries as $entry) {
 			$uuid = (string) ($entry['objectUuid'] ?? '');
 			if ($uuid !== '' && $this->callerReads(uuid: $uuid) === false) {
-				$schema = (string) ($entry['schema'] ?? '');
-				$hidden[$schema] ??= [
-					'objectUuid' => '',
-					'schema' => ($entry['schema'] ?? null),
-					'action' => ($entry['action'] ?? null),
-					'reason' => 'not readable',
-					'count' => 0,
-				];
-				$hidden[$schema]['count']++;
+				self::countHidden(hidden: $hidden, entry: $entry);
 				continue;
 			}
 
 			$kept[] = $this->redactEntry(entry: $entry);
 		}
 
+		return array_merge($kept, self::hiddenSummaries(hidden: $hidden));
+	}//end redactEntries()
+
+	/**
+	 * Count an unreadable entry under its schema.
+	 *
+	 * @param array $hidden The counted entries per schema (by reference).
+	 * @param array $entry  The unreadable entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function countHidden(array &$hidden, array $entry): void {
+		$schema = (string) ($entry['schema'] ?? '');
+		$hidden[$schema] ??= [
+			'objectUuid' => '',
+			'schema' => ($entry['schema'] ?? null),
+			'action' => ($entry['action'] ?? null),
+			'reason' => 'not readable',
+			'count' => 0,
+		];
+		$hidden[$schema]['count']++;
+	}//end countHidden()
+
+	/**
+	 * The counted entries, without an action key where none was named.
+	 *
+	 * @param array $hidden The counted entries per schema.
+	 *
+	 * @return list<array> The summaries
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function hiddenSummaries(array $hidden): array {
+		$summaries = [];
 		foreach ($hidden as $counted) {
 			if ($counted['action'] === null) {
 				unset($counted['action']);
 			}
 
-			$kept[] = $counted;
+			$summaries[] = $counted;
 		}
 
-		return $kept;
-	}//end redactEntries()
+		return $summaries;
+	}//end hiddenSummaries()
 
 	/**
 	 * A kept entry with the uuids the caller cannot read blanked out of its chain and source.
@@ -198,7 +240,7 @@ final class ReadableDeletionAnalysis {
 	 *
 	 * @param string $uuid The object's uuid.
 	 *
-	 * @return bool False when the read does not find it, fails, or the lookup budget is spent.
+	 * @return bool False when the read does not find it by its uuid, fails, or the lookup budget is spent.
 	 */
 	private function callerReads(string $uuid): bool {
 		if (array_key_exists($uuid, $this->readable) === true) {
@@ -208,8 +250,8 @@ final class ReadableDeletionAnalysis {
 		$readable = false;
 		if (count($this->readable) < self::MAX_LOOKUPS) {
 			try {
-				$this->mapper->find(identifier: $uuid);
-				$readable = true;
+				// The read also matches ids, slugs and uris: only the object itself counts.
+				$readable = ($this->mapper->find(identifier: $uuid)->getUuid() === $uuid);
 			} catch (\Throwable $e) {
 				$readable = false;
 			}

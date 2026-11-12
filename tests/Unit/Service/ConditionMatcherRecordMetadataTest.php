@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +33,8 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
+ * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 class ConditionMatcherRecordMetadataTest extends TestCase {
 
@@ -50,7 +53,7 @@ class ConditionMatcherRecordMetadataTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator($this->createMock(LoggerInterface::class)),
 			$this->createMock(LoggerInterface::class)
@@ -58,16 +61,42 @@ class ConditionMatcherRecordMetadataTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * Published is no longer record metadata, so a body `_published` does not answer a `_published` rule.
+	 * Published is not record metadata: a `_published` rule is an error that fails closed, whatever the body says.
 	 *
 	 * @return void
 	 */
-	public function testABodyPublishedKeyDoesNotAnswerAPublishedRule(): void {
+	public function testAPublishedRuleFailsClosedWhateverTheBodySays(): void {
 		$object = ['title' => 'x', '_published' => '2020-01-01 00:00:00', '@self' => ['id' => 'obj-1', 'organisation' => 'org-a']];
 
+		$this->assertTrue($this->matcher->namesUnknownMetadata(match: ['_published' => true], object: $object));
 		$this->assertFalse($this->matcher->objectMatchesConditions(object: $object, match: ['_published' => '2020-01-01 00:00:00']));
 		$this->assertFalse($this->matcher->objectMatchesConditions(object: $object, match: ['_published' => ['$lte' => '2030-01-01 00:00:00']]));
-	}//end testABodyPublishedKeyDoesNotAnswerAPublishedRule()
+		$this->assertFalse($this->matcher->objectMatchesConditions(object: $object, match: ['_published' => null]));
+	}//end testAPublishedRuleFailsClosedWhateverTheBodySays()
+
+	/**
+	 * `_uuid` is record metadata: it reads the record's uuid, which `@self` carries as `id`.
+	 *
+	 * @return void
+	 */
+	public function testAUuidRuleReadsTheRecordsUuid(): void {
+		$object = ['_uuid' => 'forged', '@self' => ['id' => 'obj-1', 'organisation' => 'org-a', 'owner' => null]];
+
+		$this->assertFalse($this->matcher->namesUnknownMetadata(match: ['_uuid' => 'obj-1']));
+		$this->assertTrue($this->matcher->objectMatchesConditions(object: $object, match: ['_uuid' => 'obj-1']));
+		$this->assertFalse($this->matcher->objectMatchesConditions(object: $object, match: ['_uuid' => 'forged']));
+	}//end testAUuidRuleReadsTheRecordsUuid()
+
+	/**
+	 * A field the record holds as empty is empty, not unknown: a null condition on it is met.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyRecordFieldIsNotUnknown(): void {
+		$object = ['@self' => ['id' => 'obj-1', 'owner' => null]];
+
+		$this->assertTrue($this->matcher->objectMatchesConditions(object: $object, match: ['_owner' => null]));
+	}//end testAnEmptyRecordFieldIsNotUnknown()
 
 	/**
 	 * A record field that is empty is not filled in by a body key of the same name.

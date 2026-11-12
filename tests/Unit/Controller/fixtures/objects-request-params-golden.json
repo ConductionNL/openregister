@@ -1,0 +1,883 @@
+{
+    "config empty": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": [],
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config extend string": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "extend": "a,@self.schema,@self.register"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": [
+                "a",
+                "_schema",
+                "_register"
+            ],
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config extend wins": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "extend": "a",
+                "_extend": "b"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": [
+                "a"
+            ],
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config fields and unset": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "fields": "a",
+                "_fields": "b",
+                "unset": "c",
+                "_unset": "d"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": "a",
+            "_unset": "c",
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config limit": {
+        "value": {
+            "limit": 5,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "limit": "5"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config limit wins over underscore limit": {
+        "value": {
+            "limit": 5,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "limit": "5",
+                "_limit": "7"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config null limit falls through": {
+        "value": {
+            "limit": 7,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "limit": null,
+                "_limit": "7"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config null offset keeps underscore offset": {
+        "value": {
+            "limit": 20,
+            "offset": 6,
+            "page": null,
+            "filters": {
+                "offset": null,
+                "_offset": "6"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config null page keeps underscore page": {
+        "value": {
+            "limit": 10,
+            "offset": 10,
+            "page": 2,
+            "filters": {
+                "page": null,
+                "_page": "2",
+                "limit": 10
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config offset": {
+        "value": {
+            "limit": 20,
+            "offset": 4,
+            "page": null,
+            "filters": {
+                "offset": "4"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config offset wins over page": {
+        "value": {
+            "limit": 10,
+            "offset": 1,
+            "page": 3,
+            "filters": {
+                "page": "3",
+                "offset": "1",
+                "limit": 10
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config offset wins over underscore offset": {
+        "value": {
+            "limit": 20,
+            "offset": 4,
+            "page": null,
+            "filters": {
+                "offset": "4",
+                "_offset": "6"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order array": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": {
+                    "a": "asc"
+                }
+            },
+            "sort": {
+                "a": "asc"
+            },
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order bad json": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": "{nope"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order empty string": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": ""
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order number": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": 5
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order scalar json": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": "5"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config order wins over underscore order": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "order": {
+                    "a": "asc"
+                },
+                "_order": {
+                    "b": "desc"
+                }
+            },
+            "sort": {
+                "a": "asc"
+            },
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config page derives offset": {
+        "value": {
+            "limit": 10,
+            "offset": 20,
+            "page": 3,
+            "filters": {
+                "page": "3",
+                "limit": "10"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config page wins over underscore page": {
+        "value": {
+            "limit": 10,
+            "offset": 20,
+            "page": 3,
+            "filters": {
+                "page": "3",
+                "_page": "2",
+                "limit": 10
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config page zero": {
+        "value": {
+            "limit": 10,
+            "offset": -10,
+            "page": 0,
+            "filters": {
+                "page": 0,
+                "limit": 10
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config route keys dropped": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "a": 1
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config search": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "_search": "q"
+            },
+            "sort": [],
+            "_search": "q",
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config text limit": {
+        "value": {
+            "limit": 0,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "limit": "many"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore extend array": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "_extend": [
+                    "@self.schema",
+                    "b"
+                ]
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": [
+                "_schema",
+                "b"
+            ],
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore fields and unset": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "_fields": "b",
+                "_unset": "d"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": "b",
+            "_unset": "d",
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore limit": {
+        "value": {
+            "limit": 7,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "_limit": "7"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore offset": {
+        "value": {
+            "limit": 20,
+            "offset": 6,
+            "page": null,
+            "filters": {
+                "_offset": "6"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore order json": {
+        "value": {
+            "limit": 20,
+            "offset": null,
+            "page": null,
+            "filters": {
+                "_order": "{\"deadline\":\"asc\"}"
+            },
+            "sort": {
+                "deadline": "asc"
+            },
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config underscore page derives offset": {
+        "value": {
+            "limit": 20,
+            "offset": 20,
+            "page": 2,
+            "filters": {
+                "_page": "2"
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config zero limit": {
+        "value": {
+            "limit": 0,
+            "offset": 0,
+            "page": 3,
+            "filters": {
+                "limit": 0,
+                "page": 3
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "config zero offset stays": {
+        "value": {
+            "limit": 20,
+            "offset": 0,
+            "page": 3,
+            "filters": {
+                "offset": 0,
+                "page": 3
+            },
+            "sort": [],
+            "_search": null,
+            "_extend": null,
+            "_fields": null,
+            "_unset": null,
+            "ids": null
+        },
+        "type": "array"
+    },
+    "extend aliases in a string": {
+        "value": [
+            "_schema",
+            "_register",
+            "c"
+        ],
+        "type": "array"
+    },
+    "extend array": {
+        "value": [
+            "_register",
+            "x"
+        ],
+        "type": "array"
+    },
+    "extend empty array": {
+        "value": [],
+        "type": "array"
+    },
+    "extend empty string": {
+        "value": [
+            ""
+        ],
+        "type": "array"
+    },
+    "extend keys are kept": {
+        "value": {
+            "k": "_schema",
+            "l": "y",
+            "7": "_register"
+        },
+        "type": "array"
+    },
+    "extend list": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "extend non-strings are kept": {
+        "value": [
+            1,
+            null,
+            true,
+            [
+                "n"
+            ],
+            "_schema"
+        ],
+        "type": "array"
+    },
+    "extend null": {
+        "value": null,
+        "type": "null"
+    },
+    "extend number": {
+        "value": null,
+        "type": "null"
+    },
+    "extend one": {
+        "value": [
+            "a"
+        ],
+        "type": "array"
+    },
+    "extend spaces are kept": {
+        "value": [
+            "a",
+            " @self.schema"
+        ],
+        "type": "array"
+    },
+    "extend true": {
+        "value": null,
+        "type": "null"
+    },
+    "form json": {
+        "value": {
+            "list": "[{\"voornaam\":\"John\"}]",
+            "object": "{\"a\":1}",
+            "padded": "  [1,2]\n",
+            "broken list": "[1,",
+            "broken object": "{a",
+            "plain": "text",
+            "empty": "",
+            "blank": "   ",
+            "empty list": "[]",
+            "number": 5,
+            "null": null,
+            "array": [
+                "[1]"
+            ],
+            "scalar json": "12",
+            "bool json": "true"
+        },
+        "type": "array"
+    },
+    "form multipart": {
+        "value": {
+            "list": [
+                {
+                    "voornaam": "John"
+                }
+            ],
+            "object": {
+                "a": 1
+            },
+            "padded": [
+                1,
+                2
+            ],
+            "broken list": "[1,",
+            "broken object": "{a",
+            "plain": "text",
+            "empty": "",
+            "blank": "   ",
+            "empty list": [],
+            "number": 5,
+            "null": null,
+            "array": [
+                "[1]"
+            ],
+            "scalar json": "12",
+            "bool json": "true"
+        },
+        "type": "array"
+    },
+    "form multipart nothing": {
+        "value": [],
+        "type": "array"
+    },
+    "form no type": {
+        "value": {
+            "list": "[{\"voornaam\":\"John\"}]",
+            "object": "{\"a\":1}",
+            "padded": "  [1,2]\n",
+            "broken list": "[1,",
+            "broken object": "{a",
+            "plain": "text",
+            "empty": "",
+            "blank": "   ",
+            "empty list": "[]",
+            "number": 5,
+            "null": null,
+            "array": [
+                "[1]"
+            ],
+            "scalar json": "12",
+            "bool json": "true"
+        },
+        "type": "array"
+    },
+    "form upper case multipart": {
+        "value": {
+            "list": [
+                {
+                    "voornaam": "John"
+                }
+            ],
+            "object": {
+                "a": 1
+            },
+            "padded": [
+                1,
+                2
+            ],
+            "broken list": "[1,",
+            "broken object": "{a",
+            "plain": "text",
+            "empty": "",
+            "blank": "   ",
+            "empty list": [],
+            "number": 5,
+            "null": null,
+            "array": [
+                "[1]"
+            ],
+            "scalar json": "12",
+            "bool json": "true"
+        },
+        "type": "array"
+    },
+    "multi array": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi array duplicates": {
+        "value": [
+            "1",
+            "2"
+        ],
+        "type": "array"
+    },
+    "multi array empties": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi array keys dropped": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi comma": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi comma duplicates": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi comma empties": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi comma spaces": {
+        "value": [
+            "a",
+            "b"
+        ],
+        "type": "array"
+    },
+    "multi empty array": {
+        "value": [],
+        "type": "array"
+    },
+    "multi empty default": {
+        "value": [
+            ""
+        ],
+        "type": "array"
+    },
+    "multi empty string": {
+        "value": [
+            "d"
+        ],
+        "type": "array"
+    },
+    "multi false": {
+        "value": [
+            false
+        ],
+        "type": "array"
+    },
+    "multi no comma keeps spaces": {
+        "value": [
+            " a "
+        ],
+        "type": "array"
+    },
+    "multi null": {
+        "value": [
+            "d"
+        ],
+        "type": "array"
+    },
+    "multi number": {
+        "value": [
+            5
+        ],
+        "type": "array"
+    },
+    "multi one": {
+        "value": [
+            "a"
+        ],
+        "type": "array"
+    },
+    "multi only commas": {
+        "value": [],
+        "type": "array"
+    },
+    "multi zero string": {
+        "value": [
+            "0"
+        ],
+        "type": "array"
+    }
+}

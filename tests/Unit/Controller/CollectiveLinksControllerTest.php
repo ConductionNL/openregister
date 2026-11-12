@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\CollectiveLinksController;
 use OCA\OpenRegister\Db\CollectiveLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -60,10 +61,11 @@ class CollectiveLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new CollectiveLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\CollectiveLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			),
 		);
 	}//end setUp()
 
@@ -142,7 +144,7 @@ class CollectiveLinksControllerTest extends TestCase {
 		$link->setPageTitle('Runbook');
 
 		$this->service->method('linkPage')
-			->with('abc-123', 1, 2, 42)
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 42)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');
@@ -221,7 +223,7 @@ class CollectiveLinksControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('createAndLinkPage')
-			->with('abc-123', 1, 2, 5, 'Runbook')
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 5, 'Runbook')
 			->willReturn($link);
 
 		$response = $this->controller->createAndLink('reg', 'sch', 'obj');

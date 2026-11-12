@@ -3,6 +3,18 @@ import { searchTrailStore } from '../../store/store.js'
 
 // Bulk delete and cleanup: what is confirmed, what is sent, what the user is told.
 
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({
+	__esModule: true,
+	default: { render: () => null },
+}))
+jest.mock('vue-material-design-icons/Pencil.vue', () => ({
+	__esModule: true,
+	default: { render: () => null },
+}))
+jest.mock('vue-material-design-icons/DotsHorizontal.vue', () => ({
+	__esModule: true,
+	default: { render: () => null },
+}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: {},
 	searchTrailStore: {},

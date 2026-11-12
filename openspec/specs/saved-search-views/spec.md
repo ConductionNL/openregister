@@ -333,21 +333,21 @@ remain.
 - **GIVEN** a public view owned by A
 - **WHEN** user B sends `DELETE /api/views/{id}`
 - **THEN** the response is 404 and the view still exists
-- @e2e exclude {guard, covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+- @e2e exclude {guard, covered by ViewServiceTest::testDeleteThrowsForPublicViewOfOtherUser}
 
 #### Scenario: a write member cannot delete a shared view
 
 - **GIVEN** a view owned by A shared `write` with group `desk`, and B in `desk`
 - **WHEN** B sends `DELETE /api/views/{id}`
 - **THEN** the response is 404 and the view still exists
-- @e2e exclude {guard, covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+- @e2e exclude {guard, covered by ViewServiceTest::testDeleteThrowsForWriteMemberOfSharedView}
 
 #### Scenario: the owner deletes
 
 - **GIVEN** a view owned by A
 - **WHEN** A sends `DELETE /api/views/{id}`
 - **THEN** the response is 204 and the view is gone
-- @e2e exclude {covered by tests/Unit/Service/ViewServiceDeleteTest.php}
+- @e2e exclude {covered by ViewServiceTest::testDeleteRemovesView}
 
 ### Requirement: A view can be shared with users in read or write mode
 

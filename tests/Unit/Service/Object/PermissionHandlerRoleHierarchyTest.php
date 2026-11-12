@@ -28,6 +28,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -73,7 +74,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		$container->method('get')
 			->willReturnCallback(
 				function (string $service) {
-					if ($service === RegisterMapper::class) {
+					if ($service === RegisterMapperInterface::class) {
 						return $this->registerMapper;
 					}
 
@@ -84,7 +85,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

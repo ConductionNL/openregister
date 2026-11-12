@@ -41,7 +41,7 @@ class FlowDryRunControllerTest extends TestCase {
 	}
 
 	private function controller(): FlowDryRunController {
-		return new FlowDryRunController(appName: 'openregister', request: $this->request, access: $this->access, service: $this->service);
+		return new FlowDryRunController(request: $this->request, access: $this->access, service: $this->service);
 	}
 
 	private function signedIn(bool $mayUpdate): void {
@@ -90,5 +90,58 @@ class FlowDryRunControllerTest extends TestCase {
 
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 		self::assertSame($steps, $response->getData());
+	}
+
+	public function testTriesAnExamplePayloadWithoutNamingAnObject(): void {
+		$this->signedIn(mayUpdate: true);
+		$this->bodyIs(['payload' => ['amount' => 5000]]);
+		$steps = ['status' => 'completed', 'steps' => [['nodeId' => 'check']]];
+		$this->service->expects($this->never())->method('dryRun');
+		$this->service->expects($this->once())->method('dryRunPayload')
+			->with('f1', ['amount' => 5000])
+			->willReturn($steps);
+
+		$response = $this->controller()->dryRun('f1');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame($steps, $response->getData());
+	}
+
+	public function testRefusesAPayloadThatIsNotAnObject(): void {
+		$this->signedIn(mayUpdate: true);
+		$this->bodyIs(['payload' => 'amount=5000']);
+		$this->service->expects($this->never())->method('dryRunPayload');
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->dryRun('f1')->getStatus());
+	}
+
+	public function testChecksTheRightBeforeTryingAPayload(): void {
+		$this->signedIn(mayUpdate: false);
+		$this->bodyIs(['payload' => ['amount' => 5000]]);
+		$this->service->expects($this->never())->method('dryRunPayload');
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $this->controller()->dryRun('f1')->getStatus());
+	}
+
+	public function testAnswers404ForAPayloadOnAFlowOutOfReach(): void {
+		$this->signedIn(mayUpdate: true);
+		$this->bodyIs(['payload' => ['amount' => 5000]]);
+		$this->service->method('dryRunPayload')->willThrowException(new DoesNotExistException('No such flow'));
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $this->controller()->dryRun('f1')->getStatus());
+	}
+
+	/**
+	 * The request body.
+	 *
+	 * @param array<string, mixed> $body The parameters.
+	 *
+	 * @return void
+	 */
+	private function bodyIs(array $body): void {
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $body[$key] ?? $default
+		);
 	}
 }

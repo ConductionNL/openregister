@@ -218,8 +218,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -335,8 +333,6 @@
                     false,
                     false,
                     true,
-                    true,
-                    false,
                     true
                 ]
             },
@@ -430,7 +426,7 @@
             "importJobId": "<uuid>"
         }
     },
-    "invalid ignored without validation": {
+    "invalid reported without validation": {
         "calls": [
             {
                 "method": "audit.setRequestImportJobId",
@@ -511,8 +507,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -529,7 +523,13 @@
                 "created": [],
                 "updated": [],
                 "unchanged": [],
-                "errors": [],
+                "errors": [
+                    {
+                        "object": [],
+                        "error": "bad",
+                        "type": "ValidationException"
+                    }
+                ],
                 "performance": {
                     "totalTime": "<time>",
                     "totalTimeMs": "<time>",
@@ -628,8 +628,6 @@
                     false,
                     true,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -804,8 +802,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -872,8 +868,8 @@
                 ]
             }
         ],
-        "threw": "TypeError",
-        "message": "OCA\\OpenRegister\\Service\\ImportService::processCsvSheet(): Argument #2 ($register) must be of type OCA\\OpenRegister\\Db\\Register, null given",
+        "threw": "InvalidArgumentException",
+        "message": "CSV import requires a register",
         "code": 0
     },
     "no schema": {
@@ -963,8 +959,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -1083,8 +1077,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -1253,8 +1245,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -1444,8 +1434,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -1585,21 +1573,21 @@
                     {
                         "row": 2,
                         "field": null,
-                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "error": "[migration-pack] missing — source column \"\"",
                         "type": "MigrationPackMappingError",
                         "original_value": null
                     },
                     {
                         "row": 3,
                         "field": null,
-                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "error": "[migration-pack] missing — source column \"\"",
                         "type": "MigrationPackMappingError",
                         "original_value": null
                     },
                     {
                         "row": 5,
                         "field": null,
-                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "error": "[migration-pack] missing — source column \"\"",
                         "type": "MigrationPackMappingError",
                         "original_value": null
                     }
@@ -1746,7 +1734,7 @@
                     {
                         "row": 3,
                         "field": null,
-                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "error": "[migration-pack] missing — source column \"\"",
                         "type": "MigrationPackMappingError",
                         "original_value": null
                     }
@@ -1888,8 +1876,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -1931,7 +1917,7 @@
                     {
                         "row": 5,
                         "field": null,
-                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "error": "[migration-pack] missing — source column \"\"",
                         "type": "MigrationPackMappingError",
                         "original_value": null
                     }
@@ -2035,8 +2021,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -2181,8 +2165,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -2320,8 +2302,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -2431,8 +2411,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -2556,8 +2534,6 @@
                     true,
                     false,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },
@@ -2678,8 +2654,6 @@
                     true,
                     true,
                     false,
-                    true,
-                    true,
                     true
                 ]
             },

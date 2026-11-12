@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\SearchRenderNeed;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -45,13 +45,28 @@ class QueryHandlerDeclaresLensesTest extends TestCase {
 		$plain = new Schema();
 		$plain->setConfiguration([]);
 
-		$this->assertTrue(condition: QueryHandler::declaresLenses(schemas: [$plain, $lensed]));
-		$this->assertFalse(condition: QueryHandler::declaresLenses(schemas: [$plain]));
+		$this->assertTrue(condition: (new SearchRenderNeed())->declaredBy(schemas: [$plain, $lensed]));
+		$this->assertFalse(condition: (new SearchRenderNeed())->declaredBy(schemas: [$plain]));
 		$this->assertTrue(
-			condition: QueryHandler::declaresLenses(
+			condition: (new SearchRenderNeed())->declaredBy(
 				schemas: [['configuration' => ['x-openregister-lenses' => ['objectTitle' => ['through' => 'objectUrl', 'property' => 'name']]]]]
 			)
 		);
-		$this->assertFalse(condition: QueryHandler::declaresLenses(schemas: [['configuration' => []], ['properties' => []]]));
+		$this->assertFalse(condition: (new SearchRenderNeed())->declaredBy(schemas: [['configuration' => []], ['properties' => []]]));
 	}//end testASchemaWithALensIsFound()
+
+	/**
+	 * Each thing a query can ask for takes the render path on its own.
+	 *
+	 * @return void
+	 */
+	public function testEachAskForRenderingCountsOnItsOwn(): void {
+		$need = new SearchRenderNeed();
+
+		$this->assertTrue($need->asked(query: [], extend: ['owner']));
+		$this->assertTrue($need->asked(query: ['_fields' => ['a']], extend: []));
+		$this->assertTrue($need->asked(query: ['_filter' => ['a']], extend: []));
+		$this->assertTrue($need->asked(query: ['_unset' => ['a']], extend: []));
+		$this->assertFalse($need->asked(query: ['_fields' => [], '_limit' => 5], extend: []));
+	}//end testEachAskForRenderingCountsOnItsOwn()
 }//end class

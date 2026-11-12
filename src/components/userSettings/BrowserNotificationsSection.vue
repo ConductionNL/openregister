@@ -76,6 +76,58 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 
+/**
+ * Subscribe or unsubscribe through the push client. A failure reverts the
+ * optimistic state and is handed back instead of thrown.
+ *
+ * @param {object} client The WebPush client
+ * @param {boolean} checked The requested toggle state
+ * @return {Promise<{enabled: boolean, failure: Error|null}>} The new state and any failure
+ */
+async function switchPush(client, checked) {
+	try {
+		if (checked === true) {
+			await client.enablePush()
+			return { enabled: true, failure: null }
+		}
+		await client.disablePush()
+		return { enabled: false, failure: null }
+	} catch (e) {
+		return { enabled: !checked, failure: e }
+	}
+}
+
+/**
+ * The message shown while the push client script has not run yet.
+ *
+ * @param {object} vm The section, for its translator
+ * @return {string} The message
+ */
+function clientLoadingMessage(vm) {
+	return vm.t(
+		'openregister',
+		'Browser notification client is still loading — please try again in a moment.',
+	)
+}
+
+/**
+ * The error to show for a toggle: none when it succeeded, else the failure's
+ * own message or a generic one.
+ *
+ * @param {object} vm The section, for its translator
+ * @param {Error|null} failure What went wrong, if anything
+ * @return {string|null} The message
+ */
+function failureMessage(vm, failure) {
+	if (failure === null) {
+		return null
+	}
+	return (
+		failure.message
+		|| vm.t('openregister', 'Could not change browser notification settings.')
+	)
+}
+
 export default {
 	name: 'BrowserNotificationsSection',
 	components: {
@@ -182,35 +234,16 @@ export default {
 		async onToggle(checked) {
 			const client = this.client()
 			if (client === null) {
-				this.error = this.t(
-					'openregister',
-					'Browser notification client is still loading — please try again in a moment.',
-				)
+				this.error = clientLoadingMessage(this)
 				return
 			}
 			this.busy = true
 			this.error = null
-			try {
-				if (checked === true) {
-					await client.enablePush()
-					this.enabled = true
-				} else {
-					await client.disablePush()
-					this.enabled = false
-				}
-			} catch (e) {
-				this.error =
-					e.message
-					|| this.t(
-						'openregister',
-						'Could not change browser notification settings.',
-					)
-				// Revert the optimistic state on failure.
-				this.enabled = !checked
-			} finally {
-				this.permission = client.permission()
-				this.busy = false
-			}
+			const outcome = await switchPush(client, checked)
+			this.error = failureMessage(this, outcome.failure)
+			this.enabled = outcome.enabled
+			this.permission = client.permission()
+			this.busy = false
 		},
 	},
 }

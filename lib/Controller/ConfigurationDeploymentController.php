@@ -30,17 +30,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
 
 /**
  * Draft, preview, deploy, explain and roll back configuration.
@@ -55,26 +59,52 @@ use OCP\IRequest;
 class ConfigurationDeploymentController extends Controller {
 
 	/**
+	 * The pending values.
+	 *
+	 * @var ConfigurationDraftsInterface
+	 */
+	private readonly ConfigurationDraftsInterface $drafts;
+
+	/**
+	 * The diff.
+	 *
+	 * @var DeploymentPreviewServiceInterface
+	 */
+	private readonly DeploymentPreviewServiceInterface $previews;
+
+	/**
+	 * The apply and the rollback.
+	 *
+	 * @var DeploymentServiceInterface
+	 */
+	private readonly DeploymentServiceInterface $deployments;
+
+	/**
+	 * The effective-configuration read.
+	 *
+	 * @var ConfigurationExplainer
+	 */
+	private readonly ConfigurationExplainer $explainer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
-	 * @param ConfigurationDraftService $drafts     The pending values.
-	 * @param DeploymentPreviewService  $previews   The diff.
-	 * @param DeploymentService         $deployments The apply and the rollback.
-	 * @param ConfigurationExplainer    $explainer  The effective-configuration read.
-	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
+	 * @param ConfigDeploymentControllerServices $services The configuration deployment controller services.
+	 * @param ConfigurationKeyRegistryInterface $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConfigurationDraftService $drafts,
-		private readonly DeploymentPreviewService $previews,
-		private readonly DeploymentService $deployments,
-		private readonly ConfigurationExplainer $explainer,
-		private readonly ConfigurationKeyRegistry $registry,
+		ConfigDeploymentControllerServices $services,
+		private readonly ConfigurationKeyRegistryInterface $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->drafts = $services->drafts;
+		$this->previews = $services->previews;
+		$this->deployments = $services->deployments;
+		$this->explainer = $services->explainer;
 
 	}//end __construct()
 
@@ -112,8 +142,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The opened set, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -123,10 +151,7 @@ class ConfigurationDeploymentController extends Controller {
 				description: $this->optional(key: 'description')
 			);
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(data: $set->jsonSerialize(), statusCode: Http::STATUS_CREATED);
@@ -148,10 +173,7 @@ class ConfigurationDeploymentController extends Controller {
 		try {
 			$set = $this->drafts->loadSet(uuid: $id);
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(
@@ -179,40 +201,25 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The pending value, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
-		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE);
+		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayerInterface::INSTANCE);
 		$layerRef = $this->optional(key: 'layerRef');
 		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
+		$target = new ConfigurationDraftTarget(setUuid: $id, address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
 		try {
 			if (((bool)($this->request->getParam(key: 'removes') ?? false)) === true) {
 				return new JSONResponse(
-					data: $this->drafts->draftRemoval(
-						setUuid: $id,
-						layer: $layer,
-						layerRef: $layerRef,
-						configKey: $configKey
-					)->jsonSerialize(),
+					data: $this->drafts->draftRemoval(target: $target)->jsonSerialize(),
 					statusCode: Http::STATUS_CREATED
 				);
 			}
 
-			$draft = $this->drafts->draftValue(
-				setUuid: $id,
-				layer: $layer,
-				layerRef: $layerRef,
-				configKey: $configKey,
-				value: $this->request->getParam(key: 'value')
-			);
+			$draft = $this->drafts->draftValue(target: $target, value: $this->request->getParam(key: 'value'));
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(data: $draft->jsonSerialize(), statusCode: Http::STATUS_CREATED);
@@ -234,10 +241,7 @@ class ConfigurationDeploymentController extends Controller {
 		try {
 			$set = $this->drafts->loadSet(uuid: $id);
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(data: $this->previews->preview(set: $set));
@@ -251,18 +255,13 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The approved set, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function approve(string $id): JSONResponse {
 		try {
 			return new JSONResponse(data: $this->drafts->approveSet(setUuid: $id)->jsonSerialize());
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 	}//end approve()
@@ -276,18 +275,13 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The recorded deployment, or the refusal naming the value.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function deploy(string $id): JSONResponse {
 		try {
 			$deployment = $this->deployments->deploy(setUuid: $id, name: $this->optional(key: 'name'));
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(data: $deployment->jsonSerialize(), statusCode: Http::STATUS_CREATED);
@@ -301,18 +295,13 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The discarded set, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function discard(string $id): JSONResponse {
 		try {
 			return new JSONResponse(data: $this->drafts->discardSet(setUuid: $id)->jsonSerialize());
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 	}//end discard()
@@ -353,10 +342,7 @@ class ConfigurationDeploymentController extends Controller {
 		try {
 			return new JSONResponse(data: $this->deployments->loadDeployment(uuid: $id)->jsonSerialize());
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 	}//end deployment()
@@ -371,8 +357,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The recorded rollback, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function rollback(string $id): JSONResponse {
@@ -382,10 +366,7 @@ class ConfigurationDeploymentController extends Controller {
 				name: $this->optional(key: 'name')
 			);
 		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: $exception->getStatusCode()
-			);
+			return $this->refused(exception: $exception);
 		}
 
 		return new JSONResponse(data: $rollback->jsonSerialize(), statusCode: Http::STATUS_CREATED);
@@ -416,9 +397,11 @@ class ConfigurationDeploymentController extends Controller {
 		return new JSONResponse(
 			data: $this->explainer->explain(
 				configKey: $configKey,
-				register: $this->optional(key: 'register'),
-				bundle: $this->optional(key: 'bundle'),
-				subject: $this->optional(key: 'subject')
+				scope: new ConfigurationScope(
+					register: $this->optional(key: 'register'),
+					bundle: $this->optional(key: 'bundle'),
+					subject: $this->optional(key: 'subject')
+				)
 			)
 		);
 
@@ -442,4 +425,18 @@ class ConfigurationDeploymentController extends Controller {
 		return $value;
 
 	}//end optional()
+
+	/**
+	 * The answer to a refused deployment act: the refusal's own body and status.
+	 *
+	 * @param DeploymentRefusedException $exception The refusal
+	 *
+	 * @return JSONResponse The refusal
+	 */
+	private function refused(DeploymentRefusedException $exception): JSONResponse {
+		return new JSONResponse(
+			data: $exception->toResponseBody(),
+			statusCode: $exception->getStatusCode()
+		);
+	}//end refused()
 }//end class

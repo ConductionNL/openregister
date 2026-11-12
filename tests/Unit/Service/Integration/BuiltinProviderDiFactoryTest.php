@@ -8,7 +8,7 @@
  * per-provider *Test classes) construct each provider DIRECTLY with
  * mocked constructor args. That shape proves a provider behaves
  * correctly once built, but it is blind to a mis-wired DI factory
- * closure in IntegrationRegistrar::registerBuiltinIntegrationProviders().
+ * closure in IntegrationWiring::registerBuiltinIntegrationProviders().
  *
  * That blind spot bit us in production: when CalendarProvider,
  * EmailProvider and TasksProvider gained Tier-2 constructor args, their
@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
+use OCA\OpenRegister\Service\Integration\IntegrationWiring;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -119,7 +119,7 @@ class BuiltinProviderDiFactoryTest extends TestCase {
 				}
 			);
 
-		(new ReflectionMethod(IntegrationRegistrar::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
+		(new ReflectionMethod(IntegrationWiring::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
 
 		return $factories;
 	}//end captureFactories()

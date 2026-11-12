@@ -43,6 +43,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring KvkProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\App\IAppManager;
@@ -85,12 +88,7 @@ class MessageDispatchProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new MessageDispatchProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-			logger: $logger,
-		);
+		$this->provider = new MessageDispatchProvider(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), logger: $logger);
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {
@@ -134,7 +132,7 @@ class MessageDispatchProviderTest extends TestCase {
 
 	public function testListIsEmptyForSendOnlyLeaf(): void {
 		$this->router->expects($this->never())->method('call');
-		$this->assertSame([], $this->provider->list('', '', '', ['_search' => 'x']));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'x']));
 	}//end testListIsEmptyForSendOnlyLeaf()
 
 	public function testDispatchDelegatesPostToRouterWithBodyAndPath(): void {
@@ -144,10 +142,13 @@ class MessageDispatchProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'POST',
-				'2010-04-01/Accounts/ACxxxx/Messages.json',
 				$this->callback(
-					static function (array $opts) use ($body): bool {
+					static function (UpstreamRequest $request) use ($body): bool {
+						if ($request->method !== 'POST' || $request->path !== '2010-04-01/Accounts/ACxxxx/Messages.json') {
+							return false;
+						}
+
+						$opts = $request->options;
 						return $opts['body'] === $body
 							&& ($opts['headers']['Accept'] ?? null) === 'application/json'
 							&& ($opts['headers']['Content-Type'] ?? null) === 'application/x-www-form-urlencoded';
@@ -156,12 +157,7 @@ class MessageDispatchProviderTest extends TestCase {
 			)
 			->willReturn(['sid' => 'SMxxxx', 'status' => 'queued']);
 
-		$result = $this->provider->dispatch(
-			source: 'twilio-sms',
-			body: $body,
-			path: '2010-04-01/Accounts/ACxxxx/Messages.json',
-			headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
-		);
+		$result = $this->provider->dispatch(source: 'twilio-sms', message: new OutboundMessage(path: '2010-04-01/Accounts/ACxxxx/Messages.json', body: $body, headers: ['Content-Type' => 'application/x-www-form-urlencoded']));
 
 		$this->assertSame('sent', $result['status']);
 		$this->assertSame('twilio-sms', $result['source']);
@@ -171,7 +167,7 @@ class MessageDispatchProviderTest extends TestCase {
 	public function testDispatchSetsAndResetsTheTargetSource(): void {
 		$this->router->method('call')->willReturn(['ok' => true]);
 
-		$this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message');
+		$this->provider->dispatch(source: 'cmcom-sms', message: new OutboundMessage(path: 'message', body: ['x' => 1]));
 
 		// After dispatch the per-call source is reset to the advertised
 		// default, so a later contract caller (health/probe) never inherits
@@ -179,10 +175,27 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchSetsAndResetsTheTargetSource()
 
+	public function testTheRouterSeesThePerCallSourceDuringDispatch(): void {
+		$seen = [];
+		$this->router->expects($this->once())->method('call')->willReturnCallback(
+			function (object $provider) use (&$seen): array {
+				$seen[] = $provider->getOpenConnectorSource();
+				return ['ok' => true];
+			}
+		);
+
+		$this->provider->dispatch(source: 'cmcom-sms', message: new OutboundMessage(path: 'message', body: ['x' => 1]));
+
+		// The router resolves the source through the provider while the call
+		// runs, so the provider's own getOpenConnectorSource() must answer the
+		// per-call source, not the advertised default.
+		$this->assertSame(['cmcom-sms'], $seen);
+	}//end testTheRouterSeesThePerCallSourceDuringDispatch()
+
 	public function testDispatchRejectsUnknownSourceBeforeRouter(): void {
 		$this->router->expects($this->never())->method('call');
 
-		$result = $this->provider->dispatch(source: 'evil-source', body: ['x' => 1], path: 'send');
+		$result = $this->provider->dispatch(source: 'evil-source', message: new OutboundMessage(path: 'send', body: ['x' => 1]));
 
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('openconnector-source-missing', $result['cause']);
@@ -196,7 +209,7 @@ class MessageDispatchProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->dispatch(source: 'whatsapp-cloud-api', body: ['x' => 1], path: 'PNID/messages');
+		$result = $this->provider->dispatch(source: 'whatsapp-cloud-api', message: new OutboundMessage(path: 'PNID/messages', body: ['x' => 1]));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('openconnector-source-missing', $result['cause']);
 	}//end testDispatchDegradesOnSourceMissing()
@@ -209,12 +222,20 @@ class MessageDispatchProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->dispatch(source: 'messagebird-sms', body: ['x' => 1], path: 'messages');
+		$result = $this->provider->dispatch(source: 'messagebird-sms', message: new OutboundMessage(path: 'messages', body: ['x' => 1]));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('upstream-service-down', $result['cause']);
 		// Source still reset even on the degraded path.
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchDegradesOnUpstreamDown()
+
+	public function testDispatchDegradesOnATransportFailure(): void {
+		$this->router->method('call')->willThrowException(new \RuntimeException('connection reset'));
+
+		$result = $this->provider->dispatch(source: 'twilio-sms', message: new OutboundMessage(path: 'messages', body: ['x' => 1]));
+		$this->assertSame(['unavailable' => true, 'cause' => 'upstream-service-down'], $result);
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchDegradesOnATransportFailure()
 
 	public function testHealthDefersToRouterProbe(): void {
 		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];

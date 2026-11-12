@@ -19,12 +19,15 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\LegalHoldRecords;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\HoldOrder;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * Test class for LegalHoldService
@@ -50,8 +53,7 @@ class LegalHoldServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new LegalHoldService(
-			$this->objectMapper,
-			$this->auditTrailMapper,
+			new LegalHoldRecords($this->objectMapper, $this->auditTrailMapper),
 			$this->userSession,
 			$this->jobList,
 			$this->logger
@@ -99,7 +101,7 @@ class LegalHoldServiceTest extends TestCase {
 
 		$this->objectMapper->expects($this->once())->method('update');
 
-		$result = $this->service->placeHold($object, 'WOO-verzoek 2025-0142');
+		$result = $this->service->placeHold($object, new HoldOrder('WOO-verzoek 2025-0142'));
 		$this->assertSame($object, $result);
 	}
 
@@ -129,7 +131,7 @@ class LegalHoldServiceTest extends TestCase {
 
 		$this->objectMapper->expects($this->once())->method('update');
 
-		$result = $this->service->releaseHold($object, 'WOO-verzoek afgehandeld');
+		$result = $this->service->releaseHold($object, new HoldOrder('WOO-verzoek afgehandeld'));
 		$this->assertSame($object, $result);
 	}
 
@@ -199,7 +201,7 @@ class LegalHoldServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->bulkPlaceHold(42, 10, 'Rekenkameronderzoek');
+		$this->service->bulkPlaceHold(new RegisterSchemaRef(10, 42), 'Rekenkameronderzoek');
 	}
 
 	/**
@@ -217,6 +219,6 @@ class LegalHoldServiceTest extends TestCase {
 
 		$this->objectMapper->expects($this->once())->method('update');
 
-		$this->service->placeHold($object, 'System hold');
+		$this->service->placeHold($object, new HoldOrder('System hold'));
 	}
 }

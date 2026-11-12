@@ -3,8 +3,8 @@
 /**
  * Integration tests for SaveObject/SaveObjects handlers and related services
  *
- * Tests RelationCascadeHandler, TransformationHandler, DeleteObject,
- * CascadingHandler, BulkOperationsHandler, PerformanceHandler,
+ * Tests RelationCascadeHandler, DeleteObject,
+ * CascadingHandler, BulkOperationsHandler,
  * and SaveObjects with real database operations.
  *
  * @category Test
@@ -19,6 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScan;
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -27,30 +31,29 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for SaveObject/SaveObjects handler classes
  *
- * Tests real code paths in RelationCascadeHandler, TransformationHandler,
+ * Tests real code paths in RelationCascadeHandler,
  * DeleteObject, CascadingHandler, BulkOperationsHandler,
- * PerformanceHandler, and SaveObjects.
+ * and SaveObjects.
  *
  * @group DB
  */
 class SaveObjectHandlersIntegrationTest extends TestCase {
 	private RelationCascadeHandler $relationCascadeHandler;
-	private TransformationHandler $transformationHandler;
 	private DeleteObject $deleteObject;
 	private CascadingHandler $cascadingHandler;
-	private PerformanceHandler $performanceHandler;
 	private SaveObjects $saveObjects;
 	private SaveObject $saveHandler;
 	private ObjectService $objectService;
@@ -71,10 +74,8 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->relationCascadeHandler = \OC::$server->get(RelationCascadeHandler::class);
-		$this->transformationHandler = \OC::$server->get(TransformationHandler::class);
 		$this->deleteObject = \OC::$server->get(DeleteObject::class);
 		$this->cascadingHandler = \OC::$server->get(CascadingHandler::class);
-		$this->performanceHandler = \OC::$server->get(PerformanceHandler::class);
 		$this->saveObjects = \OC::$server->get(SaveObjects::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
 		$this->objectService = \OC::$server->get(ObjectService::class);
@@ -88,7 +89,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}
@@ -213,7 +214,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->testSchema,
 			$data,
-			null,
 			null,
 			false,
 			false
@@ -568,8 +568,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['title' => 'No relations test'],
-			$this->testSchema
+			new RelationScan(data: ['title' => 'No relations test'], schema: $this->testSchema)
 		);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 	}
@@ -586,8 +585,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['relatedItem' => $uuid],
-			$this->testSchema
+			new RelationScan(data: ['relatedItem' => $uuid], schema: $this->testSchema)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -604,7 +602,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'No cascade test'];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$this->testSchema,
 			$data
 		);
@@ -640,7 +637,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -682,8 +678,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeMultipleObjects(
-			$object,
-			$cascadeSchema->getProperties()['children'],
 			$data['children']
 		);
 		$this->assertIsArray($result);
@@ -717,7 +711,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -734,8 +727,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'WriteBack test', 'foo' => 'bar'];
 
 		$result = $this->relationCascadeHandler->handleInverseRelationsWriteBack(
-			$object,
-			$this->testSchema,
 			$data
 		);
 		$this->assertEquals($data, $result);
@@ -746,575 +737,8 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testCascadeSingleObjectReturnsNull(): void {
 		$object = $this->createTestObject(['title' => 'Cascade single']);
-		$result = $this->relationCascadeHandler->cascadeSingleObject(
-			$object,
-			['$ref' => '#/components/schemas/Related', 'inversedBy' => 'parent'],
-			['name' => 'Child']
-		);
+		$result = $this->relationCascadeHandler->cascadeSingleObject();
 		$this->assertNull($result);
-	}
-
-	// ========================================================================
-	// TransformationHandler tests
-	// ========================================================================
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with valid objects.
-	 */
-	public function testTransformObjectsValidObjects(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Transform test 1',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertArrayHasKey('valid', $result);
-		$this->assertArrayHasKey('invalid', $result);
-		$this->assertCount(1, $result['valid']);
-		$this->assertEmpty($result['invalid']);
-
-		$transformed = $result['valid'][0];
-		$this->assertArrayHasKey('uuid', $transformed);
-		$this->assertNotEmpty($transformed['uuid']);
-		$this->assertArrayHasKey('object', $transformed);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace generates UUID when no ID.
-	 */
-	public function testTransformObjectsGeneratesUuid(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No ID test',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$uuid = $result['valid'][0]['uuid'];
-		$this->assertTrue(Uuid::isValid($uuid));
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace preserves provided ID.
-	 */
-	public function testTransformObjectsPreservesProvidedId(): void {
-		$providedId = 'custom-id-' . uniqid();
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'id' => $providedId,
-				'title' => 'Custom ID test',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertEquals($providedId, $result['valid'][0]['uuid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with missing register.
-	 */
-	public function testTransformObjectsMissingRegister(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No register',
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('MissingRegisterException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with missing schema.
-	 */
-	public function testTransformObjectsMissingSchema(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'No schema',
-				'register' => $this->testRegister->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('MissingSchemaException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with invalid schema ID.
-	 */
-	public function testTransformObjectsInvalidSchemaId(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Bad schema',
-				'register' => $this->testRegister->getId(),
-				'schema' => 99999,
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertNotEmpty($result['invalid']);
-		$this->assertEquals('InvalidSchemaException', $result['invalid'][0]['type']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with @self structure.
-	 */
-	public function testTransformObjectsWithSelfStructure(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'@self' => [
-					'register' => $this->testRegister->getId(),
-					'schema' => $this->testSchema->getId(),
-				],
-				'object' => ['title' => 'Self structure test'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with register/schema as objects
-	 * within the @self structure, so the object extraction handles them.
-	 */
-	public function testTransformObjectsWithObjectRegisterSchema(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'@self' => [
-					'register' => $this->testRegister->getId(),
-					'schema' => $this->testSchema->getId(),
-				],
-				'register' => $this->testRegister,
-				'schema' => $this->testSchema,
-				'object' => ['title' => 'Object refs test'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertEquals(
-			$this->testRegister->getId(),
-			$result['valid'][0]['register']
-		);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace scans for relations.
-	 */
-	public function testTransformObjectsScansRelations(): void {
-		$uuid = Uuid::v4()->toRfc4122();
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Relations test',
-				'relatedItem' => $uuid,
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		$this->assertArrayHasKey('relations', $result['valid'][0]);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with multiple objects mixed valid/invalid.
-	 */
-	public function testTransformObjectsMixedValidInvalid(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Valid 1',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-			[
-				'title' => 'Invalid - no register',
-				'schema' => $this->testSchema->getId(),
-			],
-			[
-				'title' => 'Valid 2',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(2, $result['valid']);
-		$this->assertCount(1, $result['invalid']);
-	}
-
-	/**
-	 * Test transformObjectsToDatabaseFormatInPlace with pre-set relations.
-	 */
-	public function testTransformObjectsWithPresetRelations(): void {
-		$schemaCache = [$this->testSchema->getId() => $this->testSchema];
-		$objects = [
-			[
-				'title' => 'Preset relations',
-				'register' => $this->testRegister->getId(),
-				'schema' => $this->testSchema->getId(),
-				'relations' => ['relatedItem'],
-			],
-		];
-
-		$result = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(
-			$objects,
-			$schemaCache
-		);
-
-		$this->assertCount(1, $result['valid']);
-		// Pre-set relations should be preserved.
-		$this->assertEquals(['relatedItem'], $result['valid'][0]['relations']);
-	}
-
-	// ========================================================================
-	// PerformanceHandler tests
-	// ========================================================================
-
-	/**
-	 * Test isSimpleRequest with basic query.
-	 */
-	public function testIsSimpleRequestBasic(): void {
-		$query = ['_limit' => 20];
-		$this->assertTrue($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with complex extend.
-	 */
-	public function testIsSimpleRequestComplexExtend(): void {
-		$query = [
-			'_extend' => ['field1', 'field2', 'field3'],
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with facets.
-	 */
-	public function testIsSimpleRequestWithFacets(): void {
-		$query = [
-			'_facets' => ['category'],
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with large limit.
-	 */
-	public function testIsSimpleRequestLargeLimit(): void {
-		$query = ['_limit' => 100];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with many filters.
-	 */
-	public function testIsSimpleRequestManyFilters(): void {
-		$query = [
-			'field1' => 'val1',
-			'field2' => 'val2',
-			'field3' => 'val3',
-			'field4' => 'val4',
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with string extend.
-	 */
-	public function testIsSimpleRequestStringExtend(): void {
-		$query = [
-			'_extend' => 'field1,field2,field3',
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with two extend fields passes.
-	 */
-	public function testIsSimpleRequestTwoExtends(): void {
-		$query = [
-			'_extend' => ['field1', 'field2'],
-			'_limit' => 20,
-		];
-		$this->assertTrue($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with _facetable flag.
-	 */
-	public function testIsSimpleRequestFacetableFlag(): void {
-		$query = [
-			'_facetable' => true,
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test optimizeRequestForPerformance sets fast_path for simple requests.
-	 */
-	public function testOptimizeRequestForPerformanceFastPath(): void {
-		$query = ['_limit' => 20];
-		$perfTimings = [];
-
-		$this->performanceHandler->optimizeRequestForPerformance($query, $perfTimings);
-
-		$this->assertTrue($query['_fast_path']);
-		$this->assertArrayHasKey('request_optimization', $perfTimings);
-	}
-
-	/**
-	 * Test optimizeRequestForPerformance with extend optimization.
-	 */
-	public function testOptimizeRequestForPerformanceWithExtend(): void {
-		$query = [
-			'_extend' => 'field1,field2',
-			'_limit' => 20,
-		];
-		$perfTimings = [];
-
-		$this->performanceHandler->optimizeRequestForPerformance($query, $perfTimings);
-
-		$this->assertIsArray($query['_extend']);
-		$this->assertArrayHasKey('request_optimization', $perfTimings);
-	}
-
-	/**
-	 * Test optimizeExtendQueries with string input.
-	 */
-	public function testOptimizeExtendQueriesString(): void {
-		$result = $this->performanceHandler->optimizeExtendQueries('field1, field2, field3');
-		$this->assertEquals(['field1', 'field2', 'field3'], $result);
-	}
-
-	/**
-	 * Test optimizeExtendQueries with empty string.
-	 */
-	public function testOptimizeExtendQueriesEmptyString(): void {
-		$result = $this->performanceHandler->optimizeExtendQueries('');
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test optimizeExtendQueries with array input.
-	 */
-	public function testOptimizeExtendQueriesArray(): void {
-		$input = ['field1', 'field2'];
-		$result = $this->performanceHandler->optimizeExtendQueries($input);
-		$this->assertEquals($input, $result);
-	}
-
-	/**
-	 * Test extractRelatedData with empty results.
-	 */
-	public function testExtractRelatedDataEmpty(): void {
-		$result = $this->performanceHandler->extractRelatedData([], true, false);
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractRelatedData with objects containing UUID fields.
-	 */
-	public function testExtractRelatedDataWithUuids(): void {
-		$uuid1 = Uuid::v4()->toRfc4122();
-		$uuid2 = Uuid::v4()->toRfc4122();
-
-		$obj1 = $this->createTestObject([
-			'title' => 'Related data test',
-			'relatedItem' => $uuid1,
-		]);
-		$obj2 = $this->createTestObject([
-			'title' => 'Related data test 2',
-			'relatedItems' => [$uuid2],
-		]);
-
-		$result = $this->performanceHandler->extractRelatedData(
-			[$obj1, $obj2],
-			true,
-			false
-		);
-		$this->assertArrayHasKey('related', $result);
-		$related = $result['related'];
-		$this->assertContains($uuid1, $related);
-		$this->assertContains($uuid2, $related);
-	}
-
-	/**
-	 * Test extractRelatedData with includeRelated false.
-	 */
-	public function testExtractRelatedDataNoInclude(): void {
-		$obj = $this->createTestObject([
-			'title' => 'No include test',
-			'relatedItem' => Uuid::v4()->toRfc4122(),
-		]);
-
-		$result = $this->performanceHandler->extractRelatedData([$obj], false, false);
-		$this->assertArrayNotHasKey('related', $result);
-	}
-
-	/**
-	 * Test extractRelatedData skips non-ObjectEntity items.
-	 */
-	public function testExtractRelatedDataSkipsNonEntities(): void {
-		$result = $this->performanceHandler->extractRelatedData(
-			['not-an-entity', 42, null],
-			true,
-			false
-		);
-		// Should be empty since no ObjectEntity items.
-		$this->assertEmpty($result['related'] ?? []);
-	}
-
-	/**
-	 * Test getFacetCount with facets.
-	 */
-	public function testGetFacetCountWithFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(true, [
-			'_facets' => ['cat', 'tag', 'status'],
-		]);
-		$this->assertEquals(3, $result);
-	}
-
-	/**
-	 * Test getFacetCount without facets.
-	 */
-	public function testGetFacetCountNoFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(false, []);
-		$this->assertEquals(0, $result);
-	}
-
-	/**
-	 * Test getFacetCount with string facets.
-	 */
-	public function testGetFacetCountStringFacets(): void {
-		$result = $this->performanceHandler->getFacetCount(true, [
-			'_facets' => 'extend',
-		]);
-		$this->assertEquals(1, $result);
-	}
-
-	/**
-	 * Test calculateTotalPages.
-	 */
-	public function testCalculateTotalPages(): void {
-		$this->assertEquals(5, $this->performanceHandler->calculateTotalPages(100, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(0, 20));
-		$this->assertEquals(3, $this->performanceHandler->calculateTotalPages(50, 20));
-		$this->assertEquals(1, $this->performanceHandler->calculateTotalPages(1, 20));
-	}
-
-	/**
-	 * Test calculateExtendCount with array.
-	 */
-	public function testCalculateExtendCountArray(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount(['a', 'b', 'c']));
-	}
-
-	/**
-	 * Test calculateExtendCount with string.
-	 */
-	public function testCalculateExtendCountString(): void {
-		$this->assertEquals(3, $this->performanceHandler->calculateExtendCount('a, b, c'));
-	}
-
-	/**
-	 * Test calculateExtendCount with empty string.
-	 */
-	public function testCalculateExtendCountEmptyString(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(''));
-	}
-
-	/**
-	 * Test calculateExtendCount with null.
-	 */
-	public function testCalculateExtendCountNull(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(null));
-	}
-
-	/**
-	 * Test calculateExtendCount with integer.
-	 */
-	public function testCalculateExtendCountInteger(): void {
-		$this->assertEquals(0, $this->performanceHandler->calculateExtendCount(42));
-	}
-
-	/**
-	 * Test preloadCriticalEntities runs without error.
-	 */
-	public function testPreloadCriticalEntities(): void {
-		// Placeholder method, just verifying it doesn't throw.
-		$this->performanceHandler->preloadCriticalEntities([
-			'_schema' => $this->testSchema->getId(),
-		]);
-		$this->assertTrue(true);
 	}
 
 	// ========================================================================
@@ -1372,12 +796,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$uuid = $object->getUuid();
 
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			null,
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 
@@ -1399,12 +818,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		// Pass originalObjectId to indicate cascade sub-deletion.
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			'some-parent-uuid',
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid, options: new DeletionOptions(originalObjectId: 'some-parent-uuid')), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 
@@ -1548,12 +962,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with null $ref returns null.
 	 */
 	public function testCreateRelatedObjectNullRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			[], // no $ref
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: [])); // no $ref
 		$this->assertNull($result);
 	}
 
@@ -1561,12 +970,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with empty $ref returns null.
 	 */
 	public function testCreateRelatedObjectEmptyRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => ''],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => '']));
 		$this->assertNull($result);
 	}
 
@@ -1574,12 +978,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with invalid schema reference returns null.
 	 */
 	public function testCreateRelatedObjectInvalidSchemaRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => '#/components/schemas/NonExistentSchema' . uniqid()],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => '#/components/schemas/NonExistentSchema' . uniqid()]));
 		$this->assertNull($result);
 	}
 
@@ -1587,12 +986,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with non-path $ref returns null.
 	 */
 	public function testCreateRelatedObjectNonPathRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => 'just-a-string'],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => 'just-a-string']));
 		$this->assertNull($result);
 	}
 
@@ -1606,10 +1000,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	public function testSaveObjectsEmpty(): void {
 		$result = $this->saveObjects->saveObjects(
 			[],
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1629,14 +1022,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1660,14 +1048,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1687,14 +1070,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1713,14 +1091,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->saveObjects->saveObjects(
 			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			true
+			new BulkSaveOptions(new BulkBatchDefaults($this->testRegister, $this->testSchema), validation: false, events: false, audit: true),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1761,8 +1134,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Bulk op test ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1792,8 +1166,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Anonymous bulk ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

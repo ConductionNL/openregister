@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -49,6 +50,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
+use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
+use OCA\OpenRegister\Service\Flow\FlowRunDispatch;
+use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
 
 /**
  * Cascade behaviour of FlowService::delete().
@@ -154,7 +159,7 @@ final class FlowDeleteCascadeTest extends TestCase {
 		$versions = ($this->versionMapper ?? $this->createMock(FlowVersionMapper::class));
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($organisationService, $versions): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -163,16 +168,24 @@ final class FlowDeleteCascadeTest extends TestCase {
 		);
 
 		return new FlowService(
-			$mapper,
-			$this->createMock(FlowTriggerIndex::class),
-			$this->createMock(FlowRunService::class),
-			$this->createMock(FlowRunAdvancer::class),
-			$runs,
-			$steps,
-			$state,
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class),
-			$container
+			new FlowDefinitionStore(
+				$mapper,
+				$this->createMock(FlowTriggerIndex::class)
+			),
+			new FlowRunDispatch(
+				$this->createMock(FlowRunService::class),
+				$this->createMock(FlowRunAdvancer::class)
+			),
+			new FlowDeletionSweep(
+				$runs,
+				$steps,
+				$state
+			),
+			new FlowServicePlatform(
+				$this->createMock(IUserSession::class),
+				$this->createMock(LoggerInterface::class),
+				$container
+			)
 		);
 
 	}//end serviceWith()
@@ -195,6 +208,35 @@ final class FlowDeleteCascadeTest extends TestCase {
 
 		return $mapper;
 	}//end flowMapperFor()
+
+	/**
+	 * A flow with a run that has not finished is not deleted, and nothing of it is swept.
+	 *
+	 * @return void
+	 */
+	public function testDeleteIsRefusedWhileARunHasNotFinished(): void {
+		$uuid = 'flow-uuid-9';
+
+		$flow = new Flow();
+		$flow->setUuid($uuid);
+		$flow->setOrganisation('org-under-test');
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findByUuid')->willReturn($flow);
+		$mapper->expects($this->never())->method('delete');
+
+		$runs = $this->createMock(FlowRunMapper::class);
+		$runs->method('hasActiveRun')->with($uuid)->willReturn(true);
+		$runs->expects($this->never())->method('deleteByFlow');
+
+		$this->expectException(FlowLifecycleRefused::class);
+		$this->serviceWith(
+			$mapper,
+			$runs,
+			$this->createMock(FlowRunStepMapper::class),
+			$this->createMock(FlowStateMapper::class)
+		)->delete(uuid: $uuid);
+
+	}//end testDeleteIsRefusedWhileARunHasNotFinished()
 
 	/**
 	 * Deleting a flow sweeps its runs, each run's steps, and its state.

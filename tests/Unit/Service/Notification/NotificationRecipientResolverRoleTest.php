@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -69,10 +70,7 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$uids = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 
 		$this->assertSame(['anna', 'bram'], $uids);
@@ -92,18 +90,12 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$before = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 		$members[] = 'chris';
 		$after = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'role', 'role' => 'behandelaar']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: ['behandelaar' => ['behandelaars']])
 		);
 
 		$this->assertSame(['anna'], $before);
@@ -114,12 +106,14 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	 * A role the schema does not assign is reported, not silently skipped.
 	 */
 	public function testAnUnassignedRoleIsReported(): void {
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'role', 'role' => 'toezichthouder']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(
+				data: [],
+				object: null,
+				context: [],
+				roleGroups: ['behandelaar' => ['behandelaars']]
+			)
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -135,9 +129,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAVanishedGroupIsReported(): void {
 		$this->groupManager->method('get')->willReturn(null);
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['opgeheven-team']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -153,9 +147,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAnEmptyGroupIsNotAFault(): void {
 		$this->groupManager->method('get')->willReturn($this->groupWith([]));
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['stil-team']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -169,9 +163,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAFailingGroupLookupIsReportedSeparately(): void {
 		$this->groupManager->method('get')->willThrowException(new \RuntimeException('LDAP is down'));
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['behandelaars']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame('group-lookup-failed', $resolved['unresolved'][0]['reason']);
@@ -186,7 +180,7 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 
 		$uids = $this->resolver->resolve(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['behandelaars']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame(['anna'], $uids);

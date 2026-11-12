@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 
@@ -57,7 +58,7 @@ class OasServiceUpsertParameterTest extends TestCase {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/api');
 
-		$oas = (new OasService($registerMapper, $schemaMapper, $urlGenerator))->createOas('1');
+		$oas = (new OasService(new OasSources($registerMapper, $schemaMapper, $urlGenerator)))->createOas('1');
 
 		foreach ($oas['paths'] as $path) {
 			if (($path['post']['operationId'] ?? null) === 'createZaak') {
@@ -116,4 +117,41 @@ class OasServiceUpsertParameterTest extends TestCase {
 		$this->assertNull($this->upsertParameter($operation));
 		$this->assertArrayNotHasKey('409', $operation['responses']);
 	}//end testASchemaWithoutAKeyHasNoUpsertParameter()
+
+	public function testTheUpsertParameterAndResponsesAreDocumentedInFull(): void {
+		$operation = $this->postOperation(['unique' => ['zaaknummer']]);
+		$error = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+
+		$this->assertSame(
+			[
+				'name' => '_upsertOn',
+				'in' => 'query',
+				'required' => false,
+				'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), '
+					.'or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
+				'schema' => ['type' => 'string', 'enum' => ['zaaknummer']],
+			],
+			$this->upsertParameter($operation)
+		);
+		$this->assertSame([201, 400, 200, 401, 409, 503, 403], array_keys($operation['responses']));
+		$this->assertSame(
+			['description' => 'Upsert: the record holding the key was updated.', 'content' => $operation['responses'][201]['content']],
+			$operation['responses'][200]
+		);
+		$this->assertSame(['description' => 'Upsert: the caller is not signed in.', 'content' => $error], $operation['responses'][401]);
+		$this->assertSame(
+			[
+				'description' => 'Upsert: more than one record holds the key (the matches are listed), or a record you cannot change holds it.',
+				'content' => $error,
+			],
+			$operation['responses'][409]
+		);
+		$this->assertSame(
+			[
+				'description' => 'Upsert: the key could not be looked up or locked; nothing was written. Retry after the Retry-After seconds.',
+				'content' => $error,
+			],
+			$operation['responses'][503]
+		);
+	}//end testTheUpsertParameterAndResponsesAreDocumentedInFull()
 }//end class

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
@@ -79,8 +80,6 @@ class TmloServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TmloService(
-			$this->registerMapper,
-			$this->schemaMapper,
 			$this->logger,
 			$this->createMock(MdtoXmlGenerator::class)
 		);
@@ -141,7 +140,7 @@ class TmloServiceTest extends TestCase {
 
 		$object = new ObjectEntity();
 
-		$result = $this->service->populateDefaults($object, $register, $schema);
+		$result = $this->service->populateDefaults($object, new RegisterSchema(register: $register, schema: $schema));
 		$tmlo = $result->getTmlo();
 
 		$this->assertEquals('actief', $tmlo['archiefstatus']);
@@ -169,7 +168,7 @@ class TmloServiceTest extends TestCase {
 
 		$object = new ObjectEntity();
 
-		$result = $this->service->populateDefaults($object, $register, $schema);
+		$result = $this->service->populateDefaults($object, new RegisterSchema(register: $register, schema: $schema));
 		$tmlo = $result->getTmlo();
 
 		$this->assertEquals('1.1', $tmlo['classification']);
@@ -199,7 +198,7 @@ class TmloServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setTmlo(['classification' => '2.2']);
 
-		$result = $this->service->populateDefaults($object, $register, $schema);
+		$result = $this->service->populateDefaults($object, new RegisterSchema(register: $register, schema: $schema));
 		$tmlo = $result->getTmlo();
 
 		$this->assertEquals('2.2', $tmlo['classification']);
@@ -218,7 +217,7 @@ class TmloServiceTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$object = new ObjectEntity();
 
-		$result = $this->service->populateDefaults($object, $register, $schema);
+		$result = $this->service->populateDefaults($object, new RegisterSchema(register: $register, schema: $schema));
 		$tmlo = $result->getTmlo();
 
 		$this->assertEmpty($tmlo);
@@ -244,7 +243,7 @@ class TmloServiceTest extends TestCase {
 
 		$object = new ObjectEntity();
 
-		$result = $this->service->populateDefaults($object, $register, $schema);
+		$result = $this->service->populateDefaults($object, new RegisterSchema(register: $register, schema: $schema));
 		$tmlo = $result->getTmlo();
 
 		$this->assertNotNull($tmlo['archiefactiedatum']);

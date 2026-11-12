@@ -114,12 +114,7 @@ import {
 				</div>
 			</div>
 
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Close
-			</NcButton>
+			<CloseCancelButton label="Close" @click="closeDialog" />
 		</div>
 	</NcModal>
 </template>
@@ -129,15 +124,15 @@ import {
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import { NcButton, NcLoadingIcon, NcModal } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import OpenInApp from 'vue-material-design-icons/OpenInApp.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'ViewObjectAuditTrail',
 	components: {
 		NcModal,
 		NcButton,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

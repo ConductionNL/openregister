@@ -18,7 +18,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -38,9 +39,11 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IAppConfig;
@@ -77,10 +80,10 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$presence->method('depart')->willReturn(true);
 		$presence->method('present')->willReturn([]);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === PresenceService::class) ? $presence : $this->createMock(MagicMapper::class)
+			fn (string $id) => ($id === PresenceServiceInterface::class) ? $presence : $this->createMock(MagicMapper::class)
 		);
 
-		return new ObjectsController(
+		return ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
@@ -240,7 +243,8 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$objectService->method('getSchema')->willReturn(4);
 		$calls = [];
 		$objectService->method('findSilent')->willReturnCallback(
-			function (string $id, ?array $extend, bool $files, $register, $schema, bool $rbac, bool $multi) use ($ambiguous, &$calls) {
+			function (...$args) use ($ambiguous, &$calls) {
+				[$id, $extend, $files, $register, $schema, $rbac, $multi] = FindCallShape::findSilent(args: $args);
 				$calls[] = [$rbac, $multi];
 				if ($rbac === false) {
 					throw $ambiguous;

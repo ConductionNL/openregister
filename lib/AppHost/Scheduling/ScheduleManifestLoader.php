@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCP\App\IAppManager;
+use OCA\OpenRegister\AppHost\Observability\BundledManifestFile;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -37,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/specs/apphost-scheduling/spec.md
  */
-class ScheduleManifestLoader {
+class ScheduleManifestLoader implements ScheduleManifestLoaderInterface {
 	/**
 	 * Constructor.
 	 *
@@ -82,18 +83,12 @@ class ScheduleManifestLoader {
 	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function loadAllOnDisk(): array {
-		$manifests = [];
-
-		try {
-			$appIds = $this->appManager->getInstalledApps();
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[AppHost\\Scheduling] Failed to enumerate installed apps: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$appIds = $this->installedAppIds();
+		if ($appIds === null) {
 			return [];
 		}
 
+		$manifests = [];
 		foreach ($appIds as $appId) {
 			$manifest = $this->loadForApp(appId: (string)$appId);
 			if ($manifest === null || $manifest->schedules === []) {
@@ -105,6 +100,23 @@ class ScheduleManifestLoader {
 
 		return $manifests;
 	}//end loadAllOnDisk()
+
+	/**
+	 * The installed app ids; null, logged, when they cannot be listed.
+	 *
+	 * @return array|null
+	 */
+	private function installedAppIds(): ?array {
+		try {
+			return $this->appManager->getInstalledApps();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[AppHost\\Scheduling] Failed to enumerate installed apps: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end installedAppIds()
 
 	/**
 	 * Load + JSON-decode an app's bundled `src/manifest.json`.
@@ -122,25 +134,6 @@ class ScheduleManifestLoader {
 			return null;
 		}
 
-		$manifestPath = $appPath . '/src/manifest.json';
-		if (is_readable($manifestPath) === false) {
-			return null;
-		}
-
-		$raw = file_get_contents($manifestPath);
-		if ($raw === false) {
-			return null;
-		}
-
-		$decoded = json_decode($raw, associative: true);
-		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
-			$this->logger->warning(
-				message: sprintf('[AppHost\\Scheduling] manifest.json for "%s" is invalid JSON', $appId),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		return $decoded;
+		return BundledManifestFile::decode(appPath: $appPath, appId: $appId, logger: $this->logger, tag: 'AppHost\\Scheduling');
 	}//end loadBundledManifest()
 }//end class

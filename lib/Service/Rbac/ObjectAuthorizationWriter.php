@@ -22,9 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -46,12 +45,12 @@ class ObjectAuthorizationWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $mapper Resolves the magic table a register and schema store in.
+	 * @param MagicMapperInterface     $mapper Resolves the magic table a register and schema store in.
 	 * @param IDBConnection   $db     The database.
 	 * @param LoggerInterface $logger Where the write is noted.
 	 */
 	public function __construct(
-		private readonly MagicMapper $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 	) {
@@ -65,38 +64,37 @@ class ObjectAuthorizationWriter {
 	 * the stored value forward, which is what stops a routine update from
 	 * destroying per-object RBAC.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string $objectUuid The object UUID.
-	 * @param array<string, mixed> $block The block to store.
+	 * @param RegisterSchema          $table      The register and schema the object is stored under.
+	 * @param AuthorizationAssignment $assignment The object UUID and the block to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function writeAuthorizationBlock(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		array $block,
-	): void {
-		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+	public function writeAuthorizationBlock(RegisterSchema $table, AuthorizationAssignment $assignment): void {
+		$this->writeBlockTo(table: $this->mapper->getTableNameForRegisterSchema($table->register, $table->schema), assignment: $assignment);
+	}//end writeAuthorizationBlock()
 
+	/**
+	 * Write the authorization block of one object into its magic table.
+	 *
+	 * @param string                  $table      The magic table the object is stored in.
+	 * @param AuthorizationAssignment $assignment The object and its block.
+	 *
+	 * @return void
+	 */
+	private function writeBlockTo(string $table, AuthorizationAssignment $assignment): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($table)
-			->set('_authorization', $qb->createNamedParameter(json_encode($block)))
-			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
+			->set('_authorization', $qb->createNamedParameter(json_encode($assignment->block)))
+			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($assignment->objectUuid)));
 		$qb->executeStatement();
 
+		$scope = ($assignment->block[ObjectScopeResolverInterface::SCOPE_KEY] ?? null);
 		$this->logger->info(
 			message: '[ObjectAuthorizationWriter] Wrote the authorization block for an object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'scope' => ($block[ObjectScopeResolver::SCOPE_KEY] ?? null),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $assignment->objectUuid, 'scope' => $scope]
 		);
-	}//end writeAuthorizationBlock()
+	}//end writeBlockTo()
 
 }//end class

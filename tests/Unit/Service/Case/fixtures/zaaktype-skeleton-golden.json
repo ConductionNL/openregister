@@ -1,0 +1,1231 @@
+{
+    "empty collections": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "empty document": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "full": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "Omgevingsvergunning",
+                "source": {
+                    "zaaktype": "https://ztc.example/zaaktypen/1"
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                },
+                "candidateRoles": [
+                    {
+                        "role": "Initiator",
+                        "generic": "initiator"
+                    },
+                    {
+                        "role": "Vergunningverlener",
+                        "generic": "behandelaar"
+                    },
+                    {
+                        "role": "Tweede behandelaar",
+                        "generic": "behandelaar"
+                    },
+                    {
+                        "role": "Zonder generiek",
+                        "generic": ""
+                    }
+                ],
+                "results": [
+                    "Verleend",
+                    "Geweigerd",
+                    "Ingetrokken"
+                ],
+                "resultMetadata": {
+                    "Verleend": {
+                        "archiefnominatie": "blijvend_bewaren",
+                        "archiefactietermijn": "P20Y"
+                    },
+                    "Ingetrokken": {
+                        "brondatumArchiefprocedure": {
+                            "afleidingswijze": "afgehandeld"
+                        },
+                        "selectielijstklasse": "https://x"
+                    }
+                },
+                "doorlooptijd": "P8W",
+                "servicenorm": "P6W"
+            },
+            "items": [
+                {
+                    "key": "fase-1-ontvangen",
+                    "type": "stage",
+                    "name": "Ontvangen",
+                    "required": true,
+                    "entryCriteria": [],
+                    "children": [
+                        {
+                            "key": "behandel-1-ontvangen",
+                            "type": "humanTask",
+                            "name": "Behandelen: Ontvangen",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-1-ontvangen",
+                            "type": "milestone",
+                            "name": "Ontvangen",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-1-ontvangen:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-1-ontvangen"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-2-status-2",
+                    "type": "stage",
+                    "name": "status 2",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-2-status-2:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-1-ontvangen"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-2-status-2",
+                            "type": "humanTask",
+                            "name": "Behandelen: status 2",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-2-status-2",
+                            "type": "milestone",
+                            "name": "status 2",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-2-status-2:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-2-status-2"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan",
+                    "type": "stage",
+                    "name": "Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving ",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-2-status-2"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan",
+                            "type": "humanTask",
+                            "name": "Behandelen: Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving ",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan",
+                            "type": "milestone",
+                            "name": "Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving Lange omschrijving ",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-4-besluit-genomen",
+                    "type": "stage",
+                    "name": "Besluit genomen",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-4-besluit-genomen:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-4-besluit-genomen",
+                            "type": "humanTask",
+                            "name": "Behandelen: Besluit genomen",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-4-besluit-genomen",
+                            "type": "milestone",
+                            "name": "Besluit genomen",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-4-besluit-genomen:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-4-besluit-genomen"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-5-zonder-nummer",
+                    "type": "stage",
+                    "name": "Zonder nummer",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-5-zonder-nummer:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-4-besluit-genomen"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-5-zonder-nummer",
+                            "type": "humanTask",
+                            "name": "Behandelen: Zonder nummer",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-5-zonder-nummer",
+                            "type": "milestone",
+                            "name": "Zonder nummer",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-5-zonder-nummer:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-5-zonder-nummer"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-6-status",
+                    "type": "stage",
+                    "name": "!!!",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-6-status:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-5-zonder-nummer"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-6-status",
+                            "type": "humanTask",
+                            "name": "Behandelen: !!!",
+                            "required": true,
+                            "doorlooptijd": "P8W",
+                            "servicenorm": "P6W",
+                            "candidateRole": "Vergunningverlener"
+                        },
+                        {
+                            "key": "status-6-status",
+                            "type": "milestone",
+                            "name": "!!!",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-6-status:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-6-status"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "roltypen 'Initiator'",
+                "status": "carried",
+                "reason": "Carried in settings.candidateRoles with generic designation 'initiator'; not placed on any item.",
+                "action": "Assign it as candidateRole to the items this role performs."
+            },
+            {
+                "element": "roltypen[1]",
+                "status": "unmapped",
+                "reason": "Not an object.",
+                "action": "Correct the source document."
+            },
+            {
+                "element": "roltypen[2]",
+                "status": "unmapped",
+                "reason": "No `omschrijving`.",
+                "action": "Name the role."
+            },
+            {
+                "element": "roltypen 'Vergunningverlener'",
+                "status": "mapped",
+                "reason": "The behandelaar role became the candidate role of every human item.",
+                "action": "Make sure a group named 'Vergunningverlener' exists, or the role will not resolve."
+            },
+            {
+                "element": "roltypen 'Tweede behandelaar'",
+                "status": "carried",
+                "reason": "Carried in settings.candidateRoles with generic designation 'behandelaar'; not placed on any item.",
+                "action": "Assign it as candidateRole to the items this role performs."
+            },
+            {
+                "element": "roltypen 'Zonder generiek'",
+                "status": "carried",
+                "reason": "Carried in settings.candidateRoles with generic designation ''; not placed on any item.",
+                "action": "Assign it as candidateRole to the items this role performs."
+            },
+            {
+                "element": "resultaattypen 'Verleend' archival terms",
+                "status": "carried",
+                "reason": "Archival terms are carried as metadata; the archival capabilities act on them, not the case layer.",
+                "action": "Nothing here; configure archival separately."
+            },
+            {
+                "element": "resultaattypen[2]",
+                "status": "unmapped",
+                "reason": "No `omschrijving`.",
+                "action": "Name the result."
+            },
+            {
+                "element": "resultaattypen[3]",
+                "status": "unmapped",
+                "reason": "No `omschrijving`.",
+                "action": "Name the result."
+            },
+            {
+                "element": "resultaattypen 'Ingetrokken' archival terms",
+                "status": "carried",
+                "reason": "Archival terms are carried as metadata; the archival capabilities act on them, not the case layer.",
+                "action": "Nothing here; configure archival separately."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "mapped",
+                "reason": "3 result(s) became the constrained end-state set.",
+                "action": "Completing the case with any other result is refused."
+            },
+            {
+                "element": "doorlooptijd",
+                "status": "carried",
+                "reason": "'P8W' is carried onto every human item and the settings; nothing computes on it here.",
+                "action": "flow-business-timers acts on it; nothing to do in the case plan."
+            },
+            {
+                "element": "servicenorm",
+                "status": "carried",
+                "reason": "'P6W' is carried onto every human item and the settings; nothing computes on it here.",
+                "action": "flow-business-timers acts on it; nothing to do in the case plan."
+            },
+            {
+                "element": "statustypen[1]",
+                "status": "unmapped",
+                "reason": "Not an object.",
+                "action": "Correct the source document."
+            },
+            {
+                "element": "statustypen[2]",
+                "status": "approximate",
+                "reason": "No `volgnummer`; the status was placed after every numbered one.",
+                "action": "Move the milestone to its place in the sequence."
+            },
+            {
+                "element": "statustypen[4]",
+                "status": "approximate",
+                "reason": "No `volgnummer`; the status was placed after every numbered one.",
+                "action": "Move the milestone to its place in the sequence."
+            },
+            {
+                "element": "statustypen (volgnummer 1)",
+                "status": "approximate",
+                "reason": "Milestone 'status-1-ontvangen' was wrapped in stage 'fase-1-ontvangen' with one required human item 'behandel-1-ontvangen' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 1).statustekst",
+                "status": "unmapped",
+                "reason": "A statustype attribute with no counterpart on a milestone.",
+                "action": "Carry it in the milestone description if it matters to the caseworker."
+            },
+            {
+                "element": "statustypen (volgnummer 1).checklistitemStatustype",
+                "status": "unmapped",
+                "reason": "A statustype attribute with no counterpart on a milestone.",
+                "action": "Carry it in the milestone description if it matters to the caseworker."
+            },
+            {
+                "element": "statustypen (volgnummer 2)",
+                "status": "approximate",
+                "reason": "Milestone 'status-2-status-2' was wrapped in stage 'fase-2-status-2' with one required human item 'behandel-2-status-2' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 2).doorlooptijd",
+                "status": "unmapped",
+                "reason": "A statustype attribute with no counterpart on a milestone.",
+                "action": "Carry it in the milestone description if it matters to the caseworker."
+            },
+            {
+                "element": "statustypen (volgnummer 2)",
+                "status": "approximate",
+                "reason": "Milestone 'status-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan' was wrapped in stage 'fase-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan' with one required human item 'behandel-3-lange-omschrijving-lange-omschrijving-lange-omschrijving-lan' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 3)",
+                "status": "approximate",
+                "reason": "Milestone 'status-4-besluit-genomen' was wrapped in stage 'fase-4-besluit-genomen' with one required human item 'behandel-4-besluit-genomen' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 3).informeren",
+                "status": "unmapped",
+                "reason": "A statustype attribute with no counterpart on a milestone.",
+                "action": "Carry it in the milestone description if it matters to the caseworker."
+            },
+            {
+                "element": "statustypen (volgnummer -)",
+                "status": "approximate",
+                "reason": "Milestone 'status-5-zonder-nummer' was wrapped in stage 'fase-5-zonder-nummer' with one required human item 'behandel-5-zonder-nummer' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer -).toelichting",
+                "status": "unmapped",
+                "reason": "A statustype attribute with no counterpart on a milestone.",
+                "action": "Carry it in the milestone description if it matters to the caseworker."
+            },
+            {
+                "element": "statustypen (volgnummer twee)",
+                "status": "approximate",
+                "reason": "Milestone 'status-6-status' was wrapped in stage 'fase-6-status' with one required human item 'behandel-6-status' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "trefwoorden",
+                "status": "unmapped",
+                "reason": "The case-plan mapping has no counterpart for this zaaktype element.",
+                "action": "Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried."
+            },
+            {
+                "element": "vertrouwelijkheidaanduiding",
+                "status": "unmapped",
+                "reason": "The case-plan mapping has no counterpart for this zaaktype element.",
+                "action": "Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried."
+            },
+            {
+                "element": "nul",
+                "status": "unmapped",
+                "reason": "The case-plan mapping has no counterpart for this zaaktype element.",
+                "action": "Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried."
+            },
+            {
+                "element": "7",
+                "status": "unmapped",
+                "reason": "The case-plan mapping has no counterpart for this zaaktype element.",
+                "action": "Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried."
+            }
+        ]
+    },
+    "identity only": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "ZT-2",
+                "source": {
+                    "zaaktype": "ZT-2"
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "null archival terms": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                },
+                "results": [
+                    "Verleend"
+                ],
+                "resultMetadata": {
+                    "Verleend": {
+                        "selectielijstklasse": 0
+                    }
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen 'Verleend' archival terms",
+                "status": "carried",
+                "reason": "Archival terms are carried as metadata; the archival capabilities act on them, not the case layer.",
+                "action": "Nothing here; configure archival separately."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "mapped",
+                "reason": "1 result(s) became the constrained end-state set.",
+                "action": "Completing the case with any other result is refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "numeric volgnummer strings and ties": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": [
+                {
+                    "key": "fase-1-negen",
+                    "type": "stage",
+                    "name": "Negen",
+                    "required": true,
+                    "entryCriteria": [],
+                    "children": [
+                        {
+                            "key": "behandel-1-negen",
+                            "type": "humanTask",
+                            "name": "Behandelen: Negen",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-1-negen",
+                            "type": "milestone",
+                            "name": "Negen",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-1-negen:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-1-negen"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-2-ook-negen",
+                    "type": "stage",
+                    "name": "Ook negen",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-2-ook-negen:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-1-negen"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-2-ook-negen",
+                            "type": "humanTask",
+                            "name": "Behandelen: Ook negen",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-2-ook-negen",
+                            "type": "milestone",
+                            "name": "Ook negen",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-2-ook-negen:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-2-ook-negen"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-3-tien",
+                    "type": "stage",
+                    "name": "Tien",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-3-tien:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-2-ook-negen"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-3-tien",
+                            "type": "humanTask",
+                            "name": "Behandelen: Tien",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-3-tien",
+                            "type": "milestone",
+                            "name": "Tien",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-3-tien:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-3-tien"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "fase-4-leeg",
+                    "type": "stage",
+                    "name": "Leeg",
+                    "required": true,
+                    "entryCriteria": [
+                        {
+                            "id": "fase-4-leeg:entry",
+                            "on": {
+                                "event": "case.item.completed",
+                                "item": "status-3-tien"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "key": "behandel-4-leeg",
+                            "type": "humanTask",
+                            "name": "Behandelen: Leeg",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-4-leeg",
+                            "type": "milestone",
+                            "name": "Leeg",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-4-leeg:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-4-leeg"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen[3]",
+                "status": "approximate",
+                "reason": "No `volgnummer`; the status was placed after every numbered one.",
+                "action": "Move the milestone to its place in the sequence."
+            },
+            {
+                "element": "statustypen (volgnummer 9.5)",
+                "status": "approximate",
+                "reason": "Milestone 'status-1-negen' was wrapped in stage 'fase-1-negen' with one required human item 'behandel-1-negen' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 9)",
+                "status": "approximate",
+                "reason": "Milestone 'status-2-ook-negen' was wrapped in stage 'fase-2-ook-negen' with one required human item 'behandel-2-ook-negen' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer 10)",
+                "status": "approximate",
+                "reason": "Milestone 'status-3-tien' was wrapped in stage 'fase-3-tien' with one required human item 'behandel-3-tien' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            },
+            {
+                "element": "statustypen (volgnummer -)",
+                "status": "approximate",
+                "reason": "Milestone 'status-4-leeg' was wrapped in stage 'fase-4-leeg' with one required human item 'behandel-4-leeg' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            }
+        ]
+    },
+    "only invalid results": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                },
+                "results": [],
+                "resultMetadata": []
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen[0]",
+                "status": "unmapped",
+                "reason": "No `omschrijving`.",
+                "action": "Name the result."
+            },
+            {
+                "element": "resultaattypen[1]",
+                "status": "unmapped",
+                "reason": "No `omschrijving`.",
+                "action": "Name the result."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "mapped",
+                "reason": "0 result(s) became the constrained end-state set.",
+                "action": "Completing the case with any other result is refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "only junk statuses": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen[0]",
+                "status": "unmapped",
+                "reason": "Not an object.",
+                "action": "Correct the source document."
+            },
+            {
+                "element": "statustypen[1]",
+                "status": "unmapped",
+                "reason": "Not an object.",
+                "action": "Correct the source document."
+            },
+            {
+                "element": "statustypen[2]",
+                "status": "unmapped",
+                "reason": "Not an object.",
+                "action": "Correct the source document."
+            }
+        ]
+    },
+    "roles without behandelaar": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "zaaktype",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                },
+                "candidateRoles": [
+                    {
+                        "role": "Adviseur",
+                        "generic": "adviseur"
+                    }
+                ]
+            },
+            "items": [
+                {
+                    "key": "fase-1-een",
+                    "type": "stage",
+                    "name": "Een",
+                    "required": true,
+                    "entryCriteria": [],
+                    "children": [
+                        {
+                            "key": "behandel-1-een",
+                            "type": "humanTask",
+                            "name": "Behandelen: Een",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-1-een",
+                            "type": "milestone",
+                            "name": "Een",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-1-een:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-1-een"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "roltypen 'Adviseur'",
+                "status": "carried",
+                "reason": "Carried in settings.candidateRoles with generic designation 'adviseur'; not placed on any item.",
+                "action": "Assign it as candidateRole to the items this role performs."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen (volgnummer 1)",
+                "status": "approximate",
+                "reason": "Milestone 'status-1-een' was wrapped in stage 'fase-1-een' with one required human item 'behandel-1-een' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            }
+        ]
+    },
+    "scalar collections": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "X",
+                "source": {
+                    "zaaktype": ""
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": []
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen",
+                "status": "unmapped",
+                "reason": "The zaaktype carries no statustypen, so no milestones could be produced.",
+                "action": "Add milestones by hand."
+            }
+        ]
+    },
+    "url fallback to identificatie": {
+        "draft": true,
+        "definition": {
+            "settings": {
+                "name": "ZT-3",
+                "source": {
+                    "zaaktype": "ZT-3"
+                },
+                "writeThrough": {
+                    "statusField": "status",
+                    "statusAtField": "statusReachedAt",
+                    "resultField": "resultaat",
+                    "resultAtField": "resultaatReachedAt"
+                }
+            },
+            "items": [
+                {
+                    "key": "fase-1-status-1",
+                    "type": "stage",
+                    "name": "status 1",
+                    "required": true,
+                    "entryCriteria": [],
+                    "children": [
+                        {
+                            "key": "behandel-1-status-1",
+                            "type": "humanTask",
+                            "name": "Behandelen: status 1",
+                            "required": true,
+                            "doorlooptijd": null,
+                            "servicenorm": null
+                        },
+                        {
+                            "key": "status-1-status-1",
+                            "type": "milestone",
+                            "name": "status 1",
+                            "required": true,
+                            "entryCriteria": [
+                                {
+                                    "id": "status-1-status-1:entry",
+                                    "on": {
+                                        "event": "case.item.completed",
+                                        "item": "behandel-1-status-1"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "report": [
+            {
+                "element": "authorization",
+                "status": "unmapped",
+                "reason": "No zaaktype element says who may administer the plan.",
+                "action": "Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act."
+            },
+            {
+                "element": "writeThrough",
+                "status": "approximate",
+                "reason": "Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.",
+                "action": "Check them against the zaak schema; rename or remove the mapping."
+            },
+            {
+                "element": "resultaattypen",
+                "status": "unmapped",
+                "reason": "No resultaattypen, so the case has no constrained end-state set.",
+                "action": "Declare `settings.results` by hand, or any result will be refused."
+            },
+            {
+                "element": "statustypen (volgnummer 1)",
+                "status": "approximate",
+                "reason": "Milestone 'status-1-status-1' was wrapped in stage 'fase-1-status-1' with one required human item 'behandel-1-status-1' so the sequence does not complete itself on import.",
+                "action": "Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion."
+            }
+        ]
+    }
+}

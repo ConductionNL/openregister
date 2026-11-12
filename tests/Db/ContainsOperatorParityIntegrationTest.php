@@ -54,6 +54,7 @@ namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -275,7 +276,7 @@ class ContainsOperatorParityIntegrationTest extends TestCase {
 		foreach ($fixtures as $label => $case) {
 			[$objectData, $expected] = $case;
 
-			$phpVerdict = $this->rbacHandler->hasPermission($schema, 'read', self::FIXTURE_OWNER, $objectData);
+			$phpVerdict = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read', self::FIXTURE_OWNER, $objectData));
 			$sqlVerdict = in_array($objectData['name'], $listedNames, true);
 
 			if ($phpVerdict !== $sqlVerdict) {

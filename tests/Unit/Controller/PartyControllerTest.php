@@ -9,12 +9,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PartyControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\PartyController;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
@@ -110,7 +112,7 @@ class PartyControllerTest extends TestCase {
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->objects->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
-		$this->controller = new PartyController(
+		$this->controller = PartyControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objects,
@@ -394,10 +396,8 @@ class PartyControllerTest extends TestCase {
 			->with(
 				$this->isInstanceOf(Schema::class),
 				'update',
-				null,
-				'marleen',
-				true,
-				$object
+				new PermissionCheckOptions(objectOwner: 'marleen', object: $object),
+				true
 			);
 		$this->roles->method('addParty')->willReturn($this->link(partyUuid: 'party-a'));
 

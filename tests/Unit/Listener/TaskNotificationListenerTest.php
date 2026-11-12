@@ -24,9 +24,10 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Listener\TaskNotificationListener;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCP\Notification\IManager;
 use OCP\Notification\INotification;
@@ -51,7 +52,7 @@ class TaskNotificationListenerTest extends TestCase {
 			static fn (Task $task): array => ['displayTitle' => 'Assign: Permit 42', 'overdue' => false, 'subject' => null]
 		);
 
-		return new TaskNotificationListener($this->dispatcher, new TaskNotificationRules(), $inbox, $this->notifications, new NullLogger());
+		return new TaskNotificationListener(new TaskTransitionNotifier($this->dispatcher, new TaskNotificationRules(), $inbox), $this->notifications, new NullLogger());
 	}
 
 	private function task(string $state, ?string $assignee, string $action): Task {

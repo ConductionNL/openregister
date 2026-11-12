@@ -80,7 +80,7 @@ class DbalIntrospectionJobTest extends TestCase {
 		$sources = [$this->source('s-1'), $this->source('s-2')];
 
 		$sourceMapper = $this->createMock(SourceMapper::class);
-		$sourceMapper->method('findAll')->willReturn($sources);
+		$sourceMapper->method('findList')->willReturn($sources);
 
 		$introspection = $this->createMock(DatabaseIntrospectionService::class);
 		$introspection->expects($this->exactly(2))
@@ -109,7 +109,7 @@ class DbalIntrospectionJobTest extends TestCase {
 		$healthy = $this->source('s-up');
 
 		$sourceMapper = $this->createMock(SourceMapper::class);
-		$sourceMapper->method('findAll')->willReturn([$failing, $healthy]);
+		$sourceMapper->method('findList')->willReturn([$failing, $healthy]);
 
 		$processed = [];
 		$introspection = $this->createMock(DatabaseIntrospectionService::class);
@@ -150,7 +150,7 @@ class DbalIntrospectionJobTest extends TestCase {
 	 */
 	public function testDriftIsLogged(): void {
 		$sourceMapper = $this->createMock(SourceMapper::class);
-		$sourceMapper->method('findAll')->willReturn([$this->source('s-drift')]);
+		$sourceMapper->method('findList')->willReturn([$this->source('s-drift')]);
 
 		$introspection = $this->createMock(DatabaseIntrospectionService::class);
 		$introspection->method('introspect')->willReturn(
@@ -193,7 +193,7 @@ class DbalIntrospectionJobTest extends TestCase {
 	 */
 	public function testMapperFailureDegradesToNoop(): void {
 		$sourceMapper = $this->createMock(SourceMapper::class);
-		$sourceMapper->method('findAll')->willThrowException(new \RuntimeException('db down'));
+		$sourceMapper->method('findList')->willThrowException(new \RuntimeException('db down'));
 
 		$introspection = $this->createMock(DatabaseIntrospectionService::class);
 		$introspection->expects($this->never())->method('introspect');

@@ -8,7 +8,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'viewConfiguration'"
 		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<div class="formContainer viewConfigurationDialog">
 			<!-- Configuration Details -->
 			<div class="configurationDetailsGrid">
@@ -34,97 +34,51 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						<strong>{{ t('openregister', 'Owner') }}:</strong>
 						<span>{{ configurationStore.configurationItem.owner }}</span>
 					</div>
-					<div
-						v-if="configurationStore.configurationItem?.created"
-						class="propertyItem">
-						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{
-							new Date(
-								configurationStore.configurationItem.created,
-							).toLocaleString()
-						}}</span>
-					</div>
-					<div
-						v-if="configurationStore.configurationItem?.updated"
-						class="propertyItem">
-						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{
-							new Date(
-								configurationStore.configurationItem.updated,
-							).toLocaleString()
-						}}</span>
-					</div>
+					<TimestampProperties
+						:created="configurationStore.configurationItem?.created"
+						:updated="configurationStore.configurationItem?.updated" />
 				</div>
 			</div>
 
 			<!-- Tabs for additional information -->
-			<div class="tabContainer">
-				<div class="tabHeaders">
-					<button
-						v-for="(tab, index) in tabs"
-						:key="tab"
-						class="tabHeader"
-						:class="{ active: activeTab === index }"
-						@click="activeTab = index">
-						{{ tab }}
-					</button>
-				</div>
-
-				<div class="tabContent">
-					<!-- Configuration Tab -->
-					<div v-if="activeTab === 0" class="tabPanel">
-						<div
-							v-if="
-								configurationStore.configurationItem?.configuration
-							"
-							class="configurationJsonContainer">
-							<h3>{{ t('openregister', 'Configuration Data') }}</h3>
-							<div class="jsonViewer">
-								<pre>{{
-									JSON.stringify(
-										configurationStore.configurationItem
-											.configuration,
-										null,
-										2,
-									)
-								}}</pre>
-							</div>
-						</div>
-						<div v-else class="emptyTabContent">
-							<NcEmptyContent
-								:name="t('openregister', 'No configuration data')"
-								:description="
-									t(
-										'openregister',
-										'This configuration has no data defined.',
-									)
-								">
-								<template #icon>
-									<CogOutline :size="64" />
-								</template>
-							</NcEmptyContent>
+			<ViewDialogTabs v-model="activeTab" :tabs="tabs">
+				<!-- Configuration Tab -->
+				<div v-if="activeTab === 0" class="tabPanel">
+					<div
+						v-if="
+							configurationStore.configurationItem?.configuration
+						"
+						class="configurationJsonContainer">
+						<h3>{{ t('openregister', 'Configuration Data') }}</h3>
+						<div class="jsonViewer">
+							<pre>{{
+								JSON.stringify(
+									configurationStore.configurationItem
+										.configuration,
+									null,
+									2,
+								)
+							}}</pre>
 						</div>
 					</div>
-
-					<!-- Logs Tab -->
-					<div v-if="activeTab === 1" class="tabPanel">
-						<div class="emptyTabContent">
-							<NcEmptyContent
-								:name="t('openregister', 'No logs found')"
-								:description="
-									t(
-										'openregister',
-										'No logs are available for this configuration.',
-									)
-								">
-								<template #icon>
-									<PostOutline :size="64" />
-								</template>
-							</NcEmptyContent>
-						</div>
-					</div>
+					<TabEmptyContent
+						v-else
+						:name="t('openregister', 'No configuration data')"
+						:description="
+							t(
+								'openregister',
+								'This configuration has no data defined.',
+							)
+						">
+						<CogOutline :size="64" />
+					</TabEmptyContent>
 				</div>
-			</div>
+
+				<!-- Logs Tab -->
+				<div v-if="activeTab === 1" class="tabPanel">
+					<EmptyLogsTab subject="configuration" />
+				</div>
+			</ViewDialogTabs>
 		</div>
 
 		<template #actions>
@@ -146,38 +100,37 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				</template>
 				Delete Configuration
 			</NcActionButton>
-			<NcButton variant="primary" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Close
-			</NcButton>
+			<CloseCancelButton label="Close" variant="primary" @click="closeModal" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcActionButton, NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcActionButton, NcDialog } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import EmptyLogsTab from '../shared/EmptyLogsTab.vue'
+import TabEmptyContent from '../shared/TabEmptyContent.vue'
+import TimestampProperties from '../shared/TimestampProperties.vue'
+import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
 
 export default {
 	name: 'ViewConfiguration',
 	components: {
+		TimestampProperties,
+		ViewDialogTabs,
 		NcDialog,
-		NcButton,
 		NcActionButton,
-		NcEmptyContent,
-		Cancel,
+		CloseCancelButton,
+		TabEmptyContent,
+		EmptyLogsTab,
 		Pencil,
 		TrashCanOutline,
 		Download,
 		CogOutline,
-		PostOutline,
 	},
 
 	data() {
@@ -223,85 +176,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewConfigurationDialog {
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.configurationDetailsGrid {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+@include view-dialog-details('configuration', 'Configuration');
 
-.configurationMainInfo h2 {
-	margin: 0 0 0.5rem 0;
-	color: var(--color-main-text);
-}
-
-.configurationDescription {
-	color: var(--color-text-lighter);
-	margin: 0;
-}
-
-.configurationProperties {
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-	padding: 1rem;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.propertyItem {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.propertyItem strong {
-	min-width: 120px;
-	color: var(--color-text-lighter);
-}
-
-.tabContainer {
-	margin-top: 1rem;
-}
-
-.tabHeaders {
-	display: flex;
-	border-bottom: 1px solid var(--color-border);
-	margin-bottom: 1rem;
-}
-
-.tabHeader {
-	padding: 0.75rem 1rem;
-	background: none;
-	border: none;
-	cursor: pointer;
-	color: var(--color-text-lighter);
-	border-bottom: 2px solid transparent;
-	transition: all 0.2s ease;
-}
-
-.tabHeader:hover {
-	color: var(--color-main-text);
-	background-color: var(--color-background-hover);
-}
-
-.tabHeader.active {
-	color: var(--color-primary);
-	border-bottom-color: var(--color-primary);
-}
-
-.tabContent {
-	min-height: 200px;
-}
-
-.tabPanel {
-	padding: 1rem 0;
-}
+@include view-dialog-tab-panels;
 
 .configurationJsonContainer {
 	display: flex;
@@ -333,16 +213,5 @@ export default {
 	color: var(--color-main-text);
 }
 
-.emptyTabContent {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	min-height: 200px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.tabHeader {
-		transition: none;
-	}
-}
+@include empty-tab-content-rules;
 </style>

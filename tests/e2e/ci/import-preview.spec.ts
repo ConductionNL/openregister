@@ -100,7 +100,7 @@ test.describe('an import says what it would do before it writes', () => {
 
 	async function countObjects(): Promise<number> {
 		const res = await admin.get(
-			`${API}/objects/${registerId}/${schemaId}?limit=200`,
+			`${API}/objects/${registerId}/${schemaId}?_limit=200`,
 		)
 		expect(res.ok(), `object listing failed: ${await res.text()}`).toBeTruthy()
 
@@ -148,7 +148,7 @@ test.describe('an import says what it would do before it writes', () => {
 		previewId: string,
 	): Promise<Array<Record<string, unknown>>> {
 		const res = await admin.get(
-			`${API}/import-previews/${previewId}/rows?limit=500`,
+			`${API}/import-previews/${previewId}/rows?_limit=500`,
 		)
 		expect(res.ok(), `row listing failed: ${await res.text()}`).toBeTruthy()
 
@@ -275,7 +275,7 @@ test.describe('an import says what it would do before it writes', () => {
 		).toBe(before + 1)
 
 		const listed = await admin.get(
-			`${API}/objects/${registerId}/${schemaId}?limit=200`,
+			`${API}/objects/${registerId}/${schemaId}?_limit=200`,
 		)
 		const rows = (await listed.json()).results as Array<Record<string, unknown>>
 		for (const row of rows) {
@@ -366,6 +366,9 @@ test.describe('an import says what it would do before it writes', () => {
 			name: `e2e import preview mapping ${RUN}`,
 			sourceFormat: 'csv',
 			version: '1.0.0',
+			// Required by PackDefinitionValidator::validateIdStrategy(); the
+			// shipped ZGW pack declares the same.
+			idStrategy: { type: 'generate' },
 			fieldMappings: [
 				{ source: 'Burgerservicenummer', target: 'bsn' },
 				{ source: 'Achternaam', target: 'naam' },
@@ -407,6 +410,9 @@ test.describe('an import says what it would do before it writes', () => {
 			name: `e2e import preview stray mapping ${RUN}`,
 			sourceFormat: 'csv',
 			version: '1.0.0',
+			// Required by PackDefinitionValidator::validateIdStrategy(); the
+			// shipped ZGW pack declares the same.
+			idStrategy: { type: 'generate' },
 			fieldMappings: [{ source: 'BSN', target: 'burgerservicenummer' }],
 		}
 

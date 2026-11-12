@@ -41,7 +41,7 @@ exports[`configuration publish modal branches fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to load branches</p>
@@ -133,7 +133,7 @@ exports[`configuration publish modal branches fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to load branches</p>
@@ -217,7 +217,7 @@ exports[`configuration publish modal clear the repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -298,7 +298,7 @@ exports[`configuration publish modal clear the repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -376,7 +376,7 @@ exports[`configuration publish modal close 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -461,7 +461,7 @@ exports[`configuration publish modal close 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -551,7 +551,7 @@ exports[`configuration publish modal close while loading 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -632,7 +632,7 @@ exports[`configuration publish modal close while loading 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -750,7 +750,7 @@ exports[`configuration publish modal item published to an unknown repo 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -807,7 +807,7 @@ exports[`configuration publish modal item without slug or published repo 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -864,7 +864,7 @@ exports[`configuration publish modal no item 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <!--v-if-->
@@ -918,7 +918,7 @@ exports[`configuration publish modal opens and loads repositories 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1013,7 +1013,7 @@ exports[`configuration publish modal pick a repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1103,7 +1103,7 @@ exports[`configuration publish modal pick a repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1198,7 +1198,7 @@ exports[`configuration publish modal pick a repository object with main branch 1
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1288,7 +1288,7 @@ exports[`configuration publish modal pick a repository object with main branch 1
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1385,7 +1385,7 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1475,7 +1475,7 @@ exports[`configuration publish modal pick a repository without branches 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1562,12 +1562,13 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1657,12 +1658,13 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -1752,12 +1754,13 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Configuration published successfully! Commit: abcdef1</p>
   </div>
@@ -1849,12 +1852,13 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Configuration published successfully! Commit: abcdef1</p>
   </div>
@@ -1951,12 +1955,13 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2042,12 +2047,13 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2133,12 +2139,13 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>push rejected</p>
@@ -2226,12 +2233,13 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>push rejected</p>
@@ -2324,12 +2332,13 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2415,12 +2424,13 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2506,12 +2516,13 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to publish configuration</p>
@@ -2599,12 +2610,13 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to publish configuration</p>
@@ -2697,12 +2709,13 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2792,12 +2805,13 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -2887,12 +2901,13 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Configuration published successfully! Commit: abcdef1</p>
     <p></p>
@@ -2988,12 +3003,13 @@ Indexed in an hour.",
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Configuration published successfully! Commit: abcdef1</p>
     <p></p>
@@ -3089,7 +3105,7 @@ exports[`configuration publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3170,7 +3186,7 @@ exports[`configuration publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3251,7 +3267,7 @@ exports[`configuration publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3332,7 +3348,7 @@ exports[`configuration publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3400,7 +3416,7 @@ exports[`configuration publish modal repositories fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishConfiguration" title="Publish Configuration to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>no token</p>
@@ -3468,7 +3484,7 @@ exports[`register publish modal branches fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3532,7 +3548,7 @@ exports[`register publish modal branches fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to load branches</p>
@@ -3598,7 +3614,7 @@ exports[`register publish modal clear the repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3653,7 +3669,7 @@ exports[`register publish modal clear the repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3713,7 +3729,7 @@ exports[`register publish modal close 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3772,7 +3788,7 @@ exports[`register publish modal close 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3836,7 +3852,7 @@ exports[`register publish modal close while loading 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3891,7 +3907,7 @@ exports[`register publish modal close while loading 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -3983,7 +3999,7 @@ exports[`register publish modal item published to an unknown repo 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4043,7 +4059,7 @@ exports[`register publish modal item without slug or published repo 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4100,7 +4116,7 @@ exports[`register publish modal no item 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <!--v-if-->
@@ -4136,7 +4152,7 @@ exports[`register publish modal opens and loads repositories 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4205,7 +4221,7 @@ exports[`register publish modal pick a repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4269,7 +4285,7 @@ exports[`register publish modal pick a repository 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4346,7 +4362,7 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4410,7 +4426,7 @@ exports[`register publish modal pick a repository object with main branch 1`] = 
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4489,7 +4505,7 @@ exports[`register publish modal pick a repository without branches 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4553,7 +4569,7 @@ exports[`register publish modal pick a repository without branches 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4631,12 +4647,13 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4709,12 +4726,13 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -4795,12 +4813,13 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Register OAS published successfully! Commit: abcdef1</p>
   </div>
@@ -4883,12 +4902,13 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Register OAS published successfully! Commit: abcdef1</p>
   </div>
@@ -4976,12 +4996,13 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5050,12 +5071,13 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5132,12 +5154,13 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>push rejected</p>
@@ -5216,12 +5239,13 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>push rejected</p>
@@ -5305,12 +5329,13 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5379,12 +5404,13 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5461,12 +5487,13 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to publish register OAS</p>
@@ -5545,12 +5572,13 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>Failed to publish register OAS</p>
@@ -5634,12 +5662,13 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5712,12 +5741,13 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -5798,12 +5828,13 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Register OAS published successfully! Commit: abcdef1</p>
     <p></p>
@@ -5890,12 +5921,13 @@ Indexed in an hour.",
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <div data-nc="NcNoteCard" type="success">
     <p>Register OAS published successfully! Commit: abcdef1</p>
     <p></p>
@@ -5982,7 +6014,7 @@ exports[`register publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -6046,7 +6078,7 @@ exports[`register publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -6118,7 +6150,7 @@ exports[`register publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -6190,7 +6222,7 @@ exports[`register publish modal publish without a path 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <!--v-if-->
   <div class="publishForm">
@@ -6258,7 +6290,7 @@ exports[`register publish modal repositories fail 1`] = `
         },
       ],
     ],
-    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" canclose="true">
+    "html": "<div data-nc="NcDialog" name="publishRegister" title="Publish Register OAS to GitHub" size="large" noclose="false">
   <!--v-if-->
   <div data-nc="NcNoteCard" type="error">
     <p>no token</p>

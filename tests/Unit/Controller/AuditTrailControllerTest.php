@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCP\BackgroundJob\IJobList;
+use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\LogService;
@@ -57,7 +63,7 @@ class AuditTrailControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new AuditTrailController(
+		$this->controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -66,7 +72,7 @@ class AuditTrailControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
@@ -481,14 +487,6 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertArrayHasKey('error', $result->getData());
 	}
 
-	public function testDestroyMultipleException(): void {
-		$this->markTestSkipped(
-			'Production destroyMultiple() always returns 405 (audit trails '
-			. 'immutable); no exception path remains. Covered by '
-			. 'testDestroyMultipleAlwaysReturns405Immutable.'
-		);
-	}
-
 	public function testStatisticsSuccess(): void {
 		$counts = [
 			'total' => 7,
@@ -592,7 +590,7 @@ class AuditTrailControllerTest extends TestCase {
 			$groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -601,7 +599,7 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$groupMgr,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
@@ -761,12 +759,7 @@ class AuditTrailControllerTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setId(2);
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(
-				['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'],
-				null,
-				2,
-				0
-			)
+			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'], null), 2, 0))
 			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
 		$this->logService->expects($this->never())->method('countAllLogs');
 
@@ -846,11 +839,12 @@ class AuditTrailControllerTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(static fn (string $key, $default = null) => ($params[$key] ?? $default));
 
 		$lister = $this->createMock(ReadableAuditTrailLister::class);
+		$lister->method('query')->willReturnCallback(static fn (array $filters = [], ?string $search = null): AuditTrailQuery => new AuditTrailQuery($filters, $search));
 		$lister->method('page')->willReturnCallback(
-			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, array $filters = []) use (&$captured): array {
-				$captured = ['cursor' => $cursor, 'filters' => $filters];
+			static function (?string $userId, TrailPageOptions $options) use (&$captured): array {
+				$captured = ['cursor' => $options->cursor, 'filters' => $options->query->filters];
 
-				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
+				return ['results' => [], 'limit' => $options->limit, 'cursor' => $options->cursor, 'nextCursor' => null];
 			}
 		);
 
@@ -859,7 +853,7 @@ class AuditTrailControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($bob);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$request,
 			$this->logService,
@@ -868,7 +862,7 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$this->createMock(IGroupManager::class),
 			$lister,
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}

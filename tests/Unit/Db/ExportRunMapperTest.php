@@ -22,12 +22,14 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Walks findForActor() against a recording query builder.
  *
  * @covers \OCA\OpenRegister\Db\ExportRunMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ExportRunMapperTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -40,15 +42,19 @@ class ExportRunMapperTest extends TestCase {
 	public function testActorPeriodAndKnownKeysNarrowTheListAndUnknownKeysAreDropped(): void {
 		$mapper = new ExportRunMapper(db: $this->connectionWith());
 
-		$runs = $mapper->findForActor(
+		$runs = $mapper->listForActor(
 			actor: 'anna',
-			filters: [
-				'from' => new DateTime('2026-01-01'),
-				'until' => new DateTime('2026-02-01'),
-				'status' => 'ready',
-				'bogus' => 'x',
-				'source' => '',
-			]
+			query: new ListQuery(
+				limit: 50,
+				offset: 0,
+				filters: [
+					'from' => new DateTime('2026-01-01'),
+					'until' => new DateTime('2026-02-01'),
+					'status' => 'ready',
+					'bogus' => 'x',
+					'source' => '',
+				]
+			)
 		);
 
 		$this->assertSame([], $runs);

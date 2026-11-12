@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
@@ -40,6 +41,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
  */
 class AuditTrailImportJobQueriesTest extends TestCase {
 	/**
@@ -93,10 +95,7 @@ class AuditTrailImportJobQueriesTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			$this->createMock(LoggerInterface::class),
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}
 

@@ -1,0 +1,119 @@
+{
+    "none": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "hasLabels true": [
+        "a",
+        "d",
+        "e"
+    ],
+    "hasLabels false": [
+        "b",
+        "c"
+    ],
+    "noLabels true": [
+        "b",
+        "c"
+    ],
+    "noLabels false": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "noLabels truthy": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "labels": [
+        "a",
+        "e"
+    ],
+    "labels none match": [],
+    "labels empty": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "extension": [
+        "a",
+        "e"
+    ],
+    "extension empty": [
+        "d"
+    ],
+    "extensions": [
+        "b",
+        "c"
+    ],
+    "extensions empty": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "minSize": [
+        "a",
+        "b",
+        "c"
+    ],
+    "maxSize": [
+        "a",
+        "b",
+        "d",
+        "e"
+    ],
+    "size range": [
+        "a",
+        "b"
+    ],
+    "minSize zero": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "title": [
+        "a",
+        "e"
+    ],
+    "title empty": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "search": [
+        "e"
+    ],
+    "search zero string": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ],
+    "combined": [
+        "e"
+    ],
+    "null values ignored": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+    ]
+}

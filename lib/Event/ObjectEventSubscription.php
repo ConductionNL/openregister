@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Listener\ObjectEventProxyListener;
+use OCA\OpenRegister\Listener\ListenerClassesInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -173,14 +173,12 @@ final class ObjectEventSubscription {
 		?array $registers = null,
 		?array $schemas = null,
 	): void {
-		self::scopeToRequest();
-
-		if (isset(self::$proxied[$event]) === false) {
-			$context->registerEventListener($event, ObjectEventProxyListener::class);
+		if (self::needsProxy(event: $event) === true) {
+			$context->registerEventListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
 			self::$proxied[$event] = true;
 		}
 
-		self::record(event: $event, listener: $listener, registers: $registers, schemas: $schemas);
+		self::record(event: $event, entry: ['listener' => $listener, 'registers' => $registers, 'schemas' => $schemas]);
 
 	}//end register()
 
@@ -216,39 +214,45 @@ final class ObjectEventSubscription {
 		?array $registers = null,
 		?array $schemas = null,
 	): void {
-		self::scopeToRequest();
-
-		if (isset(self::$proxied[$event]) === false) {
-			$dispatcher->addServiceListener($event, ObjectEventProxyListener::class);
+		if (self::needsProxy(event: $event) === true) {
+			$dispatcher->addServiceListener($event, ListenerClassesInterface::OBJECT_EVENT_PROXY);
 			self::$proxied[$event] = true;
 		}
 
-		self::record(event: $event, listener: $listener, registers: $registers, schemas: $schemas);
+		self::record(event: $event, entry: ['listener' => $listener, 'registers' => $registers, 'schemas' => $schemas]);
 
 	}//end subscribe()
 
 	/**
-	 * Record one declaration in the registry.
+	 * Whether an event still needs its proxy listener in the current request.
+	 *
+	 * Scopes the registry to the current request first, so a new request
+	 * starts with no proxies recorded.
 	 *
 	 * @param string $event Event class name.
-	 * @param string $listener IEventListener class to invoke.
-	 * @param array<int,string>|null $registers Register slugs/ids, or null for all.
-	 * @param array<int,string>|null $schemas Schema slugs/ids, or null for all.
+	 *
+	 * @return bool True when no proxy is recorded for the event yet.
+	 */
+	private static function needsProxy(string $event): bool {
+		self::scopeToRequest();
+
+		return isset(self::$proxied[$event]) === false;
+	}//end needsProxy()
+
+	/**
+	 * Append a subscription with its filter lists normalised.
+	 *
+	 * @param string                                                                                   $event Event class name.
+	 * @param array{listener: string, registers: array<int,string>|null, schemas: array<int,string>|null} $entry Listener class and raw filters.
 	 *
 	 * @return void
 	 */
-	private static function record(
-		string $event,
-		string $listener,
-		?array $registers,
-		?array $schemas,
-	): void {
+	private static function record(string $event, array $entry): void {
 		self::$subscriptions[$event][] = [
-			'listener' => $listener,
-			'registers' => self::normalise(tokens: $registers),
-			'schemas' => self::normalise(tokens: $schemas),
+			'listener' => $entry['listener'],
+			'registers' => self::normalise(tokens: $entry['registers']),
+			'schemas' => self::normalise(tokens: $entry['schemas']),
 		];
-
 	}//end record()
 
 	/**
@@ -397,15 +401,7 @@ final class ObjectEventSubscription {
 		$tokens = [];
 		foreach (self::$subscriptions as $entries) {
 			foreach ($entries as $entry) {
-				if ($entry[$field] === null) {
-					continue;
-				}
-
-				foreach ($entry[$field] as $token) {
-					if (self::isIdToken(token: (string)$token) === true) {
-						continue;
-					}
-
+				foreach (self::nameTokens(tokens: $entry[$field]) as $token) {
 					$tokens[$token] = true;
 				}
 			}
@@ -413,6 +409,20 @@ final class ObjectEventSubscription {
 
 		return array_map('strval', array_keys($tokens));
 	}//end collect()
+
+	/**
+	 * The slug tokens of one normalised filter list: id tokens dropped.
+	 *
+	 * @param array<int,string>|null $tokens A normalised filter list, or null for all.
+	 *
+	 * @return array<int,string> The non-id tokens; empty for an unfiltered list.
+	 */
+	private static function nameTokens(?array $tokens): array {
+		return array_filter(
+			($tokens ?? []),
+			static fn (string $token): bool => self::isIdToken(token: $token) === false
+		);
+	}//end nameTokens()
 
 	/**
 	 * Normalise a declaration list, collapsing an empty list to null.
@@ -437,6 +447,22 @@ final class ObjectEventSubscription {
 			return null;
 		}
 
+		$clean = self::distinctTrimmed(tokens: $tokens);
+		if ($clean === []) {
+			return null;
+		}
+
+		return $clean;
+	}//end normalise()
+
+	/**
+	 * Trim tokens, drop empty ones and repeats, and keep them as strings.
+	 *
+	 * @param array<int,mixed> $tokens Raw declaration tokens.
+	 *
+	 * @return array<int,string> The distinct non-empty tokens, in first-seen order.
+	 */
+	private static function distinctTrimmed(array $tokens): array {
 		$clean = [];
 		foreach ($tokens as $token) {
 			$token = trim((string)$token);
@@ -445,10 +471,6 @@ final class ObjectEventSubscription {
 			}
 		}
 
-		if ($clean === []) {
-			return null;
-		}
-
 		return array_map('strval', array_keys($clean));
-	}//end normalise()
+	}//end distinctTrimmed()
 }//end class

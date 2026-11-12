@@ -38,12 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
 
@@ -120,13 +117,20 @@ class FlowEngine {
 	private const MAX_TRANSITIONS = 1000;
 
 	/**
+	 * Plans each hop and moves its token and items.
+	 *
+	 * @var FlowHopRouting
+	 */
+	private readonly FlowHopRouting $routing;
+
+
+
+
+	/**
 	 * Constructor.
 	 *
-	 * $router and $placement are added LAST, and defaulted: three unit tests
-	 * construct the engine positionally and one passes the oversight registry
-	 * third, so slotting a parameter in ahead of it would silently rebind that
-	 * argument — a test that still passes while checking nothing. Neither holds
-	 * state, so a locally-made one is indistinguishable from an injected one.
+	 * $services comes after $oversight, and is defaulted: unit tests construct
+	 * the engine positionally and one passes the oversight registry third.
 	 *
 	 * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
 	 * @param LoggerInterface $logger The logger.
@@ -134,29 +138,17 @@ class FlowEngine {
 	 *                                              engine stays unit-testable without a
 	 *                                              container; absent, nothing objects,
 	 *                                              exactly as an empty registry does.
-	 * @param FlowTokenRouter|null $router Decides which exit a token takes.
-	 * @param FlowItemPlacement|null $placement Decides which items sit on which place.
-	 * @param FlowRunContext|null $runContext The ambient attribution stack. Nullable
-	 *                                       so the engine stays unit-testable without
-	 *                                       a container; absent, writes are simply
-	 *                                       unattributed rather than mis-attributed.
-	 * @param FlowTaskMootness|null $mootness Told which places a routing decision
-	 *                                        cleared, so a user task waiting on one
-	 *                                        of them is terminated rather than
-	 *                                        orphaned. Nullable on the same terms;
-	 *                                        absent, run-terminality propagation is
-	 *                                        the only backstop.
+	 * @param FlowEngineServices $services The router, the item placement, the
+	 *                                     optional attribution stack and the
+	 *                                     optional mootness hook.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowOversightRegistry $oversight = null,
-		private readonly ?FlowTokenRouter $router = null,
-		private readonly ?FlowItemPlacement $placement = null,
-		private readonly ?FlowRunContext $runContext = null,
-		private readonly ?FlowTaskMootness $mootness = null,
+		private readonly FlowEngineServices $services=new FlowEngineServices(),
 	) {
-
+		$this->routing = new FlowHopRouting(router: $services->router, placement: $services->placement, mootness: $services->mootness);
 	}//end __construct()
 
 	/**
@@ -170,46 +162,26 @@ class FlowEngine {
 	 * dispatch counter instead desynchronises the moment a step is PINNED, since
 	 * a pin logs an entry without ever reaching the dispatcher.
 	 *
-	 * @param array   $context The run context, carrying the run uuid and base.
-	 * @param string  $name    The node about to run.
-	 * @param integer $index   This hop's index within the segment's log.
+	 * @param FlowWalkHop|FlowStreamHop $hop The hop about to run; its index is the length of the pass's log.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-engine/spec.md
 	 */
-	private function enterHop(array $context, string $name, int $index): void {
-		$this->runContext?->push(
-			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-			nodeId: $name,
-			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + $index)
+	private function enterHop(FlowWalkHop|FlowStreamHop $hop): void {
+		$context = $hop->pass->context;
+		$this->services->runContext?->push(
+			frame: new FlowRunFrame(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $hop->name(),
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			)
 		);
 	}//end enterHop()
 
 	/**
-	 * The token router, made on demand when none was injected.
-	 *
-	 * @return FlowTokenRouter The router.
-	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
-	 */
-	private function router(): FlowTokenRouter {
-		return ($this->router ?? new FlowTokenRouter());
-	}//end router()
-
-	/**
-	 * The item placement, made on demand when none was injected.
-	 *
-	 * @return FlowItemPlacement The placement.
-	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-	 */
-	private function placement(): FlowItemPlacement {
-		return ($this->placement ?? new FlowItemPlacement());
-	}//end placement()
-
-	/**
-	 * Ask the oversight checks whether the next hop may run.
+	 * Ask the oversight checks whether the next hop may run, and stop the run
+	 * when one refuses.
 	 *
 	 * Consulted BEFORE EACH HOP rather than once per run: a flow that suspends
 	 * on a wait node and resumes an hour later, or one walking a long graph,
@@ -227,44 +199,14 @@ class FlowEngine {
 	 * opinion and could not form one. "Nobody registered an opinion" is not
 	 * that case.
 	 *
-	 * @param array<string, mixed> $context The run context.
-	 * @param string $name The transition about to fire.
-	 * @param string $type The step type about to run.
+	 * Nothing switches this off: not a flow, not the run's context, not an
+	 * instance setting. It is what stops a running flow when the kill switch is
+	 * thrown, so an exemption would be a way past it.
 	 *
-	 * @return array{checkId: string, reason: string}|null The refusal, or null to proceed.
+	 * A refusal is raised as a FlowStop, so a veto ends the run the way an
+	 * author's Stop step does, with the refusing check's id on it.
 	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-	 */
-	private function oversightRefusal(array $context, string $name, string $type): ?array {
-		if (($context['oversight'] ?? true) === false) {
-			return null;
-		}
-
-		if ($this->oversight === null) {
-			return null;
-		}
-
-		return $this->oversight->firstRefusal(
-			context: array_merge(
-				$context,
-				['transition' => $name, 'nodeType' => $type]
-			)
-		);
-
-	}//end oversightRefusal()
-
-	/**
-	 * Raise a FlowStop when an oversight check refuses the next hop.
-	 *
-	 * Raising rather than returning is deliberate: `run()` already turns a
-	 * FlowStop into a terminal `stopped` result, so a veto reuses the semantics
-	 * an author's Stop step already has instead of adding a second, parallel way
-	 * for a run to end early. The refusing check's id is carried in the reason
-	 * because that is what an operator needs in order to know WHICH gate closed.
-	 *
-	 * @param array $context The run context.
-	 * @param string $name The transition about to fire.
-	 * @param string $type The node type about to run.
+	 * @param FlowWalkHop|FlowStreamHop $hop The hop about to run.
 	 *
 	 * @return void
 	 *
@@ -272,19 +214,26 @@ class FlowEngine {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
-	private function assertOversightAllows(array $context, string $name, string $type): void {
-		$refusal = $this->oversightRefusal(context: $context, name: $name, type: $type);
+	private function assertOversightAllows(FlowWalkHop|FlowStreamHop $hop): void {
+		if ($this->oversight === null) {
+			return;
+		}
+
+		$refusal = $this->oversight->firstRefusal(
+			context: array_merge(
+				$hop->pass->context,
+				['transition' => $hop->name(), 'nodeType' => $hop->stepType()]
+			)
+		);
 		if ($refusal === null) {
 			return;
 		}
 
-		// Both keys are guaranteed by firstRefusal()'s return type, so no
-		// defaulting here: a `??` would be dead code that reads like a guard.
+		// Both keys are guaranteed by firstRefusal()'s return type.
 		throw new FlowStop(
 			reason: $refusal['reason'],
 			checkId: $refusal['checkId']
 		);
-
 	}//end assertOversightAllows()
 
 	/**
@@ -303,444 +252,259 @@ class FlowEngine {
 	 *
 	 * `$startAt` runs the flow from a chosen node instead of its start — n8n's
 	 * "run from here". The seed items land on that node, and the steps before it
-	 * do not run; an author pins their output ({@see self::pinnedItems()}) and
+	 * do not run; an author pins their output ({@see FlowItemPlacement::pinnedItems()}) and
 	 * re-runs only the part being worked on. It is the initial place overridden,
 	 * so a resume — whose marking is already mid-graph and comes from the store —
 	 * is unaffected.
 	 *
-	 * @param array $flow The flow document.
-	 * @param MarkingStoreInterface $store Where the marking lives (an OR object, in production).
-	 * @param object $subject The object the run is about; holds the marking.
-	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
-	 * @param array $context Run-level metadata handed to every step.
-	 * @param array|null $items Seed items; defaults to one item from the subject.
-	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
-	 * @param FlowStreamWalk|null $streams The per-run stream collaborator: claims before each
-	 *                                     firing, a locked delta commit after it, stream-scoped
-	 *                                     suspension. Null walks a single in-memory stream
-	 *                                     exactly as before — a flow with one stream IS the run.
+	 * The flow, the marking store, the subject, the dispatcher, the run-level
+	 * context and the per-run stream collaborator travel together in
+	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
+	 * in-memory stream exactly as before — a flow with one stream IS the run.
+	 *
+	 * @param FlowRunStart       $start  The flow, its collaborators, the context and the streams.
+	 * @param FlowRunOrigin|null $origin Seed items (default: one item from the subject) and the node to start
+	 *                                   from (default: the flow's own start).
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) 226 against a threshold of 200, and the
-	 * 26 came from adding a `finally` to the hop. That `finally` is the attribution
-	 * safety property, not a convenience: every other exit from a hop is a `return`
-	 * inside a catch — a stop, a suspension, a terminally-failed step — so a pop on the
-	 * success path would leave the frame standing and attribute LATER writes, in a LATER
-	 * run advanced by the same worker, to a run that had already finished. That failure
-	 * is silent and produces well-formed rows. Restructuring the walk to win the metric
-	 * would trade a real correctness guarantee for a number; the branches themselves are
-	 * each one clearly-labelled outcome of a hop.
-	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(
-		array $flow,
-		MarkingStoreInterface $store,
-		object $subject,
-		FlowStepDispatcher $dispatcher,
-		array $context = [],
-		?array $items = null,
-		?string $startAt = null,
-		?FlowStreamWalk $streams = null,
-	): array {
-		$items = ($items ?? FlowItems::fromSubject(subject: $subject));
-		$flow = $this->withStartNode(flow: $flow, startAt: $startAt);
+	public function run(FlowRunStart $start, ?FlowRunOrigin $origin=null): array {
+		$begun = $start->startingAt(node: $origin?->startAt);
+		$begun->items = ($origin->items ?? FlowItems::fromSubject(subject: $start->subject));
 
-		try {
-			$definition = $this->builder->build(flow: $flow);
-		} catch (InvalidArgumentException $e) {
-			// A malformed document is the author's error and must be visible.
-			// Unlike x-openregister-flows, this engine does not swallow.
-			$this->logger->warning(
-				message: '[FlowEngine] Refusing to run a malformed flow',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			return [
-				'status' => self::STATUS_FAILED,
-				'log' => [],
-				'context' => $context,
-				'items' => $items,
-				'error' => $e->getMessage(),
-			];
-		}//end try
-
-		$workflow = new Workflow(definition: $definition, markingStore: $store, name: (string)($flow['id'] ?? 'flow'));
-		$log = [];
-		$fired = 0;
-
-		// Per-place item buffers. Items belong to the PLACES a token sits on,
-		// not to the run globally ({@see self::seedPlaceItems()}). With a stream
-		// walk the buffers persisted by the last commit win, so each branch
-		// resumes with the items ITS branch produced.
-		$stored = null;
-		if ($streams !== null) {
-			$stored = $streams->run()->getPlaceItems();
-		}
-
-		$placeItems = $this->placement()->seedPlaceItems(
-			workflow: $workflow,
-			subject: $subject,
-			definition: $definition,
-			items: $items,
-			stored: $stored
-		);
-
-		if ($streams !== null) {
-			$pass = new FlowStreamPass(
-				flow: $flow,
-				workflow: $workflow,
-				store: $store,
-				subject: $subject,
-				dispatcher: $dispatcher,
-				context: $context,
-				streams: $streams
-			);
-			$pass->items = $items;
-			$pass->placeItems = $placeItems;
-			return $this->walkStreams(pass: $pass);
-		}
-
-		while (true) {
-			$enabled = $workflow->getEnabledTransitions(subject: $subject);
-			if (empty($enabled) === true) {
-				// No transition is enabled: either the run reached a final marking,
-				// or a join is still waiting on a branch that never arrives. Both
-				// are "as far as this graph goes".
-				return [
-					'status' => self::STATUS_COMPLETED,
-					'log' => $log,
-					'context' => $context,
-					'items' => $items,
-				];
-			}
-
-			$fired++;
-			if ($fired > self::MAX_TRANSITIONS) {
-				$this->logger->warning(
-					message: '[FlowEngine] Flow exceeded the transition ceiling; aborting',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => ($flow['id'] ?? null), 'ceiling' => self::MAX_TRANSITIONS]
-				);
-				return [
-					'status' => self::STATUS_FAILED,
-					'log' => $log,
-					'context' => $context,
-					'items' => $items,
-					'error' => sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS),
-				];
-			}
-
-			// Conditional branching (If/Switch). Among the enabled transitions,
-			// fire the first whose edge condition holds; an edge with no
-			// condition is the default/else and only wins when no conditioned
-			// sibling matches. This is what makes a multi-output node a switch,
-			// with no special node type — routing is a property of the edge.
-			$transition = $this->selectTransition(
-				enabled: $enabled,
-				flow: $flow,
-				placeItems: $placeItems,
-				context: $context
-			);
-
-			if ($transition === null) {
-				// Every active choice point is gated by a condition that did
-				// not hold and has no default edge: a Switch with no matching
-				// case and no fallback. The run ends here rather than spinning
-				// on the same un-fireable transitions until the ceiling.
-				return [
-					'status' => self::STATUS_COMPLETED,
-					'log' => $log,
-					'context' => $context,
-					'items' => $items,
-				];
-			}
-
-			$name = $transition->getName();
-			$step = $this->router()->stepFor(flow: $flow, transitionName: $name);
-
-			// A step reads the items on its input place(s). For a join — several
-			// incoming edges converging on one node — that is the concatenation
-			// of every branch's items, in the froms' declared order, which is
-			// exactly what a Merge node then refines. The Petri net already
-			// holds the join until every input place is marked, so wait-for-both
-			// is the default and needs no code here.
-			$itemsIn = $this->placement()->itemsForTransition(transition: $transition, placeItems: $placeItems);
-			$items = $itemsIn;
-
-			// The step's catalogue id, carried onto every log entry so the run
-			// history can be queried BY NODE TYPE ("which node type fails")
-			// rather than only by run.
-			$stepType = (string)($step['type'] ?? '');
-
-			$startedAt = microtime(true);
-
-			// Pinned output (n8n's "pin data"): when a run supplies a pin for
-			// this step, its stored output is used verbatim and the step is NOT
-			// executed — the side effect is skipped. This is what makes iterating
-			// on a flow cheap: pin the node that hits a real API, then re-run the
-			// downstream steps as often as needed without calling it again. A pin
-			// short-circuits before dispatch, so it also can neither stop,
-			// suspend nor fail — a pinned step always "just produces".
-			$pinned = $this->pinnedItems(flow: $flow, context: $context, transitionName: $name);
-			if ($pinned !== null) {
-				$items = $pinned;
-				$log[] = [
-					'transition' => $name,
-					'startedAt' => $this->moment(microtime: $startedAt),
-					'type' => $stepType,
-					'status' => 'pinned',
-					'itemsIn' => count($itemsIn),
-					'itemsOut' => count($items),
-					'durationMs' => 0,
-				];
-
-				// An exit-id tag becomes its place BEFORE routing, so the
-				// exit choice and the per-place delivery read the same name.
-				$items = $this->router()->resolveOutputTags(flow: $flow, transition: $transition, items: $items);
-				$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
-				$placeItems = $this->placement()->advanceItems(
-					transition: $transition,
-					placeItems: $placeItems,
-					items: $items,
-					taken: $taken
-				);
-				$workflow->apply(subject: $subject, transitionName: $name);
-				$this->pruneUntakenExits(
-					workflow: $workflow,
-					subject: $subject,
-					transition: $transition,
-					taken: $taken,
-					context: $context
-				);
-				continue;
-			}//end if
-
-			// ATTRIBUTION, around the hop. Everything written from here until the
-			// matching pop is filed under this run and node — including writes
-			// made by code that has no idea a flow is running, which is the
-			// whole point (a node cannot report what it did not know it did).
-			//
-			// The step number is `base + count($log)`, and that is not an
-			// approximation: `recordSteps()` numbers this segment's entries from
-			// the same base in the same order, so an attributed audit row and
-			// its `FlowRunStep` row carry the SAME sequence. Deriving it from a
-			// dispatch counter instead would desynchronise the moment a step is
-			// PINNED — a pin logs an entry without ever reaching the dispatcher.
-			//
-			// Pushed here rather than around the pinned branch above because a
-			// pinned step is not executed at all: it produces no writes, so it
-			// needs no frame, and skipping it costs nothing since the index is
-			// read from the log rather than counted per push.
-			$this->enterHop(context: $context, name: $name, index: count($log));
-
-			try {
-				// OVERSIGHT, before the hop. A veto is raised as a FlowStop so it
-				// travels the same path as an author's Stop step: the run ENDS.
-				// It never skips the hop and carries on, because a skipped step
-				// inside a completed run is indistinguishable from one that ran
-				// and did nothing — the exact failure this change removes.
-				$this->assertOversightAllows(context: $context, name: $name, type: $stepType);
-
-				$produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
-				$items = FlowItems::normalise(value: $produced);
-				$entry = [
-					'transition' => $name,
-					'startedAt' => $this->moment(microtime: $startedAt),
-					'type' => $stepType,
-					'status' => 'completed',
-					'itemsIn' => count($itemsIn),
-					'itemsOut' => count($items),
-					// What the step RECEIVED and RETURNED, not just how many.
-					// A count answers "did it work"; the question actually
-					// asked of a run that completed and produced the wrong
-					// answer is "what did it get, and what did it do with it",
-					// and no count can answer that.
-					'input' => $this->sampleItems(items: $itemsIn),
-					'output' => $this->sampleItems(items: $items),
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				];
-
-				// What the step LOGGED, beyond its items: a side-effect node's
-				// own report (a send node's per-recipient outcomes, say). The
-				// report handle travels in the context and is drained per hop,
-				// so a node's detail lands on ITS entry and no other.
-				$entry = $this->withStepReport(entry: $entry, context: $context);
-
-				$log[] = $entry;
-			} catch (FlowStop $stop) {
-				// A deliberate end, requested by a Stop step. Caught before the
-				// generic Throwable so it is never treated as a step failure and
-				// never subject to an onError policy — the author asked the run
-				// to end, and it ends with their message and their outcome.
-				$log[] = [
-					'transition' => $name,
-					'startedAt' => $this->moment(microtime: $startedAt),
-					'type' => $stepType,
-					'status' => 'stopped',
-					'reason' => $stop->getMessage(),
-					// Null for an author's Stop step; set when an oversight
-					// gate raised the stop, so the history records WHICH gate.
-					'checkId' => $stop->checkId(),
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				];
-
-				$stopStatus = self::STATUS_STOPPED;
-				$stopError = null;
-				if ($stop->isError() === true) {
-					$stopStatus = self::STATUS_FAILED;
-					$stopError = $stop->getMessage();
-				}
-
-				return [
-					'status' => $stopStatus,
-					'log' => $log,
-					'context' => $context,
-					'items' => $items,
-					'error' => $stopError,
-				];
-			} catch (FlowSuspension $suspension) {
-				// A pause, not a failure. Caught before Throwable so the step's
-				// onError policy never sees it — `continue` would otherwise skip
-				// straight past a Wait, which is the opposite of waiting.
-				//
-				// The marking is NOT advanced: the run must resume ON this
-				// transition, re-entering the step that asked to wait.
-				$log[] = [
-					'transition' => $name,
-					'startedAt' => $this->moment(microtime: $startedAt),
-					'status' => 'suspended',
-					'reason' => $suspension->getMessage(),
-				];
-
-				return [
-					'status' => self::STATUS_SUSPENDED,
-					'log' => $log,
-					'context' => $context,
-					'items' => $itemsIn,
-					'resumeAt' => $suspension->getResumeAt(),
-				];
-			} catch (Throwable $e) {
-				$entry = [
-					'transition' => $name,
-					'startedAt' => $this->moment(microtime: $startedAt),
-					'type' => $stepType,
-					'status' => 'failed',
-					'error' => $e->getMessage(),
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				];
-
-				// A failing step's report is worth MORE than a completing one's:
-				// a send node that delivered to two recipients and failed on the
-				// third records exactly which sends went out before the throw.
-				$entry = $this->withStepReport(entry: $entry, context: $context);
-
-				$log[] = $entry;
-				$outcome = $this->outcomeForFailedStep(
-					step: $step,
-					error: $e,
-					name: $name,
-					flow: $flow,
-					log: $log,
-					context: $context,
-					items: $items
-				);
-
-				// A terminal outcome ends the run; null means the step's policy
-				// is `continue`, so the walk goes on.
-				if ($outcome !== null) {
-					return $outcome;
-				}
-			} finally {
-				// 🔴 UNCONDITIONAL, and structurally so. Every other exit from
-				// this hop is a `return` inside a catch — a stop, a suspension,
-				// a failed step whose policy is terminal. A pop placed on the
-				// success path would leave the frame standing on all three, and
-				// the next write in the process — a LATER run advanced by the
-				// same worker — would be filed under a run that had already
-				// finished. Nothing about that row looks wrong, which is why it
-				// has to be impossible rather than merely remembered.
-				$this->runContext?->pop();
-			}//end try
-
-			// A routing step tags items with the exit id its rule named;
-			// resolve those to the exit's PLACE first, so the choice below and
-			// the per-place delivery in advanceItems() read the same name —
-			// unresolved, a routed branch fired with zero items.
-			$items = $this->router()->resolveOutputTags(flow: $flow, transition: $transition, items: $items);
-
-			// Which single exit this firing takes. A token is unique and
-			// exclusive, so a branching node hands it to exactly one successor.
-			$taken = $this->router()->takenExits(flow: $flow, transition: $transition, items: $items, context: $context);
-
-			// Move the items in lock-step with the token: onto the output
-			// places, off the consumed inputs ({@see self::advanceItems()}).
-			$placeItems = $this->placement()->advanceItems(
-				transition: $transition,
-				placeItems: $placeItems,
-				items: $items,
-				taken: $taken
-			);
-
-			// The marking advances even when a `continue` step failed: the author
-			// asked the run to proceed, and leaving the token behind would spin
-			// this transition forever.
-			$workflow->apply(subject: $subject, transitionName: $name);
-
-			// Symfony's workflow deposits a token on EVERY output place, which
-			// is right for a parallel split and wrong for a choice. Withdraw
-			// the ones the taken exit did not claim, or every branch runs.
-			$this->pruneUntakenExits(
-				workflow: $workflow,
-				subject: $subject,
-				transition: $transition,
-				taken: $taken,
-				context: $context
-			);
-		}//end while
-
+		return $this->startRun(start: $begun);
 	}//end run()
 
 	/**
-	 * Withdraw the tokens a choice did not take, and say so.
+	 * Build the workflow of a run and walk it.
 	 *
-	 * The withdrawal itself is the router's. What is added here is the report:
-	 * a place cleared by a routing decision may be one a user-task node had
-	 * already asked somebody from, and that node will now never fire from it,
-	 * so its task is moot and must not stay in an inbox as actionable work.
-	 * The Petri net raises no event for this; the engine is the only thing
-	 * that sees the moment, so the engine reports it (design D-7).
+	 * @param FlowRunStart $start What the run starts from.
 	 *
-	 * @param Workflow $workflow The running workflow.
-	 * @param object $subject The marking holder.
-	 * @param object $transition The transition that just fired.
-	 * @param array<string> $taken The output places the exit claimed.
-	 * @param array<string, mixed> $context The run context, carrying the resume state.
+	 * @return array The run result.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function startRun(FlowRunStart $start): array {
+		try {
+			$definition = $this->builder->build(flow: $start->flow);
+		} catch (InvalidArgumentException $e) {
+			return $this->refuseMalformedFlow(start: $start, error: $e);
+		}
+
+		$workflow = new Workflow(definition: $definition, markingStore: $start->store, name: (string)($start->flow['id'] ?? 'flow'));
+		$start->placeItems = $this->routing->seed(start: $start, workflow: $workflow);
+
+		if ($start->streams !== null) {
+			return $this->walkStreams(pass: $start->streamPass(workflow: $workflow, streams: $start->streams));
+		}
+
+		return $this->walkSingle(pass: $start->walkPass(workflow: $workflow));
+	}//end startRun()
+
+	/**
+	 * A malformed document is the author's error and must be visible.
+	 *
+	 * Unlike x-openregister-flows, this engine does not swallow.
+	 *
+	 * @param FlowRunStart             $start What the run starts from.
+	 * @param InvalidArgumentException $error What the builder refused.
+	 *
+	 * @return array The failed run result.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function refuseMalformedFlow(FlowRunStart $start, InvalidArgumentException $error): array {
+		$this->logger->warning(
+			message: '[FlowEngine] Refusing to run a malformed flow',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()]
+		);
+
+		return $start->refused(error: $error->getMessage());
+	}//end refuseMalformedFlow()
+
+	/**
+	 * Walk a single in-memory stream: fire enabled transitions until none
+	 * remains or a hop ends the run.
+	 *
+	 * @param FlowWalkPass $pass The pass.
+	 *
+	 * @return array The run result.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function walkSingle(FlowWalkPass $pass): array {
+		while (true) {
+			$hop = $this->nextSingleHop(pass: $pass);
+			if (is_array($hop) === true) {
+				return $hop;
+			}
+
+			$result = $this->runSingleHop(hop: $hop);
+			if ($result !== null) {
+				return $result;
+			}
+		}
+	}//end walkSingle()
+
+	/**
+	 * Pick the next transition to fire, or end the run.
+	 *
+	 * With no enabled transition the run reached a final marking, or a join
+	 * waits on a branch that never arrives: both complete the run. Where
+	 * several are enabled the first whose edge condition holds wins, and an
+	 * edge with no condition only wins when no conditioned sibling matches.
+	 * When none can fire (a Switch with no matching case and no default) the
+	 * run completes rather than spinning until the ceiling.
+	 *
+	 * @param FlowWalkPass $pass The pass.
+	 *
+	 * @return FlowWalkHop|array The hop to fire, or the run result.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function nextSingleHop(FlowWalkPass $pass): FlowWalkHop|array {
+		$enabled = $pass->workflow->getEnabledTransitions(subject: $pass->subject);
+		if (empty($enabled) === true) {
+			return $pass->result(status: self::STATUS_COMPLETED);
+		}
+
+		$pass->fired++;
+		if ($pass->fired > self::MAX_TRANSITIONS) {
+			return $pass->result(status: self::STATUS_FAILED) + ['error' => $this->ceilingReached(pass: $pass)];
+		}
+
+		$transition = $this->selectTransition(enabled: $enabled, pass: $pass);
+		if ($transition === null) {
+			return $pass->result(status: self::STATUS_COMPLETED);
+		}
+
+		return $this->singleHop(pass: $pass, transition: $transition);
+	}//end nextSingleHop()
+
+	/**
+	 * The hop of a chosen transition; a join reads every branch's items, in the froms' declared order.
+	 *
+	 * @param FlowWalkPass $pass       The pass.
+	 * @param object       $transition The chosen transition.
+	 *
+	 * @return FlowWalkHop The hop to fire.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function singleHop(FlowWalkPass $pass, object $transition): FlowWalkHop {
+		$plan = $this->routing->plan(transition: $transition, pass: $pass);
+		$pass->items = $plan->itemsIn;
+
+		return new FlowWalkHop(pass: $pass, plan: $plan);
+	}//end singleHop()
+
+	/**
+	 * Report that a run reached the transition ceiling.
+	 *
+	 * @param FlowWalkPass|FlowStreamPass $pass The pass.
+	 *
+	 * @return string The run's error.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function ceilingReached(FlowWalkPass|FlowStreamPass $pass): string {
+		$this->logger->warning(
+			message: '[FlowEngine] Flow exceeded the transition ceiling; aborting',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => ($pass->flow['id'] ?? null), 'ceiling' => self::MAX_TRANSITIONS]
+		);
+
+		return sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS);
+	}//end ceilingReached()
+
+	/**
+	 * Fire one hop of the single-stream walk.
+	 *
+	 * A pinned step's stored output is used verbatim and the step is not
+	 * dispatched, so it can neither stop, suspend nor fail. Otherwise the hop
+	 * is attributed to this run and node, oversight may veto it as a stop, and
+	 * the step is dispatched. The attribution frame is popped in `finally`
+	 * because every other exit from the hop is a return: a frame left standing
+	 * would file a later run's writes under this one.
+	 *
+	 * @param FlowWalkHop $hop The hop.
+	 *
+	 * @return array|null The run result when the hop ends the run, null to walk on.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function runSingleHop(FlowWalkHop $hop): array|null {
+		$pass = $hop->pass;
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
+		if ($pinned !== null) {
+			$pass->items = $pinned;
+			$pass->log[] = $hop->pinnedEntry();
+			$this->advanceSingle(hop: $hop);
+			return null;
+		}
+
+		$outcome = $this->dispatchSingleHop(hop: $hop);
+		if ($outcome !== null) {
+			return $outcome;
+		}
+
+		$this->advanceSingle(hop: $hop);
+		return null;
+	}//end runSingleHop()
+
+	/**
+	 * Attribute, check oversight for and dispatch one unpinned hop.
+	 *
+	 * @param FlowWalkHop $hop The hop.
+	 *
+	 * @return array|null The run result when the hop ends the run, null when the walk advances.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function dispatchSingleHop(FlowWalkHop $hop): array|null {
+		$pass = $hop->pass;
+		$this->enterHop(hop: $hop);
+
+		try {
+			$this->assertOversightAllows(hop: $hop);
+
+			$produced = $pass->dispatcher->dispatch(step: $hop->step, items: $hop->itemsIn, context: $pass->context);
+			$pass->items = FlowItems::normalise(value: $produced);
+			$pass->log[] = $hop->completedEntry();
+		} catch (FlowStop $stop) {
+			return $hop->stopped(stop: $stop);
+		} catch (FlowSuspension $suspension) {
+			return $hop->suspended(suspension: $suspension);
+		} catch (Throwable $e) {
+			$pass->log[] = $hop->failedEntry(error: $e);
+			return $this->outcomeForFailedStep(hop: $hop, error: $e);
+		} finally {
+			$this->services->runContext?->pop();
+		}//end try
+
+		return null;
+	}//end dispatchSingleHop()
+
+	/**
+	 * Move the token and the items past a fired hop.
+	 *
+	 * Exit-id tags resolve to their places first, so the exit choice and the
+	 * per-place delivery read the same name. The marking advances even after a
+	 * failed `continue` step, and the tokens Symfony deposited on exits the
+	 * choice did not take are withdrawn.
+	 *
+	 * @param FlowWalkHop $hop The fired hop.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	private function pruneUntakenExits(Workflow $workflow, object $subject, object $transition, array $taken, array $context): void {
-		$tos = array_map(static fn ($t): string => (string)$t, $transition->getTos());
-		$pruned = array_values(array_diff($tos, $taken));
-
-		$this->router()->keepOnlyTakenExits(
-			workflow: $workflow,
-			subject: $subject,
-			transition: $transition,
-			taken: $taken
-		);
-
-		if ($pruned === []) {
-			return;
-		}
-
-		$this->mootness?->placesPruned(
-			context: $context,
-			places: $pruned,
-			byTransition: $transition->getName()
-		);
-	}//end pruneUntakenExits()
+	private function advanceSingle(FlowWalkHop $hop): void {
+		$advance = $this->routing->advance(hop: $hop);
+		$hop->pass->items = $advance->items;
+		$hop->pass->placeItems = $advance->placeItems;
+	}//end advanceSingle()
 
 	/**
 	 * The per-stream walk: round-robin over advanceable streams, a claim before
@@ -769,25 +533,40 @@ class FlowEngine {
 				break;
 			}
 
-			// THE CEILING counts the RUN, not the pass: the durable firing
-			// count survives suspension and covers every stream together.
-			if ($streams->firings() >= self::MAX_TRANSITIONS) {
-				return $this->streamCeilingReached(pass: $pass);
-			}
-
-			$hop = $this->claimStreamHop(pass: $pass, streamId: $streamId);
-			if ($hop === null) {
-				continue;
-			}
-
-			$outcome = $this->runStreamHop(hop: $hop);
+			$outcome = $this->advanceStream(pass: $pass, streamId: $streamId);
 			if ($outcome !== null) {
 				return $outcome;
 			}
-		}//end while
+		}
 
-		return $this->finishStreamPass(pass: $pass);
+		return $pass->finish();
 	}//end walkStreams()
+
+	/**
+	 * Take one firing on a stream, when it has one and the ceiling allows it.
+	 *
+	 * THE CEILING counts the RUN, not the pass: the durable firing count
+	 * survives suspension and covers every stream together.
+	 *
+	 * @param FlowStreamPass $pass     The pass.
+	 * @param string         $streamId The stream to advance.
+	 *
+	 * @return array|null The terminal run result, or null when the walk goes on.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	private function advanceStream(FlowStreamPass $pass, string $streamId): ?array {
+		if ($pass->streams->firings() >= self::MAX_TRANSITIONS) {
+			return $this->streamCeilingReached(pass: $pass);
+		}
+
+		$hop = $this->claimStreamHop(pass: $pass, streamId: $streamId);
+		if ($hop === null) {
+			return null;
+		}
+
+		return $this->runStreamHop(hop: $hop);
+	}//end advanceStream()
 
 	/**
 	 * End the run as failed because it reached the transition ceiling.
@@ -799,11 +578,7 @@ class FlowEngine {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	private function streamCeilingReached(FlowStreamPass $pass): array {
-		$this->logger->warning(
-			message: '[FlowEngine] Flow exceeded the transition ceiling; aborting',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => ($pass->flow['id'] ?? null), 'ceiling' => self::MAX_TRANSITIONS]
-		);
-		$error = sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS);
+		$error = $this->ceilingReached(pass: $pass);
 		$pass->streams->finalize(enabled: false, forcedTerminal: self::STATUS_FAILED);
 
 		return $pass->result(status: self::STATUS_FAILED) + ['error' => $error];
@@ -826,35 +601,19 @@ class FlowEngine {
 	private function claimStreamHop(FlowStreamPass $pass, string $streamId): ?FlowStreamHop {
 		// This stream's candidates, narrowed by edge conditions exactly as
 		// the single-stream walk narrows them.
-		$candidates = $pass->candidatesFor(streamId: $streamId);
-		$transition = null;
-		if ($candidates !== []) {
-			$transition = $this->selectTransition(enabled: $candidates, flow: $pass->flow, placeItems: $pass->placeItems, context: $pass->context);
-		}
-
+		$transition = $this->selectTransition(enabled: $pass->candidatesFor(streamId: $streamId), pass: $pass);
 		if ($transition === null) {
 			$pass->streams->exhaust(id: $streamId);
 			return null;
 		}
 
-		$name = $transition->getName();
-		$froms = array_map('strval', $transition->getFroms());
-		$tos = array_map('strval', $transition->getTos());
-
 		// THE CLAIM, on every place this firing touches, before anything runs.
-		$claimed = $pass->streams->claim(id: $streamId, transition: $name, places: array_merge($froms, $tos));
+		$claimed = $pass->streams->claim(id: $streamId, transition: $transition);
 		if ($claimed === null) {
 			return null;
 		}
 
-		return new FlowStreamHop(
-			pass: $pass,
-			transition: $transition,
-			step: $this->router()->stepFor(flow: $pass->flow, transitionName: $name),
-			itemsIn: $this->placement()->itemsForTransition(transition: $transition, placeItems: $pass->placeItems),
-			streamId: $streamId,
-			claimed: $claimed
-		);
+		return new FlowStreamHop(pass: $pass, plan: $this->routing->plan(transition: $transition, pass: $pass), streamId: $streamId, claimed: $claimed);
 	}//end claimStreamHop()
 
 	/**
@@ -870,21 +629,13 @@ class FlowEngine {
 		$pass = $hop->pass;
 		$pass->items = $hop->itemsIn;
 
-		$pinned = $this->pinnedItems(flow: $pass->flow, context: $pass->context, transitionName: $hop->name());
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned === null) {
 			return $this->dispatchOnStream(hop: $hop);
 		}
 
 		$pass->items = $pinned;
-		$entry = [
-			'transition' => $hop->name(),
-			'startedAt' => $this->moment(microtime: $hop->startedAt),
-			'type' => $hop->stepType(),
-			'status' => 'pinned',
-			'itemsIn' => count($hop->itemsIn),
-			'itemsOut' => count($pass->items),
-			'durationMs' => 0,
-		];
+		$entry = $hop->pinnedEntry();
 		$this->fireOnStream(hop: $hop, entry: $entry);
 
 		return null;
@@ -904,163 +655,31 @@ class FlowEngine {
 	 */
 	private function dispatchOnStream(FlowStreamHop $hop): ?array {
 		$pass = $hop->pass;
-		$this->enterHop(context: $pass->context, name: $hop->name(), index: count($pass->log));
+		$this->enterHop(hop: $hop);
 
 		try {
 			// OVERSIGHT, per firing, inside the claim — never hoisted per
 			// pass, never cached. A refusal ends the RUN, not the branch.
-			$this->assertOversightAllows(context: $pass->context, name: $hop->name(), type: $hop->stepType());
+			$this->assertOversightAllows(hop: $hop);
 
 			$produced = $pass->dispatcher->dispatch(step: $hop->step, items: $hop->itemsIn, context: $pass->context);
 			$pass->items = FlowItems::normalise(value: $produced);
-			$entry = $this->completedStreamEntry(hop: $hop);
+			$entry = $hop->completedEntry();
 		} catch (FlowStop $stop) {
-			return $this->stopStreams(hop: $hop, stop: $stop);
+			return $hop->stopped(stop: $stop);
 		} catch (FlowSuspension $suspension) {
-			$this->parkStream(hop: $hop, suspension: $suspension);
+			$hop->parked(suspension: $suspension);
 			return null;
 		} catch (Throwable $e) {
 			return $this->failOnStream(hop: $hop, error: $e);
 		} finally {
-			$this->runContext?->pop();
+			$this->services->runContext?->pop();
 		}//end try
 
 		$this->fireOnStream(hop: $hop, entry: $entry);
 
 		return null;
 	}//end dispatchOnStream()
-
-	/**
-	 * The log entry of a hop whose step completed.
-	 *
-	 * @param FlowStreamHop $hop The hop; its pass holds the items the step produced.
-	 *
-	 * @return array<string, mixed> The log entry.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
-	 */
-	private function completedStreamEntry(FlowStreamHop $hop): array {
-		$items = $hop->pass->items;
-		$entry = [
-			'transition' => $hop->name(),
-			'startedAt' => $this->moment(microtime: $hop->startedAt),
-			'type' => $hop->stepType(),
-			'status' => 'completed',
-			'itemsIn' => count($hop->itemsIn),
-			'itemsOut' => count($items),
-			'input' => $this->sampleItems(items: $hop->itemsIn),
-			'output' => $this->sampleItems(items: $items),
-			'durationMs' => (int)round((microtime(true) - $hop->startedAt) * 1000),
-		];
-
-		return $this->withStepReport(entry: $entry, context: $hop->pass->context);
-	}//end completedStreamEntry()
-
-	/**
-	 * Add the hop's step report to a log entry, when the step wrote one.
-	 *
-	 * Taking (rather than reading) is what scopes a report to one hop: the
-	 * handle is cleared by the read, so a node's detail can never bleed onto a
-	 * later step's log entry.
-	 *
-	 * @param array<string, mixed> $entry   The log entry.
-	 * @param array                $context The run context carrying the report handle.
-	 *
-	 * @return array<string, mixed> The entry, with `report` when there is one.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
-	 */
-	private function withStepReport(array $entry, array $context): array {
-		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
-		if (($report instanceof FlowStepReport) === false) {
-			return $entry;
-		}
-
-		$detail = $report->take();
-		if ($detail !== []) {
-			$entry['report'] = $detail;
-		}
-
-		return $entry;
-	}//end withStepReport()
-
-	/**
-	 * End the run because a Stop step or an oversight check stopped the hop.
-	 *
-	 * A run-level end: the claim is released and no stream begins another firing.
-	 *
-	 * @param FlowStreamHop $hop  The stopped hop.
-	 * @param FlowStop      $stop The stop.
-	 *
-	 * @return array The terminal run result.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-	 */
-	private function stopStreams(FlowStreamHop $hop, FlowStop $stop): array {
-		$pass = $hop->pass;
-		$pass->streams->release(places: $hop->claimed);
-		$pass->log[] = [
-			'transition' => $hop->name(),
-			'startedAt' => $this->moment(microtime: $hop->startedAt),
-			'type' => $hop->stepType(),
-			'status' => 'stopped',
-			'reason' => $stop->getMessage(),
-			'checkId' => $stop->checkId(),
-			'durationMs' => (int)round((microtime(true) - $hop->startedAt) * 1000),
-			'streamId' => $hop->streamId,
-			'ordinalPath' => $pass->streams->pathOf(id: $hop->streamId),
-		];
-
-		$stopStatus = self::STATUS_STOPPED;
-		$stopError = null;
-		if ($stop->isError() === true) {
-			$stopStatus = self::STATUS_FAILED;
-			$stopError = $stop->getMessage();
-		}
-
-		$pass->streams->finalize(enabled: false, forcedTerminal: $stopStatus);
-
-		return $pass->result(status: $stopStatus) + ['error' => $stopError];
-	}//end stopStreams()
-
-	/**
-	 * Park the stream whose step asked to wait; its siblings keep going.
-	 *
-	 * The stream's marking is not advanced, so it resumes ON this transition.
-	 *
-	 * @param FlowStreamHop  $hop        The suspended hop.
-	 * @param FlowSuspension $suspension The suspension.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	private function parkStream(FlowStreamHop $hop, FlowSuspension $suspension): void {
-		$pass = $hop->pass;
-		$pass->log[] = [
-			'transition' => $hop->name(),
-			'startedAt' => $this->moment(microtime: $hop->startedAt),
-			'status' => 'suspended',
-			'reason' => $suspension->getMessage(),
-			'streamId' => $hop->streamId,
-			'ordinalPath' => $pass->streams->pathOf(id: $hop->streamId),
-		];
-		$pass->streams->park(
-			id: $hop->streamId,
-			resumeAt: $suspension->getResumeAt(),
-			reason: $suspension->getMessage(),
-			claimed: $hop->claimed,
-			// `settling`: this stream is the one parking, and the walk
-			// does not know that yet — its token still enables the very
-			// transition it is waiting ON. Counted, the park derives
-			// `queued` with no wake time, which a parallel worker picks
-			// up immediately.
-			enabled: $pass->streams->workRemains(
-				transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
-				settling: $hop->streamId
-			)
-		);
-	}//end parkStream()
 
 	/**
 	 * Apply a failed step's `onError` policy on its stream.
@@ -1077,93 +696,17 @@ class FlowEngine {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private function failOnStream(FlowStreamHop $hop, Throwable $error): ?array {
-		$entry = [
-			'transition' => $hop->name(),
-			'startedAt' => $this->moment(microtime: $hop->startedAt),
-			'type' => $hop->stepType(),
-			'status' => 'failed',
-			'error' => $error->getMessage(),
-			'durationMs' => (int)round((microtime(true) - $hop->startedAt) * 1000),
-		];
-		$entry = $this->withStepReport(entry: $entry, context: $hop->pass->context);
+		$entry = $hop->failedEntry(error: $error);
 
-		$policy = (string)($hop->step['onError'] ?? self::ON_ERROR_STOP);
-		$this->logger->warning(
-			message: '[FlowEngine] Flow step failed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'flow' => ($hop->pass->flow['id'] ?? null),
-				'transition' => $hop->name(),
-				'policy' => $policy,
-				'error' => $error->getMessage(),
-			]
-		);
+		$policy = $this->logStepFailure(hop: $hop, error: $error);
 
 		if ($policy === self::ON_ERROR_CONTINUE) {
 			$this->fireOnStream(hop: $hop, entry: $entry);
 			return null;
 		}
 
-		return $this->endFailedStream(hop: $hop, entry: $entry);
+		return $hop->ended(entry: $entry);
 	}//end failOnStream()
-
-	/**
-	 * End the failed stream and the run, per the step's terminal policy.
-	 *
-	 * `failed`, not `stopped`: the same distinction
-	 * {@see self::outcomeForFailedStep()} explains for the single-stream walk,
-	 * and it has to be made in BOTH places or which walk happened to run
-	 * decides whether a wreck is queryable. The stream row already carries the
-	 * message; the RUN row is what a query reads, so the envelope carries it
-	 * too and `persistResult()` puts it on `error`.
-	 *
-	 * @param FlowStreamHop        $hop   The failed hop.
-	 * @param array<string, mixed> $entry The failure's log entry, holding `error`.
-	 *
-	 * @return array The terminal run result.
-	 *
-	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
-	 */
-	private function endFailedStream(FlowStreamHop $hop, array $entry): array {
-		$pass = $hop->pass;
-		$terminal = self::STATUS_FAILED;
-		if ((string)($hop->step['onError'] ?? self::ON_ERROR_STOP) === self::ON_ERROR_DEAD_LETTER) {
-			$terminal = self::STATUS_DEAD_LETTER;
-		}
-
-		$entry['streamId'] = $hop->streamId;
-		$entry['ordinalPath'] = $pass->streams->pathOf(id: $hop->streamId);
-		$pass->log[] = $entry;
-		$pass->streams->endStream(id: $hop->streamId, status: $terminal, error: $entry['error'], claimed: $hop->claimed, enabled: false);
-		$pass->streams->finalize(enabled: false, forcedTerminal: $terminal);
-
-		return $pass->result(status: $terminal) + ['error' => $entry['error']];
-	}//end endFailedStream()
-
-	/**
-	 * The pass's last word, under the lock, from the marking there.
-	 *
-	 * "Work remains" excludes the transitions parked streams keep enabled: a
-	 * wait is not work, and counting it would re-queue every parked run.
-	 *
-	 * @param FlowStreamPass $pass The pass.
-	 *
-	 * @return array The run result.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	private function finishStreamPass(FlowStreamPass $pass): array {
-		$enabled = $pass->streams->workRemains(transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject));
-		$status = $pass->streams->finalize(enabled: $enabled);
-
-		$result = $pass->result(status: $status);
-		if ($status === self::STATUS_SUSPENDED) {
-			$result['resumeAt'] = $pass->streams->run()->getResumeAt();
-		}
-
-		return $result;
-	}//end finishStreamPass()
 
 	/**
 	 * Advance the marking for one firing and commit it on its stream.
@@ -1184,77 +727,25 @@ class FlowEngine {
 	 */
 	private function fireOnStream(FlowStreamHop $hop, array $entry): void {
 		$pass = $hop->pass;
-		$transition = $hop->transition;
-		$name = $hop->name();
+		$advance = $this->routing->advance(hop: $hop);
+		$takenTos = $hop->takenInOrder(taken: $advance->taken);
+		// The places this firing TAKES, handed over so the answer describes
+		// the marking AFTER the commit rather than the one the walk still
+		// holds: the stream picture is only re-read inside commitFiring().
+		// Without them every ordinary mid-flow firing reported "no work
+		// remains", the commit derived `completed` for a run that was still
+		// walking, and every terminal listener fired on it.
+		$enabled = $pass->workflow->getEnabledTransitions(subject: $pass->subject);
+		$enabledAfter = $pass->streams->workRemains(transitions: $enabled, produced: $takenTos);
+		$firing = $hop->firing(takenTos: $takenTos)
+			->withPlaceItems(placeItems: $advance->placeItems)
+			->withLogEntry(logEntry: $entry, enabledAfter: $enabledAfter)
+			->withStreamState(status: FlowRun::STATUS_RUNNING, error: ($entry['error'] ?? null));
 
-		// Same tag resolution as the single-stream walk: an exit-id tag
-		// becomes its place before the exit choice and the item delivery.
-		$items = $this->router()->resolveOutputTags(flow: $pass->flow, transition: $transition, items: $pass->items);
-		$taken = $this->router()->takenExits(flow: $pass->flow, transition: $transition, items: $items, context: $pass->context);
-		$placeItems = $this->placement()->advanceItems(transition: $transition, placeItems: $pass->placeItems, items: $items, taken: $taken);
-		$pass->workflow->apply(subject: $pass->subject, transitionName: $name);
-		$this->pruneUntakenExits(workflow: $pass->workflow, subject: $pass->subject, transition: $transition, taken: $taken, context: $pass->context);
-
-		$takenTos = $hop->takenInOrder(taken: $taken);
-		$result = $pass->streams->commitFiring(
-			id: $hop->streamId,
-			transition: $name,
-			froms: array_map('strval', $transition->getFroms()),
-			taken: $takenTos,
-			placeItems: $placeItems,
-			claimed: $hop->claimed,
-			logEntry: $entry,
-			// The places this firing TAKES, handed over so the answer describes
-			// the marking AFTER the commit rather than the one the walk still
-			// holds: the stream picture is only re-read inside commitFiring().
-			// Without them every ordinary mid-flow firing reported "no work
-			// remains", the commit derived `completed` for a run that was still
-			// walking, and every terminal listener fired on it.
-			enabledAfter: $pass->streams->workRemains(
-				transitions: $pass->workflow->getEnabledTransitions(subject: $pass->subject),
-				produced: $takenTos
-			),
-			streamStatus: FlowRun::STATUS_RUNNING,
-			streamError: ($entry['error'] ?? null)
-		);
-
-		// Sync from what was COMMITTED: the marking read under the lock holds
-		// every sibling's committed effect, which the in-memory apply cannot.
-		if ($pass->store instanceof FlowRunMarkingStore) {
-			$pass->store->syncCommitted(marking: $result->marking);
-		}
-
-		$pass->placeItems = $result->placeItems;
-
-		$entry['recorded'] = true;
-		$entry['streamId'] = $hop->streamId;
-		$entry['ordinalPath'] = $pass->streams->pathOf(id: $hop->streamId);
-		$entry['firings'] = $result->firings;
-		$pass->log[] = $entry;
+		$result = $pass->streams->commitFiring(firing: $firing);
+		$hop->settle(result: $result);
+		$pass->log[] = $hop->committedEntry(entry: $entry, firings: $result->firings);
 	}//end fireOnStream()
-
-	/**
-	 * Override where a flow starts, for "run from here".
-	 *
-	 * A non-empty start node replaces the flow's `initial`; the builder then
-	 * validates it exists, so an unknown node fails the run exactly as a bad
-	 * document does. An empty or absent start leaves the flow untouched, so the
-	 * ordinary path is unaffected.
-	 *
-	 * @param array $flow The flow document.
-	 * @param string|null $startAt The node to start from, or null/empty for none.
-	 *
-	 * @return array The flow document, with `initial` overridden when asked.
-	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
-	 */
-	private function withStartNode(array $flow, ?string $startAt): array {
-		if (($startAt ?? '') !== '') {
-			$flow['initial'] = $startAt;
-		}
-
-		return $flow;
-	}//end withStartNode()
 
 	/**
 	 * Decide what a failed step does, per its `onError` policy.
@@ -1283,141 +774,54 @@ class FlowEngine {
 	 * stops a sub-flow whose step failed from handing its stale items to its
 	 * parent as though it had finished.
 	 *
-	 * @param array $step The step configuration.
-	 * @param Throwable $error The failure.
-	 * @param string $name The transition name.
-	 * @param array $flow The flow document (for the log context).
-	 * @param array $log The run log so far (already holding the failure).
-	 * @param array $context The run context.
-	 * @param array $items The items in hand at the failure.
+	 * @param FlowWalkHop $hop   The failed hop; its pass already logs the failure.
+	 * @param Throwable   $error The failure.
 	 *
 	 * @return array|null The terminal result, or null to continue the walk.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	private function outcomeForFailedStep(
-		array $step,
-		Throwable $error,
-		string $name,
-		array $flow,
-		array $log,
-		array $context,
-		array $items,
-	): ?array {
-		$policy = (string)($step['onError'] ?? self::ON_ERROR_STOP);
+	private function outcomeForFailedStep(FlowWalkHop $hop, Throwable $error): ?array {
+		$policy = $this->logStepFailure(hop: $hop, error: $error);
 
+		if ($policy === self::ON_ERROR_CONTINUE) {
+			return null;
+		}
+
+		$status = self::STATUS_FAILED;
+		if ($policy === self::ON_ERROR_DEAD_LETTER) {
+			$status = self::STATUS_DEAD_LETTER;
+		}
+
+		return $hop->pass->result(status: $status) + ['error' => $error->getMessage()];
+	}//end outcomeForFailedStep()
+
+	/**
+	 * Log a failed step with its onError policy, and return that policy.
+	 *
+	 * @param FlowWalkHop|FlowStreamHop $hop   The failed hop.
+	 * @param Throwable                 $error The failure.
+	 *
+	 * @return string The step's onError policy; `stop` when it declares none.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function logStepFailure(FlowWalkHop|FlowStreamHop $hop, Throwable $error): string {
+		$policy = (string)($hop->step['onError'] ?? self::ON_ERROR_STOP);
 		$this->logger->warning(
 			message: '[FlowEngine] Flow step failed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'flow' => ($flow['id'] ?? null),
-				'transition' => $name,
+				'flow' => ($hop->pass->flow['id'] ?? null),
+				'transition' => $hop->name(),
 				'policy' => $policy,
 				'error' => $error->getMessage(),
 			]
 		);
 
-		if ($policy === self::ON_ERROR_DEAD_LETTER) {
-			return [
-				'status' => self::STATUS_DEAD_LETTER,
-				'log' => $log,
-				'context' => $context,
-				'items' => $items,
-				'error' => $error->getMessage(),
-			];
-		}
-
-		if ($policy !== self::ON_ERROR_CONTINUE) {
-			return [
-				'status' => self::STATUS_FAILED,
-				'log' => $log,
-				'context' => $context,
-				'items' => $items,
-				'error' => $error->getMessage(),
-			];
-		}
-
-		return null;
-	}//end outcomeForFailedStep()
-
-	/**
-	 * A `microtime(true)` moment as ISO 8601 with milliseconds, for the run log.
-	 *
-	 * A step's own start, so a run view can say when each step ran rather
-	 * than adding up durations from the run's start.
-	 *
-	 * @param float $microtime The moment, as `microtime(true)` returns it.
-	 *
-	 * @return string The moment, UTC, e.g. `2026-10-07T08:41:02.380+00:00`.
-	 *
-	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
-	 */
-	private function moment(float $microtime): string {
-		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $microtime), new DateTimeZone('UTC'));
-		if ($moment === false) {
-			return gmdate('Y-m-d\TH:i:s+00:00', (int)$microtime);
-		}
-
-		return $moment->format('Y-m-d\TH:i:s.vP');
-	}//end moment()
-
-	/**
-	 * A bounded, honest sample of an item list, for the run log.
-	 *
-	 * BOUNDED, because a node returning ten thousand items would otherwise put
-	 * ten thousand items in a log — and an unbounded log is one that fills a
-	 * disk and is then deleted wholesale, taking the runs that mattered with
-	 * it. Retention is per flow (`retentionDays`), so these live for months.
-	 *
-	 * HONEST, because a truncated list that does not say it is truncated is
-	 * worse than a count: a reader comparing "10 items" against a node that
-	 * processed 10,000 concludes the flow dropped data. The envelope always
-	 * carries the true `count`, and `truncated` says whether `items` is all of
-	 * them.
-	 *
-	 * @param array $items The item list.
-	 *
-	 * @return array{count: int, truncated: bool, items: array<int, mixed>} The sample.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-records-what-each-node-received-returned-and-logged
-	 */
-	private function sampleItems(array $items): array {
-		$total = count($items);
-
-		return [
-			'count' => $total,
-			'truncated' => ($total > self::LOG_ITEM_SAMPLE),
-			'items' => array_slice($items, 0, self::LOG_ITEM_SAMPLE),
-		];
-
-	}//end sampleItems()
-
-	/**
-	 * The pinned output for a step, or null when it is not pinned.
-	 *
-	 * Pins are a map of step name to an item list. A run carries them in its
-	 * `context` under `pins` (a test/authoring run supplies them without
-	 * touching the stored flow); a flow may also carry a `pins` map of its own,
-	 * used only as the fallback so a run's pins always win. A step whose name is
-	 * absent from both is not pinned and runs normally.
-	 *
-	 * @param array $flow The flow document.
-	 * @param array $context The run context.
-	 * @param string $transitionName The step's transition name.
-	 *
-	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
-	 *
-	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
-	 */
-	private function pinnedItems(array $flow, array $context, string $transitionName): ?array {
-		$pins = (array)($context['pins'] ?? ($flow['pins'] ?? []));
-		if (array_key_exists($transitionName, $pins) === false) {
-			return null;
-		}
-
-		return FlowItems::normalise(value: $pins[$transitionName]);
-	}//end pinnedItems()
+		return $policy;
+	}//end logStepFailure()
 
 	/**
 	 * Choose which enabled transition to fire, honouring edge conditions.
@@ -1438,39 +842,49 @@ class FlowEngine {
 	 * feature and is not attempted here; the condition uses the first item as
 	 * the branch's representative.
 	 *
-	 * @param array<int, object> $enabled The enabled transitions.
-	 * @param array<string, mixed> $flow The flow document.
-	 * @param array<string, array> $placeItems Items per place.
-	 * @param array<string, mixed> $context Run-level metadata.
+	 * @param array<int, object>          $enabled The enabled transitions.
+	 * @param FlowWalkPass|FlowStreamPass $pass    The pass.
 	 *
 	 * @return object|null The transition to fire, or null when none is eligible.
 	 *
 	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
 	 */
-	private function selectTransition(array $enabled, array $flow, array $placeItems, array $context): ?object {
+	private function selectTransition(array $enabled, FlowWalkPass|FlowStreamPass $pass): ?object {
 		$fallback = null;
 
 		foreach ($enabled as $transition) {
-			$condition = $this->router()->conditionReaching(flow: $flow, nodeId: $transition->getName());
+			$condition = $this->services->router->conditionReaching(flow: $pass->flow, nodeId: $transition->getName());
 
-			if ($condition === null || $condition === []) {
+			if (empty($condition) === true) {
 				// Remember the first default edge; keep looking for a match.
 				$fallback = ($fallback ?? $transition);
 				continue;
 			}
 
-			$items = $this->placement()->itemsForTransition(transition: $transition, placeItems: $placeItems);
-			$data = FlowExpression::dataFor(
-				item: ($items[0] ?? []),
-				itemCount: count($items),
-				context: $context
-			);
-
-			if (FlowExpression::isTrue(logic: $condition, data: $data) === true) {
+			if (FlowExpression::isTrue(logic: $condition, data: $this->conditionData(transition: $transition, pass: $pass)) === true) {
 				return $transition;
 			}
-		}//end foreach
+		}
 
 		return $fallback;
 	}//end selectTransition()
+
+	/**
+	 * The data a transition's condition reads: the first item on its input places.
+	 *
+	 * @param object                      $transition The candidate transition.
+	 * @param FlowWalkPass|FlowStreamPass $pass       The pass.
+	 *
+	 * @return array<string, mixed> The expression data.
+	 *
+	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 */
+	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
+		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
+
+		return FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $pass->context)
+		);
+	}//end conditionData()
 }//end class

@@ -16,7 +16,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -33,7 +33,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -50,7 +50,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -67,7 +67,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT AVG(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT AVG(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -84,7 +84,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT MAX(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT MAX(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -164,7 +164,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND 1 = 0',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND 1 = 0',
         'bindings' => 
         array (
         ),
@@ -181,7 +181,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IS NULL',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IS NULL',
         'bindings' => 
         array (
         ),
@@ -198,7 +198,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IN (?, ?)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IN (?, ?)',
         'bindings' => 
         array (
           0 => 'org-1',
@@ -217,7 +217,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("_organisation" IN (?) OR "_organisation" IS NULL)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("_organisation" IN (?) OR "_organisation" IS NULL)',
         'bindings' => 
         array (
           0 => 'org-1',
@@ -249,7 +249,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\')',
         'bindings' => 
         array (
         ),
@@ -266,7 +266,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("_organisation" IN (?, ?) OR "_organisation" IS NULL)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("_organisation" IN (?, ?) OR "_organisation" IS NULL)',
         'bindings' => 
         array (
           0 => 'org-1',
@@ -285,7 +285,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IN (?, ?)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "_organisation" IN (?, ?)',
         'bindings' => 
         array (
           0 => 'org-1',
@@ -304,7 +304,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("learner" = \'u1\')',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND ("learner" = \'u1\')',
         'bindings' => 
         array (
         ),
@@ -321,7 +321,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND ((_status IS NULL OR _status <> \'draft\') OR _owner = ?)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND ((_status IS NULL OR _status <> \'draft\') OR _owner = ?)',
         'bindings' => 
         array (
           0 => 'alice',
@@ -339,7 +339,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb)',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb)',
         'bindings' => 
         array (
         ),
@@ -356,7 +356,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "status" = ? AND "kind" IN (?, ?) AND 1 = 0 AND "flag" = ? AND "code" IN (?, ?) AND 1 = 0 AND "not_code" NOT IN (?) AND 1 = 1 AND 1 = 0 AND "closed_at" IS NULL AND "opened_at" IS NOT NULL AND "amount" > ? AND "amount" >= ? AND "amount" < ? AND "amount" <= ? AND "amount" <> ? AND "owner_name" = ?',
+        'sql' => 'SELECT COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "status" = ? AND "kind" IN (?, ?) AND 1 = 0 AND "flag" = ? AND "code" IN (?, ?) AND 1 = 0 AND "not_code" NOT IN (?) AND 1 = 1 AND 1 = 0 AND "closed_at" IS NULL AND "opened_at" IS NOT NULL AND "amount" > ? AND "amount" >= ? AND "amount" < ? AND "amount" <= ? AND "amount" <> ? AND "owner_name" = ?',
         'bindings' => 
         array (
           0 => 'open',
@@ -386,7 +386,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT "status" AS g0, COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
+        'sql' => 'SELECT "status" AS g0, COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
         'bindings' => 
         array (
         ),
@@ -415,7 +415,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT "status" AS g0, SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
+        'sql' => 'SELECT "status" AS g0, SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
         'bindings' => 
         array (
         ),
@@ -449,7 +449,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT `status` AS g0, `kind` AS g1, COUNT(*) AS agg FROM `oc_register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') GROUP BY `status`, `kind`',
+        'sql' => 'SELECT `status` AS g0, `kind` AS g1, COUNT(*) AS agg FROM `*PREFIX*register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') GROUP BY `status`, `kind`',
         'bindings' => 
         array (
         ),
@@ -477,7 +477,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT "status" AS g0, COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
+        'sql' => 'SELECT "status" AS g0, COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') GROUP BY "status"',
         'bindings' => 
         array (
         ),
@@ -506,7 +506,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT date_trunc(?, "created")::text AS bucket, COUNT(*) AS agg, SUM(COUNT(*)) OVER (ORDER BY bucket) AS cumulative_agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "status" = ? AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
+        'sql' => 'SELECT date_trunc(?, "created")::text AS bucket, COUNT(*) AS agg, SUM(COUNT(*)) OVER (ORDER BY bucket) AS cumulative_agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "status" = ? AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
         'bindings' => 
         array (
           0 => 'day',
@@ -541,7 +541,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT date_trunc(?, "created")::text AS bucket, SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
+        'sql' => 'SELECT date_trunc(?, "created")::text AS bucket, SUM(NULLIF("amount"::text, \'\')::numeric) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\'::jsonb) AND (_archived IS NULL OR _archived = \'null\'::jsonb) AND (_status IS NULL OR _status <> \'draft\') AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
         'bindings' => 
         array (
           0 => 'month',
@@ -568,7 +568,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT DATE_FORMAT(`created`, \'%Y-%m-%dT00:00:00Z\') AS bucket, COUNT(*) AS agg FROM `oc_register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') AND `created` >= ? AND `created` < ? GROUP BY bucket ORDER BY bucket',
+        'sql' => 'SELECT DATE_FORMAT(`created`, \'%Y-%m-%dT00:00:00Z\') AS bucket, COUNT(*) AS agg FROM `*PREFIX*register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') AND `created` >= ? AND `created` < ? GROUP BY bucket ORDER BY bucket',
         'bindings' => 
         array (
           0 => '2026-01-01',
@@ -601,7 +601,7 @@ return array (
     array (
       0 => 
       array (
-        'sql' => 'SELECT strftime(\'%Y-%m-%dT00:00:00Z\', "created", \'weekday 0\', \'-6 days\') AS bucket, COUNT(*) AS agg FROM "oc_register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
+        'sql' => 'SELECT strftime(\'%Y-%m-%dT00:00:00Z\', "created", \'weekday 0\', \'-6 days\') AS bucket, COUNT(*) AS agg FROM "*PREFIX*register_1_schema_case" WHERE (_deleted IS NULL OR _deleted = \'null\' OR _deleted = \'\') AND (_archived IS NULL OR _archived = \'null\' OR _archived = \'\') AND (_status IS NULL OR _status <> \'draft\') AND "created" >= ? AND "created" < ? GROUP BY bucket ORDER BY bucket',
         'bindings' => 
         array (
           0 => '2026-01-01',

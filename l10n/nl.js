@@ -508,6 +508,7 @@ OC.L10N.register(
         "Could not read this email": "Kon deze e-mail niet lezen",
         "Count": "Aantal",
         "Counting objects...": "Objecten tellen...",
+        "We could not count the objects. Close this window and try again." : "We konden de objecten niet tellen. Sluit dit venster en probeer het opnieuw.",
         "Coverage": "Dekking",
         "Create": "Aanmaken",
         "Create & connect": "Aanmaken en koppelen",

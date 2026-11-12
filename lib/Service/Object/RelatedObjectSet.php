@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -75,7 +76,28 @@ final class RelatedObjectSet {
 	}//end offer()
 
 	/**
-	 * The collected objects, followed by every located row whose uuid no per-table read returned.
+	 * The collected objects, followed by every located row whose uuid no per-table read returned and that `$admits` accepts.
+	 *
+	 * @param ObjectEntity[]                    $located The rows the cross-table lookup found.
+	 * @param (Closure(ObjectEntity): bool)|null $admits Whether a located row may be kept; null keeps every row.
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function withFallback(array $located, ?Closure $admits = null): array {
+		$objects = $this->objects;
+		foreach ($this->stillMissingAmong(located: $located) as $candidate) {
+			if ($admits === null || $admits($candidate) === true) {
+				$objects[] = $candidate;
+			}
+		}
+
+		return $objects;
+	}//end withFallback()
+
+	/**
+	 * The located rows whose uuid is wanted but was not found, in located order.
 	 *
 	 * @param ObjectEntity[] $located The rows the cross-table lookup found.
 	 *
@@ -83,15 +105,15 @@ final class RelatedObjectSet {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function withFallback(array $located): array {
+	private function stillMissingAmong(array $located): array {
 		$missingUuids = array_diff($this->wanted, $this->foundUuids);
-		$objects = $this->objects;
+		$missing = [];
 		foreach ($located as $candidate) {
 			if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
-				$objects[] = $candidate;
+				$missing[] = $candidate;
 			}
 		}
 
-		return $objects;
-	}//end withFallback()
+		return $missing;
+	}//end stillMissingAmong()
 }//end class

@@ -8,9 +8,12 @@ name: Documentation
 # merged to development satisfied its review and published nothing.
 on:
   push:
-    branches: [development]
+    branches: [main]
   pull_request:
-    branches: [development]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   deploy:

@@ -226,10 +226,12 @@ setting an active organisation the user does not belong to MUST be rejected.
 - **THEN** the result MUST contain the active organisation UUID followed by every ancestor UUID resolved via the parent chain
 - **AND** this list is what multi-tenancy query filtering uses to grant children visibility of parent resources
 
-#### Scenario: Creating an organisation recovers from a slug collision
-- **WHEN** `createOrganisation($name, ...)` produces a slug that already exists
-- **THEN** the unique-constraint violation MUST be caught and the existing organisation with that slug returned instead of crashing
-- **AND** when a specific UUID was requested it MUST be reconciled onto the existing entity
+#### Scenario: Creating an organisation never takes over the organisation holding its slug
+- **WHEN** `createOrganisation($name, ...)` produces a slug that another organisation already holds
+- **THEN** the create MUST be refused with an `OrganisationSlugConflictException`, and `POST /api/organisations` MUST answer 409
+- **AND** the organisation holding the slug MUST keep its owner, members, authorization and uuid; a requested uuid MUST NOT be written onto it
+- **AND** `OrganisationMapper::save()` on an organisation without an id MUST insert or fail, never update an existing row, also when the unique index rejects a slug taken after the check
+- **AND** when the auto-generated default organisation's slug is taken, the organisation holding it MUST be used as the default unchanged
 - **AND** a newly-created organisation MUST seed the `admin` group into its RBAC authorization and add all admin-group users as members
 
 ### Requirement: Active and default organisation lookups MUST be cached with bounded staleness

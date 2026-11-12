@@ -39,6 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCP\IL10N;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
@@ -60,6 +62,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 require_once __DIR__ . '/../Mcp/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/../Mcp/Fixtures/CollidingFixtureService.php';
@@ -168,7 +171,10 @@ class AttributeMcpDiscoveryTest extends TestCase {
 
 		$method = new ReflectionMethod(McpProviderDiscovery::class, 'collectAttributeMcpProviders');
 		$method->setAccessible(true);
-		$method->invokeArgs($app, [$sharedContainer, $logger, &$providers]);
+		$run = new McpDiscoveryRun($sharedContainer, $logger);
+		$run->addAll($providers);
+		$method->invokeArgs($app, [$run]);
+		$providers = $run->providers();
 
 		return $app;
 	}//end invokeCollect()
@@ -244,7 +250,7 @@ class AttributeMcpDiscoveryTest extends TestCase {
 		$bindings = array_merge(
 			[
 				'OCP\App\IAppManager' => $appManager,
-				AuditTrailMapper::class => $this->createMock(AuditTrailMapper::class),
+				AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapper::class),
 			],
 			$extra
 		);
@@ -400,9 +406,11 @@ class AttributeMcpDiscoveryTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: [['schema' => $schema, 'register' => null]],
 			suppressedIds: [],
-			objectService: $this->createMock(ObjectService::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $this->createMock(LoggerInterface::class)
+			services: new SchemaDerivedToolServices(
+				objectService: $this->createMock(ObjectService::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				logger: $this->createMock(LoggerInterface::class),
+			),
 		);
 
 		// Sanity: the derived provider really does emit 'pipelinq.lead.search'.

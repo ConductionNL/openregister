@@ -36,17 +36,23 @@ namespace OCA\OpenRegister\BulkAction;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
-use OCA\OpenRegister\Service\Export\ExportProfileService;
-use OCA\OpenRegister\Service\Export\ExportProfileWriter;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
+use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Export\ProfileProjection;
 
 /**
  * The built-in whole-set export.
@@ -77,22 +83,26 @@ class ExportWholeSetAction implements BulkActionInterface {
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileService $profiles     Profile lookups and scope.
-	 * @param ExportProfileWriter  $writer       Projection and CSV lines.
+	 * @param ExportProfileServiceInterface $profiles     Profile lookups and scope.
+	 * @param ExportProfileWriterInterface  $writer       Projection and CSV lines.
 	 * @param ExportRightService   $rightService The export verb.
-	 * @param ExportAuditRecorder  $recorder     The audit trail.
-	 * @param SchemaMapper         $schemaMapper Schema lookups for the per-schema file.
+	 * @param ExportAuditRecorderInterface  $recorder     The audit trail.
+	 * @param SchemaMapperInterface         $schemaMapper Schema lookups for the per-schema file.
 	 * @param IRootFolder          $rootFolder   The actor's Files folder.
+	 * @param ExportRunRecorder|null $runs      Records the file as one export run that
+	 *                                          grows per row. Nullable so a hand-built
+	 *                                          action still writes.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileService $profiles,
-		private readonly ExportProfileWriter $writer,
+		private readonly ExportProfileServiceInterface $profiles,
+		private readonly ExportProfileWriterInterface $writer,
 		private readonly ExportRightService $rightService,
-		private readonly ExportAuditRecorder $recorder,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly ExportAuditRecorderInterface $recorder,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IRootFolder $rootFolder,
+		private readonly ?ExportRunRecorder $runs = null,
 	) {
 	}//end __construct()
 
@@ -190,15 +200,10 @@ class ExportWholeSetAction implements BulkActionInterface {
 	/**
 	 * Write one object into its schema's file, or say why it was not written.
 	 *
-	 * @param ObjectEntity $object The object to export.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
-	 *     rehearsal and the commit is the design property of the bulk engine.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
 	 *     constructors are its only constructor: the class is immutable and its
 	 *     private __construct exists so an outcome cannot be built without
@@ -206,13 +211,13 @@ class ExportWholeSetAction implements BulkActionInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		if ($actor === null) {
+	public function apply(BulkStep $step): BulkActionResult {
+		if ($step->actor === null) {
 			return BulkActionResult::refused('not-authenticated');
 		}
 
 		try {
-			$profile = $this->profiles->find(id: (int)($parameters['profileId'] ?? 0));
+			$profile = $this->profiles->find(id: (int)($step->parameters['profileId'] ?? 0));
 		} catch (Throwable $e) {
 			return BulkActionResult::failed('The export profile could not be read: ' . $e->getMessage());
 		}
@@ -220,59 +225,109 @@ class ExportWholeSetAction implements BulkActionInterface {
 		// `ObjectEntity` holds the register and the schema as strings, and every
 		// collaborator here counts them. Coerced once, at the boundary, rather
 		// than at each of the six call sites.
-		$registerId = $this->identifier(value: $object->getRegister());
-		$schemaId = $this->identifier(value: $object->getSchema());
+		$run = new WholeSetExportRun(step: $step, profile: $profile, actor: $step->actor);
+		$run->registerId = $this->identifier(value: $step->object->getRegister());
+		$run->schemaId = $this->identifier(value: $step->object->getSchema());
+		$run->schema = $this->schemaFor(schemaId: $run->schemaId);
 
-		$schema = null;
-		if ($schemaId !== null) {
-			try {
-				$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				$schema = null;
-			}
+		return $this->exportRow(run: $run);
+	}//end apply()
+
+	/**
+	 * The schema with this id, read without RBAC or multitenancy, or null.
+	 *
+	 * @param int|null $schemaId The object's schema.
+	 *
+	 * @return Schema|null The schema, or null when there is none or it cannot be read.
+	 */
+	private function schemaFor(?int $schemaId): ?Schema {
+		if ($schemaId === null) {
+			return null;
 		}
 
-		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $actor->getUID());
+		try {
+			return $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end schemaFor()
+
+	/**
+	 * Check the export right, project the row, and rehearse or commit it.
+	 *
+	 * @param WholeSetExportRun $run The row's run.
+	 *
+	 * @return BulkActionResult What happened, or what would happen.
+	 */
+	private function exportRow(WholeSetExportRun $run): BulkActionResult {
+		$refusal = $this->rightService->refusalForUid(schema: $run->schema, userId: $run->actor->getUID());
 		if ($refusal !== null) {
-			$this->recorder->recordRefused(
-				profile: ($profile->getName() ?? ''),
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $registerId,
-				schema: $schemaId,
-				actorId: $actor->getUID()
-			);
-
-			return BulkActionResult::refused($refusal->getRule());
+			return $this->refuse(run: $run, refusal: $refusal);
 		}
 
-		$line = $this->writer->csvLineFor(profile: $profile, object: $object, schema: $schema);
+		$line = $this->writer->csvLineFor(
+			projection: new ProfileProjection(profile: $run->profile, schema: $run->schema),
+			object: $run->step->object
+		);
 		if ($line === '') {
 			return BulkActionResult::skipped('The object carries none of the fields the profile declares.');
 		}
 
-		if ($commit === false) {
-			return BulkActionResult::applied('Would be written to ' . $this->filenameFor(profile: $profile, schemaId: $schemaId));
+		if ($run->step->commit === false) {
+			return BulkActionResult::applied('Would be written to ' . $this->filenameFor(profile: $run->profile, schemaId: $run->schemaId));
 		}
 
+		return $this->commitRow(run: $run, line: $line);
+	}//end exportRow()
+
+	/**
+	 * Audit a refused row and refuse it.
+	 *
+	 * @param WholeSetExportRun      $run     The row's run.
+	 * @param ExportRefusedException $refusal Why the export right refuses.
+	 *
+	 * @return BulkActionResult The refusal, by its rule.
+	 */
+	private function refuse(WholeSetExportRun $run, ExportRefusedException $refusal): BulkActionResult {
+		$this->recorder->recordRefused(
+			profile: ($run->profile->getName() ?? ''),
+			rule: $refusal->getRule(),
+			reason: $refusal->getMessage(),
+			register: $run->registerId,
+			schema: $run->schemaId,
+			actorId: $run->actor->getUID()
+		);
+
+		return BulkActionResult::refused($refusal->getRule());
+	}//end refuse()
+
+	/**
+	 * Append the row to its schema's file and audit it as completed.
+	 *
+	 * @param WholeSetExportRun $run  The row's run.
+	 * @param string            $line The CSV line, newline terminated.
+	 *
+	 * @return BulkActionResult Applied, or failed when the row could not be written.
+	 */
+	private function commitRow(WholeSetExportRun $run, string $line): BulkActionResult {
 		try {
-			$this->append(profile: $profile, schemaId: $schemaId, actor: $actor, line: $line);
+			$this->append(profile: $run->profile, schemaId: $run->schemaId, actor: $run->actor, line: $line);
 		} catch (Throwable $e) {
 			return BulkActionResult::failed('The row could not be written: ' . $e->getMessage());
 		}
 
 		$this->recorder->recordCompleted(
-			profile: ($profile->getName() ?? ''),
+			profile: ($run->profile->getName() ?? ''),
 			rowCount: 1,
 			format: 'csv',
-			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
-			register: $registerId,
-			schema: $schemaId,
-			actorId: $actor->getUID()
+			valueMode: ($run->profile->getValueMode() ?? ExportProfile::MODE_STORED),
+			register: $run->registerId,
+			schema: $run->schemaId,
+			actorId: $run->actor->getUID()
 		);
 
-		return BulkActionResult::applied('Written to ' . $this->filenameFor(profile: $profile, schemaId: $schemaId));
-	}//end apply()
+		return BulkActionResult::applied('Written to ' . $this->filenameFor(profile: $run->profile, schemaId: $run->schemaId));
+	}//end commitRow()
 
 	/**
 	 * A register or schema identifier as an int, or null when there is none.
@@ -340,7 +395,43 @@ class ExportWholeSetAction implements BulkActionInterface {
 
 		fwrite($handle, $line);
 		fclose($handle);
+
+		$this->recordRow(profile: $profile, actor: $actor, file: $file, filename: $filename);
 	}//end append()
+
+	/**
+	 * Grow the export run this file is, opening it on the file's first row.
+	 *
+	 * Keyed on the file id, so one file is one run however many rows the job
+	 * appends. A run that cannot be recorded does not fail the row: the row is
+	 * already in the file, and failing it would make the job retry a write
+	 * that happened.
+	 *
+	 * @param ExportProfile $profile  The profile.
+	 * @param IUser         $actor    The user the job runs as.
+	 * @param File          $file     The file the row went into.
+	 * @param string        $filename The file's name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	private function recordRow(ExportProfile $profile, IUser $actor, File $file, string $filename): void {
+		if ($this->runs === null) {
+			return;
+		}
+
+		try {
+			$this->runs->recordAppended(
+				origin: new ExportRunOrigin(source: 'whole-set', actor: $actor->getUID(), profile: $profile->getName()),
+				format: 'csv',
+				file: new ExportRunFile(filename: $filename, fileId: (int)$file->getId(), filePath: $file->getPath()),
+				retentionSeconds: $profile->getRetentionSeconds()
+			);
+		} catch (Throwable $e) {
+			unset($e);
+		}
+	}//end recordRow()
 
 	/**
 	 * The file one schema's rows go into.

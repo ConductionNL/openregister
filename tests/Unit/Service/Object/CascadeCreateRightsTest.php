@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -28,6 +29,8 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -37,8 +40,11 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The acting user is `mallory`, a clerk. Only editors may create notes. `alice` is an editor:
@@ -46,7 +52,19 @@ use ReflectionClass;
  * signed-in caller would pass where it must refuse.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
+ * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -58,6 +76,9 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class CascadeCreateRightsTest extends TestCase {
 
@@ -118,7 +139,7 @@ class CascadeCreateRightsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('not available'));
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,
@@ -138,13 +159,13 @@ class CascadeCreateRightsTest extends TestCase {
 	 *
 	 * @return SaveObject
 	 */
-	private function saveHandler(PermissionHandler $permissions): SaveObject {
+	private function saveHandler(PermissionHandler $permissions, ?LoggerInterface $logger = null): SaveObject {
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				if (($data['text'] ?? null) === 'boom') {
 					throw new Exception('storage');
 				}
@@ -153,14 +174,15 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
-		$reflection->getProperty('schemaReferenceCache')->setValue($handler, ['note' => '2']);
-		$reflection->getProperty('schemaCache')->setValue($handler, ['2' => self::note()]);
+		SaveLookupsAccess::set($handler, 'schemaReferenceCache', ['note' => '2']);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => self::note()]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('permissionHandler')->setValue($handler, $permissions);
+		$reflection->getProperty('logger')->setValue($handler, $logger ?? new NullLogger());
 
 		return $handler;
 	}//end saveHandler()
@@ -180,7 +202,16 @@ class CascadeCreateRightsTest extends TestCase {
 		$parent->setRegister('10');
 		$parent->setOwner('alice');
 
-		return (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, ...$args);
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = ($args[1] ?? []);
+		$run->stored = ($args[2] ?? []);
+		$call = match ($method) {
+			'cascadeObjects' => [$run, $args[0]],
+			default => [new NestedObjectTarget(parent: $parent, definition: $args[0]), $args[1]],
+		};
+
+		return (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, ...$call);
 	}//end onParent()
 
 	/**
@@ -197,6 +228,49 @@ class CascadeCreateRightsTest extends TestCase {
 			args: [['$ref' => 'note', 'inversedBy' => 'incident'], ['text' => 'new', '@self' => ['owner' => 'alice']]]
 		);
 	}//end cascadeNote()
+
+	/**
+	 * A stored note owned by `alice` whose schema lets only editors update.
+	 *
+	 * @param SaveObject $handler The save handler, whose schema cache receives that schema.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function guardedTarget(SaveObject $handler): ObjectEntity {
+		$guarded = self::note();
+		$guarded->setAuthorization(['update' => ['editors'], 'read' => ['authenticated']]);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $guarded]);
+
+		$target = new ObjectEntity();
+		$target->setUuid('t-1');
+		$target->setRegister('10');
+		$target->setSchema('2');
+		$target->setOwner('alice');
+
+		return $target;
+	}//end guardedTarget()
+
+	public function testARelatedObjectTheCallerMayNotUpdateIsRefused(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+
+		$this->expectException(NotAuthorizedException::class);
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+	}
+
+	public function testARelatedObjectTheCallerMayUpdatePasses(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
+
+	public function testAnEnclosingSaveWithRbacOffSkipsTheRelatedUpdateCheck(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+		$handler->enterCascadeScope(_rbac: false);
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
 
 	public function testANestedObjectTheCallerMayNotCreateIsRefused(): void {
 		$handler = $this->saveHandler(permissions: $this->permissions());
@@ -261,7 +335,7 @@ class CascadeCreateRightsTest extends TestCase {
 		self::onParent(
 			handler: $this->saveHandler(permissions: $this->permissions()),
 			method: 'cascadeObjects',
-			args: [$parentSchema, ['note' => ['text' => 'new']]]
+			args: [$parentSchema, ['note' => ['text' => 'new']], []]
 		);
 	}
 
@@ -274,7 +348,7 @@ class CascadeCreateRightsTest extends TestCase {
 		self::onParent(
 			handler: $this->saveHandler(permissions: $this->permissions()),
 			method: 'cascadeObjects',
-			args: [$parentSchema, ['notes' => [['text' => 'new']]]]
+			args: [$parentSchema, ['notes' => [['text' => 'new']]], []]
 		);
 	}
 
@@ -282,9 +356,14 @@ class CascadeCreateRightsTest extends TestCase {
 		$parentSchema = new Schema();
 		$parentSchema->setId(1);
 		$parentSchema->setProperties(['note' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incident']]);
-		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			$this->stringContains('Cascade of an object property failed'),
+			$this->callback(static fn (array $context): bool => $context['property'] === 'note' && $context['exception'] === 'storage')
+		);
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]), logger: $logger);
 
-		$data = self::onParent(handler: $handler, method: 'cascadeObjects', args: [$parentSchema, ['note' => ['text' => 'boom']]]);
+		$data = self::onParent(handler: $handler, method: 'cascadeObjects', args: [$parentSchema, ['note' => ['text' => 'boom']], []]);
 
 		$this->assertSame(expected: ['note' => ['text' => 'boom']], actual: $data);
 	}
@@ -309,7 +388,7 @@ class CascadeCreateRightsTest extends TestCase {
 		}
 
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($failure): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($failure): ObjectEntity {
 				if ($failure !== null) {
 					throw $failure;
 				}
@@ -318,7 +397,7 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		return new CascadingHandler(
@@ -337,12 +416,7 @@ class CascadeCreateRightsTest extends TestCase {
 	 * @return string|null The created uuid.
 	 */
 	private static function relatedNote(CascadingHandler $handler): ?string {
-		return $handler->createRelatedObject(
-			objectData: ['text' => 'new'],
-			definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 10
-		);
+		return $handler->createRelatedObject(objectData: ['text' => 'new'], target: (new CascadeTarget(parentUuid: 'p-1', register: 10))->with(definition: ['$ref' => '#/components/schemas/note', 'inversedBy' => 'incident']));
 	}//end relatedNote()
 
 	public function testThePreValidationCascadeRefusesWhatTheCallerMayNotCreate(): void {
@@ -364,12 +438,7 @@ class CascadeCreateRightsTest extends TestCase {
 	}
 
 	public function testThePreValidationCascadeFindsTheSchemaInAnyCase(): void {
-		$created = $this->cascadingHandler(refusal: null)->createRelatedObject(
-			objectData: ['text' => 'new'],
-			definition: ['$ref' => '#/components/schemas/NOTE', 'inversedBy' => 'incident'],
-			parentUuid: 'p-1',
-			currentRegister: 10
-		);
+		$created = $this->cascadingHandler(refusal: null)->createRelatedObject(objectData: ['text' => 'new'], target: (new CascadeTarget(parentUuid: 'p-1', register: 10))->with(definition: ['$ref' => '#/components/schemas/NOTE', 'inversedBy' => 'incident']));
 
 		$this->assertSame(expected: self::CREATED, actual: $created);
 	}

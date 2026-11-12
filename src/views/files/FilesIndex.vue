@@ -2,58 +2,28 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Files') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage and monitor file text extraction status',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Files')"
+				:description="
+					t(
+						'openregister',
+						'Manage and monitor file text extraction status',
+					)
+				"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="filesList.length" class="viewTotalCount">
-						{{
-							t('openregister', 'Showing {showing} of {total} files', {
+			<ListActionsBar
+				:summary="
+					filesList.length
+						? t('openregister', 'Showing {showing} of {total} files', {
 								showing: filesList.length,
 								total: totalFiles,
 							})
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshFiles">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshFiles)]" />
 
 			<!-- Files Table -->
 			<div class="tableContainer">
@@ -73,78 +43,23 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th
-								scope="col"
-								class="column-filename sortable"
-								@click="toggleSort('fileName')">
-								{{ t('openregister', 'File Name') }}
-								<span
-									v-if="sortField === 'fileName'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-mimetype">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th
-								scope="col"
-								class="column-size sortable"
-								@click="toggleSort('fileSize')">
-								{{ t('openregister', 'Size') }}
-								<span
-									v-if="sortField === 'fileSize'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-chunks sortable"
-								@click="toggleSort('chunkCount')">
-								{{ t('openregister', 'Chunks') }}
-								<span
-									v-if="sortField === 'chunkCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-entities sortable"
-								@click="toggleSort('entityCount')">
-								{{ t('openregister', 'Entities') }}
-								<span
-									v-if="sortField === 'entityCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-risk sortable"
-								@click="toggleSort('riskLevel')">
-								{{ t('openregister', 'Risk Level') }}
-								<span
-									v-if="sortField === 'riskLevel'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-extracted sortable"
-								@click="toggleSort('extractedAt')">
-								{{ t('openregister', 'Extracted At') }}
-								<span
-									v-if="sortField === 'extractedAt'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
+							<template v-for="column in headerColumns" :key="column.key">
+								<th
+									v-if="column.sort"
+									scope="col"
+									:class="'column-' + column.key + ' sortable'"
+									@click="toggleSort(column.sort)">
+									{{ column.label }}
+									<span
+										v-if="sortField === column.sort"
+										class="sort-indicator"
+										>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+									>
+								</th>
+								<th v-else scope="col" :class="'column-' + column.key">
+									{{ column.label }}
+								</th>
+							</template>
 						</tr>
 					</thead>
 					<tbody>
@@ -184,50 +99,19 @@
 								{{ formatDate(file.extractedAt) }}
 							</td>
 							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										v-if="file.extractionStatus === 'failed'"
-										closeAfterClick
-										@click="retryExtraction(file.id)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Retry') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="file.extractionError"
-										closeAfterClick
-										@click="showError(file)">
-										<template #icon>
-											<AlertCircleOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Error') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="fileActions(file)" />
 							</td>
 						</tr>
 					</tbody>
 				</table>
 
 				<!-- Pagination -->
-				<div v-if="totalFiles > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalFiles"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<OffsetPager
+					:offset="offset"
+					:limit="limit"
+					:total="totalFiles"
+					@previous="previousPage"
+					@next="nextPage" />
 			</div>
 		</div>
 
@@ -249,19 +133,19 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing and monitoring file text extraction status
@@ -269,18 +153,18 @@ import FilesSidebar from '../../components/FilesSidebar.vue'
 export default {
 	name: 'FilesIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileDocumentOutline,
-		Refresh,
-		AlertCircleOutline,
-		FilterVariant,
 		FilesSidebar,
 	},
+
+	mixins: [offsetPaging('totalFiles', 'loadFiles')],
 
 	data() {
 		return {
@@ -300,23 +184,23 @@ export default {
 
 	computed: {
 		/**
-		 * Get current page number
+		 * The table's header cells, in column order; `sort` is the API field a
+		 * click sorts on, absent for a column that does not sort.
 		 *
-		 * @spec exclude list-view pagination current-page helper (computed)
-		 * @return {number} Current page
+		 * @spec exclude UI plumbing — static table header list for display.
+		 * @return {Array<{key: string, label: string, sort?: string}>}
 		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude list-view pagination total-pages helper (computed)
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalFiles / this.limit)
+		headerColumns() {
+			return [
+				{ key: 'filename', label: t('openregister', 'File Name'), sort: 'fileName' },
+				{ key: 'mimetype', label: t('openregister', 'Type') },
+				{ key: 'size', label: t('openregister', 'Size'), sort: 'fileSize' },
+				{ key: 'chunks', label: t('openregister', 'Chunks'), sort: 'chunkCount' },
+				{ key: 'entities', label: t('openregister', 'Entities'), sort: 'entityCount' },
+				{ key: 'risk', label: t('openregister', 'Risk Level'), sort: 'riskLevel' },
+				{ key: 'extracted', label: t('openregister', 'Extracted At'), sort: 'extractedAt' },
+				{ key: 'actions', label: t('openregister', 'Actions') },
+			]
 		},
 	},
 
@@ -325,17 +209,35 @@ export default {
 	},
 
 	methods: {
-		t,
+		refreshAction,
 
 		/**
-		 * Toggle sidebar visibility
+		 * The row menu of a file.
 		 *
-		 * @spec exclude list-view detail-sidebar toggle plumbing
-		 * @return {void}
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} file The file
+		 * @return {Array<object>} The ActionMenu entries
 		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+		fileActions(file) {
+			return [
+				{
+					label: t('openregister', 'Retry'),
+					icon: Refresh,
+					run: () => this.retryExtraction(file.id),
+					hidden: file.extractionStatus !== 'failed',
+				},
+				{
+					label: t('openregister', 'View Error'),
+					icon: AlertCircleOutline,
+					run: () => this.showError(file),
+					hidden: !file.extractionError,
+				},
+			]
 		},
+
+		t,
+
+		...sidebarToggle,
 
 		/**
 		 * Toggle sort field and direction
@@ -403,39 +305,64 @@ export default {
 		async loadFiles() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: this.offset,
-					sort: this.sortField,
-					order: this.sortOrder,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.statusFilter) {
-					params.status = this.statusFilter
-				}
-
-				if (this.riskLevelFilter) {
-					params.riskLevel = this.riskLevelFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/files'),
-					{ params },
+					{ params: this.fileListParams() },
 				)
-
-				if (response.data.success) {
-					this.filesList = response.data.data
-					this.totalFiles = response.data.count || this.filesList.length
-				}
+				this.showFileList(response.data)
 			} catch (error) {
 				console.error('Failed to load files:', error)
 				showError(t('openregister', 'Failed to load files'))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * The page of files to ask for, in the chosen order, narrowed by the
+		 * filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The query parameters
+		 */
+		fileListParams() {
+			return {
+				limit: this.limit,
+				offset: this.offset,
+				sort: this.sortField,
+				order: this.sortOrder,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, status and risk-level filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				status: this.statusFilter,
+				riskLevel: this.riskLevelFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
+		},
+
+		/**
+		 * Take the page of files and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showFileList(data) {
+			if (data.success) {
+				this.filesList = data.data
+				this.totalFiles = data.count || this.filesList.length
 			}
 		},
 
@@ -447,32 +374,6 @@ export default {
 		 */
 		refreshFiles() {
 			this.loadFiles()
-		},
-
-		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude list-view pagination previous-page handler
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadFiles()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude list-view pagination next-page handler
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalFiles) {
-				this.offset += this.limit
-				this.loadFiles()
-			}
 		},
 
 		/**
@@ -576,79 +477,17 @@ export default {
 			return labels[level] || level || t('openregister', 'None')
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
+@include view-container-2;
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow: hidden;
-}
+@include table-container;
 
 .filesTable {
 	width: 100%;
@@ -708,14 +547,7 @@ export default {
 	white-space: nowrap;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
+@include badge;
 
 .badge-mimetype {
 	background: var(--color-background-dark);
@@ -803,19 +635,5 @@ export default {
 
 .column-actions {
 	width: 50px;
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
 }
 </style>

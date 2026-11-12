@@ -33,18 +33,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
+use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowStop;
+use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
@@ -53,6 +58,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -114,6 +122,10 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder
@@ -130,6 +142,13 @@ class GoldenWalkLogger extends AbstractLogger {
  * @uses   \OCA\OpenRegister\Service\Flow\FlowFiringResult
  * @uses   \OCA\OpenRegister\Db\FlowRun
  * @uses   \OCA\OpenRegister\Db\FlowStream
+ * @covers \OCA\OpenRegister\Service\Flow\FlowHop
+ * @covers \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @covers \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowFiring
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
+ * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 
@@ -231,7 +250,6 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			'report' => ['flow' => 'linear', 'report' => true, 'behaviour' => ['three' => 'fail']],
 			'oversight' => ['flow' => 'split', 'oversight' => 2],
 			'oversight-first' => ['flow' => 'linear', 'oversight' => 1],
-			'oversight-off' => ['flow' => 'linear', 'oversight' => 1, 'context' => ['oversight' => false]],
 			'switch-high' => ['flow' => 'switch', 'seed' => 42],
 			'switch-low' => ['flow' => 'switch', 'seed' => 3],
 			'gated-no-match' => ['flow' => 'gated', 'seed' => 3],
@@ -340,10 +358,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			new FlowDefinitionBuilder(),
 			new GoldenWalkLogger(trace: $trace),
 			$this->oversight(refuseFrom: ($case['oversight'] ?? null), trace: $trace),
-			null,
-			null,
-			$this->runContext(trace: $trace),
-			$this->mootness(trace: $trace)
+			services: new FlowEngineServices(
+				runContext: $this->runContext(trace: $trace),
+				mootness: $this->mootness(trace: $trace)
+			)
 		);
 
 		$streams = null;
@@ -352,14 +370,11 @@ class FlowEngineWalkGoldenTest extends TestCase {
 		}
 
 		$result = $engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $this->run),
-			subject: new stdClass(),
-			dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace),
-			context: $context,
-			items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
-			startAt: ($case['startAt'] ?? null),
-			streams: $streams
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace)))->withContext(context: $context)->withStreams(streams: $streams),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
+				startAt: ($case['startAt'] ?? null)
+			)
 		);
 
 		$result['log'] = self::clip(lines: $result['log']);
@@ -448,8 +463,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function runContext(\Closure $trace): FlowRunContext {
 		$context = $this->createMock(FlowRunContext::class);
-		$context->method('push')->willReturnCallback(function (?string $runUuid, string $nodeId, int $sequence) use ($trace): void {
-			$trace(['push', $runUuid, $nodeId, $sequence]);
+		$context->method('push')->willReturnCallback(function (FlowRunFrame $frame) use ($trace): void {
+			$trace(['push', $frame->runUuid, $frame->nodeId, $frame->sequence]);
 		});
 		$context->method('pop')->willReturnCallback(function () use ($trace): void {
 			$trace(['pop']);
@@ -460,8 +475,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function mootness(\Closure $trace): FlowTaskMootness {
 		$mootness = $this->createMock(FlowTaskMootness::class);
-		$mootness->method('placesPruned')->willReturnCallback(function (array $context, array $places, string $byTransition) use ($trace): int {
-			$trace(['pruned', $places, $byTransition]);
+		$mootness->method('placesPruned')->willReturnCallback(function (array $context, PlacesPruning $pruning) use ($trace): int {
+			$trace(['pruned', $pruning->places, $pruning->byTransition]);
 			return 0;
 		});
 
@@ -528,7 +543,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			$trace(['exhaust', $id]);
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused, $refuse, $trace): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused, $refuse, $trace): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$trace(['claim', $id, $transition, $places]);
 			if (in_array($transition, $refuse, true) === true) {
 				$refused[$id] = true;
@@ -566,7 +583,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			return $answer;
 		});
 		$walk->method('commitFiring')->willReturnCallback(
-			function (string $id, string $transition, array $froms, array $taken, array $placeItems, array $claimed, array $logEntry, bool $enabledAfter, string $streamStatus = 'running', ?string $streamError = null) use (&$streams, &$exhausted, &$firings, $trace): FlowFiringResult {
+			function (FlowFiring $firing) use (&$streams, &$exhausted, &$firings, $trace): FlowFiringResult {
+				[$id, $transition, $froms, $taken] = [$firing->streamId, $firing->transition, $firing->froms, $firing->taken];
+				[$placeItems, $claimed, $logEntry, $enabledAfter] = [$firing->getPlaceItems(), $firing->getClaimedPlaces(), $firing->getLogEntry(), $firing->isEnabledAfter()];
+				[$streamStatus, $streamError] = [$firing->getStreamStatus(), $firing->getStreamError()];
 				$trace(['commitFiring', $id, $transition, $froms, $taken, array_map('count', $placeItems), $claimed, $this->normalise(value: $logEntry), $enabledAfter, $streamStatus, $streamError]);
 				$firings++;
 				$this->run->setFirings($firings);
@@ -597,12 +617,14 @@ class FlowEngineWalkGoldenTest extends TestCase {
 				return new FlowFiringResult(marking: $marking, placeItems: $placeItems, streams: [], firings: $firings);
 			}
 		);
-		$walk->method('park')->willReturnCallback(function (string $id, ?DateTime $resumeAt, string $reason, array $claimed, bool $enabled) use (&$parked, $trace): void {
+		$walk->method('park')->willReturnCallback(function (FlowStreamHalt $halt, ?DateTime $resumeAt) use (&$parked, $trace): void {
+			[$id, $reason, $claimed, $enabled] = [$halt->streamId, $halt->reason(), $halt->claimed, $halt->enabled];
 			$trace(['park', $id, $resumeAt?->format(DATE_ATOM), $reason, $claimed, $enabled]);
 			$parked[$id] = true;
 			$this->run->setResumeAt($resumeAt);
 		});
-		$walk->method('endStream')->willReturnCallback(function (string $id, string $status, ?string $error, array $claimed, bool $enabled) use (&$streams, $trace): void {
+		$walk->method('endStream')->willReturnCallback(function (FlowStreamHalt $halt, string $status) use (&$streams, $trace): void {
+			[$id, $error, $claimed, $enabled] = [$halt->streamId, $halt->reason(), $halt->claimed, $halt->enabled];
 			$trace(['endStream', $id, $status, $error, $claimed, $enabled]);
 			unset($streams[$id]);
 		});

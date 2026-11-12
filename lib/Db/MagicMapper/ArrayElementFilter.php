@@ -71,20 +71,9 @@ class ArrayElementFilter {
 			return [];
 		}
 
-		$declared = $query[self::KEY];
-		if (is_array($declared) === false || $declared === []) {
-			throw new InvalidArgumentException("'_element' must name an array property and the fields one of its elements carries.");
-		}
-
 		$blocks = [];
-		foreach ($declared as $root => $block) {
-			if (is_array($block) === false || $block === []) {
-				throw new InvalidArgumentException("'_element[{$root}]' must name the fields one of its elements carries.");
-			}
-
-			foreach (self::numbered(block: $block) as $fields) {
-				$blocks[] = ['root' => (string)$root, 'fields' => $fields];
-			}
+		foreach (self::declared(query: $query) as $root => $block) {
+			array_push($blocks, ...self::propertyBlocks(root: (string)$root, block: $block));
 		}
 
 		return $blocks;
@@ -93,36 +82,115 @@ class ArrayElementFilter {
 	/**
 	 * The EXISTS condition of one block, or null when a field name is not a plain name.
 	 *
-	 * @param string              $column     The quoted, qualified array column.
-	 * @param array<string,mixed> $fields     The block's fields.
-	 * @param callable            $bind       Value to SQL: fn(string $value): string.
-	 * @param bool                $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget    $column The quoted, qualified array column, its binder (value to SQL) and the platform.
+	 * @param array<string,mixed> $fields The block's fields.
 	 *
 	 * @return string|null The condition.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
-	public function condition(string $column, array $fields, callable $bind, bool $isPostgres): ?string {
+	public function condition(NestedPathTarget $column, array $fields): ?string {
+		$element = new NestedPathTarget(expression: self::ALIAS.'.e', bind: $column->bind(...), isPostgres: $column->isPostgres);
+		$where   = self::where(fields: $fields, element: $element);
+		if ($where === null) {
+			return null;
+		}
+
+		if ($column->isPostgres === true) {
+			return self::postgresExists(column: $column->expression, where: $where);
+		}
+
+		return self::mysqlExists(column: $column->expression, where: $where);
+	}//end condition()
+
+	/**
+	 * The `_element` map of a query that carries one.
+	 *
+	 * @param array<string,mixed> $query The request query, with `_element` set.
+	 *
+	 * @return array<mixed> The map of property to block.
+	 *
+	 * @throws InvalidArgumentException When `_element` is not a non-empty map.
+	 */
+	private static function declared(array $query): array {
+		$declared = $query[self::KEY];
+		if (is_array($declared) === false || $declared === []) {
+			throw new InvalidArgumentException("'_element' must name an array property and the fields one of its elements carries.");
+		}
+
+		return $declared;
+	}//end declared()
+
+	/**
+	 * The blocks of one property, each tagged with the property.
+	 *
+	 * @param string $root  The array property.
+	 * @param mixed  $block The value under `_element[<property>]`.
+	 *
+	 * @return list<array{root: string, fields: array<string,mixed>}> The blocks.
+	 *
+	 * @throws InvalidArgumentException When the block is not a non-empty map or list of maps.
+	 */
+	private static function propertyBlocks(string $root, mixed $block): array {
+		if (is_array($block) === false || $block === []) {
+			throw new InvalidArgumentException("'_element[{$root}]' must name the fields one of its elements carries.");
+		}
+
+		return array_map(
+			static fn (array $fields): array => ['root' => $root, 'fields' => $fields],
+			self::numbered(block: $block)
+		);
+	}//end propertyBlocks()
+
+	/**
+	 * The conditions of a block's fields, joined, or null when a field name is not a plain name.
+	 *
+	 * @param array<string,mixed> $fields  The block's fields.
+	 * @param NestedPathTarget    $element The element the fields are read below, and its binder.
+	 *
+	 * @return string|null The WHERE clause of the EXISTS subquery.
+	 */
+	private static function where(array $fields, NestedPathTarget $element): ?string {
 		$paths      = new NestedPathFilter();
 		$conditions = [];
 		foreach ($fields as $field => $value) {
-			$expression = $paths->expression(column: self::ALIAS.'.e', path: [(string)$field], isPostgres: $isPostgres);
+			$expression = $paths->expression(column: $element, path: [(string)$field]);
 			if ($expression === null) {
 				return null;
 			}
 
-			array_push($conditions, ...$paths->conditions(expression: $expression, value: $value, bind: $bind, isPostgres: $isPostgres));
+			$target = new NestedPathTarget(expression: $expression, bind: $element->bind(...), isPostgres: $element->isPostgres);
+			array_push($conditions, ...$paths->conditions(target: $target, value: $value));
 		}
 
-		$where = implode(' AND ', $conditions);
-		if ($isPostgres === true) {
-			$elements = "json_array_elements(CASE WHEN json_typeof({$column}::json) = 'array' THEN {$column}::json ELSE '[]'::json END)";
-			return 'EXISTS (SELECT 1 FROM '.$elements.' AS '.self::ALIAS."(e) WHERE {$where})";
-		}
+		return implode(' AND ', $conditions);
+	}//end where()
 
+	/**
+	 * The EXISTS over the elements of an array column on PostgreSQL.
+	 *
+	 * @param string $column The quoted, qualified array column.
+	 * @param string $where  The conditions one element must meet.
+	 *
+	 * @return string The condition.
+	 */
+	private static function postgresExists(string $column, string $where): string {
+		$elements = "json_array_elements(CASE WHEN json_typeof({$column}::json) = 'array' THEN {$column}::json ELSE '[]'::json END)";
+		return 'EXISTS (SELECT 1 FROM '.$elements.' AS '.self::ALIAS."(e) WHERE {$where})";
+	}//end postgresExists()
+
+	/**
+	 * The EXISTS over the elements of an array column on MariaDB/MySQL.
+	 *
+	 * @param string $column The quoted, qualified array column.
+	 * @param string $where  The conditions one element must meet.
+	 *
+	 * @return string The condition.
+	 */
+	private static function mysqlExists(string $column, string $where): string {
 		$elements = "JSON_TABLE(CASE WHEN JSON_TYPE({$column}) = 'ARRAY' THEN {$column} ELSE '[]' END, '\$[*]' COLUMNS (e JSON PATH '\$'))";
 		return 'EXISTS (SELECT 1 FROM '.$elements.' AS '.self::ALIAS." WHERE {$where})";
-	}//end condition()
+	}//end mysqlExists()
 
 	/**
 	 * The element blocks of one property: one unnumbered block, or the numbered ones.
@@ -138,15 +206,23 @@ class ArrayElementFilter {
 			return [$block];
 		}
 
-		$blocks = [];
 		foreach ($block as $index => $fields) {
-			if (is_array($fields) === false || $fields === [] || array_is_list($fields) === true) {
+			if (self::isFieldMap(fields: $fields) === false) {
 				throw new InvalidArgumentException("'_element' block {$index} must name the fields one element carries.");
 			}
-
-			$blocks[] = $fields;
 		}
 
-		return $blocks;
+		return $block;
 	}//end numbered()
+
+	/**
+	 * Whether a value is a non-empty map of field names.
+	 *
+	 * @param mixed $fields The value.
+	 *
+	 * @return bool True for a map of fields.
+	 */
+	private static function isFieldMap(mixed $fields): bool {
+		return is_array($fields) === true && $fields !== [] && array_is_list($fields) === false;
+	}//end isFieldMap()
 }//end class

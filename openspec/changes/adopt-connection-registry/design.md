@@ -25,7 +25,7 @@ Sixteen connections, each verified against the code on `development`
 | `xwiki` | `XwikiProvider`, source `xwiki` | Integriq probe |
 | `message-dispatch` | `MessageDispatchProvider`, SMS and WhatsApp sources | Integriq probe |
 | `pdok` | `PdokGeocoder`, the public Locatieserver through Integriq's CallService | Not checked; the message says so |
-| `office-converter` | `NcOfficeConverterInterface`, bound to `NullNcOfficeConverter` | `available: false` |
+| `office-converter` | `NcOfficeConverterInterface`, bound to `ConversionManagerConverter` | `available: false` without a conversion provider |
 
 - `sourceTemplate` is set where integriq ships `register.d/<slug>-source.json`
   on `development`: `brp-haalcentraal`, `kvk`, `opencorporates`, `xwiki` and

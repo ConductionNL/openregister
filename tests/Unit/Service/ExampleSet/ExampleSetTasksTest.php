@@ -18,11 +18,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
@@ -37,7 +39,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
@@ -54,8 +56,18 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetTasksTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -110,7 +122,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertArrayNotHasKey('completedAt', $this->taskImports[1]['data']);
 		$done = $this->engineTasks['task-2'];
 		$this->assertSame('completed', $done->getState());
-		$this->assertSame('2026-09-30 10:00', $done->getCompletedAt()->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-09-30 10:00', actual: $this->local(moment: $done->getCompletedAt()));
 		$this->assertSame('esra.demir', $done->getCompletedBy());
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
@@ -232,8 +244,49 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$import = $this->taskImports[0]['data'];
 		$this->assertSame(expected: 'sanne.devries', actual: $import['requester']);
-		$this->assertSame(expected: '2026-10-22 17:00', actual: (new \DateTime($import['expiresAt']))->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-22 17:00', actual: $this->local(moment: new \DateTime($import['expiresAt'])));
 	}//end testATaskKeepsItsRequesterAndExpiry()
+
+	/**
+	 * A task's createdAt goes to the engine as the moment of its creation, not as a field.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
+	 */
+	public function testATaskIsWrittenWithTheMomentItWasCreated(): void {
+		$this->caseWithTasks(tasks: [
+			['key' => 'hoorzitting', 'data' => [
+				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'assignee' => '{{cast:esra.uid}}',
+				'createdAt' => '{{datetime:-2 16:20}}', 'claimedBy' => '{{cast:esra.uid}}', 'claimedAt' => '{{datetime:-1 09:05}}',
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$at = $this->taskImports[0]['at'];
+		$this->assertInstanceOf(expected: \DateTime::class, actual: $at);
+		$this->assertSame(expected: '2026-10-11T14:20:00+00:00', actual: $at->setTimezone(new \DateTimeZone('UTC'))->format('c'));
+		$this->assertArrayNotHasKey(key: 'createdAt', array: $this->taskImports[0]['data']);
+	}//end testATaskIsWrittenWithTheMomentItWasCreated()
+
+	/**
+	 * A task without createdAt leaves its creation moment to the engine.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
+	 */
+	public function testATaskWithoutCreatedAtIsStampedByTheEngine(): void {
+		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertNull(actual: $this->taskImports[0]['at']);
+	}//end testATaskWithoutCreatedAtIsStampedByTheEngine()
 
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
@@ -328,6 +381,16 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 			'a checklist item checked as text' => [
 				['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a', 'label' => 'A', 'checked' => 'yes']]],
 				'checked is true or false',
+			],
+			'a creation moment that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => 'once'], 'createdAt "once" is not a date'],
+			'a creation moment in the future' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => date('c', strtotime('+10 years'))], 'lies in the future'],
+			'a claim before the task existed' => [
+				['title' => 'T', 'objectUuid' => $on, 'createdAt' => '{{datetime:-2 16:20}}', 'claimedAt' => '{{datetime:-3 09:05}}'],
+				'claimedAt lies before createdAt',
+			],
+			'a completion before the task existed' => [
+				['title' => 'T', 'objectUuid' => $on, 'state' => 'completed', 'createdAt' => '{{datetime:-2 16:20}}', 'completedAt' => '{{datetime:-2 16:19}}'],
+				'completedAt lies before createdAt',
 			],
 			'an unknown upload rule' => [
 				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'uploadRules' => ['virusScan' => true]],

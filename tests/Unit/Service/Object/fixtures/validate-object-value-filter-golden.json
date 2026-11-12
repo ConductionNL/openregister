@@ -1,0 +1,87 @@
+{
+    "testAnEmptySchemaAcceptsAnything:": {
+        "valid": false
+    },
+    "testValidationMatchesGolden:empty array dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:empty array with maxItems kept": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:empty array with minItems kept": {
+        "valid": false,
+        "errors": {
+            "/atLeastOne": "Array should have at least 1 items, 0 found"
+        }
+    },
+    "testValidationMatchesGolden:empty array with minItems zero dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:empty array with uniqueItems kept": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:enum bad value": {
+        "valid": false,
+        "errors": {
+            "/status": "The data should match one item from enum"
+        }
+    },
+    "testValidationMatchesGolden:enum null allowed kept": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:enum null dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:extend and filters removed": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:null non-enum kept": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:optional empty string dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:required empty string kept and fails": {
+        "valid": false,
+        "errors": {
+            "/title": "Minimum string length is 1, found 0"
+        }
+    },
+    "testValidationMatchesGolden:required missing": {
+        "valid": false,
+        "errors": {
+            "/": "The required properties (title) are missing"
+        }
+    },
+    "testValidationMatchesGolden:unknown empty array dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:unknown empty string dropped": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:valid": {
+        "valid": true,
+        "errors": []
+    },
+    "testValidationMatchesGolden:wrong type": {
+        "valid": false,
+        "errors": {
+            "/count": "The data (string) must match the type: integer, null"
+        }
+    },
+    "testValidationMatchesGolden:zero and false kept": {
+        "valid": true,
+        "errors": []
+    }
+}

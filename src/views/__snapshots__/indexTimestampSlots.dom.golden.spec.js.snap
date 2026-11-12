@@ -1,0 +1,149 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`index header sort and filter RegistersIndex 1`] = `
+{
+  "calls": [
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+  ],
+  "states": [
+    [
+      null,
+      "asc",
+      {},
+    ],
+    [
+      "title",
+      "desc",
+    ],
+    [
+      "updated",
+      "asc",
+    ],
+    [
+      null,
+      "asc",
+    ],
+    {
+      "title": [
+        "a",
+      ],
+    },
+    {},
+    {
+      "showCopyAction": false,
+      "showDeleteAction": false,
+      "showEditAction": false,
+      "showMassCopy": false,
+      "showMassDelete": false,
+      "showMassExport": false,
+      "showMassImport": false,
+    },
+    false,
+  ],
+}
+`;
+
+exports[`index header sort and filter SchemasIndex 1`] = `
+{
+  "calls": [
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+    [
+      1,
+      30,
+    ],
+  ],
+  "states": [
+    [
+      null,
+      "asc",
+      {},
+    ],
+    [
+      "title",
+      "desc",
+    ],
+    [
+      "updated",
+      "asc",
+    ],
+    [
+      null,
+      "asc",
+    ],
+    {
+      "title": [
+        "a",
+      ],
+    },
+    {},
+    {
+      "showCopyAction": false,
+      "showDeleteAction": false,
+      "showEditAction": false,
+      "showMassCopy": false,
+      "showMassDelete": false,
+      "showMassExport": false,
+      "showMassImport": false,
+    },
+    false,
+  ],
+}
+`;
+
+exports[`index timestamp and action cells RegistersIndex 1`] = `
+"<p class="column-created">date:2026-01-02T03:04:05Z</p>
+<p class="column-updated">date:null</p>
+<p class="row-actions">
+<menu><button>t:Edit</button><button>t:Publish OAS</button><button>t:Import</button><button>t:View API Documentation</button><button>t:Download API Specification</button><button>t:Delete</button><button>t:View Details</button></menu>
+</p>"
+`;
+
+exports[`index timestamp and action cells SchemasIndex 1`] = `
+"<p class="column-created">date:2026-01-02T03:04:05Z</p>
+<p class="column-updated">date:null</p>
+<p class="row-actions">
+<menu><button>t:Edit</button><button>t:Delete</button></menu>
+</p>"
+`;
+
+exports[`index timestamp and action cells SourcesIndex 1`] = `
+"<p class="column-created">date:2026-01-02T03:04:05Z</p>
+<p class="column-updated">date:null</p>
+<p class="row-actions">
+<menu><button>t:View</button><button>t:Edit</button><button>t:Delete</button></menu>
+</p>"
+`;

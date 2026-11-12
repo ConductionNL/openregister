@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -57,13 +58,6 @@ class ActivityFeedExport {
 	 * @var array<int,string>
 	 */
 	public const COLUMNS = ['when', 'kind', 'actor', 'action', 'summary', 'url'];
-
-	/**
-	 * The characters a spreadsheet treats as the start of a formula.
-	 *
-	 * @var array<int,string>
-	 */
-	private const FORMULA_STARTS = ['=', '+', '-', '@'];
 
 	/**
 	 * The filtered page as CSV.
@@ -84,17 +78,7 @@ class ActivityFeedExport {
 				continue;
 			}
 
-			fputcsv(
-				$handle,
-				[
-					$this->moment(timestamp: (int)($row['timestamp'] ?? 0), timezone: $timezone),
-					$this->cell(value: (string)($row['kind'] ?? '')),
-					$this->cell(value: (string)($row['actor'] ?? '')),
-					$this->cell(value: (string)($row['action'] ?? '')),
-					$this->cell(value: (string)($row['summary'] ?? '')),
-					$this->cell(value: (string)($row['url'] ?? '')),
-				]
-			);
+			fputcsv($handle, $this->csvLine(row: $row, timezone: $timezone));
 		}
 
 		rewind($handle);
@@ -103,6 +87,25 @@ class ActivityFeedExport {
 
 		return $csv;
 	}//end toCsv()
+
+	/**
+	 * The cells of one feed row, in the order of COLUMNS.
+	 *
+	 * @param array<string, mixed> $row      The feed row.
+	 * @param string               $timezone The zone the moment is written in.
+	 *
+	 * @return array<int, string>
+	 */
+	private function csvLine(array $row, string $timezone): array {
+		return [
+			$this->moment(timestamp: (int)($row['timestamp'] ?? 0), timezone: $timezone),
+			$this->cell(value: (string)($row['kind'] ?? '')),
+			$this->cell(value: (string)($row['actor'] ?? '')),
+			$this->cell(value: (string)($row['action'] ?? '')),
+			$this->cell(value: (string)($row['summary'] ?? '')),
+			$this->cell(value: (string)($row['url'] ?? '')),
+		];
+	}//end csvLine()
 
 	/**
 	 * One moment a reader can compare to their own calendar.
@@ -143,17 +146,6 @@ class ActivityFeedExport {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-feed-filters-by-kind-and-period-and-exports
 	 */
 	private function cell(string $value): string {
-		if ($value === '') {
-			return '';
-		}
-
-		if (in_array($value[0], self::FORMULA_STARTS, true) === true) {
-			// The apostrophe is what Excel and LibreOffice both read as "this
-			// is text". Stripping the character instead would change what a
-			// summary says.
-			return "'" . $value;
-		}
-
-		return $value;
+		return (string)SpreadsheetCell::csvValue(value: $value);
 	}//end cell()
 }//end class

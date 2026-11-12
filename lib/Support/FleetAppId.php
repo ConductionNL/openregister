@@ -36,67 +36,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Support;
 
+use OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue;
+use OCA\OpenRegister\Support\FleetApp\FleetAppClass;
+use OCA\OpenRegister\Support\FleetApp\FleetAppNames;
+use OCA\OpenRegister\Support\FleetApp\FleetAppPath;
+use OCA\OpenRegister\Support\FleetApp\FleetAppProbe;
 use OCP\App\IAppManager;
-use Throwable;
 
 /**
  * Resolves fleet app ids across the in-flight rename.
  */
 final class FleetAppId
 {
-
-    /**
-     * Candidate ids per canonical app, NEWEST FIRST.
-     *
-     * Order is the contract: the first entry that is installed wins, so a
-     * fully migrated instance resolves to the new id and a beta/main instance
-     * falls back to the old one. Adding a new rename means prepending, never
-     * replacing — dropping the old id here is what silently breaks the
-     * integrations this class exists to protect.
-     *
-     * @var array<string, list<string>>
-     */
-    private const CANDIDATES = [
-        'integriq' => ['integriq', 'openconnector'],
-        'filinq'   => ['filinq', 'docudesk'],
-        'thematiq' => ['thematiq', 'nldesign'],
-        'stackiq'  => ['stackiq', 'softwarecatalog'],
-        'larpinq'  => ['larpinq', 'larpingapp'],
-        'dossiq'   => ['dossiq', 'procest'],
-        'learniq'  => ['learniq', 'scholiq'],
-        'decidiq'  => ['decidiq', 'decidesk'],
-        'buildiq'  => ['buildiq', 'openbuild'],
-        'keepiq'   => ['keepiq', 'doriath'],
-    ];
-
-
-    /**
-     * PHP namespace per candidate id, for the apps OpenRegister names by FQCN.
-     *
-     * A cross-app FQCN is the second half of the rename, and it is the half
-     * that cannot be guessed: `openbuild` shipped `OCA\OpenBuilt` and
-     * `larpingapp` shipped `OCA\DsoNextcloud` before `OCA\LarpingApp`, so
-     * `ucfirst($appId)` is not the rule and never was. Each entry below was
-     * READ from that app's own `appinfo/info.xml` (new) or from a literal this
-     * repo already resolved successfully against a running instance (old).
-     *
-     * Deliberately narrower than {@see self::CANDIDATES}: a canonical name is
-     * listed here only when BOTH its namespaces have been read. An app absent
-     * from this map resolves to null rather than to a guess, because a wrong
-     * FQCN fails exactly as silently as a stale one and looks fixed.
-     *
-     * @var array<string, array<string, string>>
-     */
-    private const NAMESPACES = [
-        'integriq' => [
-            'integriq'      => 'Integriq',
-            'openconnector' => 'OpenConnector',
-        ],
-        'keepiq'   => [
-            'keepiq'  => 'Keepiq',
-            'doriath' => 'Doriath',
-        ],
-    ];
 
 
     /**
@@ -116,7 +67,7 @@ final class FleetAppId
      */
     public static function candidates(string $canonical): array
     {
-        return (self::CANDIDATES[$canonical] ?? [$canonical]);
+        return FleetAppCatalogue::candidates(canonical: $canonical);
 
     }//end candidates()
 
@@ -131,19 +82,7 @@ final class FleetAppId
      */
     public static function resolve(IAppManager $appManager, string $canonical): ?string
     {
-        foreach ((self::CANDIDATES[$canonical] ?? [$canonical]) as $candidate) {
-            try {
-                if ($appManager->isInstalled($candidate) === true) {
-                    return $candidate;
-                }
-            } catch (Throwable $e) {
-                // An app manager that cannot answer for one candidate must not
-                // abort the search — the next candidate may still resolve.
-                continue;
-            }
-        }
-
-        return null;
+        return FleetAppProbe::resolve(appManager: $appManager, canonical: $canonical);
 
     }//end resolve()
 
@@ -176,16 +115,7 @@ final class FleetAppId
      */
     public static function isEnabledForUser(IAppManager $appManager, string $canonical): bool
     {
-        $id = self::resolve(appManager: $appManager, canonical: $canonical);
-        if ($id === null) {
-            return false;
-        }
-
-        try {
-            return $appManager->isEnabledForUser($id);
-        } catch (Throwable $e) {
-            return false;
-        }
+        return FleetAppProbe::isEnabledForUser(appManager: $appManager, canonical: $canonical);
 
     }//end isEnabledForUser()
 
@@ -198,25 +128,14 @@ final class FleetAppId
      * the id that is really installed. Hardcoding either name yields a 404 on
      * half the fleet.
      *
-     * @param IAppManager $appManager The Nextcloud app manager.
-     * @param string      $canonical  Canonical (new) app name, e.g. 'integriq'.
-     * @param string      $suffix     Path after the app segment, no leading slash.
+     * @param IAppManager  $appManager The Nextcloud app manager.
+     * @param FleetAppPath $path       The canonical (new) app name, e.g. 'integriq', and the path after the app segment.
      *
      * @return string|null The path, or null when the app is not installed.
      */
-    public static function appPath(IAppManager $appManager, string $canonical, string $suffix = ''): ?string
+    public static function appPath(IAppManager $appManager, FleetAppPath $path): ?string
     {
-        $id = self::resolve(appManager: $appManager, canonical: $canonical);
-        if ($id === null) {
-            return null;
-        }
-
-        $path = '/apps/'.$id;
-        if ($suffix !== '') {
-            $path .= '/'.ltrim($suffix, '/');
-        }
-
-        return $path;
+        return FleetAppNames::appPath(appManager: $appManager, path: $path);
 
     }//end appPath()
 
@@ -229,19 +148,14 @@ final class FleetAppId
      * job runner, say) can build the name without loading the class.
      *
      * @param string $canonical Canonical (new) app name, e.g. 'integriq'.
-     * @param string $id        A concrete id from {@see self::CANDIDATES}.
+     * @param string $id        A concrete id from {@see FleetAppCatalogue::candidates()}.
      *
      * @return string|null The namespace prefix ending in a backslash, or null
      *                     when this repo has not read that app's namespace.
      */
     public static function namespaceForId(string $canonical, string $id): ?string
     {
-        $namespace = (self::NAMESPACES[$canonical][$id] ?? null);
-        if ($namespace === null) {
-            return null;
-        }
-
-        return 'OCA\\'.$namespace.'\\';
+        return FleetAppCatalogue::namespaceForId(canonical: $canonical, id: $id);
 
     }//end namespaceForId()
 
@@ -255,25 +169,15 @@ final class FleetAppId
      * name handed to an app that is not there is never dereferenced anyway and
      * the newest spelling is the one the fleet is moving to.
      *
-     * @param IAppManager $appManager    The Nextcloud app manager.
-     * @param string      $canonical     Canonical (new) app name, e.g. 'integriq'.
-     * @param string      $relativeClass Class path below the namespace, e.g. 'Service\CallService'.
+     * @param IAppManager   $appManager The Nextcloud app manager.
+     * @param FleetAppClass $class      The canonical (new) app name, e.g. 'integriq', and the class path below the namespace.
      *
      * @return string|null The FQCN, or null when this repo has not read that
      *                     app's namespace.
      */
-    public static function className(IAppManager $appManager, string $canonical, string $relativeClass): ?string
+    public static function className(IAppManager $appManager, FleetAppClass $class): ?string
     {
-        if (isset(self::NAMESPACES[$canonical]) === false) {
-            return null;
-        }
-
-        $id = self::resolve(appManager: $appManager, canonical: $canonical);
-        if ($id === null || isset(self::NAMESPACES[$canonical][$id]) === false) {
-            $id = array_key_first(self::NAMESPACES[$canonical]);
-        }
-
-        return self::namespaceForId(canonical: $canonical, id: $id).$relativeClass;
+        return FleetAppNames::className(appManager: $appManager, class: $class);
 
     }//end className()
 
@@ -294,20 +198,7 @@ final class FleetAppId
      */
     public static function resolveClass(string $canonical, string $relativeClass): ?string
     {
-        foreach (array_keys((self::NAMESPACES[$canonical] ?? [])) as $id) {
-            $className = self::namespaceForId(canonical: $canonical, id: $id).$relativeClass;
-            try {
-                if (class_exists($className) === true) {
-                    return $className;
-                }
-            } catch (Throwable $e) {
-                // A candidate whose autoloader entry throws must not abort the
-                // search — the next spelling may still load.
-                continue;
-            }
-        }
-
-        return null;
+        return FleetAppProbe::resolveClass(canonical: $canonical, relativeClass: $relativeClass);
 
     }//end resolveClass()
 

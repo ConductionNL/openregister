@@ -56,9 +56,35 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Save-time survival of the hierarchy annotation and the department matrix.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 
@@ -71,14 +97,18 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 		parent::setUp();
 
 		$this->mapper = new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
@@ -111,7 +141,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateHierarchy(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateHierarchyAnnotation');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateHierarchy()
 
@@ -193,9 +223,14 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWellFormedHierarchySaves(): void {
-		$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		$refusal = null;
+		try {
+			$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'A well-formed hierarchy was refused at save.');
 	}//end testAWellFormedHierarchySaves()
 
 	/**
@@ -231,9 +266,16 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			]
 		);
 
-		$this->validateHierarchy($schema);
+		$refusal = null;
+		try {
+			$this->validateHierarchy($schema);
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		// The pair is testAHierarchyPointingAtAnotherSchemaIsRefusedAtSave: a
+		// `$ref` that names a different schema is refused by the same check.
+		$this->assertNull($refusal, 'A self-reference spelt as the schema id was refused at save.');
 	}//end testASelfReferenceSpeltAsTheSchemaIdIsAccepted()
 
 	/**
@@ -613,7 +655,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateDeny(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateAuthorizationDeny');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateDeny()
 

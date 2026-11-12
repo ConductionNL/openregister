@@ -55,32 +55,20 @@
 				</NcEmptyContent>
 			</template>
 
-			<table v-else class="provenanceTable" data-testid="provenance-table">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Attribute') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Winning source') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Confidence') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Timestamp') }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="entry in provenanceEntries" :key="entry.attribute">
-						<td>{{ entry.attribute }}</td>
-						<td>{{ entry.source }}</td>
-						<td>{{ entry.confidence ?? '—' }}</td>
-						<td>{{ entry.timestamp ?? '—' }}</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="provenanceTable"
+				data-testid="provenance-table"
+				:columns="provenanceColumns"
+				:rows="provenanceEntries"
+				rowKey="attribute">
+				<template #column-source="{ value }">
+					{{ value }}
+				</template>
+				<template #column-confidence="{ value }">
+					{{ value ?? '—' }}
+				</template>
+			</CnDataTable>
 		</template>
 
 		<MdmConflictResolutionModal
@@ -92,6 +80,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import AccountBoxOutline from 'vue-material-design-icons/AccountBoxOutline.vue'
@@ -105,10 +94,71 @@ import { qualityStore } from '../../store/store.js'
  * rendered, and a missing map degrades to an explicit empty state rather
  * than erroring.
  */
+/**
+ * The provenance row of one attribute: a manual override names its actor, a
+ * recorded source names its source, and a plain value is the source itself.
+ *
+ * @param {Array} entry The attribute and its provenance value
+ * @return {object} The row
+ */
+function provenanceEntry([attribute, value]) {
+	if (value && typeof value === 'object') {
+		return value.override === true
+			? overrideEntry(attribute, value)
+			: recordedEntry(attribute, value)
+	}
+	return {
+		attribute,
+		source: value,
+		confidence: undefined,
+		timestamp: undefined,
+	}
+}
+
+/**
+ * The row of an attribute a steward overrode by hand, with its rationale.
+ *
+ * @param {string} attribute The attribute
+ * @param {object} value Its override record
+ * @return {object} The row
+ */
+function overrideEntry(attribute, value) {
+	return {
+		attribute,
+		source: t('openregister', 'Manual override ({actor})', {
+			actor: value.overriddenBy || t('openregister', 'unknown'),
+		}),
+		confidence: value.rationale,
+		timestamp: undefined,
+	}
+}
+
+/**
+ * The row of an attribute a source supplied: the first source name the
+ * record carries, its confidence and when.
+ *
+ * @param {string} attribute The attribute
+ * @param {object} value Its provenance record
+ * @return {object} The row
+ */
+function recordedEntry(attribute, value) {
+	return {
+		attribute,
+		source:
+			value.source
+			?? value.winningSource
+			?? value.sourceSystem
+			?? '—',
+		confidence: value.confidence,
+		timestamp: value.timestamp ?? value.at,
+	}
+}
+
 export default {
 	name: 'GoldenRecordDetail',
 
 	components: {
+		CnDataTable,
 		NcButton,
 		NcEmptyContent,
 		AccountBoxOutline,
@@ -146,6 +196,19 @@ export default {
 		},
 
 		/**
+		 * @spec exclude UI plumbing — static column definitions for the provenance table
+		 * @return {Array<object>}
+		 */
+		provenanceColumns() {
+			return [
+				{ key: 'attribute', label: t('openregister', 'Attribute'), cellClass: 'cn-cell--wrap' },
+				{ key: 'source', label: t('openregister', 'Winning source'), cellClass: 'cn-cell--wrap' },
+				{ key: 'confidence', label: t('openregister', 'Confidence'), cellClass: 'cn-cell--wrap' },
+				{ key: 'timestamp', label: t('openregister', 'Timestamp') },
+			]
+		},
+
+		/**
 		 * Defensive read of `attributeProvenance` — tolerates absence,
 		 * non-object shapes, and per-attribute entries that are either a
 		 * plain source string or a `{source, confidence, timestamp}` object.
@@ -161,38 +224,7 @@ export default {
 		provenanceEntries() {
 			const provenance = this.object?.attributeProvenance
 			if (!provenance || typeof provenance !== 'object') return []
-			return Object.entries(provenance).map(([attribute, value]) => {
-				if (value && typeof value === 'object') {
-					if (value.override === true) {
-						return {
-							attribute,
-							source: t('openregister', 'Manual override ({actor})', {
-								actor:
-									value.overriddenBy
-									|| t('openregister', 'unknown'),
-							}),
-							confidence: value.rationale,
-							timestamp: undefined,
-						}
-					}
-					return {
-						attribute,
-						source:
-							value.source
-							?? value.winningSource
-							?? value.sourceSystem
-							?? '—',
-						confidence: value.confidence,
-						timestamp: value.timestamp ?? value.at,
-					}
-				}
-				return {
-					attribute,
-					source: value,
-					confidence: undefined,
-					timestamp: undefined,
-				}
-			})
+			return Object.entries(provenance).map(provenanceEntry)
 		},
 	},
 
@@ -265,15 +297,6 @@ export default {
 }
 
 .provenanceTable {
-	width: 100%;
-	border-collapse: collapse;
 	margin-top: 12px;
-}
-
-.provenanceTable th,
-.provenanceTable td {
-	text-align: left;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 </style>

@@ -31,8 +31,7 @@ interface ScheduledReportsInterface {
 	 * Assert the caller owns the report or is an admin.
 	 *
 	 * @param ScheduledReportInterface $report The report.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is an admin.
+	 * @param ReportCaller             $caller The calling user's uid and whether they are an admin.
 	 *
 	 * @return void
 	 *
@@ -40,7 +39,7 @@ interface ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void;
+	public function assertMayAccess(ScheduledReportInterface $report, ReportCaller $caller): void;
 
 	/**
 	 * Create a scheduled report owned by the given user.
@@ -59,9 +58,8 @@ interface ScheduledReportsInterface {
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param int          $id     The scheduled report id.
+	 * @param ReportCaller $caller The calling user's uid and whether they are a Nextcloud administrator.
 	 *
 	 * @return void
 	 *
@@ -70,7 +68,7 @@ interface ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function delete(int $id, string $callerUid, bool $callerIsAdmin): void;
+	public function deleteAs(int $id, ReportCaller $caller): void;
 
 	/**
 	 * Find a scheduled report by id.
@@ -149,10 +147,8 @@ interface ScheduledReportsInterface {
 	/**
 	 * Update an existing scheduled report. Only the owner or an admin may update.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param array<string,mixed> $data Fields to update (same shape as create()).
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param ScheduledReportUpdate $update The report id, the fields to update (same shape as create())
+	 *                                      and the caller (uid, and whether they are a Nextcloud administrator).
 	 *
 	 * @return ScheduledReportInterface
 	 *
@@ -162,5 +158,5 @@ interface ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReportInterface;
+	public function applyUpdate(ScheduledReportUpdate $update): ScheduledReportInterface;
 }//end interface

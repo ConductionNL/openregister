@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -65,7 +66,7 @@ class FileTextControllerDeepTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -98,6 +99,43 @@ class FileTextControllerDeepTest extends TestCase {
 
 		$this->assertEquals(500, $response->getStatus());
 	}//end testGetStatsException()
+
+	public function testFailuresAreLoggedAndAnsweredWithTheirOwnWording(): void {
+		$this->request->method('getParam')->willReturn(100);
+		$this->textExtractor->method('getExtractedText')->willThrowException(new \Exception('text fail'));
+		$this->textExtractor->method('extractPendingFiles')->willThrowException(new \Exception('bulk fail'));
+		$this->textExtractor->method('getStats')->willThrowException(new \Exception('stats fail'));
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				unset($context['file'], $context['line']);
+				$logged[] = [$message, $context];
+			}
+		);
+
+		$responses = [
+			$this->controller->getFileText(7),
+			$this->controller->bulkExtract(),
+			$this->controller->getStats(),
+		];
+
+		$this->assertSame(
+			[
+				[500, ['success' => false, 'message' => 'Failed to retrieve file text: text fail']],
+				[500, ['success' => false, 'message' => 'Bulk extraction failed: bulk fail']],
+				[500, ['success' => false, 'message' => 'Failed to retrieve statistics: stats fail']],
+			],
+			array_map(static fn ($response) => [$response->getStatus(), $response->getData()], $responses)
+		);
+		$this->assertSame(
+			[
+				['[FileTextController] Failed to get file text', ['file_id' => 7, 'error' => 'text fail']],
+				['[FileTextController] Failed bulk extraction', ['error' => 'bulk fail']],
+				['[FileTextController] Failed to get stats', ['error' => 'stats fail']],
+			],
+			$logged
+		);
+	}//end testFailuresAreLoggedAndAnsweredWithTheirOwnWording()
 
 	public function testAnonymizeFileNotFound(): void {
 		$this->fileService->method('getFileById')->willReturn(null);

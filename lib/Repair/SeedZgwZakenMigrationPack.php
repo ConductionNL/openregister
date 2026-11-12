@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -55,13 +55,13 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param MigrationPackService $migrationPackService Migration pack business logic.
+	 * @param MigrationPackServiceInterface $migrationPackService Migration pack business logic.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MigrationPackService $migrationPackService,
+		private readonly MigrationPackServiceInterface $migrationPackService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,7 +99,7 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 		}
 
 		try {
-			$this->migrationPackService->create(definition: $this->definition(), ownerUid: null, builtin: true);
+			$this->migrationPackService->seedBuiltin(definition: $this->definition());
 			$output->info('Seeded built-in migration pack "zgw-zaken-json"');
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedZgwZakenMigrationPack] seed failed: ' . $e->getMessage());

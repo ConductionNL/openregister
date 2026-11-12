@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationDedupeState;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use PHPUnit\Framework\TestCase;
 
 /**

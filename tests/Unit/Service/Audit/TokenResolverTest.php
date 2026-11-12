@@ -223,12 +223,9 @@ final class TokenResolverTest extends TestCase {
 		$context->claim(
 			new \OCA\OpenRegister\Service\Audit\TokenIdentity(
 				'jwt',
-				'jti-1',
-				'Leverancier BV',
-				'svc-leverancier',
-				null,
-				'consumer-uuid',
-				'Leverancier BV'
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('jti-1', 'Leverancier BV'),
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('svc-leverancier', null),
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('consumer-uuid', 'Leverancier BV')
 			)
 		);
 

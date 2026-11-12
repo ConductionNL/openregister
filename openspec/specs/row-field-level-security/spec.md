@@ -458,8 +458,11 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 #### Scenario: Published is not record metadata
 - **GIVEN** a rule matching `_published`, and an object that carries its record's `@self` and a body key `_published`
 - **WHEN** the rule is evaluated
-- **THEN** the body key MUST NOT answer it: published is no longer record metadata (see `deprecate-published-metadata`), so the condition is never met and grants nothing
+- **THEN** the body key MUST NOT answer it: published is no longer record metadata (see `deprecate-published-metadata`), so the condition can never match, which is an error: saving it is refused and a stored one fails closed (a deny denies, an allow grants nothing; see the next requirement)
 - **AND** any underscore-prefixed condition on an object that carries `@self` MUST be answered from `@self` alone; only an object without any `@self` falls back to its body
+- **AND** a field `@self` holds as empty MUST answer null, which is told apart from a key that names no record metadata at all
+- **AND** `_uuid` MUST read the record's uuid, which `@self` carries as `id`
+- **AND** `_expires` MUST read the record's `expires`, which the match envelope carries and the rendered `@self` does not
 
 #### Scenario: Non-underscore property does not check @self
 - **GIVEN** object data `{ "status": "open" }`
@@ -467,6 +470,57 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **WHEN** `ConditionMatcher::getObjectValue($object, 'status')` is called
 - **THEN** it MUST return `open` from the direct property
 - **AND** it MUST NOT check `@self` (only underscore-prefixed properties fall back to `@self`)
+
+### Requirement: A condition on metadata no record carries MUST be refused at save and fail closed when stored
+A `match` key that starts with `_` or `@self.` names record metadata. The metadata a record carries is the set of fields of its match envelope (`ObjectEntity::getMatchEnvelope()`), read from the entity rather than from a hand-kept list; `_uuid` and `@self.uuid` name the field the envelope carries as `id`. A condition on any other such key (`_published`, `@self.published`, a typo) can never match a record. A save that ADDS or CHANGES such a condition in a schema's grant or deny rules, a property's rules or a register's rules MUST be refused with a message that names the key, the action, the principal and the schema, property or register. A save that keeps a stored condition unchanged, edits around it or removes it MUST NOT be refused for it, so that access revocation and link writes keep working on a schema or register that already holds one. A stored rule MUST fail closed when evaluated: a deny on it denies, an allow on it grants nothing, on the single-object path, the relation path and the list query alike. Each schema and key MUST be logged once per request. `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored schemas and registers that carry such a condition, without changing them, and MUST say that rules in an object's own `_authorization` are not scanned.
+
+#### Scenario: A schema rule on `_published` is refused at save
+- **GIVEN** a schema whose `read` rule for group `public` matches `{ "_published": { "$lte": "$now" } }`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with a message naming `_published`, the `read` rule, group `public` and the schema
+- **AND** the same holds for a deny entry, for a property's rule, and for a register's rule
+- **AND** a rule matching `_organisation`, `_owner` or another `@self` field MUST save
+
+#### Scenario: A `@self.` key follows the same rule
+- **GIVEN** a rule matching `@self.published`, and a rule matching `@self.owner`
+- **WHEN** they are saved or evaluated
+- **THEN** `@self.published` MUST be refused at save and fail closed when stored, like `_published`
+- **AND** `@self.owner` MUST read the record's owner: `{ "@self.owner": null }` is not met on a record with an owner, and a deny on `{ "@self.owner": "bob" }` fires on bob's record
+- **AND** on the list query it MUST name the same column as `_owner`
+- **AND** a body key named `@self.owner` MUST NOT answer it, on an object with or without `@self`
+
+#### Scenario: A field missing from a partial `@self` is not read from the body
+- **GIVEN** an object whose `@self` holds only `organisation`, and a body key `_owner`
+- **WHEN** a rule matching `_owner` is evaluated
+- **THEN** it MUST read null, not the body key
+
+#### Scenario: A save over a stored rule is only refused for what it adds or changes
+- **GIVEN** a stored schema or register with a rule on `_published`
+- **WHEN** a save keeps that condition unchanged, changes another condition of the rule, changes another rule, or removes the rule
+- **THEN** the save MUST NOT be refused for it
+- **AND** a save that changes the condition's value, moves it to another action, principal or property, or adds another such condition MUST be refused, naming only what is new
+
+#### Scenario: A stored deny on unknown metadata denies
+- **GIVEN** a stored schema whose `deny.update` entry for group `editors` matches `_published`
+- **WHEN** a member of `editors` updates a record, through the single-object check or the relation path
+- **THEN** the update MUST be denied
+- **AND** the list query for that caller MUST return no rows
+- **AND** the refusal MUST be logged once with the schema id and the key
+
+#### Scenario: A stored allow on unknown metadata grants nothing
+- **GIVEN** a stored rule for group `editors` matching `{ "_published": null }` or `{ "_published": { "$exists": false } }`
+- **WHEN** it is evaluated against a record, on the single-object path or as a list predicate
+- **THEN** it MUST NOT grant, although the record has no such value
+- **AND** the list predicate MUST NOT reference a `_published` column
+
+#### Scenario: Stored rules are reported, not rewritten
+- **GIVEN** stored schemas and registers, some with a condition on unknown metadata
+- **WHEN** an administrator runs `occ openregister:rbac:unknown-metadata-conditions`
+- **THEN** it MUST print one line per such condition, naming the schema or register, the rule and the key, and exit 1
+- **AND** it MUST NOT change any schema or register
+- **AND** on an instance without such conditions it MUST say so and exit 0
+- **AND** it MUST read every schema and register past RBAC and the organisation filter
+- **AND** it MUST say that rules in an object's own `_authorization` are not scanned
 
 ### Requirement: writeOnly properties MUST never be returned on any read
 A property declared `writeOnly: true` MUST be stripped from every read response for every caller, including admin, while remaining writable. This is the field-level read mechanism for secrets and tokens (standard JSON Schema / OpenAPI keyword) and is fully backward compatible: a property without `writeOnly` is returned exactly as before. It closes openregister#380 at the platform level so ADR-063 MCP tools inherit the redaction without per-dialect field projection.
@@ -712,6 +766,34 @@ apply to this object as it stands, not the rules that could apply.
 - **THEN** the condition is evaluated against that property's value
 - @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAConditionReadsAPropertyTheLifecycleDoesNotDeclare}
 
+### Requirement: A rule's `match` key reaches SQL only as a known column of the table
+On every list path, a `match` key MUST reach SQL only as a column resolved from the schema's declared properties, the fixed metadata columns or the schema's linked-type columns, quoted as the platform's identifier. Any other key MUST compile to the fail-closed predicate `1 = 0` for an allow, on the raw SQL path, the QueryBuilder path and the cross-organisation branch, and MUST empty the list for a conditional deny, whose negation would otherwise admit every row. A save that ADDS or CHANGES a condition on a malformed key, or on a key a schema does not declare, MUST be refused with a message that names the key, the rule and the schema, property or register. A register's rule can name any of its schemas' properties, so a register save judges only the key's form. A save that keeps a stored condition, edits around it, removes it, or drops a property a stored rule names MUST NOT be refused for it. `occ openregister:rbac:unknown-metadata-conditions` MUST list stored rules with such keys, without changing them.
+
+@e2e exclude backend list-query compilation, covered by tests/Unit/Db/MagicMapper/RuleKeysFailClosedTest.php and RuleKeyColumnsGoldenTest.php
+
+#### Scenario: A key that names no column admits no row
+- **GIVEN** a stored allow rule whose `match` key is malformed or names no property of the schema
+- **WHEN** a non-admin lists objects
+- **THEN** the rule MUST compile to `1 = 0`
+- **AND** none of the key's text MUST appear in the query
+
+#### Scenario: A conditional deny on such a key empties the list
+- **GIVEN** a stored deny rule, in `enforcing` mode, whose `match` key names no column
+- **WHEN** a caller the deny names lists objects
+- **THEN** the list MUST be empty
+
+#### Scenario: A known key compiles to its quoted column
+- **GIVEN** a rule on a declared property, a metadata key or a `@self.` key
+- **WHEN** it compiles
+- **THEN** the condition MUST be the one it was before, with the column quoted as an identifier
+
+#### Scenario: A save is refused only for what it adds or changes
+- **GIVEN** a schema with a stored condition on a key it does not declare
+- **WHEN** a save keeps that condition, or drops a property a stored rule names
+- **THEN** the save MUST succeed
+- **WHEN** a save adds such a condition or changes its value
+- **THEN** the save MUST be refused with a message naming the key and the rule
+
 ### Requirement: A property read rule holds on every route that returns its value
 
 When a property read rule withholds a property from a caller, the system SHALL
@@ -757,6 +839,36 @@ property SHALL keep PUT semantics.
 #### Scenario: The group that may update it still clears it by omission
 - **WHEN** a member of `service` PUTs the document without `restricted`
 - **THEN** `restricted` is null
+
+### Requirement: An anonymous caller reads no user ids in a record's envelope
+
+A JSON answer to a caller without a session MUST NOT carry `@self.owner`,
+`@self.authorization`, `@self.retention`, the linked items in `@self` (`mail`, `contacts`, `notes`,
+`todos`, `calendar`, `talk`, `deck`), or the user id inside `@self.locked`, `@self.deleted`,
+`@self.archived`, `@self.frozen`, `@self.register` and `@self.schema`. GraphQL's `_owner` MUST answer
+null. Rules MUST keep reading the record through `ObjectEntity::getMatchEnvelope()`, so a condition
+on `_owner` and the owner bypass decide as they did. A signed-in caller's answer MUST NOT change.
+
+#### Scenario: an anonymous read of a public record
+
+- **GIVEN** a record on a public-read schema, owned by a user
+- **WHEN** an anonymous caller reads it through show, index, search or a federation share
+- **THEN** the answer holds the record and its `@self.organisation`, and no user id
+- @e2e exclude {asserted per read path through the real controllers in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testAnAnonymousAnswerCarriesNoUserId}
+
+#### Scenario: an anonymous GraphQL query asks for the owner under an alias
+
+- **GIVEN** a record owned by a user
+- **WHEN** an anonymous caller queries `_owner` and `madeBy: _owner`
+- **THEN** both answer null, and a property rule still reads the owner
+- @e2e exclude {asserted on the real generated schema in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testAnAnonymousGraphQlAnswerCarriesNoOwner and ::testAnAnonymousRuleStillReadsTheOwner}
+
+#### Scenario: a signed-in read is unchanged
+
+- **GIVEN** a signed-in caller
+- **WHEN** they read the same record
+- **THEN** the answer is byte-identical to the answer before this requirement
+- @e2e exclude {asserted against a golden recorded on the earlier code in tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest.php::testTheSignedInAnswersMatchTheGolden}
 
 ## Current Implementation Status
 

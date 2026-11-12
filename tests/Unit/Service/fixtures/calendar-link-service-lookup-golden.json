@@ -1,0 +1,524 @@
+{
+    "events no user": {
+        "thrown": "Exception: No user logged in",
+        "calls": []
+    },
+    "events unknown uri": {
+        "thrown": "Exception: Calendar nope not found for user",
+        "calls": [
+            "calendars principals/users/alice"
+        ]
+    },
+    "events non vevent calendar": {
+        "thrown": "Exception: Calendar tasks not found for user",
+        "calls": [
+            "calendars principals/users/alice"
+        ]
+    },
+    "events no component set": {
+        "thrown": "Exception: Calendar bare not found for user",
+        "calls": [
+            "calendars principals/users/alice"
+        ]
+    },
+    "events all": {
+        "result": [
+            {
+                "uid": "ev-i",
+                "uri": "i.ics",
+                "summary": "Early",
+                "dtstart": "2026-03-01T00:00:00+00:00",
+                "dtend": null,
+                "location": "Room 2",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "events null limit": {
+        "result": [
+            {
+                "uid": "ev-i",
+                "uri": "i.ics",
+                "summary": "Early",
+                "dtstart": "2026-03-01T00:00:00+00:00",
+                "dtend": null,
+                "location": "Room 2",
+                "calendarId": 3,
+                "calendarUri": "iter"
+            },
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "iter"
+            },
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 3,
+                "calendarUri": "iter"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "iter"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "iter"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 3",
+            "object 3 a.ics",
+            "object 3 b.ics",
+            "object 3 c.ics",
+            "object 3 d.ics",
+            "object 3 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 3 f.ics",
+            "object 3 g.ics",
+            "object 3 h.ics",
+            "object 3 i.ics",
+            "object 3 j.ics"
+        ]
+    },
+    "events limit two": {
+        "result": [
+            {
+                "uid": "ev-i",
+                "uri": "i.ics",
+                "summary": "Early",
+                "dtstart": "2026-03-01T00:00:00+00:00",
+                "dtend": null,
+                "location": "Room 2",
+                "calendarId": 5,
+                "calendarUri": "obj"
+            },
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 5,
+                "calendarUri": "obj"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 5",
+            "object 5 a.ics",
+            "object 5 b.ics",
+            "object 5 c.ics",
+            "object 5 d.ics",
+            "object 5 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 5 f.ics",
+            "object 5 g.ics",
+            "object 5 h.ics",
+            "object 5 i.ics",
+            "object 5 j.ics"
+        ]
+    },
+    "events zero limit": {
+        "result": [
+            {
+                "uid": "ev-i",
+                "uri": "i.ics",
+                "summary": "Early",
+                "dtstart": "2026-03-01T00:00:00+00:00",
+                "dtend": null,
+                "location": "Room 2",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "events after cutoff": {
+        "result": [
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "events cutoff at a start": {
+        "result": [
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "link no user": {
+        "thrown": "Exception: No user logged in",
+        "calls": []
+    },
+    "link unknown calendar": {
+        "thrown": "Exception: Calendar event ev-a not found on calendar nope",
+        "calls": [
+            "calendars principals/users/alice"
+        ]
+    },
+    "link found": {
+        "result": {
+            "calendarId": 2,
+            "eventUri": "a.ics",
+            "summary": "Late",
+            "location": "HQ",
+            "linkedBy": "alice",
+            "eventUid": "ev-a",
+            "calendarUri": "work",
+            "dtstart": "2026-07-01T10:00:00+00:00",
+            "dtend": "2026-07-01T11:00:00+00:00",
+            "dtstartClass": "DateTime"
+        },
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics"
+        ]
+    },
+    "link found no extras": {
+        "result": {
+            "calendarId": 1,
+            "eventUri": "c.ics",
+            "summary": "No start",
+            "location": null,
+            "linkedBy": "alice",
+            "eventUid": "ev-c",
+            "calendarUri": "tasks",
+            "dtstart": null,
+            "dtend": null,
+            "dtstartClass": null
+        },
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 1",
+            "object 1 a.ics",
+            "object 1 b.ics",
+            "object 1 c.ics"
+        ]
+    },
+    "link date start": {
+        "result": {
+            "calendarId": 4,
+            "eventUri": "i.ics",
+            "summary": "Early",
+            "location": "Room 2",
+            "linkedBy": "alice",
+            "eventUid": "ev-i",
+            "calendarUri": "bare",
+            "dtstart": "2026-03-01T00:00:00+00:00",
+            "dtend": null,
+            "dtstartClass": "DateTime"
+        },
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 4",
+            "object 4 a.ics",
+            "object 4 b.ics",
+            "object 4 c.ics",
+            "object 4 d.ics",
+            "object 4 e.ics",
+            "object 4 f.ics",
+            "object 4 g.ics",
+            "object 4 h.ics",
+            "object 4 i.ics"
+        ]
+    },
+    "link missing uid": {
+        "thrown": "Exception: Calendar event ev-zzz not found on calendar work",
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "link substring only": {
+        "thrown": "Exception: Calendar event ev-a-cop not found on calendar work",
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "link broken object": {
+        "thrown": "Exception: Calendar event VEVENT broken not found on calendar work",
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse VEVENT while locating event VEVENT broken: []",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
+    "link todo": {
+        "thrown": "Exception: Calendar event todo-1 not found on calendar work",
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    }
+}

@@ -324,7 +324,7 @@ Access **Settings** → **OpenRegister** → **Settings**:
 docker exec -u 33 nextcloud php occ openregister:test
 
 # Via API
-curl -u admin:admin \
+curl -H 'OCS-APIRequest: true' -u admin:admin \
   http://localhost:8080/index.php/apps/openregister/api/registers
 
 # Expected: JSON list of registers

@@ -286,3 +286,68 @@ describe('LlmConfiguration.loadVectorStats', () => {
 		expect(state(ctx)).toMatchSnapshot()
 	})
 })
+
+describe('LlmConfiguration.loadChatStats', () => {
+	beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => {}))
+	afterEach(() => jest.restoreAllMocks())
+
+	it.each([
+		['full', { total_agents: 3, total_conversations: 5, total_messages: 8 }],
+		['partial', { total_agents: 2 }],
+		['empty', {}],
+		['nothing', null],
+	])('reads %s stats', async (name, response) => {
+		const ctx = context({ getChatStats: () => Promise.resolve(response) })
+		ctx.chatStats.totalMessages = 9
+		await ctx.loadChatStats()
+		expect(state(ctx)).toMatchSnapshot()
+	})
+
+	it('keeps the stats when the store fails', async () => {
+		const ctx = context({
+			getChatStats: () => Promise.reject(new Error('down')),
+		})
+		ctx.chatStats.totalAgents = 4
+		await ctx.loadChatStats()
+		expect(state(ctx)).toMatchSnapshot()
+	})
+})
+
+describe('LlmConfiguration.refreshDatabaseInfo', () => {
+	beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => {}))
+	afterEach(() => jest.restoreAllMocks())
+
+	it.each([
+		['refreshes', () => Promise.resolve({ data: {} }), () => Promise.resolve()],
+		[
+			'fails to refresh',
+			() => Promise.reject(new Error('down')),
+			() => Promise.resolve(),
+		],
+		[
+			'fails to reload',
+			() => Promise.resolve({ data: {} }),
+			() => Promise.reject(new Error('reload')),
+		],
+	])('%s', async (name, post, reload) => {
+		const { showError, showSuccess } = jest.requireMock('@nextcloud/dialogs')
+		showError.mockClear()
+		showSuccess.mockClear()
+		axios.post.mockReset()
+		axios.post.mockImplementation(post)
+		const ctx = context({})
+		let during
+		ctx.loadDatabaseInfo = () => {
+			during = ctx.refreshingDatabase
+			return reload()
+		}
+		await ctx.refreshDatabaseInfo()
+		expect({
+			posted: axios.post.mock.calls,
+			during,
+			success: showSuccess.mock.calls,
+			error: showError.mock.calls,
+			state: state(ctx),
+		}).toMatchSnapshot()
+	})
+})

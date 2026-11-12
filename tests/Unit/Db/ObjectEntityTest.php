@@ -32,6 +32,55 @@ class ObjectEntityTest extends TestCase {
 		return $session;
 	}
 
+	// --- filterAsRecord ---
+
+	public function testFilterAsRecordAddsNoSelfToARowWithoutOne(): void {
+		$this->entity->setUuid('record-1');
+		$this->entity->setOrganisation('org-a');
+		$seen = null;
+
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x'],
+			static function (array $probe) use (&$seen): array {
+				$seen = $probe;
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x'], $filtered);
+		$this->assertSame('record-1', $seen['@self']['id']);
+		$this->assertSame('org-a', $seen['@self']['organisation']);
+	}
+
+	public function testFilterAsRecordGivesARowItsOwnSelfBack(): void {
+		$this->entity->setUuid('record-1');
+		$own = ['id' => 'as-rendered', 'organisation' => 'as-rendered-org'];
+		$seen = null;
+
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x', '@self' => $own],
+			static function (array $probe) use (&$seen): array {
+				$seen = $probe;
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x', '@self' => $own], $filtered);
+		$this->assertSame('record-1', $seen['@self']['id']);
+	}
+
+	public function testFilterAsRecordKeepsWhatTheFilterRemoves(): void {
+		$filtered = $this->entity->filterAsRecord(
+			['title' => 'x', 'secret' => 'y'],
+			static function (array $probe): array {
+				unset($probe['secret']);
+				return $probe;
+			}
+		);
+
+		$this->assertSame(['title' => 'x'], $filtered);
+	}
+
 	// --- Constructor ---
 
 	public function testConstructorFieldTypes(): void {
@@ -563,7 +612,7 @@ class ObjectEntityTest extends TestCase {
 		$envelope = $record->getMatchEnvelope();
 
 		$this->assertSame(['id', 'title', '@self'], array_keys($envelope));
-		$this->assertSame($record->getObjectArray(), $envelope['@self']);
+		$this->assertSame(array_merge($record->getObjectArray(), ['expires' => null, 'name' => null, 'description' => null]), $envelope['@self']);
 		$this->assertSame('bob', $envelope['@self']['owner']);
 		$this->assertSame('org-b', $envelope['@self']['organisation']);
 		$this->assertSame('7', $envelope['@self']['schema']);

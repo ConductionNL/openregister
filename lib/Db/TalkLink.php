@@ -188,20 +188,24 @@ class TalkLink extends Entity implements JsonSerializable {
 	 * @return array<string,mixed>
 	 */
 	public function jsonSerialize(): array {
-		$lastMessage = null;
-		if ($this->lastMessageData !== null && $this->lastMessageData !== '') {
-			$decoded = json_decode($this->lastMessageData, true);
-			if (is_array($decoded) === true) {
-				$lastMessage = $decoded;
-			}
-		}
+		return array_merge(
+			$this->roomJson(),
+			[
+				'lastMessage' => $this->lastMessage(),
+				'lastActivity' => $this->lastActivity?->format(DateTime::ATOM),
+				'linkedBy' => $this->linkedBy,
+				'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+				'url' => $this->callUrl(),
+			]
+		);
+	}//end jsonSerialize()
 
-		// Convenience deep-link for the UI.
-		$url = null;
-		if ($this->roomToken !== null) {
-			$url = '/index.php/call/' . $this->roomToken;
-		}
-
+	/**
+	 * The linked object and the cached room fields.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function roomJson(): array {
 		return [
 			'id' => $this->id,
 			'objectUuid' => $this->objectUuid,
@@ -213,11 +217,37 @@ class TalkLink extends Entity implements JsonSerializable {
 			'roomType' => $this->roomType,
 			'subtitle' => $this->subtitle,
 			'participantCount' => $this->participantCount,
-			'lastMessage' => $lastMessage,
-			'lastActivity' => $this->lastActivity?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-			'url' => $url,
 		];
-	}//end jsonSerialize()
+	}//end roomJson()
+
+	/**
+	 * The decoded `lastMessageData`, or null when empty or not a JSON array/object.
+	 *
+	 * @return array<mixed>|null The last message.
+	 */
+	private function lastMessage(): ?array {
+		if ($this->lastMessageData === null || $this->lastMessageData === '') {
+			return null;
+		}
+
+		$decoded = json_decode($this->lastMessageData, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end lastMessage()
+
+	/**
+	 * Convenience deep-link to the room for the UI, or null without a token.
+	 *
+	 * @return string|null The url.
+	 */
+	private function callUrl(): ?string {
+		if ($this->roomToken === null) {
+			return null;
+		}
+
+		return '/index.php/call/' . $this->roomToken;
+	}//end callUrl()
 }//end class

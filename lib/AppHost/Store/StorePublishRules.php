@@ -73,7 +73,19 @@ final class StorePublishRules {
 			return null;
 		}
 
-		$body = ['slug' => $slug];
+		return ['slug' => $slug] + self::publishedFields(descriptor: $descriptor, payload: $payload);
+	}//end body()
+
+	/**
+	 * The payload fields the descriptor lets a publish send, never the slug or an identity key.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store descriptor.
+	 * @param array<string, mixed> $payload    The item to publish.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function publishedFields(StoreDescriptor $descriptor, array $payload): array {
+		$fields = [];
 		foreach ($descriptor->publishFields as $field) {
 			$field = (string)$field;
 			if ($field === 'slug' || in_array($field, self::IDENTITY_KEYS, true) === true) {
@@ -81,12 +93,12 @@ final class StorePublishRules {
 			}
 
 			if (array_key_exists($field, $payload) === true) {
-				$body[$field] = $payload[$field];
+				$fields[$field] = $payload[$field];
 			}
 		}
 
-		return $body;
-	}//end body()
+		return $fields;
+	}//end publishedFields()
 
 	/**
 	 * The publish body as JSON, or null when nothing may be sent.

@@ -63,4 +63,37 @@ class MapperRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+
+	/**
+	 * Every factory asks the container for the same services, in the same order.
+	 *
+	 * @return void
+	 */
+	public function testEveryFactoryAsksForItsServicesInOrder(): void {
+		$context = new RecordingRegistrationContext();
+		MapperRegistrar::register(context: $context);
+
+		$asked = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$asked) {
+				$asked[] = $id;
+				return $this->createMock(originalClassName: $id);
+			}
+		);
+
+		$actual = [];
+		foreach ($context->factories as $name => $factory) {
+			$asked = [];
+			$factory($container);
+			$actual[$name] = $asked;
+		}
+
+		$fixture = __DIR__ . '/fixtures/mapper-registrar-wiring.json';
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents($fixture, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+		}
+
+		$this->assertSame(expected: json_decode((string) file_get_contents($fixture), true), actual: $actual);
+	}//end testEveryFactoryAsksForItsServicesInOrder()
 }//end class

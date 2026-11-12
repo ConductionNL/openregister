@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarFeedControllerFactory;
 use OCA\OpenRegister\Controller\CalendarFeedController;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
@@ -73,7 +74,7 @@ class CalendarFeedControllerTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('203.0.113.10');
 
-		$this->controller = new CalendarFeedController(
+		$this->controller = CalendarFeedControllerFactory::create(
 			'openregister',
 			$request,
 			$this->tokens,
@@ -179,7 +180,7 @@ class CalendarFeedControllerTest extends TestCase {
 
 	public function testAnAnswerCannotBeRecordedOnAnObjectTheCallerMayNotRead(): void {
 		$this->attendees->method('mayRead')->willReturn(false);
-		$this->attendees->expects($this->never())->method('recordResponse');
+		$this->attendees->expects($this->never())->method('recordAttendeeResponse');
 
 		$this->assertSame(
 			Http::STATUS_NOT_FOUND,
@@ -207,12 +208,38 @@ class CalendarFeedControllerTest extends TestCase {
 
 	public function testARefusedAnswerIsABadRequest(): void {
 		$this->attendees->method('mayRead')->willReturn(true);
-		$this->attendees->method('recordResponse')
+		$this->attendees->method('recordAttendeeResponse')
 			->willThrowException(new \InvalidArgumentException('MAYBE is not an attendee answer'));
 
 		$this->assertSame(
 			Http::STATUS_BAD_REQUEST,
 			$this->controller->recordAttendeeResponse(id: 'object-uuid')->getStatus()
 		);
+	}
+	public function testAFailingThrottlerIsLoggedAndTheFeedStillAnswersNotFound(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('CalendarFeedController: registerAttempt failed: down');
+		$throttler = $this->createMock(IThrottler::class);
+		$throttler->expects($this->once())->method('registerAttempt')
+			->with(CalendarFeedController::THROTTLE_ACTION, '203.0.113.10')
+			->willThrowException(new \RuntimeException('down'));
+		$request = $this->createMock(IRequest::class);
+		$request->method('getRemoteAddress')->willReturn('203.0.113.10');
+		$this->tokens->method('resolve')->willReturn(null);
+		$controller = CalendarFeedControllerFactory::create(
+			'openregister',
+			$request,
+			$this->tokens,
+			$this->feed,
+			$this->attendees,
+			$this->userSession,
+			$throttler,
+			$logger
+		);
+
+		$response = $controller->feed(token: 'revoked');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
 	}
 }

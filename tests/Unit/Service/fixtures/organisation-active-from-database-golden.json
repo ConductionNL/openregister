@@ -1,0 +1,503 @@
+{
+    "nothing stored, oldest of preloaded": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "a-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to oldest",
+            {
+                "userId": "alice",
+                "organisationUuid": "a-uuid",
+                "organisationName": "name-a-uuid"
+            }
+        ],
+        [
+            "result",
+            "a-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "stored and member": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "a-uuid"
+        ],
+        [
+            "result",
+            "a-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "stored, no longer member, default joins": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "a-uuid"
+        ],
+        [
+            "config.delete",
+            [
+                "alice",
+                "openregister",
+                "active_organisation"
+            ]
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_alice"
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_timestamp_alice"
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared active organisation cache",
+            {
+                "userId": "alice"
+            }
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared invalid active organisation",
+            {
+                "userId": "alice",
+                "organisationUuid": "a-uuid"
+            }
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Retrieved default organisation from static cache",
+            []
+        ],
+        [
+            "mapper.update",
+            "default-uuid",
+            [
+                "bob",
+                "alice"
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Added user to default organisation",
+            {
+                "userId": "alice",
+                "organisationUuid": "default-uuid",
+                "organisationName": "name-default-uuid"
+            }
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "default-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to default",
+            {
+                "userId": "alice",
+                "organisationUuid": "default-uuid",
+                "organisationName": "name-default-uuid"
+            }
+        ],
+        [
+            "result",
+            "default-uuid",
+            [
+                "bob",
+                "alice"
+            ]
+        ]
+    ],
+    "stored but deleted, oldest": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "gone-uuid"
+        ],
+        [
+            "config.delete",
+            [
+                "alice",
+                "openregister",
+                "active_organisation"
+            ]
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_alice"
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_timestamp_alice"
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared active organisation cache",
+            {
+                "userId": "alice"
+            }
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared non-existent active organisation",
+            {
+                "userId": "alice",
+                "organisationUuid": "gone-uuid"
+            }
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "a-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to oldest",
+            {
+                "userId": "alice",
+                "organisationUuid": "a-uuid",
+                "organisationName": "name-a-uuid"
+            }
+        ],
+        [
+            "result",
+            "a-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "stored merged, member of survivor": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "a-uuid"
+        ],
+        [
+            "mapper.followMerge",
+            "a-uuid"
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "s-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Active organisation followed a merge",
+            {
+                "userId": "alice",
+                "from": "a-uuid",
+                "to": "s-uuid"
+            }
+        ],
+        [
+            "result",
+            "s-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "stored merged, survivor unresolvable, member": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "a-uuid"
+        ],
+        [
+            "mapper.followMerge",
+            "a-uuid"
+        ],
+        [
+            "log.warning",
+            "[OrganisationService] Could not resolve merge target; keeping the organisation as stored",
+            {
+                "organisationUuid": "a-uuid",
+                "error": "no survivor"
+            }
+        ],
+        [
+            "result",
+            "a-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "stored merged, not member of survivor": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.findByUuid",
+            "a-uuid"
+        ],
+        [
+            "mapper.followMerge",
+            "a-uuid"
+        ],
+        [
+            "config.delete",
+            [
+                "alice",
+                "openregister",
+                "active_organisation"
+            ]
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_alice"
+        ],
+        [
+            "session.remove",
+            "openregister_active_organisation_timestamp_alice"
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared active organisation cache",
+            {
+                "userId": "alice"
+            }
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Cleared invalid active organisation",
+            {
+                "userId": "alice",
+                "organisationUuid": "a-uuid"
+            }
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "a-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to oldest",
+            {
+                "userId": "alice",
+                "organisationUuid": "a-uuid",
+                "organisationName": "name-a-uuid"
+            }
+        ],
+        [
+            "result",
+            "a-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "oldest preloaded is merged": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "mapper.followMerge",
+            "a-uuid"
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "s-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to oldest",
+            {
+                "userId": "alice",
+                "organisationUuid": "s-uuid",
+                "organisationName": "name-s-uuid"
+            }
+        ],
+        [
+            "result",
+            "s-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "default already has user": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Retrieved default organisation from static cache",
+            []
+        ],
+        [
+            "config.set",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                "default-uuid",
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[OrganisationService] Auto-set active organisation to default",
+            {
+                "userId": "alice",
+                "organisationUuid": "default-uuid",
+                "organisationName": "name-default-uuid"
+            }
+        ],
+        [
+            "result",
+            "default-uuid",
+            [
+                "alice"
+            ]
+        ]
+    ],
+    "default update fails": [
+        [
+            "config.get",
+            [
+                "alice",
+                "openregister",
+                "active_organisation",
+                ""
+            ]
+        ],
+        [
+            "log.debug",
+            "[OrganisationService] Retrieved default organisation from static cache",
+            []
+        ],
+        [
+            "mapper.update",
+            "default-uuid",
+            [
+                "bob",
+                "alice"
+            ]
+        ],
+        [
+            "log.error",
+            "[OrganisationService] Failed to set default organisation for user",
+            {
+                "userId": "alice",
+                "error": "update failed"
+            }
+        ],
+        [
+            "result",
+            null,
+            null
+        ]
+    ]
+}

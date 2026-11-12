@@ -144,7 +144,7 @@ same native-or-fallback dispatch the REST/GraphQL surfaces use.
 
 ```php
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 
 // 1. DI-resolve the runner (constructor inject it in your service).
 public function __construct(

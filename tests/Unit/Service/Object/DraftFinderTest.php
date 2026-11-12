@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\OwnDraftSearch;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -109,12 +111,30 @@ class DraftFinderTest extends TestCase {
 		$this->store(uuid: 'sent', owner: 'portal:subject-1', status: 'active', data: [], updated: '2026-10-10');
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 
-		$this->assertTrue($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'd1', owner: $owner) === $draft);
-		$this->assertNull($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::portalSubject(subjectRef: 'subject-2')));
-		$this->assertNull($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'sent', owner: $owner));
-		$this->assertNull($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'nope', owner: $owner));
-		$this->assertNull($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'boom', owner: $owner));
-		$this->assertNull($this->finder->own(register: $this->register, schema: $this->schema, draftId: 'd1', owner: null));
+		$this->assertTrue($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+			owner: $owner
+		) === $draft);
+		$this->assertNull($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+			owner: DraftOwner::portalSubject(subjectRef: 'subject-2')
+		));
+		$this->assertNull($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'sent'),
+			owner: $owner
+		));
+		$this->assertNull($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'nope'),
+			owner: $owner
+		));
+		$this->assertNull($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'boom'),
+			owner: $owner
+		));
+		$this->assertNull($this->finder->own(
+			address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+			owner: null
+		));
 	}//end testOwnFindsOnlyTheOwnersDraft()
 
 	/**
@@ -128,7 +148,9 @@ class DraftFinderTest extends TestCase {
 		$this->store(uuid: 'theirs', owner: 'portal:subject-2', status: 'draft', data: ['caseType' => 'ct-1'], updated: '2026-10-11');
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 
-		$newest = $this->finder->newest(register: $this->register, schema: $this->schema, owner: $owner, match: ['caseType' => 'ct-1']);
+		$newest = $this->finder->newest(
+			search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: $owner, match: ['caseType' => 'ct-1'])
+		);
 
 		$this->assertSame('new', $newest?->getUuid());
 		$this->assertSame(['register' => '10', 'schema' => '1', 'owner' => 'portal:subject-1'], $this->searches[0]['query']['@self']);
@@ -136,9 +158,15 @@ class DraftFinderTest extends TestCase {
 		$this->assertSame('true', $this->searches[0]['query']['_drafts'], 'A list hides drafts unless asked (decision 201); the finder asks for drafts alone.');
 		$this->assertFalse($this->searches[0]['rbac']);
 		$this->assertFalse($this->searches[0]['multitenancy']);
-		$this->assertSame('other-type', $this->finder->newest(register: $this->register, schema: $this->schema, owner: $owner)?->getUuid());
-		$this->assertNull($this->finder->newest(register: $this->register, schema: $this->schema, owner: $owner, match: ['caseType' => 'ct-9']));
-		$this->assertNull($this->finder->newest(register: $this->register, schema: $this->schema, owner: DraftOwner::portalSubject(subjectRef: 'subject-3')));
+		$this->assertSame('other-type', $this->finder->newest(
+			search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: $owner)
+		)?->getUuid());
+		$this->assertNull($this->finder->newest(
+			search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: $owner, match: ['caseType' => 'ct-9'])
+		));
+		$this->assertNull($this->finder->newest(
+			search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: DraftOwner::portalSubject(subjectRef: 'subject-3'))
+		));
 	}//end testNewestPicksTheOwnersNewestMatchingDraft()
 
 	/**
@@ -150,8 +178,8 @@ class DraftFinderTest extends TestCase {
 		$finder = new DraftFinder(objects: $objects);
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 
-		$this->assertNull($finder->newest(register: $this->register, schema: $this->schema, owner: $owner));
-		$this->assertNull($finder->newest(register: $this->register, schema: $this->schema, owner: $owner));
+		$this->assertNull($finder->newest(search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: $owner)));
+		$this->assertNull($finder->newest(search: new OwnDraftSearch(register: $this->register, schema: $this->schema, owner: $owner)));
 	}//end testAFailingOrCountingSearchFindsNothing()
 
 	/**

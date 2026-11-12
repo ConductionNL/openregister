@@ -50,6 +50,13 @@ Schema configuration containing the deprecated keys (`objectPublishedField`, `ob
 - **THEN** the config key MUST be ignored
 - **AND** a deprecation warning MUST be logged
 
+#### Scenario: An authorization rule on `_published` is refused, and a stored one fails closed
+- **GIVEN** an authorization rule whose `match` names `_published` or `_depublished`
+- **WHEN** the schema or register is saved
+- **THEN** the save MUST be refused, naming the key and the rule, because records carry no published metadata
+- **AND** a rule stored before that MUST fail closed: a deny on it denies, an allow on it grants nothing (see `row-field-level-security`)
+- **AND** `occ openregister:rbac:unknown-metadata-conditions` MUST list the stored ones; a publication window is written on a data property with `$now` instead
+
 ### Requirement: Migration Guide
 The deprecation MUST ship with documentation that explains how to migrate from `objectPublishedField` to RBAC authorization rules using `$now`, including a working example for the most common publication-window pattern.
 

@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\DeletionGraph;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,6 +58,13 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	 */
 	private bool $readFails = false;
 
+	/**
+	 * Identifiers the caller's read answers with ANOTHER readable object (whose slug, id or uri equals it).
+	 *
+	 * @var array<string, string>
+	 */
+	private array $collisions = [];
+
 	private function redaction(): ReadableDeletionAnalysis {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willReturnCallback(
@@ -64,6 +72,12 @@ class ReadableDeletionAnalysisTest extends TestCase {
 				$this->reads[] = [$identifier, $register, $schema, $includeDeleted, $_rbac, $_multitenancy];
 				if ($this->readFails === true) {
 					throw new \RuntimeException('database gone');
+				}
+
+				if (isset($this->collisions[$identifier]) === true) {
+					$other = new ObjectEntity();
+					$other->setUuid($this->collisions[$identifier]);
+					return $other;
 				}
 
 				if (in_array($identifier, $this->readable, true) === false) {
@@ -129,9 +143,7 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testEveryTargetListIsRedactedAndAnEntryWithoutActionGetsNone(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'register' => '1', 'schema' => '7', 'property' => 'case', 'chain' => []]],
-			nullifyTargets: [['objectUuid' => 'theirs-2', 'schema' => '8', 'property' => 'case', 'isArray' => false, 'sourceUuid' => self::ROOT]],
-			defaultTargets: [['objectUuid' => 'theirs-3', 'schema' => '9', 'property' => 'case', 'defaultValue' => 'x']]
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'register' => '1', 'schema' => '7', 'property' => 'case', 'chain' => []]], nullifyTargets: [['objectUuid' => 'theirs-2', 'schema' => '8', 'property' => 'case', 'isArray' => false, 'sourceUuid' => self::ROOT]], defaultTargets: [['objectUuid' => 'theirs-3', 'schema' => '9', 'property' => 'case', 'defaultValue' => 'x']])
 		);
 
 		$out = $this->redaction()->analysisFor(analysis: $analysis);
@@ -145,8 +157,7 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testAnUnreadableObjectIsBlankedFromTheChainsAndSourcesOfKeptEntries(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7', 'chain' => [self::ROOT.' → theirs-1 (CASCADE)']]],
-			nullifyTargets: [['objectUuid' => 'mine-2', 'schema' => '8', 'sourceUuid' => 'theirs-1']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7', 'chain' => [self::ROOT.' → theirs-1 (CASCADE)']]], nullifyTargets: [['objectUuid' => 'mine-2', 'schema' => '8', 'sourceUuid' => 'theirs-1']]),
 			blockers: [self::blocker(uuid: 'mine-1', schema: '9', chain: [self::ROOT.' → theirs-1 (CASCADE)', 'theirs-1 → mine-1 (RESTRICT)'])],
 			chainPaths: [[self::ROOT.' → theirs-1 (CASCADE)'], 'not a chain']
 		);
@@ -193,13 +204,41 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testEachObjectIsReadOnceAsTheCaller(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7']]),
 			blockers: [self::blocker(uuid: 'theirs-1', schema: '7'), self::blocker(uuid: 'mine-1', schema: '7')]
 		);
 
 		$this->redaction()->analysisFor(analysis: $analysis);
 
 		$this->assertSame([['theirs-1', null, null, false, true, true], ['mine-1', null, null, false, true, true]], $this->reads);
+	}
+
+	public function testAReadableObjectWhoseSlugIsAnUnreadableUuidDoesNotRevealIt(): void {
+		$this->collisions['theirs-1'] = 'mine-1';
+
+		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'theirs-1', schema: '7')]));
+
+		$this->assertSame([['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]], $out->blockers);
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function otherUuids(): array {
+		return ['a case variant' => ['THEIRS-9'], 'a longer uuid' => ['theirs-9x'], 'a shorter uuid' => ['theirs-']];
+	}//end otherUuids()
+
+	/**
+	 * A read that answers with an object whose uuid only resembles the referrer's does not reveal it.
+	 *
+	 * @dataProvider otherUuids
+	 */
+	public function testAReadIsMatchedOnTheExactUuid(string $found): void {
+		$this->collisions['theirs-9'] = $found;
+
+		$out = $this->redaction()->analysisFor(analysis: new DeletionAnalysis(deletable: false, blockers: [self::blocker(uuid: 'theirs-9', schema: '7')]));
+
+		$this->assertSame([['objectUuid' => '', 'schema' => '7', 'action' => 'RESTRICT', 'reason' => 'not readable', 'count' => 1]], $out->blockers);
 	}
 
 	public function testAReadThatFailsHidesTheObject(): void {

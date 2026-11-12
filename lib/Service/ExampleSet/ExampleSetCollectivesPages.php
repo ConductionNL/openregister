@@ -48,6 +48,11 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	public const FIELDS = ['collective', 'title', 'content', 'owner', 'shareWith'];
 
 	/**
+	 * The fields a page needs, with what each holds.
+	 */
+	private const REQUIRED = ['collective' => 'a collective', 'title' => 'a title', 'content' => 'its content', 'owner' => 'an owner'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Hands out the Collectives store on first use.
@@ -92,35 +97,36 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a collectives page field a set may write';
-		}
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', required: self::REQUIRED)),
+				fn (): string => $rules->strangerRefusal(people: [(string) $data['owner']], users: $users),
+				fn (): string => $this->shareRefusal(shareWith: ($data['shareWith'] ?? [])),
+			]
+		);
+	}//end refusal()
 
-		$required = ['collective' => 'a collective', 'title' => 'a title', 'content' => 'its content', 'owner' => 'an owner'];
-		foreach ($required as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'a collectives page needs '.$what.' ('.$field.')';
-			}
-		}
-
-		if (in_array((string) $data['owner'], $users, true) === false) {
-			return '"'.(string) $data['owner'].'" is not an account the set creates or adopts';
-		}
-
-		if (array_is_list((array) ($data['shareWith'] ?? [])) === false) {
+	/**
+	 * Why the groups a page is shared with are not a list, or ''.
+	 *
+	 * @param mixed $shareWith The declared groups.
+	 *
+	 * @return string
+	 */
+	private function shareRefusal(mixed $shareWith): string {
+		if (array_is_list((array) $shareWith) === false) {
 			return 'shareWith is a list of groups';
 		}
 
 		return '';
-	}//end refusal()
+	}//end shareRefusal()
 
 	/**
 	 * Write one page, in a collective found by name or created.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -129,35 +135,46 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$store = $this->store();
 		if ($store->available() === false) {
 			return ['error' => 'Collectives is not installed', 'entry' => null];
 		}
 
-		$owner = (string) $data['owner'];
 		try {
-			$collective = $store->collective(
-				owner: $owner,
-				name: (string) $data['collective'],
-				groups: array_map('strval', (array) ($data['shareWith'] ?? []))
-			);
-			$page       = $store->page(collective: $collective['id'], owner: $owner, title: (string) $data['title'], content: (string) $data['content']);
+			$entry = $this->writePage(store: $store, data: $data);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return [
-			'error' => '',
-			'entry' => [
-				'collective'        => $collective['id'],
-				'createdCollective' => $collective['created'],
-				'page'              => $page['id'],
-				'createdPage'       => $page['created'],
-				'owner'             => $owner,
-			],
-		];
+		return ['error' => '', 'entry' => $entry];
 	}//end write()
+
+	/**
+	 * Find or write the collective, then the page in it.
+	 *
+	 * @param ExampleSetCollectivesStore $store The Collectives store.
+	 * @param array<string, mixed>       $data  The filled page fields.
+	 *
+	 * @return array{collective: int, createdCollective: bool, page: int, createdPage: bool, owner: string}
+	 */
+	private function writePage(ExampleSetCollectivesStore $store, array $data): array {
+		$owner      = (string) $data['owner'];
+		$collective = $store->collectiveOf(
+			team: new CollectiveTeam(owner: $owner, groups: array_map('strval', (array) ($data['shareWith'] ?? []))),
+			name: (string) $data['collective']
+		);
+		$page       = $store->page(
+			seat: new CollectiveSeat(collective: $collective['id'], owner: $owner),
+			text: new CollectivePageText(title: (string) $data['title'], content: (string) $data['content'])
+		);
+
+		return [
+			'collective' => $collective['id'], 'createdCollective' => $collective['created'],
+			'page'       => $page['id'], 'createdPage' => $page['created'], 'owner' => $owner,
+		];
+	}//end writePage()
 
 	/**
 	 * Whether a written page is gone.
@@ -170,7 +187,8 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 */
 	public function lost(array $entry): bool {
 		try {
-			return $this->store()->pageExists(collective: (int) $entry['collective'], page: (int) $entry['page'], owner: (string) $entry['owner']) === false;
+			$seat = new CollectiveSeat(collective: (int) $entry['collective'], owner: (string) $entry['owner']);
+			return $this->store()->pageFound(seat: $seat, page: (int) $entry['page']) === false;
 		} catch (Throwable) {
 			return true;
 		}
@@ -187,22 +205,34 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		$store = $this->store();
-		$owner = (string) $entry['owner'];
 		try {
-			if (($entry['createdCollective'] ?? false) === true) {
-				$store->deleteCollective(collective: (int) $entry['collective'], owner: $owner);
-				return 'removed';
-			}
-
-			if (($entry['createdPage'] ?? false) === true) {
-				$store->deletePage(collective: (int) $entry['collective'], page: (int) $entry['page'], owner: $owner);
-			}
+			$this->deleteWritten(store: $store, entry: $entry);
 		} catch (Throwable) {
 			return 'failed';
 		}
 
 		return 'removed';
 	}//end revert()
+
+	/**
+	 * Delete the collective when the set wrote it (its pages go with it), else the page when the set wrote that.
+	 *
+	 * @param ExampleSetCollectivesStore $store The Collectives store.
+	 * @param array<string, mixed>       $entry A record entry from write().
+	 *
+	 * @return void
+	 */
+	private function deleteWritten(ExampleSetCollectivesStore $store, array $entry): void {
+		$owner = (string) $entry['owner'];
+		if (($entry['createdCollective'] ?? false) === true) {
+			$store->deleteCollective(collective: (int) $entry['collective'], owner: $owner);
+			return;
+		}
+
+		if (($entry['createdPage'] ?? false) === true) {
+			$store->deletePage(seat: new CollectiveSeat(collective: (int) $entry['collective'], owner: $owner), page: (int) $entry['page']);
+		}
+	}//end deleteWritten()
 
 	/**
 	 * The Collectives store.

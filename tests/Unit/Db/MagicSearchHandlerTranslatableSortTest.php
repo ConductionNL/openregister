@@ -41,6 +41,7 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -160,11 +161,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$method->invoke(
 			$this->makeHandler(new SqlitePlatform()),
 			$this->makeQueryBuilder(),
-			['title' => $direction],
-			$schema,
-			null,
-			null,
-			$languages
+			$this->sortRequest(['title' => $direction], $schema, $languages)
 		);
 
 		$this->assertCount(1, $this->orderBy);
@@ -272,11 +269,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$method->invoke(
 			$this->makeHandler(new SqlitePlatform()),
 			$this->makeQueryBuilder(),
-			['@self.name' => 'asc', '_summary' => 'desc', '_created' => 'desc', '@self.updated' => 'asc'],
-			$schema,
-			null,
-			null,
-			['nl']
+			$this->sortRequest(['@self.name' => 'asc', '_summary' => 'desc', '_created' => 'desc', '@self.updated' => 'asc'], $schema, ['nl'])
 		);
 
 		$this->assertSame(
@@ -295,7 +288,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$schema->setProperties(['amount' => ['type' => 'number'], 'when' => ['type' => 'string', 'format' => 'date']]);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->makeHandler(new SqlitePlatform()), $this->makeQueryBuilder(), ['amount' => 'asc', 'when' => 'asc'], $schema, null, null, ['nl']);
+		$method->invoke($this->makeHandler(new SqlitePlatform()), $this->makeQueryBuilder(), $this->sortRequest(['amount' => 'asc', 'when' => 'asc'], $schema, ['nl']));
 
 		$this->assertSame([['t.amount', 'ASC'], ['t.when', 'ASC']], $this->orderBy);
 	}//end testANumberPropertyKeepsItsBareColumn()
@@ -307,7 +300,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string']]);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->makeHandler(new PostgreSQLPlatform()), $this->makeQueryBuilder(), ['title' => 'asc'], $schema, null, null, ['nl']);
+		$method->invoke($this->makeHandler(new PostgreSQLPlatform()), $this->makeQueryBuilder(), $this->sortRequest(['title' => 'asc'], $schema, ['nl']));
 
 		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC']], $this->orderBy);
 	}//end testPostgresLowersTextAfterACastToText()
@@ -339,4 +332,20 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		// Reading the chain must not flag a fallback on the response.
 		$this->assertFalse($languageService->isFallbackUsed());
 	}//end testTheChainFollowsTheAcceptedLanguageTheRegisterOffers()
+
+	/**
+	 * A sort request for a schema, ordered by a language chain.
+	 *
+	 * @param array  $order     The requested order.
+	 * @param Schema $schema    The schema.
+	 * @param array  $languages The language chain.
+	 *
+	 * @return SortRequest
+	 */
+	private function sortRequest(array $order, Schema $schema, array $languages): SortRequest {
+		$sort = new SortRequest(order: $order, schema: $schema);
+		$sort->sortLanguages = $languages;
+
+		return $sort;
+	}//end sortRequest()
 }//end class

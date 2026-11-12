@@ -7,17 +7,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use Error;
 use OCA\OpenRegister\Controller\ChatController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -38,10 +39,15 @@ use Psr\Log\LoggerInterface;
  * are left out. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ChatController
- * @uses   \OCA\OpenRegister\Db\Conversation
+ * @uses \OCA\OpenRegister\Controller\Support\ChatMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ChatDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ChatPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ChatControllerServices
+ * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Db\Feedback
- * @uses   \OCA\OpenRegister\Db\Message
+ * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class ChatControllerFeedbackGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/chat-feedback-golden.json';
@@ -139,8 +145,7 @@ class ChatControllerFeedbackGoldenTest extends TestCase {
 			return $organisation;
 		});
 
-		$controller = new ChatController(
-			'openregister',
+		$controller = ChatControllerFactory::create(
 			$request,
 			$this->createMock(ChatService::class),
 			$conversationMapper,

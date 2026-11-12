@@ -592,7 +592,7 @@ The star is retired: starring is following with notifications off. For one relea
 - **GIVEN** a user who follows an object with notifications on
 - **WHEN** the user calls `PUT .../favourite`
 - **THEN** `@self.watchNotify` is still true and the response carries a `Deprecation` header
-- @e2e exclude {the alias is removed next release; asserted by FavouriteServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
+- @e2e exclude {the alias is removed next release; asserted by WatcherServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
 
 ### Requirement: Favourites and recent are lenses on the object query
 

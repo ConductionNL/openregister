@@ -35,34 +35,44 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationlessAdmission;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\DraftListing;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 
 /**
  * Runs a named aggregation against a schema.
@@ -90,7 +100,8 @@ use RuntimeException;
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
-class AggregationRunner {
+class AggregationRunner implements AggregationRunnerInterface {
+	use MagicColumnNameTrait;
 
 	/**
 	 * An organisation scope the native SQL cannot render: the boundary has a
@@ -102,7 +113,7 @@ class AggregationRunner {
 
 	/**
 	 * Hard cap on the number of rows the PHP fallback path will hydrate
-	 * per request. The native Postgres path (tryNativeAggregation) does
+	 * per request. The native Postgres path (tryNativeWithSpec) does
 	 * the work in SQL and is unaffected. Picked at 10 000 to keep peak
 	 * memory bounded against an authenticated-caller request flood that
 	 * varies the filter to bypass the AggregationCache.
@@ -117,6 +128,37 @@ class AggregationRunner {
 	 * bails the whole join to the PHP fallback (see aggregateJoinedSchema()).
 	 */
 	private const JOIN_SELECT_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
+
+	/**
+	 * The operators of an operator-map filter the native SQL renders.
+	 */
+	private const NATIVE_FILTER_OPERATORS = ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR];
+
+	/**
+	 * The comparison operators of an operator map and their SQL spelling.
+	 */
+	private const NATIVE_COMPARISONS = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
+
+	/**
+	 * Magic-table mapper used for the PHP fallback path.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Register loader.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema loader.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * The shared register-scoped schema resolver.
@@ -144,18 +186,23 @@ class AggregationRunner {
 	private readonly MetricExpressionEvaluator $expressions;
 
 	/**
+	 * The operator checks of the PHP filter, built on first use.
+	 *
+	 * @var array<string, \Closure(mixed, mixed): bool>|null
+	 */
+	private ?array $operatorChecks = null;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapper $registerMapper Register loader.
-	 * @param SchemaMapper $schemaMapper Schema loader.
-	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
+	 * @param SchemaCatalogInterface $catalog The register and schema loaders and the magic-table mapper (PHP fallback path).
+	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
-	 * @param AggregationCache $cache 60s aggregation result cache.
-	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
+	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
+	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
-	 * @param OrganisationService $organisationService Active-organisation lookup for the cache key.
-	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
+	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
+	 * @param OrganisationScopeResolverInterface $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
 	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
 	 * @param LoggerInterface|null $logger Optional logger for diagnostics.
@@ -175,16 +222,14 @@ class AggregationRunner {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PlaceholderResolver $placeholders,
+		SchemaCatalogInterface $catalog,
+		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly IDBConnection $db,
-		private readonly AggregationCache $cache,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly AggregationCacheInterface $cache,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
-		private readonly OrganisationService $organisationService,
-		private readonly MagicOrganizationHandler $organizationHandler,
+		private readonly OrganisationServiceInterface $organisationService,
+		private readonly OrganisationScopeResolverInterface $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LanguageService $languageService,
 		private readonly ?LoggerInterface $logger = null,
@@ -196,9 +241,12 @@ class AggregationRunner {
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
 		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
+		$this->magicMapper    = $catalog->tables();
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 		$this->scopedResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper
 		);
 		$this->expressions = new MetricExpressionEvaluator();
 	}//end __construct()
@@ -212,25 +260,15 @@ class AggregationRunner {
 	 * schema is the aggregation *source*, the current schema supplies
 	 * the optional `@self.*` parent-reference values via `$parentRow`.
 	 *
-	 * @param string $registerRef Register slug/uuid/id.
-	 * @param string $schemaRef Schema slug/uuid/id.
-	 * @param string $name Aggregation name (key in the annotation).
-	 * @param bool $bypassRbac Internal-system mode: skip the F04 read-permission gate and the row predicate.
-	 *                         Pass `true` ONLY from non-controller callers that already
-	 *                         hold an authoritative reason to compute the aggregation
-	 *                         (e.g. report rendering for a viewer who has dashboard read,
-	 *                         threshold listeners reacting to a write event).
-	 *                         Defaults to `false` so HTTP-driven callers (the
-	 *                         controller) keep the F04 verdict.
-	 * @param array<string, mixed> $parentRow Parent object's field values, used to resolve `@self.<field>`
-	 *                                        references in a cross-schema `where` clause.  Pass the
-	 *                                        plain object array from the parent read path.  Ignored when
-	 *                                        the aggregation spec has no `from` key.
-	 * @param array<string, mixed> $extraFilter Caller-supplied constraints that NARROW the declared
-	 *                                          filter. A key the declaration already constrains is
-	 *                                          refused, not overwritten, and only scalar equality is
-	 *                                          accepted — so this can add a constraint but never relax
-	 *                                          a declared scoping one. See mergeNarrowingFilter().
+	 * @param NamedAggregationRef          $ref     Register, schema and aggregation name, as the request names them.
+	 * @param NamedAggregationOptions|null $options The read-gate mode, parent row and narrowing filter; null runs
+	 *                                              gated, without a parent row or extra filter. bypassRbac is
+	 *                                              true ONLY from non-controller callers that already hold an
+	 *                                              authoritative reason to compute the aggregation (report
+	 *                                              rendering for a viewer with dashboard read, threshold
+	 *                                              listeners reacting to a write event). The extra filter can
+	 *                                              add a constraint but never relax a declared scoping one:
+	 *                                              see mergeNarrowingFilter().
 	 *
 	 * @return array{
 	 *   name: string,
@@ -246,432 +284,430 @@ class AggregationRunner {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function run(
-		string $registerRef,
-		string $schemaRef,
-		string $name,
-		bool $bypassRbac = false,
-		array $parentRow = [],
-		array $extraFilter = [],
-	): array {
-		// REGISTER-SCOPED RESOLUTION. The register is the boundary and is
-		// resolved FIRST; the schema ref is then matched only among the schemas
-		// that register carries. See loadSchemaInRegister() for the measured
-		// cross-app read the previous schema-first ordering produced.
-		$pair = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef);
-		$schema = $pair['schema'];
-		$register = $pair['register'];
+	public function run(NamedAggregationRef $ref, ?NamedAggregationOptions $options=null): array {
+		$options ??= new NamedAggregationOptions(bypassRbac: false);
+		$run = $this->namedRun(ref: $ref->registerSchema(), name: $ref->name);
+		$run->bypassRbac  = $options->bypassRbac;
+		$run->extraFilter = $options->extraFilter;
+		return $this->runNamed(run: $run, parentRow: $options->parentRow);
+	}//end run()
 
-		// SECURITY: gate aggregation behind READ on the schema before any
-		// native or fallback path executes (see mayAggregate(): read, or a
-		// declared `list`, or a conditional read rule the caller qualifies
-		// for). NotAuthorizedException maps to HTTP 403 in
-		// AggregationController; using RuntimeException here would mask it
-		// as 404.
-		//
-		// The gate decides WHETHER the caller may aggregate; WHICH rows are
-		// counted is the read rule's row predicate, which the native path
-		// ANDs into its own SQL (tryNativeAggregation()) and the PHP fallback
-		// gets from the RBAC-filtered read it hydrates through. Conditional
-		// rules therefore narrow the figure to the rows the caller may read.
-		//
-		// Non-controller callers (ReportRenderService for dashboard
-		// widgets, AggregationThresholdListener for fire-once threshold
-		// crossings) pass `bypassRbac: true` because they already hold
-		// an authoritative reason that's separate from the active session
-		// (a viewer with dashboard read, a write-event reaction).
-		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->mayAggregate(schema: $schema, userId: $userId) === false) {
+	/**
+	 * Start a named aggregation run on the schema the register carries.
+	 *
+	 * REGISTER-SCOPED RESOLUTION. The register is the boundary and is
+	 * resolved FIRST; the schema ref is then matched only among the schemas
+	 * that register carries. See loadSchemaInRegister().
+	 *
+	 * @param RegisterSchemaRef $ref  Register and schema slug/uuid/id.
+	 * @param string            $name Aggregation name (key in the annotation).
+	 *
+	 * @return NamedAggregationRun
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function namedRun(RegisterSchemaRef $ref, string $name): NamedAggregationRun {
+		$schemaRef = (string) $ref->schema;
+		$pair      = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: (string) $ref->register);
+		$run       = new NamedAggregationRun(register: $pair['register'], schema: $pair['schema'], name: $name);
+		$run->schemaRef = $schemaRef;
+		return $run;
+	}//end namedRun()
+
+	/**
+	 * Gate the run, then compute it intra-schema or, with a `from` key, cross-schema.
+	 *
+	 * @param NamedAggregationRun  $run       The run, with its bypassRbac and extra filter set.
+	 * @param array<string, mixed> $parentRow Parent object's field values for `@self.<field>` references.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function runNamed(NamedAggregationRun $run, array $parentRow): array {
+		$run->spec = $this->authorisedSpec(run: $run);
+		if ($run->getFromSchema() !== null) {
+			return $this->runNamedCrossSchema(run: $run, parentRow: $parentRow);
+		}
+
+		return $this->runIntraSchema(run: $run);
+	}//end runNamed()
+
+	/**
+	 * Gate the run behind READ on the schema, then return the declared spec.
+	 *
+	 * SECURITY: the gate runs before any native or fallback path (see
+	 * mayAggregate(): read, or a declared `list`, or a conditional read rule
+	 * the caller qualifies for). NotAuthorizedException maps to HTTP 403 in
+	 * AggregationController; a RuntimeException would mask it as 404. The
+	 * gate decides WHETHER the caller may aggregate; WHICH rows are counted is
+	 * the read rule's row predicate. Internal callers pass `bypassRbac`.
+	 *
+	 * @param NamedAggregationRun $run The run; its userId is set here.
+	 *
+	 * @return array<string, mixed> The declared aggregation spec.
+	 *
+	 * @throws NotAuthorizedException When the caller may not aggregate the schema.
+	 * @throws RuntimeException When the schema/aggregation is missing.
+	 */
+	private function authorisedSpec(NamedAggregationRun $run): array {
+		$run->userId = $this->userSession->getUser()?->getUID();
+		if ($run->bypassRbac === false && $this->mayAggregate(schema: $run->schema, userId: $run->userId) === false) {
 			throw new NotAuthorizedException(
-				message: sprintf(
-					'You do not have permission to aggregate schema "%s".',
-					$schemaRef
-				)
+				message: sprintf('You do not have permission to aggregate schema "%s".', $run->schemaRef)
 			);
 		}
 
-		$annotation = $this->getAnnotation(schema: $schema);
+		return $this->declaredSpec(run: $run);
+	}//end authorisedSpec()
+
+	/**
+	 * The spec the schema declares under the run's name.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException When the schema/aggregation is missing.
+	 */
+	private function declaredSpec(NamedAggregationRun $run): array {
+		$annotation = $this->getAnnotation(schema: $run->schema);
 		if ($annotation === null) {
 			throw new RuntimeException(
-				sprintf('Schema "%s" does not declare x-openregister-aggregations.', $schemaRef)
+				sprintf('Schema "%s" does not declare x-openregister-aggregations.', $run->schemaRef)
 			);
 		}
 
-		if (isset($annotation[$name]) === false || is_array($annotation[$name]) === false) {
-			throw new RuntimeException(sprintf('Aggregation "%s" is not declared on this schema.', $name));
+		if (isset($annotation[$run->name]) === false || is_array($annotation[$run->name]) === false) {
+			throw new RuntimeException(sprintf('Aggregation "%s" is not declared on this schema.', $run->name));
 		}
 
-		$spec = $annotation[$name];
+		return $annotation[$run->name];
+	}//end declaredSpec()
 
-		// Cross-schema aggregation: delegate to dedicated path when `from`
-		// is declared.  Supports the new DSL (`from`, `where`, `select`) in
-		// addition to the legacy DSL (`filter`, `metric`).  The delegation
-		// happens *after* the RBAC/annotation guards above so the same
-		// permission gates cover both intra- and cross-schema calls.
-		$fromSchema = ($spec['from'] ?? null);
-		if (is_string($fromSchema) === true && $fromSchema !== '') {
-			return $this->runCrossSchema(
-				parentRegister: $register,
-				parentSchema: $schema,
-				name: $name,
-				spec: $spec,
-				parentRow: $parentRow,
-				bypassRbac: $bypassRbac
-			);
+	/**
+	 * Delegate a spec that declares `from` to runCrossSchema(), after the gates of run().
+	 *
+	 * @param NamedAggregationRun  $run       The run.
+	 * @param array<string, mixed> $parentRow Parent values for `@self.<field>` references.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function runNamedCrossSchema(NamedAggregationRun $run, array $parentRow): array {
+		return $this->runCrossSchema(run: $run, parentRow: $parentRow);
+	}//end runNamedCrossSchema()
+
+	/**
+	 * Run an intra-schema spec: guards, filter, cache, then native or PHP fallback.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function runIntraSchema(NamedAggregationRun $run): array {
+		$this->guardTouchedFields(run: $run);
+		$this->resolveRunFilter(run: $run);
+		$run->cacheKey = $this->namedCacheKey(run: $run);
+		$cached = $this->cachedNamedResult(run: $run);
+		if ($cached !== null) {
+			return $cached;
 		}
 
-		// Support `select` as an alias for `metric` (new DSL) and
-		// `where` as an alias for `filter` (new DSL) so callers can
-		// use either vocabulary on intra-schema specs too.
-		$metric = (string)($spec['metric'] ?? $spec['select'] ?? '');
+		return ($this->nativeNamedResult(run: $run) ?? $this->fallbackNamedResult(run: $run));
+	}//end runIntraSchema()
 
-		// `metrics`: several figures over ONE grouping, e.g. a budget line that
-		// needs both sum(committed) and sum(invoiced) per coding combination.
-		//
-		// The whole multi-metric path already existed — AggregationQuery::
-		// $metrics, tryNativeMultiMetric(), computeMetrics() and the grouped
-		// computeGrouped(metrics:) branch are all live and reached by the
-		// ad-hoc controller. Only the ANNOTATION path never read the key, so a
-		// declaration could not ask for what the engine could already compute.
-		// Declaring a second aggregation instead is not equivalent: it groups
-		// and scans the table again, and the two results can disagree if a row
-		// is written between the calls.
-		$specMetrics = ($spec['metrics'] ?? null);
-		$metrics = null;
-		if (is_array($specMetrics) === true && $specMetrics !== []) {
-			$metrics = $specMetrics;
-		}
-		$field = ($spec['field'] ?? null);
-		$filter = (array)($spec['filter'] ?? $spec['where'] ?? []);
-		$groupBy = ($spec['groupBy'] ?? null);
-
-		// 🔴 THE GATE ABOVE IS ROW ACCESS ON THE SCHEMA, WHICH IS A DIFFERENT
-		// QUESTION FROM THIS ONE. A caller may be entitled to read a schema's
-		// rows and still not be entitled to read one of their properties, and
-		// a SUM over a salary nobody may read IS the salary total. Same for a
-		// groupBy: its keys are the distinct values of the column.
-		//
-		// `$bypassRbac` is honoured because it is how internal callers compute
-		// figures for somebody else, and those callers have already decided who
-		// may see the result.
-		$fieldNames = [];
-		if ($field !== null) {
-			$fieldNames = [(string)$field];
-		}
-
+	/**
+	 * Refuse a run that touches a property the caller may not see.
+	 *
+	 * The schema gate is row access; a SUM over a property nobody may read IS
+	 * that property's total, and groupBy keys are its distinct values. The
+	 * explicit-reveal guards hold with `bypassRbac` too: a bypassing caller
+	 * stores or shows the figure for somebody else. A narrowing filter on an
+	 * explicit-reveal property is an oracle.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return void
+	 */
+	private function guardTouchedFields(NamedAggregationRun $run): void {
 		$touched = array_merge(
-			$fieldNames,
-			$this->groupByFields(groupBy: $groupBy),
-			$this->metricFields(metrics: $metrics)
+			$run->getFieldNames(),
+			$this->groupByFields(groupBy: $run->getGroupBy()),
+			$this->metricFields(metrics: $run->getMetrics())
 		);
-
-		// 🔴 THE EXPLICIT-REVEAL GUARD HOLDS WITH `$bypassRbac` TOO. A bypassing
-		// caller computes a figure for somebody else and stores or shows it
-		// (a materialised aggregate on another object), so a bucket key or a
-		// min/max over the value would leave in clear. Only trusted code
-		// (ExplicitReveal::trustedDuring, a system operation) passes. It is
-		// named first, so the refusal says why.
-		$this->assertNoExplicitValues(schema: $schema, fields: $touched);
-		// A caller's narrowing filter on an explicit-reveal property is an
-		// oracle: try values, read whether the figure changes.
-		$this->assertNoExplicitFilter(schema: $schema, filter: $extraFilter);
-
-		if ($bypassRbac === false) {
-			$this->assertFieldsAreReadable(schema: $schema, fields: $touched);
+		$this->assertNoExplicitValues(schema: $run->schema, fields: $touched);
+		$this->assertNoExplicitFilter(schema: $run->schema, filter: $run->extraFilter);
+		if ($run->bypassRbac === false) {
+			$this->assertFieldsAreReadable(schema: $run->schema, fields: $touched);
 		}
+	}//end guardTouchedFields()
 
-		// Normalized groupBy spec (array or null) — used both for the native
-		// path argument and for translatable group-key projection.
-		$groupByArg = null;
-		if (is_array($groupBy) === true) {
-			$groupByArg = $groupBy;
-		}
-
-		// Optional join spec — attaches aggregates from a SECOND schema to
-		// each group. See applyJoin().
-		$join = ($spec['join'] ?? null);
-		$joinArg = null;
-		if (is_array($join) === true) {
-			$joinArg = $join;
-		}
-
-		$resolvedFilter = $this->placeholders->resolveArray($filter);
-
-		// CALLER-SUPPLIED NARROWING. A declared aggregation's filter is its
-		// contract, so a caller may ADD constraints and may never relax one.
-		// Everything about this is deliberately one-directional:
-		//
-		//   - a key the declaration already constrains is REFUSED, not
-		//     overwritten. Letting a request replace `administrationId` would
-		//     turn a scoping filter into a caller-chosen one, which is the
-		//     whole risk this method exists to avoid;
-		//   - only equality on scalars is accepted. An operator filter could
-		//     express `!=` or `>`, and "add a constraint" that widens the set
-		//     is not narrowing;
-		//   - the merged result, not the declared one, is what reaches the
-		//     query AND the cache key below, so two callers narrowing
-		//     differently cannot read each other's numbers.
-		//
-		// The motivating case: shillinq's per-budget-line rollup is declared
-		// once but must answer per administration, and an annotation has no
-		// way to name the caller's active one — `$currentUser` is the only
-		// placeholder the resolver knows.
-		$declaredOnlyFilter = $resolvedFilter;
-		$resolvedFilter = $this->mergeNarrowingFilter(
-			declared: $resolvedFilter,
-			extra: $extraFilter,
-			name: $name
+	/**
+	 * Resolve the declared filter and merge the caller's narrowing into it.
+	 *
+	 * A caller may ADD constraints and never relax one (see
+	 * mergeNarrowingFilter()). The applied extra filter is taken from the
+	 * merge result, not the request, so a dropped key is not forwarded to
+	 * the join.
+	 *
+	 * @param NamedAggregationRun $run The run; filter and appliedExtraFilter are set here.
+	 *
+	 * @return void
+	 */
+	private function resolveRunFilter(NamedAggregationRun $run): void {
+		$declared = $this->placeholders->resolveArray($run->getDeclaredFilter());
+		$run->filter = $this->mergeNarrowingFilter(
+			declared: $declared,
+			narrowing: new RequestedNarrowing(constraints: $run->extraFilter, aggregation: $run->name)
 		);
+		$run->appliedExtraFilter = array_diff_key($run->filter, $declared);
+	}//end resolveRunFilter()
 
-		// The caller constraints that ACTUALLY took effect on the parent — not
-		// the ones that were asked for. applyJoin() forwards these to the joined
-		// aggregate so both sides describe the same population.
-		//
-		// Deriving it from the merge result rather than reusing $extraFilter is
-		// the difference between a fix and a second hole. mergeNarrowingFilter()
-		// drops a key the declaration already constrains, so a caller passing
-		// `administrationId: B` against a declaration pinning `A` leaves the
-		// parent on A — and forwarding the raw request would have scoped the
-		// JOIN to B while the parent stayed A, which is the same
-		// population-mismatch bug pointed the other way. Worse, the dropped key
-		// never reaches the cache key, so that mismatch would have been cached
-		// and served to the next caller.
-		$appliedExtraFilter = array_diff_key($resolvedFilter, $declaredOnlyFilter);
-
-		// Cache lookup: the resolved filter (with placeholders concrete)
-		// is the cache key together with the user's RBAC scope. 60s TTL.
-		// SECURITY: cache key MUST include userId + active organisation —
-		// two callers with different RBAC verdicts on the same (metric,
-		// field, filter) tuple would otherwise read each other's results.
-		// It MUST equally include `groupBy` and `join`: those two keys
-		// change WHICH ROWS and WHICH SCHEMAS the result is computed from,
-		// so two specs differing only there are different aggregations and
-		// omitting either would serve one caller the other's numbers —
-		// including numbers sourced from a joined schema the second spec
-		// never asked for.
+	/**
+	 * The cache key of a run.
+	 *
+	 * SECURITY: the key MUST include userId and the active organisation, or two
+	 * callers with different RBAC verdicts read each other's results. `metrics`,
+	 * `groupBy` and `join` change which figures and which rows the result holds.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function namedCacheKey(NamedAggregationRun $run): array {
 		$activeOrg = $this->organisationService->getActiveOrganisation();
-		$cacheKey = [
-			'metric' => $metric,
-			// `metrics` changes WHICH FIGURES the envelope carries, so two
-			// specs differing only here are different aggregations. Omitting
-			// it would serve a two-sum caller the single-sum result, or worse
-			// the reverse — a `values` map where the caller reads `value`.
-			'metrics' => $metrics,
-			'field' => $field,
-			'filter' => $resolvedFilter,
-			'groupBy' => $groupBy,
-			'join' => $join,
-			'userId' => $userId,
+		return [
+			'metric' => $run->getMetric(),
+			'metrics' => $run->getMetrics(),
+			'field' => $run->getField(),
+			'filter' => $run->filter,
+			'groupBy' => $run->getGroupBy(),
+			'join' => $run->getJoin(),
+			'userId' => $run->userId,
 			'org' => $activeOrg?->getUuid(),
 		];
+	}//end namedCacheKey()
+
+	/**
+	 * The cached result of a run, projected, or null on a miss.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function cachedNamedResult(NamedAggregationRun $run): ?array {
 		$cached = $this->cache->get(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			name: $name,
-			filter: $cacheKey
+			slot: new AggregationSlot(
+				registerSlug: (string)$run->register->getSlug(),
+				schemaSlug: (string)$run->schema->getSlug(),
+				name: $run->name,
+				filter: $run->cacheKey
+			)
 		);
-		if ($cached !== null) {
-			$cached['cached'] = true;
-			// Cache stores raw group keys (language-agnostic key), project on read.
-			return $this->projectTranslatableGroupKeys(
-				envelope: $cached,
-				schema: $schema,
-				register: $register,
-				groupBy: $groupByArg
-			);
+		if ($cached === null) {
+			return null;
 		}
 
-		// Try the Postgres-native fast path. Falls back to PHP when the
-		// query shape isn't supported (operator filters, complex values,
-		// non-Postgres DB, etc).
-		$nativeFieldArg = null;
-		if (is_string($field) === true) {
-			$nativeFieldArg = $field;
+		$cached['cached'] = true;
+		return $this->projectNamedGroupKeys(run: $run, envelope: $cached);
+	}//end cachedNamedResult()
+
+	/**
+	 * Store a run's result and return it with translatable group keys projected.
+	 *
+	 * The cache holds the raw, language-agnostic group keys.
+	 *
+	 * @param NamedAggregationRun  $run    The run.
+	 * @param array<string, mixed> $result The computed envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storeNamedResult(NamedAggregationRun $run, array $result): array {
+		$this->cache->set(
+			slot: new AggregationSlot(
+				registerSlug: (string)$run->register->getSlug(),
+				schemaSlug: (string)$run->schema->getSlug(),
+				name: $run->name,
+				filter: $run->cacheKey
+			),
+			result: $result
+		);
+		return $this->projectNamedGroupKeys(run: $run, envelope: $result);
+	}//end storeNamedResult()
+
+	/**
+	 * Project translatable group keys of a run's envelope.
+	 *
+	 * @param NamedAggregationRun  $run      The run.
+	 * @param array<string, mixed> $envelope The envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function projectNamedGroupKeys(NamedAggregationRun $run, array $envelope): array {
+		return $this->projectTranslatableGroupKeys(
+			envelope: $envelope,
+			grouping: new ResultGrouping(
+				table: new RegisterSchema(register: $run->register, schema: $run->schema),
+				groupBy: $run->getGroupByArg()
+			)
+		);
+	}//end projectNamedGroupKeys()
+
+	/**
+	 * The native result of a run, or null when the query shape has no native path.
+	 *
+	 * Native aggregates run over the full set, so `truncated` is always false.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function nativeNamedResult(NamedAggregationRun $run): ?array {
+		$native = $this->tryNamedNative(run: $run);
+		if ($native === null) {
+			return null;
 		}
 
-		$nativeGroupByArg = $groupByArg;
+		$run->groupFields = $this->resolveGroupFields(groupBy: $run->getGroupBy());
+		$result = $this->applyNamedJoin(run: $run, envelope: $run->envelope(backend: 'postgres') + $native);
+		return $this->storeNamedResult(run: $run, result: $result);
+	}//end nativeNamedResult()
 
-		$native = $this->tryNativeAggregation(
-			register: $register,
-			schema: $schema,
-			metric: $metric,
-			field: $nativeFieldArg,
-			filter: $resolvedFilter,
-			groupBy: $nativeGroupByArg,
-			metrics: $metrics,
-			rowRbac: $bypassRbac === false
+	/**
+	 * Try the native fast path for a run.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function tryNamedNative(NamedAggregationRun $run): ?array {
+		return $this->tryNativeWithSpec(
+			request: new NativeAggregationRequest(
+				register: $run->register,
+				schema: $run->schema,
+				spec: [
+					'metric'  => $run->getMetric(),
+					'field'   => $run->getStringField(),
+					'filter'  => $run->filter,
+					'groupBy' => $run->getGroupByArg(),
+					'metrics' => $run->getMetrics(),
+					'rowRbac' => $run->bypassRbac === false,
+				]
+			)
 		);
-		if ($native !== null) {
-			// R05: native Postgres aggregates over the full set, so
-			// `truncated` is structurally always false here. Surface
-			// the key explicitly so client code can branch on
-			// `result.truncated` regardless of backend.
-			$nativeFieldValue = null;
-			if (is_string($field) === true) {
-				$nativeFieldValue = $field;
-			}
+	}//end tryNamedNative()
 
-			$result = [
-				'name' => $name,
-				'metric' => $metric,
-				'field' => $nativeFieldValue,
-				'backend' => 'postgres',
-				'truncated' => false,
-			] + $native;
-			$result = $this->applyJoin(
-				envelope: $result,
-				join: $joinArg,
-				groupFields: $this->resolveGroupFields(groupBy: $groupBy),
-				bypassRbac: $bypassRbac,
-				extraFilter: $appliedExtraFilter
-			);
-			$this->cache->set(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				name: $name,
-				filter: $cacheKey,
-				result: $result
-			);
-			return $this->projectTranslatableGroupKeys(
-				envelope: $result,
-				schema: $schema,
-				register: $register,
-				groupBy: $nativeGroupByArg
-			);
-		}//end if
+	/**
+	 * Attach the run's join to an envelope.
+	 *
+	 * @param NamedAggregationRun  $run      The run.
+	 * @param array<string, mixed> $envelope The envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function applyNamedJoin(NamedAggregationRun $run, array $envelope): array {
+		return $this->applyJoin(run: $run, envelope: $envelope);
+	}//end applyNamedJoin()
 
-		// Fall back: pull objects and filter in PHP.
-		//
-		// Capped at PHP_FALLBACK_ROW_CAP to bound the per-request memory
-		// footprint — the cache is keyed on the resolved filter, so any
-		// authenticated caller can otherwise force a fresh hydrate by
-		// varying a filter parameter. The native Postgres path is the
-		// intended steady state; the fallback is a development /
-		// non-Postgres safety net, not a production aggregation engine.
-		// Aggregations whose source table exceeds the cap are surfaced
-		// with `truncated: true` so callers know the value is partial
-		// (or 503 from the controller in a future hardening step).
+	/**
+	 * Compute a run in PHP over the capped table read.
+	 *
+	 * A groupBy on a joined-schema field is projected onto each row first (see
+	 * projectJoinedGroupFields()); applyJoin() runs after grouping and cannot.
+	 *
+	 * @param NamedAggregationRun $run The run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fallbackNamedResult(NamedAggregationRun $run): array {
+		$rows = $this->fallbackNamedRows(run: $run);
+		$result = $run->envelope(backend: 'php-fallback');
+		$rows = $this->projectJoinedGroupFields(run: $run, rows: $rows);
+		$result += $this->namedFigures(run: $run, rows: $rows);
+		return $this->storeNamedResult(run: $run, result: $this->finishNamedJoin(run: $run, result: $result));
+	}//end fallbackNamedResult()
+
+	/**
+	 * Read the run's rows, capped at PHP_FALLBACK_ROW_CAP, and post-filter them.
+	 *
+	 * The cap bounds the per-request memory a caller can force by varying a
+	 * filter; a capped read marks the run `truncated`.
+	 *
+	 * @param NamedAggregationRun $run The run; truncated is set here.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function fallbackNamedRows(NamedAggregationRun $run): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $run->register, schema: $run->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
-		$truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
-
+		$run->truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 		$rows = [];
 		foreach ($objects as $entity) {
-			// The findAllInRegisterSchemaTable mapper returns ObjectEntity[];
-			// getObject() resolves each row to the inner data array.
 			$rows[] = $entity->getObject();
 		}
 
-		// Apply post-filter for operator shapes the underlying mapper
-		// doesn't natively support (e.g. gte/lte). Equality filters were
-		// already applied above, so re-applying them is a no-op.
-		$rows = $this->applyFilter(rows: $rows, filter: $resolvedFilter);
+		return $this->applyFilter(rows: $rows, filter: $run->filter);
+	}//end fallbackNamedRows()
 
-		$phpFallbackField = null;
-		if (is_string($field) === true) {
-			$phpFallbackField = $field;
-		}
-
-		$result = [
-			'name' => $name,
-			'metric' => $metric,
-			'field' => $phpFallbackField,
-			'backend' => 'php-fallback',
-			'truncated' => $truncated,
-		];
-
-		$runGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
-
-		// GROUPING BY A FIELD THAT LIVES ON THE JOINED SCHEMA.
-		//
-		// `groupBy: ["AnalyticalDimension.parentCode"]` asks to roll the parent
-		// rows up to a column the parent does not have — it exists only after
-		// the join resolves. applyJoin() runs AFTER grouping and attaches
-		// figures to groups that already exist, so it cannot produce this: by
-		// then the rows are gone.
-		//
-		// Resolving it means projecting the value onto each parent row FIRST,
-		// through the join key, and then grouping normally. Anything else
-		// groups on a column every row lacks, which yields one null bucket
-		// holding everything — a plausible-looking total, not an error.
-		[$rows, $runGroupFields, $joinConsumed] = $this->projectJoinedGroupFields(
-			rows: $rows,
-			groupFields: $runGroupFields,
-			join: $joinArg,
-			bypassRbac: $bypassRbac
-		);
-
-		if (count($runGroupFields) > 0) {
-			$result['groups'] = $this->computeGrouped(
+	/**
+	 * The figures of a run over its rows: `groups`, `values` or `value`.
+	 *
+	 * Ungrouped multi-metric yields `values` (a map), single-metric `value`.
+	 *
+	 * @param NamedAggregationRun              $run  The run.
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function namedFigures(NamedAggregationRun $run, array $rows): array {
+		$metrics = $run->getMetrics();
+		if (count($run->groupFields) > 0) {
+			$groups = $this->computeGrouped(
 				rows: $rows,
-				metric: $metric,
-				field: $field,
-				groupFields: $runGroupFields,
-				metrics: $metrics
+				aggregation: new RowAggregation(
+					metric: $run->getMetric(),
+					field: $run->getField(),
+					groupFields: $run->groupFields,
+					metrics: $metrics
+				)
 			);
+			return ['groups' => $groups];
 		}
 
-		if (isset($result['groups']) === false) {
-			// Ungrouped multi-metric yields `values` (a map), single-metric
-			// yields `value` (a scalar). Emitting the scalar for a `metrics`
-			// spec would hand the caller one figure where it asked for several,
-			// and it would look like a working answer.
-			if ($metrics !== null && count($metrics) > 1) {
-				$result['values'] = $this->computeMetrics(rows: $rows, metrics: $metrics);
-			} else {
-				$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
-			}
+		if ($metrics !== null && count($metrics) > 1) {
+			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
 		}
 
-		if ($joinConsumed === true) {
-			// The join was SPENT on the grouping, so there is no per-group
-			// `joined` map to attach.
-			//
-			// mergeJoinedValues() reads the join key out of each group row, but
-			// after projection the group key IS the joined dimension — the
-			// original key is not in the row any more. Running it anyway would
-			// look up a tuple that cannot match and hang a map of nulls on every
-			// group, which reads as "the joined schema had nothing" rather than
-			// "this question was already answered by the grouping".
-			//
-			// Attaching figures here would mean re-aggregating the joined schema
-			// BY the projected dimension — a second, different join. That is a
-			// feature, not a detail, and it is not invented silently here.
-			$result['join'] = [
-				'through' => (string)($joinArg['through'] ?? ''),
-				'consumedForGrouping' => true,
-			];
-		} else {
-			$result = $this->applyJoin(
-				envelope: $result,
-				join: $joinArg,
-				groupFields: $runGroupFields,
-				bypassRbac: $bypassRbac,
-				extraFilter: $appliedExtraFilter
-			);
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $run->getMetric(), field: $run->getField()))];
+	}//end namedFigures()
+
+	/**
+	 * Attach the join, or mark it spent when the grouping consumed it.
+	 *
+	 * After projection the group key IS the joined dimension, so
+	 * mergeJoinedValues() would hang a map of nulls on every group.
+	 *
+	 * @param NamedAggregationRun  $run    The run.
+	 * @param array<string, mixed> $result The envelope with its figures.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function finishNamedJoin(NamedAggregationRun $run, array $result): array {
+		if ($run->joinConsumed === false) {
+			return $this->applyNamedJoin(run: $run, envelope: $result);
 		}
 
-		$this->cache->set(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			name: $name,
-			filter: $cacheKey,
-			result: $result
-		);
-		return $this->projectTranslatableGroupKeys(
-			envelope: $result,
-			schema: $schema,
-			register: $register,
-			groupBy: $groupByArg
-		);
-	}//end run()
+		$result['join'] = [
+			'through' => (string)($run->getJoinArg()['through'] ?? ''),
+			'consumedForGrouping' => true,
+		];
+		return $result;
+	}//end finishNamedJoin()
 
 	/**
 	 * Execute an ad-hoc aggregation query — REST + GraphQL entry point.
@@ -692,7 +728,7 @@ class AggregationRunner {
 	 *    prefixed with `adhoc:`. 60 s TTL. Invalidated on every
 	 *    object lifecycle event by `AggregationCacheInvalidationListener`.
 	 * 3. Postgres / MySQL / SQLite native fast path via
-	 *    `tryNativeAggregation()` — picks the matching bucketing
+	 *    `tryNativeWithSpec()` — picks the matching bucketing
 	 *    expression (`date_trunc` / `DATE_FORMAT` / `strftime`).
 	 * 4. PHP fallback bucketing when the native path returns null
 	 *    (unrecognised engine, table miss, etc).
@@ -716,11 +752,6 @@ class AggregationRunner {
 	 *
 	 * @throws NotAuthorizedException When the caller may not read the schema.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *   RBAC + placeholder-resolve + cache-read + native-or-fallback dispatch +
-	 *   cache-write. Splitting each step into its own helper would obscure
-	 *   the order of operations that matters for the security gate and
-	 *   cache semantics.
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *   `AggregationQuery::create()` is a fail-fast static factory.
 	 *
@@ -732,9 +763,60 @@ class AggregationRunner {
 		AggregationQuery $query,
 		bool $bypassRbac=false,
 	): array {
-		// RBAC gate — identical predicate to run(), including run()'s
-		// internal-system mode (a materialised aggregate-reference is the
-		// schema author's derived value, resolved whoever saves).
+		$this->gateAdhoc(schema: $schema, bypassRbac: $bypassRbac);
+		$this->assertAdhocRevealsNothing(schema: $schema, query: $query);
+		if ($bypassRbac === false) {
+			$this->assertFieldsAreReadable(schema: $schema, fields: $this->adhocFields(query: $query));
+		}
+
+		$run = new AdhocAggregationRun(
+			register: $register,
+			schema: $schema,
+			query: $query,
+			resolvedQuery: $this->resolveAdhocQuery(query: $query),
+			bypassRbac: $bypassRbac
+		);
+
+		// Not cached for an internal-system call: the cache key is scoped by the
+		// caller (uid + organisation), not by bypassRbac, so a figure over every
+		// row would be served to the same caller's narrower question, and a
+		// narrower cached figure to the system's.
+		if ($bypassRbac === true) {
+			$envelope = $this->computeAdhocEnvelope(run: $run);
+		} else {
+			$envelope = $this->cachedAdhocEnvelope(run: $run);
+			if ($envelope === null) {
+				$envelope = $this->storeAdhocEnvelope(run: $run, envelope: $this->computeAdhocEnvelope(run: $run));
+			}
+		}
+
+		// The cache stores RAW group keys (the cache key is language-
+		// agnostic), so translatable keys must be projected on every
+		// read, including cache hits.
+		return $this->projectTranslatableGroupKeys(
+			envelope: $envelope,
+			grouping: new ResultGrouping(
+				table: new RegisterSchema(register: $register, schema: $schema),
+				groupBy: $query->groupBy
+			)
+		);
+	}//end runAdhoc()
+
+	/**
+	 * RBAC gate of runAdhoc() — identical predicate to run().
+	 *
+	 * Including run()'s internal-system mode (a materialised
+	 * aggregate-reference is the schema author's derived value, resolved
+	 * whoever saves).
+	 *
+	 * @param Schema $schema     The schema being aggregated.
+	 * @param bool   $bypassRbac Internal-system mode: skip the read gate.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not read the schema.
+	 */
+	private function gateAdhoc(Schema $schema, bool $bypassRbac): void {
 		$userId = $this->userSession->getUser()?->getUID();
 		if ($bypassRbac === false && $this->mayAggregate(schema: $schema, userId: $userId) === false) {
 			throw new NotAuthorizedException(
@@ -744,158 +826,200 @@ class AggregationRunner {
 				)
 			);
 		}
+	}//end gateAdhoc()
 
-		// An explicit-reveal value leaves only as its mask, so the ad-hoc path
-		// may neither group on it (a bucket key is the value), take a min or max
-		// of it, nor filter on it. With `$bypassRbac` too: a materialised
-		// aggregate (AggregateReferenceResolver) stores the figure on another
-		// object, in clear.
-		$this->assertNoExplicitValues(
-			schema: $schema,
-			fields: array_merge(
-				[(string)$query->field],
-				$this->groupByFields(groupBy: $query->groupBy),
-				$this->metricFields(metrics: $query->metrics)
-			)
-		);
+	/**
+	 * Refuse an ad-hoc query that would expose an explicit-reveal value.
+	 *
+	 * An explicit-reveal value leaves only as its mask, so the ad-hoc path
+	 * may neither group on it (a bucket key is the value), take a min or max
+	 * of it, nor filter on it. With `$bypassRbac` too: a materialised
+	 * aggregate (AggregateReferenceResolver) stores the figure on another
+	 * object, in clear.
+	 *
+	 * @param Schema           $schema The schema being aggregated.
+	 * @param AggregationQuery $query  The caller's query.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the query reads an explicit-reveal property.
+	 */
+	private function assertAdhocRevealsNothing(Schema $schema, AggregationQuery $query): void {
+		$this->assertNoExplicitValues(schema: $schema, fields: $this->adhocFields(query: $query));
 		$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
+	}//end assertAdhocRevealsNothing()
 
-		// Resolve placeholders inside the filter (e.g. $now, $startOfMonth)
-		// so the native SQL path can bind concrete values. The resolved
-		// filter feeds both the cache key and the SQL bindings.
-		$resolvedFilter = $this->placeholders->resolveArray($query->filter);
-		$resolvedQuery = AggregationQuery::create(
+	/**
+	 * Every property an ad-hoc query reads: its field, its group-by fields and its metric fields.
+	 *
+	 * @param AggregationQuery $query The caller's query.
+	 *
+	 * @return array<int, string>
+	 */
+	private function adhocFields(AggregationQuery $query): array {
+		return array_merge(
+			[(string)$query->field],
+			$this->groupByFields(groupBy: $query->groupBy),
+			$this->metricFields(metrics: $query->metrics)
+		);
+	}//end adhocFields()
+
+	/**
+	 * The query with placeholders inside its filter resolved.
+	 *
+	 * Resolves e.g. $now, $startOfMonth so the native SQL path can bind
+	 * concrete values. The resolved filter feeds both the cache key and the
+	 * SQL bindings.
+	 *
+	 * @param AggregationQuery $query The caller's query.
+	 *
+	 * @return AggregationQuery
+	 */
+	private function resolveAdhocQuery(AggregationQuery $query): AggregationQuery {
+		return AggregationQuery::create(
 			metric: $query->metric,
 			field: $query->field,
-			filter: $resolvedFilter,
+			filter: $this->placeholders->resolveArray($query->filter),
 			groupBy: $query->groupBy,
 			dateBucket: $query->dateBucket,
 			metrics: $query->metrics,
 			cumulative: $query->cumulative
 		);
+	}//end resolveAdhocQuery()
 
-		// Read-through cache. Identical query + filter + RBAC scope →
-		// same cache key → 60 s TTL hit. Cache miss falls through to the
-		// native-or-fallback dispatch below and the result is stored on
-		// the way out. Invalidation is event-driven via
-		// AggregationCacheInvalidationListener which evicts the entire
-		// `openregister_aggregations` cache on every object-write event.
+	/**
+	 * The cached envelope for this query, flagged as cached, or null on a miss.
+	 *
+	 * Read-through cache. Identical query + filter + RBAC scope → same cache
+	 * key → 60 s TTL hit. Invalidation is event-driven via
+	 * AggregationCacheInvalidationListener which evicts the entire
+	 * `openregister_aggregations` cache on every object-write event.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function cachedAdhocEnvelope(AdhocAggregationRun $run): ?array {
 		$cached = $this->cache->getAdhoc(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			query: $resolvedQuery
+			registerSlug: (string)$run->register->getSlug(),
+			schemaSlug: (string)$run->schema->getSlug(),
+			query: $run->resolvedQuery
 		);
 		if ($cached !== null) {
 			$cached['cached'] = true;
-			// The cache stores RAW group keys (the cache key is language-
-			// agnostic), so translatable keys must be projected on every
-			// read, including cache hits.
-			return $this->projectTranslatableGroupKeys(
-				envelope: $cached,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
 		}
 
-		// External (DBAL virtual) register: the object rows live in an
-		// external database, not the magic table, so the native + PHP paths
-		// below would aggregate an empty magic table and return 0. Delegate
-		// to the DBAL object-source provider, which computes the metric live
-		// in the external DB with the same table/column resolution the reads
-		// use. Returns null when the schema is not DBAL-sourced (→ fall
-		// through to the magic-table paths) or the query shape is unsupported.
-		$dbal = $this->tryDbalAggregation(
-			register: $register,
-			schema: $schema,
-			query: $resolvedQuery
-		);
-		if ($dbal !== null) {
-			$envelope = [
-				'backend' => 'dbal-source',
-				'cached' => false,
-			] + $dbal;
-			$this->cache->setAdhoc(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				query: $resolvedQuery,
-				result: $envelope
-			);
-			return $this->projectTranslatableGroupKeys(
-				envelope: $envelope,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
-		}
+		return $cached;
+	}//end cachedAdhocEnvelope()
 
-		// Try the Postgres / MySQL / SQLite native fast path. The runner
-		// detects the database platform and emits the matching native
-		// bucketing expression (date_trunc / DATE_FORMAT / strftime).
-		// Returns null on unsupported query shapes or unrecognised
-		// engines, signaling fall-through to the PHP bucketer below.
-		$native = $this->tryNativeAggregation(
-			register: $register,
-			schema: $schema,
-			metric: $query->metric,
-			field: $query->field,
-			filter: $resolvedFilter,
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->getMetrics(),
-			cumulative: $query->cumulative
-		);
-
-		if ($native !== null) {
-			$envelope = [
-				'backend' => $this->detectDatabasePlatform(),
-				'cached' => false,
-			] + $native;
-			// Cache the RAW (un-projected) group keys — the cache key does
-			// not encode the negotiated language, so language projection
-			// must happen after the cache boundary on every read.
-			$this->cache->setAdhoc(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				query: $resolvedQuery,
-				result: $envelope
-			);
-			return $this->projectTranslatableGroupKeys(
-				envelope: $envelope,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
-		}//end if
-
-		// PHP fallback path. Pull the RBAC-filtered row set + bucket in
-		// PHP. Correctness path; the native paths above are the
-		// production target.
-		$envelope = $this->bucketInPhp(
-			register: $register,
-			schema: $schema,
-			metric: $query->metric,
-			field: $query->field,
-			filter: $resolvedFilter,
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->getMetrics(),
-			cumulative: $query->cumulative
-		);
+	/**
+	 * Store the envelope under this query's cache key and return it.
+	 *
+	 * The RAW (un-projected) group keys are cached — the cache key does not
+	 * encode the negotiated language, so language projection must happen
+	 * after the cache boundary on every read.
+	 *
+	 * @param AdhocAggregationRun  $run      The ad-hoc run.
+	 * @param array<string, mixed> $envelope The computed envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storeAdhocEnvelope(AdhocAggregationRun $run, array $envelope): array {
 		$this->cache->setAdhoc(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			query: $resolvedQuery,
+			registerSlug: (string)$run->register->getSlug(),
+			schemaSlug: (string)$run->schema->getSlug(),
+			query: $run->resolvedQuery,
 			result: $envelope
 		);
-		return $this->projectTranslatableGroupKeys(
-			envelope: $envelope,
-			schema: $schema,
-			register: $register,
-			groupBy: $query->groupBy
-		);
+		return $envelope;
+	}//end storeAdhocEnvelope()
 
-	}//end runAdhoc()
+	/**
+	 * Compute the envelope: DBAL source, then native SQL, then the PHP bucketer.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function computeAdhocEnvelope(AdhocAggregationRun $run): array {
+		// External (DBAL virtual) register: the object rows live in an
+		// external database, not the magic table, so the native + PHP paths
+		// below would aggregate an empty magic table and return 0.
+		$envelope = $this->dbalAdhocEnvelope(run: $run);
+		if ($envelope === null) {
+			$envelope = $this->nativeAdhocEnvelope(run: $run);
+		}
+
+		// PHP fallback path. Pull the RBAC-filtered row set + bucket in
+		// PHP. Correctness path; the native paths are the production target.
+		if ($envelope === null) {
+			$envelope = $this->bucketInPhp(run: $run);
+		}
+
+		return $envelope;
+	}//end computeAdhocEnvelope()
+
+	/**
+	 * The DBAL object-source envelope, or null when the schema is not DBAL-sourced.
+	 *
+	 * Delegates to the DBAL object-source provider, which computes the metric
+	 * live in the external DB with the same table/column resolution the reads
+	 * use. Null also when the query shape is unsupported.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function dbalAdhocEnvelope(AdhocAggregationRun $run): ?array {
+		$dbal = $this->tryDbalAggregation(run: $run);
+		if ($dbal === null) {
+			return null;
+		}
+
+		return [
+			'backend' => 'dbal-source',
+			'cached' => false,
+		] + $dbal;
+	}//end dbalAdhocEnvelope()
+
+	/**
+	 * The native SQL envelope, or null to fall through to the PHP bucketer.
+	 *
+	 * The runner detects the database platform and emits the matching native
+	 * bucketing expression (date_trunc / DATE_FORMAT / strftime). Null on
+	 * unsupported query shapes or unrecognised engines.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function nativeAdhocEnvelope(AdhocAggregationRun $run): ?array {
+		$query  = $run->query;
+		$native = $this->tryNativeWithSpec(
+			request: new NativeAggregationRequest(
+				register: $run->register,
+				schema: $run->schema,
+				spec: [
+					'metric'     => $query->metric,
+					'field'      => $query->field,
+					'filter'     => $run->resolvedQuery->filter,
+					'groupBy'    => $query->groupBy,
+					'dateBucket' => $query->dateBucket,
+					'metrics'    => $query->getMetrics(),
+					'cumulative' => $query->cumulative,
+					'rowRbac'    => $run->bypassRbac === false,
+				]
+			)
+		);
+		if ($native === null) {
+			return null;
+		}
+
+		return [
+			'backend' => $this->detectDatabasePlatform(),
+			'cached' => false,
+		] + $native;
+	}//end nativeAdhocEnvelope()
 
 	/**
 	 * Delegate an ad-hoc aggregation to the DBAL object-source provider when
@@ -909,19 +1033,13 @@ class AggregationRunner {
 	 * null here rather than propagated: the aggregation endpoints should
 	 * degrade to an empty widget, never 500 the dashboard.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param AggregationQuery $query The placeholder-resolved query.
+	 * @param AdhocAggregationRun $run The ad-hoc run; its resolved query is sent.
 	 *
 	 * @return array<string, mixed>|null The result fragment, or null to fall through.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function tryDbalAggregation(
-		Register $register,
-		Schema $schema,
-		AggregationQuery $query,
-	): ?array {
+	private function tryDbalAggregation(AdhocAggregationRun $run): ?array {
 		if ($this->dbalSourceProvider === null) {
 			return null;
 		}
@@ -929,17 +1047,72 @@ class AggregationRunner {
 		// Multi-metric requests aren't supported by the DBAL provider's
 		// single-metric aggregate() signature. Fall through to the
 		// magic-table native / PHP paths below, which do support it.
+		$query = $run->resolvedQuery;
 		if ($query->isMultiMetric() === true) {
 			return null;
 		}
 
-		$configuration = $schema->getConfiguration();
-		if (is_array($configuration) === false) {
+		$config = $this->dbalSourceConfig(schema: $run->schema);
+		if ($config === null) {
 			return null;
 		}
 
-		$objectSource = ($configuration['x-openregister-object-source'] ?? null);
-		if (is_array($objectSource) === false
+		return $this->dbalAggregate(run: $run, config: $config);
+	}//end tryDbalAggregation()
+
+	/**
+	 * Aggregate through the DBAL provider; a provider failure is logged and answers null.
+	 *
+	 * @param AdhocAggregationRun $run    The ad-hoc run; its resolved query is sent.
+	 * @param array<mixed>        $config The schema's `dbal-source` config.
+	 *
+	 * @return array<string, mixed>|null The result fragment, or null to fall through.
+	 */
+	private function dbalAggregate(AdhocAggregationRun $run, array $config): ?array {
+		try {
+			return $this->dbalProviderAggregate(run: $run, config: $config);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				'[AggregationRunner] DBAL aggregation failed for schema "' . ((string)$run->schema->getSlug()) . '": ' . $e->getMessage()
+			);
+			return null;
+		}
+	}//end dbalAggregate()
+
+	/**
+	 * The DBAL provider's aggregate of the run's resolved query.
+	 *
+	 * @param AdhocAggregationRun $run    The ad-hoc run; its resolved query is sent.
+	 * @param array<mixed>        $config The schema's `dbal-source` config.
+	 *
+	 * @return array<string, mixed>|null The result fragment.
+	 */
+	private function dbalProviderAggregate(AdhocAggregationRun $run, array $config): ?array {
+		$query = $run->resolvedQuery;
+		return $this->dbalSourceProvider->aggregate(
+			register: $run->register,
+			schema: $run->schema,
+			metric: $query->metric,
+			field: $query->field,
+			filter: $query->filter,
+			groupBy: $query->groupBy,
+			dateBucket: $query->dateBucket,
+			config: $config
+		);
+	}//end dbalProviderAggregate()
+
+	/**
+	 * The `dbal-source` object-source config of a schema, or null when it has none.
+	 *
+	 * @param Schema $schema The schema being aggregated.
+	 *
+	 * @return array<mixed>|null
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function dbalSourceConfig(Schema $schema): ?array {
+		$objectSource = self::declaredObjectSource(schema: $schema);
+		if ($objectSource === null
 			|| (string)($objectSource['provider'] ?? '') !== 'dbal-source'
 		) {
 			return null;
@@ -950,24 +1123,29 @@ class AggregationRunner {
 			return null;
 		}
 
-		try {
-			return $this->dbalSourceProvider->aggregate(
-				register: $register,
-				schema: $schema,
-				metric: $query->metric,
-				field: $query->field,
-				filter: $query->filter,
-				groupBy: $query->groupBy,
-				dateBucket: $query->dateBucket,
-				config: $config
-			);
-		} catch (\Throwable $e) {
-			$this->logger?->warning(
-				'[AggregationRunner] DBAL aggregation failed for schema "' . ((string)$schema->getSlug()) . '": ' . $e->getMessage()
-			);
+		return $config;
+	}//end dbalSourceConfig()
+
+	/**
+	 * The `x-openregister-object-source` block of a schema's configuration, when it is a map.
+	 *
+	 * @param Schema $schema The schema being aggregated.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private static function declaredObjectSource(Schema $schema): ?array {
+		$configuration = $schema->getConfiguration();
+		if (is_array($configuration) === false) {
 			return null;
 		}
-	}//end tryDbalAggregation()
+
+		$objectSource = ($configuration['x-openregister-object-source'] ?? null);
+		if (is_array($objectSource) === false) {
+			return null;
+		}
+
+		return $objectSource;
+	}//end declaredObjectSource()
 
 	/**
 	 * Project translatable group keys in a grouped-aggregation envelope to
@@ -1002,48 +1180,23 @@ class AggregationRunner {
 	 * - `?_translations=all` is requested (keys are returned verbatim).
 	 *
 	 * @param array<string, mixed> $envelope The aggregation result envelope.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param Register $register The owning register (language config).
-	 * @param array<string, mixed>|null $groupBy The groupBy spec — any accepted
-	 *                                           spelling ({field}, {fields: [...]},
-	 *                                           or a plain list).
+	 * @param ResultGrouping       $grouping The register (language config), schema and group spec.
 	 *
 	 * @return array<string, mixed> The envelope with translatable group keys projected.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   The method is a chain of cheap short-circuit guards (no groups /
-	 *   no groupBy field / nothing translatable / _translations=all) before
-	 *   the projection loop; each guard adds a branch but keeps the hot
-	 *   path a single early return.
+	 * The method is a chain of cheap short-circuit guards (no groups /
+	 * no groupBy field / nothing translatable / _translations=all) before
+	 * the projection, which TranslatableGroupKeyProjection carries out.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function projectTranslatableGroupKeys(
-		array $envelope,
-		Schema $schema,
-		Register $register,
-		?array $groupBy,
-	): array {
+	private function projectTranslatableGroupKeys(array $envelope, ResultGrouping $grouping): array {
 		if (isset($envelope['groups']) === false || is_array($envelope['groups']) === false) {
 			return $envelope;
 		}
 
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		if (count($groupFields) === 0) {
-			return $envelope;
-		}
-
-		// Only project when at least one grouped field is actually
-		// translatable. getTranslatableProperties() is cheap and this keeps
-		// NON-translatable grouped fields byte-for-byte unchanged.
-		$translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
-		$translatableGroups = array_values(
-			array_filter(
-				$groupFields,
-				static fn (string $groupField): bool => in_array($groupField, $translatableProps, true)
-			)
-		);
+		$translatableGroups = $this->translatableGroupFields(schema: $grouping->table->schema, groupBy: $grouping->groupBy);
 		if (count($translatableGroups) === 0) {
 			return $envelope;
 		}
@@ -1053,126 +1206,43 @@ class AggregationRunner {
 			return $envelope;
 		}
 
-		foreach ($envelope['groups'] as $index => $group) {
-			if (is_array($group) === false) {
-				continue;
-			}
-
-			$envelope['groups'][$index] = $this->projectGroupRowKeys(
-				group: $group,
-				translatableGroups: $translatableGroups,
-				schema: $schema,
-				register: $register
-			);
-		}
-
+		$projection = new TranslatableGroupKeyProjection(
+			translations: $this->translationHandler,
+			schema: $grouping->table->schema,
+			register: $grouping->table->register,
+			translatableFields: $translatableGroups
+		);
+		$envelope['groups'] = $projection->projectGroups(groups: $envelope['groups']);
 		return $envelope;
 	}//end projectTranslatableGroupKeys()
 
 	/**
-	 * Project the translatable key(s) of ONE grouped row.
+	 * The grouped fields that are translatable on the schema, in group order.
 	 *
-	 * Handles both row shapes: the composite `keys` map (every translatable
-	 * member projected against its own field name) and the legacy scalar
-	 * `key`. A row carrying neither is returned untouched.
+	 * Only project when at least one grouped field is actually translatable.
+	 * getTranslatableProperties() is cheap, is not asked when nothing is
+	 * grouped, and this keeps NON-translatable grouped fields byte-for-byte
+	 * unchanged.
 	 *
-	 * @param array<string, mixed> $group The grouped row.
-	 * @param array<int, string> $translatableGroups Group fields that ARE translatable.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param Register $register The owning register (language config).
+	 * @param Schema                    $schema  The schema being aggregated.
+	 * @param array<string, mixed>|null $groupBy The group spec, in any accepted spelling.
 	 *
-	 * @return array<string, mixed> The row with its translatable key(s) projected.
-	 *
-	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @return array<int, string>
 	 */
-	private function projectGroupRowKeys(
-		array $group,
-		array $translatableGroups,
-		Schema $schema,
-		Register $register,
-	): array {
-		// Composite groupBy: project every translatable member of the
-		// `keys` map against its OWN field name.
-		if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-			foreach ($translatableGroups as $groupField) {
-				if (array_key_exists($groupField, $group['keys']) === false) {
-					continue;
-				}
-
-				$group['keys'][$groupField] = $this->projectSingleTranslatableKey(
-					rawKey: $group['keys'][$groupField],
-					groupField: $groupField,
-					schema: $schema,
-					register: $register
-				);
-			}
-
-			return $group;
+	private function translatableGroupFields(Schema $schema, ?array $groupBy): array {
+		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+		if (count($groupFields) === 0) {
+			return [];
 		}
 
-		// Single-field groupBy: the legacy scalar `key` shape.
-		if (array_key_exists('key', $group) === false) {
-			return $group;
-		}
-
-		$group['key'] = $this->projectSingleTranslatableKey(
-			rawKey: $group['key'],
-			groupField: $translatableGroups[0],
-			schema: $schema,
-			register: $register
+		$translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
+		return array_values(
+			array_filter(
+				$groupFields,
+				static fn (string $groupField): bool => in_array($groupField, $translatableProps, true)
+			)
 		);
-
-		return $group;
-	}//end projectGroupRowKeys()
-
-	/**
-	 * Project a single grouped key value to the negotiated language.
-	 *
-	 * Normalizes the raw key to a language-keyed map (native path yields a
-	 * JSON string, PHP path an array), then delegates to
-	 * {@see TranslationHandler::resolveTranslationsForRender()} by wrapping
-	 * the map under the grouped field name and reading the resolved value
-	 * back. Non-map keys (already scalar, e.g. legacy untranslated rows) are
-	 * returned unchanged.
-	 *
-	 * @param mixed $rawKey The raw group key (JSON string or array).
-	 * @param string $groupField The grouped field name.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param Register $register The owning register (language config).
-	 *
-	 * @return mixed The projected scalar value, or the original key when not a map.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function projectSingleTranslatableKey(
-		mixed $rawKey,
-		string $groupField,
-		Schema $schema,
-		Register $register,
-	): mixed {
-		$map = $rawKey;
-
-		// Native SQL returns the JSON column value as a string; decode it.
-		if (is_string($rawKey) === true) {
-			$decoded = json_decode($rawKey, true);
-			if (is_array($decoded) === true) {
-				$map = $decoded;
-			}
-		}
-
-		// Not a language-keyed map (scalar / legacy untranslated) — leave it.
-		if (is_array($map) === false) {
-			return $rawKey;
-		}
-
-		$resolved = $this->translationHandler->resolveTranslationsForRender(
-			objectData: [$groupField => $map],
-			schema: $schema,
-			register: $register
-		);
-
-		return $resolved[$groupField] ?? $rawKey;
-	}//end projectSingleTranslatableKey()
+	}//end translatableGroupFields()
 
 	/**
 	 * Convenience: run an ad-hoc aggregation by register/schema ref.
@@ -1253,36 +1323,7 @@ class AggregationRunner {
 	 * Marked `backend: "php-fallback"` in the response so callers know
 	 * the query did not hit a native engine.
 	 *
-	 * @param Register $register Register.
-	 * @param Schema $schema Schema.
-	 * @param string $metric One of count/sum/avg/min/max.
-	 * @param string|null $field Metric field (null for count).
-	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
-	 * @param array<string, mixed>|null $groupBy Optional categorical groupBy spec.
-	 * @param array<string, mixed>|null $dateBucket Optional time-bucket spec.
-	 * @param array<int, array{metric: string, field: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                        (REQ-AGG-102);
-	 *                                                                        null/one-element behaves
-	 *                                                                        exactly as the legacy
-	 *                                                                        single `$metric`/`$field`
-	 *                                                                        pair. Not combined with
-	 *                                                                        `$dateBucket` (rejected
-	 *                                                                        upstream by
-	 *                                                                        AggregationQuery::create()).
-	 * @param bool $cumulative Running-total flag
-	 *                         (REQ-AGG-103).
-	 *                         Only consulted
-	 *                         when `$dateBucket`
-	 *                         is set; adds a
-	 *                         `cumulative` key
-	 *                         to each ordered
-	 *                         bucket via {@see
-	 *                         addCumulativeColumn()}
-	 *                         — the
-	 *                         PHP-post-pass half
-	 *                         of the SQL-window
-	 *                         / PHP parity pair
-	 *                         (design D3).
+	 * @param AdhocAggregationRun $run The ad-hoc run.
 	 *
 	 * @return array<string, mixed> Either `{value, backend, cached}` or
 	 *                              `{groups, backend, cached}` mirroring the
@@ -1290,29 +1331,39 @@ class AggregationRunner {
 	 *                              requests carry `values` instead of
 	 *                              `value`/per-group `value`.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   The branching mirrors the Postgres SQL path: dateBucket vs.
-	 *   groupBy vs. ungrouped, each with the metric / filter pipeline.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function bucketInPhp(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket,
-		?array $metrics = null,
-		bool $cumulative = false,
-	): array {
+	private function bucketInPhp(AdhocAggregationRun $run): array {
+		$rows = $this->adhocPhpRows(run: $run);
+
+		if ($run->query->dateBucket !== null) {
+			return [
+				'groups' => $this->dateBucketGroups(query: $run->query, rows: $rows),
+				'backend' => 'php-fallback',
+				'cached' => false,
+			];
+		}
+
+		return $this->adhocPhpFigures(query: $run->query, rows: $rows) + [
+			'backend' => 'php-fallback',
+			'cached' => false,
+		];
+	}//end bucketInPhp()
+
+	/**
+	 * The schema's rows, capped, with the resolved filter applied in PHP.
+	 *
+	 * Same operator vocabulary (in / gt / gte / lt / lte / ne) as the SQL path.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function adhocPhpRows(AdhocAggregationRun $run): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $run->register, schema: $run->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 
 		$rows = [];
@@ -1322,95 +1373,138 @@ class AggregationRunner {
 			$rows[] = $entity->getObject();
 		}
 
-		// Apply the filter clauses in PHP — same operator vocabulary
-		// (in / gt / gte / lt / lte / ne) as the SQL path.
-		$rows = $this->applyFilter(rows: $rows, filter: $filter);
+		return $this->applyFilter(rows: $rows, filter: $run->resolvedQuery->filter);
+	}//end adhocPhpRows()
 
-		if ($dateBucket !== null) {
-			// Restrict to rows whose bucket field falls in [start, end).
-			$bucketField = (string)$dateBucket['field'];
-			$start = strtotime((string)$dateBucket['start']);
-			$end = strtotime((string)$dateBucket['end']);
-			$gap = (string)$dateBucket['gap'];
-			$buckets = [];
+	/**
+	 * The metric per date bucket, chronologically ascending, with the running total when asked.
+	 *
+	 * Sorting the ISO-8601-UTC bucket keys with ksort() orders them chronologically
+	 * ascending (string ordering matches time ordering for this key format),
+	 * which is the ordering addCumulativeColumn() assumes.
+	 *
+	 * @param AggregationQuery                 $query The caller's query; it carries a dateBucket.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function dateBucketGroups(AggregationQuery $query, array $rows): array {
+		$buckets = $this->bucketRowsByDate(rows: $rows, dateBucket: (array)$query->dateBucket);
 
-			foreach ($rows as $row) {
-				$raw = ($row[$bucketField] ?? null);
-				if ($raw === null) {
-					continue;
-				}
-
-				$stamp = strtotime((string)$raw);
-				if (is_numeric($raw) === true) {
-					$stamp = (int)$raw;
-				}
-
-				if ($stamp === false || $stamp < $start || $stamp >= $end) {
-					continue;
-				}
-
-				$key = $this->truncateTimestamp(timestamp: $stamp, gap: $gap);
-				$buckets[$key] ??= [];
-				$buckets[$key][] = $row;
-			}
-
-			// Compute the metric per bucket. ksort() on the ISO-8601-UTC
-			// bucket keys sorts them chronologically ascending (string
-			// ordering matches time ordering for this key format), which
-			// is the ordering addCumulativeColumn() assumes.
-			$groups = [];
-			ksort($buckets);
-			foreach ($buckets as $key => $bucketRows) {
-				$groups[] = [
-					'key' => $key,
-					'value' => $this->computeMetric(rows: $bucketRows, metric: $metric, field: $field),
-				];
-			}
-
-			if ($cumulative === true) {
-				$groups = $this->addCumulativeColumn(groups: $groups);
-			}
-
-			return [
-				'groups' => $groups,
-				'backend' => 'php-fallback',
-				'cached' => false,
-			];
-		}//end if
-
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		$isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
-		if (count($groupFields) > 0) {
-			$groups = $this->computeGrouped(
-				rows: $rows,
-				metric: $metric,
-				field: $field,
-				groupFields: $groupFields,
-				metrics: $metrics
-			);
-
-			return [
-				'groups' => $groups,
-				'backend' => 'php-fallback',
-				'cached' => false,
+		$groups = [];
+		ksort($buckets);
+		foreach ($buckets as $key => $bucketRows) {
+			$groups[] = [
+				'key' => $key,
+				'value' => $this->computeMetric(rows: $bucketRows, aggregation: new RowAggregation(metric: $query->metric, field: $query->field)),
 			];
 		}
 
-		if ($isMultiMetric === true) {
-			return [
-				'values' => $this->computeMetrics(rows: $rows, metrics: $metrics),
-				'backend' => 'php-fallback',
-				'cached' => false,
-			];
+		if ($query->cumulative === true) {
+			$groups = $this->addCumulativeColumn(groups: $groups);
 		}
 
-		return [
-			'value' => $this->computeMetric(rows: $rows, metric: $metric, field: $field),
-			'backend' => 'php-fallback',
-			'cached' => false,
+		return $groups;
+	}//end dateBucketGroups()
+
+	/**
+	 * The rows whose bucket field falls in [start, end), keyed by truncated bucket.
+	 *
+	 * @param array<int, array<string, mixed>> $rows       The filtered rows.
+	 * @param array<string, mixed>             $dateBucket The time-bucket spec: field, start, end, gap.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>>
+	 */
+	private function bucketRowsByDate(array $rows, array $dateBucket): array {
+		$bucketField = (string)$dateBucket['field'];
+		$window = [
+			'start' => strtotime((string)$dateBucket['start']),
+			'end' => strtotime((string)$dateBucket['end']),
 		];
+		$gap = (string)$dateBucket['gap'];
+		$buckets = [];
 
-	}//end bucketInPhp()
+		foreach ($rows as $row) {
+			$stamp = $this->rowBucketStamp(row: $row, field: $bucketField);
+			if ($this->stampInWindow(stamp: $stamp, window: $window) === false) {
+				continue;
+			}
+
+			$key = $this->truncateTimestamp(timestamp: (int)$stamp, gap: $gap);
+			$buckets[$key] ??= [];
+			$buckets[$key][] = $row;
+		}
+
+		return $buckets;
+	}//end bucketRowsByDate()
+
+	/**
+	 * A row's bucket timestamp: null when the field is absent, false when unparseable.
+	 *
+	 * A numeric value is taken as a unix timestamp.
+	 *
+	 * @param array<string, mixed> $row   The row.
+	 * @param string               $field The bucket field.
+	 *
+	 * @return int|false|null
+	 */
+	private function rowBucketStamp(array $row, string $field): int|false|null {
+		$raw = ($row[$field] ?? null);
+		if ($raw === null) {
+			return null;
+		}
+
+		$stamp = strtotime((string)$raw);
+		if (is_numeric($raw) === true) {
+			$stamp = (int)$raw;
+		}
+
+		return $stamp;
+	}//end rowBucketStamp()
+
+	/**
+	 * Whether a bucket timestamp falls in the window [start, end).
+	 *
+	 * @param int|false|null                          $stamp  The row's timestamp.
+	 * @param array{start: int|false, end: int|false} $window The window bounds.
+	 *
+	 * @return bool
+	 */
+	private function stampInWindow(int|false|null $stamp, array $window): bool {
+		return ($stamp === null || $stamp === false || $stamp < $window['start'] || $stamp >= $window['end']) === false;
+	}//end stampInWindow()
+
+	/**
+	 * The figures of an un-bucketed fallback query: `groups`, `values` or `value`.
+	 *
+	 * @param AggregationQuery                 $query The caller's query.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function adhocPhpFigures(AggregationQuery $query, array $rows): array {
+		$metrics     = $query->getMetrics();
+		$groupFields = $this->resolveGroupFields(groupBy: $query->groupBy);
+		if (count($groupFields) > 0) {
+			return [
+				'groups' => $this->computeGrouped(
+					rows: $rows,
+					aggregation: new RowAggregation(
+						metric: $query->metric,
+						field: $query->field,
+						groupFields: $groupFields,
+						metrics: $metrics
+					)
+				),
+			];
+		}
+
+		if (count($metrics) > 1) {
+			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
+		}
+
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $query->metric, field: $query->field))];
+	}//end adhocPhpFigures()
 
 	/**
 	 * Add a `cumulative` (running-total) key to each already-ordered
@@ -1423,7 +1517,7 @@ class AggregationRunner {
 	 * SQL-window / PHP-post-pass parity pair: MySQL, SQLite and the PHP
 	 * fallback path call this helper; the Postgres native path instead
 	 * computes the identical running total in SQL via
-	 * `SUM(...) OVER (ORDER BY bucket)` (see {@see tryNativeAggregation()}).
+	 * `SUM(...) OVER (ORDER BY bucket)` (see {@see tryNativeWithSpec()}).
 	 * The two MUST agree bucket-for-bucket on the same input — pinned by
 	 * `AggregationRunnerCumulativeTest::testSqlWindowAndPhpPostPassAgreeOnTheSameData()`.
 	 *
@@ -1498,51 +1592,39 @@ class AggregationRunner {
 	/**
 	 * Compute a single scalar metric over the given rows.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Already-filtered rows.
-	 * @param string $metric One of count/sum/avg/min/max/count_distinct.
-	 * @param mixed $field Field name to aggregate over (ignored for count).
+	 * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+	 * @param RowAggregation                   $aggregation The metric (count/sum/avg/min/max/count_distinct) and the
+	 *                                                      field it aggregates over (ignored for count).
 	 *
 	 * @return int|float|null The metric result, or null when no rows match.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	private function computeMetric(array $rows, string $metric, mixed $field): int|float|null {
-		$sumReducer = fn (float $a, float $b) => $a + $b;
-		$minReducer = fn (float $a, float $b) => min($a, $b);
-		$maxReducer = fn (float $a, float $b) => max($a, $b);
-		$distinct = array_unique(
-			array_filter(
-				array_map(fn (array $r) => $r[(string)$field] ?? null, $rows),
-				fn ($v) => $v !== null
-			),
-			SORT_REGULAR
-		);
-
-		return match ($metric) {
+	private function computeMetric(array $rows, RowAggregation $aggregation): int|float|null {
+		$field = (string) $aggregation->field;
+		return match ($aggregation->metric) {
 			'count' => count($rows),
-			'sum' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $sumReducer,
-				initial: 0.0
-			),
-			'avg' => $this->avg(rows: $rows, field: (string)$field),
-			'min' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $minReducer,
-				initial: null
-			),
-			'max' => $this->reduceNumeric(
-				rows: $rows,
-				field: (string)$field,
-				reducer: $maxReducer,
-				initial: null
-			),
-			'count_distinct' => count($distinct),
+			'sum' => array_reduce($this->numericValues(rows: $rows, field: $field), fn (float $a, float $b) => $a + $b, 0.0),
+			'avg' => $this->avg(rows: $rows, field: $field),
+			'min' => self::reduceFromFirst(values: $this->numericValues(rows: $rows, field: $field), reducer: fn (float $a, float $b) => min($a, $b)),
+			'max' => self::reduceFromFirst(values: $this->numericValues(rows: $rows, field: $field), reducer: fn (float $a, float $b) => max($a, $b)),
+			'count_distinct' => $this->countDistinct(rows: $rows, field: $field),
 			default => null,
-		};//end match
+		};
 	}//end computeMetric()
+
+	/**
+	 * The number of distinct non-null values of a column.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  Rows to read.
+	 * @param string                           $field Column to read.
+	 *
+	 * @return int
+	 */
+	private function countDistinct(array $rows, string $field): int {
+		$values = array_filter(array_map(fn (array $r) => $r[$field] ?? null, $rows), fn ($v) => $v !== null);
+		return count(array_unique($values, SORT_REGULAR));
+	}//end countDistinct()
 
 	/**
 	 * Compute every metric in a multi-metric request over the same row set.
@@ -1598,40 +1680,28 @@ class AggregationRunner {
 	 * Leaves everything untouched when no group field is join-qualified, so the
 	 * ordinary path pays only an array scan.
 	 *
-	 * @param array<int, array<string, mixed>> $rows        The parent rows.
-	 * @param array<int, string>               $groupFields The requested group fields.
-	 * @param array<string, mixed>|null        $join        The join spec, if any.
-	 * @param bool                             $bypassRbac  Internal-system mode.
+	 * Sets the run's group fields (the requested ones; the projected column
+	 * is named after the qualified field) and whether the join was consumed
+	 * by the grouping.
 	 *
-	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, string>, 2: bool} Rows, group
-	 *         fields, and whether the join was consumed by the grouping.
+	 * @param NamedAggregationRun              $run  The run: its groupBy, join and internal-system mode.
+	 * @param array<int, array<string, mixed>> $rows The parent rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, carrying any projected columns.
 	 *
 	 * @throws RuntimeException When a join-qualified group field has no usable join spec.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function projectJoinedGroupFields(
-		array $rows,
-		array $groupFields,
-		?array $join,
-		bool $bypassRbac,
-	): array {
-		$joinSpec = [];
-		$through = '';
-		if (is_array($join) === true) {
-			$joinSpec = $join;
-			$through = (string)($joinSpec['through'] ?? '');
-		}
+	private function projectJoinedGroupFields(NamedAggregationRun $run, array $rows): array {
+		$run->groupFields = $this->resolveGroupFields(groupBy: $run->getGroupBy());
+		$run->joinConsumed = false;
 
-		$qualified = [];
-		foreach ($groupFields as $groupField) {
-			if ($through !== '' && str_starts_with($groupField, $through . '.') === true) {
-				$qualified[] = $groupField;
-			}
-		}
-
+		$joinSpec = ($run->getJoinArg() ?? []);
+		$through = (string)($joinSpec['through'] ?? '');
+		$qualified = $this->joinQualifiedGroupFields(groupFields: $run->groupFields, through: $through);
 		if ($qualified === []) {
-			return [$rows, $groupFields, false];
+			return $rows;
 		}
 
 		$onMap = $this->joinedProjectionKeyMap(joinSpec: $joinSpec, qualified: $qualified[0]);
@@ -1639,23 +1709,41 @@ class AggregationRunner {
 		$parentKey = (string)array_key_first($onMap);
 		$joinedRows = $this->loadJoinedRowsForProjection(
 			joinSpec: $joinSpec,
-			through: $through,
-			bypassRbac: $bypassRbac
+			bypassRbac: $run->bypassRbac
 		);
 
 		foreach ($qualified as $groupField) {
-			$rows = $this->stampProjectedColumn(
-				rows: $rows,
-				joinedRows: $joinedRows,
+			$projection = new JoinedColumnProjection(
 				parentKey: $parentKey,
 				joinedKey: (string)$onMap[$parentKey],
 				sourceField: substr($groupField, (strlen($through) + 1)),
 				column: $groupField
 			);
+			$rows = $projection->stamp(rows: $rows, joinedRows: $joinedRows);
 		}
 
-		return [$rows, $groupFields, true];
+		$run->joinConsumed = true;
+		return $rows;
 	}//end projectJoinedGroupFields()
+
+	/**
+	 * The group fields qualified by the join's `through` schema (`Through.field`).
+	 *
+	 * @param array<int, string> $groupFields The requested group fields.
+	 * @param string             $through     The joined schema ref; empty when there is no join.
+	 *
+	 * @return list<string>
+	 */
+	private function joinQualifiedGroupFields(array $groupFields, string $through): array {
+		$qualified = [];
+		foreach ($groupFields as $groupField) {
+			if ($through !== '' && str_starts_with($groupField, $through . '.') === true) {
+				$qualified[] = $groupField;
+			}
+		}
+
+		return $qualified;
+	}//end joinQualifiedGroupFields()
 
 	/**
 	 * Resolve the parent=>joined key map for a group-field projection.
@@ -1687,27 +1775,12 @@ class AggregationRunner {
 	 */
 	private function joinedProjectionKeyMap(array $joinSpec, string $qualified): array {
 		if (is_string($joinSpec['on'] ?? null) === true) {
-			throw new RuntimeException(
-				'Grouping by "' . $qualified . '" requires the explicit join.on map '
-				. '({parentField: joinedField}); the "Schema.column" shorthand infers the parent key '
-				. 'from the group fields, which are the joined ones here.'
-			);
+			throw self::joinShorthandRefusal(qualified: $qualified);
 		}
 
-		$onMap = [];
-		$onClause = ($joinSpec['on'] ?? null);
-		if (is_array($onClause) === true) {
-			foreach ($onClause as $parentField => $joinedField) {
-				if (is_string($parentField) === true && is_string($joinedField) === true) {
-					$onMap[$parentField] = $this->stripSchemaPrefix(ref: $joinedField);
-				}
-			}
-		}
-
+		$onMap = $this->explicitJoinOnMap(onClause: ($joinSpec['on'] ?? null));
 		if ($onMap === []) {
-			throw new RuntimeException(
-				'Grouping by "' . $qualified . '" needs the join\'s `on` mapping to locate the parent key.'
-			);
+			throw self::joinWithoutOnRefusal(qualified: $qualified);
 		}
 
 		// Single-key joins only. A composite key would need a tuple lookup per
@@ -1715,14 +1788,77 @@ class AggregationRunner {
 		// on the first key alone, which would over-merge groups and inflate
 		// every total.
 		if (count($onMap) > 1) {
-			throw new RuntimeException(
-				'Grouping by a joined field is supported for single-key joins only; "'
-				. $qualified . '" joins on ' . count($onMap) . ' keys.'
-			);
+			throw self::compositeJoinRefusal(qualified: $qualified, keys: count($onMap));
 		}
 
 		return $onMap;
 	}//end joinedProjectionKeyMap()
+
+	/**
+	 * The explicit `on` map of a join, `{parentField: joinedField}` with the
+	 * schema prefix stripped; entries that are not string to string are skipped.
+	 *
+	 * @param mixed $onClause The join's `on` clause
+	 *
+	 * @return array<string, string> The parent field to joined field map; empty without one.
+	 */
+	private function explicitJoinOnMap(mixed $onClause): array {
+		$onMap = [];
+		if (is_array($onClause) === false) {
+			return $onMap;
+		}
+
+		foreach ($onClause as $parentField => $joinedField) {
+			if (is_string($parentField) === true && is_string($joinedField) === true) {
+				$onMap[$parentField] = $this->stripSchemaPrefix(ref: $joinedField);
+			}
+		}
+
+		return $onMap;
+	}//end explicitJoinOnMap()
+
+	/**
+	 * The refusal of a joined group field whose join uses the `Schema.column` shorthand.
+	 *
+	 * @param string $qualified The joined group field
+	 *
+	 * @return RuntimeException
+	 */
+	private static function joinShorthandRefusal(string $qualified): RuntimeException {
+		return new RuntimeException(
+			'Grouping by "' . $qualified . '" requires the explicit join.on map '
+			. '({parentField: joinedField}); the "Schema.column" shorthand infers the parent key '
+			. 'from the group fields, which are the joined ones here.'
+		);
+	}//end joinShorthandRefusal()
+
+	/**
+	 * The refusal of a joined group field whose join has no usable `on` map.
+	 *
+	 * @param string $qualified The joined group field
+	 *
+	 * @return RuntimeException
+	 */
+	private static function joinWithoutOnRefusal(string $qualified): RuntimeException {
+		return new RuntimeException(
+			'Grouping by "' . $qualified . '" needs the join\'s `on` mapping to locate the parent key.'
+		);
+	}//end joinWithoutOnRefusal()
+
+	/**
+	 * The refusal of a joined group field on a composite-key join.
+	 *
+	 * @param string $qualified The joined group field
+	 * @param int    $keys      How many keys the join has
+	 *
+	 * @return RuntimeException
+	 */
+	private static function compositeJoinRefusal(string $qualified, int $keys): RuntimeException {
+		return new RuntimeException(
+			'Grouping by a joined field is supported for single-key joins only; "'
+			. $qualified . '" joins on ' . $keys . ' keys.'
+		);
+	}//end compositeJoinRefusal()
 
 	/**
 	 * Hydrate and filter the joined schema's rows for a group-field projection.
@@ -1732,29 +1868,23 @@ class AggregationRunner {
 	 * retired one, or the roll-up would credit amounts to a dimension the join
 	 * itself excludes.
 	 *
-	 * @param array<string, mixed> $joinSpec   The join spec.
-	 * @param string               $through    The joined schema ref.
+	 * @param array<string, mixed> $joinSpec   The join spec; its `through` names the joined schema.
 	 * @param bool                 $bypassRbac Internal-system mode.
 	 *
 	 * @return array<int, array<string, mixed>> The joined rows.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function loadJoinedRowsForProjection(
-		array $joinSpec,
-		string $through,
-		bool $bypassRbac,
-	): array {
+	private function loadJoinedRowsForProjection(array $joinSpec, bool $bypassRbac): array {
 		[$joinedSchema, $joinedRegister] = $this->resolveJoinTarget(
-			through: $through,
+			through: (string)($joinSpec['through'] ?? ''),
 			bypassRbac: $bypassRbac
 		);
 
 		$joinedRows = [];
 		foreach ($this->magicMapper->findAllInRegisterSchemaTable(
-			register: $joinedRegister,
-			schema: $joinedSchema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $joinedRegister, schema: $joinedSchema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		) as $object) {
 			$joinedRows[] = $object->getObject();
 		}
@@ -1768,58 +1898,6 @@ class AggregationRunner {
 
 		return $this->applyFilter(rows: $joinedRows, filter: $joinedFilter);
 	}//end loadJoinedRowsForProjection()
-
-	/**
-	 * Stamp each parent row with the joined value its join key maps to.
-	 *
-	 * The synthetic column is named after the QUALIFIED field, so a caller
-	 * reading `keys` sees the name it asked for rather than an internal alias.
-	 *
-	 * A parent row whose key matches nothing gets NULL rather than being
-	 * dropped: dropping it would quietly shrink every total, while a null
-	 * bucket is visible and is the honest answer for "belongs to no dimension".
-	 *
-	 * @param array<int, array<string, mixed>> $rows        Parent rows.
-	 * @param array<int, array<string, mixed>> $joinedRows  Joined rows.
-	 * @param string                           $parentKey   Parent-side join field.
-	 * @param string                           $joinedKey   Joined-side join field.
-	 * @param string                           $sourceField Joined field to project.
-	 * @param string                           $column      Synthetic column name.
-	 *
-	 * @return array<int, array<string, mixed>> Rows carrying the projected column.
-	 *
-	 * @spec openspec/specs/aggregation-api/spec.md
-	 */
-	private function stampProjectedColumn(
-		array $rows,
-		array $joinedRows,
-		string $parentKey,
-		string $joinedKey,
-		string $sourceField,
-		string $column,
-	): array {
-		$lookup = [];
-		foreach ($joinedRows as $joinedRow) {
-			$key = ($joinedRow[$joinedKey] ?? null);
-			if ($key === null) {
-				continue;
-			}
-
-			$lookup[(string)$key] = ($joinedRow[$sourceField] ?? null);
-		}
-
-		foreach ($rows as $index => $row) {
-			$parentValue = ($row[$parentKey] ?? null);
-			$projected = null;
-			if ($parentValue !== null) {
-				$projected = ($lookup[(string)$parentValue] ?? null);
-			}
-
-			$rows[$index][$column] = $projected;
-		}
-
-		return $rows;
-	}//end stampProjectedColumn()
 
 	/**
 	 * Whether a metrics list uses anything the native SQL path cannot express.
@@ -1839,33 +1917,46 @@ class AggregationRunner {
 	 */
 	private function metricsNeedPhpPath(array $metrics): bool {
 		foreach ($metrics as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			// A DERIVED metric has no SQL form at all: it is arithmetic over the
-			// other metrics' results, which do not exist until they have been
-			// computed. Stated explicitly rather than relying on the `as` check
-			// below to catch it, so removing `as` could never route an
-			// expression at the native path and have it silently compute
-			// nothing.
-			if (($entry['metric'] ?? null) === 'expression') {
-				return true;
-			}
-
-			$condition = ($entry['condition'] ?? null);
-			if (is_array($condition) === true && $condition !== []) {
-				return true;
-			}
-
-			$alias = ($entry['as'] ?? null);
-			if (is_string($alias) === true && $alias !== '') {
+			if ($this->metricEntryNeedsPhpPath(entry: $entry) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end metricsNeedPhpPath()
+
+	/**
+	 * Whether one metric entry is a derived metric, or carries a `condition` or an `as` alias.
+	 *
+	 * @param mixed $entry The metric entry; a non-array entry needs nothing.
+	 *
+	 * @return bool
+	 */
+	private function metricEntryNeedsPhpPath(mixed $entry): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		if (($entry['metric'] ?? null) === 'expression') {
+			return true;
+		}
+
+		return $this->declaresConditionOrAlias(entry: $entry);
+	}//end metricEntryNeedsPhpPath()
+
+	/**
+	 * Whether a metric entry declares a non-empty `condition` or a non-empty `as` alias.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return bool
+	 */
+	private function declaresConditionOrAlias(array $entry): bool {
+		$condition = ($entry['condition'] ?? null);
+		$alias     = ($entry['as'] ?? null);
+		return (is_array($condition) === true && $condition !== [])
+			|| (is_string($alias) === true && $alias !== '');
+	}//end declaresConditionOrAlias()
 
 	/**
 	 * Compute every requested metric over one row set.
@@ -1884,26 +1975,8 @@ class AggregationRunner {
 	private function computeMetrics(array $rows, array $metrics): array {
 		$values = [];
 		foreach ($metrics as $entry) {
-			// A DERIVED metric reads the figures this aggregation has already
-			// produced, rather than the rows. `vatBalance = totalVATPaid -
-			// totalVATCollected` is arithmetic between two sums just computed;
-			// declaring a second aggregation to subtract them scans the table
-			// again, and the two results can disagree if a row is written
-			// between the calls — which a trial balance must never do.
-			//
-			// It reads only aliases computed BEFORE it, so the order of the
-			// `metrics` list is the dependency order. An alias that is not there
-			// yet raises and names what IS available, because resolving it to 0
-			// would turn a typo into a plausible number.
 			if (($entry['metric'] ?? null) === 'expression') {
-				$derivedAlias = ($entry['as'] ?? null);
-				if (is_string($derivedAlias) === false || $derivedAlias === '') {
-					throw new RuntimeException(
-						'A derived metric must declare `as`: it has no field or metric name to '
-						.'derive a response key from.'
-					);
-				}
-
+				$derivedAlias = $this->derivedMetricAlias(entry: $entry);
 				$values[$derivedAlias] = $this->expressions->evaluate(
 					expression: (string)($entry['expression'] ?? ''),
 					scope: $values
@@ -1911,52 +1984,74 @@ class AggregationRunner {
 				continue;
 			}
 
-			// `condition` — a per-metric filter, so one grouping can carry
-			// several figures over DIFFERENT row subsets.
-			//
-			// This is what a debit/credit split needs, and without it no
-			// accounting report in a consuming app can be declarative:
-			// `totalDebit` and `totalCredit` are the same SUM over the same
-			// field, separated only by `side`. Declaring two aggregations
-			// instead is not equivalent — it groups and scans the table twice,
-			// and the two results can disagree if a row is written between the
-			// calls, which is exactly what a trial balance must never do.
-			//
-			// It is a FILTER OBJECT, deliberately, not a SQL string. The same
-			// shape as `filter`, run through the same applyFilter(), so there
-			// is one grammar to learn and one implementation to keep correct.
-			// A second, string-shaped grammar is how the consuming app ended up
-			// with 265 declarations the engine could not read.
-			$scoped = $rows;
-			$condition = ($entry['condition'] ?? null);
-			if (is_array($condition) === true && $condition !== []) {
-				$scoped = $this->applyFilter(rows: $rows, filter: $condition);
-			}
-
-			// `as` — an explicit response key.
-			//
-			// Required once `condition` exists: two conditional sums over the
-			// same field both derive `sum_amount` and the second would
-			// overwrite the first, silently returning one figure where the
-			// caller asked for two.
-			$alias = ($entry['as'] ?? null);
-			$key = AggregationQuery::metricResponseKey(
-				metric: $entry['metric'],
-				field: $entry['field']
-			);
-			if (is_string($alias) === true && $alias !== '') {
-				$key = $alias;
-			}
-
+			$scoped = $this->metricEntryRows(rows: $rows, entry: $entry);
+			$key    = $this->metricEntryKey(entry: $entry);
 			$values[$key] = $this->computeMetric(
 				rows: $scoped,
-				metric: $entry['metric'],
-				field: $entry['field']
+				aggregation: new RowAggregation(metric: $entry['metric'], field: ($entry['field'] ?? null))
 			);
 		}
 
 		return $values;
 	}//end computeMetrics()
+
+	/**
+	 * The `as` alias of a derived (expression) metric, which it must declare.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the derived metric has no `as`.
+	 */
+	private function derivedMetricAlias(array $entry): string {
+		$derivedAlias = ($entry['as'] ?? null);
+		if (is_string($derivedAlias) === false || $derivedAlias === '') {
+			throw new RuntimeException(
+				'A derived metric must declare `as`: it has no field or metric name to '
+				.'derive a response key from.'
+			);
+		}
+
+		return $derivedAlias;
+	}//end derivedMetricAlias()
+
+	/**
+	 * The rows a metric entry counts: all of them, or those its `condition` matches.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  The rows.
+	 * @param array<string, mixed>             $entry The metric entry.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function metricEntryRows(array $rows, array $entry): array {
+		$condition = ($entry['condition'] ?? null);
+		if (is_array($condition) === true && $condition !== []) {
+			return $this->applyFilter(rows: $rows, filter: $condition);
+		}
+
+		return $rows;
+	}//end metricEntryRows()
+
+	/**
+	 * The response key of a metric entry: its `as` alias, else the metric/field key.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return string
+	 */
+	private function metricEntryKey(array $entry): string {
+		$alias = ($entry['as'] ?? null);
+		$key = AggregationQuery::metricResponseKey(
+			metric: $entry['metric'],
+			field: ($entry['field'] ?? null)
+		);
+		if (is_string($alias) === true && $alias !== '') {
+			$key = $alias;
+		}
+
+		return $key;
+	}//end metricEntryKey()
 
 	/**
 	 * Resolve a raw groupBy spec to an ordered list of non-empty group field
@@ -2000,19 +2095,10 @@ class AggregationRunner {
 	 * a consumer can pivot the result into a cross-tab. The bucket order is
 	 * the first-seen order of each distinct tuple.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Already-filtered rows.
-	 * @param string $metric One of count/sum/avg/min/max/count_distinct.
-	 * @param mixed $field Field to aggregate over.
-	 * @param array<int, string> $groupFields Ordered field(s) used as the bucket key.
-	 * @param array<int, array{metric: string, field: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                        (REQ-AGG-102). When it
-	 *                                                                        carries more than one
-	 *                                                                        entry, each group row
-	 *                                                                        carries a `values` map
-	 *                                                                        instead of a single scalar
-	 *                                                                        `value` —
-	 *                                                                        `$metric`/`$field` are
-	 *                                                                        then ignored.
+	 * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+	 * @param RowAggregation                   $aggregation The metric over its field, the group fields and the optional
+	 *                                                      multi-metric list (with more than one entry each group row
+	 *                                                      carries a `values` map instead of a single scalar `value`).
 	 *
 	 * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value?: int|float|null, values?: array<string, int|float|null>}>
 	 *
@@ -2020,9 +2106,34 @@ class AggregationRunner {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields, ?array $metrics = null): array {
-		$isMulti = (count($groupFields) > 1);
+	private function computeGrouped(array $rows, RowAggregation $aggregation): array {
+		$metrics       = $aggregation->metrics;
+		$isMulti       = (count($aggregation->groupFields) > 1);
 		$isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
+
+		$out = [];
+		foreach ($this->groupBuckets(rows: $rows, groupFields: $aggregation->groupFields) as $bucket) {
+			if ($isMultiMetric === true) {
+				$figure = ['values' => $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics)];
+			} else {
+				$figure = ['value' => $this->computeMetric(rows: $bucket['rows'], aggregation: $aggregation)];
+			}
+
+			$out[] = $this->groupKeyOf(tuple: $bucket['tuple'], isMulti: $isMulti) + $figure;
+		}
+
+		return $out;
+	}//end computeGrouped()
+
+	/**
+	 * The rows bucketed by their group-field tuple, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows        The rows.
+	 * @param array<int, string>               $groupFields The group fields.
+	 *
+	 * @return array<string, array{tuple: array<string, mixed>, rows: array<int, array<string, mixed>>}>
+	 */
+	private function groupBuckets(array $rows, array $groupFields): array {
 		$buckets = [];
 		foreach ($rows as $row) {
 			$tuple = [];
@@ -2030,82 +2141,70 @@ class AggregationRunner {
 				$tuple[$groupField] = ($row[$groupField] ?? null);
 			}
 
-			// Composite cache key over the whole tuple; json_encode keeps
-			// distinct tuples distinct regardless of scalar/null members.
 			$key = json_encode($tuple);
-			if (isset($buckets[$key]) === false) {
-				$buckets[$key] = ['tuple' => $tuple, 'rows' => []];
-			}
-
+			$buckets[$key] ??= ['tuple' => $tuple, 'rows' => []];
 			$buckets[$key]['rows'][] = $row;
 		}
 
-		$out = [];
-		foreach ($buckets as $bucket) {
-			$valueOrValues = null;
-			if ($isMultiMetric === true) {
-				$valueOrValues = $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics);
-			} else {
-				$valueOrValues = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
-			}
-
-			$valueKey = 'value';
-			if ($isMultiMetric === true) {
-				$valueKey = 'values';
-			}
-
-			if ($isMulti === true) {
-				$out[] = [
-					'keys' => $bucket['tuple'],
-					$valueKey => $valueOrValues,
-				];
-				continue;
-			}
-
-			// Single-field: unwrap the tuple to the legacy `{key, value}` shape.
-			$out[] = [
-				'key' => reset($bucket['tuple']),
-				$valueKey => $valueOrValues,
-			];
-		}//end foreach
-
-		return $out;
-	}//end computeGrouped()
+		return $buckets;
+	}//end groupBuckets()
 
 	/**
-	 * Reduce a numeric column using the given binary reducer.
+	 * A group's key: the whole tuple as `keys` for several fields, else its one value as `key`.
 	 *
-	 * @param array<int, array<string, mixed>> $rows Rows to reduce.
-	 * @param string $field Column to read.
-	 * @param callable $reducer Binary reducer applied to (acc, value).
-	 * @param mixed $initial Initial accumulator value (null is allowed).
+	 * @param array<string, mixed> $tuple   The group-field tuple.
+	 * @param bool                 $isMulti Whether there are several group fields.
 	 *
-	 * @return int|float|null The reduced value, or null when no numeric rows were seen.
+	 * @return array<string, mixed>
 	 */
-	private function reduceNumeric(array $rows, string $field, callable $reducer, mixed $initial): int|float|null {
-		$acc = $initial;
-		$count = 0;
-		foreach ($rows as $row) {
-			$value = $row[$field] ?? null;
-			if (is_numeric($value) === false) {
-				continue;
-			}
-
-			$count++;
-			if ($acc === null) {
-				$acc = (float)$value;
-				continue;
-			}
-
-			$acc = $reducer((float)$acc, (float)$value);
+	private function groupKeyOf(array $tuple, bool $isMulti): array {
+		if ($isMulti === true) {
+			return ['keys' => $tuple];
 		}
 
-		if ($count === 0 && $acc === null) {
+		return ['key' => reset($tuple)];
+	}//end groupKeyOf()
+
+	/**
+	 * The numeric values of a column, as floats, in row order; non-numeric values are skipped.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  Rows to read.
+	 * @param string                           $field Column to read.
+	 *
+	 * @return array<int, float>
+	 */
+	private function numericValues(array $rows, string $field): array {
+		$values = [];
+		foreach ($rows as $row) {
+			$value = $row[$field] ?? null;
+			if (is_numeric($value) === true) {
+				$values[] = (float) $value;
+			}
+		}
+
+		return $values;
+	}//end numericValues()
+
+	/**
+	 * Reduce values with a binary reducer seeded by the first value; null when there are none.
+	 *
+	 * @param array<int, float>              $values  The values, in order.
+	 * @param callable(float, float): float  $reducer Binary reducer applied to (acc, value).
+	 *
+	 * @return float|null
+	 */
+	private static function reduceFromFirst(array $values, callable $reducer): ?float {
+		if (count($values) === 0) {
 			return null;
 		}
 
+		$acc = array_shift($values);
+		foreach ($values as $value) {
+			$acc = $reducer($acc, $value);
+		}
+
 		return $acc;
-	}//end reduceNumeric()
+	}//end reduceFromFirst()
 
 	/**
 	 * Compute the arithmetic mean of a numeric column.
@@ -2212,17 +2311,29 @@ class AggregationRunner {
 			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$criterion]);
 		}
 
-		foreach ($criterion as $op => $onValue) {
-			if ($this->checkOn(value: $value, op: (string)$op, onValue: $onValue) === false) {
+		return $this->operatorMapMatches(value: $value, operators: $criterion);
+	}//end criterionMatches()
+
+	/**
+	 * Whether a value passes every operator of an operator map, in map order.
+	 *
+	 * @param mixed $value     The row value
+	 * @param array $operators The operator map, such as `{gte: 1, lt: 5}`
+	 *
+	 * @return bool True when every operator passes.
+	 */
+	private function operatorMapMatches(mixed $value, array $operators): bool {
+		foreach ($operators as $op => $onValue) {
+			if ($this->operatorCheck(op: (string)$op)($value, $onValue) === false) {
 				return false;
 			}
 		}
 
 		return true;
-	}//end criterionMatches()
+	}//end operatorMapMatches()
 
 	/**
-	 * Apply a single operator check.
+	 * The check of a single operator, applied as `$check($value, $onValue)`.
 	 *
 	 * `eq`/`ne`/`in`/`notIn` all route through {@see valueMatchesAnyOf()} —
 	 * REQ-AGG-106 / bug #2027 — so a multi-value (array) row value (a
@@ -2233,56 +2344,21 @@ class AggregationRunner {
 	 * `gt`/`gte`/`lt`/`lte` are unaffected — range comparisons over a
 	 * multi-value row aren't part of this fix's scope.
 	 *
-	 * @param mixed $value The value extracted from the row.
 	 * @param string $op Operator name ('eq','ne','gt','gte','lt','lte','in','notIn','isnull').
-	 * @param mixed $onValue The operand value to compare against.
 	 *
-	 * @return bool True when the value satisfies the operator.
+	 * @return \Closure(mixed, mixed): bool True when the row value satisfies the operator against the operand.
 	 *
 	 * @throws RuntimeException When the operator is not one of the nine implemented
 	 *                          spellings. It previously matched every row instead,
 	 *                          silently widening the filter.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
-		if ($op === NullFilter::ISNULL_OPERATOR) {
-			return ($value === null) === NullFilter::isNullOperatorAsksForNull(value: $onValue);
-		}
-
-		if ($op === 'eq') {
-			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]);
-		}
-
-		if ($op === 'ne') {
-			return ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]) === false);
-		}
-
-		if ($op === 'in') {
-			return (is_array($onValue) === true
-				&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === true);
-		}
-
-		if ($op === 'notIn') {
-			return (is_array($onValue) === false
-				|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === false);
-		}
-
-		$cmp = $this->normaliseForCompare(v: $value);
-		$rhs = $this->normaliseForCompare(v: $onValue);
-		$known = match ($op) {
-			'gt' => $cmp !== null && $rhs !== null && $cmp > $rhs,
-			'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
-			'lt' => $cmp !== null && $rhs !== null && $cmp < $rhs,
-			'lte' => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-			default => null,
-		};
-
-		if ($known !== null) {
-			return $known;
+	private function operatorCheck(string $op): \Closure {
+		$check = ($this->operatorChecks()[$op] ?? null);
+		if ($check !== null) {
+			return $check;
 		}
 
 		// AN UNRECOGNISED OPERATOR IS REFUSED, NOT IGNORED.
@@ -2308,7 +2384,80 @@ class AggregationRunner {
 			. 'eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every '
 			. 'row, which silently widened the filter instead of narrowing it.'
 		);
-	}//end checkOp()
+	}//end operatorCheck()
+
+	/**
+	 * The implemented operators, each as a check of (row value, operand).
+	 *
+	 * @return array<string, \Closure(mixed, mixed): bool>
+	 */
+	private function operatorChecks(): array {
+		return $this->operatorChecks ??= [
+			NullFilter::ISNULL_OPERATOR => static fn (mixed $value, mixed $onValue): bool =>
+				($value === null) === NullFilter::isNullOperatorAsksForNull(value: $onValue),
+			'eq' => fn (mixed $value, mixed $onValue): bool =>
+				$this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]),
+			'ne' => fn (mixed $value, mixed $onValue): bool =>
+				($this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]) === false),
+			'in' => fn (mixed $value, mixed $onValue): bool => $this->valueInList(value: $value, onValue: $onValue),
+			'notIn' => fn (mixed $value, mixed $onValue): bool => $this->valueNotInList(value: $value, onValue: $onValue),
+			'gt' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] > $pair[1],
+			'gte' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] >= $pair[1],
+			'lt' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] < $pair[1],
+			'lte' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] <= $pair[1],
+		];
+	}//end operatorChecks()
+
+	/**
+	 * Whether the operand is a list and the row value matches any of it (`in`).
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return bool
+	 */
+	private function valueInList(mixed $value, mixed $onValue): bool {
+		return (is_array($onValue) === true
+			&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === true);
+	}//end valueInList()
+
+	/**
+	 * Whether the operand is not a list or the row value matches none of it (`notIn`).
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return bool
+	 */
+	private function valueNotInList(mixed $value, mixed $onValue): bool {
+		return (is_array($onValue) === false
+			|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === false);
+	}//end valueNotInList()
+
+	/**
+	 * Both sides normalised for a range check, or null when either side is null.
+	 *
+	 * Dates compare as timestamps (see normaliseForCompare()); a null on
+	 * either side never satisfies a range check.
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return array{0: mixed, 1: mixed}|null
+	 */
+	private function normalisedPair(mixed $value, mixed $onValue): ?array {
+		$cmp = $this->normaliseForCompare(v: $value);
+		$rhs = $this->normaliseForCompare(v: $onValue);
+		if ($cmp === null || $rhs === null) {
+			return null;
+		}
+
+		return [$cmp, $rhs];
+	}//end normalisedPair()
 
 	/**
 	 * The SQL that asks for an empty or a filled column.
@@ -2412,177 +2561,115 @@ class AggregationRunner {
 	 * → one row per distinct tuple) + optional time-bucketing. The
 	 * categorical groupBy and time-bucket paths run natively on Postgres,
 	 * MySQL and SQLite; the ungrouped scalar path is Postgres-only (the
-	 * others fall through to the PHP fallback).
+	 * others fall through to the PHP fallback). A request whose `metrics`
+	 * list has more than one entry goes to {@see tryNativeMultiMetric()}.
+	 * With `cumulative` and a `dateBucket`, Postgres adds a
+	 * `SUM(...) OVER (ORDER BY bucket)` window column; MySQL and SQLite fall
+	 * through to the {@see addCumulativeColumn()} PHP post-pass, and the two
+	 * MUST agree bucket for bucket (design D3).
 	 *
 	 * Multi-field groupBy returns each group row as
 	 * `{keys: {fieldA: ..., fieldB: ...}, value}`; single-field groupBy
 	 * keeps the backward-compatible `{key, value}` shape.
 	 *
-	 * Returns the result fragment ('value' or 'groups') on success, null
-	 * to signal the caller should fall back to PHP-side aggregation.
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
 	 *
-	 * @param Register $register Register the schema belongs to.
-	 * @param Schema $schema Schema being aggregated.
-	 * @param string $metric Metric name (count/sum/avg/min/max).
-	 * @param string|null $field Field to aggregate over (ignored for count).
-	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
-	 * @param array<string, mixed>|null $groupBy Optional group spec: single-field ({field: ...}),
-	 *                                           multi-field ({fields: [...]}), or a plain list
-	 *                                           ([...]).
-	 * @param array<string, mixed>|null $dateBucket Optional time-bucket spec ({field, start, end, gap}).
-	 *                                              When supplied, the query becomes a
-	 *                                              `date_trunc`-bucketed series with explicit `WHERE
-	 *                                              field >= start AND field < end` bounds. Mutually
-	 *                                              exclusive with $groupBy (validated by
-	 *                                              AggregationQuery::create() upstream).
-	 * @param array<int, array{metric: string, field: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                        (REQ-AGG-102). When it
-	 *                                                                        carries more than one
-	 *                                                                        entry, this method
-	 *                                                                        dispatches to {@see
-	 *                                                                        tryNativeMultiMetric()}
-	 *                                                                        instead of running the
-	 *                                                                        single-metric path below;
-	 *                                                                        `$metric`/`$field` are
-	 *                                                                        then ignored.
-	 * @param bool $cumulative Running-total flag
-	 *                         (REQ-AGG-103),
-	 *                         only consulted
-	 *                         when `$dateBucket`
-	 *                         is set. On
-	 *                         Postgres this adds
-	 *                         a `SUM(...) OVER
-	 *                         (ORDER BY bucket)`
-	 *                         window column to
-	 *                         the SQL (native
-	 *                         running total).
-	 *                         MySQL and SQLite
-	 *                         fall through to
-	 *                         the {@see
-	 *                         addCumulativeColumn()}
-	 *                         PHP post-pass —
-	 *                         the two MUST agree
-	 *                         bucket-for- bucket
-	 *                         (design D3).
-	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
-	 *
-	 * @return array{value: int|float|null}
-	 *                                      |array{values: array<string, int|float|null>}
-	 *                                      |array{groups: array<int, array{key: mixed, value: int|float|null, cumulative?: int|float}>}
-	 *                                      |null
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)  rowRbac threads the bypassRbac decision down to the SQL.
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)     cumulative and rowRbac are request flags
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-	 * @spec openspec/specs/aggregation-api/spec.md
-	 * @spec openspec/specs/aggregation-api/spec.md
-	 */
-	private function tryNativeAggregation(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket = null,
-		?array $metrics = null,
-		bool $cumulative = false,
-		bool $rowRbac = true,
-	): ?array {
-		return $this->tryNativeWithSpec(
-			register: $register,
-			schema: $schema,
-			spec: [
-				'metric'     => $metric,
-				'field'      => $field,
-				'filter'     => $filter,
-				'groupBy'    => $groupBy,
-				'dateBucket' => $dateBucket,
-				'metrics'    => $metrics,
-				'cumulative' => $cumulative,
-				'rowRbac'    => $rowRbac,
-			]
-		);
-	}//end tryNativeAggregation()
-
-	/**
-	 * Dispatch a native aggregation request to the multi-metric or single-metric path.
-	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param array    $spec     The aggregation request: metric, field, filter,
-	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
-	 *
-	 * @return array|null Null sends the caller to the PHP path
+	 * @return array|null The result fragment ('value', 'values' or 'groups'); null sends the caller to the PHP path
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeWithSpec(Register $register, Schema $schema, array $spec): ?array {
+	private function tryNativeWithSpec(NativeAggregationRequest $request): ?array {
+		$spec = $request->spec;
 		if ($this->nativePathCannotExpress(metrics: $spec['metrics'], groupBy: $spec['groupBy']) === true) {
 			return null;
 		}
 
 		if (is_array($spec['metrics']) === true && count($spec['metrics']) > 1) {
-			return $this->tryNativeMultiMetric(
-				register: $register,
-				schema: $schema,
-				filter: $spec['filter'],
-				groupBy: $spec['groupBy'],
-				metrics: $spec['metrics'],
-				rowRbac: $spec['rowRbac']
-			);
+			return $this->tryNativeMultiMetric(request: $request);
 		}
 
-		return $this->tryNativeSingleMetric(register: $register, schema: $schema, spec: $spec);
+		return $this->tryNativeSingleMetric(request: $request);
 	}//end tryNativeWithSpec()
 
 	/**
 	 * Run one metric natively, or answer null to send the caller to the PHP path.
 	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param array    $spec     The aggregation request: metric, field, filter,
-	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
 	 *
 	 * @return array|null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeSingleMetric(Register $register, Schema $schema, array $spec): ?array {
+	private function tryNativeSingleMetric(NativeAggregationRequest $request): ?array {
+		$spec         = $request->spec;
 		$platformName = $this->detectDatabasePlatform();
-		$groupFields  = $this->resolveGroupFields(groupBy: $spec['groupBy']);
-		if (self::nativeShapeSupported(platform: $platformName, dateBucket: $spec['dateBucket'], groupFields: $groupFields) === false
-			|| self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === false
-			|| self::nativeFilterSupported(filter: $spec['filter'], schema: $schema) === false
-		) {
+		if ($this->nativeRequestSupported(request: $request, platform: $platformName) === false) {
 			return null;
 		}
 
-		$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$query = $this->nativeQueryFor(request: $request, platform: $platformName);
+		if ($query === null) {
+			return null;
+		}
+
+		$statement = new NativeAggregationStatement(
+			query: $query,
+			aggSql: $this->nativeAggregateSql(query: $query, field: $spec['field']),
+			cumulative: $spec['cumulative']
+		);
+		return $this->runNativeQuery(statement: $statement, spec: $spec);
+	}//end tryNativeSingleMetric()
+
+	/**
+	 * The native query over the schema's table with its WHERE built, or null when it cannot run.
+	 *
+	 * Null when the schema has no table, or when the row predicate or
+	 * organisation scope cannot be expressed natively.
+	 *
+	 * @param NativeAggregationRequest $request  The register, schema and aggregation asked.
+	 * @param string                   $platform The detected database platform.
+	 *
+	 * @return NativeAggregationQuery|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeQueryFor(NativeAggregationRequest $request, string $platform): ?NativeAggregationQuery {
+		$spec      = $request->spec;
+		$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $request->register, schema: $request->schema);
 		if ($tableName === null || $tableName === '') {
 			return null;
 		}
 
 		$query = new NativeAggregationQuery(
-			platform: $platformName,
-			quote: $this->identifierQuote(platform: $platformName),
+			platform: $platform,
+			quote: $this->identifierQuote(platform: $platform),
 			tableName: $tableName,
 			metric: $spec['metric']
 		);
-		if ($this->buildNativeWhere(query: $query, register: $register, schema: $schema, rowRbac: $spec['rowRbac']) === false) {
+		if ($this->buildNativeWhere(query: $query, request: $request) === false) {
 			return null;
 		}
 
 		$this->addNativeFilterPredicates(query: $query, filter: $spec['filter']);
+		return $query;
+	}//end nativeQueryFor()
 
-		return $this->runNativeQuery(
-			query: $query,
-			aggSql: $this->nativeAggregateSql(query: $query, field: $spec['field']),
-			groupFields: $groupFields,
-			bucket: ['dateBucket' => $spec['dateBucket'], 'cumulative' => $spec['cumulative']]
-		);
-	}//end tryNativeSingleMetric()
+	/**
+	 * Whether the native SQL supports the request's shape, metric and filter on this platform.
+	 *
+	 * @param NativeAggregationRequest $request  The register, schema and aggregation asked.
+	 * @param string                   $platform The detected database platform.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeRequestSupported(NativeAggregationRequest $request, string $platform): bool {
+		$spec = $request->spec;
+		return $this->nativeShapeSupported(platform: $platform, spec: $spec) === true
+			&& self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === true
+			&& self::nativeFilterSupported(filter: $spec['filter'], schema: $request->schema) === true;
+	}//end nativeRequestSupported()
 
 	/**
 	 * Whether the request holds something the native SQL cannot express.
@@ -2605,6 +2692,17 @@ class AggregationRunner {
 			return true;
 		}
 
+		return $this->groupsOnJoinedField(groupBy: $groupBy);
+	}//end nativePathCannotExpress()
+
+	/**
+	 * Whether a group field reaches into a joined schema (`parent.code`).
+	 *
+	 * @param array|null $groupBy The group spec
+	 *
+	 * @return bool
+	 */
+	private function groupsOnJoinedField(?array $groupBy): bool {
 		foreach ($this->resolveGroupFields(groupBy: $groupBy) as $groupField) {
 			if (str_contains($groupField, '.') === true) {
 				return true;
@@ -2612,7 +2710,7 @@ class AggregationRunner {
 		}
 
 		return false;
-	}//end nativePathCannotExpress()
+	}//end groupsOnJoinedField()
 
 	/**
 	 * Whether the platform runs this query shape natively.
@@ -2621,20 +2719,19 @@ class AggregationRunner {
 	 * grouped shapes; the ungrouped scalar shape depends on the Postgres numeric
 	 * cast and falls through to the PHP path.
 	 *
-	 * @param string     $platform    The platform short name
-	 * @param array|null $dateBucket  The time-bucket spec
-	 * @param array      $groupFields The categorical group fields
+	 * @param string               $platform The platform short name
+	 * @param array<string, mixed> $spec     The native request's spec (its `dateBucket` and `groupBy`)
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function nativeShapeSupported(string $platform, ?array $dateBucket, array $groupFields): bool {
+	private function nativeShapeSupported(string $platform, array $spec): bool {
 		if ($platform === 'unknown') {
 			return false;
 		}
 
-		return $platform === 'postgres' || $dateBucket !== null || count($groupFields) > 0;
+		return $platform === 'postgres' || $spec['dateBucket'] !== null || count($this->resolveGroupFields(groupBy: $spec['groupBy'])) > 0;
 	}//end nativeShapeSupported()
 
 	/**
@@ -2675,15 +2772,36 @@ class AggregationRunner {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private static function nativeFilterSupported(array $filter, Schema $schema): bool {
-		$operators = ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR];
 		foreach ($filter as $value) {
-			if (is_array($value) === true && array_is_list($value) === false
-				&& array_diff(array_map('strval', array_keys($value)), $operators) !== []
-			) {
+			if (self::isUnsupportedOperatorMap(value: $value) === true) {
 				return false;
 			}
 		}
 
+		return self::filtersNoArrayProperty(filter: $filter, schema: $schema);
+	}//end nativeFilterSupported()
+
+	/**
+	 * Whether a filter value is an operator map with an operator the native SQL does not render.
+	 *
+	 * @param mixed $value A filter value
+	 *
+	 * @return bool
+	 */
+	private static function isUnsupportedOperatorMap(mixed $value): bool {
+		return is_array($value) === true && array_is_list($value) === false
+			&& array_diff(array_map('strval', array_keys($value)), self::NATIVE_FILTER_OPERATORS) !== [];
+	}//end isUnsupportedOperatorMap()
+
+	/**
+	 * Whether no filter is on an array-type property.
+	 *
+	 * @param array  $filter The placeholder-resolved filter map
+	 * @param Schema $schema The schema
+	 *
+	 * @return bool
+	 */
+	private static function filtersNoArrayProperty(array $filter, Schema $schema): bool {
 		$properties = ($schema->getProperties() ?? []);
 		foreach (array_keys($filter) as $filterField) {
 			if (($properties[(string) $filterField]['type'] ?? null) === 'array') {
@@ -2692,7 +2810,7 @@ class AggregationRunner {
 		}
 
 		return true;
-	}//end nativeFilterSupported()
+	}//end filtersNoArrayProperty()
 
 	/**
 	 * Add the predicates every native aggregation applies before the caller's filters.
@@ -2701,27 +2819,23 @@ class AggregationRunner {
 	 * rules: the soft-delete and archive defaults, the draft lens, the
 	 * organisation boundary and the row-level read rule.
 	 *
-	 * @param NativeAggregationQuery $query    The query being built
-	 * @param Register               $register The register
-	 * @param Schema                 $schema   The schema
-	 * @param bool                   $rowRbac  Whether the caller's read rule applies
+	 * @param NativeAggregationQuery   $query   The query being built
+	 * @param NativeAggregationRequest $request The register, the schema and whether the caller's read rule applies (`rowRbac`)
 	 *
 	 * @return bool False when the organisation scope cannot be expressed in SQL
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function buildNativeWhere(NativeAggregationQuery $query, Register $register, Schema $schema, bool $rowRbac): bool {
-		$this->addLifecyclePredicates(query: $query, schema: $schema);
+	private function buildNativeWhere(NativeAggregationQuery $query, NativeAggregationRequest $request): bool {
+		$this->addLifecyclePredicates(query: $query, schema: $request->schema);
 
-		$orgScope = $this->nativeOrganisationScope(register: $register, schema: $schema, rowRbac: $rowRbac);
+		$orgScope = $this->nativeOrganisationScope(request: $request);
 		if (self::addOrganisationPredicate(query: $query, orgScope: $orgScope) === false) {
 			return false;
 		}
 
-		if ($rowRbac === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
+		if ($request->spec['rowRbac'] === true) {
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $request->schema, register: $request->register);
 			if ($rowPredicate !== null) {
 				$query->where(predicate: $rowPredicate);
 			}
@@ -2769,34 +2883,64 @@ class AggregationRunner {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function addDraftPredicate(NativeAggregationQuery $query, Schema $schema): void {
-		$draftLens     = new DraftListLens();
-		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
-		if ($statusMissing === true) {
+		$draftLens = new DraftListLens();
+		if ($this->statusColumnMissing(query: $query) === true) {
 			return;
 		}
 
-		$draftOwner   = $this->userSession->getUser()?->getUID();
-		$ownerBinding = null;
-		if ($draftOwner !== null && $draftOwner !== '') {
-			$ownerBinding = '?';
-		}
-
-		$draftPredicate = $draftLens->sql(
-			mode: $draftLens->modeFor(query: [], schema: $schema),
-			columnPrefix: '',
-			owner: $ownerBinding
+		$draftOwner     = $this->userSession->getUser()?->getUID();
+		$draftPredicate = $draftLens->clauseFor(
+			listing: new DraftListing(mode: $draftLens->modeFor(query: [], schema: $schema), owner: self::draftOwnerBinding(owner: $draftOwner)),
+			columnPrefix: ''
 		);
 		if ($draftPredicate === null) {
 			return;
 		}
 
-		$bindings = [];
-		if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
-			$bindings[] = $draftOwner;
+		$query->where(predicate: $draftPredicate, bindings: self::draftBindings(predicate: $draftPredicate, owner: $draftOwner));
+	}//end addDraftPredicate()
+
+	/**
+	 * Whether the magic table lacks the `_status` column the draft lens reads.
+	 *
+	 * @param NativeAggregationQuery $query The query being built
+	 *
+	 * @return bool
+	 */
+	private function statusColumnMissing(NativeAggregationQuery $query): bool {
+		return in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true);
+	}//end statusColumnMissing()
+
+	/**
+	 * The owner placeholder of the draft lens: `?` for a signed-in caller with an id, else null.
+	 *
+	 * @param string|null $owner The caller's id
+	 *
+	 * @return string|null
+	 */
+	private static function draftOwnerBinding(?string $owner): ?string {
+		if ($owner !== null && $owner !== '') {
+			return '?';
 		}
 
-		$query->where(predicate: $draftPredicate, bindings: $bindings);
-	}//end addDraftPredicate()
+		return null;
+	}//end draftOwnerBinding()
+
+	/**
+	 * The bindings of the draft predicate: the owner when the predicate carries its placeholder.
+	 *
+	 * @param string      $predicate The draft predicate
+	 * @param string|null $owner     The caller's id
+	 *
+	 * @return array<int, string>
+	 */
+	private static function draftBindings(string $predicate, ?string $owner): array {
+		if (self::draftOwnerBinding(owner: $owner) !== null && str_contains($predicate, '?') === true) {
+			return [$owner];
+		}
+
+		return [];
+	}//end draftBindings()
 
 	/**
 	 * The organisation scope the list path would apply to this register and schema.
@@ -2809,23 +2953,21 @@ class AggregationRunner {
 	 * by the org-less rows for a grant from the register cascade; both only
 	 * together with the row predicate.
 	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param bool     $rowRbac  Whether the caller's read rule applies
+	 * @param NativeAggregationRequest $request The register, the schema and whether the caller's read rule applies (`rowRbac`)
 	 *
 	 * @return array{mode: string, uuids: array<int, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rowRbac threads the bypassRbac decision down to the SQL
 	 * @SuppressWarnings(PHPMD.StaticAccess)        admitOrganisationless is a pure scope transformation
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeOrganisationScope(Register $register, Schema $schema, bool $rowRbac): array {
+	private function nativeOrganisationScope(NativeAggregationRequest $request): array {
+		$schema   = $request->schema;
 		$orgScope = $this->organizationHandler->resolveOrganizationScope(
-			registerId: $register->getId(),
+			registerId: $request->register->getId(),
 			schemaId: $schema->getId()
 		);
-		if ($rowRbac === false) {
+		if ($request->spec['rowRbac'] === false) {
 			return $orgScope;
 		}
 
@@ -2837,11 +2979,11 @@ class AggregationRunner {
 		}
 
 		if ($this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
-			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+			return ['mode' => OrganisationScopeResolverInterface::SCOPE_ALL, 'uuids' => []];
 		}
 
 		if ($this->magicMapper->organisationlessRowsAdmittedByRbac(schema: $schema) === true) {
-			return MagicOrganizationHandler::admitOrganisationless(scope: $orgScope);
+			return OrganisationlessAdmission::admit(scope: $orgScope);
 		}
 
 		return $orgScope;
@@ -2862,28 +3004,47 @@ class AggregationRunner {
 	 */
 	private static function addOrganisationPredicate(NativeAggregationQuery $query, array $orgScope): bool {
 		$orgColumn = $query->quoted(column: '_organisation');
-		switch ($orgScope['mode']) {
-			case MagicOrganizationHandler::SCOPE_ALL:
-				return true;
-			case MagicOrganizationHandler::SCOPE_NONE:
-				$query->where(predicate: '1 = 0');
-				return true;
-			case MagicOrganizationHandler::SCOPE_NULL_ONLY:
-				$query->where(predicate: $orgColumn.' IS NULL');
-				return true;
-			case MagicOrganizationHandler::SCOPE_IN:
-			case MagicOrganizationHandler::SCOPE_IN_OR_NULL:
-				$inClause = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
-				if ($orgScope['mode'] === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
-					$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
-				}
-
-				$query->where(predicate: $inClause, bindings: array_values($orgScope['uuids']));
-				return true;
-			default:
-				return false;
-		}//end switch
+		return match ($orgScope['mode']) {
+			OrganisationScopeResolverInterface::SCOPE_ALL => true,
+			OrganisationScopeResolverInterface::SCOPE_NONE => self::addOrganisationWhere(query: $query, predicate: '1 = 0'),
+			OrganisationScopeResolverInterface::SCOPE_NULL_ONLY => self::addOrganisationWhere(query: $query, predicate: $orgColumn.' IS NULL'),
+			OrganisationScopeResolverInterface::SCOPE_IN,
+			OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL => self::addOrganisationInPredicate(query: $query, orgScope: $orgScope),
+			default => false,
+		};
 	}//end addOrganisationPredicate()
+
+	/**
+	 * Add an organisation predicate without bindings.
+	 *
+	 * @param NativeAggregationQuery $query     The query being built
+	 * @param string                 $predicate The predicate
+	 *
+	 * @return bool Always true: the mode is expressed
+	 */
+	private static function addOrganisationWhere(NativeAggregationQuery $query, string $predicate): bool {
+		$query->where(predicate: $predicate);
+		return true;
+	}//end addOrganisationWhere()
+
+	/**
+	 * Add the `IN` organisation predicate, with the org-less rows for SCOPE_IN_OR_NULL.
+	 *
+	 * @param NativeAggregationQuery                         $query    The query being built
+	 * @param array{mode: string, uuids: array<int, string>} $orgScope The organisation scope
+	 *
+	 * @return bool Always true: the mode is expressed
+	 */
+	private static function addOrganisationInPredicate(NativeAggregationQuery $query, array $orgScope): bool {
+		$orgColumn = $query->quoted(column: '_organisation');
+		$inClause  = $orgColumn.' IN ('.self::placeholders(count: count($orgScope['uuids'])).')';
+		if ($orgScope['mode'] === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
+			$inClause = '('.$inClause.' OR '.$orgColumn.' IS NULL)';
+		}
+
+		$query->where(predicate: $inClause, bindings: array_values($orgScope['uuids']));
+		return true;
+	}//end addOrganisationInPredicate()
 
 	/**
 	 * A comma-separated list of `count` placeholders.
@@ -2922,87 +3083,151 @@ class AggregationRunner {
 				continue;
 			}
 
+			$target = new NativeFilterColumn(query: $query, column: $column);
 			if (array_is_list($value) === true) {
-				$this->addListPredicate(query: $query, column: $column, list: $value, negate: false);
+				$this->addInPredicate(target: $target, list: $value);
 				continue;
 			}
 
-			$this->addOperatorPredicates(query: $query, column: $column, operators: $value);
+			$this->addOperatorPredicates(target: $target, operators: $value);
 		}
 	}//end addNativeFilterPredicates()
 
 	/**
-	 * Add an `IN` or `NOT IN` predicate over a list.
+	 * Add an `IN` predicate over a list; an empty list matches nothing.
 	 *
-	 * An empty `IN` matches nothing and an empty `NOT IN` excludes nothing.
-	 *
-	 * @param NativeAggregationQuery $query  The query being built
-	 * @param string                 $column The quoted column
-	 * @param array                  $list   The values
-	 * @param bool                   $negate True for `NOT IN`
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param array              $list   The values
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Selects IN or NOT IN
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function addListPredicate(NativeAggregationQuery $query, string $column, array $list, bool $negate): void {
-		$operator = 'IN';
-		$noValues = '1 = 0';
-		if ($negate === true) {
-			$operator = 'NOT IN';
-			$noValues = '1 = 1';
-		}
-
+	private function addInPredicate(NativeFilterColumn $target, array $list): void {
 		if (count($list) === 0) {
-			$query->where(predicate: $noValues);
+			$target->query->where(predicate: '1 = 0');
 			return;
 		}
 
-		$query->where(
-			predicate: $column.' '.$operator.' ('.self::placeholders(count: count($list)).')',
-			bindings: array_map(fn (mixed $item): string => $this->bindValue(value: $item), array_values($list))
+		$target->query->where(
+			predicate: $target->column.' IN ('.self::placeholders(count: count($list)).')',
+			bindings: $this->listBindings(list: $list)
 		);
-	}//end addListPredicate()
+	}//end addInPredicate()
+
+	/**
+	 * Add a `NOT IN` predicate over a list; an empty list excludes nothing.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param array              $list   The values
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function addNotInPredicate(NativeFilterColumn $target, array $list): void {
+		if (count($list) === 0) {
+			$target->query->where(predicate: '1 = 1');
+			return;
+		}
+
+		$target->query->where(
+			predicate: $target->column.' NOT IN ('.self::placeholders(count: count($list)).')',
+			bindings: $this->listBindings(list: $list)
+		);
+	}//end addNotInPredicate()
+
+	/**
+	 * The bindings of a list predicate, in list order.
+	 *
+	 * @param array $list The values
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function listBindings(array $list): array {
+		return array_map(fn (mixed $item): string => $this->bindValue(value: $item), array_values($list));
+	}//end listBindings()
 
 	/**
 	 * Add the predicates of an operator map such as `{gte: 1, lt: 5}`, in map order.
 	 *
-	 * @param NativeAggregationQuery $query     The query being built
-	 * @param string                 $column    The quoted column
-	 * @param array                  $operators The operator map
+	 * @param NativeFilterColumn $target    The query being built and the quoted column
+	 * @param array              $operators The operator map
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function addOperatorPredicates(NativeAggregationQuery $query, string $column, array $operators): void {
-		$comparisons = ['gt' => '>', 'gte' => '>=', 'lt' => '<', 'lte' => '<=', 'ne' => '<>'];
+	private function addOperatorPredicates(NativeFilterColumn $target, array $operators): void {
 		foreach ($operators as $op => $operand) {
-			$op = (string) $op;
-			if ($op === 'in' || $op === 'notIn') {
-				$list = [];
-				if (is_array($operand) === true) {
-					$list = $operand;
-				}
-
-				$this->addListPredicate(query: $query, column: $column, list: $list, negate: $op === 'notIn');
-				continue;
-			}
-
-			if ($op === NullFilter::ISNULL_OPERATOR) {
-				$query->where(
-					predicate: $column.$this->nullPredicate(wantsNull: NullFilter::isNullOperatorAsksForNull(value: $operand))
-				);
-				continue;
-			}
-
-			if (isset($comparisons[$op]) === true) {
-				$query->where(predicate: $column.' '.$comparisons[$op].' ?', bindings: [$this->bindValue(value: $operand)]);
-			}
-		}//end foreach
+			$this->addOperatorPredicate(target: $target, term: new NativeOperatorTerm(operator: (string) $op, operand: $operand));
+		}
 	}//end addOperatorPredicates()
+
+	/**
+	 * Add the predicate of one operator-map term; an operator the SQL does not know adds none.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The operator and its operand
+	 *
+	 * @return void
+	 */
+	private function addOperatorPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		if ($term->operator === 'in' || $term->operator === 'notIn') {
+			$this->addListOperatorPredicate(target: $target, term: $term);
+			return;
+		}
+
+		if ($term->operator === NullFilter::ISNULL_OPERATOR) {
+			$target->query->where(
+				predicate: $target->column.$this->nullPredicate(wantsNull: NullFilter::isNullOperatorAsksForNull(value: $term->operand))
+			);
+			return;
+		}
+
+		$this->addComparisonPredicate(target: $target, term: $term);
+	}//end addOperatorPredicate()
+
+	/**
+	 * Add an `in` or `notIn` term; an operand that is not a list counts as an empty list.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The `in` or `notIn` term
+	 *
+	 * @return void
+	 */
+	private function addListOperatorPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		$list = [];
+		if (is_array($term->operand) === true) {
+			$list = $term->operand;
+		}
+
+		if ($term->operator === 'notIn') {
+			$this->addNotInPredicate(target: $target, list: $list);
+			return;
+		}
+
+		$this->addInPredicate(target: $target, list: $list);
+	}//end addListOperatorPredicate()
+
+	/**
+	 * Add a comparison term (`gt`, `gte`, `lt`, `lte`, `ne`); any other operator adds nothing.
+	 *
+	 * @param NativeFilterColumn $target The query being built and the quoted column
+	 * @param NativeOperatorTerm $term   The term
+	 *
+	 * @return void
+	 */
+	private function addComparisonPredicate(NativeFilterColumn $target, NativeOperatorTerm $term): void {
+		if (isset(self::NATIVE_COMPARISONS[$term->operator]) === true) {
+			$target->query->where(
+				predicate: $target->column.' '.self::NATIVE_COMPARISONS[$term->operator].' ?',
+				bindings: [$this->bindValue(value: $term->operand)]
+			);
+		}
+	}//end addComparisonPredicate()
 
 	/**
 	 * The aggregate expression of the query's metric over a field.
@@ -3042,31 +3267,25 @@ class AggregationRunner {
 	 * A failing statement (missing table or column) answers null, which sends
 	 * the caller to the PHP path.
 	 *
-	 * @param NativeAggregationQuery $query       The built query
-	 * @param string                 $aggSql      The aggregate expression
-	 * @param array                  $groupFields The categorical group fields
-	 * @param array                  $bucket      The `dateBucket` spec (or null) and the `cumulative` flag
+	 * @param NativeAggregationStatement $statement The built query, its aggregate expression and the running-total flag
+	 * @param array<string, mixed>       $spec      The native request's spec (its `dateBucket` and `groupBy`)
 	 *
 	 * @return array|null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields, array $bucket): ?array {
+	private function runNativeQuery(NativeAggregationStatement $statement, array $spec): ?array {
 		try {
-			if ($bucket['dateBucket'] !== null) {
-				return $this->runNativeBucketQuery(
-					query: $query,
-					aggSql: $aggSql,
-					dateBucket: $bucket['dateBucket'],
-					cumulative: $bucket['cumulative']
-				);
+			if ($spec['dateBucket'] !== null) {
+				return $this->runNativeBucketQuery(statement: $statement, dateBucket: $spec['dateBucket']);
 			}
 
+			$groupFields = $this->resolveGroupFields(groupBy: $spec['groupBy']);
 			if (count($groupFields) > 0) {
-				return $this->runNativeGroupedQuery(query: $query, aggSql: $aggSql, groupFields: $groupFields);
+				return $this->runNativeGroupedQuery(statement: $statement, groupFields: $groupFields);
 			}
 
-			return $this->runNativeScalarQuery(query: $query, aggSql: $aggSql);
+			return $this->runNativeScalarQuery(statement: $statement);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -3081,27 +3300,27 @@ class AggregationRunner {
 	 * addCumulativeColumn() PHP post-pass, and the two must agree bucket for
 	 * bucket (design D3, pinned by AggregationRunnerCumulativeTest).
 	 *
-	 * @param NativeAggregationQuery $query      The built query
-	 * @param string                 $aggSql     The aggregate expression
-	 * @param array                  $dateBucket The time-bucket spec ({field, start, end, gap})
-	 * @param bool                   $cumulative Whether to add a running total
+	 * @param NativeAggregationStatement $statement  The built query, its aggregate expression and the running-total flag
+	 * @param array                      $dateBucket The time-bucket spec ({field, start, end, gap})
 	 *
 	 * @return array{groups: array<int, array{key: string, value: int|float|null, cumulative?: int|float|null}>}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Running-total flag (REQ-AGG-103)
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeBucketQuery(NativeAggregationQuery $query, string $aggSql, array $dateBucket, bool $cumulative): array {
+	private function runNativeBucketQuery(NativeAggregationStatement $statement, array $dateBucket): array {
+		$query     = $statement->query;
+		$aggSql    = $statement->aggSql;
 		$bucketCol = $query->quoted(column: $this->sanitizeColumnName(name: (string) $dateBucket['field']));
-		$gap       = (string) $dateBucket['gap'];
 
 		$cumulativeSelect = '';
-		if ($query->isPostgres() === true && $cumulative === true) {
+		if ($statement->windowedTotal() === true) {
 			$cumulativeSelect = ", SUM({$aggSql}) OVER (ORDER BY bucket) AS cumulative_agg";
 		}
 
-		$bucketExpr   = $this->nativeBucketExpression(query: $query, column: $bucketCol, gap: $gap);
+		$bucketExpr   = $this->nativeBucketExpression(
+			column: new NativeFilterColumn(query: $query, column: $bucketCol),
+			gap: (string) $dateBucket['gap']
+		);
 		$boundedWhere = $query->whereSql().' AND '.$bucketCol.' >= ? AND '.$bucketCol.' < ?';
 		$stmt         = $this->db->prepare(
 			"SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg{$cumulativeSelect}
@@ -3114,10 +3333,10 @@ class AggregationRunner {
 
 		$groups = [];
 		while (($row = $stmt->fetch()) !== false) {
-			$groups[] = $this->nativeBucketRow(row: $row, metric: $query->metric, withCumulative: $cumulativeSelect !== '');
+			$groups[] = $this->nativeBucketRow(row: $row, statement: $statement);
 		}
 
-		if ($cumulative === true && $query->isPostgres() === false) {
+		if ($statement->cumulative === true && $query->isPostgres() === false) {
 			$groups = $this->addCumulativeColumn(groups: $groups);
 		}
 
@@ -3151,22 +3370,20 @@ class AggregationRunner {
 	/**
 	 * One bucket of a time-bucketed series.
 	 *
-	 * @param array  $row            The fetched row
-	 * @param string $metric         The metric
-	 * @param bool   $withCumulative Whether the row carries a native running total
+	 * @param array                      $row       The fetched row
+	 * @param NativeAggregationStatement $statement The statement; its metric, and whether the row carries a native running total
 	 *
 	 * @return array{key: string, value: int|float|null, cumulative?: int|float|null}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the SQL selected the window column
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeBucketRow(array $row, string $metric, bool $withCumulative): array {
-		$group = [
+	private function nativeBucketRow(array $row, NativeAggregationStatement $statement): array {
+		$metric = $statement->query->metric;
+		$group  = [
 			'key'   => $this->coerceBucketKey(raw: $row['bucket']),
 			'value' => $this->coerceAggregateValue(raw: $row['agg'], metric: $metric),
 		];
-		if ($withCumulative === true) {
+		if ($statement->windowedTotal() === true) {
 			$group['cumulative'] = $this->coerceAggregateValue(raw: ($row['cumulative_agg'] ?? null), metric: $metric);
 		}
 
@@ -3179,38 +3396,37 @@ class AggregationRunner {
 	 * Postgres binds the gap into `date_trunc`; MySQL and SQLite emit literal
 	 * format strings from the closed gap vocabulary AggregationQuery::create() validates.
 	 *
-	 * @param NativeAggregationQuery $query  The built query
-	 * @param string                 $column The quoted bucket column
-	 * @param string                 $gap    The bucket gap
+	 * @param NativeFilterColumn $column The built query and the quoted bucket column
+	 * @param string             $gap    The bucket gap
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function nativeBucketExpression(NativeAggregationQuery $query, string $column, string $gap): string {
-		if ($query->isPostgres() === true) {
-			return 'date_trunc(?, '.$column.')::text';
+	private function nativeBucketExpression(NativeFilterColumn $column, string $gap): string {
+		if ($column->query->isPostgres() === true) {
+			return 'date_trunc(?, '.$column->column.')::text';
 		}
 
-		if ($query->platform === 'mysql') {
-			return $this->mysqlBucketExpression(column: $column, gap: $gap);
+		if ($column->query->platform === 'mysql') {
+			return $this->mysqlBucketExpression(column: $column->column, gap: $gap);
 		}
 
-		return $this->sqliteBucketExpression(column: $column, gap: $gap);
+		return $this->sqliteBucketExpression(column: $column->column, gap: $gap);
 	}//end nativeBucketExpression()
 
 	/**
 	 * Run a categorical grouped aggregate, single-field or multi-field.
 	 *
-	 * @param NativeAggregationQuery $query       The built query
-	 * @param string                 $aggSql      The aggregate expression
-	 * @param array                  $groupFields The ordered group fields
+	 * @param NativeAggregationStatement $statement   The built query and its aggregate expression
+	 * @param array                      $groupFields The ordered group fields
 	 *
 	 * @return array{groups: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeGroupedQuery(NativeAggregationQuery $query, string $aggSql, array $groupFields): array {
+	private function runNativeGroupedQuery(NativeAggregationStatement $statement, array $groupFields): array {
+		$query       = $statement->query;
 		$selectParts = [];
 		$groupCols   = [];
 		foreach ($groupFields as $index => $groupField) {
@@ -3222,7 +3438,7 @@ class AggregationRunner {
 		$selectSql = implode(', ', $selectParts);
 		$groupSql  = implode(', ', $groupCols);
 		$stmt      = $this->db->prepare(
-			"SELECT {$selectSql}, {$aggSql} AS agg
+			"SELECT {$selectSql}, {$statement->aggSql} AS agg
                              FROM {$query->table()}
                              WHERE {$query->whereSql()}
                              GROUP BY {$groupSql}"
@@ -3231,33 +3447,26 @@ class AggregationRunner {
 
 		$groups = [];
 		while (($row = $stmt->fetch()) !== false) {
-			$groups[] = self::nativeGroupRow(row: $row, groupFields: $groupFields, metric: $query->metric);
+			$groups[] = self::nativeGroupKeys(row: $row, groupFields: $groupFields)
+				+ ['value' => self::nativeGroupValue(raw: $row['agg'], metric: $query->metric)];
 		}
 
 		return ['groups' => $groups];
 	}//end runNativeGroupedQuery()
 
 	/**
-	 * One group of a grouped aggregate: `{key, value}`, or `{keys, value}` for several group fields.
+	 * The key of one group of a grouped aggregate: `{key}`, or `{keys}` for several group fields.
 	 *
-	 * @param array  $row         The fetched row
-	 * @param array  $groupFields The ordered group fields
-	 * @param string $metric      The metric
+	 * @param array $row         The fetched row
+	 * @param array $groupFields The ordered group fields
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function nativeGroupRow(array $row, array $groupFields, string $metric): array {
-		$value = $row['agg'];
-		if ($metric !== 'count' && is_string($value) === true) {
-			$value = (float) $value;
-		} elseif ($value !== null) {
-			$value = (int) $value;
-		}
-
+	private static function nativeGroupKeys(array $row, array $groupFields): array {
 		if (count($groupFields) === 1) {
-			return ['key' => ($row['g0'] ?? null), 'value' => $value];
+			return ['key' => ($row['g0'] ?? null)];
 		}
 
 		$keys = [];
@@ -3265,21 +3474,43 @@ class AggregationRunner {
 			$keys[$groupField] = ($row['g'.$index] ?? null);
 		}
 
-		return ['keys' => $keys, 'value' => $value];
-	}//end nativeGroupRow()
+		return ['keys' => $keys];
+	}//end nativeGroupKeys()
+
+	/**
+	 * The value of one group of a grouped aggregate.
+	 *
+	 * @param mixed  $raw    The fetched aggregate
+	 * @param string $metric The metric
+	 *
+	 * @return int|float|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function nativeGroupValue(mixed $raw, string $metric): int|float|null {
+		if ($metric !== 'count' && is_string($raw) === true) {
+			return (float) $raw;
+		}
+
+		if ($raw !== null) {
+			return (int) $raw;
+		}
+
+		return null;
+	}//end nativeGroupValue()
 
 	/**
 	 * Run an ungrouped aggregate.
 	 *
-	 * @param NativeAggregationQuery $query  The built query
-	 * @param string                 $aggSql The aggregate expression
+	 * @param NativeAggregationStatement $statement The built query and its aggregate expression
 	 *
 	 * @return array{value: int|float|string|null}
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function runNativeScalarQuery(NativeAggregationQuery $query, string $aggSql): array {
-		$stmt = $this->db->prepare("SELECT {$aggSql} AS agg FROM {$query->table()} WHERE {$query->whereSql()}");
+	private function runNativeScalarQuery(NativeAggregationStatement $statement): array {
+		$query = $statement->query;
+		$stmt  = $this->db->prepare("SELECT {$statement->aggSql} AS agg FROM {$query->table()} WHERE {$query->whereSql()}");
 		$stmt->execute($query->bindings());
 		$row   = $stmt->fetch();
 		$value = null;
@@ -3301,7 +3532,7 @@ class AggregationRunner {
 	/**
 	 * Multi-metric native dispatch (REQ-AGG-102).
 	 *
-	 * Runs the single-metric native path in {@see tryNativeAggregation()}
+	 * Runs the single-metric native path in {@see tryNativeWithSpec()}
 	 * once per requested `{metric, field}` entry — reusing its dialect
 	 * branching and filter translation verbatim, with zero new SQL surface
 	 * — and merges the per-metric results into one `values` map (ungrouped)
@@ -3316,12 +3547,10 @@ class AggregationRunner {
 	 * Not used for the time-bucket (`dateBucket`) path — mutually exclusive
 	 * with multi-metric, rejected upstream by AggregationQuery::create().
 	 *
-	 * @param Register $register Register the schema belongs to.
-	 * @param Schema $schema Schema being aggregated.
-	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
-	 * @param array<string, mixed>|null $groupBy Optional group spec (see {@see tryNativeAggregation()}).
-	 * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries (>1).
-	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked: its
+	 *                                          placeholder-resolved filter, optional group spec,
+	 *                                          metric entries (>1) and whether the caller's
+	 *                                          read-rule row predicate applies.
 	 *
 	 * @return array{values: AggValues}
 	 *                                  |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: AggValues}>}
@@ -3329,47 +3558,104 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeMultiMetric(
-		Register $register,
-		Schema $schema,
-		array $filter,
-		?array $groupBy,
-		array $metrics,
-		bool $rowRbac = true,
-	): ?array {
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		$isMulti = (count($groupFields) > 1);
+	private function tryNativeMultiMetric(NativeAggregationRequest $request): ?array {
+		$perMetric = $this->nativePerMetric(request: $request);
+		if ($perMetric === null) {
+			return null;
+		}
 
-		$ungroupedValues = [];
-		$orderedKeys = [];
-		$mergedByKey = [];
+		$groupFields = $this->resolveGroupFields(groupBy: $request->spec['groupBy']);
+		if (count($groupFields) === 0) {
+			$ungroupedValues = [];
+			foreach ($perMetric as [$responseKey, $single]) {
+				$ungroupedValues[$responseKey] = ($single['value'] ?? null);
+			}
 
-		foreach ($metrics as $entry) {
-			$single = $this->tryNativeAggregation(
-				register: $register,
-				schema: $schema,
-				metric: $entry['metric'],
-				field: $entry['field'],
-				filter: $filter,
-				groupBy: $groupBy,
-				dateBucket: null,
-				rowRbac: $rowRbac
+			return ['values' => $ungroupedValues];
+		}
+
+		return ['groups' => $this->mergeNativeMetricGroups(perMetric: $perMetric, isMulti: count($groupFields) > 1)];
+	}//end tryNativeMultiMetric()
+
+	/**
+	 * Run each metric entry natively, in order; null as soon as one cannot run.
+	 *
+	 * One metric that cannot run natively bails the whole multi-metric
+	 * attempt so the caller falls through to a single, consistent
+	 * PHP-fallback computation.
+	 *
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
+	 *
+	 * @return list<array{0: string, 1: array<string, mixed>}>|null Response key and native result per entry.
+	 */
+	private function nativePerMetric(NativeAggregationRequest $request): ?array {
+		$spec = $request->spec;
+		$perMetric = [];
+		foreach ($spec['metrics'] as $entry) {
+			$single = $this->tryNativeWithSpec(
+				request: new NativeAggregationRequest(
+					register: $request->register,
+					schema: $request->schema,
+					spec: $this->entrySpec(
+						metric: $entry['metric'],
+						field: ($entry['field'] ?? null),
+						rest: [
+							'filter'     => $spec['filter'],
+							'groupBy'    => $spec['groupBy'],
+							'dateBucket' => null,
+							'rowRbac'    => $spec['rowRbac'],
+						]
+					)
+				)
 			);
 
 			if ($single === null) {
-				// One metric couldn't run natively — bail the whole
-				// multi-metric attempt so the caller falls through to a
-				// single, consistent PHP-fallback computation.
 				return null;
 			}
 
-			$responseKey = AggregationQuery::metricResponseKey(metric: $entry['metric'], field: $entry['field']);
+			$perMetric[] = [
+				AggregationQuery::metricResponseKey(metric: $entry['metric'], field: ($entry['field'] ?? null)),
+				$single,
+			];
+		}
 
-			if (count($groupFields) === 0) {
-				$ungroupedValues[$responseKey] = ($single['value'] ?? null);
-				continue;
-			}
+		return $perMetric;
+	}//end nativePerMetric()
 
+	/**
+	 * The native spec for one metric/field pair of a multi-entry spec.
+	 *
+	 * The typed parameters reject a non-string metric or field (TypeError)
+	 * instead of letting it reach the native SQL path.
+	 *
+	 * @param string               $metric The entry's metric.
+	 * @param string|null          $field  The entry's field, null for count.
+	 * @param array<string, mixed> $rest   The other spec keys.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function entrySpec(string $metric, ?string $field, array $rest): array {
+		return ['metric' => $metric, 'field' => $field] + $rest;
+	}//end entrySpec()
+
+	/**
+	 * Merge the per-metric groups into one `values` map per group, in first-seen group order.
+	 *
+	 * @param list<array{0: string, 1: array<string, mixed>}> $perMetric Response key and native result per entry.
+	 * @param bool                                            $isMulti   Whether groups carry a `keys` tuple.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function mergeNativeMetricGroups(array $perMetric, bool $isMulti): array {
+		$keyName = 'key';
+		if ($isMulti === true) {
+			$keyName = 'keys';
+		}
+
+		$mergedByKey = [];
+		foreach ($perMetric as [$responseKey, $single]) {
 			foreach (($single['groups'] ?? []) as $group) {
 				$keyData = ($group['key'] ?? null);
 				if ($isMulti === true) {
@@ -3377,32 +3663,13 @@ class AggregationRunner {
 				}
 
 				$tupleKey = (string)json_encode($keyData);
-				if (isset($mergedByKey[$tupleKey]) === false) {
-					$mergedByKey[$tupleKey] = ['keyData' => $keyData, 'values' => []];
-					$orderedKeys[] = $tupleKey;
-				}
-
+				$mergedByKey[$tupleKey] ??= [$keyName => $keyData, 'values' => []];
 				$mergedByKey[$tupleKey]['values'][$responseKey] = ($group['value'] ?? null);
 			}
-		}//end foreach
-
-		if (count($groupFields) === 0) {
-			return ['values' => $ungroupedValues];
 		}
 
-		$groups = [];
-		foreach ($orderedKeys as $tupleKey) {
-			$entry = $mergedByKey[$tupleKey];
-			if ($isMulti === true) {
-				$groups[] = ['keys' => $entry['keyData'], 'values' => $entry['values']];
-				continue;
-			}
-
-			$groups[] = ['key' => $entry['keyData'], 'values' => $entry['values']];
-		}
-
-		return ['groups' => $groups];
-	}//end tryNativeMultiMetric()
+		return array_values($mergedByKey);
+	}//end mergeNativeMetricGroups()
 
 	/**
 	 * Coerce a raw native-SQL aggregate column value (`agg` or, for
@@ -3466,33 +3733,74 @@ class AggregationRunner {
 		// it as UTC, shifting every bucket label by the server's UTC offset
 		// (e.g. CET buckets land an hour early). Parse offset-less shapes as
 		// UTC explicitly; only fall back to strtotime for offset-bearing text.
-		$hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
-		if ($hasTimezone === false) {
-			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', 'Y-m-d'];
-			foreach ($formats as $format) {
-				$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
-				if ($parsed !== false) {
-					return $parsed->format('Y-m-d\TH:i:s\Z');
-				}
+		if (self::hasTimezoneDesignator(raw: $raw) === false) {
+			$utcKey = self::offsetLessBucketKey(raw: $raw);
+			if ($utcKey !== null) {
+				return $utcKey;
 			}
 		}
 
-		// Offset-bearing (or otherwise unhandled) shapes: strtotime understands
-		// the embedded offset, so converting to UTC via gmdate is correct here.
+		return self::offsetBucketKey(raw: $raw);
+	}//end coerceBucketKey()
+
+	/**
+	 * Whether bucket text ends in a timezone designator (`Z`, `+02:00`, `-0500`).
+	 *
+	 * @param string $raw The bucket text.
+	 *
+	 * @return bool
+	 */
+	private static function hasTimezoneDesignator(string $raw): bool {
+		return (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
+	}//end hasTimezoneDesignator()
+
+	/**
+	 * The bucket key of an offset-less bucket text, read as UTC; null for an unknown shape.
+	 *
+	 * @param string $raw The bucket text, without a timezone designator.
+	 *
+	 * @return string|null ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label, or null.
+	 */
+	private static function offsetLessBucketKey(string $raw): ?string {
+		// `!` on the date-only shape: without it createFromFormat() takes
+		// the missing time of day from the wall clock, so a day bucket
+		// would be labelled with the moment of the request.
+		$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', '!Y-m-d'];
+		foreach ($formats as $format) {
+			$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
+			if ($parsed !== false) {
+				return $parsed->format('Y-m-d\TH:i:s\Z');
+			}
+		}
+
+		return null;
+	}//end offsetLessBucketKey()
+
+	/**
+	 * The bucket key of an offset-bearing (or otherwise unhandled) bucket text.
+	 *
+	 * Strtotime understands the embedded offset, so converting to UTC via gmdate
+	 * is correct here; text it cannot read is returned as is.
+	 *
+	 * @param string $raw The bucket text.
+	 *
+	 * @return string ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label, or the original text.
+	 */
+	private static function offsetBucketKey(string $raw): string {
 		$stamp = strtotime($raw);
 		if ($stamp === false) {
 			return $raw;
 		}
 
 		return gmdate('Y-m-d\TH:i:s\Z', $stamp);
-	}//end coerceBucketKey()
+	}//end offsetBucketKey()
 
 	/**
 	 * Detect the active database platform short name.
 	 *
 	 * Returns one of `postgres`, `mysql`, `sqlite`, or `unknown`. Used to
 	 * pick the matching native-bucketing path in
-	 * {@see tryNativeAggregation()} and to annotate the response
+	 * {@see tryNativeWithSpec()} and to annotate the response
 	 * `backend` field in {@see runAdhoc()}.
 	 *
 	 * @return string Lower-case platform short name.
@@ -3649,30 +3957,10 @@ class AggregationRunner {
 	}//end bindValue()
 
 	/**
-	 * Convert a property name to its magic-table column name. Mirrors
-	 * MagicMapper::sanitizeColumnName so we don't expose a public API there.
-	 *
-	 * @param string $name Raw property name.
-	 *
-	 * @return string Sanitised column name.
-	 */
-	private function sanitizeColumnName(string $name): string {
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower((string)$name);
-		$name = preg_replace('/[^a-z0-9_]/', '_', (string)$name);
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		$name = preg_replace('/_+/', '_', $name);
-		return rtrim((string)$name, '_');
-	}//end sanitizeColumnName()
-
-	/**
 	 * Attach aggregates from a SECOND schema to each group of an already
 	 * computed grouped envelope (the `join` clause).
 	 *
-	 * Spec shape (see {@see AggregationJoinAnnotationValidator::validate()}):
+	 * Spec shape (see {@see \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator::validate()}):
 	 *   "join": {
 	 *     "through": "CommitmentBudget",
 	 *     "on":      "CommitmentBudget.programmeCode",
@@ -3692,9 +3980,9 @@ class AggregationRunner {
 	 *   re-derive BOTH tables' tenancy (`_organisation`) and soft-delete
 	 *   predicates by hand. Every one of those is a place to silently widen
 	 *   the row set; routing the joined schema through the SAME
-	 *   {@see tryNativeAggregation()} the parent used means it inherits
+	 *   {@see tryNativeWithSpec()} the parent used means it inherits
 	 *   those predicates instead of re-implementing them.
-	 * - {@see tryNativeAggregation()} answers `null` (fall back to PHP) for
+	 * - {@see tryNativeWithSpec()} answers `null` (fall back to PHP) for
 	 *   any shape it cannot translate. A hand-written JOIN inside it would
 	 *   have to fall back too, and the PHP fallback has no join — the two
 	 *   paths would disagree exactly when the native path bailed.
@@ -3721,10 +4009,10 @@ class AggregationRunner {
 	 * first three are the ones the cross-schema `from` path relies on; the
 	 * fourth was missing and cost a cross-tenant read (see $extraFilter below):
 	 *  1. An explicit `list` permission gate on the JOINED schema via
-	 *     {@see PermissionHandler::hasPermission()}, refusing with
+	 *     {@see PermissionHandlerInterface::hasPermission()}, refusing with
 	 *     RuntimeException('Forbidden: ...') before a single row is read.
 	 *  2. Tenancy: the joined aggregate runs through the same
-	 *     {@see tryNativeAggregation()} (which appends the
+	 *     {@see tryNativeWithSpec()} (which appends the
 	 *     `_organisation = ?` predicate, fail-closed to
 	 *     `__no_active_org__` when there is no active organisation) or the
 	 *     same {@see MagicMapper::findAllInRegisterSchemaTable()} the
@@ -3736,42 +4024,49 @@ class AggregationRunner {
 	 *     userId + active organisation, so a permitted caller's joined
 	 *     numbers can never be served to a caller with a different verdict.
 	 *
+	 * The run supplies the raw join spec (null is a no-op), the parent's
+	 * ordered group fields, the internal-system mode (skips the read gate;
+	 * tenancy predicates still apply — they are not bypassable here) and the
+	 * caller's narrowing constraints (control 4, see narrowJoinedFilter()).
+	 *
+	 * @param NamedAggregationRun  $run      The run whose join is attached.
 	 * @param array<string, mixed> $envelope The parent aggregation envelope (must carry `groups`).
-	 * @param array<string, mixed>|null $join The raw join spec; null is a no-op.
-	 * @param array<int, string> $groupFields The parent's ordered group fields.
-	 * @param bool $bypassRbac Internal-system mode: skip the read-permission gate
-	 *                         (tenancy predicates still apply — they are not bypassable here).
-	 * @param array<string, mixed> $extraFilter The caller's narrowing constraints, applied to the
-	 *                         JOINED aggregate as well as the parent — restricted to keys the
-	 *                         joined schema declares, and never overriding the declared
-	 *                         `join.filter`. Control 4: without it the parent was scoped to one
-	 *                         administration while the joined figures were computed across all
-	 *                         of them.
 	 *
 	 * @return array<string, mixed> The envelope with a `joined` map on each group and a `join` summary.
 	 *
 	 * @throws RuntimeException When the join spec is unusable, the joined schema cannot be
 	 *                          resolved, or the caller lacks read permission on it.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *   The method is one linear pipeline (validate → resolve+gate → aggregate
-	 *   → merge); splitting the guards out would hide the fail-closed order,
-	 *   which is the security-relevant property.
+	 * The method is one linear pipeline (validate → resolve+gate → aggregate
+	 * → merge); each step is its own method, called in that fail-closed order.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function applyJoin(
-		array $envelope,
-		?array $join,
-		array $groupFields,
-		bool $bypassRbac,
-		array $extraFilter = [],
-	): array {
+	private function applyJoin(NamedAggregationRun $run, array $envelope): array {
+		$join = $run->getJoinArg();
 		if ($join === null) {
 			return $envelope;
 		}
 
+		$this->assertJoinable(envelope: $envelope, groupFields: $run->groupFields);
+
+		$joined = $this->resolveJoin(run: $run, join: $join);
+		$this->narrowJoinedFilter(joined: $joined, extraFilter: $run->appliedExtraFilter);
+
+		return $this->attachJoinedValues(envelope: $envelope, joined: $joined);
+	}//end applyJoin()
+
+	/**
+	 * Refuse a join that has no groups to attach to.
+	 *
+	 * @param array<string, mixed> $envelope    The parent aggregation envelope.
+	 * @param array<int, string>   $groupFields The parent's ordered group fields.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the parent is ungrouped.
+	 */
+	private function assertJoinable(array $envelope, array $groupFields): void {
 		if (count($groupFields) === 0) {
 			throw new RuntimeException(
 				'Aggregation join requires a groupBy — joined values are attached per group.'
@@ -3781,24 +4076,58 @@ class AggregationRunner {
 		if (isset($envelope['groups']) === false || is_array($envelope['groups']) === false) {
 			throw new RuntimeException('Aggregation join expected a grouped result to attach to.');
 		}
+	}//end assertJoinable()
 
+	/**
+	 * Parse the join spec, then load the joined schema, gate on it and locate its register.
+	 *
+	 * The spec is parsed and the gate passed BEFORE a single joined row is read.
+	 *
+	 * @param NamedAggregationRun  $run  The run whose join is attached.
+	 * @param array<string, mixed> $join The raw join spec.
+	 *
+	 * @return JoinedAggregation The joined side, with its declared filter resolved.
+	 *
+	 * @throws RuntimeException When the join spec is unusable, the joined schema cannot be
+	 *                          resolved, or the caller lacks read permission on it.
+	 */
+	private function resolveJoin(NamedAggregationRun $run, array $join): JoinedAggregation {
 		$through = (string)($join['through'] ?? '');
 		if ($through === '') {
 			throw new RuntimeException('Aggregation join is missing a non-empty `through` schema ref.');
 		}
 
-		$onMap = $this->resolveJoinKey(join: $join, groupFields: $groupFields);
+		$onMap = $this->resolveJoinKey(join: $join, groupFields: $run->groupFields);
 		$selectEntries = $this->parseJoinSelect(join: $join);
 
 		// Load the joined schema, gate on it, and locate its register —
 		// all BEFORE a single joined row is read.
 		[$joinedSchema, $joinedRegister] = $this->resolveJoinTarget(
 			through: $through,
-			bypassRbac: $bypassRbac
+			bypassRbac: $run->bypassRbac
 		);
 
-		$joinedFilter = $this->placeholders->resolveArray((array)($join['filter'] ?? $join['where'] ?? []));
+		$joined = new JoinedAggregation(
+			through: $through,
+			schema: $joinedSchema,
+			register: $joinedRegister,
+			rowRbac: $run->bypassRbac === false
+		);
+		$joined->onMap = $onMap;
+		$joined->selectEntries = $selectEntries;
+		$joined->filter = $this->placeholders->resolveArray((array)($join['filter'] ?? $join['where'] ?? []));
+		return $joined;
+	}//end resolveJoin()
 
+	/**
+	 * Narrow the joined filter by the caller's constraints the joined schema declares.
+	 *
+	 * @param JoinedAggregation    $joined      The joined side; its filter is narrowed here.
+	 * @param array<string, mixed> $extraFilter The caller's narrowing constraints.
+	 *
+	 * @return void
+	 */
+	private function narrowJoinedFilter(JoinedAggregation $joined, array $extraFilter): void {
 		// SECURITY (control 4): the caller's NARROWING filter must reach the
 		// joined side too.
 		//
@@ -3825,55 +4154,55 @@ class AggregationRunner {
 		// is too big for one that is always zero. Keys the joined schema does
 		// not declare are dropped and logged; the join then stays as wide as it
 		// was, which is the pre-existing behaviour rather than a new one.
-		$joinedProperties = array_keys(($joinedSchema->getProperties() ?? []));
+		$joinedProperties = array_keys(($joined->schema->getProperties() ?? []));
 		$applicable = array_intersect_key($extraFilter, array_flip($joinedProperties));
 		$ignored = array_keys(array_diff_key($extraFilter, $applicable));
 		if ($ignored !== []) {
 			$this->logger?->debug(
 				'Aggregation join: caller filter keys not declared by the joined schema were dropped.',
 				[
-					'through' => $through,
+					'through' => $joined->through,
 					'ignored' => $ignored,
 				]
 			);
 		}
 
 		if ($applicable !== []) {
-			$joinedFilter = $this->mergeNarrowingFilter(
-				declared: $joinedFilter,
-				extra: $applicable,
-				name: $through . ' (join)'
+			$joined->filter = $this->mergeNarrowingFilter(
+				declared: $joined->filter,
+				narrowing: new RequestedNarrowing(constraints: $applicable, aggregation: $joined->through . ' (join)')
 			);
 		}
+	}//end narrowJoinedFilter()
 
-		$lookup = $this->aggregateJoinedSchema(
-			register: $joinedRegister,
-			schema: $joinedSchema,
-			filter: $joinedFilter,
-			joinedFields: array_values($onMap),
-			selectEntries: $selectEntries,
-			rowRbac: $bypassRbac === false
-		);
+	/**
+	 * Aggregate the joined side and attach its values to each parent group.
+	 *
+	 * @param array<string, mixed> $envelope The parent aggregation envelope (carries `groups`).
+	 * @param JoinedAggregation    $joined   The joined side.
+	 *
+	 * @return array<string, mixed> The envelope with a `joined` map on each group and a `join` summary.
+	 */
+	private function attachJoinedValues(array $envelope, JoinedAggregation $joined): array {
+		$lookup = $this->aggregateJoinedSchema(joined: $joined);
 
-		$aliases = array_map(static fn (array $entry): string => $entry['alias'], $selectEntries);
+		$aliases = $joined->getAliases();
 
 		$envelope['groups'] = $this->mergeJoinedValues(
 			groups: $envelope['groups'],
-			onMap: $onMap,
-			aliases: $aliases,
-			lookup: $lookup['values']
+			lookup: new JoinedValueLookup(onMap: $joined->onMap, aliases: $aliases, values: $lookup['values'])
 		);
 
 		$envelope['join'] = [
-			'through' => $through,
-			'on' => $onMap,
+			'through' => $joined->through,
+			'on' => $joined->onMap,
 			'select' => $aliases,
 			'backend' => $lookup['backend'],
 			'truncated' => $lookup['truncated'],
 		];
 
 		return $envelope;
-	}//end applyJoin()
+	}//end attachJoinedValues()
 
 	/**
 	 * Merge caller-supplied constraints into a declared filter, narrowing only.
@@ -3898,47 +4227,87 @@ class AggregationRunner {
 	 *   3. an empty-string value is dropped, because a caller omitting a
 	 *      parameter should not silently become a filter on ''.
 	 *
-	 * @param array<string, mixed> $declared The declared, placeholder-resolved filter.
-	 * @param array<string, mixed> $extra    Caller-supplied constraints.
-	 * @param string               $name     Aggregation name, for the debug log.
+	 * @param array<string, mixed> $declared  The declared, placeholder-resolved filter.
+	 * @param RequestedNarrowing   $narrowing Caller-supplied constraints and the aggregation name, for the debug log.
 	 *
 	 * @return array<string, mixed> The merged filter.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function mergeNarrowingFilter(array $declared, array $extra, string $name): array {
-		if ($extra === []) {
+	private function mergeNarrowingFilter(array $declared, RequestedNarrowing $narrowing): array {
+		if ($narrowing->constraints === []) {
 			return $declared;
 		}
 
+		return $this->withNarrowing(declared: $declared, narrowing: $narrowing);
+	}//end mergeNarrowingFilter()
+
+	/**
+	 * The declared filter plus every caller constraint the three rules accept, in request order.
+	 *
+	 * @param array<string, mixed> $declared  The declared, placeholder-resolved filter.
+	 * @param RequestedNarrowing   $narrowing Caller-supplied constraints and the aggregation name, for the debug log.
+	 *
+	 * @return array<string, mixed> The merged filter.
+	 */
+	private function withNarrowing(array $declared, RequestedNarrowing $narrowing): array {
 		$merged = $declared;
-		foreach ($extra as $key => $value) {
-			if (is_string($key) === false || $key === '') {
+		foreach ($narrowing->constraints as $key => $value) {
+			if (self::isNarrowingKey(key: $key) === false) {
 				continue;
 			}
 
 			if (array_key_exists($key, $declared) === true) {
-				// `?->` because the logger is an OPTIONAL constructor argument
-				// here (`?LoggerInterface $logger = null`). A bare `->debug()`
-				// is a fatal whenever it was not injected — and a fatal on a
-				// read path, thrown from the branch that ENFORCES the scoping
-				// rule, would be the worst possible place for one.
-				$this->logger?->debug(
-					'Aggregation: refusing a request filter that would relax a declared one.',
-					['aggregation' => $name, 'key' => $key]
-				);
-				continue;
+				$this->logRefusedRelaxation(narrowing: $narrowing, key: $key);
+			} elseif (self::isNarrowingValue(value: $value) === true) {
+				$merged[$key] = $value;
 			}
-
-			if (is_scalar($value) === false || $value === '') {
-				continue;
-			}
-
-			$merged[$key] = $value;
 		}
 
 		return $merged;
-	}//end mergeNarrowingFilter()
+	}//end withNarrowing()
+
+	/**
+	 * Whether a constraint key can narrow: a non-empty string.
+	 *
+	 * @param mixed $key The constraint key.
+	 *
+	 * @return bool
+	 */
+	private static function isNarrowingKey(mixed $key): bool {
+		return is_string($key) === true && $key !== '';
+	}//end isNarrowingKey()
+
+	/**
+	 * Whether a constraint value can narrow: a scalar other than the empty string.
+	 *
+	 * @param mixed $value The constraint value.
+	 *
+	 * @return bool
+	 */
+	private static function isNarrowingValue(mixed $value): bool {
+		return is_scalar($value) === true && $value !== '';
+	}//end isNarrowingValue()
+
+	/**
+	 * Log a caller constraint refused because the declaration already constrains its key.
+	 *
+	 * @param RequestedNarrowing $narrowing The constraints and the aggregation name.
+	 * @param string             $key       The refused key.
+	 *
+	 * @return void
+	 */
+	private function logRefusedRelaxation(RequestedNarrowing $narrowing, string $key): void {
+		// `?->` because the logger is an OPTIONAL constructor argument
+		// here (`?LoggerInterface $logger = null`). A bare `->debug()`
+		// is a fatal whenever it was not injected — and a fatal on a
+		// read path, thrown from the branch that ENFORCES the scoping
+		// rule, would be the worst possible place for one.
+		$this->logger?->debug(
+			'Aggregation: refusing a request filter that would relax a declared one.',
+			['aggregation' => $narrowing->aggregation, 'key' => $key]
+		);
+	}//end logRefusedRelaxation()
 
 	/**
 	 * Load the joined schema, gate the caller on it, and locate its register.
@@ -3989,44 +4358,64 @@ class AggregationRunner {
 	 * "this alias was never requested".
 	 *
 	 * @param array<int, mixed> $groups The parent grouped rows.
-	 * @param array<string, string> $onMap Ordered parentField => joinedField map.
-	 * @param array<int, string> $aliases The select aliases, in declaration order.
-	 * @param array<string, array<string, int|float|null>> $lookup Joined values by merge key.
+	 * @param JoinedValueLookup $lookup The join map, the select aliases and the joined values by merge key.
 	 *
 	 * @return array<int, mixed> The grouped rows, each carrying a `joined` map.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function mergeJoinedValues(array $groups, array $onMap, array $aliases, array $lookup): array {
-		$parentFields = array_keys($onMap);
-
+	private function mergeJoinedValues(array $groups, JoinedValueLookup $lookup): array {
 		foreach ($groups as $index => $group) {
 			if (is_array($group) === false) {
 				continue;
 			}
 
-			$tuple = [];
-			foreach ($parentFields as $parentField) {
-				if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-					$tuple[] = ($group['keys'][$parentField] ?? null);
-					continue;
-				}
-
-				$tuple[] = ($group['key'] ?? null);
-			}
-
-			$tupleKey = $this->joinTupleKey(values: $tuple);
-
-			$joined = [];
-			foreach ($aliases as $alias) {
-				$joined[$alias] = ($lookup[$tupleKey][$alias] ?? null);
-			}
-
-			$groups[$index]['joined'] = $joined;
-		}//end foreach
+			$groups[$index]['joined'] = $this->joinedValuesOf(group: $group, lookup: $lookup);
+		}
 
 		return $groups;
 	}//end mergeJoinedValues()
+
+	/**
+	 * The joined values of one grouped row, every alias present and null on a miss.
+	 *
+	 * @param array             $group  The parent grouped row.
+	 * @param JoinedValueLookup $lookup The join map, the select aliases and the joined values by merge key.
+	 *
+	 * @return array<string, mixed> The joined values by alias.
+	 */
+	private function joinedValuesOf(array $group, JoinedValueLookup $lookup): array {
+		$tupleKey = $this->joinTupleKey(values: self::groupJoinTuple(group: $group, parentFields: array_keys($lookup->onMap)));
+
+		$joined = [];
+		foreach ($lookup->aliases as $alias) {
+			$joined[$alias] = ($lookup->values[$tupleKey][$alias] ?? null);
+		}
+
+		return $joined;
+	}//end joinedValuesOf()
+
+	/**
+	 * The values of a grouped row's parent join fields: from its `keys` map, else its single `key`.
+	 *
+	 * @param array             $group        The parent grouped row.
+	 * @param array<int, mixed> $parentFields The parent fields of the join.
+	 *
+	 * @return array<int, mixed> The tuple, one value per parent field.
+	 */
+	private static function groupJoinTuple(array $group, array $parentFields): array {
+		$tuple = [];
+		foreach ($parentFields as $parentField) {
+			if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+				$tuple[] = ($group['keys'][$parentField] ?? null);
+				continue;
+			}
+
+			$tuple[] = ($group['key'] ?? null);
+		}
+
+		return $tuple;
+	}//end groupJoinTuple()
 
 	/**
 	 * Resolve a join `on` clause to an ordered `parentField => joinedField` map.
@@ -4059,6 +4448,27 @@ class AggregationRunner {
 			return $this->resolveJoinKeyMap(onClause: $onClause, groupFields: $groupFields);
 		}
 
+		$joinedField = $this->joinOnColumn(onClause: $onClause);
+
+		// Same-named group field wins; otherwise the first group field.
+		$parentField = $groupFields[0];
+		if (in_array($joinedField, $groupFields, true) === true) {
+			$parentField = $joinedField;
+		}
+
+		return [$parentField => $joinedField];
+	}//end resolveJoinKey()
+
+	/**
+	 * The joined column a `"Schema.column"` join.on string names.
+	 *
+	 * @param mixed $onClause The join.on value, when it is not a map.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When join.on is not a non-empty string or names an empty column.
+	 */
+	private function joinOnColumn(mixed $onClause): string {
 		if (is_string($onClause) === false || $onClause === '') {
 			throw new RuntimeException(
 				'Aggregation join.on must be a "Schema.column" string or a {parentField: joinedField} map.'
@@ -4070,14 +4480,8 @@ class AggregationRunner {
 			throw new RuntimeException('Aggregation join.on names an empty column.');
 		}
 
-		// Same-named group field wins; otherwise the first group field.
-		$parentField = $groupFields[0];
-		if (in_array($joinedField, $groupFields, true) === true) {
-			$parentField = $joinedField;
-		}
-
-		return [$parentField => $joinedField];
-	}//end resolveJoinKey()
+		return $joinedField;
+	}//end joinOnColumn()
 
 	/**
 	 * Resolve the explicit `{parentField: joinedField}` spelling of `on`.
@@ -4202,6 +4606,26 @@ class AggregationRunner {
 			];
 		}
 
+		$field  = $this->joinSelectField(raw: $raw);
+		$metric = $this->joinSelectMetric(raw: $raw);
+
+		return [
+			'alias' => (string)($raw['alias'] ?? $field),
+			'field' => $this->stripSchemaPrefix(ref: $field),
+			'metric' => $metric,
+		];
+	}//end parseJoinSelectEntry()
+
+	/**
+	 * The non-empty string `field` of a `{field, metric?}` select entry.
+	 *
+	 * @param mixed $raw The select entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the entry is not an object with a non-empty string field.
+	 */
+	private function joinSelectField(mixed $raw): string {
 		if (is_array($raw) === false
 			|| isset($raw['field']) === false
 			|| is_string($raw['field']) === false
@@ -4212,6 +4636,19 @@ class AggregationRunner {
 			);
 		}
 
+		return $raw['field'];
+	}//end joinSelectField()
+
+	/**
+	 * The metric of a `{field, metric?}` select entry, `sum` by default.
+	 *
+	 * @param array<string, mixed> $raw The select entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the metric is not one of JOIN_SELECT_METRICS.
+	 */
+	private function joinSelectMetric(array $raw): string {
 		$metric = (string)($raw['metric'] ?? 'sum');
 		if (in_array($metric, self::JOIN_SELECT_METRICS, true) === false) {
 			throw new RuntimeException(
@@ -4219,18 +4656,14 @@ class AggregationRunner {
 			);
 		}
 
-		return [
-			'alias' => (string)($raw['alias'] ?? $raw['field']),
-			'field' => $this->stripSchemaPrefix(ref: $raw['field']),
-			'metric' => $metric,
-		];
-	}//end parseJoinSelectEntry()
+		return $metric;
+	}//end joinSelectMetric()
 
 	/**
 	 * Aggregate the joined schema, grouped on the joined side of the join key.
 	 *
 	 * Native first (one grouped query per select entry, reusing
-	 * {@see tryNativeAggregation()} verbatim so the joined read carries the
+	 * {@see tryNativeWithSpec()} verbatim so the joined read carries the
 	 * same tenancy and soft-delete predicates as the parent). If ANY entry
 	 * bails to null the WHOLE native attempt is abandoned and every entry is
 	 * recomputed in PHP — mirroring {@see tryNativeMultiMetric()}'s posture,
@@ -4241,64 +4674,80 @@ class AggregationRunner {
 	 * {@see computeGrouped()} the parent's fallback uses — which is what
 	 * makes the two paths agree rather than merely look similar.
 	 *
-	 * @param Register $register Register owning the joined schema.
-	 * @param Schema $schema The joined schema.
-	 * @param array<string, mixed> $filter Placeholder-resolved filter for the joined schema.
-	 * @param array<int, string> $joinedFields Joined-side join key field(s).
-	 * @param array<int, array{alias: string, field: string, metric: string}> $selectEntries Parsed select entries.
-	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
+	 * @param JoinedAggregation $joined The joined side: schema, register, filter, join key, select
+	 *                                  entries and whether the caller's row predicate applies.
 	 *
 	 * @return array{values: array<string, array<string, int|float|null>>, backend: string, truncated: bool}
 	 *         Lookup keyed by {@see joinTupleKey()} → alias → value.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function aggregateJoinedSchema(
-		Register $register,
-		Schema $schema,
-		array $filter,
-		array $joinedFields,
-		array $selectEntries,
-		bool $rowRbac = true,
-	): array {
-		$groupBySpec = ['fields' => $joinedFields];
-		$isMulti = (count($joinedFields) > 1);
-
-		// --- Native attempt: 1 grouped query per select entry. ---
-		$native = [];
-		$nativeUsable = true;
-		foreach ($selectEntries as $entry) {
-			$single = $this->tryNativeAggregation(
-				register: $register,
-				schema: $schema,
-				metric: $entry['metric'],
-				field: $entry['field'],
-				filter: $filter,
-				groupBy: $groupBySpec,
-				rowRbac: $rowRbac
-			);
-
-			if ($single === null) {
-				$nativeUsable = false;
-				break;
-			}
-
-			$native[$entry['alias']] = ($single['groups'] ?? []);
-		}
-
-		if ($nativeUsable === true) {
+	private function aggregateJoinedSchema(JoinedAggregation $joined): array {
+		$native = $this->nativeJoinedGroups(joined: $joined);
+		if ($native !== null) {
 			return [
-				'values' => $this->indexJoinedGroups(perAlias: $native, isMulti: $isMulti, joinedFields: $joinedFields),
+				'values' => $this->indexJoinedGroups(
+					perAlias: $native,
+					joinedFields: $joined->getJoinedFields()
+				),
 				'backend' => 'postgres',
 				'truncated' => false,
 			];
 		}
 
-		// --- PHP fallback: hydrate ONCE, reduce per select entry. ---
+		return $this->fallbackJoinedValues(joined: $joined);
+	}//end aggregateJoinedSchema()
+
+	/**
+	 * The native groups per select alias, or null when any entry cannot run natively.
+	 *
+	 * One grouped query per select entry.
+	 *
+	 * @param JoinedAggregation $joined The joined side.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>>|null
+	 */
+	private function nativeJoinedGroups(JoinedAggregation $joined): ?array {
+		$groupBySpec = ['fields' => $joined->getJoinedFields()];
+		$native = [];
+		foreach ($joined->selectEntries as $entry) {
+			$single = $this->tryNativeWithSpec(
+				request: new NativeAggregationRequest(
+					register: $joined->register,
+					schema: $joined->schema,
+					spec: $this->entrySpec(
+						metric: $entry['metric'],
+						field: $entry['field'],
+						rest: [
+							'filter'  => $joined->filter,
+							'groupBy' => $groupBySpec,
+							'rowRbac' => $joined->rowRbac,
+						]
+					)
+				)
+			);
+
+			if ($single === null) {
+				return null;
+			}
+
+			$native[$entry['alias']] = ($single['groups'] ?? []);
+		}
+
+		return $native;
+	}//end nativeJoinedGroups()
+
+	/**
+	 * The joined lookup computed in PHP: hydrate ONCE, reduce per select entry.
+	 *
+	 * @param JoinedAggregation $joined The joined side.
+	 *
+	 * @return array{values: array<string, array<string, int|float|null>>, backend: string, truncated: bool}
+	 */
+	private function fallbackJoinedValues(JoinedAggregation $joined): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $joined->register, schema: $joined->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 		$truncated = (count($objects) >= self::PHP_FALLBACK_ROW_CAP);
 
@@ -4307,38 +4756,44 @@ class AggregationRunner {
 			$rows[] = $object->getObject();
 		}
 
-		$rows = $this->applyFilter(rows: $rows, filter: $filter);
+		$rows = $this->applyFilter(rows: $rows, filter: $joined->filter);
 
 		$perAlias = [];
-		foreach ($selectEntries as $entry) {
+		foreach ($joined->selectEntries as $entry) {
 			$perAlias[$entry['alias']] = $this->computeGrouped(
 				rows: $rows,
-				metric: $entry['metric'],
-				field: $entry['field'],
-				groupFields: $joinedFields
+				aggregation: new RowAggregation(
+					metric: $entry['metric'],
+					field: $entry['field'],
+					groupFields: $joined->getJoinedFields()
+				)
 			);
 		}
 
 		return [
-			'values' => $this->indexJoinedGroups(perAlias: $perAlias, isMulti: $isMulti, joinedFields: $joinedFields),
+			'values' => $this->indexJoinedGroups(
+				perAlias: $perAlias,
+				joinedFields: $joined->getJoinedFields()
+			),
 			'backend' => 'php-fallback',
 			'truncated' => $truncated,
 		];
-	}//end aggregateJoinedSchema()
+	}//end fallbackJoinedValues()
 
 	/**
 	 * Fold per-alias grouped rows into one `joinKey => alias => value` lookup.
 	 *
 	 * @param array<string, array<int, array<string, mixed>>> $perAlias Grouped rows per select alias.
-	 * @param bool $isMulti Whether the join key is composite (rows carry `keys`, not `key`).
-	 * @param array<int, string> $joinedFields Joined-side join key field(s), in key order.
+	 * @param array<int, string> $joinedFields Joined-side join key field(s), in key order; more than one
+	 *                                         makes the key composite (rows carry `keys`, not `key`).
 	 *
 	 * @return array<string, array<string, int|float|null>> Lookup keyed by {@see joinTupleKey()}.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function indexJoinedGroups(array $perAlias, bool $isMulti, array $joinedFields): array {
-		$lookup = [];
+	private function indexJoinedGroups(array $perAlias, array $joinedFields): array {
+		$isMulti = count($joinedFields) > 1;
+		$lookup  = [];
 		foreach ($perAlias as $alias => $groups) {
 			foreach ($groups as $group) {
 				if (is_array($group) === false) {
@@ -4347,15 +4802,7 @@ class AggregationRunner {
 
 				$tuple = [($group['key'] ?? null)];
 				if ($isMulti === true) {
-					$keys = [];
-					if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-						$keys = $group['keys'];
-					}
-
-					$tuple = [];
-					foreach ($joinedFields as $joinedField) {
-						$tuple[] = ($keys[$joinedField] ?? null);
-					}
+					$tuple = $this->joinedKeysTuple(group: $group, joinedFields: $joinedFields);
 				}
 
 				$tupleKey = $this->joinTupleKey(values: $tuple);
@@ -4365,6 +4812,28 @@ class AggregationRunner {
 
 		return $lookup;
 	}//end indexJoinedGroups()
+
+	/**
+	 * A multi-key group's `keys` values, in joined-field order (null for a missing one).
+	 *
+	 * @param array<string, mixed> $group        The group row.
+	 * @param array<int, string>   $joinedFields Joined-side join key fields.
+	 *
+	 * @return list<mixed>
+	 */
+	private function joinedKeysTuple(array $group, array $joinedFields): array {
+		$keys = [];
+		if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+			$keys = $group['keys'];
+		}
+
+		$tuple = [];
+		foreach ($joinedFields as $joinedField) {
+			$tuple[] = ($keys[$joinedField] ?? null);
+		}
+
+		return $tuple;
+	}//end joinedKeysTuple()
 
 	/**
 	 * Build the merge key for one join-key tuple.
@@ -4388,27 +4857,13 @@ class AggregationRunner {
 	private function joinTupleKey(array $values): string {
 		$parts = [];
 		foreach ($values as $value) {
-			if ($value === null) {
-				$parts[] = "\x00null";
-				continue;
-			}
-
-			if ($value === true) {
-				$parts[] = 'true';
-				continue;
-			}
-
-			if ($value === false) {
-				$parts[] = 'false';
-				continue;
-			}
-
-			if (is_scalar($value) === true) {
-				$parts[] = (string)$value;
-				continue;
-			}
-
-			$parts[] = (string)json_encode($value);
+			$parts[] = match (true) {
+				$value === null => "\x00null",
+				$value === true => 'true',
+				$value === false => 'false',
+				is_scalar($value) === true => (string)$value,
+				default => (string)json_encode($value),
+			};
 		}
 
 		return implode("\x1f", $parts);
@@ -4430,56 +4885,48 @@ class AggregationRunner {
 	 * - An additional RBAC gate is applied here on the *target* schema so
 	 *   a caller cannot use a cross-schema aggregation to leak counts from
 	 *   a schema it is not allowed to list.
-	 * - The active-organisation predicate is carried into `tryNativeAggregation()`
+	 * - The active-organisation predicate is carried into `tryNativeWithSpec()`
 	 *   unchanged; the target table belongs to the same tenant.
 	 *
-	 * @param Register $parentRegister The register that owns the *parent* schema.
-	 * @param Schema $parentSchema The schema whose annotation we read.
-	 * @param string $name Aggregation name.
-	 * @param array<string, mixed> $spec The raw aggregation spec from the annotation.
+	 * @param NamedAggregationRun  $run       The named run on the parent schema.
 	 * @param array<string, mixed> $parentRow Parent object fields for `@self.*` resolution.
-	 * @param bool $bypassRbac Whether to skip the RBAC gate on the target schema.
 	 *
 	 * @return array<string, mixed> Aggregation result envelope.
 	 *
 	 * @throws RuntimeException When the target schema/register cannot be resolved or RBAC fails.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	private function runCrossSchema(
-		Register $parentRegister,
-		Schema $parentSchema,
-		string $name,
-		array $spec,
-		array $parentRow,
-		bool $bypassRbac,
-	): array {
-		$fromRef = (string)($spec['from'] ?? '');
+	private function runCrossSchema(NamedAggregationRun $run, array $parentRow): array {
+		$cross = $this->resolveCrossTarget(run: $run, parentRow: $parentRow);
+		$this->resolveCrossWhere(cross: $cross);
+
+		$cached = $this->cachedCrossResult(cross: $cross);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		$result = $this->nativeCrossResult(cross: $cross);
+		if ($result === null) {
+			$result = $this->fallbackCrossResult(cross: $cross);
+		}
+
+		return $this->storeCrossResult(cross: $cross, result: $result);
+	}//end runCrossSchema()
+
+	/**
+	 * Load the `from` schema, gate on it, and find the register that carries it.
+	 *
+	 * @param NamedAggregationRun  $run       The named run on the parent schema.
+	 * @param array<string, mixed> $parentRow Parent object fields for `@self.*` resolution.
+	 *
+	 * @return CrossSchemaAggregationRun
+	 *
+	 * @throws RuntimeException When `from` is empty, the target is missing or forbidden, or no register carries it.
+	 */
+	private function resolveCrossTarget(NamedAggregationRun $run, array $parentRow): CrossSchemaAggregationRun {
+		$fromRef = (string)($run->spec['from'] ?? '');
 		if ($fromRef === '') {
 			throw new RuntimeException('Cross-schema aggregation spec is missing a non-empty `from` key.');
 		}
-
-		// Resolve `select` / `metric` alias.
-		$metric = (string)($spec['metric'] ?? $spec['select'] ?? 'count');
-
-		// `metrics` — several figures over ONE grouping. This path read only
-		// the SINGULAR key, so a cross-schema spec asking for a debit/credit
-		// split silently degraded to the default `count`. The intra-schema
-		// path has honoured `metrics` since #2917; two paths reading different
-		// halves of the same declaration is drift that answers wrongly rather
-		// than erroring, so both now read the same keys.
-		$crossSpecMetrics = ($spec['metrics'] ?? null);
-		$metrics = null;
-		if (is_array($crossSpecMetrics) === true && $crossSpecMetrics !== []) {
-			$metrics = $crossSpecMetrics;
-		}
-
-		$field = ($spec['field'] ?? null);
-		// Resolve `where` / `filter` alias.
-		$rawWhere = (array)($spec['where'] ?? $spec['filter'] ?? []);
-		$groupBy = ($spec['groupBy'] ?? null);
 
 		// Load the target schema.
 		$targetSchema = $this->loadSchema(schemaRef: $fromRef);
@@ -4494,10 +4941,10 @@ class AggregationRunner {
 		// owner-context to gate against. The owner-specific branch of
 		// permissionHandler->hasPermission() only applies when both
 		// $userId and $objectOwner are non-null. The corresponding
-		// `object: null` reinforces this: PermissionHandler treats the
+		// `object: null` reinforces this: PermissionHandlerInterface treats the
 		// (null, null) pair as the list-level form.
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {
+		if ($run->bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {
 			throw new RuntimeException(
 				sprintf(
 					'Forbidden: caller lacks read permission on cross-schema target "%s".',
@@ -4514,102 +4961,161 @@ class AggregationRunner {
 			);
 		}
 
+		$cross = new CrossSchemaAggregationRun(
+			parent: $run,
+			parentRow: $parentRow,
+			targetSchema: $targetSchema,
+			targetRegister: $targetRegister
+		);
+		$cross->userId = $userId;
+		return $cross;
+	}//end resolveCrossTarget()
+
+	/**
+	 * Resolve the `where` clause and derive the cache key from it.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run; where and cacheKey are set here.
+	 *
+	 * @return void
+	 */
+	private function resolveCrossWhere(CrossSchemaAggregationRun $cross): void {
 		// Resolve `@self.<field>` references against the parent row, then
 		// apply placeholder resolution ($now, $currentUser, etc.).
 		$resolvedWhere = $this->resolveAtSelfReferences(
-			where: $rawWhere,
-			parentRow: $parentRow
+			where: $cross->getRawWhere(),
+			parentRow: $cross->parentRow
 		);
-		$resolvedWhere = $this->placeholders->resolveArray($resolvedWhere);
+		$cross->where = $this->placeholders->resolveArray($resolvedWhere);
 
 		// Build the cache key, including the parent row values that were
 		// substituted so two parent objects with different field values
 		// cache independently.
 		$activeOrg = $this->organisationService->getActiveOrganisation();
-		$cacheKey = [
+		$cross->cacheKey = [
 			'cross' => true,
-			'from' => $fromRef,
-			'metric' => $metric,
-			'metrics' => $metrics,
-			'field' => $field,
-			'where' => $resolvedWhere,
-			'groupBy' => $groupBy,
-			'userId' => $userId,
+			'from' => $cross->getFromRef(),
+			'metric' => $cross->getMetric(),
+			'metrics' => $cross->getMetrics(),
+			'field' => $cross->getField(),
+			'where' => $cross->where,
+			'groupBy' => $cross->getGroupBy(),
+			'userId' => $cross->userId,
 			'org' => $activeOrg?->getUuid(),
 		];
+	}//end resolveCrossWhere()
 
+	/**
+	 * The cached result for this run, flagged as cached, or null on a miss.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function cachedCrossResult(CrossSchemaAggregationRun $cross): ?array {
 		$cached = $this->cache->get(
-			registerSlug: (string)$parentRegister->getSlug(),
-			schemaSlug: (string)$parentSchema->getSlug(),
-			name: $name,
-			filter: $cacheKey
+			slot: new AggregationSlot(
+				registerSlug: (string)$cross->parent->register->getSlug(),
+				schemaSlug: (string)$cross->parent->schema->getSlug(),
+				name: $cross->parent->name,
+				filter: $cross->cacheKey
+			)
 		);
 		if ($cached !== null) {
 			$cached['cached'] = true;
-			return $cached;
 		}
 
-		// Attempt Postgres-native aggregation on the target schema table.
-		$crossFieldArg = null;
-		if (is_string($field) === true) {
-			$crossFieldArg = $field;
-		}
+		return $cached;
+	}//end cachedCrossResult()
 
-		$crossGroupByArg = null;
-		if (is_array($groupBy) === true) {
-			$crossGroupByArg = $groupBy;
-		}
+	/**
+	 * Store the result under this run's cache key and return it.
+	 *
+	 * @param CrossSchemaAggregationRun $cross  The cross-schema run.
+	 * @param array<string, mixed>      $result The result envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storeCrossResult(CrossSchemaAggregationRun $cross, array $result): array {
+		$this->cache->set(
+			slot: new AggregationSlot(
+				registerSlug: (string)$cross->parent->register->getSlug(),
+				schemaSlug: (string)$cross->parent->schema->getSlug(),
+				name: $cross->parent->name,
+				filter: $cross->cacheKey
+			),
+			result: $result
+		);
+		return $result;
+	}//end storeCrossResult()
 
+	/**
+	 * The Postgres-native result on the target schema table, or null to fall back to PHP.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function nativeCrossResult(CrossSchemaAggregationRun $cross): ?array {
 		// A `metrics` spec is computed in PHP so that per-entry `condition`
-		// and `as` are honoured — tryNativeAggregation() takes a single
+		// and `as` are honoured — tryNativeWithSpec() takes a single
 		// metric/field pair and has nowhere to put them. Letting it run would
 		// return one unconditioned figure for a spec that asked for several.
 		// The row cap still applies and is reported through `truncated`.
-		$native = null;
-		if ($metrics === null) {
-			$native = $this->tryNativeAggregation(
-				register: $targetRegister,
-				schema: $targetSchema,
-				metric: $metric,
-				field: $crossFieldArg,
-				filter: $resolvedWhere,
-				groupBy: $crossGroupByArg,
-				rowRbac: $bypassRbac === false
-			);
+		if ($cross->getMetrics() !== null) {
+			return null;
 		}
 
-		if ($native !== null) {
-			$crossNativeField = null;
-			if (is_string($field) === true) {
-				$crossNativeField = $field;
-			}
-
-			$result = [
-				'name' => $name,
-				'metric' => $metric,
-				'field' => $crossNativeField,
-				'from' => $fromRef,
-				'backend' => 'postgres',
-				'truncated' => false,
-			] + $native;
-
-			$this->cache->set(
-				registerSlug: (string)$parentRegister->getSlug(),
-				schemaSlug: (string)$parentSchema->getSlug(),
-				name: $name,
-				filter: $cacheKey,
-				result: $result
-			);
-			return $result;
-		}//end if
-
-		// PHP fallback path for the target schema.
-		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $targetRegister,
-			schema: $targetSchema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+		$native = $this->tryNativeWithSpec(
+			request: new NativeAggregationRequest(
+				register: $cross->targetRegister,
+				schema: $cross->targetSchema,
+				spec: [
+					'metric'  => $cross->getMetric(),
+					'field'   => $cross->getStringField(),
+					'filter'  => $cross->where,
+					'groupBy' => $cross->getGroupByArg(),
+					'rowRbac' => $cross->parent->bypassRbac === false,
+				]
+			)
 		);
-		$truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
+		if ($native === null) {
+			return null;
+		}
+
+		return $cross->envelope(backend: 'postgres') + $native;
+	}//end nativeCrossResult()
+
+	/**
+	 * The PHP fallback result over the target schema's rows.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fallbackCrossResult(CrossSchemaAggregationRun $cross): array {
+		$rows = $this->fallbackCrossRows(cross: $cross);
+
+		$result = $cross->envelope(backend: 'php-fallback');
+		if ($cross->getMetrics() !== null) {
+			$result['metrics'] = $cross->getMetrics();
+		}
+
+		return $result + $this->crossFigures(cross: $cross, rows: $rows);
+	}//end fallbackCrossResult()
+
+	/**
+	 * The target schema's rows, capped and filtered by the resolved `where`.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run; truncated is set here.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function fallbackCrossRows(CrossSchemaAggregationRun $cross): array {
+		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
+			table: new RegisterSchema(register: $cross->targetRegister, schema: $cross->targetSchema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
+		);
+		$cross->truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 
 		$rows = [];
 		foreach ($objects as $entity) {
@@ -4618,59 +5124,44 @@ class AggregationRunner {
 			$rows[] = $entity->getObject();
 		}
 
-		$rows = $this->applyFilter(rows: $rows, filter: $resolvedWhere);
+		return $this->applyFilter(rows: $rows, filter: $cross->where);
+	}//end fallbackCrossRows()
 
-		$crossPhpField = null;
-		if (is_string($field) === true) {
-			$crossPhpField = $field;
-		}
-
-		$result = [
-			'name' => $name,
-			'metric' => $metric,
-			'field' => $crossPhpField,
-			'from' => $fromRef,
-			'backend' => 'php-fallback',
-			'truncated' => $truncated,
-		];
-
-		if ($metrics !== null) {
-			$result['metrics'] = $metrics;
-		}
-
-		$crossGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+	/**
+	 * The figures over the rows: `groups`, `values` (a `metrics` spec) or `value`.
+	 *
+	 * @param CrossSchemaAggregationRun        $cross The cross-schema run.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function crossFigures(CrossSchemaAggregationRun $cross, array $rows): array {
+		$crossGroupFields = $this->resolveGroupFields(groupBy: $cross->getGroupBy());
 		if (count($crossGroupFields) > 0) {
-			$result['groups'] = $this->computeGrouped(
-				rows: $rows,
-				metric: $metric,
-				field: $field,
-				groupFields: $crossGroupFields,
-				metrics: $metrics
-			);
+			return [
+				'groups' => $this->computeGrouped(
+					rows: $rows,
+					aggregation: new RowAggregation(
+						metric: $cross->getMetric(),
+						field: $cross->getField(),
+						groupFields: $crossGroupFields,
+						metrics: $cross->getMetrics()
+					)
+				),
+			];
 		}
 
-		if (isset($result['groups']) === false) {
-			// Ungrouped: a `metrics` spec yields `values` (a map keyed by alias).
-			// Falling through to computeMetric() here would hand back a single
-			// figure derived from $metric — which is the DEFAULT 'count' when
-			// the spec declared only `metrics` — for a request that named
-			// several conditioned sums.
-			if ($metrics !== null) {
-				$result['values'] = $this->computeMetrics(rows: $rows, metrics: $metrics);
-			} else {
-				$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
-			}
+		// Ungrouped: a `metrics` spec yields `values` (a map keyed by alias).
+		// Falling through to computeMetric() here would hand back a single
+		// figure derived from the metric — which is the DEFAULT 'count' when
+		// the spec declared only `metrics` — for a request that named
+		// several conditioned sums.
+		if ($cross->getMetrics() !== null) {
+			return ['values' => $this->computeMetrics(rows: $rows, metrics: $cross->getMetrics())];
 		}
 
-		$this->cache->set(
-			registerSlug: (string)$parentRegister->getSlug(),
-			schemaSlug: (string)$parentSchema->getSlug(),
-			name: $name,
-			filter: $cacheKey,
-			result: $result
-		);
-		return $result;
-	}//end runCrossSchema()
+		return ['value' => $this->computeMetric(rows: $rows, aggregation: new RowAggregation(metric: $cross->getMetric(), field: $cross->getField()))];
+	}//end crossFigures()
 
 	/**
 	 * Resolve `@self.<field>` references in a `where` clause against the parent row.
@@ -4693,57 +5184,82 @@ class AggregationRunner {
 	private function resolveAtSelfReferences(array $where, array $parentRow): array {
 		$resolved = [];
 		foreach ($where as $key => $value) {
-			if (is_array($value) === true) {
-				$resolved[$key] = $this->resolveAtSelfReferences(
-					where: $value,
-					parentRow: $parentRow
-				);
-				continue;
-			}
-
-			if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
-				// Strip the leading '@self.' prefix (6 characters) to get the field name.
-				$fieldName = substr($value, 6);
-
-				// AN UNANSWERABLE CORRELATION IS AN ERROR, NOT AN EMPTY FILTER.
-				//
-				// This used to resolve to null and was described as failing
-				// closed. It does not: the null is applied as a real filter
-				// VALUE, so the aggregation returns the target rows whose own
-				// field is null. For a segment P&L keyed on `@self.code` that
-				// is the unassigned-cost-centre total — returned confidently,
-				// under HTTP 200, identically for every parent record, with
-				// nothing in the envelope naming what went wrong.
-				//
-				// No production caller supplies a parent row today (the REST
-				// controller, ReportRenderService and ThresholdEvaluationService
-				// all call run() without one), so silence here means every such
-				// declaration answers wrongly rather than visibly.
-				//
-				// A key PRESENT but null is left alone: correlating on null is a
-				// legitimate query. It is the ABSENT key — no parent row, or a
-				// typo in the field name — that is refused.
-				if (array_key_exists($fieldName, $parentRow) === false) {
-					throw new RuntimeException(
-						sprintf(
-							'Cannot resolve "%s": the parent row supplies no "%s" field. '
-							.'A cross-schema aggregation correlating on @self requires the '
-							.'caller to pass the parent object as parentRow.',
-							$value,
-							$fieldName
-						)
-					);
-				}
-
-				$resolved[$key] = $parentRow[$fieldName];
-				continue;
-			}
-
-			$resolved[$key] = $value;
-		}//end foreach
+			$resolved[$key] = $this->resolvedWhereValue(value: $value, parentRow: $parentRow);
+		}
 
 		return $resolved;
 	}//end resolveAtSelfReferences()
+
+	/**
+	 * One where value with its `@self.*` references resolved: a nested map
+	 * recursively, a reference from the parent row, anything else as is.
+	 *
+	 * @param mixed                $value     The where value.
+	 * @param array<string, mixed> $parentRow Parent object's field values.
+	 *
+	 * @return mixed The resolved value.
+	 */
+	private function resolvedWhereValue(mixed $value, array $parentRow): mixed {
+		if (is_array($value) === true) {
+			return $this->resolveAtSelfReferences(
+				where: $value,
+				parentRow: $parentRow
+			);
+		}
+
+		if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
+			return self::parentRowValue(reference: $value, parentRow: $parentRow);
+		}
+
+		return $value;
+	}//end resolvedWhereValue()
+
+	/**
+	 * The parent row's value for an `@self.<field>` reference.
+	 *
+	 * @param string               $reference The `@self.<field>` reference.
+	 * @param array<string, mixed> $parentRow Parent object's field values.
+	 *
+	 * @return mixed The field's value, null included.
+	 *
+	 * @throws RuntimeException When the parent row has no such field.
+	 */
+	private static function parentRowValue(string $reference, array $parentRow): mixed {
+		// Strip the leading '@self.' prefix (6 characters) to get the field name.
+		$fieldName = substr($reference, 6);
+
+		// AN UNANSWERABLE CORRELATION IS AN ERROR, NOT AN EMPTY FILTER.
+		//
+		// This used to resolve to null and was described as failing
+		// closed. It does not: the null is applied as a real filter
+		// VALUE, so the aggregation returns the target rows whose own
+		// field is null. For a segment P&L keyed on `@self.code` that
+		// is the unassigned-cost-centre total — returned confidently,
+		// under HTTP 200, identically for every parent record, with
+		// nothing in the envelope naming what went wrong.
+		//
+		// No production caller supplies a parent row today (the REST
+		// controller, ReportRenderService and ThresholdEvaluationService
+		// all call run() without one), so silence here means every such
+		// declaration answers wrongly rather than visibly.
+		//
+		// A key PRESENT but null is left alone: correlating on null is a
+		// legitimate query. It is the ABSENT key — no parent row, or a
+		// typo in the field name — that is refused.
+		if (array_key_exists($fieldName, $parentRow) === false) {
+			throw new RuntimeException(
+				sprintf(
+					'Cannot resolve "%s": the parent row supplies no "%s" field. '
+					.'A cross-schema aggregation correlating on @self requires the '
+					.'caller to pass the parent object as parentRow.',
+					$reference,
+					$fieldName
+				)
+			);
+		}
+
+		return $parentRow[$fieldName];
+	}//end parentRowValue()
 
 	/**
 	 * Find the first register that contains the given schema.
@@ -4775,24 +5291,36 @@ class AggregationRunner {
 		// is consistent with loadSchema/loadRegister.
 		$registers = $this->registerMapper->findAll(_multitenancy: false);
 		foreach ($registers as $register) {
-			$schemaIds = $register->getSchemas();
-			if (is_array($schemaIds) === false) {
-				continue;
-			}
-
-			// Normalise both sides to int before strict comparison: the
-			// schema id is canonically an int and `register->getSchemas()`
-			// may return string representations (legacy rows / DB drivers).
-			// Strict in_array with mixed-type members would silently miss
-			// a match and steer aggregation at the wrong register.
-			$normalised = array_map(static fn ($id) => (int)$id, $schemaIds);
-			if (in_array((int)$schemaId, $normalised, true) === true) {
+			if (self::registerListsSchema(register: $register, schemaId: (int)$schemaId) === true) {
 				return $register;
 			}
 		}
 
 		return null;
 	}//end findRegisterForSchema()
+
+	/**
+	 * Whether a register's schema list holds the schema id.
+	 *
+	 * @param Register $register The register.
+	 * @param int      $schemaId The schema id.
+	 *
+	 * @return bool
+	 */
+	private static function registerListsSchema(Register $register, int $schemaId): bool {
+		$schemaIds = $register->getSchemas();
+		if (is_array($schemaIds) === false) {
+			return false;
+		}
+
+		// Normalise both sides to int before strict comparison: the
+		// schema id is canonically an int and `register->getSchemas()`
+		// may return string representations (legacy rows / DB drivers).
+		// Strict in_array with mixed-type members would silently miss
+		// a match and steer aggregation at the wrong register.
+		$normalised = array_map(static fn ($id) => (int)$id, $schemaIds);
+		return in_array($schemaId, $normalised, true);
+	}//end registerListsSchema()
 
 	/**
 	 * Resolve the (register, schema) pair a request named, with the register as the boundary.
@@ -4899,7 +5427,7 @@ class AggregationRunner {
 	 *  - a conditional `read` rule the caller's group qualifies for. A
 	 *    schema-level check has no row to evaluate the rule's `match`
 	 *    against and refuses, but the aggregate narrows to the rows that
-	 *    match through the row predicate in tryNativeAggregation() (and the
+	 *    match through the row predicate in tryNativeWithSpec() (and the
 	 *    RBAC-filtered read in the PHP fallback), so the caller is counted
 	 *    over its own rows and nothing else.
 	 *
@@ -5064,24 +5592,38 @@ class AggregationRunner {
 
 		$fields = [];
 		foreach ($groupBy as $key => $entry) {
-			if (is_string($entry) === true) {
-				$fields[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === true && is_string(($entry['field'] ?? null)) === true) {
-				$fields[] = $entry['field'];
-				continue;
-			}
-
-			// A map keyed by field name is the other shape this spec takes.
-			if (is_string($key) === true) {
-				$fields[] = $key;
+			$field = $this->groupByEntryField(key: $key, entry: $entry);
+			if ($field !== null) {
+				$fields[] = $field;
 			}
 		}
 
 		return $fields;
 	}//end groupByFields()
+
+	/**
+	 * The field one groupBy entry names: a string entry, a `{field}` object, or a string key.
+	 *
+	 * @param int|string $key   The entry's key.
+	 * @param mixed      $entry The entry.
+	 *
+	 * @return string|null Null when the entry names no field.
+	 */
+	private function groupByEntryField(int|string $key, mixed $entry): string|null {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === true && is_string(($entry['field'] ?? null)) === true) {
+			return $entry['field'];
+		}
+
+		if (is_string($key) === true) {
+			return $key;
+		}
+
+		return null;
+	}//end groupByEntryField()
 
 	/**
 	 * The property names a metrics spec refers to.
@@ -5091,12 +5633,8 @@ class AggregationRunner {
 	 * @return array<int, string> The names.
 	 */
 	private function metricFields(?array $metrics): array {
-		if ($metrics === null) {
-			return [];
-		}
-
 		$fields = [];
-		foreach ($metrics as $metric) {
+		foreach (($metrics ?? []) as $metric) {
 			if (is_array($metric) === true && is_string(($metric['field'] ?? null)) === true) {
 				$fields[] = $metric['field'];
 			}

@@ -28,7 +28,10 @@ namespace Unit\Service\Operations;
 
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Service\Operations\OperatorAct;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -105,7 +108,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testACompletedRunIsARowWithBothMomentsAndADuration(): void {
-		$this->recorder()->around('Acme\\NightlyJob', static fn (): string => 'done');
+		$this->recorder()->around(new JobRunStart('Acme\\NightlyJob'), static fn (): string => 'done');
 
 		$this->assertCount(1, $this->inserted);
 		$this->assertCount(1, $this->updated);
@@ -136,12 +139,9 @@ final class JobRunRecorderTest extends TestCase {
 		$thrown = null;
 
 		try {
-			$recorder->around(
-				'Acme\\NightlyJob',
-				static function (): void {
+			$recorder->around(new JobRunStart('Acme\\NightlyJob'), static function (): void {
 					throw new RuntimeException('the source refused the connection');
-				}
-			);
+				});
 		} catch (RuntimeException $failure) {
 			$thrown = $failure;
 		}
@@ -172,12 +172,12 @@ final class JobRunRecorderTest extends TestCase {
 		);
 
 		$recorder = $this->recorder();
-		$recorder->around('Acme\\QuietJob', static fn (): bool => true);
+		$recorder->around(new JobRunStart('Acme\\QuietJob'), static fn (): bool => true);
 
 		$this->assertSame([], $seen);
 
 		try {
-			$recorder->around('Acme\\NoisyJob', static fn (): never => throw new RuntimeException('boom'));
+			$recorder->around(new JobRunStart('Acme\\NoisyJob'), static fn (): never => throw new RuntimeException('boom'));
 		} catch (RuntimeException) {
 			// Expected: the recorder re-throws.
 		}
@@ -200,14 +200,9 @@ final class JobRunRecorderTest extends TestCase {
 	public function testANestedRecordDoesNotWriteASecondRow(): void {
 		$recorder = $this->recorder();
 
-		$recorder->around(
-			'Acme\\NightlyJob',
-			static function () use ($recorder): void {
-				$recorder->around('Acme\\NightlyJob', static fn (): bool => true);
-			},
-			JobRun::CAUSE_MANUAL,
-			'fatima'
-		);
+		$recorder->around(new JobRunStart('Acme\\NightlyJob', new JobRunContext(JobRun::CAUSE_MANUAL, 'fatima')), static function () use ($recorder): void {
+				$recorder->around(new JobRunStart('Acme\\NightlyJob'), static fn (): bool => true);
+			});
 
 		$this->assertCount(1, $this->inserted);
 		$this->assertSame('fatima', $this->inserted[0]->getActor());
@@ -225,12 +220,9 @@ final class JobRunRecorderTest extends TestCase {
 	public function testTheRowExistsWhileTheWorkIsStillRunning(): void {
 		$outcomeDuringWork = null;
 
-		$this->recorder()->around(
-			'Acme\\NightlyJob',
-			function () use (&$outcomeDuringWork): void {
+		$this->recorder()->around(new JobRunStart('Acme\\NightlyJob'), function () use (&$outcomeDuringWork): void {
 				$outcomeDuringWork = $this->inserted[0]->getOutcome();
-			}
-		);
+			});
 
 		$this->assertSame(JobRun::OUTCOME_RUNNING, $outcomeDuringWork);
 	}
@@ -243,12 +235,7 @@ final class JobRunRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnActIsRecordedWithItsActorAndItsObjects(): void {
-		$row = $this->recorder()->recordAct(
-			'OperationsConsole::repair',
-			'noor',
-			['check' => 'orphan-relations', 'objects' => [['id' => 7]]],
-			'Repaired 1 row(s).'
-		);
+		$row = $this->recorder()->recordAct(new OperatorAct('OperationsConsole::repair', 'noor', ['check' => 'orphan-relations', 'objects' => [['id' => 7]]], 'Repaired 1 row(s).'));
 
 		$this->assertNotNull($row);
 		$this->assertSame('noor', $row->getActor());

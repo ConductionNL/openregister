@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\ScheduledFilterParser;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser;
 use PHPUnit\Framework\TestCase;
 
 final class ScheduledFilterParserTest extends TestCase {

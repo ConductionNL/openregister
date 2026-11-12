@@ -1,0 +1,3015 @@
+{
+    "cert save throws": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/1",
+                []
+            ]
+        },
+        {
+            "find": [
+                "one",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "one"
+            ]
+        },
+        {
+            "audit": [
+                "one",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": null,
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "one",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 1,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                },
+                1,
+                "T"
+            ]
+        },
+        {
+            "saveObject": [
+                5,
+                6,
+                {
+                    "certificate": 1
+                },
+                null,
+                false,
+                false,
+                true,
+                true
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Certificate save error: cert refused",
+                []
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 1,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 1 destroyed, 0 held, 0 withheld by decision, 0 errors",
+                []
+            ]
+        }
+    ],
+    "default batch of 50": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/2",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 2/2",
+                []
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 51,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 51,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 0 held, 0 withheld by decision, 51 errors",
+                []
+            ]
+        }
+    ],
+    "default batch, full": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/1",
+                []
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 50,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        },
+                        {
+                            "decision": "retain"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 50,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 0 held, 0 withheld by decision, 50 errors",
+                []
+            ]
+        }
+    ],
+    "default batch, no cert": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/1",
+                []
+            ]
+        },
+        {
+            "find": [
+                "one",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "one"
+            ]
+        },
+        {
+            "audit": [
+                "one",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": null,
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "one",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "find": [
+                "two",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "two"
+            ]
+        },
+        {
+            "audit": [
+                "two",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": null,
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "two",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 2,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                },
+                2,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "one"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 2,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 2 destroyed, 0 held, 0 withheld by decision, 0 errors",
+                []
+            ]
+        }
+    ],
+    "empty list": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 0,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 0 held, 0 withheld by decision, 0 errors",
+                []
+            ]
+        }
+    ],
+    "every entry branch": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "classification": "A"
+                        },
+                        {
+                            "uuid": "retain",
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "transfer",
+                            "decision": "transfer"
+                        },
+                        {
+                            "uuid": "unreadable"
+                        },
+                        {
+                            "uuid": "held"
+                        },
+                        {
+                            "uuid": "one",
+                            "classification": "1.1",
+                            "decision": "destroy"
+                        },
+                        {
+                            "uuid": "undeletable"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/2",
+                []
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Refusing to destroy retain: review decision \"retain\"",
+                []
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Refusing to destroy transfer: review decision \"transfer\"",
+                []
+            ]
+        },
+        {
+            "find": [
+                "unreadable",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Failed: unreadable: cannot read",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 2/2",
+                []
+            ]
+        },
+        {
+            "find": [
+                "held",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "find": [
+                "one",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "one"
+            ]
+        },
+        {
+            "audit": [
+                "one",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": "1.1",
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "one",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "find": [
+                "undeletable",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "undeletable"
+            ]
+        },
+        {
+            "audit": [
+                "undeletable",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": null,
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "undeletable",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Failed: undeletable: delete refused",
+                []
+            ]
+        },
+        {
+            "find": [
+                "two",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "two"
+            ]
+        },
+        {
+            "audit": [
+                "two",
+                {
+                    "archiefnominatie": "vernietigen",
+                    "archiefstatus": "destroyed"
+                },
+                "archival.destroyed",
+                {
+                    "destructionListUuid": "list-1",
+                    "classification": null,
+                    "approvedBy": [
+                        "u1",
+                        "u2"
+                    ]
+                }
+            ]
+        },
+        {
+            "deleteObject": [
+                "5",
+                "9",
+                "two",
+                null,
+                false,
+                false
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "classification": "A"
+                        },
+                        {
+                            "uuid": "retain",
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "transfer",
+                            "decision": "transfer"
+                        },
+                        {
+                            "uuid": "unreadable"
+                        },
+                        {
+                            "uuid": "held"
+                        },
+                        {
+                            "uuid": "one",
+                            "classification": "1.1",
+                            "decision": "destroy"
+                        },
+                        {
+                            "uuid": "undeletable"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 2,
+                    "skippedHolds": 1,
+                    "skippedErrors": 3,
+                    "skippedDecisions": 2
+                },
+                2,
+                "T"
+            ]
+        },
+        {
+            "saveObject": [
+                5,
+                6,
+                {
+                    "certificate": 2
+                },
+                null,
+                false,
+                false,
+                true,
+                true
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "classification": "A"
+                        },
+                        {
+                            "uuid": "retain",
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "transfer",
+                            "decision": "transfer"
+                        },
+                        {
+                            "uuid": "unreadable"
+                        },
+                        {
+                            "uuid": "held"
+                        },
+                        {
+                            "uuid": "one",
+                            "classification": "1.1",
+                            "decision": "destroy"
+                        },
+                        {
+                            "uuid": "undeletable"
+                        },
+                        {
+                            "uuid": "two"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 2,
+                    "skippedHolds": 1,
+                    "skippedErrors": 3,
+                    "skippedDecisions": 2,
+                    "certificateUuid": "cert-1"
+                }
+            ]
+        },
+        {
+            "get": [
+                "IManager"
+            ]
+        },
+        {
+            "get": [
+                "IGroupManager"
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        },
+        {
+            "setApp": [
+                "openregister"
+            ]
+        },
+        {
+            "setUser": [
+                "ann"
+            ]
+        },
+        {
+            "setObject": [
+                "destruction_list",
+                "list-1"
+            ]
+        },
+        {
+            "setSubject": [
+                "destruction_holds_skipped",
+                {
+                    "listUuid": "list-1",
+                    "skippedCount": 1
+                }
+            ]
+        },
+        {
+            "notify": []
+        },
+        {
+            "setApp": [
+                "openregister"
+            ]
+        },
+        {
+            "setUser": [
+                "bob"
+            ]
+        },
+        {
+            "setObject": [
+                "destruction_list",
+                "list-1"
+            ]
+        },
+        {
+            "setSubject": [
+                "destruction_holds_skipped",
+                {
+                    "listUuid": "list-1",
+                    "skippedCount": 1
+                }
+            ]
+        },
+        {
+            "notify": []
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 2 destroyed, 1 held, 2 withheld by decision, 3 errors",
+                []
+            ]
+        }
+    ],
+    "held without group": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/1",
+                []
+            ]
+        },
+        {
+            "find": [
+                "held",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 1,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 1,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "get": [
+                "IManager"
+            ]
+        },
+        {
+            "get": [
+                "IGroupManager"
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        },
+        {
+            "setApp": [
+                "openregister"
+            ]
+        },
+        {
+            "setUser": [
+                "ann"
+            ]
+        },
+        {
+            "setObject": [
+                "destruction_list",
+                "list-1"
+            ]
+        },
+        {
+            "setSubject": [
+                "destruction_holds_skipped",
+                {
+                    "listUuid": "list-1",
+                    "skippedCount": 1
+                }
+            ]
+        },
+        {
+            "notify": []
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 1 held, 0 withheld by decision, 0 errors",
+                []
+            ]
+        }
+    ],
+    "list lookup throws": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "error": [
+                "[DestructionExecutionJob] Fatal: mapper down",
+                {
+                    "exception": "mapper down"
+                }
+            ]
+        }
+    ],
+    "list not approved": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] List not approved: list-1",
+                []
+            ]
+        }
+    ],
+    "list not found": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "error": [
+                "[DestructionExecutionJob] Fatal: no list",
+                {
+                    "exception": "no list"
+                }
+            ]
+        }
+    ],
+    "no list uuid": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "error": [
+                "[DestructionExecutionJob] No destructionListUuid provided",
+                []
+            ]
+        }
+    ],
+    "notify throws": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "find": [
+                "list-1",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executing",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Batch 1/1",
+                []
+            ]
+        },
+        {
+            "find": [
+                "held",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "generateDestructionCertificate": [
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 1,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                },
+                0,
+                "T"
+            ]
+        },
+        {
+            "update": [
+                "list-1",
+                {
+                    "id": "list-1",
+                    "status": "executed",
+                    "objects": [
+                        {
+                            "uuid": "held"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "u1"
+                        },
+                        {
+                            "userId": "u2"
+                        },
+                        {
+                            "other": "x"
+                        }
+                    ],
+                    "executingAt": "T",
+                    "executedAt": "T",
+                    "destroyedCount": 0,
+                    "skippedHolds": 1,
+                    "skippedErrors": 0,
+                    "skippedDecisions": 0
+                }
+            ]
+        },
+        {
+            "get": [
+                "IManager"
+            ]
+        },
+        {
+            "get": [
+                "IGroupManager"
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        },
+        {
+            "warning": [
+                "[DestructionExecutionJob] Hold notify error: groups down",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Done: 0 destroyed, 1 held, 0 withheld by decision, 0 errors",
+                []
+            ]
+        }
+    ],
+    "settings throw": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "info": [
+                "[DestructionExecutionJob] Processing destruction list: list-1",
+                []
+            ]
+        },
+        {
+            "get": [
+                "RetentionServiceInterface"
+            ]
+        },
+        {
+            "get": [
+                "ArchivalSettingsReaderInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "AuditTrailMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "DeleteObject"
+            ]
+        },
+        {
+            "get": [
+                "RetentionDestructionInterface"
+            ]
+        },
+        {
+            "get": [
+                "SaveObjectWriterInterface"
+            ]
+        },
+        {
+            "error": [
+                "[DestructionExecutionJob] Fatal: settings down",
+                {
+                    "exception": "settings down"
+                }
+            ]
+        }
+    ]
+}

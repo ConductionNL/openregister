@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -50,13 +51,13 @@ class InheritedGrantLister {
 	 * Constructor.
 	 *
 	 * @param HierarchyDescender $hierarchy Resolves an object's ancestors.
-	 * @param MagicMapper        $mapper    Reads an ancestor object.
+	 * @param MagicMapperInterface        $mapper    Reads an ancestor object.
 	 * @param ObjectShareReader  $shares    Reads the shares on an ancestor's folder.
 	 * @param LoggerInterface    $logger    Where an unreadable ancestor is noted.
 	 */
 	public function __construct(
 		private readonly HierarchyDescender $hierarchy,
-		private readonly MagicMapper $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly ObjectShareReader $shares,
 		private readonly LoggerInterface $logger,
 	) {
@@ -140,11 +141,10 @@ class InheritedGrantLister {
 				continue;
 			}
 
-			$shares = $this->shares->sharesOn(
-				object: $ancestor,
-				sharers: [(string)$ancestor->getOwner()],
-				complete: $complete
-			);
+			$shares = match ($complete) {
+				true => $this->shares->completeSharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+				false => $this->shares->sharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+			};
 			foreach ($shares as $share) {
 				$found[] = ['ancestor' => $ancestor, 'type' => $share['type'], 'share' => $share['share']];
 			}
@@ -165,26 +165,49 @@ class InheritedGrantLister {
 	 */
 	private function ancestorsOf(ObjectEntity $object, bool $complete): array {
 		try {
-			return $this->hierarchy->ancestorsOf(
-				registerId: (int)$object->getRegister(),
-				schemaId: (int)$object->getSchema(),
-				objectUuid: (string)$object->getUuid()
-			);
+			return $this->hierarchy->ancestorsOf(ref: self::refOf(object: $object));
 		} catch (Throwable $e) {
 			if ($complete === true) {
 				throw new RuntimeException('The ancestors of an object could not be resolved', 0, $e);
 			}
 
-			$this->logger->warning(
-				message: '[InheritedGrantLister] Could not resolve the ancestors of an object; its inherited grants are not listed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'object' => (string)$object->getUuid(),
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnUnresolved(object: $object, error: $e);
 			return [];
-		}//end try
+		}
 	}//end ancestorsOf()
+
+	/**
+	 * The object as the reference the hierarchy walks from.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return ObjectRef The reference.
+	 */
+	private static function refOf(ObjectEntity $object): ObjectRef {
+		return new ObjectRef(
+			register: (int)$object->getRegister(),
+			schema: (int)$object->getSchema(),
+			id: (string)$object->getUuid()
+		);
+	}//end refOf()
+
+	/**
+	 * Say that an object's ancestors could not be resolved, so its inherited grants are not listed.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param Throwable    $error  Why the walk failed.
+	 *
+	 * @return void
+	 */
+	private function warnUnresolved(ObjectEntity $object, Throwable $error): void {
+		$this->logger->warning(
+			message: '[InheritedGrantLister] Could not resolve the ancestors of an object; its inherited grants are not listed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'object' => (string)$object->getUuid(),
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnresolved()
 }//end class

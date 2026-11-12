@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -117,7 +118,19 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 				$container,
 				private readonly bool $commandLine
 			) {
-				parent::__construct($session, $userManager, $groupManager, $schemaMapper, $mapper, $matcher, $appConfig, $logger, $container);
+				parent::__construct(
+					...PermissionHandlerFactory::args(
+						$session,
+						$userManager,
+						$groupManager,
+						$schemaMapper,
+						$mapper,
+						$matcher,
+						$appConfig,
+						$logger,
+						$container
+					)
+				);
 			}
 
 			/**

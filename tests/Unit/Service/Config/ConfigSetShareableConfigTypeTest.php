@@ -11,6 +11,8 @@ namespace Unit\Service\Config;
 
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
 use OCA\OpenRegister\Service\ConfigurationService;
 use PHPUnit\Framework\TestCase;
@@ -23,10 +25,21 @@ class ConfigSetShareableConfigTypeTest extends TestCase {
 
 	private ConfigSetShareableConfigType $type;
 
+	private BundleCrossingGuard $guard;
+
 	protected function setUp(): void {
+		$this->guard = $this->createMock(BundleCrossingGuard::class);
 		$this->mapper = $this->createMock(ConfigurationMapper::class);
 		$this->configService = $this->createMock(ConfigurationService::class);
-		$this->type = new ConfigSetShareableConfigType($this->mapper, $this->configService);
+		$this->type = new ConfigSetShareableConfigType(new ConfigurationRecords($this->mapper, $this->configService), $this->guard);
+	}
+
+	public function testDeserialiseAsksTheGuardBeforeItImports(): void {
+		$this->guard->method('assertAllowed')->willThrowException(new \RuntimeException('refused'));
+		$this->configService->expects($this->never())->method('importFromJson');
+
+		$this->expectExceptionMessage('refused');
+		$this->type->deserialise([]);
 	}
 
 	public function testIdentity(): void {

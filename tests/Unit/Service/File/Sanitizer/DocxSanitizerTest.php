@@ -3,7 +3,7 @@
 /**
  * DocxSanitizerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Sanitizer\DocxSanitizer}.
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer}.
  * A synthetic .docx ZIP is built in-test covering every surgical pass; the
  * sanitised output is re-opened and asserted part-by-part.
  *
@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\File\Sanitizer;
 
 use OCA\OpenRegister\Exception\SanitizationException;
-use OCA\OpenRegister\Service\File\Sanitizer\DocxSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 

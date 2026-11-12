@@ -18,12 +18,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Controller\BulkController;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\AppFramework\Http;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -39,10 +41,26 @@ use PHPUnit\Framework\TestCase;
  * administrator lookup answers per user id, so a check made for anybody but the caller fails.
  *
  * @covers \OCA\OpenRegister\Controller\BulkController
+ * @uses \OCA\OpenRegister\Controller\Support\BulkStore
+ * @uses \OCA\OpenRegister\Controller\Support\BulkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\BulkControllerServices
  * @uses   \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  * @uses   \OCA\OpenRegister\Service\Object\BatchOperationStatus
  * @uses   \OCA\OpenRegister\Dto\BulkSaveOutcome
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveBatch
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveCounts
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveReport
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveSummary
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
+ * @uses \OCA\OpenRegister\Dto\BulkRowCount
+ * @uses \OCA\OpenRegister\Dto\BulkSaveOutcomes
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Dto\StreamedRowCount
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
  */
 class BulkControllerStreamTest extends TestCase {
 
@@ -101,7 +119,7 @@ class BulkControllerStreamTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params + ['objects' => [['name' => 'row']]]);
 
-		$controller = new BulkController(
+		$controller = BulkControllerFactory::create(
 			'openregister',
 			$request,
 			$objects,
@@ -114,6 +132,16 @@ class BulkControllerStreamTest extends TestCase {
 
 		return $controller->save('1', '2');
 	}//end save()
+
+	public function testNoSessionIsNoAdministrator(): void {
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->expects($this->never())->method('isAdmin');
+		$gate = new SchemaManageGate(userSession: $session, groupManager: $groups, schemaMapper: $this->createMock(SchemaMapper::class));
+
+		$this->assertFalse($gate->callerIsAdministrator());
+	}
 
 	public function testAManagerWhoIsNoAdministratorMayNotStream(): void {
 		$response = $this->save(uid: 'mallory', params: ['stream' => true]);

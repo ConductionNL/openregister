@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederationControllerFactory;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
@@ -74,7 +75,7 @@ class FederationControllerConfidentialityTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->controller = new FederationController(
+		$this->controller = FederationControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(FederatedShareMapper::class),
