@@ -62,8 +62,6 @@ class ConfigurationSeedController extends Controller {
 	 *
 	 * @return JSONResponse The set, what was staged, and what was skipped.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function create(): JSONResponse {
