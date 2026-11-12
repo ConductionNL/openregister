@@ -234,3 +234,4 @@ merge:decidiq:2030:0f631b71	merged 3 (2039-2041); 2060 gate RED (checker floor d
 fix:buildiq:1454:7d559fbc	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:21:27Z
 fix:buildiq:1437:4938b7b7	merged development in, dockerimage restored; new head e8a1f0f93d	session-20261112T184508-711de18c	2026-11-12T20:21:51Z
 cover:dossiq:6ca0231e:568ec52a	PR #6121: 1 class, 9 tests (Lifecycle CaseActionList); suite 11970->11979, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:22:06Z
+cover:dossiq:6ca0231e:c900fa11	PR #6122: 8 Email/Filters classes, 41 tests; suite 11970->12011, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:22:05Z
