@@ -37,6 +37,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\AuditTrailFilterTerm
  * @uses   \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditTrailFindAllGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

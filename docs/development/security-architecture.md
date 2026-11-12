@@ -110,7 +110,7 @@ $magicBytes = [
 
 ```bash
 # Attacker tries to upload malware.exe
-curl -X POST /api/objects/.../files \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/.../files \
   -F "file=@malware.exe"
 ```
 
@@ -120,7 +120,7 @@ curl -X POST /api/objects/.../files \
 
 ```bash
 # Attacker renames malware.exe to document.pdf
-curl -X POST /api/objects/.../files \
+curl -H 'OCS-APIRequest: true' -X POST /api/objects/.../files \
   -F "file=@document.pdf"  # Actually malware.exe
 ```
 

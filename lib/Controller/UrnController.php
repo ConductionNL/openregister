@@ -165,7 +165,6 @@ class UrnController extends Controller {
 	 * @return JSONResponse JSON response with the bulk resolution result.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt No object body: batch URN address translation (input capped at 1000 for DoS safety);
 	 *   returns addressing parts, not object content.
 	 *

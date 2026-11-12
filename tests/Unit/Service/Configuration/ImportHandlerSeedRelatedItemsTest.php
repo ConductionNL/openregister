@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -101,8 +102,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$captured = [];
 		$noteService->expects($this->exactly(2))
 			->method('createNote')
-			->willReturnCallback(function (string $uuid, string $message) use (&$captured) {
-				$captured[] = compact('uuid', 'message');
+			->willReturnCallback(function (NoteDraft $draft) use (&$captured) {
+				$captured[] = ['uuid' => $draft->objectUuid, 'message' => $draft->message];
 				return ['id' => count($captured)];
 			});
 

@@ -58,6 +58,9 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Unit tests for SaveObject
@@ -3390,20 +3393,21 @@ class SaveObjectTest extends TestCase {
 
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['saveObject'])
+			->onlyMethods(['saveObject', 'assertMayUpdateRelated'])
 			->getMock();
 		$saved = [];
 		$handler->method('saveObject')->willReturnCallback(
-			function (mixed ...$args) use (&$saved, $target): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$args) use (&$saved, $target): ObjectEntity {
 				$saved[] = $args;
 				return $target;
-			}
+			})
 		);
 		$writeBack = new InverseWriteBack(
 			objects: $mapper,
 			saver: $handler,
 			lookups: new SaveLookups(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class)),
-			urls: $this->createMock(IURLGenerator::class)
+			urls: $this->createMock(IURLGenerator::class),
+			guard: $handler
 		);
 		$method = new \ReflectionMethod(InverseWriteBack::class, 'writeToTarget');
 		$method->invoke($writeBack, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
@@ -4691,10 +4695,8 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		$result = $this->handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['name' => 'Test Object'],
-			uuid: null,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			persist: false
 		);
 
@@ -4731,10 +4733,8 @@ class SaveObjectTest extends TestCase {
 			->willReturn(['auditTrailsEnabled' => false]);
 
 		$result = $this->handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['name' => 'New Name'],
-			uuid: 'existing-uuid',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'existing-uuid'),
 			persist: false
 		);
 

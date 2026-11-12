@@ -20,6 +20,9 @@ use PHPUnit\Framework\TestCase;
  * FilePropertyHandler reads `autoShare` from the schema configuration and warns on `autoPublish`.
  *
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 class SchemaFileShareConfigurationTest extends TestCase {
 

@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The schema check, then the property check, then the write; a refusal stops the rest.
@@ -142,7 +143,11 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, mixed $extend, mixed $register, mixed $schema, mixed $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$extend = $options->extend;
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->calls[] = ['save', $object, $extend, ($register === $this->register), ($schema === $this->schema), $uuid];
 				return $this->record();
 			}

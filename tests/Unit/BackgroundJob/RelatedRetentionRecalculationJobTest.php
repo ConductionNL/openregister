@@ -69,6 +69,16 @@ use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
  * @uses \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator
  * @uses \OCA\OpenRegister\Service\Archival\SelectielijstResolver
  * @uses \OCA\OpenRegister\Service\RetentionService
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RetentionDependantPlace
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Archival\DateSource
+ * @uses \OCA\OpenRegister\Service\Archival\RecordDating
+ * @uses \OCA\OpenRegister\Service\Archival\SelectielijstStorage
+ * @uses \OCA\OpenRegister\Service\RetentionRules
+ * @uses \OCA\OpenRegister\Service\RetentionStores
  */
 class RelatedRetentionRecalculationJobTest extends TestCase {
 

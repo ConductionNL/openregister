@@ -52,6 +52,16 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  * @uses   \OCA\OpenRegister\Support\NullFilter
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathTarget
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\QuotedSqlColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RawObjectFieldFilter
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TypedColumnRef
+ * @uses \OCA\OpenRegister\Exception\EncryptedFieldFilterException
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicSearchHandlerRawObjectFiltersGoldenTest extends TestCase {
 

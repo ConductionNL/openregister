@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
@@ -52,6 +53,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
+use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -149,10 +151,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		try {
 			$object = $this->sources->objects->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(
@@ -236,24 +237,26 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			return null;
 		}
 
+		$minter = $this->minterOf(link: $link);
+		if ($minter === null) {
+			return null;
+		}
+
 		try {
-			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
-			// are off here because there is no session to judge, which leaves the
-			// view as the ONLY bound on this query. The shared search path used to
-			// log an unresolvable view and carry on with the query unchanged - and
-			// the view IS unresolvable here, because ViewMapper::find() ran an RBAC
-			// read check against an anonymous caller. The result was a link serving
-			// up to MAX_VIEW_OBJECTS arbitrary objects from any organisation. With
-			// the flag the view is resolved exempt (the link is the authorization,
-			// exactly as for the schema read in filteredProperties()) and every way
-			// of failing to apply it throws, which the catch below turns into "this
-			// link no longer resolves".
-			$results = $this->sources->objects->searchObjects(
-				query: ['_limit' => self::MAX_VIEW_OBJECTS],
-				_rbac: false,
-				_multitenancy: false,
-				views: [$viewId],
-				_viewScopeRequired: true
+			// The rows are resolved as the account that minted the link, with
+			// its own read rules and organisation, so a link never serves more
+			// than its minter may read. `_viewScopeRequired: true` keeps the
+			// view a hard bound: every way of failing to apply it throws, which
+			// the catch below turns into "this link no longer resolves".
+			$results = $this->sources->objects->runAs(
+				$minter,
+				fn () => $this->sources->objects->searchObjects(
+					query: ['_limit' => self::MAX_VIEW_OBJECTS],
+					_rbac: true,
+					_multitenancy: true,
+					views: [$viewId],
+					_viewScopeRequired: true
+				)
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(
@@ -277,6 +280,32 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 
 		return ['results' => $rows, 'total' => count($rows)];
 	}//end readView()
+
+	/**
+	 * The enabled account that minted a link, or null when it no longer resolves.
+	 *
+	 * @param AccessLinkInterface $link The link.
+	 *
+	 * @return IUser|null
+	 */
+	private function minterOf(AccessLinkInterface $link): ?IUser {
+		$uid = '';
+		if ($link instanceof AccessLink) {
+			$uid = trim((string)$link->getCreatedBy());
+		}
+
+		$minter = null;
+		if ($uid !== '') {
+			$minter = $this->sources->users?->get($uid);
+		}
+
+		if ($minter === null || $minter->isEnabled() === false) {
+			$this->logger->info('[AccessLinkReader] The account that minted a view link no longer resolves; serving nothing.');
+			return null;
+		}
+
+		return $minter;
+	}//end minterOf()
 
 	/**
 	 * One object, reduced to what an anonymous caller may read.

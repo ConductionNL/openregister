@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ExportRunMapper
+ * @uses \OCA\OpenRegister\Db\ExportRun
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class ExportRunMapperFindGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -46,6 +46,8 @@ use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices
  */
 class OAuth2TokenRefreshJobTest extends TestCase {
 	/** @var array<int, string> Credential ids the sweep actually asked to refresh. */
