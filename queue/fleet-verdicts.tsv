@@ -3890,3 +3890,4 @@ dossiq	6082	31c9cf673cc5d024413adafdc0a7e39f20ff0a03	GREEN	worker-38	11970 tests
 keepiq	1668	8aff563f6c77341777a64b1240e075f23eb48bbf	GREEN	worker-08	merges clean on development; deploy files only (Dockerfile, compose, Helm chart, image workflow, README section), no PHP/JS touched so unit suite unaffected (not run); diff review: rendered template, no app behaviour change
 humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	REVERIFY	worker-10	checker floor dockerimage RED not reproducible: compare gives dockerimage pass->pass, score 93->93 at 3ac478ed (tests-only PR); no change pushed; new head 3ac478ed6e8e8e68df4c514abdcdea4456337ae7, verify it
 integriq	3338	34ecd231d9b81c5ee49917b3f862ae3e0f50ffcd	RED	worker-25:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
+integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
