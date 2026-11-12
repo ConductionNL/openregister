@@ -923,3 +923,4 @@ cover:stackiq:8cfacb29m2f4b:692f8a78	PR #1781: lib/Service/Contactpersoon 116/20
 cover:stackiq:8cfacb29m2f4b:efa2a923	PR stackiq#1782: 3 new listener tests (+11) and missing @uses removing 17 risky; suite 2458->2469 OK	session-20261112T231640-f6dda86c	2026-11-12T23:41:25Z
 verify:keepiq:1698:852994f1	GREEN 1698: tests only, unit 3722->3751, 0 failures	session-20261112T231637-60fd49c4	2026-11-12T23:41:42Z
 merge:stackiq:1742:20a07765	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:42:09Z
+merge:stackiq:1738:11514d4f	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:42:15Z
