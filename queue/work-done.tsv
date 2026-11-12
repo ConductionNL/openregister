@@ -458,3 +458,4 @@ verify:shillinq:2799:79288991	BLOCK 2799: API error bodies and Content-Type rewr
 cover:buildiq:8ca317f6:js8a19c098	PR #1479: 4 vitest tests, src/store/* 90% -> 100% statements	session-20261112T200014-a0c0c232	2026-11-12T21:35:45Z
 cover:integriq:9b0f5894:jsd8a9d314	PR #3405: 80 tests for src/components/mapping (lines 47.8->84.8%), suite 1392->1472 green	session-20261112T212852-3ecaf9de	2026-11-12T21:35:55Z
 cover:integriq:9b0f5894:jse7f31e57	opened integriq#3404 (11 vitest tests, callLogApi; suite 1392->1403 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:36:12Z
+cover:openregister:7350e3ef:jsbd7d0461	PR #10038: 36 jest tests for 4 schema modals; schema dir lines 81.2->86.7%, suite 7111 green	session-20261112T212928-8b609f19	2026-11-12T21:36:19Z
