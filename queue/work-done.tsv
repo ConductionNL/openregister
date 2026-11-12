@@ -958,3 +958,4 @@ cover:integriq:9b0f5894m2367:js2b49da71	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:js2461af45	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:47Z
 cover:integriq:9b0f5894m2367:jsa0b17cde	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:56Z
 cover:integriq:9b0f5894m2367:jsfd3f82d2	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:53:05Z
+cover:dossiq:6ca0231e:aede7575	PR #6199: 13 tests for OpenRegisterRowNormaliser (0 -> 28/28 lines); suite 12970->12983, 19 inherited failures	session-20261112T231633-96ffe7b8	2026-11-12T23:53:07Z
