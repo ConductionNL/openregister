@@ -81,7 +81,9 @@ class TablesControllerSyncGoldenTest extends TestCase {
 			$this->magicMapper($case),
 			$this->registerMapper($case),
 			$this->schemaMapper(),
-			$this->logger()
+			$this->logger(),
+			$this->adminSession(),
+			$this->adminGroupManager()
 		);
 
 		if ($case['action'] === 'sync') {
@@ -201,5 +203,31 @@ class TablesControllerSyncGoldenTest extends TestCase {
 
 		$this->assertArrayHasKey($key, self::$golden);
 		$this->assertSame(self::$golden[$key], $actual);
+	}
+
+	/**
+	 * A signed-in session; the sync endpoints are admin-only.
+	 *
+	 * @return \OCP\IUserSession
+	 */
+	private function adminSession(): \OCP\IUserSession {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		return $session;
+	}
+
+	/**
+	 * A group manager that reports the caller as admin.
+	 *
+	 * @return \OCP\IGroupManager
+	 */
+	private function adminGroupManager(): \OCP\IGroupManager {
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn(true);
+
+		return $groupManager;
 	}
 }

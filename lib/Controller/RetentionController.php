@@ -170,8 +170,6 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $id Destruction list UUID
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated destruction list
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -303,8 +301,6 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $id Destruction list UUID
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated status
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -410,8 +406,6 @@ class RetentionController extends Controller {
 	 *
 	 * POST /api/retention/legal-holds
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated object
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -464,8 +458,6 @@ class RetentionController extends Controller {
 	 * DELETE /api/retention/legal-holds/{id}
 	 *
 	 * @param string $id Object UUID (the object the hold is on)
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response with updated object
 	 *
@@ -526,8 +518,6 @@ class RetentionController extends Controller {
 	 * Place a bulk legal hold on all objects in a schema.
 	 *
 	 * POST /api/retention/legal-holds/bulk
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response confirming the bulk operation
 	 *

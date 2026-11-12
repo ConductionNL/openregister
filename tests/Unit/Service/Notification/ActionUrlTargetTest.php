@@ -21,14 +21,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ActionLinkResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext;
+use OCA\OpenRegister\Notifications\Service\Notification\AppRouteBase;
+use OCA\OpenRegister\Notifications\Service\Notification\ObjectDetailLinks;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskActionLinks;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionMethod;
+use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ActionLinkResolver
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\AppRouteBase
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ObjectDetailLinks
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\TaskActionLinks
  */
 final class ActionUrlTargetTest extends TestCase {
 
@@ -50,9 +58,17 @@ final class ActionUrlTargetTest extends TestCase {
 
 	#[DataProvider('targets')]
 	public function testAUrlTargetKeepsToWebAndMailLinks(string $href, ?string $expected): void {
-		$dispatcher = (new ReflectionClass(AnnotationNotificationDispatcher::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveActionTarget');
+		$routes = new AppRouteBase();
+		$resolver = new ActionLinkResolver(
+			routes: $routes,
+			tasks: new TaskActionLinks(isRejecting: static fn (string $outcome): bool => false),
+			objects: new ObjectDetailLinks(logger: $this->createMock(LoggerInterface::class), routes: $routes)
+		);
+		$links = $resolver->resolve(
+			spec: ['actions' => [['target' => ['kind' => 'url', 'href' => $href]]]],
+			context: new ActionTargetContext(object: new ObjectEntity(), data: [], originApp: 'openregister')
+		);
 
-		$this->assertSame($expected, $method->invoke($dispatcher, ['kind' => 'url', 'href' => $href], new ObjectEntity(), [], 'openregister'));
+		$this->assertSame($expected, ($links[0]['url'] ?? null));
 	}//end testAUrlTargetKeepsToWebAndMailLinks()
 }//end class

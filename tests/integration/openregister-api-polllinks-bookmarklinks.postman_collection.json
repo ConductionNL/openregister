@@ -10,6 +10,7 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
 					"// Each request authenticates on its own: drop the Nextcloud session cookie a",
 					"// previous request left in the jar, or the admin session would answer the",
 					"// non-admin and anonymous requests.",

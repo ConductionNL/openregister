@@ -222,6 +222,21 @@ class ReferenceOptionsReaderTest extends TestCase {
 	}//end testTheQueryCarriesTheFilterAndThePaging()
 
 	/**
+	 * A declared filter cannot name another user's read state, follows or history.
+	 *
+	 * @return void
+	 */
+	public function testTheQueryDropsKeysOnlyTheSearchHandlerSets(): void {
+		$plan = [
+			'filter' => ['organisation' => 'org-1', '_unreadFor' => 'alice', '_watchingFor' => 'alice', '_recentFor' => 'alice'],
+		];
+
+		$query = $this->reader->queryFor(plan: $plan, page: new ListQuery(limit: 25, offset: 0));
+
+		$this->assertSame(['organisation' => 'org-1', '_limit' => 25, '_offset' => 0], $query);
+	}//end testTheQueryDropsKeysOnlyTheSearchHandlerSets()
+
+	/**
 	 * A negative offset is clamped rather than passed through.
 	 *
 	 * @return void

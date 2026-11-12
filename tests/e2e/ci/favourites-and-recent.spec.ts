@@ -86,6 +86,9 @@ async function assertSeededUser(ctx: APIRequestContext, uid: string): Promise<vo
 }
 
 /** How many audit entries an object carries right now. */
+// Read as the administrator: an object's audit trail is admin-only at the
+// framework level (AuditTrailController::objects carries no #[NoAdminRequired]),
+// so the owner's read was refused before it counted anything.
 async function auditCount(
 	ctx: APIRequestContext,
 	registerId: string,
@@ -204,7 +207,7 @@ test.describe('favourites and recently opened over HTTP', () => {
 
 	test('starring leaves the object untouched', async () => {
 		const target = uuids[0]
-		const before = await auditCount(owner, registerId, schemaId, target)
+		const before = await auditCount(admin, registerId, schemaId, target)
 
 		const star = await owner.put(
 			`${API}/objects/${registerId}/${schemaId}/${target}/favourite`,
@@ -215,6 +218,14 @@ test.describe('favourites and recently opened over HTTP', () => {
 			star.headers().deprecation,
 			'the favourite route should say it is deprecated',
 		).toBe('true')
+
+		// The whole reason the star lives in its own table. Counted BEFORE the
+		// read below: a read is itself an audited act (it writes a `read` row),
+		// so counting after it measured the read, not the star.
+		expect(
+			await auditCount(admin, registerId, schemaId, target),
+			'starring must write no audit entry on the object',
+		).toBe(before)
 
 		const read = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}/${target}`,
@@ -228,12 +239,6 @@ test.describe('favourites and recently opened over HTTP', () => {
 		).toBe(true)
 		expect(body['@self']?.watching, 'a star is a follow now').toBe(true)
 		expect(body['@self']?.watchNotify, 'a star follows quietly').toBe(false)
-
-		// The whole reason the star lives in its own table.
-		expect(
-			await auditCount(owner, registerId, schemaId, target),
-			'starring must write no audit entry on the object',
-		).toBe(before)
 	})
 
 	test("a star is one person's, and starring twice is starring once", async () => {

@@ -773,12 +773,21 @@ class AggregationRunner implements AggregationRunnerInterface {
 			register: $register,
 			schema: $schema,
 			query: $query,
-			resolvedQuery: $this->resolveAdhocQuery(query: $query)
+			resolvedQuery: $this->resolveAdhocQuery(query: $query),
+			bypassRbac: $bypassRbac
 		);
 
-		$envelope = $this->cachedAdhocEnvelope(run: $run);
-		if ($envelope === null) {
-			$envelope = $this->storeAdhocEnvelope(run: $run, envelope: $this->computeAdhocEnvelope(run: $run));
+		// Not cached for an internal-system call: the cache key is scoped by the
+		// caller (uid + organisation), not by bypassRbac, so a figure over every
+		// row would be served to the same caller's narrower question, and a
+		// narrower cached figure to the system's.
+		if ($bypassRbac === true) {
+			$envelope = $this->computeAdhocEnvelope(run: $run);
+		} else {
+			$envelope = $this->cachedAdhocEnvelope(run: $run);
+			if ($envelope === null) {
+				$envelope = $this->storeAdhocEnvelope(run: $run, envelope: $this->computeAdhocEnvelope(run: $run));
+			}
 		}
 
 		// The cache stores RAW group keys (the cache key is language-
@@ -998,6 +1007,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 					'dateBucket' => $query->dateBucket,
 					'metrics'    => $query->getMetrics(),
 					'cumulative' => $query->cumulative,
+					'rowRbac'    => $run->bypassRbac === false,
 				]
 			)
 		);

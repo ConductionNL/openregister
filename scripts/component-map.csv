@@ -287,6 +287,7 @@ Controller/MigrationController.php,82,Controller,Configuration,Configuration/Con
 Controller/MigrationPacksController.php,197,Controller,Configuration,Configuration/Controller/MigrationPacksController.php,3,,Configuration
 Controller/NamesController.php,162,Controller,Work,Work/Controller/NamesController.php,0,,Processes
 Controller/OasController.php,71,Controller,Service,Service/Controller/OasController.php,0,,Core
+Controller/OpenApiController.php,107,Controller,Service,Service/Controller/OpenApiController.php,0,,Core
 Controller/ObjectActionsController.php,210,Controller,Flows,Flows/Controller/ObjectActionsController.php,0,,Processes
 Controller/ObjectDraftController.php,114,Controller,Service,Service/Controller/ObjectDraftController.php,0,,Core
 Controller/ObjectFavouriteController.php,99,Controller,Work,Work/Controller/ObjectFavouriteController.php,0,,Processes
@@ -994,6 +995,7 @@ Exception/DraftAlreadyLeftException.php,5,Exception,Exception,Exception/DraftAlr
 Exception/DuplicateBlockedException.php,20,Exception,Exception,Exception/DuplicateBlockedException.php,0,,Kernel
 Exception/EmlParseException.php,6,Exception,Exception,Exception/EmlParseException.php,3,,Kernel
 Exception/EncryptedFieldFilterException.php,23,Exception,Exception,Exception/EncryptedFieldFilterException.php,0,,Kernel
+Exception/EncryptedFieldSortException.php,,Exception,,,,,Kernel
 Exception/ExplicitRevealQueryException.php,6,Exception,Exception,Exception/ExplicitRevealQueryException.php,0,,Kernel
 Exception/ExportTooLargeException.php,25,Exception,Exception,Exception/ExportTooLargeException.php,0,,Kernel
 Exception/FieldDecryptionException.php,13,Exception,Exception,Exception/FieldDecryptionException.php,0,,Kernel
@@ -2924,6 +2926,7 @@ Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Serv
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
 Service/Resolver/Exception/SchemaNotFoundException.php,33,Service,Service,Service/Resolver/Exception/SchemaNotFoundException.php,0,,Core
 Service/Resolver/RegisterSchemaPair.php,26,Service,Service,Service/Resolver/RegisterSchemaPair.php,0,,Core
+Service/RetentionPass.php,45,Service,Compliance,Compliance/Service/RetentionPass.php,0,,Compliance
 Service/RetentionService.php,465,Service,Compliance,Compliance/Service/RetentionService.php,4,46,Compliance
 Service/RetentionServiceInterface.php,28,Service,Compliance,Compliance/Service/RetentionServiceInterface.php,0,,Compliance
 Service/Rules/AdministeredValidationEnforcer.php,80,Service,Flows,Flows/Service/Rules/AdministeredValidationEnforcer.php,0,,Processes

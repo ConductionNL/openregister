@@ -170,8 +170,6 @@ class ApiTokenSettingsController extends Controller {
 	/**
 	 * Save API tokens for GitHub and GitLab
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with save result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -251,8 +249,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Test GitHub API token
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result
 	 *
@@ -334,8 +330,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Test GitLab API token
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result
 	 *

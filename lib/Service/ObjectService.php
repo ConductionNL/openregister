@@ -961,7 +961,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
-     * @throws InvalidArgumentException When the organisation does not exist.
+     * @throws InvalidArgumentException When the organisation does not exist or is not active.
      *
      * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
      */
@@ -969,7 +969,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         if ($this->organisationService->findContextOrganisation(uuid: $organisationUuid) === null) {
             throw new InvalidArgumentException(
-                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist.'
+                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist or is not active.'
             );
         }
 
@@ -3098,10 +3098,43 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema
         );
 
+        $this->refuseACrossingUpdate(stored: $existingObject, request: $request);
         $this->assertMayUpdate(stored: $existingObject, _rbac: $request->rbac);
 
         return $existingObject->getUuid();
     }//end assertMayUpdateStored()
+
+    /**
+     * Refuse an update of a row of another organisation that no marked update rule allows.
+     *
+     * The caller sees the row, possibly through a read rule that reaches across
+     * organisations, and the update rule it is judged by next does not look at
+     * organisations. So a row inside the caller's organisations, or with no
+     * organisation, is left to the update rule; any other row only to an update
+     * rule marked `crossOrganisation: true`. Skipped when the write does not keep
+     * to the caller's organisations or RBAC is off (an administrator, a job).
+     *
+     * @param ObjectEntity      $stored  The stored row the caller sees.
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When no marked update rule reaches the row.
+     *
+     * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+     */
+    private function refuseACrossingUpdate(ObjectEntity $stored, SaveAccessRequest $request): void
+    {
+        if ($request->rbac === false || $request->multitenancy === false
+            || trim((string) $stored->getOrganisation()) === ''
+            || $this->objectMapper->callerOrganisationsHold(row: $stored) === true
+            || $this->permissionHandler->updateCrossesOrganisations(schema: $this->currentSchema, row: $stored) === true
+        ) {
+            return;
+        }
+
+        throw new NotAuthorizedException(message: 'You may not change this object.');
+    }//end refuseACrossingUpdate()
 
     /**
      * Ask the permissions of a write to a uuid the caller does not see: new, or stored and hidden.
@@ -3116,7 +3149,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayWriteUnseen(SaveAccessRequest $request): ?string
     {
-        $hidden = $this->refuseSomebodyElsesDraft(uuid: $request->uuid, _rbac: $request->rbac);
+        $hidden = $this->hiddenStoredRow(uuid: $request->uuid, _rbac: $request->rbac);
 
         $this->assertMayCreate(request: $request);
         if ($hidden === null) {
@@ -3124,9 +3157,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         // Stored but hidden: the write lands on that row, so it must keep to
-        // the caller's organisations and pass the update rule against it.
+        // the caller's organisations and pass the update rule against it. The
+        // draft refusal comes after the create, append-only and organisation
+        // refusals, so its own answer is only given inside the caller's
+        // organisations and does not tell which uuids hold a draft elsewhere.
         $this->refuseAWriteOntoAnAppendOnlyRow();
         $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $request->multitenancy);
+        $this->refuseSomebodyElsesDraft(stored: $hidden);
         $this->assertMayUpdate(stored: $hidden, _rbac: $request->rbac);
 
         return $hidden->getUuid();
@@ -3189,30 +3226,27 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end refuseAnotherOrganisationsRow()
 
     /**
-     * Refuse a write to a stored draft the caller cannot read.
+     * The stored row a uuid names past the read rule, for a write the caller's own lookup did not find.
      *
      * A draft answers to its owner only (decision 180), and that rule lives in
-     * the read query. The lookup above therefore does not find somebody else's
-     * draft, and the write went on as a create under a chosen uuid, judged by
-     * the schema's create rule, and was then stored over the draft. Anybody
-     * who may create in the schema could change somebody else's draft through
-     * PATCH and got its content back in the answer. Found on a live instance,
-     * 12 October 2026.
+     * the read query. The caller's lookup therefore does not find somebody
+     * else's draft, and the write went on as a create under a chosen uuid,
+     * judged by the schema's create rule, and was then stored over the draft.
+     * Found on a live instance, 12 October 2026.
      *
      * So the uuid is looked up once more, past the read rule, and only for
-     * this question. Skipped with RBAC off: an administrator, a job and a
-     * scope-value owner (decision 195) are judged by their caller.
+     * the refusals of a write onto a hidden row. Skipped with RBAC off: an
+     * administrator, a job and a scope-value owner (decision 195) are judged
+     * by their caller.
      *
      * @param string $uuid  The uuid the caller's own lookup did not find.
      * @param bool   $_rbac Whether the write is judged for the signed-in caller.
      *
      * @return ObjectEntity|null The stored row the caller cannot read, null when there is none or RBAC is off.
      *
-     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
-     *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): ?ObjectEntity
+    private function hiddenStoredRow(string $uuid, bool $_rbac): ?ObjectEntity
     {
         if ($_rbac === false || $this->currentSchema === null) {
             return null;
@@ -3220,7 +3254,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         try {
             // A soft-deleted row counts too: the write would land on it.
-            $stored = $this->objectMapper->find(
+            return $this->objectMapper->find(
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
@@ -3231,7 +3265,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCP\AppFramework\Db\DoesNotExistException) {
             return null;
         }
+    }//end hiddenStoredRow()
 
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * @param ObjectEntity $stored The stored row the caller's own lookup did not find.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
+    {
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
@@ -3243,8 +3291,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
         }
-
-        return $stored;
     }//end refuseSomebodyElsesDraft()
 
     /**
@@ -4311,10 +4357,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end deleteAnswersToOrganisation()
 
     /**
-     * Refuse a delete in a register or schema the caller's organisation only consumes.
+     * Refuse a delete or move in a register or schema the caller's organisation only consumes.
      *
      * The organisation boundary answers a read question and lets a consumer of shared
-     * master data see the holder's rows. A delete is a write, as for a save.
+     * master data see the holder's rows. A delete or a move is a write, as for a save.
      *
      * @param int|null $registerId The register deleted from.
      * @param int|null $schemaId   The schema deleted from.
@@ -6462,6 +6508,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws NotAuthorizedException If the caller may not create objects in the target schema.
+     * @throws SharedMasterDataWriteException If the caller's organisation only consumes the source or target.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -6474,6 +6521,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         $this->permissionHandler->checkPermission(schema: $targetSchema, action: 'create');
+
+        // A move removes rows from the source and writes rows into the target.
+        $targetRegister = $this->utilityHandler->normalizeEntity(entity: $migration->target->register, type: 'register');
+        $targetRegisterId = null;
+        if ($targetRegister instanceof Register) {
+            $targetRegisterId = $targetRegister->getId();
+        }
+
+        $this->rejectSharedMasterDataDelete(registerId: $source->register->getId(), schemaId: $source->schema->getId());
+        $this->rejectSharedMasterDataDelete(registerId: $targetRegisterId, schemaId: $targetSchema->getId());
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(

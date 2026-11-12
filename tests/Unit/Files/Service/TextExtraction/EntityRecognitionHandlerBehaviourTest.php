@@ -4,8 +4,8 @@
  * Entity detection against a real HTTP analyze endpoint, and the BSN/phone
  * overlap rule of the regex detector.
  *
- * The analyze backends are reached over curl, so a PHP built-in server with
- * a stand-in router plays the backend; nothing inside the handler is mocked.
+ * The analyze backends are reached through Nextcloud's HTTP client, here backed
+ * by Guzzle, so a PHP built-in server with a stand-in router plays the backend.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Files\Service\TextExtraction
@@ -51,6 +51,10 @@ use RuntimeException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserCall;
 
 class EntityRecognitionHandlerBehaviourTest extends TestCase {
+	use GuzzleClientServiceTrait;
+
+	/** @var array<int, array{0: string, 1: array}> */
+	private array $calls = [];
 
 	/** @var resource|null */
 	private static $server = null;
@@ -111,7 +115,8 @@ class EntityRecognitionHandlerBehaviourTest extends TestCase {
 			),
 			backends: new EntityRecognitionBackends(
 				settingsService: $this->settings,
-				anonymisationBackendService: $this->anonymiser
+				anonymisationBackendService: $this->anonymiser,
+				clientService: $this->guzzleClientService($this->calls)
 			),
 			logger: $this->logger
 		);
@@ -160,6 +165,39 @@ class EntityRecognitionHandlerBehaviourTest extends TestCase {
 			json_decode($entities[1]['value'], true)
 		);
 	}//end testPresidioResultsAreConvertedAndLowScoresDropped()
+
+	public function testTheAnalyzeCallAsksForNoLocalAddressExemption(): void {
+		$this->presidioAt(self::$base . '/ok/');
+
+		$this->detect(EntityRecognitionHandler::METHOD_PRESIDIO, 'Jan Jansen', ['PERSON']);
+
+		$this->assertCount(1, $this->calls);
+		[$uri, $options] = $this->calls[0];
+		$this->assertSame(self::$base . '/ok/analyze', $uri);
+		$this->assertArrayNotHasKey('nextcloud', $options);
+		$this->assertSame('application/json', $options['headers']['Content-Type']);
+		$this->assertFalse($options['http_errors']);
+	}//end testTheAnalyzeCallAsksForNoLocalAddressExemption()
+
+	public function testWithoutAnHttpClientNoRequestIsMadeAndRegexIsUsed(): void {
+		$this->presidioAt(self::$base . '/ok/');
+		$this->expectErrorLogged('Presidio connection error: no HTTP client available');
+		$handler = new EntityRecognitionHandler(
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(settingsService: $this->settings, anonymisationBackendService: $this->anonymiser),
+			logger: $this->logger
+		);
+		$dispatch = new ReflectionMethod(EntityRecognitionHandler::class, 'detectEntities');
+
+		$entities = $dispatch->invoke($handler, new EntityDetectionQuery(text: 'a@example.com', entityTypes: ['EMAIL'], confidenceThreshold: 0.5), EntityRecognitionHandler::METHOD_PRESIDIO);
+
+		$this->assertSame(['EMAIL'], $this->types(array_values($entities)));
+	}//end testWithoutAnHttpClientNoRequestIsMadeAndRegexIsUsed()
 
 	public function testPresidioRequestErrorFallsBackToRegex(): void {
 		$this->presidioAt(self::$base . '/reject');

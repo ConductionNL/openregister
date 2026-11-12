@@ -18,12 +18,18 @@
 
 namespace OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 
+use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
 
 /**
  * Maps the properties of a schema to GraphQL object fields.
  */
 class ObjectPropertyFields {
+
+	/**
+	 * The field that states how many properties were withheld from the caller.
+	 */
+	public const WITHHELD_FIELD = '_withheldProperties';
 
 	/**
 	 * Constructor.
@@ -49,9 +55,15 @@ class ObjectPropertyFields {
 	public function forSchema(RegisterSchema $schema): array {
 		$notes = $this->typeMapper->getPropertyAuthDescriptions(schema: $schema);
 		$fields = [];
+		$withheld = 0;
 
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
-			if (is_array(value: $property) === false || $this->typeMapper->mayCarryField(schema: $schema, property: (string)$name) === false) {
+			if (is_array(value: $property) === false) {
+				continue;
+			}
+
+			if ($this->typeMapper->mayCarryField(schema: $schema, property: (string)$name) === false) {
+				$withheld++;
 				continue;
 			}
 
@@ -61,8 +73,32 @@ class ObjectPropertyFields {
 			];
 		}
 
+		if ($withheld > 0) {
+			$fields[self::WITHHELD_FIELD] = $this->withheldField(withheld: $withheld);
+		}
+
 		return $fields;
 	}//end forSchema()
+
+	/**
+	 * The field stating how many properties this caller's type leaves out.
+	 *
+	 * A count, never names, as the OpenAPI description states it: the caller learns
+	 * the type is not the whole schema without learning what is missing.
+	 *
+	 * @param int $withheld The number of properties left out.
+	 *
+	 * @return array<string, mixed> The field
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	private function withheldField(int $withheld): array {
+		return [
+			'type' => Type::nonNull(Type::int()),
+			'description' => 'How many properties of this schema are withheld from this caller',
+			'resolve' => static fn (): int => $withheld,
+		];
+	}//end withheldField()
 
 	/**
 	 * A property's description with its authorisation note appended.

@@ -80,7 +80,12 @@ async function contextFor(
 
 /** A calendar client: no session, no cookie, no CSRF token. */
 async function anonymousContext(): Promise<APIRequestContext> {
-	return pwRequest.newContext({ baseURL: BASE })
+	return pwRequest.newContext({
+		baseURL: BASE,
+		// Empty headers are what make it anonymous: a bare newContext()
+		// inherits the suite's Authorization header from playwright.config.ts.
+		extraHTTPHeaders: {},
+	})
 }
 
 /**

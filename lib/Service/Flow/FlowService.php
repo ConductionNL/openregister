@@ -652,11 +652,21 @@ class FlowService implements FlowServiceInterface {
 	 * @return void
 	 *
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowLifecycleRefused When a run of the flow has not finished.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->deleteStored(flow: $this->find(uuid: $uuid));
+		$flow = $this->find(uuid: $uuid);
+		if ($this->sweep->runs->hasActiveRun(flowId: (string)$flow->getUuid()) === true) {
+			$this->platform->logger->info(
+				message: '[FlowService] Refused to delete flow ' . $flow->getUuid() . ': a run has not finished',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			throw new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_RUNS_IN_FLIGHT, flowId: (string)$flow->getUuid());
+		}
+
+		$this->deleteStored(flow: $flow);
 
 	}//end delete()
 

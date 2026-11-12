@@ -243,7 +243,6 @@ class ObjectActionsController extends Controller {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
 		return $this->invokeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
 	}//end invoke()
@@ -264,7 +263,6 @@ class ObjectActionsController extends Controller {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function invokeOnSelection(string $register, string $schema, string $action): JSONResponse {
 		return $this->selectionInvoked(table: new RegisterSchemaRef(register: $register, schema: $schema), action: $action);
 	}//end invokeOnSelection()

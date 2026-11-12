@@ -212,6 +212,7 @@ exports[`MigrationObject::performMigration (golden) records the migrated migrati
         "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -242,6 +243,7 @@ exports[`MigrationObject::performMigration (golden) records the okNoBody migrati
         "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -267,6 +269,7 @@ exports[`MigrationObject::performMigration (golden) records the refused migratio
         "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -302,6 +305,7 @@ exports[`MigrationObject::performMigration (golden) records the refusedNoBody mi
         "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -337,6 +341,7 @@ exports[`MigrationObject::performMigration (golden) records the thrown migration
         "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },

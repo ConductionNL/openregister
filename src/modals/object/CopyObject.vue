@@ -1,30 +1,19 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { objectName } from './objectName.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.dialog === 'copyObject'"
-		:name="
-			'Copy '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
-		"
+		:name="'Copy ' + (objectName(objectStore.objectItem) || 'Object')"
 		size="normal"
 		noClose>
 		<div v-if="success === null">
 			<p>
 				Create a copy of
-				<b>{{
-					objectStore.objectItem?.['@self']?.name
-					|| objectStore.objectItem?.name
-					|| objectStore.objectItem?.['@self']?.title
-					|| objectStore.objectItem?.id
-				}}</b>
+				<b>{{ objectName(objectStore.objectItem) }}</b>
 			</p>
 
 			<div class="form-group">
@@ -72,7 +61,11 @@ import {
 } from '@nextcloud/vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
-import { renameCopy, withoutOriginalMetadata } from '../../services/objectCopy.js'
+import {
+	originalName,
+	renameCopy,
+	withoutOriginalMetadata,
+} from '../../services/objectCopy.js'
 
 export default {
 	name: 'CopyObject',
@@ -105,13 +98,7 @@ export default {
 		 * @spec exclude computed display helper for default copy name
 		 */
 		defaultCopyName() {
-			const originalName =
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| `Object ${objectStore.objectItem?.['@self']?.id}`
-
-			return `Copy of ${originalName}`
+			return `Copy of ${originalName(objectStore.objectItem)}`
 		},
 	},
 

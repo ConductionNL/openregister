@@ -39,6 +39,8 @@ use RuntimeException;
  *
  * Each case that needs Talk's RoomService declares a stand-in for it, so it
  * runs in its own process and the class never exists for any other test.
+ * The case without Talk runs in its own process too, because other test files
+ * alias the RoomService class when they are loaded.
  */
 class TalkGatewaySetDescriptionTest extends TestCase {
 
@@ -74,6 +76,7 @@ class TalkGatewaySetDescriptionTest extends TestCase {
 		eval('namespace OCA\\Talk\\Service; class RoomService { public array $calls = []; public function setDescription(object $room, string $description): void { $this->calls[] = [$room, $description]; if ($description === "boom") { throw new \\RuntimeException("talk says no"); } } }');
 	}
 
+	#[RunInSeparateProcess]
 	public function testWithoutTalkNothingIsResolved(): void {
 		$this->assertFalse(class_exists(self::ROOM_SERVICE));
 		$container = $this->createMock(ContainerInterface::class);

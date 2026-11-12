@@ -918,12 +918,10 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The new run, or a 4xx when the source cannot be retried.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(string $uuid): JSONResponse {
 		$run = $this->runnableRun(uuid: $uuid);
 		if ($run instanceof JSONResponse) {
@@ -963,12 +961,10 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The parked run, or a 4xx when it cannot be signalled.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function resume(string $uuid): JSONResponse {
 		$run = $this->runnableRun(uuid: $uuid);
 		if ($run instanceof JSONResponse) {
@@ -1015,14 +1011,12 @@ class FlowRunController extends Controller {
 	 *                      ambiguous or not suspended.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/integration/openregister-integrations.postman_collection.json
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function signalByKey(string $key): JSONResponse {
 		$run = $this->soleSuspendedRun(key: $key);
 		if ($run instanceof JSONResponse) {

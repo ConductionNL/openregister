@@ -4,8 +4,8 @@
  * Golden tests for UiController.
  *
  * Every public route method serves the same SPA shell: the `index` template
- * of this app, no params, status 200, and a CSP whose connect-src allows
- * every domain. Pins that so a refactor can be proven behaviour-preserving.
+ * of this app, no params, status 200, and the default CSP, whose connect-src
+ * is the instance's own origin. Pins that so a refactor can be proven behaviour-preserving.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -58,7 +58,6 @@ class UiControllerGoldenTest extends TestCase {
 
 	public function testEveryRouteServesTheSpaShell(): void {
 		$expectedCsp = new ContentSecurityPolicy();
-		$expectedCsp->addAllowedConnectDomain('*');
 		$controller = new UiController('openregister', $this->createMock(IRequest::class));
 
 		foreach ($this->routeMethods() as $name) {

@@ -493,6 +493,7 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			$folder = $this->createMock(Folder::class);
 			$folder->method('getById')->willReturn($this->nodesInFolder());
+			$folder->method('getFirstNodeById')->willReturn(($this->nodesInFolder()[0] ?? null));
 			return $folder;
 		});
 		return $root;

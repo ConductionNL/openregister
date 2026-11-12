@@ -634,8 +634,9 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * The organisation an organisation context acts for.
 	 *
-	 * Memoised per request by uuid. An organisation that does not exist answers
-	 * null, so the organisation filter admits nothing.
+	 * Memoised per request by uuid. A merged-away organisation answers with the
+	 * organisation it was merged into. One that does not exist or is not active
+	 * answers null, so the organisation filter admits nothing.
 	 *
 	 * @param string $uuid The organisation uuid the context names.
 	 *
@@ -649,8 +650,12 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		try {
-			$organisation = $this->organisationMapper->findByUuid($uuid);
+			$organisation = $this->followMerge(organisation: $this->organisationMapper->findByUuid($uuid));
 		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		if ($organisation !== null && $organisation->isActive() === false) {
 			$organisation = null;
 		}
 
@@ -970,9 +975,11 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		$saved = $this->organisationMapper->save($organisation);
 
-		// If there's no default organisation set, make this one the default.
+		// With no default organisation set, one created by an admin or by the
+		// system becomes the default. Records without an organisation land in
+		// the default, so a regular user's organisation never becomes it.
 		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-		if ($defaultOrgId === '') {
+		if ($defaultOrgId === '' && ($user === null || $this->groupManager->isAdmin($user->getUID()) === true)) {
 			$this->appConfig->setValueString('openregister', 'defaultOrganisation', $saved->getUuid());
 		}
 

@@ -269,6 +269,8 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$bound = $this->boundValues[$statementIndex];
 		$idParam = ($bound[1][0] ?? null);
 		$identifier = ($bound[2][0] ?? null);
+		$slugParam = ($bound[3][0] ?? null);
+		$uriParam = ($bound[4][0] ?? null);
 
 		// Only filter deleted rows when the generated SQL says so.
 		$excludeDeleted = str_contains($sql, 'IS NULL');
@@ -280,10 +282,11 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			}
 
 			foreach ($rows as $row) {
+				// SQL `= NULL` is never true, so a null parameter matches no row.
 				$matches = ($row['_id'] === $idParam
 					|| $row['_uuid'] === $identifier
-					|| $row['_slug'] === $identifier
-					|| $row['_uri'] === $identifier);
+					|| ($slugParam !== null && $row['_slug'] === $slugParam)
+					|| ($uriParam !== null && $row['_uri'] === $uriParam));
 
 				if ($matches === false) {
 					continue;
@@ -586,6 +589,41 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		// Exactly one full-row SELECT — against the ONE table that matched.
 		$this->assertSame(1, $this->magicTableSelects);
 	}//end testFindsObjectByUuid()
+
+	/**
+	 * A row whose slug equals another row's uuid never answers for that uuid,
+	 * even when it sits in an earlier chunk.
+	 *
+	 * @return void
+	 */
+	public function testAUuidIsAnsweredByItsOwnRowBeforeASlugThatCopiesIt(): void {
+		$uuid = '0b7c5d6e-1f2a-4b3c-8d4e-5f6a7b8c9d0e';
+		$this->givenLiveTable(registerId: 1, schemaId: 1, rows: [$this->row(id: 1, uuid: '11111111-1111-4111-8111-111111111111', slug: $uuid, uri: 'u-1')]);
+		for ($i = 2; $i <= 150; $i++) {
+			$this->givenLiveTable(registerId: $i, schemaId: 1, rows: []);
+		}
+
+		$this->givenLiveTable(registerId: 151, schemaId: 1, rows: [$this->row(id: 9, uuid: $uuid, slug: 'real', uri: 'u-9')]);
+
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
+
+		$this->assertSame($uuid, $result['object']->getUuid());
+		$this->assertSame(151, $result['register']->getId());
+	}//end testAUuidIsAnsweredByItsOwnRowBeforeASlugThatCopiesIt()
+
+	/**
+	 * A uuid-shaped slug is still found when no row holds that uuid.
+	 *
+	 * @return void
+	 */
+	public function testAUuidShapedSlugIsFoundWhenNoRowHoldsThatUuid(): void {
+		$uuid = '0b7c5d6e-1f2a-4b3c-8d4e-5f6a7b8c9d0e';
+		$this->givenLiveTable(registerId: 1, schemaId: 1, rows: [$this->row(id: 1, uuid: '11111111-1111-4111-8111-111111111111', slug: $uuid, uri: 'u-1')]);
+
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
+
+		$this->assertSame('11111111-1111-4111-8111-111111111111', $result['object']->getUuid());
+	}//end testAUuidShapedSlugIsFoundWhenNoRowHoldsThatUuid()
 
 	/**
 	 * An object is found by its slug.

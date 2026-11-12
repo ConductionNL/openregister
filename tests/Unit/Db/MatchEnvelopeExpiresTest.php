@@ -119,5 +119,36 @@ class MatchEnvelopeExpiresTest extends TestCase {
 	 */
 	public function testTheRenderedSelfIsUnchanged(): void {
 		$this->assertArrayNotHasKey('expires', $this->record('+1 day')->getObjectArray());
+		$this->assertSame('zaak-1', $this->record(null)->getObjectArray()['name']);
 	}//end testTheRenderedSelfIsUnchanged()
+
+	/**
+	 * A rule on `_name` or `_description` reads the stored value, as the list
+	 * reads the column: a record without a name has none, not its uuid.
+	 *
+	 * @return void
+	 */
+	public function testNameAndDescriptionReadTheStoredValue(): void {
+		$unnamed = $this->record(null)->getMatchEnvelope();
+		$this->assertNull($unnamed['@self']['name']);
+		$this->assertNull($unnamed['@self']['description']);
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $unnamed, match: ['_name' => null]));
+		$this->assertFalse($this->matcher()->objectMatchesConditions(object: $unnamed, match: ['_name' => 'zaak-1']));
+
+		$named = $this->record(null);
+		$named->setName('Besluit');
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $named->getMatchEnvelope(), match: ['_name' => 'Besluit']));
+	}//end testNameAndDescriptionReadTheStoredValue()
+
+	/**
+	 * `_id` names the uuid on a record and on the list's column alike.
+	 *
+	 * @return void
+	 */
+	public function testIdReadsTheUuidOnBothPaths(): void {
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $this->record(null)->getMatchEnvelope(), match: ['_id' => 'zaak-1']));
+		$this->assertSame('_uuid', (new RecordMetadataConditions())->columnKey(key: '_id'));
+		$this->assertSame('_uuid', (new RecordMetadataConditions())->columnKey(key: '@self.id'));
+		$this->assertSame('_uuid', (new \OCA\OpenRegister\Service\Rbac\RuleColumns())->columnOf(key: '_id'));
+	}//end testIdReadsTheUuidOnBothPaths()
 }//end class

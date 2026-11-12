@@ -74,7 +74,8 @@ class EncryptedFieldFilterMiddleware extends Middleware {
 
 		$this->logger->info(
 			sprintf(
-				'[EncryptedFieldFilterMiddleware] rejected filter on encrypted property "%s" in %s::%s',
+				'[EncryptedFieldFilterMiddleware] rejected %s on property "%s" in %s::%s',
+				$exception->getReason(),
 				$exception->getProperty(),
 				$controller::class,
 				$methodName
@@ -84,7 +85,7 @@ class EncryptedFieldFilterMiddleware extends Middleware {
 
 		return new JSONResponse(
 			data: [
-				'error' => 'encrypted-field-not-filterable',
+				'error' => $exception->getReason(),
 				'property' => $exception->getProperty(),
 				'message' => $exception->getMessage(),
 			],
