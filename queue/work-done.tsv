@@ -859,3 +859,4 @@ cover:openregister:7350e3efm0e99:jsa1252b57	failed: lib/Service/Confluence/ does
 review:openregister:10061:c8d3817d	APPROVE: lockfile-only minor bump, consistent	session-20261112T231639-173f6289	2026-11-12T23:19:50Z
 cover:openregister:7350e3efm0e99:jsf545d745	failed: malformed row, lang=js but dirs=lib/Repair/*.php holds only PHP; no JS subject to cover	session-20261112T231639-173f6289	2026-11-12T23:20:22Z
 cover:openregister:7350e3efm0e99:js38e80a9f	failed: lang=js but dirs=lib/Command/*.php is PHP; malformed row, requeue as lang=php	session-20261112T231637-27871bfa	2026-11-12T23:20:25Z
+cover:pipelinq:f67520ecm9d2c:js36ac5d07	PR #3589: 18 PHP tests for lib/Service/LineTotals (dir is PHP despite lang=js); suite 5773->5791, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:21:09Z
