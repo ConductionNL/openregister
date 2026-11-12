@@ -354,6 +354,7 @@ cover:dossiq:6ca0231e:js8e4b3d9d	PR #6173: 14 vitest tests for AiSuggestionDecis
 merge:portaliq:2321:6e2c6d71	already merged 2321;already merged 2330;	session-20261112T184502-4ecd6072	2026-11-12T21:00:52Z
 cover:dossiq:6ca0231e:bedd4a8d	PR #6172: CaseDocumentDraftsTest @uses fix (4 risky tests counted) + 4 tests; CaseDocumentDrafts 7/111 -> 109/111 strict; suite 11976->11980, 19 inherited	session-20261112T200018-e68ecbf8	2026-11-12T21:01:34Z
 verify:buildiq:1437:9c828671	GREEN 1437, GREEN 1450; 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:01:43Z
+cover:stackiq:8cfacb29:js1306cddf	PR @925f047b: 9 tests StatisticsOverview+ModerationQueue; settings/sections 74.0%->76.1%	session-20261112T175557-37d60f4f	2026-11-12T21:02:23Z
 cover:dossiq:6ca0231e:0eb04fa4	PR #6175: 13 tests for Product (ProductOutcome, issuer branches), suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T21:02:22Z
 cover:dossiq:6ca0231e:a797d42e	PR #6174: 13 tests for CasePlanBlob/CasePlanMigrationService edge paths; suite 11976->11989, 19 inherited failures	session-20261112T202909-d1558483	2026-11-12T21:02:00Z
 fix:buildiq:1441:39c17463	not reproducible: dockerimage passes locally, score 84 = floor; tests-only PR; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T21:02:21Z
