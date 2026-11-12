@@ -144,12 +144,13 @@ class ShareGrantAttributes {
 	}//end verbsOf()
 
 	/**
-	 * The object UUID a share grants, or null when it grants no object.
+	 * The object UUID a share's folder name names, or null when it names none.
 	 *
 	 * An object's folder is named after its UUID — the convention
 	 * `FolderManagementHandler` creates and `FileMapper::findOwningObjectUuid()`
 	 * already relies on. A share on a FILE inside that folder is a file share
-	 * and grants no object.
+	 * and grants no object. The name is only a candidate: the share grants the
+	 * object only when its node is the folder stored for that object.
 	 *
 	 * @param IShare $share The share to inspect.
 	 *

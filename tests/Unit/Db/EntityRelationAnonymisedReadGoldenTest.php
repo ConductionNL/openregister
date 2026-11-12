@@ -38,6 +38,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 final class EntityRelationAnonymisedReadGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

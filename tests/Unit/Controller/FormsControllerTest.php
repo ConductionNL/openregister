@@ -54,6 +54,9 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * @uses \OCA\OpenRegister\Controller\Support\FormsControllerServices
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmission
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
+ * @uses \OCA\OpenRegister\Service\Form\FormDestination
  */
 class FormsControllerTest extends TestCase {
 

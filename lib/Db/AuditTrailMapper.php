@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
@@ -1292,7 +1293,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$user = $this->userSession->getUser();
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
-		if ($user !== null) {
+		// A write inside a system operation is the system's, whoever's request started it.
+		if ($user !== null && SystemOperationContext::isActive() === false) {
 			$auditTrail->setUser($user->getUID());
 			$auditTrail->setUserName($user->getDisplayName());
 		}

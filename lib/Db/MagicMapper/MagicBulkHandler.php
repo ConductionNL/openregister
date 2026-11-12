@@ -249,6 +249,9 @@ class MagicBulkHandler {
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
 
+				// Date/date-time normalization, matching the non-bulk path — see normalizeDateProperty().
+				$value = $this->normalizeDateProperty(value: $value, propertyFormat: ($schema->getProperties()[$propertyName]['format'] ?? null));
+
 				// Convert complex values for database storage.
 				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
 			}//end foreach
@@ -914,6 +917,34 @@ class MagicBulkHandler {
 		$formatted = $this->dateTimeNormalizer->formatForDatabase($value);
 		return $formatted ?? $default;
 	}//end formatDateTimeForDatabase()
+
+	/**
+	 * Normalise a date/date-time property, matching the non-bulk path
+	 * (MagicMapper::prepareObjectDataForTable()). Shares one `datetime` column
+	 * for both formats; see DateTimeNormalizer::formatForDatabase()/
+	 * formatDateForDatabase() for the offset-handling difference. Anything else
+	 * passes through unchanged.
+	 *
+	 * @param mixed $value The raw property value.
+	 * @param mixed $propertyFormat The schema property's `format`, if any; any
+	 *                              non-string (malformed schema) passes through.
+	 *
+	 * @return mixed The normalised value, or $value unchanged when not applicable.
+	 */
+	private function normalizeDateProperty(mixed $value, mixed $propertyFormat): mixed {
+		if (in_array($propertyFormat, ['date-time', 'date'], true) === false || $value === null) {
+			return $value;
+		}
+
+		if ($value instanceof \DateTimeInterface === false && is_string($value) === false) {
+			return $value;
+		}
+
+		return match ($propertyFormat) {
+			'date' => $this->dateTimeNormalizer->formatDateForDatabase($value),
+			default => $this->dateTimeNormalizer->formatForDatabase($value),
+		};
+	}//end normalizeDateProperty()
 
 	/**
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.

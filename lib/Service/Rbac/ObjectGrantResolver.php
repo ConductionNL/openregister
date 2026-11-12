@@ -147,6 +147,13 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private ?ShareGrantAttributes $shareAttributes = null;
 
 	/**
+	 * Keeps the shares that are on their object's stored folder; made on first use.
+	 *
+	 * @var StoredFolderShares|null
+	 */
+	private ?StoredFolderShares $storedFolderShares = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -222,6 +229,8 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			$run->shareType = $shareType;
 			$this->collectForType(run: $run);
 		}
+
+		$this->admitCandidates(run: $run);
 
 		return $this->expandDownHierarchies(granted: $run->granted);
 	}//end resolve()
@@ -448,7 +457,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	}//end warnPagingBound()
 
 	/**
-	 * Add one page of shares to the grant map, and say whether another page may follow.
+	 * Add one page of shares to the run's candidates, and say whether another page may follow.
 	 *
 	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
 	 * @param IShare[]      $shares The page.
@@ -461,7 +470,10 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		}
 
 		foreach ($shares as $share) {
-			$this->absorbShare(share: $share, run: $run);
+			$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
+			if ($uuid !== null) {
+				$run->candidates[] = [$uuid, $share];
+			}
 		}
 
 		return count($shares) >= self::PAGE_SIZE;
@@ -511,19 +523,29 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	}//end warnUnreadableType()
 
 	/**
-	 * Add one share to the grant map, when it is a folder share on an object.
+	 * Grant each candidate share whose node is the folder stored for its object.
 	 *
+	 * @param ShareGrantRun $run The run whose candidates are checked and whose grant map takes them.
+	 *
+	 * @return void
+	 */
+	private function admitCandidates(ShareGrantRun $run): void {
+		$this->storedFolderShares ??= new StoredFolderShares(logger: $this->logger, container: $this->container);
+		foreach ($this->storedFolderShares->admitted(candidates: $run->candidates) as [$uuid, $share]) {
+			$this->absorbShare(uuid: $uuid, share: $share, run: $run);
+		}
+	}//end admitCandidates()
+
+	/**
+	 * Add one share to the grant map for the object it was admitted on.
+	 *
+	 * @param string        $uuid  The object the share grants.
 	 * @param IShare        $share The share.
 	 * @param ShareGrantRun $run   The run whose grant map takes the share.
 	 *
 	 * @return void
 	 */
-	private function absorbShare(IShare $share, ShareGrantRun $run): void {
-		$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
-		if ($uuid === null) {
-			return;
-		}
-
+	private function absorbShare(string $uuid, IShare $share, ShareGrantRun $run): void {
 		// A caller may hold several grants on one object (directly and
 		// through a group). The widest wins, which is how core itself
 		// composes overlapping shares.

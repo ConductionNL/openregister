@@ -802,16 +802,9 @@ class AuthenticationServiceTest extends TestCase {
 			$this->markTestSkipped('Jose JWT library not available');
 		}
 
-		$jwk = new \Jose\Component\Core\JWK([
-			'kty' => 'oct',
-			'k' => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
-		]);
-
 		$token = $this->invokeMethod($this->service, 'generateJWT', [
 			['sub' => 'test', 'iat' => 1234567890],
-			$jwk,
-			'HS256',
-			null,
+			['algorithm' => 'HS256', 'secret' => 'test-secret-key-for-jwt-min-32-bytes!!'],
 		]);
 
 		$parts = explode('.', $token);
@@ -828,16 +821,9 @@ class AuthenticationServiceTest extends TestCase {
 			$this->markTestSkipped('Jose JWT library not available');
 		}
 
-		$jwk = new \Jose\Component\Core\JWK([
-			'kty' => 'oct',
-			'k' => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
-		]);
-
 		$token = $this->invokeMethod($this->service, 'generateJWT', [
 			['sub' => 'test'],
-			$jwk,
-			'HS256',
-			'my-x5t-thumbprint',
+			['algorithm' => 'HS256', 'secret' => 'test-secret-key-for-jwt-min-32-bytes!!', 'x5t' => 'my-x5t-thumbprint'],
 		]);
 
 		$parts = explode('.', $token);
@@ -850,11 +836,6 @@ class AuthenticationServiceTest extends TestCase {
 			$this->markTestSkipped('Jose JWT library not available');
 		}
 
-		$jwk = new \Jose\Component\Core\JWK([
-			'kty' => 'oct',
-			'k' => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
-		]);
-
 		$inputPayload = [
 			'sub' => 'test-subject',
 			'iss' => 'test-issuer',
@@ -865,9 +846,7 @@ class AuthenticationServiceTest extends TestCase {
 
 		$token = $this->invokeMethod($this->service, 'generateJWT', [
 			$inputPayload,
-			$jwk,
-			'HS256',
-			null,
+			['algorithm' => 'HS256', 'secret' => 'test-secret-key-for-jwt-min-32-bytes!!'],
 		]);
 
 		$parts = explode('.', $token);

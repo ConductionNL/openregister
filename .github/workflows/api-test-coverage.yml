@@ -34,6 +34,15 @@ on:
         required: false
         type: string
 
+# One run per event and ref. A newer run always replaces an older one that is
+# still WAITING for a runner. A run already in progress is cancelled only on
+# pull requests, where just the head commit's result counts; a push to `main`
+# finishes, so every merge keeps a coverage verdict. Measured 2026-11-12: 18
+# superseded API Test Coverage runs sat queued, each a full Newman suite.
+concurrency:
+  group: api-test-coverage-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   newman-suite:
     name: Newman API Test Suite
