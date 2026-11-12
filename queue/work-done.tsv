@@ -74,3 +74,4 @@ cover:buildiq:8ca317f6:baa54041	opened buildiq#1450 (5 tests, CompileInput; Serv
 cover:openregister:dc0dbf81:e372e6ff	PR #10030: 5 tests for 3 Event classes; lib/Event was already 95% covered, rest are getters	session-20261112T184502-4ecd6072	2026-11-12T19:17:48Z
 cover:buildiq:8ca317f6:390adfb9	opened buildiq#1451 (2 tests, Capabilities canEdit call; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:18:49Z
 cover:dossiq:6ca0231e:45b6a139	PR dossiq#6086: 8 tests for FamilyPlanAccess (only untested logic class in dir besides CasePlanInterventions); suite 11965->11973, same 49 inherited failures	session-20261112T184438-005b5eda	2026-11-12T19:19:09Z
+review:openregister:10023:f261d6da	APPROVE: value-preserving constant renames with aliases; suites green	session-20261112T182617-a12dc411	2026-11-12T19:19:50Z
