@@ -1,0 +1,220 @@
+{
+ "app": "stackiq",
+ "commit": "c51c6abac09c00b7ca28eff055a1199979d6e453",
+ "measured_at": "2026-11-12T22:19:57Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 54.75,
+  "statements": 31598,
+  "covered": 17300,
+  "dirs": {
+   "lib/AppInfo/": [
+    545,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    198,
+    123
+   ],
+   "lib/Command/": [
+    266,
+    258
+   ],
+   "lib/Controller/": [
+    3839,
+    2667
+   ],
+   "lib/Controller/Settings/": [
+    74,
+    74
+   ],
+   "lib/Dashboard/": [
+    12,
+    2
+   ],
+   "lib/EventListener/": [
+    976,
+    733
+   ],
+   "lib/Examples/": [
+    93,
+    93
+   ],
+   "lib/Exception/": [
+    4,
+    4
+   ],
+   "lib/Middleware/": [
+    42,
+    42
+   ],
+   "lib/Portal/": [
+    23,
+    23
+   ],
+   "lib/Repair/": [
+    1210,
+    913
+   ],
+   "lib/Sections/": [
+    6,
+    0
+   ],
+   "lib/Service/": [
+    19343,
+    9824
+   ],
+   "lib/Service/AangebodenGebruik/": [
+    61,
+    22
+   ],
+   "lib/Service/ArchiMate/": [
+    198,
+    195
+   ],
+   "lib/Service/Cmdb/": [
+    1517,
+    951
+   ],
+   "lib/Service/Contactpersoon/": [
+    193,
+    190
+   ],
+   "lib/Service/Federation/": [
+    388,
+    342
+   ],
+   "lib/Service/Itsm/": [
+    46,
+    0
+   ],
+   "lib/Service/Settings/": [
+    279,
+    191
+   ],
+   "lib/Service/Stackiq/": [
+    2274,
+    653
+   ],
+   "lib/Settings/": [
+    11,
+    0
+   ]
+  }
+ },
+ "js": {
+  "pct": 68.65,
+  "statements": 8221,
+  "covered": 5644,
+  "dirs": {
+   "src/": [
+    12,
+    12
+   ],
+   "src/components/": [
+    442,
+    306
+   ],
+   "src/components/ai/": [
+    29,
+    18
+   ],
+   "src/components/cards/": [
+    61,
+    47
+   ],
+   "src/components/cells/": [
+    8,
+    8
+   ],
+   "src/components/contracts/": [
+    115,
+    68
+   ],
+   "src/components/maintenance/": [
+    34,
+    5
+   ],
+   "src/components/organisations/": [
+    146,
+    101
+   ],
+   "src/components/portfolio/": [
+    57,
+    36
+   ],
+   "src/components/reviews/": [
+    34,
+    25
+   ],
+   "src/components/roadmap/": [
+    23,
+    2
+   ],
+   "src/components/sbom/": [
+    118,
+    89
+   ],
+   "src/components/vulnerabilities/": [
+    46,
+    25
+   ],
+   "src/composables/": [
+    37,
+    32
+   ],
+   "src/dialogs/": [
+    197,
+    133
+   ],
+   "src/dialogs/SuiteWizard/": [
+    31,
+    19
+   ],
+   "src/modals/": [
+    342,
+    265
+   ],
+   "src/modals/object/": [
+    1760,
+    559
+   ],
+   "src/services/": [
+    32,
+    26
+   ],
+   "src/store/modules/": [
+    769,
+    669
+   ],
+   "src/store/plugins/": [
+    420,
+    416
+   ],
+   "src/utils/": [
+    1099,
+    1091
+   ],
+   "src/views/": [
+    456,
+    335
+   ],
+   "src/views/cmdb/": [
+    52,
+    26
+   ],
+   "src/views/organisaties/": [
+    208,
+    165
+   ],
+   "src/views/settings/": [
+    207,
+    67
+   ],
+   "src/views/settings/sections/": [
+    1486,
+    1099
+   ]
+  }
+ }
+}
