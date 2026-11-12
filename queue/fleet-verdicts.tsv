@@ -3453,3 +3453,28 @@ portaliq	2329	65627ad770c93c4e26166051713c442bf438ee2f	GREEN	vm2:p2	unit 4478 OK
 portaliq	2330	3aab490926098d52624ea4c0e28a8e08c544a8fc	GREEN	vm2:p2	unit 4478 OK (baseline 0), 9 touched node specs pass, floor holds; diff review clean
 portaliq	2331	2de3a9930aadac14457775483d10fc03538cd0f5	GREEN	vm2:p2	unit 4478 OK (baseline 0), 9 touched node specs pass, floor holds; diff review clean
 portaliq	2332	5c6eb46fc26d132525fcbdcb3e85181839321850	GREEN	vm2:p2	unit 4478 OK (baseline 0), 9 touched node specs pass, floor holds; diff review clean
+decidiq	2002	a9c6da5df155386dea9cdfbc1aa705a4b5cf4fa8	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2003	c88f2005efac928d11f9b2a96037d4707a5ab5ef	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2004	c3dc892d17a0847cca63f552d6fc9892d1ed52be	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2005	f43b890084587ac9cdea62cf4d05bd7225a67285	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2006	999116f2867bce36e429bcf7e5f787637c3fe253	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2007	ff20e9fda8bfa9e5ac606231f7944e6750be2ee2	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2008	d2664b5d2e7d99ed77c667759fa2ba77bdffee01	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2009	1c88853773f30c2aada80ea4dfa1e62ac34285f9	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2010	56993110cddc3e01095a13be4e21d07b966a4036	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2011	94e516a50094b6d20a2f70ad1ea6aebc65727713	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2012	7fa0670463c4147bd48505c6d9c7f61b4497bd35	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2013	493068f55e282c3dfdc44c02d8abab45b63b3ed0	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2015	261ae07b9a91a65a3e4eafeb4738b484fb366b7a	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2017	b658e50782600b5976a359959be986dcff326dbb	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2018	fbc196aa2598d0e9568d65efb895c72a0924ad0f	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2021	0f9cb0032eedaa323b612853e20c0d5c23abe6f4	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2022	111ca22062e77500bf11e027b1b751825f6c41ed	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2023	1779ed9b77bd71cfd120e084526caa4485c366b9	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2024	9b211b1a98ca0929658ecd94d323216650135a28	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2025	5c5ae169c64fb4b0671e3b838dfdf7194ce8d8d1	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2026	f5db5250015a2423b8817281350ad76bb4b1c466	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2027	6824a8a705b36b2b3d3ae2ec09eff6c97a0d3fff	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2028	2aeb2cc5100e16d058ded7c0d1967544e280b068	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2029	a53c6739bb03bddb8b4832161202d2bfa378ba42	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2030	fd4b17112baf64d9482dc5171f1841b8bc28bf6b	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
