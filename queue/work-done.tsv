@@ -780,6 +780,7 @@ cover:pipelinq:f67520ecm9d2c:jsf0c02922	failed: payload lang=js but dirs=lib/Ser
 cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Service/Lifecycle/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:58:00Z
 cover:keepiq:d76c2121:e372e6ff	PR #1689: 7 tests for 4 Event classes, suite 3722->3729 OK	session-20261112T224529-41d77a96	2026-11-12T22:58:26Z
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
+cover:integriq:9b0f5894m2367:jsb2c9296a	failed: lib/Service/Engine/ does not exist in integriq development (no Engine dir anywhere, never in history); stale row	session-20261112T220141-9622e2a0	2026-11-12T22:58:41Z
 cover:integriq:9b0f5894m2367:js38e80a9f	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:50Z
 cover:integriq:9b0f5894m2367:js0f859653	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:59:00Z
 cover:hermiq:755cdfe7m7444:b97b9aec	PR hermiq#1622: 9 tests, Approval bridge/verdict gaps covered (only class-missing branch unreachable); suite 3569, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:59:16Z
@@ -790,3 +791,4 @@ cover:integriq:9b0f5894m2367:jsf91e7417	failed: dirs=lib/Service/Connection/ doe
 review:openregister:10054:8b2cc5b6	APPROVE	session-20261112T224530-d70ae278	2026-11-12T23:00:18Z
 verify:thematiq:1663:479ef12f	stale	session-20261112T224535-bdffbbbc	2026-11-12T23:00:31Z
 cover:integriq:9b0f5894m2367:js5597bc7b	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:10Z
+cover:integriq:9b0f5894m2367:js9d3a1784	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:20Z
