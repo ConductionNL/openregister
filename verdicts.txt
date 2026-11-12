@@ -2523,3 +2523,4 @@
 10013 24a62399660297684ffcfe4368e639799bd1e808 APPROVE Tests only, 8 new files, 37 tests pass; no lib/ changes. Architecture, Rules, Contract green; Controller errors identical to main.
 10000 ac3ebe6bf3474e4c3e44359b2317ab9b41912580 APPROVE Tests only (10 new unit test files, 42 tests); all pass merged with main; Architecture, Rules, Contract green; Controller errors are pre-existing DBAL stub gaps unrelated to this PR.
 10012 7031598cdcacdb2ab346d1cc0074129940cb4006 APPROVE Tests only (8 new files, 52 tests, all pass); no lib changes; Architecture, Rules, Contract green; Controller's 9 errors identical on main.
+10015 846b4821f835b1c889c6fb75d914844b39f0025e APPROVE Test-only: adds @uses/UsesClass metadata to 973 Service tests, no deletions, no lib changes; all referenced classes exist; Architecture/Service/Controller/Contract on tree merged with main: no new failures (85 vs 103 baseline). Conflicts with main in 2 test files.
