@@ -896,3 +896,4 @@ cover:pipelinq:f67520ecm9d2c:jsfdb25f89	PR #3597: RegisterAccessSync +8 tests (P
 cover:hermiq:755cdfe7m7444:568ec52a	PR hermiq#1625: AiFeatureDpoAckGuard +10 tests, suite 3567->3577, no new failures	session-20261112T231640-f6dda86c	2026-11-12T23:32:29Z
 cover:pipelinq:f67520ecm9d2c:59826f43	PR pipelinq#3598: AdminSettings +4 tests, suite 5773->5777, no new failures	session-20261112T231638-72e59130	2026-11-12T23:32:38Z
 verify:hermiq:1599:a5644d60	9 GREEN (1599 already in development); tests only, PHP 3628 + vitest 966 green	session-20261112T224529-41d77a96	2026-11-12T23:32:59Z
+cover:pipelinq:f67520ecm9d2c:jsdfaef732	failed: lang=js but dirs=lib/Notification/*.php is PHP; task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:33:33Z
