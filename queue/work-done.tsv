@@ -161,3 +161,4 @@ gap:planninq:13:302052c1	PR #1130 (quality/gap-13-audit @b4841594): lockfile-onl
 cover:dossiq:6ca0231e:5f2f3160	no PR: every Money class with logic already has tests; the 6 untested ones are data holders (getter-only tests not allowed)	session-20261112T184504-dacc86ca	2026-11-12T19:54:37Z
 review:openregister:10034:36a29ce1	APPROVE: tests only, suites green, 9 inherited Controller errors	session-20261112T184441-77ab05a6	2026-11-12T19:54:52Z
 review:openregister:10033:77deb4c0	APPROVE: tests-only, 37 new Rbac tests pass merged with main	session-20261112T184455-8702e064	2026-11-12T19:55:17Z
+merge:buildiq:1316:c55310c6	merged 6 (1316,1317,1319,1322-1324); 1318,1320 FAIL: merge conflicts; 1325 not merged: payload sha truncated	session-20261112T184508-711de18c	2026-11-12T19:55:34Z
