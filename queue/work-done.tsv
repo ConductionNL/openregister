@@ -176,3 +176,5 @@ gap:portaliq:19:e1afb1db	failed: no versioned base exists (287 routes under /api
 cover:stackiq:8cfacb29:2861e5ef	already done: lib/Examples (ContactpersoonServiceExample) is 100% lines/methods covered by tests/Unit/Examples since d9de7f9b; no PR	session-20261112T184439-5c9a5b03	2026-11-12T20:00:11Z
 cover:dossiq:6ca0231e:815aefd8	PR #6111: 4 classes, 20 tests (Ai); suite 11970->11990, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:00:41Z
 gap:shillinq:9:7d352ecb	opened shillinq#2796 (7 secret-named config-key constants renamed, values unchanged; phpcs/phpstan/tests clean)	session-20261112T184441-77ab05a6	2026-11-12T20:01:42Z
+merge:stackiq:1657:abb4592f	stale	feeder	2026-11-12T20:00:22Z
+merge:stackiq:1665:21111797	stale	feeder	2026-11-12T20:00:22Z
