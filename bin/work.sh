@@ -14,7 +14,7 @@
 #   task_done <id> <result>     record the result and release the task lease
 #   task_lease <id>             print the lease name of a task
 #   task_open                   print every open task (claimed or not), oldest first
-# Type rank: fix, review, verify/merge, gap, cover. Type `integrate` (openregister main, behind the single
+# Type rank: fix, review/measure, verify/merge, gap, cover. Type `integrate` (openregister main, behind the single
 # `integrator` lease) is reserved: never claimed unless named in [types] (comma list).
 WQ=queue/work.tsv
 WD=queue/work-done.tsv
@@ -46,7 +46,7 @@ _task_rows() {
 		/^#/ || NF < 7 || ($1 in done) || ($1 in seen) { next }
 		{
 			seen[$1] = 1
-			r = ($2 == "fix") ? 1 : ($2 == "review") ? 2 : ($2 == "verify" || $2 == "merge") ? 3 : ($2 == "gap") ? 4 : ($2 == "cover") ? 5 : 9
+			r = ($2 == "fix") ? 1 : ($2 == "review" || $2 == "measure") ? 2 : ($2 == "verify" || $2 == "merge") ? 3 : ($2 == "gap") ? 4 : ($2 == "cover") ? 5 : 9
 			if (types != ",,") { if (index(types, "," $2 ",") == 0) next }
 			else if ($2 == "integrate") next
 			if (mode == "claimable" && live($1)) next
