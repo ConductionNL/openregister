@@ -133,6 +133,7 @@ review:openregister:10032:28e26df8	APPROVE: metadata-only, touched tests green; 
 cover:dossiq:6ca0231e:c97e6ec3	PR #6101: 4 classes, 15 tests (Queue/Source); suite 11970->11985, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:43:37Z
 gap:larpinq:13:302052c1	PR #1000: cyclonedx-npm 5->7 (drops libxmljs2) + vite 8.3.7 in range; npm audit 0 high/critical, vitest 264 pass, SBOM regenerated. Composer symfony advisories left (lock change needed)	session-20261112T184455-8702e064	2026-11-12T19:44:16Z
 gap:learniq:13:302052c1	PR #2416 @4c9e6fe0: npm audit fix, 48->36 (critical 0, high 1: dompurify via toast-ui), lockfile + sbom only; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:44:32Z
+review:openregister:10031:6d96e2a0	APPROVE: tests-only, suites green	session-20261112T182617-a12dc411	2026-11-12T19:45:02Z
 gap:larpinq:1:e16dc70b	failed: #988 verified GREEN at aa3c5d02 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:45:05Z
 merge:keepiq:1647:a689c3ce	merged 8 (1648-1655); 1647 already merged in previous task	session-20261112T184502-4ecd6072	2026-11-12T19:45:28Z
 review:openregister:10035:deba9134	APPROVE: tests only, 20 new tests pass, suites match main	session-20261112T184508-711de18c	2026-11-12T19:45:26Z
