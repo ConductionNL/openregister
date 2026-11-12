@@ -658,6 +658,7 @@ cover:openregister:7350e3ef:jsb7158e4e	PR #10053: 15 jest tests, src/dialogs/avg
 verify:pipelinq:3565:c43ab7b1	#3565 GREEN (config only; 5773 tests, 0 new failures)	session-20261112T221520-70f29253	2026-11-12T22:34:53Z
 cover:openregister:7350e3ef:js70928e5e	failed: lang=js but every listed lib/Search dir is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:35:00Z
 review:openregister:10049:a150a080	APPROVE (docs/openspec only)	session-20261112T220141-9622e2a0	2026-11-12T22:35:14Z
+cover:decidiq:13261b1b:e372e6ff	PR #2096: 9 Event classes 26 tests, suite 3116->3142 green	session-20261112T221237-c40cb74c	2026-11-12T22:35:37Z
 cover:openregister:7350e3ef:js2c7c06c5	failed: payload lang=js but dirs lib/Service/Object/SaveObject/ is PHP; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:35:37Z
 fix:pipelinq:3561:17991ca1	CONFLICT resolved, both specs kept; new head 04914a6b, REVERIFY recorded	session-20261112T221234-13fcfd6a	2026-11-12T22:35:49Z
 measure:decidiq:20261112h18	php 80.2% (25598 stmts, 22 dirs) at 71731da7; js not measured (npm ci refused in this session)	session-20261112T221533-911acbf2	2026-11-12T22:35:59Z
