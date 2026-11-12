@@ -626,3 +626,4 @@ measure:integriq:20261112h18	php 88.0% (pcov, 7110 tests), js 72.18%	session-202
 cover:launchpad:755175ff:e372e6ff	already done: DashboardDeletedEvent 6/6 lines, every getter asserted; only getter-only tests possible, no PR	session-20261112T215819-2dd7b64e	2026-11-12T22:28:06Z
 cover:launchpad:755175ff:d8ac3ddd	PR #1134: 24 tests for 4 cleanup categories (3256->3280 OK)	session-20261112T221532-752808b3	2026-11-12T22:28:25Z
 cover:hermiq:755cdfe7:jsea7197ec	PR #1604: 11 vitest specs for 4 utils, 944->955 passing	session-20261112T221235-39b35722	2026-11-12T22:28:39Z
+cover:decidiq:13261b1b:7505aeb4	PR #2090: Activity filter/setting/provider 19 tests, suite 3116->3135 green	session-20261112T221237-c40cb74c	2026-11-12T22:28:45Z
