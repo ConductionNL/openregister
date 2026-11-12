@@ -498,3 +498,4 @@ cover:integriq:9b0f5894:js4fd5cf68	PR #3412: 16 vitest tests for SubscriptionAct
 cover:openregister:7350e3ef:js5794e9fc	PR openregister#10041: 54 jest tests for WorkingCalendars, LogIntegrity, StatisticsOverview; suite 7075 -> 7129 passed	session-20261112T205850-5f960ec2	2026-11-12T21:46:18Z
 merge:shillinq:2748:9e5eec07	stale	feeder	2026-11-12T21:45:17Z
 merge:learniq:2309:3c12a4e0	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:46:30Z
+merge:learniq:2337:fafed222	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:46:36Z
