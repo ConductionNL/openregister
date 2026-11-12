@@ -3941,3 +3941,4 @@ dossiq	6092	4a8cea85ae330aecd179624a06e1e87ad0a83945	GREEN	worker-44	12136 tests
 dossiq	6093	bc3c150c7af23f5e8cdd96dac63c177d66c1142f	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
 dossiq	6094	9fecf9710291423f6ed76c6e119109d44f5b65a7	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
 dossiq	6095	16c34b6ba21a9767b969294599fb871f2e228bf3	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
+launchpad	1106	379ed362a8602c2cc372333770e6503a615453fd	GREEN	worker-33	PHP 3266 tests on tree (baseline 3256 OK), vitest 1186/1186, 0 new failures; lockfile+sbom only
