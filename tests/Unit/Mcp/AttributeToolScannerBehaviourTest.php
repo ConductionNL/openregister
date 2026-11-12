@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Mcp\ToolDocblock
  * @uses   \OCA\OpenRegister\Mcp\ToolDescriptorExtras
  * @uses   \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
  */
 class AttributeToolScannerBehaviourTest extends TestCase {
 

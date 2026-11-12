@@ -187,8 +187,6 @@ class DsarController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function erasure(): JSONResponse {
@@ -221,8 +219,6 @@ class DsarController extends Controller {
 	 * activity via the per-action override on `ObjectEntity`.
 	 *
 	 * @return JSONResponse
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */

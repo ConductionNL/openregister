@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\OrganisationContext;
 
 /**
  * Handles all query and search operations for ObjectService.
@@ -245,6 +246,8 @@ class QueryHandler implements QueryHandlerInterface {
 		// reference behind it int-cast to 0. Resolve or refuse, never zero.
 		$query = $this->normaliseReferences(query: $query);
 
+		// Code acting for an organisation counts inside it, whatever the flag says.
+		$_multitenancy = OrganisationContext::multitenancy(requested: $_multitenancy);
 		$activeOrgUuid = null;
 		if ($_multitenancy === true) {
 			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();

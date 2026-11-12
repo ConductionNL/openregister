@@ -68,6 +68,24 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
  * @uses \OCA\OpenRegister\Controller\Support\TaskCompletion
  * @uses \OCA\OpenRegister\Controller\Support\TaskPlatform
  * @uses \OCA\OpenRegister\Controller\Support\TaskControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletionCommand
+ * @uses \OCA\OpenRegister\Controller\Support\TaskInboxRequest
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
+ * @uses \OCA\OpenRegister\Service\Task\FormCompletionRequest
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskInboxPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
@@ -876,10 +894,9 @@ class TaskControllerTest extends TestCase {
 
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
-		// The SPA calls the API from this page, so the shell must carry the
-		// same connect-domain relaxation the dashboard shell does.
+		// The SPA calls only this instance's own API from this page.
 		$policy = $response->getContentSecurityPolicy();
 		$this->assertNotNull($policy);
-		$this->assertStringContainsString('connect-src', $policy->buildPolicy());
+		$this->assertSame("'self'", UiControllerTest::connectSources(policy: $policy->buildPolicy()));
 	}//end testOpenServesTheSpaShell()
 }//end class

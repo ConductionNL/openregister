@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\CaseItem
  * @covers \OCA\OpenRegister\Db\CaseItemAudit
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class CaseItemMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

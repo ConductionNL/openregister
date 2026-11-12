@@ -33,6 +33,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleErrorBuilding
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraphValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateDeclarationScope
  *
  * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md
  */

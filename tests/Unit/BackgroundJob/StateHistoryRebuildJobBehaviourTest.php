@@ -72,7 +72,7 @@ class StateHistoryRebuildJobBehaviourTest extends TestCase {
 		$entry->setSchema(7);
 		$entry->setRegisterUuid('reg-1');
 		$this->audit->method('findObjectUuidsAfter')->willReturn(['o-1']);
-		$this->audit->method('findForObjectByAction')->willReturn([$entry]);
+		$this->audit->method('findObjectActions')->willReturn([$entry]);
 	}
 
 	public function testBatchFailureLeavesTheCursorAndWarns(): void {
