@@ -3977,6 +3977,7 @@ buildiq	1441	39c17463d3ff95c3f462e8825b7a3eb7ade5361d	GREEN	worker-53	tree of 8:
 buildiq	1442	b503f28bea5d35193549cdcd1a3e232e4a1f0710	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1443	898d3f708e79f14ed5c5a0ac20f9461711cf6025	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1444	fbabc84d705a66d75e6254698269a7d9cce7d673	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
+buildiq	1445	b639bf561301333c124705a1ba46cfa476015021	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 dossiq	6083	d3caa11f0c8d9d579e7f668fc5f9dfdcf1727e2d	GREEN	worker-44	12126 tests on 9-PR tree, baseline 19 inherited failures, 0 new; tests only
 dossiq	6084	d8f342f0998c1c5d09475505d0dc1563855a252e	GREEN	worker-44	12126 tests on 9-PR tree, baseline 19 inherited failures, 0 new; tests only
 dossiq	6085	670a4b23807adc86963253c7574a38daa9926038	GREEN	worker-44	12126 tests on 9-PR tree, baseline 19 inherited failures, 0 new; tests only
@@ -3989,3 +3990,5 @@ dossiq	6091	f47446c79c37527fd734a235824b1bf939e4c079	GREEN	worker-44	12126 tests
 planninq	1130	b4841594063c1d4aa031d8ed5c80d4a10ca2a7d0	GREEN	worker-33	PHP 869 OK (baseline 869 OK), vitest 3105/3105 (baseline same), 0 new failures; lockfile+sbom only
 larpinq	1000	6b3e22c3ef1f0190225c0d6b09049e6203467e02	GREEN	worker-39	phpunit 682 (baseline 682, 20 skipped), vitest 264 passed; new failures 0; deps/lock/sbom only
 planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	GREEN	worker-33	PHP 869 OK (baseline 869 OK), vitest 3105/3105 (baseline same), 0 new failures; openapi.json added, valid JSON
+buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
+buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
