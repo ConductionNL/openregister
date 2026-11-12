@@ -345,3 +345,4 @@ cover:stackiq:8cfacb29:jsb1f0efae	PR @ed4c5904: 4 render tests for DataQualityRe
 cover:dossiq:6ca0231e:js0023cfc7	PR #6170: 8 dialogs, 43 vitest tests; src/dialogs/* statements 75.4%->81.3%, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:59:07Z
 cover:dossiq:6ca0231e:cd5286bf	PR #6171: 10 tests for SessionRules, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:59:08Z
 gap:stackiq:dompurify:1	PR #1758: dompurify override for @toast-ui/editor, lock+sbom regenerated, build ok	session-20261112T202437-4020bd95	2026-11-12T21:00:15Z
+cover:buildiq:8ca317f6:js847d1562	opened buildiq#1463 (11 vitest tests, ExpressionNodeEditor component; suite 2962->2973 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:00:30Z
