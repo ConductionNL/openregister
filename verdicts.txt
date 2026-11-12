@@ -2515,3 +2515,4 @@
 10016 b129b993e9b2c0fea1f44b6e2023ba471e1062b9 APPROVE Docs only: openspec archive moves, CLOSURE notes, three synced specs, one valid capabilities.json plan field; no lib, test or workflow change; REUSE covered; merges cleanly with main.
 10004 2aa42b2c2c82034b7af7f1cede2dc217ee4a1351 APPROVE CI only: concurrency groups keyed on event and ref for three workflows, none reusable; main/scheduled runs finish, PR runs cancel superseded ones; YAML valid; no code or test change; merges cleanly.
 10018 ae9be8246890d76292208bb96add36a21dd8484b APPROVE Only openspec/ docs changed (new change proposal, added requirements and tasks); no lib/, test or frontend code touched, so no behaviour or access change.
+10008 5d1b82a4e08bdb368b0b4bc5f7994335a886e347 APPROVE Tooling and docs only: coverage publish script, composer script, summary JSON and README line; no lib changes; script lints; Architecture, Rules, Contract green merged with main.
