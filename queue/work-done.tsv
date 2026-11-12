@@ -918,3 +918,4 @@ merge:stackiq:1704:0816d4d9	merge-local over 9 stackiq tasks: merged=37 red=0 fa
 cover:stackiq:8cfacb29m2f4b:aae6d66c	no PR: CmdbImportExceptionTest already asserts every code, status, fallback and accessor; UnsupportedSbomFormatException has no body	session-20261112T231633-96ffe7b8	2026-11-12T23:40:57Z
 verify:keepiq:1680:788a7cd2	1680 BLOCK (changes existing API error bodies/headers), 1699 GREEN; 0 new test failures	session-20261112T231638-72e59130	2026-11-12T23:40:56Z
 cover:stackiq:8cfacb29m2f4b:d528dcf0	already done: ConceptOrganisatiesWidget accessors covered by 4 tests (incl. merged quality/test-coverage-d528dcf0-1); only load() remains, static OCP\Util needs a server; no PR	session-20261112T224529-41d77a96	2026-11-12T23:41:17Z
+cover:stackiq:8cfacb29m2f4b:692f8a78	PR #1781: lib/Service/Contactpersoon 116/205 -> 205/205 (missing @uses dropped guard coverage; +7 guard tests); suite 2458->2465, 0 failures	session-20261112T224530-d70ae278	2026-11-12T23:41:18Z
