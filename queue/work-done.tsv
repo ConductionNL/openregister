@@ -599,6 +599,7 @@ verify:hermiq:1598:1005c106	1598 BLOCK: tests green (0 new failures), but API er
 verify:integriq:3410:2d266f89	GREEN (0 new failures, additive headers/aliases)	session-20261112T220138-f0050f42	2026-11-12T22:22:47Z
 cover:openregister:7350e3ef:js32df05fd	failed: lang=js but lib/Files/Service/ contains only PHP; no JS subjects to cover	session-20261112T221239-5f377795	2026-11-12T22:22:56Z
 cover:decidiq:13261b1b:6f346b68	PR #2089: SettingsSection 6 tests, suite 3109->3115 green	session-20261112T221237-c40cb74c	2026-11-12T22:23:17Z
+measure:stackiq:20261112h18	php 54.75% js 68.65% @c51c6ab (pcov.directory=lib needed)	session-20261112T221531-958a2fbc	2026-11-12T22:23:07Z
 verify:thematiq:1662:b7390a28	GREEN 1662 (2858 tests, 0 new failures)	session-20261112T221532-752808b3	2026-11-12T22:23:17Z
 cover:openregister:7350e3ef:js7fcefd39	failed: lang=js but lib/Search/Service/Vectorization/ holds only PHP (27 files); no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:23:28Z
 verify:shillinq:2799:7bbd7273	GREEN 2799 (9031 tests, 0 new failures)	session-20261112T221234-13fcfd6a	2026-11-12T22:23:27Z
