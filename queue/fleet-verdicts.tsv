@@ -4377,3 +4377,4 @@ hermiq	1625	82e61b1bd64017863033f5f7dc0e59d02ef7275a	GREEN	worker-04	tree 3623 t
 hermiq	1626	6b8354b4f2bc484eff0707f524cde038e76112ab	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
 hermiq	1627	44e77e11a10f615a44d513dcdf24a094779318fd	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
 hermiq	1628	b3a7d1ede8e2a326d9b81fb1c6fe47c7f380fa94	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
+keepiq	1680	2abefb9d8c305944968927a69856ad6250dfe04b	REVERIFY	worker-40	contract now applies only to new /api/v1 aliases (route postfix); declared /api/v1 routes and unversioned paths keep body, content type and headers (no Deprecation/Link); OpenAPI route now login-required; unit 3750 run, 0 failures; new head ac4cb6b7d2c6e56b13fec01a335616e0c073a70a, verify it
