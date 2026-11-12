@@ -140,3 +140,5 @@ review:openregister:10035:deba9134	APPROVE: tests only, 20 new tests pass, suite
 cover:dossiq:6ca0231e:8fea83ca	PR #6102: RuleConditionLogic, 22 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:45:39Z
 gap:opencatalogi:3:475d3f06	failed: no opencatalogi route answers on /api/v{major} (all /api/...), so a versioned servers URL would misdescribe it; same URI-versioning owner decision as openregister gap 3	session-20261112T175557-37d60f4f	2026-11-12T19:45:49Z
 cover:dossiq:6ca0231e:c402b143	PR #6103: 11 tests for PartyIndicatorReader and PartyVocabulary; suite 11970->11981, 19 inherited failures unchanged	session-20261112T192858-87c9f218	2026-11-12T19:45:43Z
+merge:learniq:2283:08682d93	stale	feeder	2026-11-12T19:45:24Z
+merge:learniq:2298:37ddcf94	stale	feeder	2026-11-12T19:45:24Z
