@@ -4219,3 +4219,4 @@ dossiq	6178	264c089149b4c8d760687f4c6003ca6422682877	GREEN	worker-56	phpunit 125
 versioniq	660	cc4e8f8a5de1d9a9ece060b05d8a4261f778fd43	GREEN	worker-45	no phpunit in dev deps (0 tests run, baseline n/a); php -l clean; additive v1 route aliases + deprecation headers, access checks unchanged
 dossiq	6179	58b3a24db5041d85c52fa304e4381f6f1a6db53d	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6180	d8e124989e0f69cbb33d22da2e8eb63911110e9e	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
+decidiq	2082	09e26a3926f9a89eff389c201220d552451dbb06	GREEN	worker-57	tree 3159 tests, baseline 3109/0 fail, new failures 0; tests-only
