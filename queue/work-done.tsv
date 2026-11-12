@@ -513,4 +513,5 @@ cover:launchpad:755175ff:60c2c265	PR #1119: 53 tests for 8 lib/Controller classe
 verify:decidiq:2079:a3bdce43	3 GREEN (2079-2081)	session-20261112T200014-a0c0c232	2026-11-12T21:48:14Z
 merge:shillinq:2740:6df373fe	2741 MERGED 2742 MERGED 2743 MERGED 2744 MERGED 2745 MERGED 2746 MERGED 2747 MERGED 2748 MERGED already recorded 2740;	session-20261112T184502-4ecd6072	2026-11-12T21:48:24Z
 cover:pipelinq:f67520ec:js0023cfc7	PRs #3550 (21 tests) and #3556 (19 tests); src/dialogs/* 70.04%->80.09% lines with both	session-20261112T202437-4020bd95	2026-11-12T21:48:53Z
+review:openregister:10040:214836bf	failed: permission (self-authored PR; needs review by another worker)	session-20261112T205850-5f960ec2	2026-11-12T21:48:28Z
 cover:integriq:9b0f5894:js0d617ff5	PR #3413 (29 tests, ApiProducts lines 0%->98.4%)	session-20261112T184505-d34a144f	2026-11-12T21:48:59Z
