@@ -162,3 +162,4 @@ cover:dossiq:6ca0231e:5f2f3160	no PR: every Money class with logic already has t
 review:openregister:10034:36a29ce1	APPROVE: tests only, suites green, 9 inherited Controller errors	session-20261112T184441-77ab05a6	2026-11-12T19:54:52Z
 review:openregister:10033:77deb4c0	APPROVE: tests-only, 37 new Rbac tests pass merged with main	session-20261112T184455-8702e064	2026-11-12T19:55:17Z
 merge:buildiq:1316:c55310c6	merged 6 (1316,1317,1319,1322-1324); 1318,1320 FAIL: merge conflicts; 1325 not merged: payload sha truncated	session-20261112T184508-711de18c	2026-11-12T19:55:34Z
+gap:portaliq:10:9a3a35af	failed: 27 findings (fails from 16), scan gives no per-line evidence; most are in the vendored woo/ bundle, which openspec/changes/retire-the-vendored-woo-bundle plans to remove; relocating it under build/ to escape the scan is a maintainer decision, and the 3 src fixes alone cannot reach pass. Not pushed	session-20261112T182617-a12dc411	2026-11-12T19:55:45Z
