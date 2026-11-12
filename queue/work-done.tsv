@@ -386,3 +386,4 @@ gap:keepiq:opensourcehealth:30baf8f5	failed: not fixable in one bounded PR. Same
 cover:stackiq:8cfacb29:js09359406	PR #1761: 15 tests (UpcomingMaintenanceWidget, ProductRoadmap, VulnerabilityExposurePanel); 41.87%->86.25% lines	session-20261112T202437-4020bd95	2026-11-12T21:09:46Z
 verify:dossiq:6167:44ca4812	5 GREEN (6167-6171), tests-only; phpunit 12001 + vitest 6270, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:10:23Z
 cover:buildiq:8ca317f6:js0023cfc7	PR #1465: 8 specs, 80 tests, src/dialogs/* lines 70.8% -> 80.65%	session-20261112T200015-391c2792	2026-11-12T21:10:26Z
+cover:hermiq:755cdfe7:js0be8c659	PR #1589: 17 vitest tests for 5 modals (skill draft edit/reject, scorecard, agent export, template export); suite 944->961, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:10:46Z
