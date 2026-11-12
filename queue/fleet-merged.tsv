@@ -252,4 +252,5 @@ portaliq	2327	1ed0676421ed7837a335c54528eda960e974b769	MERGED	worker-19	GATE OK 
 learniq	2193	5377f0850f61b84fcb479fc1c6598ef9be46d8e3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2328	2fc3da9f929b87f7ce9e8e05d968d302cc88d79b	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 opencatalogi	2550	f551c638bebcead1d6d79603a7ae81dfc8471252	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
+filinq	1954	81785f514df4e4091d0f1041fc29d57e816744a4	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
 portaliq	2329	65627ad770c93c4e26166051713c442bf438ee2f	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
