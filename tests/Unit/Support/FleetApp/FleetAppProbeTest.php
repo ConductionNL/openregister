@@ -32,6 +32,8 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Support\FleetApp\FleetAppProbe
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue
  */
 class FleetAppProbeTest extends TestCase {
 

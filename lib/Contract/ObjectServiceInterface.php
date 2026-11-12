@@ -11,10 +11,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IUser;
 
 /**
@@ -330,30 +333,21 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist many objects in one bulk operation.
 	 *
-	 * @param array           $objects        The objects to store.
-	 * @param string|int|null $register       Register id, UUID or slug.
-	 * @param string|int|null $schema         Schema id, UUID or slug.
-	 * @param bool            $_rbac          Apply register RBAC.
-	 * @param bool            $_multitenancy  Apply organisation scoping.
-	 * @param bool            $validation     Validate against the schema.
-	 * @param bool            $events         Emit events for each object.
-	 * @param bool            $deduplicateIds Drop duplicate ids within the batch.
-	 * @param bool            $enrich         Enrich each object with derived metadata.
-	 * @param bool            $_audit         Write an audit-trail entry.
+	 * @param array           $objects       The objects to store.
+	 * @param BulkSaveOptions $options       The register and schema for rows that name none (id, UUID
+	 *                                       or slug), whether to validate against the schema, whether
+	 *                                       to emit events for each object, and whether to write
+	 *                                       audit-trail entries.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
 	 *
 	 * @return array The stored objects.
 	 */
 	public function saveObjects(
 		array $objects,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		BulkSaveOptions $options=new BulkSaveOptions(),
 		bool $_rbac=true,
-		bool $_multitenancy=true,
-		bool $validation=false,
-		bool $events=false,
-		bool $deduplicateIds=true,
-		bool $enrich=true,
-		bool $_audit=true
+		bool $_multitenancy=true
 	): array;
 
 	/**
@@ -432,36 +426,24 @@ interface ObjectServiceInterface {
 	/**
 	 * Release a lock on an object.
 	 *
-	 * @param string|int $identifier The object id or UUID.
-	 * @param bool       $advisory   Take an advisory (non-blocking) lock.
-	 * @param ?string    $runUuid    The flow run releasing the lock, for a run-scoped lock.
+	 * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a run-scoped lock.
+	 *                               A request with `break` set is refused; breakObjectLock() breaks a lock.
 	 *
 	 * @return bool True when the lock was released.
 	 */
-	public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool;
+	public function unlockObject(UnlockRequest $request): bool;
 
 	/**
 	 * Take a lock on an object.
 	 *
-	 * @param string  $identifier The object id or UUID.
-	 * @param ?string $process    A label for the process holding the lock.
-	 * @param ?int    $duration   Lock duration in seconds.
-	 * @param bool    $advisory   Take an advisory (non-blocking) lock.
-	 * @param ?string $runUuid    The flow run taking the lock. A run-scoped lock
-	 *                            refuses every other caller, the run's own runAs
-	 *                            user included.
-	 * @param ?string $nodeId     The flow node that took it, recorded for the sweep.
+	 * @param LockRequest $request  The object, the process label, the duration in seconds and the flow
+	 *                              run step taking the lock. A run-scoped lock refuses every other caller,
+	 *                              the run's own runAs user included.
+	 * @param bool        $advisory Take an advisory (non-blocking) lock.
 	 *
 	 * @return array The resulting lock state.
 	 */
-	public function lockObject(
-		string $identifier,
-		?string $process=null,
-		?int $duration=null,
-		bool $advisory=false,
-		?string $runUuid=null,
-		?string $nodeId=null
-	): array;
+	public function lockObject(LockRequest $request, bool $advisory=false): array;
 
 	/**
 	 * Delete many objects by UUID.

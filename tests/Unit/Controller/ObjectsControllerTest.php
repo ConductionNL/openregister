@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -6590,7 +6591,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockAnswersWhetherItIsHeld(): void {
 		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id', process: 'edit', duration: 60))
 			->willReturn(['uuid' => 'id', 'held' => false]);
 
 		$result = $this->controller->lock('r', 's', 'id');
@@ -6605,7 +6606,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockWithoutAHoldReport(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id'))->willReturn(['uuid' => 'id']);
 
 		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}
@@ -6841,6 +6842,38 @@ class ObjectsControllerTest extends TestCase {
 			'/^attachment; filename=my-register_schema_\d{4}-\d{2}-\d{2}_\d{6}\.json$/',
 			$result->getHeaders()['Content-Disposition']
 		);
+	}
+
+	/**
+	 * A JSON export runs as the signed-in caller, so the service can honour an admin's `_multi`.
+	 *
+	 * @return void
+	 */
+	public function testAJsonExportRunsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'json');
+		$this->exportService->expects($this->once())->method('exportToJson')->with(
+			$this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user)
+		)->willReturn('[]');
+
+		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * A PDF export counts its recorded rows as the signed-in caller, the same scope the served file used.
+	 *
+	 * @return void
+	 */
+	public function testAPdfExportCountsItsRowsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'pdf');
+		$asCaller = $this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user);
+		$this->exportService->expects($this->once())->method('exportToPdf')->with($asCaller)->willReturn('%PDF');
+		$this->exportService->expects($this->once())->method('countExportRows')->with($asCaller)->willReturn(4);
+
+		$this->assertSame('%PDF', $this->controller->export('1', '2', $this->objectService)->render());
 	}
 
 	// =========================================================================

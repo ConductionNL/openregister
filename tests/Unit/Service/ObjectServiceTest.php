@@ -48,9 +48,9 @@ use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
@@ -84,10 +84,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -760,10 +761,10 @@ class ObjectServiceTest extends TestCase {
 
 		$handlerScope = null;
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
 				$handlerScope = ['register' => $register, 'schema' => $schema];
 				return $savedEntity;
-			}
+			})
 		);
 		$this->renderHandler->method('renderEntity')->willReturn($savedEntity);
 
@@ -1055,9 +1056,7 @@ class ObjectServiceTest extends TestCase {
 			->willReturn($lockInfo);
 
 		$result = $this->service->lockObject(
-			identifier: 'obj-uuid',
-			process: 'import',
-			duration: 3600
+			request: new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600)
 		);
 
 		$this->assertSame($lockInfo, $result);
@@ -1073,9 +1072,20 @@ class ObjectServiceTest extends TestCase {
 			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
-		$result = $this->service->unlockObject(identifier: 'obj-uuid');
+		$result = $this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid'));
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * Test unlockObject refuses a break request and leaves the lock handler untouched.
+	 */
+	public function testUnlockObjectRefusesABreakRequest(): void {
+		$this->lockHandler->expects($this->never())->method('unlock');
+
+		$this->expectException(\InvalidArgumentException::class);
+
+		$this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid', break: true));
 	}
 
 	// ── 13. count() tests ───────────────────────────────────────────────

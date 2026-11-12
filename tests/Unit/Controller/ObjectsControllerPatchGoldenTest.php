@@ -52,6 +52,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Golden test for PATCH and POST .../{id}/patch: the read before the write, the merge, the save, every refusal.
@@ -97,6 +98,18 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalWriteException
  * @uses   \OCA\OpenRegister\Service\Rules\ExpressionDefaultException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
  */
 class ObjectsControllerPatchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-patch-golden.json';
@@ -341,8 +354,8 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 				'fails' => throw new RuntimeException('secret detail'),
 			};
 		});
-		$service->method('unlockObject')->willReturnCallback(function (...$args) {
-			$this->calls[] = ['unlockObject' => $args];
+		$service->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			$this->calls[] = ['unlockObject' => [$request->identifier, $request->advisory, $request->runUuid]];
 			return true;
 		});
 		return $service;

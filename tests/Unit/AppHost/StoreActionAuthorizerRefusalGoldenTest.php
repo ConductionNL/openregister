@@ -87,6 +87,7 @@ class TruthyActionAuthService {
 /**
  * @covers \OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer
  * @uses   \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
  */
 class StoreActionAuthorizerRefusalGoldenTest extends TestCase {
 	/**

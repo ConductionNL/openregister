@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation.
  *
  * @covers \OCA\OpenRegister\Db\JobRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class JobRunSerialisationGoldenTest extends TestCase {
 

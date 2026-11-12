@@ -62,6 +62,8 @@ use stdClass;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators
  */
 class RegistersControllerRollbackGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-rollback-golden.json';

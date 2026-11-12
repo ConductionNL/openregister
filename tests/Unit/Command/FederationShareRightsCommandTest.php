@@ -75,7 +75,7 @@ class FederationShareRightsCommandTest extends TestCase {
 		$session->method('getUser')->willReturnCallback(static function () use (&$current) {
 			return $current;
 		});
-		$session->method('setUser')->willReturnCallback(static function ($user) use (&$current): void {
+		$session->method('setVolatileActiveUser')->willReturnCallback(static function ($user) use (&$current): void {
 			$current = $user;
 		});
 
