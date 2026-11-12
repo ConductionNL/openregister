@@ -118,3 +118,4 @@ cover:dossiq:6ca0231e:9b457b26	PR #6096: 3 classes, 27 tests (Flow calendar/synt
 cover:buildiq:8ca317f6:be0dcca9	opened buildiq#1458 (4 tests, BuildiqToolProvider catalogue/dispatch; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:36:20Z
 merge:integriq:3245:dbda5545	merged 7 (3283-3287,3316,3341); 3338 RED gate (dockerimage floor); 3245 FAIL on REST merge	session-20261112T192856-0ffa8de4	2026-11-12T19:36:43Z
 gap:launchpad:2:2dcff4e3	PR #1108: deploy files rendered (filinq/keepiq render with app id launchpad; renders differ only by app id). Image not built (no Docker daemon)	session-20261112T184455-8702e064	2026-11-12T19:37:22Z
+cover:dossiq:6ca0231e:9ece5c6f	PR #6097: 4 controller caller gates, 10 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:37:15Z
