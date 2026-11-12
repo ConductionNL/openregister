@@ -3670,3 +3670,6 @@ stackiq	1442	9a42cab127e671be3239f8a61ad864a456a44057	CONFLICT	fv11-20:stackiq-t
 stackiq	1540	dc4ce15221e70e6489d34f110bb7d6f78b84009c	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
 stackiq	1570	95100fd1615c68b8cfda70205d6c2ecaf79a4120	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
 stackiq	1589	e9d19e0d874e8cca4a2e94d0795a788010a5cd80	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
+buildiq	1299	01e275422675ef4a14e780ac04dae792f174928b	BLOCK	fv11-12:buildiq-a	PR is closed: listed by git ls-remote fallback in error; supersedes the GREEN above, do not merge
+buildiq	1321	4c5687eb9ad21509152eb6c0b814be5dcd0bdb6b	BLOCK	fv11-12:buildiq-a	PR is closed: listed by git ls-remote fallback in error; supersedes the GREEN above, do not merge
+pipelinq	3227	157563fc3a74987e4f5601d80016d9e936ceb0f8	BLOCK	fv11-12:pipelinq-a	PR is closed: listed by git ls-remote fallback in error
