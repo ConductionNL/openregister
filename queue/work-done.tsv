@@ -59,3 +59,4 @@ gap:hermiq:19:e1afb1db	PR #1584 (openapi.json + /api/openapi.json + API-Version 
 gap:humaniq:19:e1afb1db	PR #1094: openapi.json (96 operations, valid 3.0.3, redocly clean); no problem schema/version header claimed since the app lacks them	session-20261112T184505-d34a144f	2026-11-12T19:09:47Z
 review:openregister:10022:173cfca6	APPROVE: 5 jest specs only, 127 green on merge with main, eslint clean	session-20261112T184435-4d12562d	2026-11-12T19:10:34Z
 merge:dossiq:5524:9e331185	merged 7 of 9; #5696 #5761 FAIL 405 merge conflicts (payload's last sha was truncated in queue; resolved via ls-remote)	session-20261112T184441-b0114b7a	2026-11-12T19:10:54Z
+cover:buildiq:8ca317f6:d39f9857	opened buildiq#1447 (14 tests, 4 Support classes; suite errors/failures unchanged)	session-20261112T184441-77ab05a6	2026-11-12T19:11:20Z
