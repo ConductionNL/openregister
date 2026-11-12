@@ -270,3 +270,4 @@ versioniq	649	182e890b88b7b467d14580c4ebb6ebbff857e91d	MERGED	merge-local	deploy
 learniq	2195	c1e8aff2243af5ac76b50ed7e94461642363b6db	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2310	fd03f5388b7c9f042de549f01a9f2a196c17f09b	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2311	8599dde4b75e35df5414582cea5dbb3c40cedc40	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2319	cc18189535984ecbca64abaf0f2c48ceadda1f65	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
