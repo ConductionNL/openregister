@@ -260,3 +260,4 @@ portaliq	2282	967a054bb8c4a02b82172a588692b995e10a233a	SKIP	worker-19	GATE UNMEA
 portaliq	2306	ce66e7e23c0ff5200eccee2917932a9c1c3a1592	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 larpinq	988	aa3c5d0232adf287d62d730cf392095e12af58d5	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
 portaliq	2307	7f7809df7ad974e9790e28ba5e32b8f1fa198f6d	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2340	5bc2a2edec13ab1ea6ecbf0107b1ab50d72db148	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
