@@ -1,0 +1,296 @@
+{
+ "app": "buildiq",
+ "commit": "5495c2c4fe9bce65b30a34c21488498dfbd47dbc",
+ "measured_at": "2026-11-12T22:23:28Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 79.08,
+  "statements": 19516,
+  "covered": 15433,
+  "dirs": {
+   "lib/": [
+    11,
+    11
+   ],
+   "lib/AppInfo/": [
+    27,
+    26
+   ],
+   "lib/BackgroundJob/": [
+    245,
+    210
+   ],
+   "lib/Command/": [
+    349,
+    343
+   ],
+   "lib/Controller/": [
+    3334,
+    2519
+   ],
+   "lib/Dashboard/": [
+    81,
+    79
+   ],
+   "lib/Exception/": [
+    64,
+    64
+   ],
+   "lib/Integration/": [
+    220,
+    183
+   ],
+   "lib/Lifecycle/": [
+    85,
+    78
+   ],
+   "lib/Listener/": [
+    538,
+    386
+   ],
+   "lib/Mcp/": [
+    31,
+    30
+   ],
+   "lib/Mcp/Handler/": [
+    808,
+    697
+   ],
+   "lib/Repair/": [
+    915,
+    649
+   ],
+   "lib/Resources/template/": [
+    3,
+    0
+   ],
+   "lib/Resources/template/appinfo/": [
+    11,
+    0
+   ],
+   "lib/Resources/template/lib/AppInfo/": [
+    34,
+    0
+   ],
+   "lib/Resources/template/lib/Controller/": [
+    17,
+    0
+   ],
+   "lib/Resources/template/lib/Listener/": [
+    8,
+    0
+   ],
+   "lib/Resources/template/lib/Repair/": [
+    51,
+    0
+   ],
+   "lib/Resources/template/lib/Sections/": [
+    5,
+    0
+   ],
+   "lib/Resources/template/lib/Service/": [
+    150,
+    68
+   ],
+   "lib/Resources/template/lib/Settings/": [
+    9,
+    0
+   ],
+   "lib/Resources/template/phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/": [
+    155,
+    0
+   ],
+   "lib/Resources/template/templates/": [
+    3,
+    0
+   ],
+   "lib/Resources/template/templates/settings/": [
+    3,
+    0
+   ],
+   "lib/Resources/template/tests/": [
+    20,
+    0
+   ],
+   "lib/Resources/template/tests/Unit/": [
+    1,
+    0
+   ],
+   "lib/Resources/template/tests/unit/AppInfo/": [
+    35,
+    0
+   ],
+   "lib/Resources/template/tests/unit/Controller/": [
+    43,
+    0
+   ],
+   "lib/Sections/": [
+    0,
+    0
+   ],
+   "lib/Service/": [
+    11267,
+    9163
+   ],
+   "lib/Service/Automation/": [
+    9,
+    8
+   ],
+   "lib/Service/Connection/": [
+    171,
+    157
+   ],
+   "lib/Service/Copilot/": [
+    151,
+    149
+   ],
+   "lib/Service/Credential/": [
+    57,
+    40
+   ],
+   "lib/Service/Dashboard/": [
+    141,
+    132
+   ],
+   "lib/Service/GitHub/": [
+    75,
+    66
+   ],
+   "lib/Settings/": [
+    0,
+    0
+   ],
+   "lib/Support/": [
+    389,
+    375
+   ]
+  }
+ },
+ "js": {
+  "pct": 78.41,
+  "statements": 13660,
+  "covered": 10711,
+  "dirs": {
+   "src/": [
+    215,
+    159
+   ],
+   "src/assets/": [
+    0,
+    0
+   ],
+   "src/components/": [
+    690,
+    561
+   ],
+   "src/components/agents/": [
+    28,
+    27
+   ],
+   "src/components/applicationDetail/": [
+    308,
+    226
+   ],
+   "src/components/applicationDetail/widgets/": [
+    260,
+    221
+   ],
+   "src/components/copilot/": [
+    63,
+    59
+   ],
+   "src/components/dashboard/": [
+    65,
+    61
+   ],
+   "src/components/page-editor/": [
+    1685,
+    1344
+   ],
+   "src/components/page-editor/fields/": [
+    1378,
+    999
+   ],
+   "src/components/runtime/": [
+    218,
+    178
+   ],
+   "src/components/schema-editor/": [
+    805,
+    535
+   ],
+   "src/components/store/": [
+    94,
+    70
+   ],
+   "src/components/tabs/": [
+    116,
+    81
+   ],
+   "src/components/walkthrough-editor/": [
+    284,
+    183
+   ],
+   "src/composables/": [
+    778,
+    751
+   ],
+   "src/dialogs/": [
+    2022,
+    1424
+   ],
+   "src/dialogs/CreateApplicationWizard/": [
+    205,
+    157
+   ],
+   "src/manifest.d/": [
+    14,
+    14
+   ],
+   "src/manifests/": [
+    3,
+    3
+   ],
+   "src/mixins/": [
+    206,
+    190
+   ],
+   "src/modals/": [
+    726,
+    488
+   ],
+   "src/router/": [
+    1,
+    1
+   ],
+   "src/services/": [
+    1224,
+    1174
+   ],
+   "src/services/manifestValidation/": [
+    479,
+    477
+   ],
+   "src/store/": [
+    50,
+    45
+   ],
+   "src/store/modules/": [
+    52,
+    0
+   ],
+   "src/utils/": [
+    99,
+    83
+   ],
+   "src/views/": [
+    1546,
+    1200
+   ],
+   "src/views/settings/": [
+    46,
+    0
+   ]
+  }
+ }
+}
