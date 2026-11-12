@@ -995,6 +995,7 @@ Exception/DraftAlreadyLeftException.php,5,Exception,Exception,Exception/DraftAlr
 Exception/DuplicateBlockedException.php,20,Exception,Exception,Exception/DuplicateBlockedException.php,0,,Kernel
 Exception/EmlParseException.php,6,Exception,Exception,Exception/EmlParseException.php,3,,Kernel
 Exception/EncryptedFieldFilterException.php,23,Exception,Exception,Exception/EncryptedFieldFilterException.php,0,,Kernel
+Exception/EncryptedFieldSortException.php,,Exception,,,,,Kernel
 Exception/ExplicitRevealQueryException.php,6,Exception,Exception,Exception/ExplicitRevealQueryException.php,0,,Kernel
 Exception/ExportTooLargeException.php,25,Exception,Exception,Exception/ExportTooLargeException.php,0,,Kernel
 Exception/FieldDecryptionException.php,13,Exception,Exception,Exception/FieldDecryptionException.php,0,,Kernel
