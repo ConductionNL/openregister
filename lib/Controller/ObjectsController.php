@@ -5774,7 +5774,7 @@ class ObjectsController extends Controller {
 	 */
 	private function jsonExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToJson(
-			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
@@ -5818,7 +5818,7 @@ class ObjectsController extends Controller {
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
 		$rowCount = $this->services->transfer->exportService->countExportRows(
-			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
+			request: $this->callerExportRequest(export: $export),
 		);
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()

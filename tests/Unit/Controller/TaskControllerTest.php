@@ -68,6 +68,24 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
  * @uses \OCA\OpenRegister\Controller\Support\TaskCompletion
  * @uses \OCA\OpenRegister\Controller\Support\TaskPlatform
  * @uses \OCA\OpenRegister\Controller\Support\TaskControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletionCommand
+ * @uses \OCA\OpenRegister\Controller\Support\TaskInboxRequest
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
+ * @uses \OCA\OpenRegister\Service\Task\FormCompletionRequest
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskInboxPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection

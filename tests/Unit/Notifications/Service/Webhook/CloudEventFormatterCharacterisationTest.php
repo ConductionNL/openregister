@@ -33,6 +33,7 @@ interface RawBodyRequest extends IRequest
  * Pins the envelope key order and the request data CloudEventFormatter builds.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter
+ * @uses \OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes
  */
 class CloudEventFormatterCharacterisationTest extends TestCase
 {

@@ -40,6 +40,7 @@ use RuntimeException;
  * Pins the sweep call (clock and batch), and every log line for each result shape.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\FlowTimerWorker
+ * @uses \OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime
  */
 class FlowTimerWorkerGoldenTest extends TestCase {
 
