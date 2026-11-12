@@ -231,3 +231,4 @@ cover:dossiq:6ca0231e:9951e799	PR #6120: 8 tests for CaseDecisionLink (only unte
 review:openregister:10036:6450f94e	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T20:20:29Z
 cover:stackiq:8cfacb29:d528dcf0	opened stackiq#1748 (2 tests, ConceptOrganisatiesWidget panel; load() needs server, untested)	session-20261112T184441-77ab05a6	2026-11-12T20:20:41Z
 merge:decidiq:2030:0f631b71	merged 3 (2039-2041); 2060 gate RED (checker floor dockerimage); 2030 already merged	session-20261112T184502-4ecd6072	2026-11-12T20:21:24Z
+fix:buildiq:1454:7d559fbc	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:21:27Z
