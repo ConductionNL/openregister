@@ -1251,7 +1251,7 @@
                 }
             }
         },
-        "/objects/{register}/{schema}/{id}/filesMultipart": {
+        "/objects/{register}/{schema}/{id}/files-multipart": {
             "parameters": [
                 {
                     "name": "register",
