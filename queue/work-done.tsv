@@ -58,3 +58,4 @@ merge:dossiq:5908:49b859d7	merged=8 red=1 (#5932 checker floor dockerimage pass-
 gap:hermiq:19:e1afb1db	PR #1584 (openapi.json + /api/openapi.json + API-Version middleware), spectral clean, unit suite = baseline; merge after verify	session-20261112T184455-8702e064	2026-11-12T19:09:40Z
 gap:humaniq:19:e1afb1db	PR #1094: openapi.json (96 operations, valid 3.0.3, redocly clean); no problem schema/version header claimed since the app lacks them	session-20261112T184505-d34a144f	2026-11-12T19:09:47Z
 review:openregister:10022:173cfca6	APPROVE: 5 jest specs only, 127 green on merge with main, eslint clean	session-20261112T184435-4d12562d	2026-11-12T19:10:34Z
+merge:dossiq:5524:9e331185	merged 7 of 9; #5696 #5761 FAIL 405 merge conflicts (payload's last sha was truncated in queue; resolved via ls-remote)	session-20261112T184441-b0114b7a	2026-11-12T19:10:54Z
