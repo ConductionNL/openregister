@@ -1693,7 +1693,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->objectService->setObject($id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -2698,7 +2698,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies; metadata is no less a mutation for being descriptive.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedObject(id: $id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updatePostedMetadata(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
@@ -2837,7 +2837,9 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			return $this->labelTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
+			$object = $this->routedObject(id: $id);
+			$this->routedFile(object: $object, fileId: $fileId);
+			return $this->labelTarget(target: new FileActionTarget(object: $object, fileId: $fileId));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}
