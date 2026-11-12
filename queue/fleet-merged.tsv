@@ -219,3 +219,4 @@ learniq	2318	86a2d3d3c1b60fda51c5d3fcc4b137471360c6b3	FAIL	merge-local	{"message
 portaliq	2300	4cb21a275747aa432ebfa2060ba7f20b51af05f9	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2301	d6daede60aed62fccdae828f9d951a70930becc2	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2337	9b5b2b888242f02668ce0e7fd60b17d9c921f462	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2303	778639bfb489df3f33a35186779017c006850619	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
