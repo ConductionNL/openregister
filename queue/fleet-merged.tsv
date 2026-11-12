@@ -152,3 +152,4 @@ decidiq	2025	5c5ae169c64fb4b0671e3b838dfdf7194ce8d8d1	MERGED	worker-19	GATE OK s
 buildiq	1314	bbc1e087da8d48ebda4d94461b9bec4c4b6ab657	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2026	f5db5250015a2423b8817281350ad76bb4b1c466	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2027	6824a8a705b36b2b3d3ae2ec09eff6c97a0d3fff	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1315	8c404fe79e65bc7c0eb189135d56df75d732c2fe	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
