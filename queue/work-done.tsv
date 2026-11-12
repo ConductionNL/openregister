@@ -269,3 +269,4 @@ merge:humaniq:1058:f7249759	stale	feeder	2026-11-12T20:30:22Z
 cover:dossiq:6ca0231e:ba7cd468	PR #6133: 8 tests for CaseTeamReference, TeamMigrationReport, ReaderTeamCases (100% lines, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:32:45Z
 cover:dossiq:6ca0231e:0250a951	PR #6134: 8 tests for CaseObjectReader, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:33:29Z
 verify:buildiq:1440:b06ab2aa	8 GREEN (tests/docs only, 0 new failures); merge gate RED x8: dockerimage, branches behind development	session-20261112T184508-711de18c	2026-11-12T20:34:02Z
+cover:dossiq:6ca0231e:7ed71db5	PR #6136: FirstRunReadiness, 8 tests; suite 11976->11984, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:34:23Z
