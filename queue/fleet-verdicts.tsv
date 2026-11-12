@@ -4105,3 +4105,4 @@ stackiq	1755	9c932e74e38876bf05be6ef566257611ae161e74	GREEN	worker-50	phpunit 23
 stackiq	1756	76fd13f5010a68a48478aec8b90c5f5b2b409c12	GREEN	worker-50	phpunit 2334 OK (baseline 2334 OK), vitest 1664 pass, 0 new failures; tests-only
 stackiq	1757	ed4c5904d2f4b6f64ef5b6a16b61414d3cc97e51	GREEN	worker-50	phpunit 2334 OK (baseline 2334 OK), vitest 1664 pass, 0 new failures; tests-only
 portaliq	2366	7406159f36b6d214dc1498388a0bf472170aca33	GREEN	worker-48	php unit 4501 tests, baseline 4501 green, 0 new failures; no test:unit script, npm ci + build pass; lockfile+sbom only
+stackiq	1758	5dc987803e8841404ba543663c4b2cfeede451e1	GREEN	worker-39	tree of 6: phpunit 2334 ok (baseline 2334), vitest 1667 ok (baseline 1593); new failures 0; deps override, lock and sbom only
