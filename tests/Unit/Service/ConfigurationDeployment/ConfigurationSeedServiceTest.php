@@ -99,7 +99,7 @@ final class ConfigurationSeedServiceTest extends TestCase {
 		return $store;
 	}//end store()
 
-	private function settings(): SettingsService&MockObject {
+	private function settings(): SettingsServiceInterface&MockObject {
 		$settings = $this->createMock(SettingsServiceInterface::class);
 		$settings->method('getRbacSettingsOnly')->willReturn(['rbac' => ['enabled' => true], 'availableGroups' => []]);
 		$settings->method('getMultitenancySettingsOnly')->willReturn(['multitenancy' => ['enabled' => false]]);
