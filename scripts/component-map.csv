@@ -2926,6 +2926,7 @@ Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Serv
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
 Service/Resolver/Exception/SchemaNotFoundException.php,33,Service,Service,Service/Resolver/Exception/SchemaNotFoundException.php,0,,Core
 Service/Resolver/RegisterSchemaPair.php,26,Service,Service,Service/Resolver/RegisterSchemaPair.php,0,,Core
+Service/RetentionPass.php,45,Service,Compliance,Compliance/Service/RetentionPass.php,0,,Compliance
 Service/RetentionService.php,465,Service,Compliance,Compliance/Service/RetentionService.php,4,46,Compliance
 Service/RetentionServiceInterface.php,28,Service,Compliance,Compliance/Service/RetentionServiceInterface.php,0,,Compliance
 Service/Rules/AdministeredValidationEnforcer.php,80,Service,Flows,Flows/Service/Rules/AdministeredValidationEnforcer.php,0,,Processes
