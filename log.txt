@@ -3230,3 +3230,4 @@
 2026-11-12T18:38:51Z integrator-20261111T115842-a749432d GREEN tree 8eb1fd4192 on dev 80e00f000c prs 1 front=skip: Tests: 57334, Assertions: 190136, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-12T18:39:55Z integrator-20261111T115842-a749432d MERGED-TREE 8eb1fd4192: 1 PRs in one push, main now 8eb1fd4192 = tested tree
 2026-11-12T18:41:36Z integrator-20261111T115842-a749432d CONFLICT-DEV #10015 846b4821
+2026-11-12T18:50:00Z integrator-20261111T115842-a749432d RED tree 13a4da70f8 prs 5 front=skip: Tests: 57378, Assertions: 190301, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Architecture\WriteRoutesRequireRequestTokenTest::testWriteRoutesSkipTheTokenCheckO
