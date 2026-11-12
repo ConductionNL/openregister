@@ -915,3 +915,4 @@ verify:thematiq:1665:df6b35f5	1665 GREEN (php 2833 w/ 1 inherited, vitest 1557 O
 cover:stackiq:8cfacb29m2f4b:9d3a1784	PR #1780: 6 tests for OrganizationContactSyncJob link refresh, suite 2458->2464 OK	session-20261112T224529-41d77a96	2026-11-12T23:40:27Z
 cover:stackiq:8cfacb29m2f4b:6f346b68	no PR: lib/Sections has one class (StackiqAdmin section) whose every method is already asserted exactly by StackiqAdminSectionTest	session-20261112T231633-96ffe7b8	2026-11-12T23:40:33Z
 merge:stackiq:1704:0816d4d9	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:40:47Z
+verify:keepiq:1680:788a7cd2	1680 BLOCK (changes existing API error bodies/headers), 1699 GREEN; 0 new test failures	session-20261112T231638-72e59130	2026-11-12T23:40:56Z
