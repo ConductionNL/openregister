@@ -24,6 +24,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\CasePlanTimerRearmJob
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
  */
 class CasePlanTimerRearmJobTest extends TestCase {
 

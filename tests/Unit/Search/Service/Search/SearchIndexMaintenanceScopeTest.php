@@ -37,6 +37,10 @@ use ReflectionMethod;
  * schemaSlugsByTable: every register, one register, and non-register rows.
  *
  * @covers \OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexStores
  */
 class SearchIndexMaintenanceScopeTest extends TestCase {
 

@@ -76,6 +76,22 @@ use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationSubscriptionsController
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationTemplatesController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceAddress
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceWrite
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Db\BroadcastMessage
+ * @uses \OCA\OpenRegister\Notifications\Db\BroadcastWindow
+ * @uses \OCA\OpenRegister\Notifications\Db\SubscriptionKey
  */
 class A26NotificationControllersGoldenTest extends TestCase {
 

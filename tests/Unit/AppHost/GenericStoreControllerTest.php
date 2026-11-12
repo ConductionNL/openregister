@@ -68,6 +68,17 @@ use RuntimeException;
  *
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class GenericStoreControllerTest extends TestCase {
 	/** @var ManifestLoader&MockObject */

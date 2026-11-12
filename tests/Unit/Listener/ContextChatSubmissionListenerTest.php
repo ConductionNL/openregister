@@ -45,6 +45,12 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatCandidate
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class ContextChatSubmissionListenerTest extends TestCase {
 	private SchemaMapper $schemaMapper;

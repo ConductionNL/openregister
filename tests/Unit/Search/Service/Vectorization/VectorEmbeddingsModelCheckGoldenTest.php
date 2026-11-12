@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
  * Pins every report shape and the queries run for it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers
  */
 final class VectorEmbeddingsModelCheckGoldenTest extends TestCase {
 

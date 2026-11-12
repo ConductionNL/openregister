@@ -49,6 +49,16 @@ use ReflectionNamedType;
  * the job is built by reflection from a map of the collaborators below.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventActor
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class DeferredObjectEventJobGoldenTest extends TestCase {
 

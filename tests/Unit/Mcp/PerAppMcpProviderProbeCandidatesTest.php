@@ -28,6 +28,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Mcp\PerAppMcpProviderProbe
  * @uses   \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryCacheEntry
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpProviderCandidate
  */
 class PerAppMcpProviderProbeCandidatesTest extends TestCase {
 

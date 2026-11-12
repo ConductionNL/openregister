@@ -118,6 +118,14 @@ class AttributeToolScannerSchemaFixture
  * AttributeToolScannerSchemaFixture; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Mcp\AttributeToolScanner
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpToolTitle
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
+ * @uses \OCA\OpenRegister\Mcp\ToolScanSubject
  */
 class AttributeToolScannerSchemaGoldenTest extends TestCase
 {

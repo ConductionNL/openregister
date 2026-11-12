@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\Exception\CallerRefusedException
+ * @uses \OCA\OpenRegister\Middleware\Exception\CeilingBreach
  */
 class CallerRefusedExceptionTest extends TestCase {
 

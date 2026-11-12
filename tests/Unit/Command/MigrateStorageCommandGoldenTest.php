@@ -26,6 +26,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @covers \OCA\OpenRegister\Command\MigrateStorageCommand
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Command\MigrateStorageRun
  */
 class MigrateStorageCommandGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/migrate-storage-command-golden.json';

@@ -44,6 +44,25 @@ use OCA\OpenRegister\Search\Service\Quality\DedupRun;
  * Compared with fixtures/duplicate-detection-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Exception\RegisterNotFoundException
+ * @uses \OCA\OpenRegister\Search\Service\Quality\ComparedValues
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DedupConfig
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DedupRuleResolver
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DedupRun
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DismissedPairStore
+ * @uses \OCA\OpenRegister\Search\Service\Quality\PayloadComparator
+ * @uses \OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolvers
  */
 class DuplicateDetectionServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/duplicate-detection-golden.json';

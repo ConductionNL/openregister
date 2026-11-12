@@ -41,6 +41,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Search\Service\Search\SearchIndexSnapshotRestore
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexPass
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexStores
  */
 class SearchIndexSnapshotRestoreTest extends TestCase {
 

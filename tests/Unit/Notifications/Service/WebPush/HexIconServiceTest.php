@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\WebPush\HexIconService
+ * @uses \OCA\OpenRegister\Notifications\Service\WebPush\IconCacheEntry
  */
 final class HexIconServiceTest extends TestCase {
 

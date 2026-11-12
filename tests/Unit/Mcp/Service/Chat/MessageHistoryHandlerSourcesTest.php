@@ -20,6 +20,8 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
  * entity's `sources` column.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class MessageHistoryHandlerSourcesTest extends TestCase
 {

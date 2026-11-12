@@ -34,6 +34,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Repair\SeedTablesVirtualSchemas
+ * @uses \OCA\OpenRegister\Repair\AdminUserIds
  */
 final class SeedTablesVirtualSchemasTest extends TestCase {
 
