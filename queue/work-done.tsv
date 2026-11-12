@@ -720,6 +720,7 @@ verify:portaliq:2368:2ef96a34	stale	session-20261112T221533-911acbf2	2026-11-12T
 verify:hermiq:1599:d9f73035	stale	session-20261112T224531-d3b6ae48	2026-11-12T22:47:43Z
 cover:keepiq:d76c2121:ecbab48a	PR #1685: 43 tests for ShareSave parser/entries/history (3722->3765 OK)	session-20261112T221532-752808b3	2026-11-12T22:47:25Z
 fix:launchpad:1121:30685fba	problem details limited to /api/v1; unversioned errors unchanged; new head f23e458f; REVERIFY recorded	session-20261112T221237-c40cb74c	2026-11-12T22:47:42Z
+cover:pipelinq:f67520ecm9d2c:60c2c265	PR #3577: PosTenderController 41->98%, SlaPolicyController 48->90% (21 tests)	session-20261112T221234-13fcfd6a	2026-11-12T22:48:00Z
 fix:opencatalogi:2578:49238459	failed: exempting standard-protocol paths (sitemaps, dcat, feeds, federation...) from API-Version/problem details is the PR's deliberate design, not a defect; needs human review	session-20261112T224530-d70ae278	2026-11-12T22:47:54Z
 cover:integriq:9b0f5894m2367:js7927b05b	failed: payload mismatch, lang=js (js 72.18%) but dirs=lib/Service/Llm/*.php is PHP (php already 88%); generator bug, 103 lang=js rows point at lib/	session-20261112T224529-5928280e	2026-11-12T22:48:11Z
 verify:launchpad:1126:556a77a6	failed: permission (1127 head moved: 4471e7e2 != 16fb3d88)	session-20261112T221235-91821e68	2026-11-12T22:48:36Z
