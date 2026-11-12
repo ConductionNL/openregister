@@ -910,4 +910,5 @@ cover:keepiq:d76c2121m70b5:59826f43	opened keepiq#1701 (AdminSettings version ca
 cover:keepiq:d76c2121m70b5:js6f346b68	failed: lang=js but dirs=lib/Sections/*.php is PHP only (SettingsSection), and its 4 methods are already asserted by AppShellControllersTest; task row mis-mapped, nothing to add	session-20261112T231639-4c562de9	2026-11-12T23:38:28Z
 cover:stackiq:8cfacb29m2f4b:c2bb21fa	PR #1779: 22 tests for ContactPersonHandler (accounts, createUserAccount); suite 2458->2480, 0 failures	session-20261112T231633-96ffe7b8	2026-11-12T23:38:47Z
 merge:stackiq:1674:1cfd589a	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:39:54Z
+cover:stackiq:8cfacb29m2f4b:59826f43	no PR: lib/Settings has one class (StackiqAdmin) whose every method is already asserted exactly by StackiqAdminTest	session-20261112T231633-96ffe7b8	2026-11-12T23:39:59Z
 verify:thematiq:1665:df6b35f5	1665 GREEN (php 2833 w/ 1 inherited, vitest 1557 OK)	session-20261112T231645-3f0591a5	2026-11-12T23:40:00Z
