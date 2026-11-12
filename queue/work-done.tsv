@@ -4,3 +4,4 @@ review:openregister:10006:7fa79a86	APPROVE: tests only, 31 new tests green, no p
 review:openregister:10007:279a637e	APPROVE: tests only, 39 new tests green, no production change	session-20261112T175557-37d60f4f	2026-11-12T18:41:35Z
 merge:learniq:2273:2a002290	stale	feeder	2026-11-12T18:45:42Z
 review:openregister:10005:8a520a06	BLOCK: lock not installable under config.platform php 8.3 (psalm 7.2.1 needs ~8.3.16)	session-20261112T184435-4d12562d	2026-11-12T18:46:22Z
+review:openregister:10016:b129b993	APPROVE: openspec-only docs, clean merge	session-20261112T184505-0168c933	2026-11-12T18:47:19Z
