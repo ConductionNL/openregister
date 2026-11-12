@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Golden allowed, refused and failed responses of both sidebar endpoints.
  *
  * @covers \OCA\OpenRegister\Files\Controller\FileSidebarController
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices
+ * @uses \OCA\OpenRegister\Files\Service\File\CallerFileAccess
  */
 final class FileSidebarControllerResponsesGoldenTest extends TestCase {
 

@@ -37,6 +37,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\ProcessingLogMapper
  * @uses   \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ProcessingLogMapperScopeGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

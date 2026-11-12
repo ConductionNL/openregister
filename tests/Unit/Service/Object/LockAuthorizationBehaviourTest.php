@@ -122,7 +122,7 @@ class LockAuthorizationBehaviourTest extends TestCase {
 			userSession: $this->session,
 			groupManager: $this->groups,
 			schemaMapper: $this->schemas,
-			permissionHandler: $permissions
+			permissionHandler: ($permissions ?? $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end auth()
 
@@ -156,16 +156,6 @@ class LockAuthorizationBehaviourTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 		$this->auth(permissions: $permissions)->assertMayLock(['object' => new ObjectEntity(), 'schema' => null]);
 	}//end testALockWithoutASchemaIsRefused()
-
-	/**
-	 * Without a permission handler the lock is refused rather than taken unchecked.
-	 *
-	 * @return void
-	 */
-	public function testALockWithoutAPermissionHandlerIsRefused(): void {
-		$this->expectException(NotAuthorizedException::class);
-		$this->auth()->assertMayLock(['object' => new ObjectEntity(), 'schema' => new Schema()]);
-	}//end testALockWithoutAPermissionHandlerIsRefused()
 
 	/**
 	 * Without a session nobody may unlock or break.

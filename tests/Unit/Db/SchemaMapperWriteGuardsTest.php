@@ -40,6 +40,8 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 final class SchemaMapperWriteGuardsTest extends TestCase {
 

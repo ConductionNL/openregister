@@ -47,13 +47,13 @@ class LockAuthorization {
 	 * @param IUserSession                    $userSession       The caller.
 	 * @param IGroupManager                   $groupManager      Administrator and group membership checks.
 	 * @param SchemaMapperInterface           $schemaMapper      Resolves the manage rules of the owning schema.
-	 * @param PermissionHandlerInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock.
+	 * @param PermissionHandlerInterface      $permissionHandler RBAC, asked for update permission before a user takes a lock.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ?PermissionHandlerInterface $permissionHandler = null,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 	}//end __construct()
 
@@ -63,8 +63,8 @@ class LockAuthorization {
 	 * A lock refuses every other writer, and one taken without a duration holds
 	 * until it is unlocked, so taking it needs the right to update the object,
 	 * not only to find it. A flow run is asked the same: it runs as its acting
-	 * user, whom the session then names. Without a schema or a permission
-	 * handler to ask there is no answer, and the lock is refused.
+	 * user, whom the session then names. Without a schema to ask there is no
+	 * answer, and the lock is refused.
 	 *
 	 * @param array $context The resolved object with its register and schema.
 	 *
@@ -76,7 +76,7 @@ class LockAuthorization {
 	 */
 	public function assertMayLock(array $context): void {
 		$object = $context['object'];
-		if (($context['schema'] ?? null) instanceof Schema === false || $this->permissionHandler === null) {
+		if (($context['schema'] ?? null) instanceof Schema === false) {
 			throw new NotAuthorizedException(message: 'This object cannot be locked: its update rule cannot be checked.');
 		}
 

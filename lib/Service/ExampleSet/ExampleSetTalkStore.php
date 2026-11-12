@@ -71,19 +71,35 @@ class ExampleSetTalkStore {
 	private const GROUP_ROOM = 2;
 
 	/**
+	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Tells whether the app is installed.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Finds the accounts.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container   Hands out Talk's services.
-	 * @param IAppManager        $appManager  Tells whether Talk is installed.
-	 * @param IUserManager       $userManager Finds the owner and the participants.
-	 *
-	 * @return void
+	 * @param ExampleSetAppReach $reach Hands out Talk's services, tells whether Talk is installed, finds the owner and the participants.
 	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-		private readonly IUserManager $userManager,
-	) {
+	public function __construct(ExampleSetAppReach $reach) {
+		$this->container   = $reach->container;
+		$this->appManager  = $reach->apps;
+		$this->userManager = $reach->users;
 	}//end __construct()
 
 	/**

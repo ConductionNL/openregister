@@ -25,6 +25,9 @@ use PHPUnit\Framework\TestCase;
  * replaces the storage figure.
  *
  * @covers \OCA\OpenRegister\Db\TenantUsageMapper
+ * @uses \OCA\OpenRegister\Db\TenantUsage
+ * @uses \OCA\OpenRegister\Db\TenantUsage\UsageBucket
+ * @uses \OCA\OpenRegister\Db\UsageMeasurement
  */
 final class TenantUsageUpsertTest extends TestCase {
 

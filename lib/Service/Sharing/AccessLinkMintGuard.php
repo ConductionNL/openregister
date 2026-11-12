@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -113,10 +114,9 @@ class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 		try {
 			$object = $this->objects->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false,
-				_audit: false
+				_multitenancy: true
 			);
 		} catch (Throwable $denied) {
 			unset($denied);

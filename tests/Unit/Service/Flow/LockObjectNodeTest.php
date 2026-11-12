@@ -38,6 +38,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
@@ -136,10 +137,8 @@ final class LockObjectNodeTest extends TestCase {
 	public function testTheLockIsTakenForTheRun(): void {
 		$seen = [];
 		$this->objects->method('lockObject')->willReturnCallback(
-			function (...$args) use (&$seen): array {
-				// Named arguments arrive positionally in declaration order:
-				// identifier, process, duration, advisory, runUuid, nodeId.
-				$seen = $args;
+			function (LockRequest $request) use (&$seen): array {
+				$seen = $request;
 				return ['uuid' => self::OBJ, 'locked' => []];
 			}
 		);
@@ -147,9 +146,9 @@ final class LockObjectNodeTest extends TestCase {
 		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $this->context()));
 
 		$this->assertSame(self::OBJ, $out[0][FlowItems::JSON]['uuid']);
-		$this->assertSame(self::OBJ, $seen[0]);
-		$this->assertSame(self::RUN, $seen[4], 'the lock was not scoped to the run');
-		$this->assertSame('lock-1', $seen[5]);
+		$this->assertSame(self::OBJ, $seen->identifier);
+		$this->assertSame(self::RUN, $seen->runUuid, 'the lock was not scoped to the run');
+		$this->assertSame('lock-1', $seen->nodeId);
 	}//end testTheLockIsTakenForTheRun()
 
 	/**

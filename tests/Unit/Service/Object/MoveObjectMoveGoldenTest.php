@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\ObjectMove;
+use OCA\OpenRegister\Service\Object\MoveAddress;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -111,13 +113,13 @@ class MoveObjectMoveGoldenTest extends TestCase {
 		$object->setObject(array_key_exists('data', $setup) === true ? $setup['data'] : ['title' => 'x', 'number' => '2026-0042']);
 
 		$service  = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects(), $this->audit(), $this->logger(), $this->createStub(IEventDispatcher::class)), $this->validator());
-		$returned = $service->move(
-			object: $object,
-			sourceRegister: $this->register(id: 1),
-			sourceSchema: $this->schema(id: 10, properties: []),
-			targetRegister: $this->register(id: $this->setup['to'][0]),
-			targetSchema: $this->schema(id: $this->setup['to'][1], properties: ($setup['targetProps'] ?? [])),
-			actor: $this->setup['actor']
+		$returned = $service->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $this->register(id: 1), schema: $this->schema(id: 10, properties: [])),
+				target: new MoveAddress(register: $this->register(id: $this->setup['to'][0]), schema: $this->schema(id: $this->setup['to'][1], properties: ($setup['targetProps'] ?? []))),
+				actor: $this->setup['actor']
+			)
 		);
 
 		return ['returned' => $returned, 'after' => ['register' => $object->getRegister(), 'schema' => $object->getSchema(), 'uuid' => $object->getUuid()], 'calls' => $this->calls];

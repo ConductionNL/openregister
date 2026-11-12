@@ -33,6 +33,16 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\Schema
  * @covers \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\ExactKeyHydration
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationControlKeys
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationEntry
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
  */
 class HydrateExactKeysTest extends TestCase {
 

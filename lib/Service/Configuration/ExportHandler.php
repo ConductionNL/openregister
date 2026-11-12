@@ -134,6 +134,7 @@ class ExportHandler {
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
 	 * @param LoggerInterface $logger The logger interface.
+	 * @param ReadableExportObjects|null $readableObjects Projects exported objects to what the caller may read.
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
@@ -142,6 +143,7 @@ class ExportHandler {
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
 		LoggerInterface $logger,
+		private readonly ?ReadableExportObjects $readableObjects = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -508,10 +510,17 @@ class ExportHandler {
 	 */
 	private function exportRegisterObjects(Register $register): array {
 		$objects = [];
-		foreach ($this->registerObjects(register: $register) as $object) {
-			$object = $object->jsonSerialize();
+		foreach ($this->registerObjects(register: $register) as $entity) {
+			$object = $entity->jsonSerialize();
 			$registerId = (int)$object['@self']['register'];
 			$schemaId = (int)$object['@self']['schema'];
+			if ($this->readableObjects !== null) {
+				$object = $this->readableObjects->project(
+					object: $entity,
+					schema: ($this->schemasMap[$schemaId] ?? null),
+					serialised: $object
+				);
+			}
 			if (isset($this->registersMap[$registerId]) === true) {
 				$object['@self']['register'] = $this->registersMap[$registerId]->getSlug();
 			}

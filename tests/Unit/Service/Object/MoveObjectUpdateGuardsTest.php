@@ -96,7 +96,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMoveAsksTheUpdateGuardsOnceBeforeTheWrite(): void {
-		$answer = $this->mover(writes: 1)->move($this->object(), ...$this->addresses());
+		$answer = $this->mover(writes: 1)->perform(move: $this->moveOf(object: $this->object()));
 
 		$this->assertTrue($answer['moved']);
 		$this->assertSame(
@@ -115,7 +115,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 		$this->refusal = 'This record is final.';
 
 		$object = $this->object();
-		$answer = $this->mover(writes: 0)->move($object, ...$this->addresses());
+		$answer = $this->mover(writes: 0)->perform(move: $this->moveOf(object: $object));
 
 		$this->assertFalse($answer['moved']);
 		$this->assertStringContainsString('This record is final.', $answer['errors'][0]);
@@ -247,4 +247,22 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 
 		return [...$entities, 'anna'];
 	}//end addresses()
+
+	/**
+	 * The move of an object from register 1 / schema 10 to register 2 / schema 20, asked by anna.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return ObjectMove
+	 */
+	private function moveOf(ObjectEntity $object): ObjectMove {
+		[$sourceRegister, $sourceSchema, $targetRegister, $targetSchema, $actor] = $this->addresses();
+
+		return new ObjectMove(
+			object: $object,
+			source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
+			target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
+			actor: $actor
+		);
+	}//end moveOf()
 }//end class
