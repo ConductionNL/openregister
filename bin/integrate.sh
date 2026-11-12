@@ -486,7 +486,16 @@ phase_verdict() {
 	say "RED tree $T10 prs $N front=$front: $line"; sed 's/^/FAIL /' "$RUN/failures.txt"; exit 6
 }
 
-merged_now() { gh api "repos/$R/pulls/$1" -q '.merged' 2>/dev/null; }
+# PR state goes through GraphQL: its budget is separate from the REST quota every lane shares.
+gql_pr() { gh api graphql -f query="query{repository(owner:\"${R%/*}\",name:\"${R#*/}\"){pullRequest(number:$1){$2}}}" -q ".data.repository.pullRequest.$3" 2>/dev/null; }
+merged_now() { gql_pr "$1" merged merged; }
+# Prints the numbers among "$@" that GitHub does not yet mark merged, in one query.
+unmerged_of() {
+	local q="" n
+	for n in "$@"; do q+="p$n:pullRequest(number:$n){number merged} "; done
+	gh api graphql -f query="query{repository(owner:\"${R%/*}\",name:\"${R#*/}\"){$q}}" \
+		-q '.data.repository[]|select(.merged!=true)|.number' 2>/dev/null || printf '%s\n' "$@"
+}
 
 # Lands the whole tested tree with one fast-forward push of T onto main. T is the chain of
 # "int: merge #n" commits that was tested, so main becomes exactly the tested tree and GitHub
@@ -508,9 +517,7 @@ push_merge() {
 	[ "$(git -C "$C" rev-parse origin/main)" = "$T" ] || { say "ALERT-POSTCHECK main is not T after push; stop"; st_log "ALERT-POSTCHECK main != T after push"; exit 6; }
 	mapfile -t pending < <(cut -f1 "$W/tree.tsv")
 	for i in 1 2 3 4 5 6; do
-		local left=()
-		for n in "${pending[@]}"; do [ "$(merged_now "$n")" = true ] || left+=("$n"); done
-		pending=("${left[@]}"); [ ${#pending[@]} -eq 0 ] && break
+		mapfile -t pending < <(unmerged_of "${pending[@]}"); [ ${#pending[@]} -eq 0 ] && break
 		python3 -c "import time;time.sleep(10)"
 	done
 	while IFS=$'\t' read -r n head ref review t tree; do lines+=("$n $head $t $tree $(date -u +%FT%TZ) push"); done < "$W/tree.tsv"
@@ -548,7 +555,7 @@ phase_merge() {
 			python3 -c "import time;time.sleep(20)"
 		done
 		[ "$m" = true ] || { say "MERGE-FAILED #$n: ${msg:0:160}"; st_log "MERGE-FAILED #$n: ${msg:0:160}"; exit 6; }
-		mc=$(gh api "repos/$R/pulls/$n" -q .merge_commit_sha)
+		mc=$(gql_pr "$n" 'mergeCommit{oid}' mergeCommit.oid)
 		git -C "$C" fetch -q origin main
 		p1=$(git -C "$C" rev-parse "$mc^1" 2>/dev/null); p2=$(git -C "$C" rev-parse "$mc^2" 2>/dev/null)
 		if [ "$p1" != "$expected" ] || [ "$p2" != "$head" ] || [ "$(git -C "$C" rev-parse "$mc^{tree}")" != "$tree" ]; then
