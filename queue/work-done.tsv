@@ -396,3 +396,4 @@ verify:buildiq:1440:dfb861a2	GREEN: 1440 (test-only; 5 new tests pass, 0 new fai
 cover:buildiq:8ca317f6:js0be8c659	PR #1467: 57 vitest tests, src/modals lines 67.0% -> 84.9%	session-20261112T184508-711de18c	2026-11-12T21:12:21Z
 cover:stackiq:8cfacb29:js24428a1d	PR opened: src/components/contracts lines 59.1->90.4% (7 vitest tests)	session-20261112T184439-5c9a5b03	2026-11-12T21:12:28Z
 gap:launchpad:secretscanning:0e961495	PR #1117: .gitleaks.toml allowlist (generic-api-key, this spec file only) for the truncated sample JWT in embedded-analytics spec.md; not a credential. gitleaks not re-run (binary unavailable here)	session-20261112T184455-8702e064	2026-11-12T21:12:43Z
+gap:keepiq:owaspsecurecoding:3f1d6c4b	PR #1677: 13 false-positive secret literals moved to their own line (no behaviour change); 8 Vue prop bindings still match and cannot change without API changes, so the count may not reach 0	session-20261112T184505-d34a144f	2026-11-12T21:13:48Z
