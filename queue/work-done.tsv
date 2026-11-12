@@ -427,3 +427,4 @@ cover:stackiq:8cfacb29:jsd29a5f26	PR #1773: 6 vitest mount tests, cards dir 77.0
 cover:hermiq:755cdfe7:js0246d36e	PR #1593: 5 vitest tests for API fallback branches (agentTemplates, chat, talk); suite 944->949, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:23:56Z
 verify:stackiq:1758:45f57960	GREEN 1758-1763 (6 PRs)	session-20261112T202437-4020bd95	2026-11-12T21:24:09Z
 cover:buildiq:8ca317f6:js10b588fb	PR #1472: 32 vitest tests, applicationDetail lines 79.6% -> 93.7%	session-20261112T184508-711de18c	2026-11-12T21:24:21Z
+merge:shillinq:2760:51f8d7bf	2760 MERGED 2761 MERGED 2762 MERGED 2763 MERGED 2764 MERGED 2769 MERGED 2770 MERGED 2771 MERGED 2772 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T21:24:51Z
