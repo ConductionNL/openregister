@@ -101,21 +101,8 @@ function runScenario(array $scenario, array $cfg): bool {
 		return false;
 	}
 
-	// 0. Optional pre-test cleanup. Runs each scenario's `pre_sql` (a list of
-	// statements) against the openregister postgres before the LLM kicks off,
-	// so tests that assert "row exists with slug X" don't conflict with prior
-	// runs. Failures are surfaced but don't abort the scenario — the asserts
-	// will fail loudly anyway.
-	$preSql = $scenario['pre_sql'] ?? [];
-	if (is_array($preSql) && $preSql !== []) {
-		foreach ($preSql as $stmt) {
-			if (!is_string($stmt) || trim($stmt) === '') {
-				continue;
-			}
-			$rc = pgExec($cfg, $stmt);
-			echo '  ↺ pre_sql: ' . substr($stmt, 0, 80) . ($rc ? '' : ' [FAILED]') . "\n";
-		}
-	}
+	// 0. Optional pre-test cleanup.
+	runPreSql($cfg, $scenario['pre_sql'] ?? []);
 
 	// 1. MCP session + tools list
 	$session = mcpInit($cfg);
@@ -130,15 +117,7 @@ function runScenario(array $scenario, array $cfg): bool {
 		echo "  ✗ MCP tools/list failed\n";
 		return false;
 	}
-	// De-duplicate by id — some apps appear via both alias and FQCN.
-	$byId = [];
-	foreach ($tools as $t) {
-		$id = (string)($t['id'] ?? $t['name'] ?? '');
-		if ($id !== '') {
-			$byId[$id] = $t;
-		}
-	}
-	$tools = array_values($byId);
+	$tools = uniqueToolsById($tools);
 	echo '  ✓ tools available: ' . count($tools) . "\n";
 
 	// 2. Build Ollama messages: system (persona) + user (goal)
@@ -148,16 +127,77 @@ function runScenario(array $scenario, array $cfg): bool {
 	}
 	$messages[] = ['role' => 'user', 'content' => $goal];
 
-	$ollamaTools = mcpToolsToOllama($tools);
-
 	// 3. Loop: LLM → tool_call(s) → execute → tool_result → LLM …
+	$toolCallLog = runJourney($cfg, $session, $model, $messages, $tools, $maxTurns);
+	if ($toolCallLog === null) {
+		return false;
+	}
+
+	// 4. Run asserts
+	$asserts = $scenario['asserts'] ?? [];
+	if (empty($asserts)) {
+		echo "  ⚠ scenario has no asserts — pass by default\n";
+		return true;
+	}
+
+	$ok = true;
+	foreach ($asserts as $i => $a) {
+		[$pass, $msg] = evaluateAssert($a, $toolCallLog, $cfg);
+		echo '    ' . ($pass ? '✓' : '✗') . " [#$i] $msg\n";
+		if (!$pass) {
+			$ok = false;
+		}
+	}
+
+	return $ok;
+}
+
+/**
+ * Run a scenario's `pre_sql` statements against the openregister postgres
+ * before the LLM kicks off, so tests that assert "row exists with slug X"
+ * don't conflict with prior runs. Failures are surfaced but don't abort the
+ * scenario — the asserts will fail loudly anyway.
+ */
+function runPreSql(array $cfg, $preSql): void {
+	if (!is_array($preSql) || $preSql === []) {
+		return;
+	}
+	foreach ($preSql as $stmt) {
+		if (!is_string($stmt) || trim($stmt) === '') {
+			continue;
+		}
+		$rc = pgExec($cfg, $stmt);
+		echo '  ↺ pre_sql: ' . substr($stmt, 0, 80) . ($rc ? '' : ' [FAILED]') . "\n";
+	}
+}
+
+/**
+ * De-duplicate tools by id — some apps appear via both alias and FQCN.
+ */
+function uniqueToolsById(array $tools): array {
+	$byId = [];
+	foreach ($tools as $t) {
+		$id = (string)($t['id'] ?? $t['name'] ?? '');
+		if ($id !== '') {
+			$byId[$id] = $t;
+		}
+	}
+	return array_values($byId);
+}
+
+/**
+ * Let the LLM call tools until it gives a final reply or runs out of turns.
+ * Returns the tool call log, or null when the LLM call failed.
+ */
+function runJourney(array $cfg, string $session, string $model, array $messages, array $tools, int $maxTurns): ?array {
+	$ollamaTools = mcpToolsToOllama($tools);
 	$toolCallLog = [];
 	for ($turn = 1; $turn <= $maxTurns; $turn++) {
 		echo "  → turn $turn\n";
 		$resp = ollamaChat($cfg, $model, $messages, $ollamaTools);
 		if ($resp === null) {
 			echo "    ✗ ollama call failed\n";
-			return false;
+			return null;
 		}
 		$assistantMsg = $resp['message'] ?? [];
 		$messages[] = $assistantMsg;
@@ -171,129 +211,133 @@ function runScenario(array $scenario, array $cfg): bool {
 		}
 
 		foreach ($toolCalls as $tc) {
-			$fn = $tc['function'] ?? [];
-			$rawName = (string)($fn['name'] ?? '');
-			$rawArgs = $fn['arguments'] ?? [];
-			$argsArr = is_string($rawArgs) ? (json_decode($rawArgs, true) ?? []) : (array)$rawArgs;
-			$canonical = ollamaToolNameToMcp($rawName, $tools);
-
-			echo "    ↳ tool_call $rawName → mcp:$canonical args=" . json_encode($argsArr) . "\n";
-
-			$result = mcpCallTool($cfg, $session, $canonical, $argsArr);
-			$isError = (bool)($result['isError'] ?? false);
-			$resultText = json_encode($result ?? ['error' => 'no result']);
-			if ($cfg['verbose'] || $isError) {
-				echo '       ⇐ ' . ($isError ? '✗ ' : '✓ ') . substr($resultText, 0, 240) . "\n";
-			}
-
-			// Record call WITH success flag so asserts can distinguish
-			// "tool was called" from "tool actually worked".
-			$toolCallLog[] = [
-				'name' => $canonical,
-				'args' => $argsArr,
-				'isError' => $isError,
-				'result' => $result,
-			];
-
-			$messages[] = [
-				'role' => 'tool',
-				'content' => $resultText,
-				'name' => $rawName,
-			];
+			[$logEntry, $toolMessage] = executeToolCall($cfg, $session, $tc, $tools);
+			$toolCallLog[] = $logEntry;
+			$messages[] = $toolMessage;
 		}
 	}
+	return $toolCallLog;
+}
 
-	// 4. Run asserts
-	$asserts = $scenario['asserts'] ?? [];
-	if (empty($asserts)) {
-		echo "  ⚠ scenario has no asserts — pass by default\n";
-		return true;
+/**
+ * Execute one LLM tool call over MCP. Returns [log entry, tool message].
+ */
+function executeToolCall(array $cfg, string $session, $tc, array $tools): array {
+	$fn = $tc['function'] ?? [];
+	$rawName = (string)($fn['name'] ?? '');
+	$rawArgs = $fn['arguments'] ?? [];
+	$argsArr = is_string($rawArgs) ? (json_decode($rawArgs, true) ?? []) : (array)$rawArgs;
+	$canonical = ollamaToolNameToMcp($rawName, $tools);
+
+	echo "    ↳ tool_call $rawName → mcp:$canonical args=" . json_encode($argsArr) . "\n";
+
+	$result = mcpCallTool($cfg, $session, $canonical, $argsArr);
+	$isError = (bool)($result['isError'] ?? false);
+	$resultText = json_encode($result ?? ['error' => 'no result']);
+	if ($cfg['verbose'] || $isError) {
+		echo '       ⇐ ' . ($isError ? '✗ ' : '✓ ') . substr($resultText, 0, 240) . "\n";
 	}
 
-	$ok = true;
-	foreach ($asserts as $i => $a) {
-		$type = (string)($a['type'] ?? '');
-		$pass = false;
-		$msg = '';
-		switch ($type) {
-			case 'tool_called':
-				$tool = (string)($a['tool'] ?? '');
-				$minCalls = (int)($a['min_calls'] ?? 1);
-				$count = 0;
-				foreach ($toolCallLog as $tc) {
-					if ($tc['name'] === $tool) {
-						$count++;
-					}
-				}
-				$pass = $count >= $minCalls;
-				$msg = "tool_called $tool ≥ $minCalls (got $count)";
-				break;
+	// Record call WITH success flag so asserts can distinguish
+	// "tool was called" from "tool actually worked".
+	$logEntry = [
+		'name' => $canonical,
+		'args' => $argsArr,
+		'isError' => $isError,
+		'result' => $result,
+	];
+	$toolMessage = [
+		'role' => 'tool',
+		'content' => $resultText,
+		'name' => $rawName,
+	];
+	return [$logEntry, $toolMessage];
+}
 
-			case 'tool_succeeded':
-				// Stronger than tool_called: requires at least one call that
-				// did NOT return isError. Catches the case where the LLM
-				// dutifully called the tool but every call failed.
-				$tool = (string)($a['tool'] ?? '');
-				$minCalls = (int)($a['min_calls'] ?? 1);
-				$okCalls = 0;
-				$errCalls = 0;
-				foreach ($toolCallLog as $tc) {
-					if ($tc['name'] !== $tool) {
-						continue;
-					}
-					if ($tc['isError']) {
-						$errCalls++;
-					} else {
-						$okCalls++;
-					}
-				}
-				$pass = $okCalls >= $minCalls;
-				$msg = "tool_succeeded $tool ≥ $minCalls (ok=$okCalls err=$errCalls)";
-				break;
+/**
+ * Evaluate one scenario assert. Returns [pass, message].
+ */
+function evaluateAssert($a, array $toolCallLog, array $cfg): array {
+	$type = (string)($a['type'] ?? '');
+	switch ($type) {
+		case 'tool_called':
+			return assertToolCalled($a, $toolCallLog);
+		case 'tool_succeeded':
+			return assertToolSucceeded($a, $toolCallLog);
+		case 'no_tool_errors':
+			return assertNoToolErrors($toolCallLog);
+		case 'db_row_exists':
+			return assertDbRowExists($a, $cfg);
+		case 'db_count':
+			return assertDbCount($a, $cfg);
+		default:
+			return [false, "unknown assert type: $type"];
+	}
+}
 
-			case 'no_tool_errors':
-				// Catches LLM journeys that "limp through" with isError on
-				// every call but still hit min_call counts. Use sparingly:
-				// some scenarios expect a few graceful rejections.
-				$bad = 0;
-				foreach ($toolCallLog as $tc) {
-					if ($tc['isError']) {
-						$bad++;
-					}
-				}
-				$pass = $bad === 0;
-				$msg = "no_tool_errors (got $bad failing calls)";
-				break;
-
-			case 'db_row_exists':
-				$table = (string)($a['table'] ?? '');
-				$where = (string)($a['where'] ?? '1=1');
-				$count = pgScalar($cfg, "SELECT COUNT(*) FROM \"$table\" WHERE $where");
-				$pass = $count !== null && (int)$count > 0;
-				$msg = "db_row_exists $table WHERE $where (count=$count)";
-				break;
-
-			case 'db_count':
-				$table = (string)($a['table'] ?? '');
-				$where = (string)($a['where'] ?? '1=1');
-				$min = (int)($a['min'] ?? 1);
-				$count = (int)(pgScalar($cfg, "SELECT COUNT(*) FROM \"$table\" WHERE $where") ?? 0);
-				$pass = $count >= $min;
-				$msg = "db_count $table WHERE $where ≥ $min (got $count)";
-				break;
-
-			default:
-				$msg = "unknown assert type: $type";
-				$pass = false;
-				break;
-		}
-		echo '    ' . ($pass ? '✓' : '✗') . " [#$i] $msg\n";
-		if (!$pass) {
-			$ok = false;
+function assertToolCalled(array $a, array $toolCallLog): array {
+	$tool = (string)($a['tool'] ?? '');
+	$minCalls = (int)($a['min_calls'] ?? 1);
+	$count = 0;
+	foreach ($toolCallLog as $tc) {
+		if ($tc['name'] === $tool) {
+			$count++;
 		}
 	}
+	return [$count >= $minCalls, "tool_called $tool ≥ $minCalls (got $count)"];
+}
 
-	return $ok;
+/**
+ * Stronger than tool_called: requires at least one call that did NOT return
+ * isError. Catches the case where the LLM dutifully called the tool but every
+ * call failed.
+ */
+function assertToolSucceeded(array $a, array $toolCallLog): array {
+	$tool = (string)($a['tool'] ?? '');
+	$minCalls = (int)($a['min_calls'] ?? 1);
+	$okCalls = 0;
+	$errCalls = 0;
+	foreach ($toolCallLog as $tc) {
+		if ($tc['name'] !== $tool) {
+			continue;
+		}
+		if ($tc['isError']) {
+			$errCalls++;
+		} else {
+			$okCalls++;
+		}
+	}
+	return [$okCalls >= $minCalls, "tool_succeeded $tool ≥ $minCalls (ok=$okCalls err=$errCalls)"];
+}
+
+/**
+ * Catches LLM journeys that "limp through" with isError on every call but
+ * still hit min_call counts. Use sparingly: some scenarios expect a few
+ * graceful rejections.
+ */
+function assertNoToolErrors(array $toolCallLog): array {
+	$bad = 0;
+	foreach ($toolCallLog as $tc) {
+		if ($tc['isError']) {
+			$bad++;
+		}
+	}
+	return [$bad === 0, "no_tool_errors (got $bad failing calls)"];
+}
+
+function assertDbRowExists(array $a, array $cfg): array {
+	$table = (string)($a['table'] ?? '');
+	$where = (string)($a['where'] ?? '1=1');
+	$count = pgScalar($cfg, "SELECT COUNT(*) FROM \"$table\" WHERE $where");
+	return [$count !== null && (int)$count > 0, "db_row_exists $table WHERE $where (count=$count)"];
+}
+
+function assertDbCount(array $a, array $cfg): array {
+	$table = (string)($a['table'] ?? '');
+	$where = (string)($a['where'] ?? '1=1');
+	$min = (int)($a['min'] ?? 1);
+	$count = (int)(pgScalar($cfg, "SELECT COUNT(*) FROM \"$table\" WHERE $where") ?? 0);
+	return [$count >= $min, "db_count $table WHERE $where ≥ $min (got $count)"];
 }
 
 // -----------------------------------------------------------------------------

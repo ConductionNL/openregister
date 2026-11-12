@@ -158,9 +158,10 @@ use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
@@ -2818,22 +2819,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function persistObject(array $object, array $options): ObjectEntity
     {
-        return $this->saveHandler->saveObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            data: $object,
-            uuid: $options['uuid'],
-            _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy'],
-            persist: true,
+        $policy = new SavePolicy(
             silent: $options['silent'],
-            _validation: $options['_validation'],
-            uploadedFiles: $options['uploadedFiles'],
-            currentUser: $options['currentUser'],
+            validation: $options['_validation'],
             failIfExists: $options['failIfExists'],
-            _unowned: $options['_unowned'],
-            _dedupOverride: $options['_dedupOverride'],
-            _owner: $options['_owner']
+            dedupOverride: $options['_dedupOverride']
+        );
+        $actor  = new SaveActor(currentUser: $options['currentUser'], owner: $options['_owner'], unowned: $options['_unowned']);
+        $target = new ObjectFindTarget(register: $this->currentRegister, schema: $this->currentSchema);
+
+        return $this->saveHandler->saveObject(
+            data: $object,
+            options: new ObjectSaveOptions(
+                target: $target,
+                uuid: $options['uuid'],
+                uploadedFiles: $options['uploadedFiles'],
+                policy: $policy,
+                actor: $actor
+            ),
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy']
         );
     }//end persistObject()
 
