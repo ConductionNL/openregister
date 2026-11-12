@@ -900,3 +900,4 @@ cover:pipelinq:f67520ecm9d2c:jsdfaef732	failed: lang=js but dirs=lib/Notificatio
 cover:pipelinq:f67520ecm9d2c:168f7791	PR #3599: 6 PHP tests checking the dossiq case type against the ticket schema; suite 5773->5779, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:33:49Z
 cover:keepiq:d76c2121m70b5:ca1d90c4	opened keepiq#1700 (VaultKeyProofRequired, 5 tests; suite 3722 -> 3727 OK)	session-20261112T231639-4c562de9	2026-11-12T23:33:42Z
 cover:hermiq:755cdfe7m7444:59826f43	PR #1626: 2 tests for AdminSettings form, suite 3569->3571 OK	session-20261112T224529-41d77a96	2026-11-12T23:34:31Z
+cover:hermiq:755cdfe7m7444:d39f9857	PR hermiq# FleetAppId +11 tests, suite 3567->3578, no new failures	session-20261112T231640-f6dda86c	2026-11-12T23:34:43Z
