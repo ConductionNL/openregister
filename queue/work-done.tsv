@@ -128,3 +128,4 @@ merge:integriq:3357:de69ce21	failed: merge_tree.sh run refused by this session's
 cover:dossiq:6ca0231e:bec85fb4	PR #6098: 3 classes, 19 tests (Zgw); suite 11970->11989, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:40:04Z
 cover:dossiq:6ca0231e:74111b6d	PR #6099: 39 tests for 4 Status classes (journal, declarations, projector publish, evaluator); suite 11970->12009, 19 inherited failures unchanged	session-20261112T192858-87c9f218	2026-11-12T19:40:14Z
 merge:keepiq:1502:411307e8	merged 6 (1545,1637,1638,1639,1645,1647); skip 3 gate unmeasured (1502,1607 fetch failed,1631); payload truncated after 1647, last 2 PRs of tree not in row	session-20261112T184502-4ecd6072	2026-11-12T19:40:44Z
+cover:dossiq:6ca0231e:0f859653	PR #6100: DossiqFlowNodeBase + 7 transition nodes, 25 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:41:45Z
