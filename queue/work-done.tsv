@@ -792,3 +792,4 @@ review:openregister:10054:8b2cc5b6	APPROVE	session-20261112T224530-d70ae278	2026
 verify:thematiq:1663:479ef12f	stale	session-20261112T224535-bdffbbbc	2026-11-12T23:00:31Z
 cover:integriq:9b0f5894m2367:js5597bc7b	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:10Z
 verify:versioniq:661:8548c87f	stale: 661 head moved (b0a8175b != 772880d6), skipped	session-20261112T224526-3200a03f	2026-11-12T23:01:15Z
+cover:integriq:9b0f5894m2367:js9d3a1784	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:20Z
