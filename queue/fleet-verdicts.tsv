@@ -4290,6 +4290,7 @@ hermiq	1611	7d6bc8aba38d3544d8ed290507c0e90b9c747b19	GREEN	worker-26	phpunit-uni
 hermiq	1612	d4bebea7efe9518e99088ce1592f0e7c536d6af1	GREEN	worker-26	phpunit-unit 3689 on 9-PR tree (baseline 3555, all pass), vitest 949 (baseline 944, all pass), 0 new failures; tests-only
 hermiq	1613	b6b1ea56dbc830140a10653837824b534e37c09c	GREEN	worker-26	phpunit-unit 3689 on 9-PR tree (baseline 3555, all pass), vitest 949 (baseline 944, all pass), 0 new failures; tests-only
 hermiq	1614	56913f84cf82ae3fbea0b9f899f0b672d3797567	GREEN	worker-26	phpunit-unit 3689 on 9-PR tree (baseline 3555, all pass), vitest 949 (baseline 944, all pass), 0 new failures; tests-only
+filinq	1972	76465151cf2536ce529b2f8c124b92242c32105e	BLOCK	worker-55	5333 tests run, baseline 5318 OK (6 skipped), 0 new failures; behaviour change: health, metrics and identity callback paths no longer get API-Version or problem-details error bodies; adds /api/v1 route aliases and Deprecation/Link headers
 decidiq	2092	4142d189ee257d42e3ef5f0b5e5f546ee9fddab3	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
 decidiq	2094	31582a8f29e687b0676787c4269f2af54dbd625e	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
 decidiq	2095	28e186ab069f14fbfcb83fdcc20a8bd81f8b41d7	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
