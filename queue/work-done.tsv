@@ -673,3 +673,4 @@ cover:pipelinq:f67520ecm9d2c:js81b1241f	failed: malformed payload (lang=js but d
 review:openregister:10046:04d5ae77	APPROVE: test-only, 228 jest tests green merged with main	session-20261112T221239-5f377795	2026-11-12T22:37:59Z
 review:openregister:10050:77f81a29	APPROVE: tests only, 496 object modal tests pass	session-20261112T221235-91821e68	2026-11-12T22:38:13Z
 cover:openregister:7350e3ef:jse6f8d431	failed: lang=js but lib/Service/Relation/ is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:38:28Z
+cover:hermiq:755cdfe7m7444:js0f20d6d0	failed: lang=js but dirs=lib/Service/Talk/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:38:42Z
