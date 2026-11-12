@@ -1032,3 +1032,5 @@ cover:pipelinq:f67520ecm9d2c:6f346b68	cover	pipelinq	development	quality/test-co
 cover:keepiq:d76c2121m70b5:f91e7417	cover	keepiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=685;coverage=80.2;target=85.0	2026-11-12T18:15:41Z
 cover:openregister:7350e3efm0e99:js38e80a9f	cover	openregister	main	test/coverage-js-38e80a9f	lang=js;dirs=lib/Command/*.php;focus=uncovered;weight=147;coverage=83.1;target=85.0	2026-11-12T21:18:41Z
 cover:openregister:7350e3efm0e99:jsf545d745	cover	openregister	main	test/coverage-js-f545d745	lang=js;dirs=lib/Repair/*.php;focus=uncovered;weight=141;coverage=83.1;target=85.0	2026-11-12T21:18:47Z
+verify:keepiq:1698:852994f1	verify	keepiq	development	merge	prs=1698@1b78e69bcc14aad2b92b99edd2367c886022ca7f	2026-11-12T23:15:24Z
+cover:stackiq:8cfacb29m2f4b:17d367ab	cover	stackiq	development	quality/test-coverage-17d367ab	lang=php;dirs=lib/Controller/Settings/;focus=thin;weight=327;coverage=54.75;target=85.0	2026-07-14T16:55:22Z
