@@ -813,3 +813,4 @@ cover:integriq:9b0f5894m2367:js6f346b68	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
 cover:keepiq:d76c2121:f91e7417	failed: permission (running the PHP unit suite is refused in this session)	session-20261112T221239-5f377795	2026-11-12T23:03:42Z
 cover:pipelinq:f67520ecm9d2c:jsdb675bd6	no PR: lib/Activity/Setting is getter-only and every class already has a test plus the settings golden; task said js but dir is PHP	session-20261112T221235-39b35722	2026-11-12T23:05:48Z
+cover:stackiq:8cfacb29m2f4b:2861e5ef	already done: lib/Examples/ContactpersoonServiceExample.php 93/93 statements covered by existing ContactpersoonServiceExampleTest on development; no PR	session-20261112T221537-97382091	2026-11-12T23:05:37Z
