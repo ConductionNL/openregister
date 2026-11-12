@@ -186,6 +186,11 @@ npm run lint            # ESLint
 npm run stylelint       # CSS linting
 ```
 
+### Test coverage
+
+<!-- coverage:start -->
+<!-- coverage:end -->
+
 ## Tech Stack
 
 | Layer | Technology |
