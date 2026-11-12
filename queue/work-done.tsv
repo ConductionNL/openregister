@@ -637,3 +637,4 @@ cover:decidiq:13261b1b:f545d745	PR #2092: DbValueMigrationGateway 8 tests, suite
 cover:launchpad:755175ff:7505aeb4	PR #1136: 15 tests, emitter + debounce clock path (3256->3271 OK)	session-20261112T221532-752808b3	2026-11-12T22:30:53Z
 cover:launchpad:755175ff:dfaef732	PR #1137: 3 tests pinning notifier language/name/uuid-less link; suite 3256->3259 green	session-20261112T215819-2dd7b64e	2026-11-12T22:31:01Z
 cover:hermiq:755cdfe7:65e30692	PR #1606: 12 tests for IntakeService/IntakeSettings, no new failures	session-20261112T221235-39b35722	2026-11-12T22:31:24Z
+cover:pipelinq:f67520ec:8f8dca30	PR #3569: ExportRunService+ExportJobService to 100%, Export dir 81.6->94.8% (26 tests)	session-20261112T221234-13fcfd6a	2026-11-12T22:31:40Z
