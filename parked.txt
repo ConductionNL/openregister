@@ -186,3 +186,15 @@ openregister#9939 7bdaccc73b7c6d64ff7c17ad59f0fb1b6f02b11f fails on main alone: 
 openregister#9943 add72608fbf4af0621e986696f08e3b5a59c2a88 fails on main alone: ComponentDefinitionTest, a new lib file has no scripts/component-map.csv row (add the rows, run scripts/component-patterns.py)
 openregister#8948 3dadedc407ccec1b0eab79a181a723f5afff6b8f fails on main alone: ComponentDefinitionTest, a new lib file has no scripts/component-map.csv row (add the rows, run scripts/component-patterns.py)
 openregister#9982 d6cad235cac10698d54c28db96651da752b81379 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#4210 cc45fecab2dc9731053bb33fbe54b69ffeb27784 precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#4727 bd8c451f971d95b8fcd30e8c06be9d1901d1ee7b precheck-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#4731 d80187a93b445ef257116682e2414c710b3b7840 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#4983 625f31eeeccb2a6b589ee30e05c9994f18474ea6 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#4985 4fccc4ed69d73e8cc00e869f4ff6142243000206 precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#4987 bdf600d8c41e3e9c0b6f72533d68788abcdb0a61 precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#5481 8febde45efbc5db246b7afbbed686bffa53723d8 precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#5484 f88e090721e243664c7b916200e2fb078a69018c precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#7738 b4fe46d2af97b1e32360f35aa148a1d735888c2d precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#7739 6f15fd1bc869706187e1a3ca39d04ac57d26fdd8 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#7741 a665246e7b807ee320fbf62f84d392599a89642f precheck-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#8918 9fcd20e6a168e282760d03f6d10b0ad5cd46dc16 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
