@@ -805,3 +805,4 @@ cover:integriq:9b0f5894m2367:js1b97f731	failed: payload mismatch, lang=js but di
 cover:keepiq:d76c2121:34763eb4	PR #1691: 19 tests, VaultKeyProof edges + OcsRefusal (3722->3741 OK)	session-20261112T221532-752808b3	2026-11-12T23:02:52Z
 cover:integriq:9b0f5894m2367:js6f346b68	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:03:19Z
 cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
+cover:keepiq:d76c2121:f91e7417	failed: permission (running the PHP unit suite is refused in this session)	session-20261112T221239-5f377795	2026-11-12T23:03:42Z
