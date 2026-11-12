@@ -960,6 +960,7 @@ cover:integriq:9b0f5894m2367:js6dc9019f	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:js2b49da71	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:38Z
 cover:integriq:9b0f5894m2367:js2461af45	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:47Z
 cover:integriq:9b0f5894m2367:jsa0b17cde	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:56Z
+cover:dossiq:6ca0231e:c7ef8f28	PR #6198: 11 tests for 4 Listener/Support helpers, no new failures	session-20261112T224529-41d77a96	2026-11-12T23:53:02Z
 cover:integriq:9b0f5894m2367:jsfd3f82d2	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:53:05Z
 cover:dossiq:6ca0231e:aede7575	PR #6199: 13 tests for OpenRegisterRowNormaliser (0 -> 28/28 lines); suite 12970->12983, 19 inherited failures	session-20261112T231633-96ffe7b8	2026-11-12T23:53:07Z
 fix:keepiq:1680:2abefb9d	fixed: scoped API contract to new aliases, OpenAPI route login-only; new head ac4cb6b7, REVERIFY recorded	session-20261112T234653-efce95ba	2026-11-12T23:53:44Z
