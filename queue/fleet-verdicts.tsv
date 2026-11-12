@@ -4064,3 +4064,7 @@ dossiq	6113	2743b838568fc3de690aefcfa2938791c361f960	GREEN	worker-33	tree 12119 
 dossiq	6115	07c6ae580a3ceeeca91a42b4b63d2400783e67fd	GREEN	worker-33	tree 12119 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6116	90f729169bdc6f45e64e5fd42345051d143be06c	GREEN	worker-33	tree 12119 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 buildiq	1444	fbabc84d705a66d75e6254698269a7d9cce7d673	REVERIFY	worker-49	gate RED (dockerimage pass->fail, score 84->80) not reproducible: checker_floor compare on this head reports docker and dockerimage pass, score 84 = floor; the PR adds one test file only; no change pushed; new head fbabc84d705a66d75e6254698269a7d9cce7d673 (unchanged), verify it
+stackiq	1742	6c7bdc84637410e16f62514bef45d0d8cac20b5d	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
+stackiq	1743	3505511d1294384fb7fa7e954fdaa39dd0fc2fe0	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
+stackiq	1744	8183e87b77b821cb2670aaac0261549ef0200b2f	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
+stackiq	1745	5249e2247035b3d1e9c64938768d6b7bf2949cef	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
