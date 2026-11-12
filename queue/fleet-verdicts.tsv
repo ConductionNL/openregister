@@ -3794,3 +3794,4 @@ portaliq	2282	5f341e4a6ce4466f53029ca0cb83a5e8ac9ac5f2	REVERIFY	FLEETFIX	develop
 portaliq	2284	951dffeb3aa17b133d039bb5bc88469a498f7e28	REVERIFY	FLEETFIX	development merged in, catalogue test UsesClass conflict resolved; new head b2a0155204176795c00218d83ecbed38e0434b82, verify it
 portaliq	2312	8d44449e9bb49bf62eeb88a9f9f7c06f817f46ac	REVERIFY	FLEETFIX	development merged in (clean); node tests over portalApi 175/175; new head e056c2f77fc4c58f02ab1b00a452b62ff26f8662, verify it
 humaniq	882	757f11963bf977a092decf81d06c8a811ce6c5d1	REVERIFY	FLEETFIX	refactor redone on the LeafDescriptor value objects; characterisation test green on old and new code, parity script green; new head a056213a4e5c27cf1908ba8ee5a7a85496b6bb6e, verify it
+humaniq	1029	91761046360fc8aed3925047acbc76f7dd73a1fc	REVERIFY	FLEETFIX	development merged in (clean, #1027 landed); new head a8575e17355a3083c95cc32a036a2f82e7010e19, verify it
