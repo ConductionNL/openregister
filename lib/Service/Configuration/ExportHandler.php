@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
@@ -112,6 +113,7 @@ class ExportHandler {
 		'registers' => [],
 		'schemas' => [],
 	] + ConfigurationComponentSections::CONNECTOR_SECTIONS + [
+		'flows' => [],
 		'workflows' => [],
 		'objects' => [],
 	];
@@ -124,6 +126,13 @@ class ExportHandler {
 	 */
 	private readonly MappingMapper $mappingMapper;
 
+	/**
+	 * Flow mapper instance for handling flow operations.
+	 *
+	 * @var FlowMapper The flow mapper instance.
+	 */
+	private readonly FlowMapper $flowMapper;
+
 
 	/**
 	 * Constructor for ExportHandler.
@@ -133,6 +142,7 @@ class ExportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
+	 * @param FlowMapper $flowMapper The flow mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 */
 	public function __construct(
@@ -141,6 +151,7 @@ class ExportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
+		FlowMapper $flowMapper,
 		LoggerInterface $logger,
 	) {
 		$this->schemaMapper = $schemaMapper;
@@ -148,6 +159,7 @@ class ExportHandler {
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->mappingMapper = $mappingMapper;
+		$this->flowMapper = $flowMapper;
 		$this->logger = $logger;
 	}//end __construct()
 
@@ -186,6 +198,7 @@ class ExportHandler {
 
 		$this->addRegisters(run: $run, input: $input);
 		$this->addMappings(run: $run);
+		$this->addFlows(run: $run);
 
 		// Declare the RBAC groups this configuration depends on, in the OAS-native
 		// slot. Without this the export is LOSSY: OasService emits the same scope
@@ -294,6 +307,25 @@ class ExportHandler {
 			$run->openApiSpec['components']['mappings'][$slug] = $mapping;
 		}
 	}//end addMappings()
+
+	/**
+	 * Add the configuration's flows to the export, keyed by uuid.
+	 *
+	 * @param ConfigurationExportRun $run The export run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addFlows(ConfigurationExportRun $run): void {
+		if ($run->configuration === null) {
+			return;
+		}
+
+		foreach ($this->exportFlows(configuration: $run->configuration) as $uuid => $flow) {
+			$run->openApiSpec['components']['flows'][$uuid] = $flow;
+		}
+	}//end addFlows()
 
 	/**
 	 * A configuration's register entry as an entity: an id is looked up, anything else is used as it is.
@@ -606,6 +638,48 @@ class ExportHandler {
 			]
 		);
 	}//end logMappingFailure()
+
+	/**
+	 * A configuration's flows by uuid, without instance-specific properties.
+	 *
+	 * Unlike mappings, a flow has no slug: `uuid` is kept (not stripped) so
+	 * the importer can resolve an existing flow on the target instance via
+	 * {@see \OCA\OpenRegister\Db\FlowMapper::findByUuid()}.
+	 *
+	 * A flow that cannot be loaded is logged and left out.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function exportFlows(Configuration $configuration): array {
+		$flows = [];
+		foreach ($configuration->getFlows() ?? [] as $flowUuid) {
+			try {
+				$flow = $this->flowMapper->findByUuid($flowUuid);
+				$flowArray = $flow->jsonSerialize();
+				unset(
+					$flowArray['id'],
+					$flowArray['owner'],
+					$flowArray['organisation']
+				);
+
+				$flows[$flow->getUuid()] = $flowArray;
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: '[ExportHandler] Failed to export flow',
+					context: [
+						'flowUuid' => $flowUuid,
+						'error' => $e->getMessage(),
+					]
+				);
+			}//end try
+		}//end foreach
+
+		return $flows;
+	}//end exportFlows()
 
 	/**
 	 * Attach the declared-group scope map to an exported configuration document.

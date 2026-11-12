@@ -90,6 +90,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSources(?array $sources)
  * @method array|null getMappings()
  * @method void setMappings(?array $mappings)
+ * @method array|null getFlows()
+ * @method void setFlows(?array $flows)
  * @method array|null getApplications()
  * @method void setApplications(?array $applications)
  * @method string|null getOrganisation()
@@ -320,6 +322,13 @@ class Configuration extends Entity implements JsonSerializable {
 	 * @var array|null
 	 */
 	protected ?array $mappings = [];
+
+	/**
+	 * Array of Flow uuids managed by this configuration
+	 *
+	 * @var array|null
+	 */
+	protected ?array $flows = [];
 
 	/**
 	 * Array of application IDs managed by this configuration

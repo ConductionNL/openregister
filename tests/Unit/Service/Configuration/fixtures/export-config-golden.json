@@ -11,6 +11,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -386,6 +387,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -790,6 +792,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1171,6 +1174,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1579,6 +1583,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -1678,6 +1683,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -2044,6 +2050,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "securitySchemes": {
                     "oauth2": {
@@ -2439,6 +2446,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [
                     {
@@ -2845,6 +2853,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -3151,6 +3160,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [
                     {
@@ -3555,6 +3565,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
@@ -3940,6 +3951,7 @@
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
+                "flows": [],
                 "workflows": [],
                 "objects": [],
                 "securitySchemes": {
