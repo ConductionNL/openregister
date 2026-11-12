@@ -321,4 +321,5 @@ fix:buildiq:1458:9b4f8e93	not reproduced: dockerimage pass, score 84 on rerun at
 cover:dossiq:6ca0231e:71f63b5c	PR #6158: dirs 85% lines; EscalationRuleValidator 78.7%->100%, RemedyLodging 90.3%->100% (9 tests, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:49:01Z
 fix:stackiq:1738:e394d2fa	fixed 2 route tests; pushed b41165365e59295451ac5a3484e85db38b0d9251; REVERIFY	session-20261112T202437-4020bd95	2026-11-12T20:49:44Z
 cover:dossiq:6ca0231e:cdc59513	PR #6160: 2 classes, 3 tests (Inspection thin); suite 11976->11979, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:50:15Z
+cover:dossiq:6ca0231e:ab2de1d0	PR #6161: 13 tests covering ObligationService, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:50:53Z
 verify:dossiq:6133:25d3cf83	9 GREEN (6133-6141), tests-only, tree 12068 tests, 0 new failures over baseline 19	session-20261112T202912-56c18a61	2026-11-12T20:50:56Z
