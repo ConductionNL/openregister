@@ -12,7 +12,7 @@ useDefault = true
 description = "Documentation and READMEs: curl examples with the default admin:admin login (or a user:password placeholder) of the local development container, and example UUIDs used as keys."
 targetRules = ["curl-auth-user", "generic-api-key"]
 paths = [
-  '''^docs/''',
+  '''(^|/)docs/''',
   '''\.md$''',
 ]
 
@@ -20,33 +20,33 @@ paths = [
 description = "CI job: curl with the default admin:admin login of the throwaway Nextcloud container the job starts."
 targetRules = ["curl-auth-user"]
 paths = [
-  '''^\.github/workflows/api\-test\-coverage\.yml$''',
+  '''(^|/)\.github/workflows/api\-test\-coverage\.yml$''',
 ]
 
 [[allowlists]]
 description = "Local development seed scripts: curl with the $NC_USER:$NC_PASS variables of the local development container."
 targetRules = ["curl-auth-user"]
 paths = [
-  '''^docker/mail/[^/]+\.sh$''',
+  '''(^|/)docker/mail/[^/]+\.sh$''',
 ]
 
 [[allowlists]]
 description = "Local development stacks: the AppAPI registration secrets that pair the throwaway dev Nextcloud with its ExApp containers; they protect no deployed system."
 targetRules = ["generic-api-key"]
 paths = [
-  '''^docker\-compose[^/]*\.yml$''',
+  '''(^|/)docker\-compose[^/]*\.yml$''',
 ]
 
 [[allowlists]]
 description = "Spec scenarios: example API key strings and curl logins in Given/When/Then steps, not credentials."
 targetRules = ["curl-auth-user", "generic-api-key", "stripe-access-token"]
 paths = [
-  '''^openspec/''',
+  '''(^|/)openspec/''',
 ]
 
 [[allowlists]]
 description = "Unit tests, fixtures and test scripts: AWS's documented example key ids, made-up tokens and secrets, seed slugs, and the default admin:admin login of the test containers."
 targetRules = ["aws-access-token", "curl-auth-user", "generic-api-key", "jwt", "stripe-access-token"]
 paths = [
-  '''^tests/''',
+  '''(^|/)tests/''',
 ]
