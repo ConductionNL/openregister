@@ -931,3 +931,4 @@ merge:stackiq:1772:8964922c	merge-local over 9 stackiq tasks: merged=37 red=0 fa
 merge:stackiq:1595:27425258	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:43:00Z
 verify:humaniq:1097:acd5c01f	1097 GREEN (3790 OK, additive after fix)	session-20261112T231645-3f0591a5	2026-11-12T23:43:11Z
 cover:stackiq:8cfacb29m2f4b:60c2c265	PR #1783: 56 tests (SettingsController endpoints, ContactpersonenController::getMe), suite 2470->2526, 0 failures	session-20261112T233856-8f2d924b	2026-11-12T23:44:39Z
+verify:launchpad:1121:abb6d70f	4 GREEN, 1121 BLOCK (api v1 middleware behaviour change); 0 test failures	session-20261112T224530-d70ae278	2026-11-12T23:44:51Z
