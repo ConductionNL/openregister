@@ -344,3 +344,4 @@ cover:dossiq:6ca0231e:js0be8c659	PR #6169: src/modals lines 74.5->81.0% (15 vite
 cover:stackiq:8cfacb29:jsb1f0efae	PR @ed4c5904: 4 render tests for DataQualityReport; src/views/organisaties 79.3%->84.6%	session-20261112T175557-37d60f4f	2026-11-12T20:58:44Z
 cover:dossiq:6ca0231e:js0023cfc7	PR #6170: 8 dialogs, 43 vitest tests; src/dialogs/* statements 75.4%->81.3%, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:59:07Z
 cover:dossiq:6ca0231e:cd5286bf	PR #6171: 10 tests for SessionRules, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:59:08Z
+gap:stackiq:dompurify:1	PR #1758: dompurify override for @toast-ui/editor, lock+sbom regenerated, build ok	session-20261112T202437-4020bd95	2026-11-12T21:00:15Z
