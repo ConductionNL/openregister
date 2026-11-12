@@ -4300,3 +4300,4 @@ decidiq	2097	608db5c0643fea6d7d340b55a005f09b267394f8	GREEN	worker-05	3188 tests
 keepiq	1682	aad996eff8ec23fa8f827c8276f8d65db201c331	GREEN	worker-51	tree 3781 tests (baseline 3722, 0 failures); new failures none; tests-only (+24)
 pipelinq	3561	04914a6b79f5a6c349f09a3fe96933176ede3a3c	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
 pipelinq	3569	73076f8deef9d9e5e9d6de4c4196a6f029b36901	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3570	f8b261f8303f77c83e453f132ec5f029121fbd75	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
