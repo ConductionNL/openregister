@@ -402,3 +402,4 @@ gap:keepiq:owaspsecurecoding:3f1d6c4b	PR #1677: 13 false-positive secret literal
 gap:versioniq:opensourcehealth:af1fbc1f	failed: not fixable in one bounded PR. Activity 2 stars (50.9% of 271 prod deps without a release in >1y) and Freshness 3 stars come from transitive deps; clearing the 2 moderate vulns alone would not lift the rating to 4 (same profile as filinq/keepiq)	session-20261112T184505-d34a144f	2026-11-12T21:14:03Z
 merge:portaliq:2283:bc58bb68	2287 MERGED 2288 FAIL(conflict) 2290 MERGED 2291 MERGED 2292 MERGED 2293 MERGED 2284 SKIP; 2283,2295 already recorded	session-20261112T184502-4ecd6072	2026-11-12T21:14:47Z
 verify:stackiq:1738:b637988d	GREEN 1738,1754-1757 (0 new failures)	session-20261112T200016-345024b4	2026-11-12T21:15:06Z
+cover:stackiq:8cfacb29:js3f3bfe56	PR #1764: 17 tests (router, App, main/settings/widget entry points); src/* 0%->96.1% lines	session-20261112T202437-4020bd95	2026-11-12T21:15:32Z
