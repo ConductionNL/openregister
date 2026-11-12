@@ -522,3 +522,4 @@ cover:integriq:9b0f5894:js629c93bd	PR #3414: 36 tests for Approvals+callLog (lin
 cover:pipelinq:f67520ec:js6d6735a6	PR #3557: bookings views, 20 vitest tests; stmts 75.0%->82.5%	session-20261112T200016-345024b4	2026-11-12T21:51:22Z
 cover:pipelinq:f67520ec:jsd4e4a205	PR #3558: 17 vitest tests (CashShiftDropsWidget, PosTransactionPaymentWidget, ReceiptModalBody); suite 3164->3181, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:51:30Z
 review:openregister:10038:918d088a	APPROVE: tests-only, full jest green on merge with main	session-20261112T212851-01e91591	2026-11-12T21:51:48Z
+cover:pipelinq:f67520ec:js3f3bfe56	PR #3560: 16 vitest tests for src/ entries + registry contract; src/* lines 0% -> 24.7% (main.js/App.vue remain)	session-20261112T184508-711de18c	2026-11-12T21:52:21Z
