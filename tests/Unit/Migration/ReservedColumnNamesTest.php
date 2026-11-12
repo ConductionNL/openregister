@@ -24,6 +24,17 @@
  * test naming the columns, engine and series, and the run stays green.
  * `php fixtures/update-reserved-words.php` refreshes the snapshots.
  *
+ * Limit: only the columns the Doctrine schema closures define are checked,
+ * because MigratedSqliteDatabase::migratedSchema() runs `changeSchema()` and
+ * nothing else. A column created by raw SQL, or in preSchemaChange and
+ * postSchemaChange, is invisible here and its name needs a manual look against
+ * the lists. Today that is Version1Date20260322120000 (`ALTER TABLE ... ADD COLUMN`
+ * retention_nominatie, retention_status and retention_datum, MariaDB only) and
+ * Version1Date20260706100000 (`CREATE TABLE` with vector_id and embedding,
+ * PostgreSQL only); none of those names is reserved. Scanning the migration
+ * sources for them would not be robust: the first builds the name from an array
+ * key interpolated into the statement, the second spreads it over concatenated strings.
+ *
  * It needs a Nextcloud server's classes for the migrated schema, like the
  * other MigratedSqliteDatabase tests, so it runs in CI and not in a bare clone.
  *
