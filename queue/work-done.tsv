@@ -621,3 +621,4 @@ verify:larpinq:1005:9d190ca5	GREEN 1005 (697 tests, 0 new failures)	session-2026
 cover:pipelinq:f67520ec:6b926386	PR #3566: 29 tests for BrokerCredentialReader, BlueskyAdapter, XAdapter; Social dir ~81.6% -> ~96%; suite 5773->5802, no new failures	session-20261112T221533-911acbf2	2026-11-12T22:26:57Z
 cover:launchpad:755175ff:d39f9857	PR #1133: 13 tests pinning FleetAppId rename order; suite 3256->3269 green	session-20261112T215819-2dd7b64e	2026-11-12T22:27:03Z
 cover:pipelinq:f67520ec:jsa5192f20	failed: permission (npm ci refused in this session)	session-20261112T221533-911acbf2	2026-11-12T22:27:12Z
+measure:integriq:20261112h18	php 88.0% (pcov, 7110 tests), js 72.18%	session-20261112T221235-9e827ed1	2026-11-12T22:27:39Z
