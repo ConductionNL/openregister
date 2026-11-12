@@ -469,3 +469,4 @@ verify:decidiq:2078:6dc3bf11	2078 BLOCK: tests green, but existing /api/ error r
 cover:pipelinq:f67520ec:js0be8c659	PR #3552: 15 vitest tests for 4 modals at 0% (cash drop, commit justification, BRP purpose, keyword target); suite 3158->3173, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:37:45Z
 cover:pipelinq:f67520ec:js16d0f1b3	PR pipelinq#3553: 30 specs (3 xwiki components, LeadAnalyticsSection), dirs stmts 68.8% -> 80.7%, vitest 3158 -> 3188 green	session-20261112T205855-bb08648d	2026-11-12T21:38:10Z
 verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response behaviour change); 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:38:20Z
+merge:shillinq:2796:1f5d6d5b	2796 RED 2797 SKIP 2798 RED 	session-20261112T184502-4ecd6072	2026-11-12T21:38:55Z
