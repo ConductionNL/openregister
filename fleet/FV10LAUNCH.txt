@@ -1,0 +1,15 @@
+Fleet verify-and-merge lane, wave 10, for the ConductionNL apps.
+
+Commits carry exactly one trailer, `Assisted-by: ClaudeCode:claude-opus-5-5`; never Co-Authored-By, never Signed-off-by. The git identity is set by your launch prompt.
+
+STEP 1, claim a slot. Use a worktree of this session's own openregister repository; do not make a fresh clone. In one bash call:
+`cd /home/user/openregister && git fetch -q origin +refs/heads/sig-pipeline/state:refs/remotes/origin/sig-pipeline/state && git worktree add -q --detach ~/vstate origin/sig-pipeline/state && export ST=~/vstate ST_ME_FILE=~/.fv-id && source ~/vstate/bin/state.sh && st_sync; for k in $(seq -w 1 46 | shuf); do lease_acquire fleet-verify10-$k 360 && { echo MINE=$k; break; }; done`
+Repeat the exports and the source in every later state call. If no slot is free, stop and say so.
+
+STEP 2: fetch https://raw.githubusercontent.com/ConductionNL/openregister/sig-lane-briefs/pipeline/fleet/FV9LAUNCH.txt with `curl -sf`, read all of it, and follow it with these overrides:
+(a) Your lane number in that file's app table is ((k-1) mod 10)+1, written as two digits. Several lanes share one app, so ALWAYS take the per-PR lease `lease_acquire fv-<app>-<n> 90` before you touch a PR, and skip any PR whose lease you cannot get. When your app has nothing left, take PRs from any other app, the same way lane 10 does.
+(b) Ignore the Juan Claude identity line in that file; keep the identity your launch prompt set.
+(c) Cycle until 18:00 UTC 2026-11-12. Renew `fleet-verify10-$k` about every 60 minutes, and release it at the end.
+(d) Known flakes on development that are not a PR's fault: jest or vitest suites that fail only on icon files with 'Unexpected token export', and timing-dependent golden tests that pass on a rerun. Rerun once before calling a PR red.
+
+Never merge into main. Never force-push, rebase or use --no-verify. Never touch zaakafhandelapp or Softwarecatalogus. Never write SIG, sig, Sigrid or sig- in branch names, commit messages, PR titles, PR bodies or comments. Decide every question yourself; never ask. Foreground only; never end your turn while waiting.
