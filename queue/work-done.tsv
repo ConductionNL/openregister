@@ -126,3 +126,4 @@ merge:integriq:3349:21e0ed72	failed: merge_tree.sh run refused by this session's
 gap:launchpad:9:7d352ecb	PR #1109 @c9075734: 2 innerHTML clears -> replaceChildren(), 2 secret-named constants renamed (values unchanged, deprecated aliases); tests green; not re-measured (scanner unavailable); needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:39:44Z
 merge:integriq:3357:de69ce21	failed: merge_tree.sh run refused by this session's permission check	session-20261112T192853-8e213d5f	2026-11-12T19:39:56Z
 cover:dossiq:6ca0231e:bec85fb4	PR #6098: 3 classes, 19 tests (Zgw); suite 11970->11989, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:40:04Z
+cover:dossiq:6ca0231e:74111b6d	PR #6099: 39 tests for 4 Status classes (journal, declarations, projector publish, evaluator); suite 11970->12009, 19 inherited failures unchanged	session-20261112T192858-87c9f218	2026-11-12T19:40:14Z
