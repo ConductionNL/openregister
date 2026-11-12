@@ -92,3 +92,4 @@ buildiq	1305	6476127c8e443618980d8f5972e2cacac2e62892	MERGED	worker-53	GATE OK s
 buildiq	1306	e634d63b6c3cf8b5e3635a07f41e73655ef979ae	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1307	8d27c40a55826a434beb4573e762560af7ded0f3	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1308	d49c17c5e5ff04b73147ff9b2a685d1d46a3571f	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1676	0ca2a382d50ac78a27a4d56f0398ecd75b0741ce	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
