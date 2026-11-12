@@ -1851,6 +1851,7 @@ class FilesController extends Controller {
 		$object = $this->managedFileObject(file: $file);
 		if ($object === false
 			|| $this->refusesManagedFile(object: $object) === true
+			|| $this->refusesUnmanagedFile(file: $file, object: $object) === true
 			|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
 		) {
 			throw new FileActionRefusal(message: 'File not found', code: 404);
@@ -1858,6 +1859,35 @@ class FilesController extends Controller {
 
 		return $object;
 	}//end downloadableFileObject()
+
+	/**
+	 * Whether a download by id must be refused for a file outside the managed tree.
+	 *
+	 * Such a file belongs to a Nextcloud user, so a signed-in caller gets it only
+	 * when it is reachable in their own file tree, where Nextcloud's sharing rules
+	 * apply. An anonymous caller is already held to a published file.
+	 *
+	 * @param File              $file   The file.
+	 * @param ObjectEntity|null $object The object; null for a file outside the managed tree.
+	 *
+	 * @return bool True when the caller cannot reach the file in their own tree.
+	 */
+	private function refusesUnmanagedFile(File $file, ?ObjectEntity $object): bool {
+		if ($object !== null || $this->isAnonymousRequest() === true) {
+			return false;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid === null) {
+			return true;
+		}
+
+		try {
+			return $this->rootFolder->getUserFolder($uid)->getFirstNodeById((int)$file->getId()) === null;
+		} catch (\Throwable $e) {
+			return true;
+		}
+	}//end refusesUnmanagedFile()
 
 	/**
 	 * The object an OpenRegister-managed file belongs to.
