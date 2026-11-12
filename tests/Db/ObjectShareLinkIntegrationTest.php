@@ -51,8 +51,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Rbac\GrantRequest;
-use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

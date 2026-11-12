@@ -3874,3 +3874,5 @@ Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
 Service/ZgwAutorisatieGrant.php,,Service,,,,,Core
+BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
+Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
