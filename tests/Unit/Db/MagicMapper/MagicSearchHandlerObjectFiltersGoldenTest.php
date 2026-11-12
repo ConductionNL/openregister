@@ -49,6 +49,13 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  * @uses   \OCA\OpenRegister\Support\NullFilter
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BoundQueryColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FieldComparison
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TypedColumnRef
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 

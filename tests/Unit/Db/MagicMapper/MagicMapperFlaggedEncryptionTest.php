@@ -49,6 +49,9 @@ use stdClass;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnprocessedUploads
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Service\PropertyAccessCollaborators
  */
 class MagicMapperFlaggedEncryptionTest extends TestCase {
 	private const SECRET = 'plain-bsn';

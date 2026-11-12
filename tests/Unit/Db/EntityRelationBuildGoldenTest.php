@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
  * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  *
  * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */

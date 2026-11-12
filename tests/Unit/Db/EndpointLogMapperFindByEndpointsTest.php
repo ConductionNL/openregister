@@ -27,6 +27,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\EndpointLogMapper
  * @uses   \OCA\OpenRegister\Db\EndpointLog
+ * @uses \OCA\OpenRegister\Db\EndpointLogScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class EndpointLogMapperFindByEndpointsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

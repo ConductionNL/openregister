@@ -58,6 +58,8 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Db\MappingMapper
  * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Db\Mapping\MappingSlug
  */
 class MappingMapperCacheInvalidationTest extends TestCase {
 

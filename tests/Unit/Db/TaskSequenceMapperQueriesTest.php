@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @uses \OCA\OpenRegister\Db\Task
  * @uses   \OCA\OpenRegister\Db\LinkColumn
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class TaskSequenceMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

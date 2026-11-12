@@ -36,6 +36,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ObjectRelationMapper
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\ObjectRelation
  */
 class ObjectRelationMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait {

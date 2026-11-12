@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  * Pins each condition and parameter; a null id component is matched with IS NULL.
  *
  * @covers \OCA\OpenRegister\Db\TimeTrackerLinkMapper
+ * @uses \OCA\OpenRegister\Db\TimeTrackerLink
+ * @uses \OCA\OpenRegister\Db\XwikiLink
  */
 final class TimeTrackerLinkMapperFindByEntryGoldenTest extends TestCase {
 

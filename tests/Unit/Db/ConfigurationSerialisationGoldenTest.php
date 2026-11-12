@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation for Configuration.
  *
  * @covers \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class ConfigurationSerialisationGoldenTest extends TestCase {
 

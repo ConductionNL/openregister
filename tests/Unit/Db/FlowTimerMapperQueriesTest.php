@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowTimer\TimerSubject
+ * @uses \OCA\OpenRegister\Db\IdCursor
  */
 class FlowTimerMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

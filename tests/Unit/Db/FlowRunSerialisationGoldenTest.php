@@ -28,6 +28,7 @@ use stdClass;
  * Golden field types and serialisation for FlowRun.
  *
  * @covers \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowRunSerialisationGoldenTest extends TestCase {
 

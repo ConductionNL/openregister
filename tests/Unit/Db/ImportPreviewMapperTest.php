@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\ImportPreviewMapper
  * @uses   \OCA\OpenRegister\Db\ImportPreview
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ImportPreviewMapperTest extends TestCase {
 	use RecordsQueries;

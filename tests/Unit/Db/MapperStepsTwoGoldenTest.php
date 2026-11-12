@@ -36,6 +36,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskBlockerMapper
  * @covers \OCA\OpenRegister\Db\ConfigurationValueMapper
  * @covers \OCA\OpenRegister\Db\PortalTaskDeliveryMapper
+ * @uses \OCA\OpenRegister\Db\ConfigurationValue
+ * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\Task
  */
 final class MapperStepsTwoGoldenTest extends TestCase {
 	use RecordsQueries;
