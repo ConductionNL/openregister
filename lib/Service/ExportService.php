@@ -835,14 +835,12 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters[$metaField] = $value;
 		}
 
-		// Check if multitenancy was explicitly requested via _multi parameter.
-		$multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
-		$multitenancy = true;
-		if (isset($filters['_multi']) === true) {
-			$multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
-		} elseif (isset($filters['multi']) === true) {
-			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
-		}
+		// `_multi` may narrow an export to the organisation for anyone, but only
+		// an administrator may lift the organisation boundary with it.
+		$isAdmin = $this->isUserAdmin(user: $request->currentUser);
+		$multitenancy = (self::requestedMultitenancy(filters: $filters) === true || $isAdmin === false);
+		$multiExplicitlySet = (isset($filters['_multi']) || isset($filters['multi']))
+			&& ($isAdmin === true || self::requestedMultitenancy(filters: $filters) === true);
 
 		// `_ids` (a list or a comma-separated string) narrows the export to the
 		// selected objects; RBAC and multitenancy still apply to each.
@@ -880,6 +878,25 @@ class ExportService implements ObjectExporterInterface {
 		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
 	}//end fetchObjectsForExport()
 
+
+	/**
+	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return bool
+	 */
+	private static function requestedMultitenancy(array $filters): bool {
+		if (isset($filters['_multi']) === true) {
+			return filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		if (isset($filters['multi']) === true) {
+			return filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		return true;
+	}//end requestedMultitenancy()
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).
