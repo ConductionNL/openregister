@@ -3,7 +3,7 @@
 ## 1. Listener and job
 
 - [x] 1.1 `ObjectChangeListener` defers the object id through `ListenerDeferralService` in background mode (and for an unknown mode), chunk size from `textExtractionChunkSize`, dedupe on the id; `listenerDeferral=inline` keeps one `ObjectTextExtractionJob` per object.
-- [x] 1.2 `ObjectTextExtractionChunkJob` (actor-forwarded): extracts each entry, skips an entry without an id, continues after a failure, no-op when `objectExtractionMode` is `none`; `JobHandles::OBJECT_TEXT_EXTRACTION_CHUNK`.
+- [x] 1.2 `ObjectTextExtractionChunkJob` (actor-forwarded): extracts each entry, skips an entry without an id, continues after a failure, no-op when `objectExtractionMode` is `none`.
 
 ## 2. Tests
 
