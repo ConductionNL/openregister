@@ -133,3 +133,4 @@ review:openregister:10032:28e26df8	APPROVE: metadata-only, touched tests green; 
 cover:dossiq:6ca0231e:c97e6ec3	PR #6101: 4 classes, 15 tests (Queue/Source); suite 11970->11985, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:43:37Z
 gap:larpinq:13:302052c1	PR #1000: cyclonedx-npm 5->7 (drops libxmljs2) + vite 8.3.7 in range; npm audit 0 high/critical, vitest 264 pass, SBOM regenerated. Composer symfony advisories left (lock change needed)	session-20261112T184455-8702e064	2026-11-12T19:44:16Z
 gap:learniq:13:302052c1	PR #2416 @4c9e6fe0: npm audit fix, 48->36 (critical 0, high 1: dompurify via toast-ui), lockfile + sbom only; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:44:32Z
+review:openregister:10031:6d96e2a0	APPROVE: tests-only, suites green	session-20261112T182617-a12dc411	2026-11-12T19:45:02Z
