@@ -181,8 +181,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated user profile
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -444,8 +442,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -524,8 +520,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -561,8 +555,6 @@ class UserController extends Controller {
 	 * Delete the current user's avatar
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -636,8 +628,6 @@ class UserController extends Controller {
 	 * Update notification preferences for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated preferences
 	 *
@@ -733,8 +723,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with the created token
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -773,7 +761,6 @@ class UserController extends Controller {
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
@@ -788,8 +775,6 @@ class UserController extends Controller {
 	 * Request account deactivation for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -834,8 +819,6 @@ class UserController extends Controller {
 	 * Cancel a pending deactivation request for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *

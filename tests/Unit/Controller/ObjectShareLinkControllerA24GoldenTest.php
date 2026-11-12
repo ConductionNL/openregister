@@ -35,6 +35,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Node;
 use OCP\IRequest;
@@ -51,6 +52,11 @@ use Psr\Log\LoggerInterface;
 class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 
 	private const UUID = '11111111-1111-4111-8111-111111111111';
+
+	/**
+	 * The node id of the object's own folder.
+	 */
+	private const FOLDER_ID = 555;
 
 	/**
 	 * The request parameters.
@@ -131,8 +137,24 @@ class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 		$share->method('getNodeType')->willReturn($nodeType);
 		$share->method('getNode')->willReturn($node);
 		$share->method('getPermissions')->willReturn(17);
+		$share->method('getNodeId')->willReturn(self::FOLDER_ID);
 
 		return $share;
+	}
+
+	/**
+	 * The object, with its own folder stored as the given node.
+	 *
+	 * @param string|null $folder The stored folder node id.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function objectInFolder(?string $folder = '555'): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid(self::UUID);
+		$object->setFolder($folder);
+
+		return $object;
 	}
 
 	private function assertRefused(JSONResponse $response): void {
@@ -148,8 +170,8 @@ class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 	public function testLiveLinkResolvesWithRbacOff(): void {
 		$this->expectThrottled(0);
 		$this->shares->method('getShareByToken')->with('tok')->willReturn($this->share());
-		$this->objects->expects($this->once())->method('find')->with(self::UUID, [], false, null, null, false, false)
-			->willReturn(new ObjectEntity());
+		$this->objects->expects($this->once())->method('find')->with(...FindCallShape::findArgs(self::UUID, [], false, null, null, false, false))
+			->willReturn($this->objectInFolder());
 
 		$response = $this->controller()->show('tok');
 
@@ -163,7 +185,7 @@ class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 		$this->params = ['password' => 'secret'];
 		$this->shares->method('getShareByToken')->willReturn($share);
 		$this->shares->expects($this->once())->method('checkPassword')->with($share, 'secret')->willReturn(true);
-		$this->objects->method('find')->willReturn(new ObjectEntity());
+		$this->objects->method('find')->willReturn($this->objectInFolder());
 
 		$this->assertSame(200, $this->controller()->show('tok')->getStatus());
 	}
@@ -230,6 +252,21 @@ class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 			$this->share(IShare::TYPE_LINK, null, 'file'),
 			$this->share(IShare::TYPE_LINK, null, 'folder', 'not-a-uuid'),
 			$broken
+		);
+		$controller = $this->controller();
+
+		$this->assertRefused($controller->show('tok'));
+		$this->assertRefused($controller->show('tok'));
+		$this->assertRefused($controller->show('tok'));
+	}
+
+	public function testAShareOnAnotherFolderWithTheObjectsNameIsRefused(): void {
+		$this->expectThrottled(0);
+		$this->shares->method('getShareByToken')->willReturn($this->share());
+		$this->objects->method('find')->willReturnOnConsecutiveCalls(
+			$this->objectInFolder('556'),
+			$this->objectInFolder(null),
+			$this->objectInFolder('/legacy/path')
 		);
 		$controller = $this->controller();
 

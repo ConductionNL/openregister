@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Removes one owner's draft from a destination.
@@ -91,12 +93,13 @@ class DraftDiscard {
 			// RBAC off: a scope-value owner has no Nextcloud user to judge;
 			// DraftFinder::own() above was the owner check.
 			return $this->objects->deleteObject(
-				uuid: (string)$draft->getUuid(),
-				register: $register,
-				schema: $schema,
+				deletion: new ObjectDeletion(
+					uuid: (string)$draft->getUuid(),
+					target: new ObjectFindTarget(register: $register, schema: $schema),
+					permanent: true
+				),
 				_rbac: false,
-				_multitenancy: false,
-				permanent: true
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return false;

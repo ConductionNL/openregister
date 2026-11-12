@@ -1562,6 +1562,7 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -1657,6 +1658,7 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -1752,6 +1754,7 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -1849,6 +1852,7 @@ exports[`configuration publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -1951,6 +1955,7 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2042,6 +2047,7 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2133,6 +2139,7 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2226,6 +2233,7 @@ exports[`configuration publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2324,6 +2332,7 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2415,6 +2424,7 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2506,6 +2516,7 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2599,6 +2610,7 @@ exports[`configuration publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2697,6 +2709,7 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2792,6 +2805,7 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2887,6 +2901,7 @@ exports[`configuration publish modal publish with note and empty commit message 
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -2988,6 +3003,7 @@ Indexed in an hour.",
           "body": "{"owner":"acme","repo":"site","path":"lib/settings/base.json","branch":"dev","commitMessage":"Update configuration: Base"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -4631,6 +4647,7 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -4709,6 +4726,7 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -4795,6 +4813,7 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -4883,6 +4902,7 @@ exports[`register publish modal publish 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -4976,6 +4996,7 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5050,6 +5071,7 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5132,6 +5154,7 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5216,6 +5239,7 @@ exports[`register publish modal publish fails 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5305,6 +5329,7 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5379,6 +5404,7 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5461,6 +5487,7 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5545,6 +5572,7 @@ exports[`register publish modal publish fails without message 1`] = `
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5634,6 +5662,7 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5712,6 +5741,7 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5798,6 +5828,7 @@ exports[`register publish modal publish with note and empty commit message 1`] =
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },
@@ -5890,6 +5921,7 @@ Indexed in an hour.",
           "body": "{"owner":"acme","repo":"site","path":"parks_openregister.json","branch":"master","commitMessage":"Update register OAS: Parks"}",
           "headers": {
             "Content-Type": "application/json",
+            "requesttoken": "test-request-token",
           },
           "method": "POST",
         },

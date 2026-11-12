@@ -168,6 +168,12 @@ serializations. Unknown register/schema slugs MUST return 404.
 - WHEN an unauthenticated client GETs that schema's context document
 - THEN it receives the context document (200)
 
+#### Scenario: Anonymous dereference of an unpublished schema
+- GIVEN a schema that an unauthenticated client may not read
+- WHEN an unauthenticated client GETs that schema's context document, or the context document of a register holding only such schemas
+- THEN the response is 404
+- AND a register context served to an unauthenticated client defines the terms of its published schemas only
+
 #### Scenario: Unknown slug
 - GIVEN no register with slug `does-not-exist`
 - WHEN a client GETs `/api/contexts/does-not-exist`

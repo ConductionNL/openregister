@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 
 /**
  * Records and releases the object locks a flow run holds.

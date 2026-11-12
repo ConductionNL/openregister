@@ -136,7 +136,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
@@ -165,7 +164,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
 	 */
@@ -517,7 +515,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
 	 *
@@ -547,7 +544,6 @@ class ContactsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */

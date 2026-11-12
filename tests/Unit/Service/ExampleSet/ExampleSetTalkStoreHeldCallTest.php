@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
@@ -69,7 +70,7 @@ class ExampleSetTalkStoreHeldCallTest extends TestCase {
 			}
 		);
 
-		return new ExampleSetTalkStore($container, $this->createMock(IAppManager::class), $this->createMock(IUserManager::class));
+		return new ExampleSetTalkStore(new ExampleSetAppReach(container: $container, apps: $this->createMock(IAppManager::class), users: $this->createMock(IUserManager::class)));
 	}
 
 	public function testAHeldCallIsAStartedAndAnEndedSystemMessage(): void {

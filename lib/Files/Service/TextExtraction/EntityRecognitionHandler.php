@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;

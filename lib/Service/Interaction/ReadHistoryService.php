@@ -151,7 +151,7 @@ class ReadHistoryService {
 	 *
 	 * @return AuditTrail|null The row written, or null when none was due.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `$_audit` flag of GetObject::find().
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `audit` flag of GetObject::find()'s request.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
 	 */

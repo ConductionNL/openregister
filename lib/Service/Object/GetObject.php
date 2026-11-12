@@ -137,49 +137,12 @@ class GetObject
     }//end enabledProvider()
 
     /**
-     * Gets an object by its ID with optional extensions.
+     * Gets an object by its ID, and registers the read on the audit trail unless the request opts out.
      *
-     * This method also creates an audit trail entry for the 'read' action,
-     * unless `$_audit` says otherwise.
+     * Pass `audit: false` on the request for machine-to-machine reads inside one
+     * operation: the instance setting is all-or-nothing.
      *
-     * @param string   $id            The ID of the object to get.
-     * @param Register $register      The register containing the object.
-     * @param Schema   $schema        The schema of the object.
-     * @param array    $_extend       Properties to extend with.
-     * @param bool     $files         Include file information.
-     * @param bool     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                Pass false for machine-to-machine reads inside one
-     *                                operation - the instance setting is all-or-nothing.
-     *
-     * @return ObjectEntity The retrieved object.
-     *
-     * @throws DoesNotExistException If object not found.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function find(
-        string $id,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        ?array $_extend=[],
-        bool $files=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_audit=true
-    ): ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit);
-        return $this->findRecorded(request: $request, scope: new ReadScope(register: $register, schema: $schema));
-    }//end find()
-
-    /**
-     * Read one object and register the read on the audit trail, unless the request opts out.
-     *
-     * @param ObjectFindRequest $request The id and read flags, `audit` included.
+     * @param ObjectFindRequest $request The id, extensions, file flag and read flags, `audit` included.
      * @param ReadScope         $scope   The register and schema, either may be absent.
      *
      * @return ObjectEntity The retrieved object.
@@ -188,7 +151,7 @@ class GetObject
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function findRecorded(ObjectFindRequest $request, ReadScope $scope): ObjectEntity
+    public function find(ObjectFindRequest $request, ReadScope $scope=new ReadScope()): ObjectEntity
     {
         // Object-source delegation: for a schema served from an external source
         // (x-openregister-object-source) the object is fetched live from the
@@ -211,7 +174,7 @@ class GetObject
         // The same row is what "recently opened" (the `_recent` lens) reads
         // back, so this is the only place a view is recorded.
         return $this->withReadRegistered(object: $this->findInTable(request: $request, scope: $scope), audit: $request->audit);
-    }//end findRecorded()
+    }//end find()
 
     /**
      * Fetch one object live from its object-source provider; a missing provider or object is a 404.
@@ -288,45 +251,12 @@ class GetObject
     }//end withReadRegistered()
 
     /**
-     * Gets an object by its ID without creating an audit trail.
+     * Gets an object by its ID without creating an audit trail: from its object source, or from the magic table.
      *
      * This method is used internally by other operations (like UPDATE) that need to
-     * retrieve an object without logging the read action.
+     * retrieve an object without logging the read action. The request's `audit` flag is not read.
      *
-     * @param string   $id            The ID of the object to get.
-     * @param Register $register      The register containing the object.
-     * @param Schema   $schema        The schema of the object.
-     * @param array    $_extend       Properties to extend with.
-     * @param bool     $files         Include file information.
-     * @param bool     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     *
-     * @return ObjectEntity The retrieved object.
-     *
-     * @throws DoesNotExistException If object not found.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    public function findSilent(
-        string $id,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        ?array $_extend=[],
-        bool $files=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true
-    ): ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
-        return $this->findUnrecorded(request: $request, scope: new ReadScope(register: $register, schema: $schema));
-    }//end findSilent()
-
-    /**
-     * Read one object without registering the read: from its object source, or from the magic table.
-     *
-     * @param ObjectFindRequest $request The id and read flags.
+     * @param ObjectFindRequest $request The id, extensions, file flag and read flags.
      * @param ReadScope         $scope   The register and schema, either may be absent.
      *
      * @return ObjectEntity The retrieved object.
@@ -335,9 +265,9 @@ class GetObject
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function findUnrecorded(ObjectFindRequest $request, ReadScope $scope): ObjectEntity
+    public function findSilent(ObjectFindRequest $request, ReadScope $scope=new ReadScope()): ObjectEntity
     {
-        // Object-source delegation (silent read, no audit) — see findRecorded().
+        // Object-source delegation (silent read, no audit) — see find().
         $source = $this->sourceBinding(scope: $scope);
         if ($source !== null) {
             return $this->findInSource(source: $source, id: $request->id);
@@ -345,7 +275,7 @@ class GetObject
 
         // No audit trail creation - this is a silent read.
         return $this->findInTable(request: $request, scope: $scope);
-    }//end findUnrecorded()
+    }//end findSilent()
 
     /**
      * Finds all objects matching the given criteria.

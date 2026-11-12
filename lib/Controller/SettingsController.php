@@ -219,8 +219,6 @@ class SettingsController extends Controller {
 	/**
 	 * Handle the PUT request to update settings.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated settings
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -258,8 +256,6 @@ class SettingsController extends Controller {
 	 *
 	 * This method recalculates deletion times for all objects and logs based on current retention settings.
 	 * It also assigns default owners and organizations to objects that don't have them assigned.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with rebase result
 	 *
@@ -474,8 +470,6 @@ class SettingsController extends Controller {
 	 *
 	 * Forces a refresh of the cached database information including
 	 * PostgreSQL extensions. This clears the cache and re-queries the database.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with refreshed database info
 	 *

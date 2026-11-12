@@ -171,6 +171,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Db\\ConfigurationMapper',
 				'OCA\\OpenRegister\\Db\\MappingMapper',
 				'Psr\\Log\\LoggerInterface',
+				'OCA\\OpenRegister\\Service\\Configuration\\ReadableExportObjects',
 			],
 			'OCA\\OpenRegister\\Service\\ConfigurationService' => [
 				'OCA\\OpenRegister\\Db\\ConfigurationMapper',

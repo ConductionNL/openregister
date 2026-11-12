@@ -14,7 +14,7 @@ This spec builds on the existing soft-delete infrastructure (`ObjectEntity.delet
 
 ## Requirements
 
-### Requirement 1: Deletions MUST use soft delete by default, marking objects as deleted without physical removal
+### Requirement: Deletions MUST use soft delete by default, marking objects as deleted without physical removal
 
 All delete operations via the API MUST perform a soft delete by setting the `deleted` JSON field on `ObjectEntity` with metadata about the deletion. The object MUST remain in the database and be excluded from normal queries but retrievable through the trash/deleted objects API.
 
@@ -54,7 +54,7 @@ All delete operations via the API MUST perform a soft delete by setting the `del
 - **THEN** collection caches and facet caches for the object's register and schema MUST be invalidated
 - **AND** if cache invalidation fails (e.g., Solr not configured), the soft delete MUST still succeed
 
-### Requirement 2: The system MUST support configurable retention periods before purge
+### Requirement: The system MUST support configurable retention periods before purge
 
 Soft-deleted objects MUST have a configurable retention period after which they become eligible for permanent purge. The `ObjectEntity::delete()` method MUST calculate a `purgeDate` based on the configured retention period, and a background job MUST handle automated purging.
 
@@ -84,7 +84,7 @@ Soft-deleted objects MUST have a configurable retention period after which they 
 - **THEN** the system MUST reject the setting with a validation error
 - **AND** the minimum retention period for government records MUST be enforced per Archiefwet 1995
 
-### Requirement 3: Soft-deleted objects MUST be restorable through the trash API
+### Requirement: Soft-deleted objects MUST be restorable through the trash API
 
 The `DeletedController` MUST provide endpoints for listing, restoring, and permanently deleting soft-deleted objects. Restoration MUST clear the `deleted` metadata and make the object visible in normal queries again.
 
@@ -124,7 +124,7 @@ The `DeletedController` MUST provide endpoints for listing, restoring, and perma
 - **AND** a client that sends `OCS-APIRequest: true` (a script signing in with basic auth or an app password) is not asked for it; without that header and without the token the call is refused
 - @e2e exclude {request-token check is Nextcloud middleware; DeletedControllerCsrfTest pins the route annotations and the store golden pins the token header}
 
-### Requirement 4: Permanent deletion (purge) MUST require prior soft delete and authorization
+### Requirement: Permanent deletion (purge) MUST require prior soft delete and authorization
 
 Objects MUST only be permanently deletable (hard delete) after they have been soft-deleted. The `DeletedController::destroy()` endpoint MUST verify the object is in soft-deleted state before allowing permanent removal. Admin-only access SHOULD be enforced for permanent deletion.
 
@@ -152,7 +152,7 @@ Objects MUST only be permanently deletable (hard delete) after they have been so
 - **THEN** all 10 objects MUST be permanently deleted from the database
 - **AND** an audit trail entry MUST be created for each purged object with action `system.purge`
 
-### Requirement 5: Full object snapshot MUST be preserved in the audit trail before deletion
+### Requirement: Full object snapshot MUST be preserved in the audit trail before deletion
 
 When an object is deleted (soft or hard), the audit trail entry MUST capture the complete state of the object at the time of deletion, ensuring the data can be reconstructed for compliance, investigation, or recovery purposes.
 
@@ -203,7 +203,7 @@ When an object is deleted (soft or hard), the audit trail entry MUST capture the
 - **AND** `createAuditTrail()` MUST NOT be called
 - **AND** the deletion MUST still succeed (audit trail is not a prerequisite for deletion)
 
-### Requirement 6: CASCADE deletions MUST create individual AuditTrail entries with trigger context
+### Requirement: CASCADE deletions MUST create individual AuditTrail entries with trigger context
 
 Each object deleted via CASCADE referential integrity MUST produce its own AuditTrail entry that traces back to the original trigger object, enabling full reconstruction of the cascade chain.
 
@@ -241,7 +241,7 @@ Each object deleted via CASCADE referential integrity MUST produce its own Audit
 - **THEN** `ReferentialIntegrityService` MUST skip `order-2` during cascade processing
 - **AND** no duplicate audit trail entry MUST be created for `order-2`
 
-### Requirement 7: SET_NULL and SET_DEFAULT actions MUST create AuditTrail entries
+### Requirement: SET_NULL and SET_DEFAULT actions MUST create AuditTrail entries
 
 Each property modification via SET_NULL or SET_DEFAULT referential integrity MUST produce an AuditTrail entry recording the previous value, new value, trigger context, and affected property.
 
@@ -271,7 +271,7 @@ Each property modification via SET_NULL or SET_DEFAULT referential integrity MUS
 - **THEN** `members` MUST be updated to `["person-1", "person-3"]` (UUID removed from array, not entire property nullified)
 - **AND** the audit entry MUST record `previousValue: ["person-1", "person-2", "person-3"]` and `newValue: ["person-1", "person-3"]`
 
-### Requirement 8: RESTRICT blocks MUST create AuditTrail entries and return structured errors
+### Requirement: RESTRICT blocks MUST create AuditTrail entries and return structured errors
 
 When a deletion is blocked by RESTRICT, an AuditTrail entry MUST record the blocked attempt, and the API MUST return HTTP 409 Conflict with a structured error body listing the blocking references.
 
@@ -304,7 +304,7 @@ When a deletion is blocked by RESTRICT, an AuditTrail entry MUST record the bloc
   - `chainPaths`: the full graph traversal paths
 - **AND** no mutations MUST occur during the pre-flight analysis
 
-### Requirement 9: Bulk delete operations MUST produce per-object audit trail entries
+### Requirement: Bulk delete operations MUST produce per-object audit trail entries
 
 When multiple objects are deleted in a single bulk operation, each object MUST receive its own audit trail entry, and the response MUST include aggregate counts of all affected objects (including cascades).
 
@@ -332,7 +332,7 @@ When multiple objects are deleted in a single bulk operation, each object MUST r
 - **AND** a failure on object #50 MUST NOT roll back deletions of objects #1-#49
 - **AND** the response MUST report partial success with counts of successful and failed deletions
 
-### Requirement 10: The delete API response MUST include audit trail reference information
+### Requirement: The delete API response MUST include audit trail reference information
 
 The API response for successful deletion operations MUST provide sufficient information for the caller to reference the audit trail entry, enabling downstream systems to correlate the deletion with its audit record.
 
@@ -354,7 +354,7 @@ The API response for successful deletion operations MUST provide sufficient info
 - **THEN** `DeleteObject::getLastCascadeCount()` MUST return 5
 - **AND** the API response SHOULD include the cascade count for client-side display
 
-### Requirement 11: The trash/recycle bin API MUST support listing, filtering, and statistics for deleted objects
+### Requirement: The trash/recycle bin API MUST support listing, filtering, and statistics for deleted objects
 
 The `DeletedController` MUST provide a full API for managing soft-deleted objects including paginated listing, filtering by schema/register, deletion statistics, and top deleter analytics.
 
@@ -390,7 +390,7 @@ The `DeletedController` MUST provide a full API for managing soft-deleted object
   - `deletedThisWeek`: count of objects deleted in the last 7 days
   - `oldestDays`: age in days of the oldest soft-deleted object
 
-### Requirement 12: Search and listing MUST exclude soft-deleted objects by default
+### Requirement: Search and listing MUST exclude soft-deleted objects by default
 
 All normal object queries (list, search, faceted search) MUST exclude soft-deleted objects unless the caller explicitly requests their inclusion. This ensures deleted objects do not appear in user-facing search results.
 
@@ -416,7 +416,7 @@ All normal object queries (list, search, faceted search) MUST exclude soft-delet
 - **WHEN** `MagicMapper::countAll()` is called without explicit deleted inclusion
 - **THEN** the count MUST return 90
 
-### Requirement 13: AuditTrail entries for all referential integrity actions MUST include the initiating user context
+### Requirement: AuditTrail entries for all referential integrity actions MUST include the initiating user context
 
 All referential integrity AuditTrail entries (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT) MUST carry the identity of the user who initiated the original deletion that triggered the cascade chain, ensuring accountability even for system-triggered mutations.
 
@@ -437,7 +437,7 @@ All referential integrity AuditTrail entries (CASCADE, SET_NULL, SET_DEFAULT, RE
 - **THEN** each entry MUST carry `session: "abc123"` and `request: "req-456"`
 - **AND** the `ipAddress` MUST be the IP of the original requesting client
 
-### Requirement 14: GDPR right to erasure MUST be reconciled with audit trail retention for deletion records
+### Requirement: GDPR right to erasure MUST be reconciled with audit trail retention for deletion records
 
 When a data subject exercises their right to erasure (AVG Article 17), deletion audit trail entries MUST balance the obligation to erase personal data with the legal obligation to retain audit records. Audit records are exempt from erasure under AVG Article 17(3)(b) (legal claims) and Article 17(3)(e) (archival in public interest).
 
@@ -462,7 +462,7 @@ When a data subject exercises their right to erasure (AVG Article 17), deletion 
 - **THEN** pseudonymization MUST still proceed (data minimization)
 - **BUT** the audit entry itself MUST NOT be deleted until the legal hold is lifted
 
-### Requirement 15: NO_ACTION deletions MUST NOT create referential integrity audit entries
+### Requirement: NO_ACTION deletions MUST NOT create referential integrity audit entries
 
 The NO_ACTION `onDelete` behavior means no referential integrity action is taken, so no integrity-specific audit entry is needed. The standard `delete` audit entry for the root object MUST still be created.
 

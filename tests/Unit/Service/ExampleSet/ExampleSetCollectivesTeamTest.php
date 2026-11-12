@@ -106,7 +106,7 @@ class ExampleSetCollectivesTeamTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => $this->services[$id]);
 
-		return new ExampleSetCollectivesStore($container, $this->createMock(IAppManager::class));
+		return new ExampleSetCollectivesStore(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(IAppManager::class), users: $this->createMock(\OCP\IUserManager::class)));
 	}//end store()
 
 	private static function found(): object {

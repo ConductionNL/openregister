@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface;
@@ -109,7 +110,7 @@ class RelatedRetentionRecalculationJobBehaviourTest extends TestCase {
 
 		$this->job = new RelatedRetentionRecalculationJob(
 			$this->createMock(ITimeFactory::class),
-			new RelatedRetentionLookup($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $this->calculator, $this->retention),
 			$this->logger
 		);

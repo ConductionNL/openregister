@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -86,6 +87,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -160,14 +162,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// RBAC-filtered find refuses the row, exactly as it does for a learner;
 		// only an unfiltered find (the system path) returns it.
 		$this->objectService->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				mixed $register = null,
-				mixed $schema = null,
-				bool $_rbac = true,
-			): ObjectEntity {
+			function (...$args): ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac] = FindCallShape::find(args: $args);
 				if ($_rbac === true) {
 					throw new DoesNotExistException('Object not found in any magic table');
 				}
@@ -199,19 +195,9 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// saveObject() dispatches ObjectUpdatingEvent to the real listener and
 		// refuses the write when it stops the event, as MagicMapper does.
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				mixed $register = null,
-				mixed $schema = null,
-				?string $uuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $silent = false,
-				bool $_validation = true,
-				?array $uploadedFiles = null,
-				?IUser $currentUser = null,
-			): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$silent = $options->policy->silent;
+				$currentUser = $options->actor->currentUser;
 				$this->saves[] = [
 					'_rbac' => $_rbac,
 					'_multitenancy' => $_multitenancy,

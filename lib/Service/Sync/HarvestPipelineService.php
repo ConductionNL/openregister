@@ -33,11 +33,14 @@ use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SyncRecord;
 use OCA\OpenRegister\Db\SyncRecordInputs;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Runs the gather -> fetch -> import pipeline for one source.
@@ -414,9 +417,10 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		$existingUuid = $item->trackedUuid();
 		$saved        = $this->importServices->objectService->saveObject(
 			object: $item->mapped,
-			register: $source->getTargetRegister(),
-			schema: $source->getTargetSchema(),
-			uuid: $existingUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $source->getTargetRegister(), schema: $source->getTargetSchema()),
+				uuid: $existingUuid
+			)
 		);
 
 		$savedUuid = $this->savedUuidOf(saved: $saved);
@@ -575,8 +579,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		try {
 			return WriteCause::asLookup(fn () => $this->importServices->objectService->find(
 				id: (string)$previous->getObjectUuid(),
-				register: $source->getTargetRegister(),
-				schema: $source->getTargetSchema()
+				options: new ObjectFindOptions(register: $source->getTargetRegister(), schema: $source->getTargetSchema())
 			));
 		} catch (Throwable $e) {
 			return null;

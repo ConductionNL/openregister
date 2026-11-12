@@ -26,6 +26,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\DestructionCheckJob;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
@@ -578,8 +579,8 @@ class DestructionCheckJobTrailTest extends TestCase {
 		$saved->setUuid('list-1');
 		$writer = $this->createMock(SaveObjectWriterInterface::class);
 		$writer->method('saveObject')->willReturnCallback(
-			function ($register, $schema) use ($saved): ObjectEntity {
-				$this->trail[] = 'save ' . $register . ' ' . $schema;
+			function (array $data, ObjectSaveOptions $options) use ($saved): ObjectEntity {
+				$this->trail[] = 'save ' . $options->target->register . ' ' . $options->target->schema;
 				return $saved;
 			}
 		);

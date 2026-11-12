@@ -103,7 +103,6 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The filed report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
@@ -279,7 +278,6 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below. Reviewing is the
 	 *   only write this endpoint allows, and it is the reviewer group's job by definition.
 	 *

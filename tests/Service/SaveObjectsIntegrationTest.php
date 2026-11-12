@@ -15,8 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for SaveObjects handler
@@ -105,7 +106,7 @@ class SaveObjectsIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors
 			}

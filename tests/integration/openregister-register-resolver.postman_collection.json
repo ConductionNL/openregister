@@ -1,4 +1,15 @@
 {
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+        ]
+      }
+    }
+  ],
   "info": {
     "_postman_id": "openregister-register-resolver-v1",
     "name": "OpenRegister Register Resolver",

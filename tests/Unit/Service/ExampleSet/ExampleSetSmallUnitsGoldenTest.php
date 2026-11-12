@@ -118,26 +118,26 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 	public function testFillMissingBranches(): void {
 		$profile = ['headline' => 'Kop', 'role' => '', 'organisation' => 'Org', 'absence' => null, 'status' => null];
 
-		$none = new ExampleSetProfiles($this->users(user: null), $this->createMock(IAccountManager::class), $this->createMock(ContainerInterface::class));
+		$none = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: null)), $this->createMock(IAccountManager::class));
 		$this->assertSame(['account ghost is not there'], $none->fillMissing(uid: 'ghost', profile: $profile));
 
 		$log     = [];
 		$account = $this->account(values: ['headline' => 'held', 'role' => '', 'organisation' => 'held too'], log: $log);
 		$manager = $this->manager(account: $account, log: $log);
-		$full    = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $manager, $this->createMock(ContainerInterface::class));
+		$full    = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $manager);
 		$this->assertSame([], $full->fillMissing(uid: 'pieter', profile: $profile));
 		$this->assertSame(['getAccount'], $log);
 
 		$log     = [];
 		$account = $this->account(values: ['headline' => '  ', 'role' => '', 'organisation' => 'held'], log: $log);
 		$manager = $this->manager(account: $account, log: $log);
-		$partial = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $manager, $this->createMock(ContainerInterface::class));
+		$partial = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $manager);
 		$this->assertSame([], $partial->fillMissing(uid: 'pieter', profile: $profile));
 		$this->assertSame(['getAccount', 'set headline=Kop', 'updateAccount'], $log);
 
 		$failing = $this->createMock(IAccountManager::class);
 		$failing->method('getAccount')->willThrowException(new RuntimeException('store down'));
-		$broken = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $failing, $this->createMock(ContainerInterface::class));
+		$broken = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $failing);
 		$this->assertSame(['profile of pieter: store down'], $broken->fillMissing(uid: 'pieter', profile: $profile));
 	}//end testFillMissingBranches()
 
@@ -311,7 +311,7 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 			$container->method('get')->willReturn($service);
 		}
 
-		return new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $this->createMock(IAccountManager::class), $container);
+		return new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $this->createMock(IAccountManager::class));
 	}//end withStatus()
 
 	/**

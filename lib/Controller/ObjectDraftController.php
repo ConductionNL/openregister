@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\Object\UserDraftActivation;
@@ -49,7 +50,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -155,12 +155,10 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The activated object, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function activate(string $register, string $schema, string $id): JSONResponse {
 		return $this->activateForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
@@ -207,7 +205,10 @@ class ObjectDraftController extends Controller {
 		try {
 			$registerEntity = $this->registers->find(id: $route->register, _rbac: false, _multitenancy: false);
 			$schemaEntity = $this->schemas->find(id: $route->schema, _rbac: false, _multitenancy: false);
-			$readable = $this->objects->find(id: $route->id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
+			$readable = $this->objects->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			);
 		} catch (Throwable) {
 			return null;
 		}

@@ -66,6 +66,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
@@ -148,7 +152,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->writeNote(...));
 	}//end create()
@@ -165,7 +168,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -185,7 +187,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -202,10 +203,9 @@ class TaskNotesController extends Controller {
 	 */
 	private function listNotes(TaskInterface $task): JSONResponse {
 		$params = $this->request->getParams();
-		$limit = (int)($params['limit'] ?? 50);
-		$offset = (int)($params['offset'] ?? 0);
+		$page = new ListQuery(limit: (int)($params['limit'] ?? 50), offset: (int)($params['offset'] ?? 0));
 
-		$notes = $this->notes->getNotesForObject((string)$task->getUuid(), $limit, $offset);
+		$notes = $this->notes->listNotes(query: new ObjectNotesQuery(objectUuid: (string)$task->getUuid(), page: $page));
 
 		return new JSONResponse(['results' => $notes, 'total' => count($notes)]);
 	}//end listNotes()
@@ -224,7 +224,7 @@ class TaskNotesController extends Controller {
 		}
 
 		return new JSONResponse(
-			$this->notes->createNote((string)$task->getUuid(), $message),
+			$this->notes->createNote(draft: new NoteDraft(objectUuid: (string)$task->getUuid(), message: $message)),
 			Http::STATUS_CREATED
 		);
 	}//end writeNote()
@@ -247,7 +247,7 @@ class TaskNotesController extends Controller {
 			return TaskLeafGuard::notFound();
 		}
 
-		return new JSONResponse($this->notes->updateNote($noteId, $message));
+		return new JSONResponse($this->notes->editNote(noteId: $noteId, edit: new NoteEdit(message: $message)));
 	}//end rewriteNote()
 
 	/**

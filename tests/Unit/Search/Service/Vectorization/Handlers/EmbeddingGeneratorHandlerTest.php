@@ -270,6 +270,23 @@ class EmbeddingGeneratorHandlerTest extends TestCase
         $this->assertSame(['model' => 'nomic-embed-text'], $requests[0]['body']);
     }//end testOllamaBuildsApiUrlFromTrimmedBaseUrlAndAsksShowForLength()
 
+    public function testOllamaGeneratorStaysCachedWhenTheLengthProbeFails(): void
+    {
+        $config = ['provider' => 'ollama', 'model' => 'nomic-embed-text', 'base_url' => self::$base.'/fail/'];
+
+        try {
+            $this->handler->getGenerator($config);
+            $this->fail('A failing /show probe must surface on the first call.');
+        } catch (Exception $e) {
+            $this->assertNotSame('', $e->getMessage());
+        }
+
+        $cached = $this->readPrivate($this->handler, EmbeddingGeneratorHandler::class, 'generatorCache');
+        $this->assertInstanceOf(OllamaEmbeddingGenerator::class, $cached['ollama_nomic-embed-text']);
+        $this->assertSame($cached['ollama_nomic-embed-text'], $this->handler->getGenerator($config));
+        $this->assertCount(1, $this->requests());
+    }//end testOllamaGeneratorStaysCachedWhenTheLengthProbeFails()
+
     public function testOllamaWithoutBaseUrlDefaultsToLocalhost(): void
     {
         $generator = (fn(): OllamaEmbeddingGenerator => $this->createOllamaGenerator(model: 'all-minilm', config: []))

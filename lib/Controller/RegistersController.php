@@ -532,8 +532,6 @@ class RegistersController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created register or error
 	 *
 	 * @psalm-return JSONResponse<201, Register,
@@ -637,8 +635,6 @@ class RegistersController extends Controller {
 	 * @param int $id The ID of the register to update
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated register or error
 	 *
@@ -747,8 +743,6 @@ class RegistersController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched register or error
 	 *
 	 * @psalm-return JSONResponse<200, Register,
@@ -773,8 +767,6 @@ class RegistersController extends Controller {
 	 * @throws Exception If there is an error deleting the register
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response on success or error
 	 *
@@ -1082,8 +1074,6 @@ class RegistersController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with publish result or error
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
@@ -1118,8 +1108,6 @@ class RegistersController extends Controller {
 	 * @return JSONResponse JSON response with import result or error
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
 	 *

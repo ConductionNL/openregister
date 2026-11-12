@@ -876,10 +876,9 @@ class TaskControllerTest extends TestCase {
 
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
-		// The SPA calls the API from this page, so the shell must carry the
-		// same connect-domain relaxation the dashboard shell does.
+		// The SPA calls only this instance's own API from this page.
 		$policy = $response->getContentSecurityPolicy();
 		$this->assertNotNull($policy);
-		$this->assertStringContainsString('connect-src', $policy->buildPolicy());
+		$this->assertSame("'self'", UiControllerTest::connectSources(policy: $policy->buildPolicy()));
 	}//end testOpenServesTheSpaShell()
 }//end class

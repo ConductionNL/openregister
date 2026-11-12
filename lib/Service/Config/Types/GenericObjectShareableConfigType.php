@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * A shareable type bound to one register + schema, built from a schema marker.
@@ -187,8 +189,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 
 			$saved = $this->objectService->saveObject(
 				object: $this->portable(data: $object),
-				register: $this->register,
-				schema: $this->schema
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema))
 			);
 
 			$installed[] = (string)$saved->getUuid();

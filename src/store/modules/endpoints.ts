@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { withRequestToken } from '../../services/requestToken.js'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
@@ -143,13 +144,13 @@ function useEndpointReads(state: TEndpointState) {
 			throw new Error('Endpoint ID is required for testing')
 		}
 
-		return fetch(`${apiEndpoint}/${item.id}/test`, {
+		return fetch(`${apiEndpoint}/${item.id}/test`, withRequestToken({
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({ data: testData }),
-		})
+		}))
 			.then((response) => {
 				return response.json().then((data) => {
 					if (!response.ok) {
@@ -195,13 +196,13 @@ function useEndpointWrites(
 	 */
 	const saveEndpoint = (method: keyof typeof SAVES, item: TEndpointItem) => {
 		const save = SAVES[method]
-		return fetch(save.url(item), {
+		return fetch(save.url(item), withRequestToken({
 			method,
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(item),
-		})
+		}))
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error(`Failed to ${save.verb} endpoint`)
@@ -251,9 +252,9 @@ function useEndpointWrites(
 			throw new Error('Endpoint ID is required for deletion')
 		}
 
-		return fetch(`${apiEndpoint}/${item.id}`, {
+		return fetch(`${apiEndpoint}/${item.id}`, withRequestToken({
 			method: 'DELETE',
-		})
+		}))
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error('Failed to delete endpoint')

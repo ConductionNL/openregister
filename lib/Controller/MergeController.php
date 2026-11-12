@@ -85,7 +85,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the preview payload.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */
@@ -123,7 +122,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the persisted `mergeOperation`.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */
@@ -179,7 +177,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the updated `mergeOperation`.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */

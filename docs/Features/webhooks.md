@@ -254,7 +254,7 @@ OpenRegister provides a RESTful API for managing webhooks.
 ### Creating a Webhook
 
 ```bash
-curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks \
+curl -H 'OCS-APIRequest: true' -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks \
   -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -291,21 +291,21 @@ curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks \
 ### Listing Webhooks
 
 ```bash
-curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks \
+curl -H 'OCS-APIRequest: true' -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks \
   -u 'admin:admin'
 ```
 
 ### Getting a Webhook
 
 ```bash
-curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+curl -H 'OCS-APIRequest: true' -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
   -u 'admin:admin'
 ```
 
 ### Updating a Webhook
 
 ```bash
-curl -X PUT http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+curl -H 'OCS-APIRequest: true' -X PUT http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
   -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -316,14 +316,14 @@ curl -X PUT http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} 
 ### Deleting a Webhook
 
 ```bash
-curl -X DELETE http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
+curl -H 'OCS-APIRequest: true' -X DELETE http://localhost:8080/index.php/apps/openregister/api/webhooks/{id} \
   -u 'admin:admin'
 ```
 
 ### Testing a Webhook
 
 ```bash
-curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/test \
+curl -H 'OCS-APIRequest: true' -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/test \
   -u 'admin:admin'
 ```
 ![img_5.png](img_5.png)
@@ -333,7 +333,7 @@ The test endpoint sends a test payload to verify webhook configuration. After te
 ### Listing Available Events
 
 ```bash
-curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/events \
+curl -H 'OCS-APIRequest: true' -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/events \
   -u 'admin:admin'
 ```
 
@@ -970,11 +970,11 @@ Logs can be accessed via the API:
 
 ```bash
 # Get logs for a specific webhook
-curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs \
+curl -H 'OCS-APIRequest: true' -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs \
   -u 'admin:admin'
 
 # Get all webhook logs (with optional filtering)
-curl -X GET 'http://localhost:8080/index.php/apps/openregister/api/webhooks/logs?webhook_id=1&limit=50&offset=0&success=false' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://localhost:8080/index.php/apps/openregister/api/webhooks/logs?webhook_id=1&limit=50&offset=0&success=false' \
   -u 'admin:admin'
 ```
 
@@ -992,7 +992,7 @@ curl -X GET 'http://localhost:8080/index.php/apps/openregister/api/webhooks/logs
 You can manually retry a failed webhook delivery using the log entry ID:
 
 ```bash
-curl -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/logs/{logId}/retry \
+curl -H 'OCS-APIRequest: true' -X POST http://localhost:8080/index.php/apps/openregister/api/webhooks/logs/{logId}/retry \
   -u 'admin:admin'
 ```
 
@@ -1110,7 +1110,7 @@ You can monitor retry status by checking webhook logs:
 
 ```bash
 # Get statistics for a webhook
-curl -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs/stats \
+curl -H 'OCS-APIRequest: true' -X GET http://localhost:8080/index.php/apps/openregister/api/webhooks/{id}/logs/stats \
   -u 'admin:admin'
 ```
 

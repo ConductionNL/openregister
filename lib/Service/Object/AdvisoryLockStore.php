@@ -38,6 +38,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 
 /**
  * The appConfig-backed advisory lock store.

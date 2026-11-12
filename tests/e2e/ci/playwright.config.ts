@@ -400,6 +400,7 @@ export default defineConfig({
 	use: {
 		baseURL: resolveBaseUrl(),
 		extraHTTPHeaders: {
+			'OCS-APIRequest': 'true',
 			Authorization: `Basic ${Buffer.from(
 				`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${
 					process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'

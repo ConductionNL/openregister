@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
@@ -54,7 +55,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
-use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
@@ -136,7 +136,7 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 
 		$this->job = new RelatedRetentionRecalculationJob(
 			$this->createMock(ITimeFactory::class),
-			new RelatedRetentionLookup($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
 		);

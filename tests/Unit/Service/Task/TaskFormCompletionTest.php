@@ -38,6 +38,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The completion path with a form payload.
@@ -252,7 +253,11 @@ class TaskFormCompletionTest extends TestCase {
 		$subject->setObject(['name' => 'Case 7', 'reason' => null]);
 		$this->objects->method('find')->with('obj-1')->willReturn($subject);
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend, mixed $register, mixed $schema, ?string $uuid, bool $_rbac, bool $_multitenancy, bool $silent, bool $_validation, ?array $uploadedFiles, ?IUser $currentUser) use ($subject): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($subject): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
+				$currentUser = $options->actor->currentUser;
 				$this->calls[] = 'save';
 				// getObject() carries the entity's own id alongside the record,
 				// so assert the record's content rather than the exact array.
@@ -535,7 +540,7 @@ class TaskFormCompletionTest extends TestCase {
 
 		$seen = null;
 		$this->objects->method('saveObject')->willReturnCallback(
-            function () use ($subject, &$seen): ObjectEntity {
+            function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($subject, &$seen): ObjectEntity {
 				$seen = $this->runContext->currentRunUuid();
 
 				return $subject;
