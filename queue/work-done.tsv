@@ -366,3 +366,4 @@ gap:humaniq:opensourcehealth:724b9637	failed: opensourcehealth stars come from 6
 cover:stackiq:8cfacb29:js0be8c659	PR #1760: 16 tests (SaveFacetViewModal, SubmitReviewModal, Modals); src/modals/* 71.23%->83.1% lines	session-20261112T202437-4020bd95	2026-11-12T21:05:07Z
 cover:dossiq:6ca0231e:2021c6de	no PR: lib/Service/Outbound already 86/91 statements under strict metadata, 83 tests none risky; the 5 left are live-DNS record parsing and an unreachable private guard	session-20261112T200018-e68ecbf8	2026-11-12T21:05:25Z
 verify:pipelinq:3545:8faa4858	BLOCK: API-wide response contract change (error body/Content-Type, deprecation headers); tests 0 new failures	session-20261112T205847-2f6d1ca4	2026-11-12T21:05:52Z
+cover:dossiq:6ca0231e:59826f43	PR #6179: 5 tests covering AdminSettings, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T21:06:00Z
