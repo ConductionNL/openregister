@@ -62,3 +62,4 @@ merge:dossiq:5524:9e331185	merged 7 of 9; #5696 #5761 FAIL 405 merge conflicts (
 cover:buildiq:8ca317f6:d39f9857	opened buildiq#1447 (14 tests, 4 Support classes; suite errors/failures unchanged)	session-20261112T184441-77ab05a6	2026-11-12T19:11:20Z
 cover:buildiq:8ca317f6:f545d745	PR buildiq#1448 (replaces closed #1446, class-name collision fixed): 7 tests for FlagRegistryTokenSensitive + PopulateApplicationPermissions edge cases; suite 2234->2241, failures unchanged	session-20261112T184438-005b5eda	2026-11-12T19:11:37Z
 gap:dossiq:9:7d352ecb	PR #6082: renamed MoneyConfigKeys::PAYOUT_CALLBACK_SECRET to *_KEY (config key name matched the secret regex); value unchanged	session-20261112T184505-d34a144f	2026-11-12T19:11:55Z
+cover:buildiq:8ca317f6:0d8702e3	PR #1449: template SettingsService + FlowSeedService branches, 18 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:12:11Z
