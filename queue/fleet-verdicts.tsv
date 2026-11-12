@@ -4360,3 +4360,4 @@ pipelinq	3583	98ea5e5c89a82cb9118ccaa90442335fedb979e5	GREEN	worker-16	php 5865 
 pipelinq	3584	185394bc0a3a81e5705ba9dbf31ef4375e5d8b93	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
 pipelinq	3585	de26147b53aed3d02ecf95c5916a5ef537853f6d	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; axe-core moved to devDependencies (only e2e uses it), sbom updated
 pipelinq	3586	3181af63e71ff93fc9bc5a64e058b51b6fb02b8a	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
+pipelinq	3587	7a24f067f8829b330b2cd02e74bc99073a2c8f32	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
