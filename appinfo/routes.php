@@ -1515,7 +1515,13 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		// `filesMultipart` is the deprecated name of `files/multipart`.
-		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files/multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'kebab'],
+		[
+			'name'         => 'files#createMultipart',
+			'url'          => '/api/objects/{register}/{schema}/{id}/files/multipart',
+			'verb'         => 'POST',
+			'requirements' => ['id' => '[^/]+'],
+			'postfix'      => 'kebab',
+		],
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
