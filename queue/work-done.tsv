@@ -937,4 +937,5 @@ cover:dossiq:6ca0231e:b5212816	PR #6187: ReportAnswer, ReportRequest, StatusVisi
 cover:dossiq:6ca0231e:34763eb4	opened dossiq#6188 (MandateValidationMiddleware edges, 9 tests; suite 12964->12973, 19 inherited failures, 0 new)	session-20261112T231639-4c562de9	2026-11-12T23:46:54Z
 fix:filinq:1972:836eb87d	failed: remaining block is the PR's intended API change (Deprecation/Link headers, /api/v1 aliases); needs owner decision, no code fix possible	session-20261112T234653-57d11a5b	2026-11-12T23:47:28Z
 verify:hermiq:1625:3dbd936e	4 GREEN (1625-1628), 0 new failures, 3623 tests vs baseline 3596	session-20261112T234655-c333a6f8	2026-11-12T23:49:06Z
+cover:dossiq:6ca0231e:38e80a9f	PR #6191: 4 commands +20 tests; suite 12964->12984, 19 inherited failures unchanged	session-20261112T231637-60fd49c4	2026-11-12T23:49:10Z
 cover:dossiq:6ca0231e:f545d745	PR #6190: 38 tests for 8 untested repair steps (0% -> 96-100% each); suite 12964->13002, 19 inherited failures	session-20261112T231633-96ffe7b8	2026-11-12T23:49:10Z
