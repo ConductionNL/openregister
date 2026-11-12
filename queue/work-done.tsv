@@ -946,3 +946,4 @@ cover:integriq:9b0f5894m2367:js102ac6fb	failed: lang=js but dirs=lib/Service/Sec
 cover:integriq:9b0f5894m2367:js19badfa5	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:50:58Z
 cover:integriq:9b0f5894m2367:js0d678885	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:07Z
 cover:integriq:9b0f5894m2367:js2fbf11bd	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:17Z
+cover:dossiq:6ca0231e:a67b69e6	PR dossiq#6195: 13 tests; ReportAnswer 0->21/21, PhaseSummary/ReportRequest gaps closed (dir was already ~95%, queued 70.74% stale); suite 12977, same 19 inherited failures	session-20261112T221237-836ed3f0	2026-11-12T23:51:24Z
