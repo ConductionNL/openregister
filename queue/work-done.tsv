@@ -430,3 +430,4 @@ cover:buildiq:8ca317f6:js10b588fb	PR #1472: 32 vitest tests, applicationDetail l
 merge:shillinq:2760:51f8d7bf	2760 MERGED 2761 MERGED 2762 MERGED 2763 MERGED 2764 MERGED 2769 MERGED 2770 MERGED 2771 MERGED 2772 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T21:24:51Z
 cover:integriq:9b0f5894:js5a3cabaa	PR #3399: 8 action forms, 13 vitest tests; src/views/Rule lines 29.5%->41.2% (editor views still uncovered); suite 1392->1405 green	session-20261112T184505-d34a144f	2026-11-12T21:25:16Z
 cover:integriq:9b0f5894:js0023cfc7	PR #3400: 14 vitest tests for EditMappingRuleDialog + DsoActivityMappingDialog; src/dialogs 78.27->90.99%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:25:37Z
+verify:dossiq:6151:e9fa35ad	6151 BLOCK (API error bodies and routes change); 6152-6159 GREEN tests-only; tree 12564 tests, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:26:06Z
