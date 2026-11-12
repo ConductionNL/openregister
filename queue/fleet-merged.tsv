@@ -437,3 +437,4 @@ stackiq	1772	5b0413991f169e9f1f72a9b1159ab64799f7ac8c	MERGED	merge-local	GATE OK
 stackiq	1542	69e306bb1fd600b807c20d41242916836e2328fa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1546	db138c93a358741b35322339037564984a8996e8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1595	3325e9bea6413097830c0ae0c491df3926af883c	SKIP	merge-local	GATE UNMEASURED 3325e9bea6 does not merge cleanly onto development
+stackiq	1774	f03648cc89aec6bee957a465287d9d7329c73deb	MERGED	merge-local	light gate: quality config yaml only, parses, applies cleanly
