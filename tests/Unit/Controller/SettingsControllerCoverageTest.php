@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
@@ -48,13 +49,12 @@ class SettingsControllerCoverageTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SettingsController(
+		$this->controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$l10n
@@ -77,23 +77,6 @@ class SettingsControllerCoverageTest extends TestCase {
 				return $this->platformName;
 			}
 		};
-	}
-
-	// =========================================================================
-	// getConfigurationService — success path
-	// =========================================================================
-
-	public function testGetConfigurationServiceReturnsServiceWhenInstalled(): void {
-		$configSvc = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister', 'files']);
-		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ConfigurationService')
-			->willReturn($configSvc);
-
-		$result = $this->controller->getConfigurationService();
-
-		$this->assertSame($configSvc, $result);
 	}
 
 	// =========================================================================
@@ -182,13 +165,13 @@ class SettingsControllerCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testGetSearchIndexStatusReturnsInventory(): void {
-		$maintenance = $this->createMock(\OCA\OpenRegister\Service\Search\SearchIndexMaintenance::class);
+		$maintenance = $this->createMock(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance::class);
 		$maintenance->method('tablesInScope')->willReturn(['oc_openregister_table_1']);
 		$maintenance->method('indexNamesFor')->willReturn(['oc_openregister_table_1' => ['idx_a', 'idx_b']]);
 		$maintenance->method('supportsConcurrentRebuild')->willReturn(true);
 		$maintenance->method('lastRun')->willReturn([]);
 		$this->container->method('get')
-			->with(\OCA\OpenRegister\Service\Search\SearchIndexMaintenance::class)
+			->with(\OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface::class)
 			->willReturn($maintenance);
 
 		$result = $this->controller->getSearchIndexStatus();

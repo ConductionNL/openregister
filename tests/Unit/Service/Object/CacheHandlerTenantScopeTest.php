@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
 use OCP\ICacheFactory;
@@ -155,7 +158,7 @@ class CacheHandlerTenantScopeTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 
@@ -163,14 +166,20 @@ class CacheHandlerTenantScopeTest extends TestCase {
 			});
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			$registerMapper,
-			$schemaMapper,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 	}
 
@@ -369,7 +378,7 @@ class CacheHandlerTenantScopeTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$registerMapper->method('findAll')->willReturn([
 			$this->createRegister(1, [5], ['schemas' => ['test-schema' => ['magicMapping' => true]]]),
@@ -445,7 +454,7 @@ class CacheHandlerTenantScopeTest extends TestCase {
 	 * organisation's objects and organisations in one call, keyed by UUID.
 	 *
 	 * This is the exact return shape ObjectsController::collectNamesForResponse,
-	 * ObjectService::collectNamesForResults, ExportService, PerformanceHandler,
+	 * ObjectService::collectNamesForResults, ExportService,
 	 * MetadataHydrationHandler and MagicFacetHandler consume.
 	 *
 	 * @return void
@@ -500,7 +509,6 @@ class CacheHandlerTenantScopeTest extends TestCase {
 	 *   pre-seeded map.
 	 * - Service\Object\SaveObject\MetadataHydrationHandler tests
 	 *   `empty($names[$uuid]) === false` and falls back to the UUID.
-	 * - Service\Object\PerformanceHandler assigns the map to `relatedNames`.
 	 * - Db\MagicMapper\MagicFacetHandler tests `isset($names[$value])` at both of
 	 *   its single-value sites and falls back to a shortened UUID, and its batch
 	 *   site foreach()es over exactly what came back.

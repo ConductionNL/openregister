@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\EmailLink\EmailLinkFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -54,6 +55,8 @@ use OCP\AppFramework\Db\Entity;
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
+ * @method string|null getRfcMessageId()
+ * @method void setRfcMessageId(?string $rfcMessageId)
  * @method void setLinkedAt(DateTime $linkedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -160,23 +163,46 @@ class EmailLink extends Entity implements JsonSerializable {
 	protected ?DateTime $linkedAt = null;
 
 	/**
+	 * The longest `Message-ID` the column holds.
+	 */
+	public const RFC_MESSAGE_ID_LENGTH = 255;
+
+	/**
+	 * The RFC `Message-ID` of the linked mail, with its angle brackets.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rfcMessageId = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'mailAccountId', type: 'integer');
-		$this->addType(fieldName: 'mailMessageId', type: 'integer');
-		$this->addType(fieldName: 'mailMessageUid', type: 'string');
-		$this->addType(fieldName: 'subject', type: 'string');
-		$this->addType(fieldName: 'sender', type: 'string');
-		$this->addType(fieldName: 'senderName', type: 'string');
-		$this->addType(fieldName: 'mailDate', type: 'datetime');
-		$this->addType(fieldName: 'metadata', type: 'string');
-		$this->addType(fieldName: 'linkedBy', type: 'string');
-		$this->addType(fieldName: 'linkedAt', type: 'datetime');
+		foreach (EmailLinkFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
+
+	/**
+	 * A `Message-ID` as the column holds it: null when it does not fit.
+	 *
+	 * A longer id is rare and legal. Truncated, it could equal another message's
+	 * id, and a reply would thread onto the wrong object; absent, the reply is
+	 * `unthreaded` and a person sees it.
+	 *
+	 * @param string|null $messageId The id.
+	 *
+	 * @return string|null The id to store.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public static function storableMessageId(string|null $messageId): string|null {
+		if ($messageId === null || $messageId === '' || strlen($messageId) > self::RFC_MESSAGE_ID_LENGTH) {
+			return null;
+		}
+
+		return $messageId;
+	}//end storableMessageId()
 
 	/**
 	 * The link details from the metadata, one entry per DETAIL_KEYS key, null when absent.
@@ -207,22 +233,9 @@ class EmailLink extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'mailAccountId' => $this->mailAccountId,
-			'mailMessageId' => $this->mailMessageId,
-			'mailMessageUid' => $this->mailMessageUid,
-			'subject' => $this->subject,
-			'sender' => $this->sender,
-			'senderName' => $this->senderName,
-			'mailDate' => $this->mailDate?->format(DateTime::ATOM),
-			'metadata' => $this->metadata,
-			'details' => $this->details(),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['rfcMessageId']));
+
+		return $typed->inserted(json: $json, entriesAfter: ['metadata' => ['details' => $this->details()]]);
 	}//end jsonSerialize()
 }//end class

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -44,6 +45,7 @@ use RuntimeException;
  * Tests that a record's data cannot stand in for its organisation.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -56,6 +58,10 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 
@@ -99,14 +105,14 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 		);
 
 		$logger = new NullLogger();
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $userSession,
 			userManager: $userManager,
 			groupManager: $groupManager,
 			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
 			objectEntityMapper: $this->createMock(originalClassName: MagicMapper::class),
 			conditionMatcher: new ConditionMatcher(
-				userSession: $userSession,
+				users: new ConditionUserResolvers(userSession: $userSession),
 				container: $container,
 				operatorEvaluator: new OperatorEvaluator(logger: $logger),
 				logger: $logger

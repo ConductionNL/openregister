@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 class NotificationAnnotationValidatorTest extends TestCase {
@@ -279,6 +279,22 @@ class NotificationAnnotationValidatorTest extends TestCase {
 			'properties' => [],
 		]);
 		$this->assertSame([], $errors);
+	}
+
+	public function testWebhookChannelRefusesANonHttpUrl(): void {
+		$errors = $this->v->validate([
+			'x-openregister-notifications' => [
+				'opened' => [
+					'trigger' => ['type' => 'created'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'ftp://hooks.example.com/x'],
+					'subject' => 'x',
+				],
+			],
+			'properties' => [],
+		]);
+		$this->assertContains('notification-webhook-no-url', array_column($errors, 'code'));
 	}
 
 	public function testObjectAclRecipientRequiresPermission(): void {

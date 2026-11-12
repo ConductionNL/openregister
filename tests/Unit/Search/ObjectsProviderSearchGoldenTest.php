@@ -15,6 +15,7 @@ use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -39,6 +40,13 @@ use Psr\Log\AbstractLogger;
  * @uses   \OCA\OpenRegister\Search\SearchScopes
  * @uses   \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
  * @uses   \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\ObjectsProviderOutput
+ * @uses \OCA\OpenRegister\Search\SearchScopeTargets
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchHit
  */
 class ObjectsProviderSearchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-provider-search-golden.json';
@@ -149,14 +157,17 @@ class ObjectsProviderSearchGoldenTest extends TestCase {
 			}
 		);
 
-		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $objectService, $deepLinks, $schemaMapper, $registerMapper, $logger);
+		$sources = new ObjectPreviewSources(
+			objectService: $objectService,
+			deepLinkRegistry: $deepLinks,
+			schemaMapper: $schemaMapper,
+			registerMapper: $registerMapper
+		);
+		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $sources, $logger);
 		$provider = new ObjectsProvider(
-			$l10n,
 			$objectService,
-			$logger,
-			$schemaMapper,
-			new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview),
-			$registerMapper
+			new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+			new \OCA\OpenRegister\Search\ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview), $logger)
 		);
 
 		try {

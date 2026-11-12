@@ -33,6 +33,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SelectielijstControllerFactory;
 
 /**
  * Tests SelectielijstController.
@@ -55,15 +56,11 @@ class SelectielijstControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new SelectielijstController(
-			'openregister',
+		$this->controller = SelectielijstControllerFactory::create(
 			$this->request,
 			$this->selectielijst,
 			$this->settingsHandler,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(LoggerInterface::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
 	}
 
 	/**

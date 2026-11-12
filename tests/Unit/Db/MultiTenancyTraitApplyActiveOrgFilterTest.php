@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -72,9 +73,7 @@ class MultiTenancyTraitApplyActiveOrgFilterTest extends TestCase {
 
 		$this->mapper = new WebhookMapper(
 			$this->db,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->appConfig
 		);
 	}//end setUp()
@@ -99,7 +98,14 @@ class MultiTenancyTraitApplyActiveOrgFilterTest extends TestCase {
 	): void {
 		$method = new ReflectionMethod(WebhookMapper::class, 'applyActiveOrgFilter');
 		$method->setAccessible(true);
-		$method->invoke($this->mapper, $qb, $user, $activeOrgUuids, $allowNullOrg, $organisationColumn);
+		$scope = [
+			'activeOrgUuids' => $activeOrgUuids,
+			'allowNullOrg' => $allowNullOrg,
+			'organisationColumn' => $organisationColumn,
+			'sharedIds' => [],
+			'sharedIdColumn' => 'id',
+		];
+		$method->invoke($this->mapper, $qb, $scope + ['user' => $user]);
 	}//end invokeApplyActiveOrgFilter()
 
 	/**

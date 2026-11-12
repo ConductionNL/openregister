@@ -14,6 +14,7 @@ jest.mock('@nextcloud/l10n', () => ({
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('vue-material-design-icons/Cancel.vue', () => ({}))
 jest.mock('vue-material-design-icons/DeleteOutline.vue', () => ({}))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => ({}))
 
 /**
  * A bare dialog context with every method and computed bound to it.
@@ -21,9 +22,12 @@ jest.mock('vue-material-design-icons/DeleteOutline.vue', () => ({}))
  * @return {object} The context
  */
 function context() {
-	const ctx = { ...ClearAuditTrails.data.call({}), filteredCount: 4 }
+	const parts = [...(ClearAuditTrails.mixins ?? []), ClearAuditTrails]
+	const ctx = { ...Object.assign({}, ...parts.map((part) => part.data?.call({}))), filteredCount: 4 }
 	ctx.t = (app, text, vars) => (vars ? `${text} ${JSON.stringify(vars)}` : text)
-	for (const [name, method] of Object.entries(ClearAuditTrails.methods)) {
+	for (const [name, method] of Object.entries(
+		Object.assign({}, ...parts.map((part) => part.methods)),
+	)) {
 		ctx[name] = method.bind(ctx)
 	}
 	for (const [name, getter] of Object.entries(ClearAuditTrails.computed)) {

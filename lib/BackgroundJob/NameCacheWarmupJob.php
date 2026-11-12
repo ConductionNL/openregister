@@ -90,17 +90,20 @@ class NameCacheWarmupJob extends TimedJob {
 		// @var LoggerInterface $logger.
 		$logger = $this->container->get(LoggerInterface::class);
 
-		$logger->info(
-			message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'job_id' => $this->getId(),
-				'scheduled_time' => date('Y-m-d H:i:s'),
-				'timezone' => date_default_timezone_get(),
-			]
-		);
+		$logger->info(message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started', context: $this->startedContext());
 
+		$this->warmUp(logger: $logger, startTime: $startTime);
+	}//end run()
+
+	/**
+	 * Warm the name cache, logging the outcome either way.
+	 *
+	 * @param LoggerInterface $logger    The run's logger.
+	 * @param float           $startTime When the run started (microtime).
+	 *
+	 * @return void
+	 */
+	private function warmUp(LoggerInterface $logger, float $startTime): void {
 		try {
 			// @var ObjectNameCacheInterface $cacheHandler.
 			$cacheHandler = $this->container->get(ObjectNameCacheInterface::class);
@@ -108,31 +111,81 @@ class NameCacheWarmupJob extends TimedJob {
 			// Perform cache warmup.
 			$namesLoaded = $cacheHandler->warmupNameCache();
 
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
 			$logger->info(
 				message: '[NameCacheWarmupJob] ✅ Name Cache Nightly Warmup Job Completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job_id' => $this->getId(),
-					'names_loaded' => $namesLoaded,
-					'execution_time' => $executionTime . 'ms',
-				]
+				context: $this->completedContext(namesLoaded: $namesLoaded, startTime: $startTime)
 			);
 		} catch (\Exception $e) {
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
 			$logger->error(
 				message: '[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job_id' => $this->getId(),
-					'error' => $e->getMessage(),
-					'execution_time' => $executionTime . 'ms',
-				]
+				context: $this->failedContext(error: $e, startTime: $startTime)
 			);
 		}//end try
-	}//end run()
+	}//end warmUp()
+
+	/**
+	 * The context the start of a warmup is logged with.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function startedContext(): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'job_id' => $this->getId(),
+			'scheduled_time' => date('Y-m-d H:i:s'),
+			'timezone' => date_default_timezone_get(),
+		];
+	}//end startedContext()
+
+	/**
+	 * The context a completed warmup is logged with.
+	 *
+	 * @param int   $namesLoaded How many names the warmup loaded.
+	 * @param float $startTime   When the run started (microtime).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function completedContext(int $namesLoaded, float $startTime): array {
+		$executionTime = self::elapsedMilliseconds(startTime: $startTime);
+
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'job_id' => $this->getId(),
+			'names_loaded' => $namesLoaded,
+			'execution_time' => $executionTime . 'ms',
+		];
+	}//end completedContext()
+
+	/**
+	 * The context a failed warmup is logged with.
+	 *
+	 * @param \Exception $error     The failure.
+	 * @param float      $startTime When the run started (microtime).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function failedContext(\Exception $error, float $startTime): array {
+		$executionTime = self::elapsedMilliseconds(startTime: $startTime);
+
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'job_id' => $this->getId(),
+			'error' => $error->getMessage(),
+			'execution_time' => $executionTime . 'ms',
+		];
+	}//end failedContext()
+
+	/**
+	 * Milliseconds since the run started, to two decimals.
+	 *
+	 * @param float $startTime When the run started (microtime).
+	 *
+	 * @return float
+	 */
+	private static function elapsedMilliseconds(float $startTime): float {
+		return round((microtime(true) - $startTime) * 1000, 2);
+	}//end elapsedMilliseconds()
 }//end class

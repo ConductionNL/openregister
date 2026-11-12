@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\EndpointLog\EndpointLogFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -43,6 +44,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EndpointLog extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Unique identifier for this endpoint log entry.
@@ -131,17 +135,9 @@ class EndpointLog extends Entity implements JsonSerializable {
 	 * @phpstan-api
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'statusCode', type: 'integer');
-		$this->addType(fieldName: 'statusMessage', type: 'string');
-		$this->addType(fieldName: 'request', type: 'json');
-		$this->addType(fieldName: 'response', type: 'json');
-		$this->addType(fieldName: 'endpointId', type: 'integer');
-		$this->addType(fieldName: 'userId', type: 'string');
-		$this->addType(fieldName: 'sessionId', type: 'string');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'size', type: 'integer');
+		foreach (EndpointLogFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 
 		// Set default expires to next week.
 		if ($this->expires === null) {
@@ -171,24 +167,6 @@ class EndpointLog extends Entity implements JsonSerializable {
 	}//end getResponse()
 
 	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Hydrate the entity from an array of data
 	 *
 	 * @param array $object Array of data to hydrate the entity with
@@ -208,7 +186,7 @@ class EndpointLog extends Entity implements JsonSerializable {
 			try {
 				$this->$method($value);
 			} catch (\Exception $exception) {
-				// Handle or log the exception if needed.
+				// Keys without a setter on this entity are ignored, as in the other entity hydrators.
 			}
 		}
 
@@ -267,46 +245,4 @@ class EndpointLog extends Entity implements JsonSerializable {
 	public function setSize(int $size): void {
 		$this->size = $size;
 	}//end setSize()
-
-	/**
-	 * Serialize the entity to JSON format
-	 *
-	 * @return (array|int|null|string)[]
-	 *
-	 * @phpstan-return array<string,mixed>
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, statusCode: int|null,
-	 *     statusMessage: null|string, request: array|null,
-	 *     response: array|null, endpointId: int|null, userId: null|string,
-	 *     sessionId: null|string, expires: null|string,
-	 *     created: null|string, size: int}
-	 */
-	public function jsonSerialize(): array {
-		// Format expires date.
-		$expiresFormatted = null;
-		if (isset($this->expires) === true) {
-			$expiresFormatted = $this->expires->format('c');
-		}
-
-		// Format created date.
-		$createdFormatted = null;
-		if (isset($this->created) === true) {
-			$createdFormatted = $this->created->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'statusCode' => $this->statusCode,
-			'statusMessage' => $this->statusMessage,
-			'request' => $this->request,
-			'response' => $this->response,
-			'endpointId' => $this->endpointId,
-			'userId' => $this->userId,
-			'sessionId' => $this->sessionId,
-			'expires' => $expiresFormatted,
-			'created' => $createdFormatted,
-			'size' => $this->size,
-		];
-	}//end jsonSerialize()
 }//end class

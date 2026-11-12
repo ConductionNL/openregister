@@ -37,9 +37,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -127,16 +127,12 @@ class SearchDictionaryProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $objects    Reads the concepts.
-	 * @param RegisterMapper  $registers  Resolves the vocabulary register's id.
-	 * @param SchemaMapper    $schemas    Resolves the concept schemas' ids.
-	 * @param IAppConfig      $appConfig  Holds the administered caps.
-	 * @param LoggerInterface $logger     Diagnostics.
+	 * @param SchemaCatalogInterface $catalog   Resolves the vocabulary register's and concept schemas' ids, and reads the concepts.
+	 * @param IAppConfig             $appConfig Holds the administered caps.
+	 * @param LoggerInterface        $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -163,26 +159,50 @@ class SearchDictionaryProvider {
 			return SearchDictionary::empty();
 		}
 
-		$this->loading = true;
-		try {
-			$dictionary = SearchDictionary::fromDeclarations(
-				concepts: $this->declarationsIn(scheme: self::SYNONYM_SCHEME, language: $language),
-				stopwords: $this->stopwordsIn(language: $language)
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'[SearchDictionaryProvider] No dictionary loaded, searching without one: {error}',
-				['error' => $e->getMessage(), 'exception' => $e]
-			);
-			$dictionary = SearchDictionary::empty();
-		} finally {
-			$this->loading = false;
-		}
+		$dictionary = $this->loadDictionary(language: $language);
 
 		$this->memo[$language] = $dictionary;
 
 		return $dictionary;
 	}//end forLanguage()
+
+	/**
+	 * Load the dictionary for a language, or an empty one (logged) when that fails.
+	 *
+	 * Marks the load as running so that a search it triggers cannot re-enter it.
+	 *
+	 * @param string $language The language.
+	 *
+	 * @return SearchDictionary The dictionary.
+	 */
+	private function loadDictionary(string $language): SearchDictionary {
+		$this->loading = true;
+		try {
+			return $this->buildDictionary(language: $language);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[SearchDictionaryProvider] No dictionary loaded, searching without one: {error}',
+				['error' => $e->getMessage(), 'exception' => $e]
+			);
+			return SearchDictionary::empty();
+		} finally {
+			$this->loading = false;
+		}
+	}//end loadDictionary()
+
+	/**
+	 * Build the dictionary from the administered synonyms and stopwords of a language.
+	 *
+	 * @param string $language The language.
+	 *
+	 * @return SearchDictionary The dictionary.
+	 */
+	private function buildDictionary(string $language): SearchDictionary {
+		return SearchDictionary::fromDeclarations(
+			concepts: $this->declarationsIn(scheme: self::SYNONYM_SCHEME, language: $language),
+			stopwords: $this->stopwordsIn(language: $language)
+		);
+	}//end buildDictionary()
 
 	/**
 	 * Most synonyms one word may contribute.
@@ -222,24 +242,39 @@ class SearchDictionaryProvider {
 				continue;
 			}
 
-			$alternates = [];
-			foreach ((array)($concept['altLabel'] ?? []) as $tag => $value) {
-				if ((string)$tag !== $language) {
-					continue;
-				}
-
-				foreach ((array)$value as $alternate) {
-					if (is_string($alternate) === true) {
-						$alternates[] = $alternate;
-					}
-				}
-			}
-
-			$declarations[] = ['prefLabel' => $preferred, 'altLabel' => $alternates];
-		}//end foreach
+			$declarations[] = [
+				'prefLabel' => $preferred,
+				'altLabel' => $this->alternatesIn(raw: ($concept['altLabel'] ?? []), language: $language),
+			];
+		}
 
 		return $declarations;
 	}//end declarationsIn()
+
+	/**
+	 * One language's alternate labels off a language-keyed map.
+	 *
+	 * @param mixed  $raw      The language-keyed map; each value a label or a list of them.
+	 * @param string $language The language tag.
+	 *
+	 * @return array<int, string> The alternate labels, strings only.
+	 */
+	private function alternatesIn(mixed $raw, string $language): array {
+		$alternates = [];
+		foreach ((array)$raw as $tag => $value) {
+			if ((string)$tag !== $language) {
+				continue;
+			}
+
+			foreach ((array)$value as $alternate) {
+				if (is_string($alternate) === true) {
+					$alternates[] = $alternate;
+				}
+			}
+		}
+
+		return $alternates;
+	}//end alternatesIn()
 
 	/**
 	 * The stopwords, projected to one language.
@@ -303,32 +338,80 @@ class SearchDictionaryProvider {
 	 * @return array<int, array<string, mixed>> The concepts.
 	 */
 	private function conceptsIn(string $schemeUri): array {
-		// The slug map answers slug => LIST OF IDS, keyed by the LOWERCASED
-		// slug. Both halves matter: `conceptScheme` is filed under
-		// `conceptscheme`, and a slug can legitimately resolve to several ids,
-		// so the value is a list even when there is one.
-		$registerId = self::firstId(
-			map: $this->registers->findIdsBySlugs([self::REGISTER]),
-			slug: self::REGISTER
-		);
-		$conceptId = self::firstId(map: $this->schemas->findIdsBySlugs([self::SCHEMA]), slug: self::SCHEMA);
-		$schemeSchemaId = self::firstId(
-			map: $this->schemas->findIdsBySlugs([self::SCHEME_SCHEMA]),
-			slug: self::SCHEME_SCHEMA
-		);
+		$ids = $this->vocabularyIds();
+		if ($ids === null) {
+			return [];
+		}
+
+		[$registerId, $conceptId, $schemeSchemaId] = $ids;
+
+		$schemes    = new RegisterSchemaRef(register: $registerId, schema: $schemeSchemaId);
+		$schemeUuid = $this->administeredScheme(table: $schemes, schemeUri: $schemeUri);
+		if ($schemeUuid === null) {
+			return [];
+		}
+
+		$concepts = new RegisterSchemaRef(register: $registerId, schema: $conceptId);
+		return $this->rowsOf(result: $this->searchConcepts(table: $concepts, schemeUuid: $schemeUuid));
+	}//end conceptsIn()
+
+	/**
+	 * The ids of the vocabulary register, its concept schema and its scheme schema.
+	 *
+	 * @return array{0: int, 1: int, 2: int}|null The ids, or null (logged) when this instance has no vocabulary register.
+	 */
+	private function vocabularyIds(): ?array {
+		$registerId = $this->registerIdOf(slug: self::REGISTER);
+		$conceptId = $this->schemaIdOf(slug: self::SCHEMA);
+		$schemeSchemaId = $this->schemaIdOf(slug: self::SCHEME_SCHEMA);
 
 		if ($registerId === null || $conceptId === null || $schemeSchemaId === null) {
 			$this->logger->info(
 				'[SearchDictionaryProvider] No vocabulary register on this instance, searching without a dictionary'
 			);
-			return [];
+			return null;
 		}
 
-		$schemeUuid = $this->schemeUuid(
-			registerId: $registerId,
-			schemaId: $schemeSchemaId,
-			schemeUri: $schemeUri
-		);
+		return [$registerId, $conceptId, $schemeSchemaId];
+	}//end vocabularyIds()
+
+	/**
+	 * The id of the register with this slug.
+	 *
+	 * The slug map answers slug => LIST OF IDS, keyed by the LOWERCASED
+	 * slug. Both halves matter: `conceptScheme` is filed under
+	 * `conceptscheme`, and a slug can legitimately resolve to several ids,
+	 * so the value is a list even when there is one.
+	 *
+	 * @param string $slug The register slug.
+	 *
+	 * @return int|null The first id, or null when there is none.
+	 */
+	private function registerIdOf(string $slug): ?int {
+		return self::firstId(map: $this->catalog->registers()->findIdsBySlugs([$slug]), slug: $slug);
+	}//end registerIdOf()
+
+	/**
+	 * The id of the schema with this slug; see registerIdOf() for the slug map.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return int|null The first id, or null when there is none.
+	 */
+	private function schemaIdOf(string $slug): ?int {
+		return self::firstId(map: $this->catalog->schemas()->findIdsBySlugs([$slug]), slug: $slug);
+	}//end schemaIdOf()
+
+	/**
+	 * The uuid of the administered scheme with this URI, logged when there is none.
+	 *
+	 * @param RegisterSchemaRef $table     The vocabulary register and its scheme schema.
+	 * @param string            $schemeUri The scheme's URI.
+	 *
+	 * @return string|null The scheme's uuid, or null.
+	 */
+	private function administeredScheme(RegisterSchemaRef $table, string $schemeUri): ?string {
+		$schemeUuid = $this->schemeUuid(table: $table, schemeUri: $schemeUri);
 		if ($schemeUuid === null) {
 			// Said out loud rather than passed over: an administrator who wrote
 			// concepts and sees no expansion needs a trail, and "no scheme" is
@@ -337,38 +420,55 @@ class SearchDictionaryProvider {
 				'[SearchDictionaryProvider] No concept scheme "{scheme}", so nothing is administered for it',
 				['scheme' => $schemeUri]
 			);
-			return [];
 		}
 
-		return $this->rowsOf(
-			result: $this->objects->searchObjectsPaginated(
-				searchQuery: [
-					'_register' => $registerId,
-					'_schema' => $conceptId,
-					'inScheme' => $schemeUuid,
-					'_limit' => self::CONCEPT_LIMIT,
-				],
-				countQuery: [],
-				_rbac: false,
-				_multitenancy: false
-			)
+		return $schemeUuid;
+	}//end administeredScheme()
+
+	/**
+	 * Search the concept schema for the concepts in a scheme, unscoped and capped.
+	 *
+	 * @param RegisterSchemaRef $table      The vocabulary register and its concept schema.
+	 * @param string            $schemeUuid The scheme's uuid.
+	 *
+	 * @return array<string, mixed> The paginated search result.
+	 */
+	private function searchConcepts(RegisterSchemaRef $table, string $schemeUuid): array {
+		return $this->objectSearch()->searchObjectsPaginated(
+			searchQuery: [
+				'_register' => $table->register,
+				'_schema' => $table->schema,
+				'inScheme' => $schemeUuid,
+				'_limit' => self::CONCEPT_LIMIT,
+			],
+			countQuery: [],
+			_rbac: false,
+			_multitenancy: false
 		);
-	}//end conceptsIn()
+	}//end searchConcepts()
+
+	/**
+	 * The object search the concepts and schemes are read through.
+	 *
+	 * @return MagicObjectSearchInterface The search role of the object storage.
+	 */
+	private function objectSearch(): MagicObjectSearchInterface {
+		return $this->catalog->tables();
+	}//end objectSearch()
 
 	/**
 	 * The uuid of the scheme object carrying this uri.
 	 *
-	 * @param int    $registerId The vocabulary register.
-	 * @param int    $schemaId   The conceptScheme schema.
-	 * @param string $schemeUri  The canonical uri.
+	 * @param RegisterSchemaRef $table     The vocabulary register and the conceptScheme schema, by id.
+	 * @param string            $schemeUri The canonical uri.
 	 *
 	 * @return string|null The uuid, or null when no scheme carries it.
 	 */
-	private function schemeUuid(int $registerId, int $schemaId, string $schemeUri): ?string {
-		$result = $this->objects->searchObjectsPaginated(
+	private function schemeUuid(RegisterSchemaRef $table, string $schemeUri): ?string {
+		$result = $this->objectSearch()->searchObjectsPaginated(
 			searchQuery: [
-				'_register' => $registerId,
-				'_schema' => $schemaId,
+				'_register' => $table->register,
+				'_schema' => $table->schema,
 				'uri' => $schemeUri,
 				'_limit' => 1,
 			],
@@ -377,21 +477,61 @@ class SearchDictionaryProvider {
 			_multitenancy: false
 		);
 
-		foreach (($result['results'] ?? []) as $row) {
-			if (is_object($row) === true && method_exists($row, 'getUuid') === true) {
-				return (string)$row->getUuid();
-			}
+		return $this->firstUuid(result: $result);
+	}//end schemeUuid()
 
-			if (is_array($row) === true) {
-				$uuid = (($row['@self']['id'] ?? null) ?? ($row['id'] ?? null));
-				if (is_string($uuid) === true && $uuid !== '') {
-					return $uuid;
-				}
+	/**
+	 * The uuid of the first result row that carries one.
+	 *
+	 * @param array<string, mixed> $result A paginated search result.
+	 *
+	 * @return string|null The uuid, or null when no row carries one.
+	 */
+	private function firstUuid(array $result): ?string {
+		foreach (($result['results'] ?? []) as $row) {
+			$uuid = $this->uuidOf(row: $row);
+			if ($uuid !== null) {
+				return $uuid;
 			}
 		}
 
 		return null;
-	}//end schemeUuid()
+	}//end firstUuid()
+
+	/**
+	 * The uuid one search row carries, in either row shape.
+	 *
+	 * @param mixed $row An entity with getUuid(), or a serialised object array.
+	 *
+	 * @return string|null The uuid, or null when the row carries no usable one.
+	 */
+	private function uuidOf(mixed $row): ?string {
+		if (is_object($row) === true && method_exists($row, 'getUuid') === true) {
+			return (string)$row->getUuid();
+		}
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return $this->uuidOfArray(row: $row);
+	}//end uuidOf()
+
+	/**
+	 * The uuid a serialised object array carries, `@self.id` before `id`.
+	 *
+	 * @param array $row The serialised object.
+	 *
+	 * @return string|null The uuid, or null when it is not a non-empty string.
+	 */
+	private function uuidOfArray(array $row): ?string {
+		$uuid = (($row['@self']['id'] ?? null) ?? ($row['id'] ?? null));
+		if (is_string($uuid) === true && $uuid !== '') {
+			return $uuid;
+		}
+
+		return null;
+	}//end uuidOfArray()
 
 	/**
 	 * The object payloads of a search result.

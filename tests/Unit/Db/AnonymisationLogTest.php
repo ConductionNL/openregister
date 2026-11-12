@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\AnonymisationLog;
+use OCA\OpenRegister\Files\Db\AnonymisationLog;
 use PHPUnit\Framework\TestCase;
 
 class AnonymisationLogTest extends TestCase {

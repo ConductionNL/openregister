@@ -36,7 +36,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/flow-storage/spec.md
  */
-class FlowAdoptionRefused extends RuntimeException {
+class FlowAdoptionRefused extends RuntimeException implements FlowAdoptionRefusedInterface {
 	/**
 	 * There is no acting user to become the owner.
 	 *

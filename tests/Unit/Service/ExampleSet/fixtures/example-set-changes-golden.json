@@ -1,0 +1,1128 @@
+{
+    "resolve gap": {
+        "answer": {
+            "refusal": "cannot resolve {{cast:nobody.uid}}, {{cast:ghost.uid}}",
+            "row": [],
+            "merged": [],
+            "set": [],
+            "append": []
+        },
+        "rows": []
+    },
+    "resolve two rows": {
+        "answer": {
+            "refusal": "2 site portal rows match {\"slug\":\"p\"}; a change needs exactly one to change",
+            "row": [],
+            "merged": [],
+            "set": [],
+            "append": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p"
+                },
+                "00000000-0000-4000-8000-000000000002": {
+                    "id": "00000000-0000-4000-8000-000000000002",
+                    "slug": "p"
+                }
+            }
+        }
+    },
+    "resolve object not earlier": {
+        "answer": {
+            "refusal": "object \"mine\" is not written earlier in this fragment",
+            "row": [],
+            "merged": [],
+            "set": [],
+            "append": []
+        },
+        "rows": []
+    },
+    "resolve no match": {
+        "answer": {
+            "refusal": "no site portal with {\"slug\":\"p\"} to change",
+            "row": [],
+            "merged": [],
+            "set": [],
+            "append": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "q"
+                }
+            }
+        }
+    },
+    "resolve empty where": {
+        "answer": {
+            "refusal": "no site portal with [] to change",
+            "row": [],
+            "merged": [],
+            "set": [],
+            "append": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "q"
+                }
+            }
+        }
+    },
+    "resolve object earlier": {
+        "answer": {
+            "refusal": "",
+            "row": {
+                "id": "m1",
+                "slug": "mine",
+                "tags": [
+                    "x",
+                    "y"
+                ]
+            },
+            "merged": {
+                "id": "m1",
+                "slug": "mine",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "b": {
+                    "c": "anna"
+                }
+            },
+            "set": {
+                "b.c": "anna"
+            },
+            "append": {
+                "tags": "x"
+            }
+        },
+        "rows": []
+    },
+    "resolve set append json": {
+        "answer": {
+            "refusal": "",
+            "row": {
+                "id": "00000000-0000-4000-8000-000000000001",
+                "slug": "p",
+                "auth": {
+                    "modes": [
+                        "a"
+                    ]
+                },
+                "meta": {
+                    "k": 1
+                },
+                "tags": [
+                    "y"
+                ]
+            },
+            "merged": {
+                "id": "00000000-0000-4000-8000-000000000001",
+                "slug": "p",
+                "auth": "{\"modes\":[\"a\",\"b\"],\"mode\":\"b\"}",
+                "meta": "{\"k\":2}",
+                "tags": [
+                    "y"
+                ],
+                "deep": {
+                    "er": {
+                        "path": "z"
+                    }
+                }
+            },
+            "set": {
+                "auth.mode": "b",
+                "meta.k": 2,
+                "deep.er.path": "z"
+            },
+            "append": {
+                "auth.modes": "b",
+                "tags": "y"
+            }
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "auth": "{\"modes\":[\"a\"]}",
+                    "meta": {
+                        "k": 1
+                    },
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "apply nothing differs": {
+        "answer": {
+            "resolved": {
+                "refusal": "",
+                "row": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 1,
+                    "tags": [
+                        "x"
+                    ]
+                },
+                "merged": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 1,
+                    "tags": [
+                        "x"
+                    ]
+                },
+                "set": {
+                    "a": 1
+                },
+                "append": {
+                    "tags": "x"
+                }
+            },
+            "applied": {
+                "error": "",
+                "entry": null
+            }
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 1,
+                    "tags": [
+                        "x"
+                    ]
+                }
+            }
+        }
+    },
+    "apply writes": {
+        "answer": {
+            "resolved": {
+                "refusal": "",
+                "row": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 1,
+                    "auth": {
+                        "modes": [
+                            "a"
+                        ]
+                    },
+                    "tags": [
+                        "x"
+                    ]
+                },
+                "merged": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "auth": "{\"modes\":[\"a\",\"b\"],\"mode\":\"b\"}",
+                    "tags": [
+                        "x",
+                        "y"
+                    ],
+                    "n": {
+                        "e": {
+                            "w": "v"
+                        }
+                    }
+                },
+                "set": {
+                    "a": 2,
+                    "auth.mode": "b",
+                    "n.e.w": "v"
+                },
+                "append": {
+                    "tags": "y",
+                    "auth.modes": "b"
+                }
+            },
+            "applied": {
+                "error": "",
+                "entry": {
+                    "register": "site",
+                    "schema": "portal",
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "set": [
+                        {
+                            "path": "a",
+                            "had": true,
+                            "old": 1,
+                            "new": 2,
+                            "from": "a"
+                        },
+                        {
+                            "path": "auth.mode",
+                            "had": false,
+                            "old": null,
+                            "new": "b",
+                            "from": "auth.mode"
+                        },
+                        {
+                            "path": "n.e.w",
+                            "had": false,
+                            "old": null,
+                            "new": "v",
+                            "from": "n"
+                        }
+                    ],
+                    "append": [
+                        {
+                            "path": "tags",
+                            "value": "y"
+                        },
+                        {
+                            "path": "auth.modes",
+                            "value": "b"
+                        }
+                    ],
+                    "jsonFields": [
+                        "auth"
+                    ]
+                }
+            }
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "auth": "{\"modes\":[\"a\",\"b\"],\"mode\":\"b\"}",
+                    "tags": [
+                        "x",
+                        "y"
+                    ],
+                    "n": {
+                        "e": {
+                            "w": "v"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "apply fingerprint": {
+        "answer": {
+            "resolved": {
+                "refusal": "",
+                "row": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p"
+                },
+                "merged": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "url": "https://example.test/s/secret-anchor",
+                    "label": "Go https://example.test/s/secret-anchor"
+                },
+                "set": {
+                    "url": "https://example.test/s/secret-anchor",
+                    "label": "Go https://example.test/s/secret-anchor"
+                },
+                "append": []
+            },
+            "applied": {
+                "error": "",
+                "entry": {
+                    "register": "site",
+                    "schema": "portal",
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "set": [
+                        {
+                            "path": "url",
+                            "had": false,
+                            "old": null,
+                            "new": "example-set-secret:sha256:fe1860ef4aba59d412c99af3eddbfd7e4e2d764f4b43dba8c36dd09b6d86b794",
+                            "from": "url"
+                        },
+                        {
+                            "path": "label",
+                            "had": false,
+                            "old": null,
+                            "new": "example-set-secret:sha256:94c68c67d8c30acae95cf9e1d296bfdee60256dcd71354ebe749ebfbbf61c02b",
+                            "from": "label"
+                        }
+                    ],
+                    "append": []
+                }
+            }
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "url": "https://example.test/s/secret-anchor",
+                    "label": "Go https://example.test/s/secret-anchor"
+                }
+            }
+        }
+    },
+    "apply update error": {
+        "answer": {
+            "resolved": {
+                "refusal": "",
+                "row": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": "x"
+                },
+                "merged": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 5
+                },
+                "set": {
+                    "a": 5
+                },
+                "append": []
+            },
+            "applied": {
+                "error": "Property 'a' should be type 'string or null' but is 'integer'.",
+                "entry": null
+            }
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": "x"
+                }
+            }
+        }
+    },
+    "follow nothing": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    }
+                ],
+                "append": [
+                    {
+                        "path": "tags",
+                        "value": "y"
+                    }
+                ]
+            },
+            "wrote": false
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 3,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow dropped path": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    }
+                ],
+                "append": []
+            },
+            "wrote": false
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 3,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow gained path": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    },
+                    {
+                        "path": "c",
+                        "had": true,
+                        "old": 0,
+                        "new": 9,
+                        "from": "c"
+                    }
+                ],
+                "append": [
+                    {
+                        "path": "tags",
+                        "value": "y"
+                    }
+                ]
+            },
+            "wrote": true
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 3,
+                    "c": 9,
+                    "d": 4,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow refusal": {
+        "answer": {
+            "error": "no site portal with {\"slug\":\"nope\"} to change",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    }
+                ],
+                "append": []
+            },
+            "wrote": false
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 3,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow refresh undone": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    }
+                ],
+                "append": [
+                    {
+                        "path": "tags",
+                        "value": "y"
+                    }
+                ]
+            },
+            "wrote": true
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 7,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow refresh moved": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 5,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    }
+                ],
+                "append": [
+                    {
+                        "path": "tags",
+                        "value": "y"
+                    }
+                ]
+            },
+            "wrote": true
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 5,
+                    "b": 3,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow refresh null": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": false,
+                        "old": null,
+                        "new": 2,
+                        "from": "a"
+                    }
+                ],
+                "append": []
+            },
+            "wrote": true
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2
+                }
+            }
+        }
+    },
+    "follow refresh in step": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": 1,
+                        "new": 2,
+                        "from": "a"
+                    },
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": 1,
+                        "new": 3,
+                        "from": "b"
+                    }
+                ],
+                "append": [
+                    {
+                        "path": "tags",
+                        "value": "y"
+                    }
+                ]
+            },
+            "wrote": false
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "b": 3,
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "follow update error": {
+        "answer": {
+            "error": "Property 'b' should be type 'string or null' but is 'integer'.",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "a",
+                        "had": true,
+                        "old": "one",
+                        "new": "two",
+                        "from": "a"
+                    }
+                ],
+                "append": []
+            },
+            "wrote": false
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": "two",
+                    "b": "x"
+                }
+            }
+        }
+    },
+    "follow fingerprint": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "url",
+                        "had": true,
+                        "old": "old",
+                        "new": "example-set-secret:sha256:fe1860ef4aba59d412c99af3eddbfd7e4e2d764f4b43dba8c36dd09b6d86b794",
+                        "from": "url"
+                    }
+                ],
+                "append": []
+            },
+            "wrote": true
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "url": "https://example.test/s/secret-anchor"
+                }
+            }
+        }
+    },
+    "refresh mixed": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "b",
+                        "had": true,
+                        "old": "old",
+                        "new": "new",
+                        "from": "b"
+                    },
+                    {
+                        "path": "d",
+                        "had": true,
+                        "old": {
+                            "x": 1
+                        },
+                        "new": {
+                            "x": 2
+                        },
+                        "from": "d"
+                    }
+                ],
+                "append": [],
+                "jsonFields": [
+                    "d"
+                ]
+            },
+            "left": [
+                "c",
+                "e"
+            ]
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "a": 1,
+                    "b": "new",
+                    "c": "edited",
+                    "d": "{\"x\":2}"
+                }
+            }
+        }
+    },
+    "refresh nothing": {
+        "answer": {
+            "error": "",
+            "entry": null,
+            "left": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "a": 1
+                }
+            }
+        }
+    },
+    "refresh structure": {
+        "answer": {
+            "error": "",
+            "entry": {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "t",
+                        "had": true,
+                        "old": {
+                            "k": 1
+                        },
+                        "new": {
+                            "k": 2
+                        },
+                        "from": "t"
+                    }
+                ],
+                "append": [],
+                "jsonFields": [
+                    "t"
+                ]
+            },
+            "left": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "t": "{\"k\":2}"
+                }
+            }
+        }
+    },
+    "lost gone": {
+        "answer": [
+            "(gone)"
+        ],
+        "rows": []
+    },
+    "lost nothing": {
+        "answer": [],
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "j": "{\"k\":1}",
+                    "tags": [
+                        "y"
+                    ],
+                    "url": "https://example.test/s/secret-anchor"
+                }
+            }
+        }
+    },
+    "lost all": {
+        "answer": [
+            "a",
+            "j.k",
+            "url",
+            "tags"
+        ],
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 3,
+                    "j": "{\"k\":5}",
+                    "url": "other",
+                    "tags": []
+                }
+            }
+        }
+    },
+    "lost url gone": {
+        "answer": [
+            "url"
+        ],
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": "2.0",
+                    "j": "{\"k\":1}",
+                    "tags": [
+                        "y"
+                    ]
+                }
+            }
+        }
+    },
+    "revert unreadable": {
+        "answer": {
+            "ok": false,
+            "left": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 2,
+                    "k": {
+                        "z": 0,
+                        "x": 1
+                    },
+                    "tags": [
+                        "x",
+                        "y"
+                    ],
+                    "n": {
+                        "e": {
+                            "w": "v"
+                        }
+                    },
+                    "url": "https://example.test/s/secret-anchor"
+                }
+            }
+        }
+    },
+    "revert gone": {
+        "answer": {
+            "ok": true,
+            "left": []
+        },
+        "rows": []
+    },
+    "revert all": {
+        "answer": {
+            "ok": true,
+            "left": []
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "k": {
+                        "z": 0
+                    },
+                    "tags": [
+                        "x"
+                    ],
+                    "n": {
+                        "e": []
+                    },
+                    "a": 1
+                }
+            }
+        }
+    },
+    "revert edited": {
+        "answer": {
+            "ok": true,
+            "left": [
+                "url",
+                "a"
+            ]
+        },
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "a": 9,
+                    "k": {
+                        "z": 0
+                    },
+                    "tags": [
+                        "x"
+                    ],
+                    "n": {
+                        "e": [],
+                        "o": 1
+                    },
+                    "url": "changed"
+                }
+            }
+        }
+    },
+    "revert json": {
+        "answer": [
+            {
+                "register": "site",
+                "schema": "portal",
+                "id": "00000000-0000-4000-8000-000000000001",
+                "set": [
+                    {
+                        "path": "j.k",
+                        "had": true,
+                        "old": 0,
+                        "new": 1,
+                        "from": "j.k"
+                    },
+                    {
+                        "path": "t.m",
+                        "had": true,
+                        "old": 0,
+                        "new": 2,
+                        "from": "t.m"
+                    }
+                ],
+                "append": [],
+                "jsonFields": [
+                    "j"
+                ]
+            },
+            {
+                "ok": true,
+                "left": []
+            }
+        ],
+        "rows": {
+            "site portal": {
+                "00000000-0000-4000-8000-000000000001": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "slug": "p",
+                    "j": "{\"k\":0}",
+                    "t": "{\"m\":0}"
+                }
+            }
+        }
+    },
+    "written references": {
+        "answer": [
+            {
+                "a": 1,
+                "b": 3,
+                "c": 4
+            },
+            []
+        ],
+        "rows": []
+    },
+    "as sent": {
+        "answer": {
+            "a": "{\"b\":1}",
+            "c": "d",
+            "e": [
+                "f"
+            ]
+        },
+        "rows": []
+    }
+}

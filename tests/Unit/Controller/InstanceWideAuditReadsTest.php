@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Controller\ProcessingPurposeController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -127,7 +128,7 @@ final class InstanceWideAuditReadsTest extends TestCase {
 		$logService = $this->createMock(LogService::class);
 		$logService->method('maskExplicitReveal')->willReturnArgument(0);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request($params),
 			$logService,
@@ -150,13 +151,13 @@ final class InstanceWideAuditReadsTest extends TestCase {
 	 */
 	private function purposeController(?string $uid): ProcessingPurposeController {
 		return new ProcessingPurposeController(
-			'openregister',
 			$this->request([]),
-			$this->createMock(ProcessingPurposeMapper::class),
-			$this->createMock(PurposeRegistry::class),
-			$this->audit,
-			$this->session($uid),
-			$this->groupManager()
+			new \OCA\OpenRegister\Controller\Support\ProcessingPurposeControllerServices(
+				$this->createMock(ProcessingPurposeMapper::class),
+				$this->createMock(PurposeRegistry::class),
+				$this->audit,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->session($uid), $this->groupManager(), $this->createMock(\Psr\Log\LoggerInterface::class)),
+			)
 		);
 	}//end purposeController()
 

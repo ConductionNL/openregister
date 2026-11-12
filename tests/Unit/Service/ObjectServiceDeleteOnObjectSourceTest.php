@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -44,7 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -73,6 +74,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -88,6 +90,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that deleteObject() hands an object-source delete to its provider.
@@ -134,18 +139,15 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$deleteHandler = new DeleteObject(
 			objectEntityMapper: $this->objectMapper,
 			cacheHandler: $this->createMock(CacheHandler::class),
-			userSession: $this->createMock(IUserSession::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+			audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->createMock(AuditTrailMapper::class), logger: $this->createMock(LoggerInterface::class)),
 			settingsService: $this->createMock(SettingsService::class),
-			logger: $this->createMock(LoggerInterface::class),
-			integrityService: $this->createMock(ReferentialIntegrityService::class),
-			db: $this->createMock(IDBConnection::class),
-			organisationMapper: $this->organisationMapper,
+			integrity: new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			attribution: new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->createMock(IUserSession::class), $this->organisationMapper, $this->createMock(LoggerInterface::class)),
 			objectSourceRegistry: $this->registry,
 			registerMapper: $this->createMock(RegisterMapper::class)
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$deleteHandler,
 			$this->createMock(GetObject::class),
@@ -184,7 +186,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->registry
-		);
+		));
 	}//end setUp()
 
 	/**
@@ -232,27 +234,29 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 				return true;
 			}
 
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				return null;
 			}
 
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				return [];
 			}
 
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				return 0;
 			}
 
-			public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
+			public function insert(SourcedTable $source, array $data): ObjectEntity {
 				throw new RuntimeException('insert is not part of this test');
 			}
 
-			public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
+			public function update(SourcedTable $source, string $id, array $data): ObjectEntity {
 				throw new RuntimeException('update is not part of this test');
 			}
 
-			public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
+			public function remove(SourcedTable $source, string $id): bool {
+				$register = $source->table->register;
+				$schema   = $source->table->schema;
 				$this->removed[] = ['register' => $register, 'schema' => $schema, 'id' => $id];
 				return true;
 			}
@@ -269,7 +273,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->registry->addProvider($this->recordingProvider($removed));
 		[$register, $schema] = $this->scope(['provider' => 'dbal-source', 'readOnly' => false, 'config' => ['table' => 'permits']]);
 
-		$result = $this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 
 		$this->assertTrue($result);
 		$this->assertCount(1, $removed, 'the writable provider was never asked to remove the row');
@@ -289,8 +293,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->registry->addProvider(
 			new OrganisationObjectSourceProvider(
 				$this->organisationMapper,
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new OrganisationActingUser(userSession: $this->createMock(IUserSession::class), groupManager: $this->createMock(IGroupManager::class)),
 				$this->createMock(LoggerInterface::class),
 				$this->createMock(OrganisationService::class)
 			)
@@ -300,7 +303,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/cannot be deleted through the object API/');
 
-		$this->service->deleteObject(uuid: 'org-uuid-1', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'org-uuid-1', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testTheOrganisationProjectionAnswersWithItsOwnRefusal()
 
 	/**
@@ -314,7 +317,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		[$register, $schema] = $this->scope(['provider' => 'dbal-source', 'config' => ['table' => 'permits']]);
 
 		try {
-			$this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 			$this->fail('a delete on a read-only source went through');
 		} catch (RuntimeException $e) {
 			$this->assertStringContainsString('read-only projection', $e->getMessage());
@@ -339,7 +342,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			->willThrowException(new \Exception('User does not have permission to delete'));
 
 		try {
-			$this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 			$this->fail('a refused caller reached the delete');
 		} catch (\Exception $e) {
 			$this->assertSame('User does not have permission to delete', $e->getMessage());
@@ -358,6 +361,6 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 
 		$this->expectException(DoesNotExistException::class);
 
-		$this->service->deleteObject(uuid: 'missing-uuid', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'missing-uuid', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testAnAbsentNativeObjectIsStillNotFound()
 }//end class

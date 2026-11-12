@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -30,12 +32,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -120,15 +121,13 @@ class SchemaDraftTest extends TestCase {
 		$this->changelogMapper = $this->createMock(SchemaChangelogMapper::class);
 
 		$versioning = new SchemaVersioningService(
-			new SchemaDiffService(),
 			$this->changelogMapper,
-			$this->createMock(SchemaRunMapper::class),
-			$this->createMock(SchemaRunEntryMapper::class),
+			new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -139,7 +138,7 @@ class SchemaDraftTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$this->createMock(SchemaService::class),
 			$this->createMock(LoggerInterface::class),
 			$container,

@@ -1,0 +1,98 @@
+{
+    "OCA\\OpenRegister\\Db\\ConfigurationDraft": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "setUuid": "string",
+            "layer": "string",
+            "layerRef": "string",
+            "configKey": "string",
+            "baseValue": "json",
+            "draftValue": "json",
+            "basePresent": "boolean",
+            "removes": "boolean",
+            "createdBy": "string",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "setUuid": null,
+            "layer": null,
+            "layerRef": null,
+            "key": null,
+            "base": null,
+            "basePresent": false,
+            "value": null,
+            "removes": false,
+            "createdBy": null,
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "setUuid": "s2",
+            "layer": "s3",
+            "layerRef": "s4",
+            "key": "s5",
+            "base": null,
+            "basePresent": true,
+            "value": null,
+            "removes": false,
+            "createdBy": "s10",
+            "created": "2026-03-11T01:04:05+02:00",
+            "updated": "2026-04-12T02:04:05+00:00"
+        }
+    },
+    "OCA\\OpenRegister\\Db\\DelegationGrant": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "principal": "string",
+            "actingAs": "string",
+            "scope": "json",
+            "status": "string",
+            "grantedBy": "string",
+            "reason": "string",
+            "organisation": "string",
+            "requestedAt": "datetime",
+            "answeredAt": "datetime",
+            "expiresAt": "datetime",
+            "revokedAt": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "principal": null,
+            "actingAs": null,
+            "scope": [],
+            "status": null,
+            "grantedBy": null,
+            "reason": null,
+            "organisation": null,
+            "requestedAt": null,
+            "answeredAt": null,
+            "expiresAt": null,
+            "revokedAt": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "principal": "s2",
+            "actingAs": "s3",
+            "scope": {
+                "k4": "v4"
+            },
+            "status": "s5",
+            "grantedBy": "s6",
+            "reason": "s7",
+            "organisation": "s8",
+            "requestedAt": "2026-01-19T09:04:05+00:00",
+            "answeredAt": "2026-02-10T00:04:05+01:00",
+            "expiresAt": "2026-03-11T01:04:05+02:00",
+            "revokedAt": "2026-04-12T02:04:05+00:00"
+        }
+    }
+}

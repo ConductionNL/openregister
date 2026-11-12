@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -32,8 +32,8 @@ use Psr\Log\LoggerInterface;
  * log line with `fixtures/rate-limiter-golden.json`. Set `OR_GOLDEN_WRITE=1`
  * to regenerate the fixture.
  *
- * @covers \OCA\OpenRegister\Service\Notification\RateLimiter
- * @covers \OCA\OpenRegister\Service\Notification\TokenBucket
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\RateLimiter
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\TokenBucket
  */
 final class RateLimiterGoldenTest extends TestCase {
 

@@ -16,12 +16,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -60,10 +61,8 @@ class ObjectHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ObjectHandler(
-			$this->objectMapper,
+			new TextExtractionObjects(new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			$this->chunkMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
 			$this->logger
 		);
 	}//end setUp()
@@ -531,6 +530,8 @@ class ObjectHandlerTest extends TestCase {
 		$result = $this->handler->extractText(1, []);
 
 		$this->assertIsString($result['text']);
+		// The leaf sits below the depth limit, so its value is not extracted.
+		$this->assertStringNotContainsString('deep-value', $result['text']);
 	}//end testExtractTextRespectsMaxRecursionDepth()
 
 	// ── A REAL ObjectEntity, because the mocks are what hid this ──────────

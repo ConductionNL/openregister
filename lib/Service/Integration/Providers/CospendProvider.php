@@ -38,9 +38,10 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\CospendLink;
-use OCA\OpenRegister\Db\CospendLinkMapper;
+use OCA\OpenRegister\Db\CospendLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\Server;
@@ -55,6 +56,8 @@ use Throwable;
  * requiredApp='cospend', storage='link-table'.
  */
 class CospendProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
 
 	/**
 	 * NC app id required for this integration.
@@ -87,23 +90,43 @@ class CospendProvider extends AbstractIntegrationProvider {
 	private ?ContainerInterface $container;
 
 	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param CospendLinkMapper $cospendLinkMapper Tier-2 link table mapper.
-	 * @param ContainerInterface|null $container Optional server-container override (tests).
+	 * @param LeafProviderPlatform       $platform          The DB connection, app manager and localisation.
+	 * @param CospendLinkMapperInterface $cospendLinkMapper Tier-2 link table mapper.
+	 * @param ContainerInterface|null    $container         Optional server-container override (tests).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private CospendLinkMapper $cospendLinkMapper,
+		LeafProviderPlatform $platform,
+		private CospendLinkMapperInterface $cospendLinkMapper,
 		?ContainerInterface $container = null,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 		$this->container = $container;
 	}//end __construct()
 
@@ -123,58 +146,14 @@ class CospendProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List NC Cospend entries linked to an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `cospend_projects.name`, surfacing each matched project plus its
-	 * bills (the wave-2.3 two-type shape).
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array<string,mixed> $filters Optional registry filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>> List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-cospend/spec.md
+	 * @return CospendLinkMapperInterface
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->cospendLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (CospendLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]` marker
-		// in `cospend_projects.name`, surfacing projects + their bills.
-		return $this->legacyMarkerList(objectId: $objectId);
-	}//end list()
+	protected function linkMapper(): CospendLinkMapperInterface {
+		return $this->cospendLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert a CospendLink row into the registry leaf-row shape.
@@ -185,23 +164,16 @@ class CospendProvider extends AbstractIntegrationProvider {
 	 * @param CospendLink $link Link row from the mapper.
 	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/integration-cospend/spec.md
 	 */
-	private function rowFromLink(CospendLink $link): array {
-		$projectId = (string)$link->getProjectId();
-		$entryType = (string)$link->getEntryType();
-		$billId = $link->getBillId();
-
-		$id = $projectId;
-		if ($entryType === 'bill' && $billId !== null) {
-			$id = $projectId . '/' . $billId;
-		}
-
+	protected function rowFromLink(CospendLink $link): array {
 		return [
-			'type' => $entryType,
-			'id' => $id,
+			'type' => (string)$link->getEntryType(),
+			'id' => $this->entryIdOf(link: $link),
 			'entryId' => $link->getId(),
 			'title' => (string)$link->getName(),
-			'url' => '/index.php/apps/cospend/p/' . $projectId,
+			'url' => '/index.php/apps/cospend/p/' . (string)$link->getProjectId(),
 			'amount' => $link->getAmount(),
 			'currency' => $link->getCurrency(),
 			'data' => $link->jsonSerialize(),
@@ -209,16 +181,32 @@ class CospendProvider extends AbstractIntegrationProvider {
 	}//end rowFromLink()
 
 	/**
-	 * Legacy marker-scan list (projects + bills).
+	 * The row id of a link: the project id, or `project/bill` for a bill.
+	 *
+	 * @param CospendLink $link Link row.
+	 *
+	 * @return string
+	 */
+	private function entryIdOf(CospendLink $link): string {
+		$projectId = (string)$link->getProjectId();
+		if ((string)$link->getEntryType() === 'bill' && $link->getBillId() !== null) {
+			return $projectId . '/' . $link->getBillId();
+		}
+
+		return $projectId;
+	}//end entryIdOf()
+
+	/**
+	 * Legacy fallback: the projects whose `name` carries the `[or:{uuid}]`
+	 * marker, each followed by its bills (the wave-2.3 two-type shape).
 	 *
 	 * @param string $objectId Owning object uuid.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function legacyMarkerList(string $objectId): array {
-		try {
-			$projectMapper = $this->lookup(serviceName: 'OCA\\Cospend\\Db\\ProjectMapper');
-		} catch (Throwable $e) {
+	protected function unlinkedRows(string $objectId): array {
+		$projectMapper = $this->serviceOrNull(serviceName: 'OCA\\Cospend\\Db\\ProjectMapper');
+		if ($projectMapper === null) {
 			return [];
 		}
 
@@ -227,30 +215,25 @@ class CospendProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		$billMapper = null;
-		try {
-			$billMapper = $this->lookup(serviceName: 'OCA\\Cospend\\Db\\BillMapper');
-		} catch (Throwable $e) {
-			$billMapper = null;
-		}
+		return $this->withBills(projects: $projects, billMapper: $this->serviceOrNull(serviceName: 'OCA\\Cospend\\Db\\BillMapper'));
+	}//end unlinkedRows()
 
+	/**
+	 * Each project row followed by its bill rows.
+	 *
+	 * @param array<int,array<string,mixed>> $projects   Project leaf rows.
+	 * @param object|null                    $billMapper NC Cospend BillMapper, if it resolved.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function withBills(array $projects, ?object $billMapper): array {
 		$rows = [];
 		foreach ($projects as $project) {
-			$projectRow = $this->normaliseProject(project: $project, objectId: $objectId);
-			$rows[] = $projectRow;
-			$rows = array_merge(
-				$rows,
-				$this->collectBills(
-					billMapper: $billMapper,
-					projectId: (string)$projectRow['data']['id'],
-					projectName: (string)$projectRow['title'],
-					currencyName: (string)($projectRow['data']['currencyName'] ?? '')
-				)
-			);
+			$rows = array_merge($rows, [$project], $this->collectBills(billMapper: $billMapper, project: $project));
 		}
 
 		return $rows;
-	}//end legacyMarkerList()
+	}//end withBills()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).
@@ -261,18 +244,7 @@ class CospendProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$status = 'unavailable';
-		$message = 'NC Cospend app is not installed';
-		if ($this->isEnabled() === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Cospend app is not installed');
 	}//end health()
 
 	/**
@@ -300,220 +272,241 @@ class CospendProvider extends AbstractIntegrationProvider {
 	}//end lookup()
 
 	/**
-	 * Find NC Cospend projects whose `name` contains the OR object marker.
+	 * A service from the container, or null when it does not resolve.
+	 *
+	 * @param string $serviceName Fully qualified class name to resolve.
+	 *
+	 * @return object|null
+	 */
+	private function serviceOrNull(string $serviceName): ?object {
+		try {
+			return $this->lookup(serviceName: $serviceName);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end serviceOrNull()
+
+	/**
+	 * The NC Cospend projects whose `name` contains the OR object marker, as leaf rows.
 	 *
 	 * @param object $projectMapper NC Cospend ProjectMapper instance.
-	 * @param string $objectId Owning object uuid.
+	 * @param string $objectId      Owning object uuid.
 	 *
-	 * @return array<int,object> Matching project rows (loose-typed).
+	 * @return array<int,array<string,mixed>> Project leaf rows; none when the query fails.
 	 */
 	private function findProjectsByMarker(object $projectMapper, string $objectId): array {
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-
 		try {
-			$tableName = $projectMapper->getTableName();
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from($tableName)
-				->where(
-					$qb->expr()->iLike(
-						'name',
-						$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($marker) . '%')
-					)
-				)
-				->orderBy('last_changed', 'DESC');
-
-			$result = $qb->executeQuery();
-			$rows = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$rows[] = (object)$row;
-				$row = $result->fetch();
-			}
-
-			$result->closeCursor();
-			return $rows;
+			$rows = $this->fetchRows(qb: $this->projectQuery(projectMapper: $projectMapper, marker: self::MARKER_PREFIX . $objectId . ']'));
 		} catch (Throwable $e) {
 			return [];
-		}//end try
+		}
+
+		return array_map(fn (array $row): array => $this->normaliseProject(project: (object)$row, objectId: $objectId), $rows);
 	}//end findProjectsByMarker()
+
+	/**
+	 * The query for the projects whose name contains the marker, newest first.
+	 *
+	 * @param object $projectMapper NC Cospend ProjectMapper instance.
+	 * @param string $marker        The `[or:{uuid}]` marker.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function projectQuery(object $projectMapper, string $marker): IQueryBuilder {
+		$tableName = $projectMapper->getTableName();
+		$qb = $this->db->getQueryBuilder();
+		$like = '%' . $this->db->escapeLikeParameter($marker) . '%';
+
+		return $qb->select('*')
+			->from($tableName)
+			->where($qb->expr()->iLike('name', $qb->createNamedParameter($like)))
+			->orderBy('last_changed', 'DESC');
+	}//end projectQuery()
+
+	/**
+	 * Every row a query returns, cursor closed.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function fetchRows(IQueryBuilder $qb): array {
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end fetchRows()
 
 	/**
 	 * Normalise a raw cospend_projects row into a registry leaf row.
 	 *
-	 * @param object $project Raw project row.
+	 * @param object $project  Raw project row.
 	 * @param string $objectId Owning object uuid (used to strip the marker).
 	 *
 	 * @return array<string,mixed>
 	 */
 	private function normaliseProject(object $project, string $objectId): array {
-		$lastChangedColumn = 'last_changed';
-		$lastChanged = null;
-		if (isset($project->{$lastChangedColumn}) === true) {
-			$lastChanged = (int)$project->{$lastChangedColumn};
-		}
-
-		$userIdColumn = 'user_id';
-		$currencyColumn = 'currency_name';
-
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rawName = '';
-		if (isset($project->name) === true) {
-			$rawName = (string)$project->name;
-		}
-
-		$cleanName = trim(str_replace($marker, '', $rawName));
-
-		$id = '';
-		if (isset($project->id) === true) {
-			$id = (string)$project->id;
-		}
-
-		$userId = '';
-		if (isset($project->{$userIdColumn}) === true) {
-			$userId = (string)$project->{$userIdColumn};
-		}
-
-		$currency = '';
-		if (isset($project->{$currencyColumn}) === true) {
-			$currency = (string)$project->{$currencyColumn};
-		}
+		$data = $this->projectData(project: $project, objectId: $objectId);
 
 		return [
 			'type' => 'project',
-			'id' => $id,
-			'title' => $cleanName,
-			'description' => $userId,
-			'url' => '/index.php/apps/cospend/p/' . $id,
-			'lastUpdated' => $lastChanged,
-			'data' => [
-				'id' => $id,
-				'name' => $cleanName,
-				'userId' => $userId,
-				'currencyName' => $currency,
-				'lastChanged' => $lastChanged,
-			],
+			'id' => $data['id'],
+			'title' => $data['name'],
+			'description' => $data['userId'],
+			'url' => '/index.php/apps/cospend/p/' . $data['id'],
+			'lastUpdated' => $data['lastChanged'],
+			'data' => $data,
 		];
 	}//end normaliseProject()
 
 	/**
-	 * Collect bill rows for a single linked project (legacy fallback).
+	 * The `data` block of a project row: id, marker-free name, owner, currency, last change.
 	 *
-	 * @param object|null $billMapper BillMapper instance (or null).
-	 * @param string $projectId Cospend project id.
-	 * @param string $projectName Cleaned project name (label fallback).
-	 * @param string $currencyName Currency name carried from the project.
+	 * @param object $project  Raw project row.
+	 * @param string $objectId Owning object uuid (used to strip the marker).
+	 *
+	 * @return array{id: string, name: string, userId: string, currencyName: string, lastChanged: int|null}
+	 */
+	private function projectData(object $project, string $objectId): array {
+		$marker = self::MARKER_PREFIX . $objectId . ']';
+
+		return [
+			'id' => (string)($project->id ?? ''),
+			'name' => trim(str_replace($marker, '', (string)($project->name ?? ''))),
+			'userId' => (string)($project->{'user_id'} ?? ''),
+			'currencyName' => (string)($project->{'currency_name'} ?? ''),
+			'lastChanged' => $this->intOrNull(value: $project->{'last_changed'} ?? null),
+		];
+	}//end projectData()
+
+	/**
+	 * The bill rows of one linked project (legacy fallback); none without a bill mapper or when the query fails.
+	 *
+	 * @param object|null         $billMapper NC Cospend BillMapper, if it resolved.
+	 * @param array<string,mixed> $project    The project leaf row.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function collectBills(
-		?object $billMapper,
-		string $projectId,
-		string $projectName,
-		string $currencyName,
-	): array {
+	private function collectBills(?object $billMapper, array $project): array {
 		if ($billMapper === null) {
 			return [];
 		}
 
 		try {
-			$tableName = $billMapper->getTableName();
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from($tableName)
-				->where($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
-				->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0)))
-				->orderBy('timestamp', 'DESC')
-				->setMaxResults(self::BILLS_PER_PROJECT);
-
-			$result = $qb->executeQuery();
-			$rows = [];
-			$raw = $result->fetch();
-			while ($raw !== false) {
-				$rows[] = $this->normaliseBill(
-					bill: (object)$raw,
-					projectId: $projectId,
-					projectName: $projectName,
-					currencyName: $currencyName
-				);
-				$raw = $result->fetch();
-			}
-
-			$result->closeCursor();
-			return $rows;
+			$rows = $this->fetchRows(qb: $this->billQuery(billMapper: $billMapper, projectId: (string)$project['data']['id']));
 		} catch (Throwable $e) {
 			return [];
-		}//end try
+		}
+
+		return array_map(fn (array $row): array => $this->normaliseBill(bill: (object)$row, project: $project), $rows);
 	}//end collectBills()
+
+	/**
+	 * The query for a project's newest non-deleted bills.
+	 *
+	 * @param object $billMapper NC Cospend BillMapper instance.
+	 * @param string $projectId  Cospend project id.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function billQuery(object $billMapper, string $projectId): IQueryBuilder {
+		$tableName = $billMapper->getTableName();
+		$qb = $this->db->getQueryBuilder();
+
+		return $qb->select('*')
+			->from($tableName)
+			->where($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
+			->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0)))
+			->orderBy('timestamp', 'DESC')
+			->setMaxResults(self::BILLS_PER_PROJECT);
+	}//end billQuery()
 
 	/**
 	 * Normalise a raw cospend_bills row into a leaf row.
 	 *
-	 * @param object $bill Raw bill row.
-	 * @param string $projectId Cospend project id.
-	 * @param string $projectName Cleaned project name (label fallback).
-	 * @param string $currencyName Currency name carried from the project.
+	 * @param object              $bill    Raw bill row.
+	 * @param array<string,mixed> $project The project leaf row the bill belongs to.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function normaliseBill(
-		object $bill,
-		string $projectId,
-		string $projectName,
-		string $currencyName,
-	): array {
-		$billId = '';
-		if (isset($bill->id) === true) {
-			$billId = (string)$bill->id;
-		}
-
-		$what = '';
-		if (isset($bill->what) === true) {
-			$what = (string)$bill->what;
-		}
-
-		$amount = 0.0;
-		if (isset($bill->amount) === true) {
-			$amount = (float)$bill->amount;
-		}
-
-		$tsCandidate = null;
-		if (isset($bill->timestamp) === true) {
-			$tsCandidate = (int)$bill->timestamp;
-		}
-
-		$payerColumn = 'payer_id';
-		$payerId = null;
-		if (isset($bill->{$payerColumn}) === true) {
-			$payerId = (int)$bill->{$payerColumn};
-		}
-
-		$isoTimestamp = '';
-		if ($tsCandidate !== null) {
-			$isoTimestamp = gmdate('c', $tsCandidate);
-		}
-
-		$title = $projectName;
-		if ($what !== '') {
-			$title = $what;
-		}
+	private function normaliseBill(object $bill, array $project): array {
+		$data = $this->billData(bill: $bill, project: $project);
 
 		return [
 			'type' => 'bill',
-			'id' => $projectId . '/' . $billId,
-			'title' => $title,
-			'description' => $isoTimestamp,
-			'url' => '/index.php/apps/cospend/p/' . $projectId,
-			'lastUpdated' => $tsCandidate,
-			'data' => [
-				'id' => $billId,
-				'projectId' => $projectId,
-				'what' => $what,
-				'amount' => $amount,
-				'payerId' => $payerId,
-				'timestamp' => $tsCandidate,
-				'currencyName' => $currencyName,
-			],
+			'id' => $data['projectId'] . '/' . $data['id'],
+			'title' => $this->billTitle(what: $data['what'], projectName: (string)$project['title']),
+			'description' => $this->isoTimestamp(timestamp: $data['timestamp']),
+			'url' => '/index.php/apps/cospend/p/' . $data['projectId'],
+			'lastUpdated' => $data['timestamp'],
+			'data' => $data,
 		];
 	}//end normaliseBill()
+
+	/**
+	 * The `data` block of a bill row; project id and currency come from the project.
+	 *
+	 * @param object              $bill    Raw bill row.
+	 * @param array<string,mixed> $project The project leaf row.
+	 *
+	 * @return array{id: string, projectId: string, what: string, amount: float, payerId: int|null, timestamp: int|null, currencyName: string}
+	 */
+	private function billData(object $bill, array $project): array {
+		return [
+			'id' => (string)($bill->id ?? ''),
+			'projectId' => (string)$project['data']['id'],
+			'what' => (string)($bill->what ?? ''),
+			'amount' => (float)($bill->amount ?? 0.0),
+			'payerId' => $this->intOrNull(value: $bill->{'payer_id'} ?? null),
+			'timestamp' => $this->intOrNull(value: $bill->timestamp ?? null),
+			'currencyName' => (string)($project['data']['currencyName'] ?? ''),
+		];
+	}//end billData()
+
+	/**
+	 * A bill's title: what it was for, else the project name.
+	 *
+	 * @param string $what        The bill's `what`.
+	 * @param string $projectName The project name.
+	 *
+	 * @return string
+	 */
+	private function billTitle(string $what, string $projectName): string {
+		if ($what !== '') {
+			return $what;
+		}
+
+		return $projectName;
+	}//end billTitle()
+
+	/**
+	 * An ISO-8601 UTC timestamp, or '' when there is none.
+	 *
+	 * @param int|null $timestamp Unix timestamp.
+	 *
+	 * @return string
+	 */
+	private function isoTimestamp(?int $timestamp): string {
+		if ($timestamp === null) {
+			return '';
+		}
+
+		return gmdate('c', $timestamp);
+	}//end isoTimestamp()
+
+	/**
+	 * A column value as an int, or null when it is absent.
+	 *
+	 * @param mixed $value Raw column value.
+	 *
+	 * @return int|null
+	 */
+	private function intOrNull(mixed $value): ?int {
+		if ($value === null) {
+			return null;
+		}
+
+		return (int)$value;
+	}//end intOrNull()
 }//end class

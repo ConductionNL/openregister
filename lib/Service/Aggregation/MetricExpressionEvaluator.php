@@ -72,6 +72,15 @@ use RuntimeException;
 class MetricExpressionEvaluator {
 
 	/**
+	 * The refusal of an identifier that names no alias: the name, then the aliases that exist.
+	 *
+	 * @var string
+	 */
+	private const UNKNOWN_ALIAS = 'Metric expression references "%s", which is not a metric in this aggregation. '
+		.'Available: %s. A derived metric can only read figures computed BEFORE it, so '
+		.'order the `metrics` list accordingly.';
+
+	/**
 	 * The token list for the expression currently being evaluated.
 	 *
 	 * @var array<int, array{type: string, value: string}>
@@ -138,22 +147,34 @@ class MetricExpressionEvaluator {
 		}
 
 		$value = $this->parseExpression();
-
-		if ($this->pos < $this->count) {
-			$leftover = $this->tokens[$this->pos]['value'];
-			throw new RuntimeException(
-				sprintf(
-					'Unexpected "%s" in metric expression "%s". The grammar is arithmetic over '
-					.'metric aliases: + - * / parentheses, and min()/max() of two arguments.',
-					$leftover,
-					$expression
-				)
-			);
-		}
+		$this->refuseLeftover(expression: $expression);
 
 		return $value;
 	}//end evaluate()
 
+	/**
+	 * Refuse a token the grammar left unconsumed.
+	 *
+	 * @param string $expression The expression source, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When a token is left after the expression.
+	 */
+	private function refuseLeftover(string $expression): void {
+		if ($this->pos >= $this->count) {
+			return;
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				'Unexpected "%s" in metric expression "%s". The grammar is arithmetic over '
+				.'metric aliases: + - * / parentheses, and min()/max() of two arguments.',
+				$this->tokens[$this->pos]['value'],
+				$expression
+			)
+		);
+	}//end refuseLeftover()
 
 	/**
 	 * expr := term (('+' | '-') term)*
@@ -162,29 +183,11 @@ class MetricExpressionEvaluator {
 	 */
 	private function parseExpression(): ?float {
 		$value = $this->parseTerm();
+		$op    = $this->takeOperator(first: '+', second: '-');
 
-		while ($this->pos < $this->count
-			&& ($this->tokens[$this->pos]['type'] === '+' || $this->tokens[$this->pos]['type'] === '-')
-		) {
-			$op = $this->tokens[$this->pos]['type'];
-			$this->pos++;
-			$rhs = $this->parseTerm();
-
-			if ($value === null || $rhs === null) {
-				$value = null;
-				continue;
-			}
-
-			// Early-continue rather than if/else, matching parseTerm() below.
-			// phpcs bans the inline ternary this replaced and phpmd bans the
-			// `else` that replaced it, so neither shape is available; the
-			// pattern this file already uses satisfies both.
-			if ($op === '+') {
-				$value = ($value + $rhs);
-				continue;
-			}
-
-			$value = ($value - $rhs);
+		while ($op !== null) {
+			$value = $this->combine(op: $op, lhs: $value);
+			$op    = $this->takeOperator(first: '+', second: '-');
 		}
 
 		return $value;
@@ -197,37 +200,109 @@ class MetricExpressionEvaluator {
 	 */
 	private function parseTerm(): ?float {
 		$value = $this->parseFactor();
+		$op    = $this->takeOperator(first: '*', second: '/');
 
-		while ($this->pos < $this->count
-			&& ($this->tokens[$this->pos]['type'] === '*' || $this->tokens[$this->pos]['type'] === '/')
-		) {
-			$op = $this->tokens[$this->pos]['type'];
-			$this->pos++;
-			$rhs = $this->parseFactor();
-
-			if ($value === null || $rhs === null) {
-				$value = null;
-				continue;
-			}
-
-			if ($op === '*') {
-				$value = ($value * $rhs);
-				continue;
-			}
-
-			// DIVISION BY ZERO YIELDS NULL, not INF and not NAN. json_encode()
-			// refuses INF outright, and NAN compares false against everything,
-			// so either one travels a long way before anybody notices.
-			if ($rhs === 0.0) {
-				$value = null;
-				continue;
-			}
-
-			$value = ($value / $rhs);
-		}//end while
+		while ($op !== null) {
+			$value = $this->combine(op: $op, lhs: $value);
+			$op    = $this->takeOperator(first: '*', second: '/');
+		}
 
 		return $value;
 	}//end parseTerm()
+
+	/**
+	 * Consume the next token when it is one of two operators.
+	 *
+	 * @param string $first  One operator the production accepts.
+	 * @param string $second The other operator the production accepts.
+	 *
+	 * @return string|null The consumed operator, or null when the next token is neither.
+	 */
+	private function takeOperator(string $first, string $second): ?string {
+		if ($this->pos >= $this->count) {
+			return null;
+		}
+
+		$type = $this->tokens[$this->pos]['type'];
+		if ($type !== $first && $type !== $second) {
+			return null;
+		}
+
+		$this->pos++;
+		return $type;
+	}//end takeOperator()
+
+	/**
+	 * Apply one binary operator to the running value and the operand that follows it.
+	 *
+	 * The right operand is parsed first, so a null left side still consumes its
+	 * tokens. A null on either side poisons the result.
+	 *
+	 * @param string     $op  One of + - * /.
+	 * @param float|null $lhs The left operand: the value computed so far.
+	 *
+	 * @return float|null The result, or null when an operand is null or the divisor is zero.
+	 */
+	private function combine(string $op, float|null $lhs): float|null {
+		$rhs = $this->rightOperand(op: $op);
+		if ($lhs === null || $rhs === null) {
+			return null;
+		}
+
+		return $this->arithmetic(op: $op, operands: new MetricOperands(lhs: $lhs, rhs: $rhs));
+	}//end combine()
+
+	/**
+	 * Parse the right operand of a binary operator: a term after + or -, a factor after * or /.
+	 *
+	 * @param string $op One of + - * /.
+	 *
+	 * @return float|null The operand, or null when it is undefined.
+	 */
+	private function rightOperand(string $op): ?float {
+		if ($op === '+' || $op === '-') {
+			return $this->parseTerm();
+		}
+
+		return $this->parseFactor();
+	}//end rightOperand()
+
+	/**
+	 * Apply one binary operator to two known operands.
+	 *
+	 * @param string         $op       One of + - * /.
+	 * @param MetricOperands $operands The left and right operand.
+	 *
+	 * @return float|null The result, or null when the divisor is zero.
+	 */
+	private function arithmetic(string $op, MetricOperands $operands): ?float {
+		return match ($op) {
+			'+' => ($operands->lhs + $operands->rhs),
+			'-' => ($operands->lhs - $operands->rhs),
+			'/' => $this->divide(dividend: $operands->lhs, divisor: $operands->rhs),
+			default => ($operands->lhs * $operands->rhs),
+		};
+	}//end arithmetic()
+
+	/**
+	 * Divide, yielding null on a zero divisor.
+	 *
+	 * DIVISION BY ZERO YIELDS NULL, not INF and not NAN. json_encode()
+	 * refuses INF outright, and NAN compares false against everything,
+	 * so either one travels a long way before anybody notices.
+	 *
+	 * @param float $dividend The dividend.
+	 * @param float $divisor  The divisor.
+	 *
+	 * @return float|null The quotient, or null when the divisor is zero.
+	 */
+	private function divide(float $dividend, float $divisor): ?float {
+		if ($divisor === 0.0) {
+			return null;
+		}
+
+		return ($dividend / $divisor);
+	}//end divide()
 
 	/**
 	 * factor := NUMBER | IDENT | '(' expr ')' | ('min'|'max') '(' expr ',' expr ')' | '-' factor
@@ -243,43 +318,71 @@ class MetricExpressionEvaluator {
 
 		$token = $this->tokens[$this->pos];
 
-		if ($token['type'] === '-') {
-			$this->pos++;
-			$inner = $this->parseFactor();
-			if ($inner === null) {
-				return null;
-			}
-
-			return (0 - $inner);
-		}
-
-		if ($token['type'] === 'number') {
-			$this->pos++;
-			return (float)$token['value'];
-		}
-
-		if ($token['type'] === '(') {
-			$this->pos++;
-			$inner = $this->parseExpression();
-			$this->expect(type: ')');
-			return $inner;
-		}
-
-		if ($token['type'] === 'ident') {
-			$name = $token['value'];
-
-			if ($name === 'min' || $name === 'max') {
-				return $this->parseMinMax(name: $name);
-			}
-
-			$this->pos++;
-			return $this->resolveAlias(name: $name);
-		}
-
-		throw new RuntimeException(
-			sprintf('Unexpected "%s" where a value was expected in a metric expression.', $token['value'])
-		);
+		return match ($token['type']) {
+			'-' => $this->parseNegation(),
+			'number' => $this->parseNumber(value: $token['value']),
+			'(' => $this->parseGroup(),
+			'ident' => $this->parseIdentifier(name: $token['value']),
+			default => throw new RuntimeException(
+				sprintf('Unexpected "%s" where a value was expected in a metric expression.', $token['value'])
+			),
+		};
 	}//end parseFactor()
+
+	/**
+	 * '-' factor
+	 *
+	 * @return float|null The negated value, or null when the operand is null.
+	 */
+	private function parseNegation(): ?float {
+		$this->pos++;
+		$inner = $this->parseFactor();
+		if ($inner === null) {
+			return null;
+		}
+
+		return (0 - $inner);
+	}//end parseNegation()
+
+	/**
+	 * NUMBER
+	 *
+	 * @param string $value The literal.
+	 *
+	 * @return float The number.
+	 */
+	private function parseNumber(string $value): float {
+		$this->pos++;
+		return (float)$value;
+	}//end parseNumber()
+
+	/**
+	 * '(' expr ')'
+	 *
+	 * @return float|null The value inside the parentheses.
+	 */
+	private function parseGroup(): ?float {
+		$this->pos++;
+		$inner = $this->parseExpression();
+		$this->expect(type: ')');
+		return $inner;
+	}//end parseGroup()
+
+	/**
+	 * IDENT, or the min/max call an identifier starts.
+	 *
+	 * @param string $name The identifier.
+	 *
+	 * @return float|null The value.
+	 */
+	private function parseIdentifier(string $name): ?float {
+		if ($name === 'min' || $name === 'max') {
+			return $this->parseMinMax(name: $name);
+		}
+
+		$this->pos++;
+		return $this->resolveAlias(name: $name);
+	}//end parseIdentifier()
 
 	/**
 	 * ('min'|'max') '(' expr ',' expr ')'
@@ -321,21 +424,7 @@ class MetricExpressionEvaluator {
 	 */
 	private function resolveAlias(string $name): ?float {
 		if (array_key_exists($name, $this->scope) === false) {
-			$known = array_keys($this->scope);
-			sort($known);
-			$available = '(none)';
-			if ($known !== []) {
-				$available = implode(', ', $known);
-			}
-			throw new RuntimeException(
-				sprintf(
-					'Metric expression references "%s", which is not a metric in this aggregation. '
-					.'Available: %s. A derived metric can only read figures computed BEFORE it, so '
-					.'order the `metrics` list accordingly.',
-					$name,
-					$available
-				)
-			);
+			throw $this->unknownAlias(name: $name);
 		}
 
 		$value = $this->scope[$name];
@@ -344,6 +433,20 @@ class MetricExpressionEvaluator {
 			return null;
 		}
 
+		return $this->numeric(name: $name, value: $value);
+	}//end resolveAlias()
+
+	/**
+	 * An alias value as a number, or a refusal naming the alias.
+	 *
+	 * @param string $name  The alias.
+	 * @param mixed  $value Its non-null value.
+	 *
+	 * @return float The value.
+	 *
+	 * @throws RuntimeException When the value is not an int or a float.
+	 */
+	private function numeric(string $name, mixed $value): float {
 		if (is_int($value) === false && is_float($value) === false) {
 			throw new RuntimeException(
 				sprintf(
@@ -355,7 +458,25 @@ class MetricExpressionEvaluator {
 		}
 
 		return (float)$value;
-	}//end resolveAlias()
+	}//end numeric()
+
+	/**
+	 * The refusal for an identifier that names no alias in scope.
+	 *
+	 * @param string $name The alias.
+	 *
+	 * @return RuntimeException The refusal, naming the aliases that do exist.
+	 */
+	private function unknownAlias(string $name): RuntimeException {
+		$known = array_keys($this->scope);
+		sort($known);
+		$available = '(none)';
+		if ($known !== []) {
+			$available = implode(', ', $known);
+		}
+
+		return new RuntimeException(sprintf(self::UNKNOWN_ALIAS, $name, $available));
+	}//end unknownAlias()
 
 	/**
 	 * Consume the expected token type or refuse.

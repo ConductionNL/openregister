@@ -75,22 +75,26 @@ class AuditTrailPayloadHelperTest extends TestCase {
 		$this->assertStringContainsString('ceiling', $result['blob']['reason']);
 	}
 
-	public function testRevertChangesSkipsWhenNoOldValue(): void {
+	public function testRevertChangesRemovesAPropertyTheEntryAdded(): void {
 		$audit = $this->createMock(AuditTrail::class);
 		$audit->method('getChanged')->willReturn(['title' => ['old' => null, 'new' => 'x']]);
 		$object = new ObjectEntity();
+		$object->setObject(['title' => 'x', 'keep' => 'y']);
 
-		// No 'old' value means nothing is reverted; the call must not throw.
 		$this->helper->revertChanges($object, $audit);
-		$this->addToAssertionCount(1);
+
+		$this->assertArrayNotHasKey('title', $object->getObject());
+		$this->assertSame('y', $object->getObject()['keep']);
 	}
 
 	public function testRevertChangesHandlesEmptyChangeSet(): void {
 		$audit = $this->createMock(AuditTrail::class);
 		$audit->method('getChanged')->willReturn([]);
 		$object = new ObjectEntity();
+		$object->setObject(['title' => 'kept']);
 
 		$this->helper->revertChanges($object, $audit);
-		$this->addToAssertionCount(1);
+
+		$this->assertSame('kept', $object->getObject()['title']);
 	}
 }

@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  * The annotation validator reads its operator vocabulary from here too, so a
  * schema can never be refused for an operator the catalogue advertises.
  */
-final class OperatorCatalogue {
+final class OperatorCatalogue implements OperatorCatalogueInterface {
 
 	/**
 	 * Every operator, in a shape an expression builder can render.

@@ -17,8 +17,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
 use OCA\OpenRegister\Service\Form\FormDependent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsSignals;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -67,6 +69,11 @@ class FormDependentsCheckTest extends TestCase {
 	 */
 	private bool $withClosureless = false;
 
+	/**
+	 * Whether the owning app also registers a form whose unpublish closure throws.
+	 */
+	private bool $withFailing = false;
+
 	protected function setUp(): void {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(
@@ -80,9 +87,7 @@ class FormDependentsCheckTest extends TestCase {
 				$this->assertSame('ticket', $event->getSchema()->getSlug());
 				$event->addForm(
 					new FormDependent(
-						id: 'form-a',
-						app: 'pipelinq',
-						title: 'Contact opnemen',
+						form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact opnemen'),
 						author: 'alice',
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
 						unpublish: function (): void {
@@ -92,9 +97,7 @@ class FormDependentsCheckTest extends TestCase {
 				);
 				$event->addForm(
 					new FormDependent(
-						id: 'form-b',
-						app: 'portaliq',
-						title: 'Melding',
+						form: new PublishedForm(id: 'form-b', app: 'portaliq', title: 'Melding'),
 						author: null,
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title'], ['field' => 'prio', 'property' => 'priority', 'type' => 'choice', 'options' => ['low', 'high']]]],
 						unpublish: function (): void {
@@ -102,12 +105,23 @@ class FormDependentsCheckTest extends TestCase {
 						}
 					)
 				);
+				if ($this->withFailing === true) {
+					$event->addForm(
+						new FormDependent(
+							form: new PublishedForm(id: 'form-d', app: 'pipelinq', title: 'Kapot'),
+							author: 'dave',
+							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
+							unpublish: static function (): void {
+								throw new \RuntimeException('owning app is down');
+							}
+						)
+					);
+				}
+
 				if ($this->withClosureless === true) {
 					$event->addForm(
 						new FormDependent(
-							id: 'form-c',
-							app: 'pipelinq',
-							title: 'Zonder sluiter',
+							form: new PublishedForm(id: 'form-c', app: 'pipelinq', title: 'Zonder sluiter'),
 							author: 'carol',
 							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]]
 						)
@@ -130,11 +144,13 @@ class FormDependentsCheckTest extends TestCase {
 		);
 
 		$this->check = new FormDependentsCheck(
-			dispatcher: $dispatcher,
-			validator: new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()),
-			appConfig: $this->appConfig,
-			notifications: $this->notifications,
-			logger: $this->createMock(LoggerInterface::class)
+			new FormDependentsSignals(
+				$dispatcher,
+				$this->notifications
+			),
+			new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()),
+			$this->appConfig,
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -221,6 +237,30 @@ class FormDependentsCheckTest extends TestCase {
 		$this->assertSame('unpublished', $outcomes['form-a']);
 		$this->assertSame(['alice'], array_column($this->sent, 'user'), 'only the author of a form that was unpublished is told');
 	}//end testAFormWithoutAnUnpublishClosureIsNotReportedUnpublished()
+
+	/**
+	 * An unpublish closure that throws reports the form as failed, and its author is not told it was unpublished.
+	 */
+	public function testAFailingUnpublishIsReportedFailedAndNotNotified(): void {
+		$this->withFailing = true;
+		$applied = $this->check->apply(assessment: $this->check->assess(schema: $this->ticketWithRequiredPriority()));
+
+		$outcomes = array_column($applied, 'outcome', 'id');
+		$this->assertSame('unpublish-failed', $outcomes['form-d']);
+		$this->assertSame('unpublished', $outcomes['form-a']);
+		$this->assertSame(['alice'], array_column($this->sent, 'user'));
+	}//end testAFailingUnpublishIsReportedFailedAndNotNotified()
+
+	/**
+	 * The author's notification names the form, the schema and how many findings broke it.
+	 */
+	public function testTheAuthorNotificationNamesTheFormTheSchemaAndTheFindingCount(): void {
+		$applied = $this->check->apply(assessment: $this->check->assess(schema: $this->ticketWithRequiredPriority()));
+
+		$findings = array_column($applied, 'findings', 'id')['form-a'];
+		$this->assertSame(['formTitle' => 'Contact opnemen', 'schema' => 'ticket', 'count' => count($findings)], $this->sent[0]['parameters']);
+		$this->assertGreaterThan(0, count($findings));
+	}//end testTheAuthorNotificationNamesTheFormTheSchemaAndTheFindingCount()
 
 	/**
 	 * An owning app set to refuse blocks the schema save, and nothing is unpublished.

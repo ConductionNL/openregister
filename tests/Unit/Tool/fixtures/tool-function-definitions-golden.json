@@ -1,5 +1,5 @@
 {
-    "OCA\\OpenRegister\\Tool\\AgentTool": [
+    "OCA\\OpenRegister\\Mcp\\Tool\\AgentTool": [
         {
             "name": "list_agents",
             "subject": "agent",
@@ -117,7 +117,7 @@
             }
         }
     ],
-    "OCA\\OpenRegister\\Tool\\ApplicationTool": [
+    "OCA\\OpenRegister\\Mcp\\Tool\\ApplicationTool": [
         {
             "name": "list_applications",
             "subject": "application",
@@ -231,7 +231,7 @@
             }
         }
     ],
-    "OCA\\OpenRegister\\Tool\\ObjectsTool": [
+    "OCA\\OpenRegister\\Mcp\\Tool\\ObjectsTool": [
         {
             "name": "search_objects",
             "subject": "object",
@@ -352,7 +352,7 @@
             }
         }
     ],
-    "OCA\\OpenRegister\\Tool\\RegisterTool": [
+    "OCA\\OpenRegister\\Mcp\\Tool\\RegisterTool": [
         {
             "name": "list_registers",
             "subject": "register",
@@ -462,7 +462,7 @@
             }
         }
     ],
-    "OCA\\OpenRegister\\Tool\\SchemaTool": [
+    "OCA\\OpenRegister\\Mcp\\Tool\\SchemaTool": [
         {
             "name": "list_schemas",
             "subject": "schema",

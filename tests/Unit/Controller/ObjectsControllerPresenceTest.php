@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -33,7 +34,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -45,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 
 /**
  * Contract tests for objects#presenceBeat, presenceDepart and presenceList.
@@ -70,7 +73,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === PresenceService::class) {
+				if ($id === PresenceServiceInterface::class) {
 					return $this->presence;
 				}
 
@@ -82,7 +85,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -231,7 +234,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 		$this->objectIsReadable();
 		$this->presence->expects($this->once())
 			->method('present')
-			->with('uuid-123', self::CALLER)
+			->with(new PresenceLookup(objectUuid: 'uuid-123', exceptUser: self::CALLER))
 			->willReturn([['userId' => 'bob']]);
 
 		$response = $this->controller->presenceList('reg', 'sch', 'uuid-123');

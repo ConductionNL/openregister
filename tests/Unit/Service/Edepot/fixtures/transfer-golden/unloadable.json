@@ -1,0 +1,82 @@
+{
+    "list": {
+        "uuid": "list-1",
+        "status": "failed",
+        "objectReferences": [
+            {
+                "uuid": "a",
+                "schema": 1,
+                "register": 2
+            },
+            {
+                "uuid": "ghost",
+                "schema": 1,
+                "register": 2
+            }
+        ],
+        "attempts": [
+            {
+                "attempt": 1,
+                "timestamp": "<now>",
+                "transport": "rest_api",
+                "outcome": "failed",
+                "error": null
+            }
+        ]
+    },
+    "calls": [
+        [
+            "info",
+            "[EdepotTransferService] Transfer attempt",
+            {
+                "transferId": "list-1",
+                "transport": "rest_api",
+                "attempt": 1
+            }
+        ],
+        [
+            "info",
+            "[EdepotTransferService] Audit: archival.transfer_initiated",
+            {
+                "action": "archival.transfer_initiated",
+                "transferUuid": "list-1",
+                "objectCount": 2,
+                "transport": "rest_api",
+                "targetArchive": "archive-x"
+            }
+        ],
+        [
+            "find",
+            "a"
+        ],
+        [
+            "find",
+            "ghost"
+        ],
+        [
+            "debug",
+            "[EdepotTransferService] outstanding-check could not load object ghost",
+            []
+        ],
+        [
+            "find",
+            "ghost"
+        ],
+        [
+            "warning",
+            "[EdepotTransferService] Could not load object for transfer",
+            {
+                "uuid": "ghost",
+                "error": "not found"
+            }
+        ],
+        [
+            "find",
+            "a"
+        ],
+        [
+            "find",
+            "ghost"
+        ]
+    ]
+}

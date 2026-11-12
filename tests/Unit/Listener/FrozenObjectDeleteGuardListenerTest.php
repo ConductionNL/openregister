@@ -34,6 +34,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Listener\FrozenObjectDeleteGuardListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Event\ObjectDeletingEvent
+ * @uses \OCA\OpenRegister\Db\FreezeTerms
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
  */
 class FrozenObjectDeleteGuardListenerTest extends TestCase {
 

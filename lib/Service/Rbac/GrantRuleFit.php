@@ -67,41 +67,55 @@ class GrantRuleFit {
 	 * part that reads who is asking cannot be answered for everybody, so the
 	 * entry is kept and reported as relative.
 	 *
-	 * @param mixed                $entry    The entry as written (a role grant carries its holder list).
-	 * @param mixed                $role     The role it came through, or null.
+	 * @param HeldRule             $rule     The entry as written and the role it came through.
 	 * @param array<string, mixed> $envelope The record as the matcher reads it.
 	 *
 	 * @return array{matchedOn: string[], relative: bool}|null The fit.
 	 *
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
-	public function fitOf(mixed $entry, mixed $role, array $envelope): ?array {
-		$match = null;
-		if ($role === null && is_array($entry) === true) {
-			$match = ($entry['match'] ?? null);
-		}
+	public function fitOf(HeldRule $rule, array $envelope): ?array {
+		return $this->fitOfMatch(match: $rule->matchClause(), envelope: $envelope);
+	}//end fitOf()
 
+	/**
+	 * How one `match` clause fits this record, or null when its static part does not.
+	 *
+	 * @param mixed                $match    The clause as written.
+	 * @param array<string, mixed> $envelope The record as the matcher reads it.
+	 *
+	 * @return array{matchedOn: string[], relative: bool}|null The fit.
+	 */
+	private function fitOfMatch(mixed $match, array $envelope): ?array {
 		if (is_array($match) === false || $match === []) {
 			return ['matchedOn' => [], 'relative' => false];
 		}
 
-		$static = [];
-		$relative = false;
-		foreach ($match as $property => $value) {
-			if ($this->readsTheCaller(value: $value) === true) {
-				$relative = true;
-				continue;
-			}
-
-			$static[$property] = $value;
-		}
-
+		$static = $this->staticPart(match: $match);
 		if ($static !== [] && $this->matcher->objectMatchesConditions(object: $envelope, match: $static) === false) {
 			return null;
 		}
 
-		return ['matchedOn' => array_map('strval', array_keys($match)), 'relative' => $relative];
-	}//end fitOf()
+		return ['matchedOn' => array_map('strval', array_keys($match)), 'relative' => count($static) !== count($match)];
+	}//end fitOfMatch()
+
+	/**
+	 * The part of a `match` clause that does not read who is asking.
+	 *
+	 * @param array<string, mixed> $match The clause.
+	 *
+	 * @return array<string, mixed> The static conditions.
+	 */
+	private function staticPart(array $match): array {
+		$static = [];
+		foreach ($match as $property => $value) {
+			if ($this->readsTheCaller(value: $value) === false) {
+				$static[$property] = $value;
+			}
+		}
+
+		return $static;
+	}//end staticPart()
 
 	/**
 	 * Whether a match value reads who is asking.
@@ -112,17 +126,7 @@ class GrantRuleFit {
 	 */
 	private function readsTheCaller(mixed $value): bool {
 		if (is_string($value) === true) {
-			if (in_array($value, self::CALLER_TOKENS, true) === true) {
-				return true;
-			}
-
-			foreach (self::CALLER_TOKENS as $token) {
-				if (str_starts_with($value, $token . '.') === true) {
-					return true;
-				}
-			}
-
-			return false;
+			return self::isCallerToken(value: $value);
 		}
 
 		if (is_array($value) === false) {
@@ -133,14 +137,46 @@ class GrantRuleFit {
 			return true;
 		}
 
-		foreach ($value as $operand) {
+		return $this->anyOperandReadsTheCaller(operands: $value);
+	}//end readsTheCaller()
+
+	/**
+	 * Whether a string is a caller token, or a path into one (`$organisation.uuid`).
+	 *
+	 * @param string $value The value as written.
+	 *
+	 * @return bool True when it names the caller, the caller's groups or organisation.
+	 */
+	private static function isCallerToken(string $value): bool {
+		if (in_array($value, self::CALLER_TOKENS, true) === true) {
+			return true;
+		}
+
+		foreach (self::CALLER_TOKENS as $token) {
+			if (str_starts_with($value, $token . '.') === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isCallerToken()
+
+	/**
+	 * Whether any operand of an operator object reads who is asking.
+	 *
+	 * @param array<mixed> $operands The operator object's values.
+	 *
+	 * @return bool True when one of them does.
+	 */
+	private function anyOperandReadsTheCaller(array $operands): bool {
+		foreach ($operands as $operand) {
 			if ($this->readsTheCaller(value: $operand) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end readsTheCaller()
+	}//end anyOperandReadsTheCaller()
 
 	/**
 	 * The type and id of the principal a rule names.

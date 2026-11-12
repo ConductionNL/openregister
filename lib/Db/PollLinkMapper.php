@@ -17,17 +17,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class PollLinkMapper
  *
  * @template-extends QBMapper<PollLink>
+ * @method list<PollLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class PollLinkMapper extends QBMapper {
+class PollLinkMapper extends QBMapper implements PollLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -38,40 +41,6 @@ class PollLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find poll links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return PollLink[] Array of poll links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
-	 * Find poll links by poll id.
-	 *
-	 * @param int $pollId The poll id.
-	 *
-	 * @return PollLink[] Array of poll links.
-	 */
-	public function findByPollId(int $pollId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByPollId()
-
-	/**
 	 * Find a specific poll link by object UUID and poll id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -80,33 +49,13 @@ class PollLinkMapper extends QBMapper {
 	 * @return PollLink|null The link or null if not found.
 	 */
 	public function findByObjectAndPoll(string $objectUuid, int $pollId): ?PollLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'poll_id', value: $pollId));
+		if ($link instanceof PollLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndPoll()
-
-	/**
-	 * Delete all poll links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a poll link by object UUID + poll id (Tier-2 unlink path).
@@ -120,11 +69,6 @@ class PollLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndPoll(string $objectUuid, int $pollId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'poll_id', value: $pollId));
 	}//end deleteByObjectAndPoll()
 }//end class

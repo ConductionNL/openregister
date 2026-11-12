@@ -38,8 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCP\IURLGenerator;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
+use OCP\IL10N;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
@@ -76,14 +77,12 @@ class AnnotationNotifier implements INotifier {
 	/**
 	 * Constructor.
 	 *
-	 * @param IFactory $factory L10N factory for localised subjects.
-	 * @param IURLGenerator $urlGenerator URL generator for the icon and action link.
-	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
+	 * @param IFactory        $factory L10N factory for localised subjects.
+	 * @param ObjectDeepLinks $links   The URL generator for the icon and action link, and the owning app's detail route.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly ?DeepLinkRegistryService $deepLinks = null,
+		private readonly ObjectDeepLinks $links,
 	) {
 	}//end __construct()
 
@@ -122,104 +121,163 @@ class AnnotationNotifier implements INotifier {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
+		$owned = $this->ownedSubject(notification: $notification);
+		$l = $this->factory->get('openregister', $languageCode);
+
+		$notification->setParsedSubject($this->parsedSubject(l: $l, owned: $owned));
+		$this->setParsedBody(notification: $notification, params: $owned['params']);
+		$notification->setIcon($this->iconUrl(params: $owned['params']));
+		$this->addActions(
+			run: new NotificationPrepareRun(notification: $notification, l: $l, languageCode: $languageCode),
+			params: $owned['params']
+		);
+
+		return $notification;
+	}//end prepare()
+
+	/**
+	 * The subject and parameters of a notification this notifier owns.
+	 *
+	 * Subjects this notifier does not own (e.g. configuration_update_available,
+	 * rendered by Notifier) are passed on untouched.
+	 *
+	 * @param INotification $notification Notification to prepare.
+	 *
+	 * @return array{subject: string, params: array} The subject and its parameters.
+	 *
+	 * @throws UnknownNotificationException When this notifier does not own it.
+	 */
+	private function ownedSubject(INotification $notification): array {
 		if ($notification->getApp() !== 'openregister') {
 			throw new UnknownNotificationException();
 		}
 
 		$subject = $notification->getSubject();
 		$params = $notification->getSubjectParameters();
-		$text = ($params['_text'] ?? null);
-		$hasText = (is_string($text) === true && $text !== '');
-		$isObject = array_key_exists($subject, self::SUBJECT_TEMPLATES);
-
-		// Subjects this notifier does not own (e.g. configuration_update_available,
-		// rendered by Notifier) are passed on untouched.
-		if ($isObject === false && $hasText === false) {
+		if (array_key_exists($subject, self::SUBJECT_TEMPLATES) === false && self::customText(params: $params) === null) {
 			throw new UnknownNotificationException();
 		}
 
-		$l = $this->factory->get('openregister', $languageCode);
+		return ['subject' => $subject, 'params' => $params];
+	}//end ownedSubject()
 
-		// The schema's custom per-locale subject (already interpolated by the
-		// dispatcher for this recipient) wins; otherwise render the canonical
-		// localised string with the object title + register name substituted.
+	/**
+	 * The dispatcher's pre-rendered `_text`, when it carries one.
+	 *
+	 * @param array $params Subject parameters.
+	 *
+	 * @return string|null The text, or null when absent or empty.
+	 */
+	private static function customText(array $params): ?string {
+		$text = ($params['_text'] ?? null);
+		if (is_string($text) === true && $text !== '') {
+			return $text;
+		}
+
+		return null;
+	}//end customText()
+
+	/**
+	 * The rendered subject line.
+	 *
+	 * The schema's custom per-locale subject (already interpolated by the
+	 * dispatcher for this recipient) wins; otherwise the canonical localised
+	 * string with the object title + register name substituted. Only a
+	 * canonical object subject has a template; a custom subject (e.g. a flow
+	 * send's `flow_message`) reaches this point purely on its `_text`.
+	 *
+	 * @param IL10N                                  $l     Localiser for the recipient.
+	 * @param array{subject: string, params: array} $owned The subject and its parameters.
+	 *
+	 * @return string The parsed subject.
+	 */
+	private function parsedSubject(IL10N $l, array $owned): string {
+		$subject = $owned['subject'];
+		$params = $owned['params'];
+		$text = self::customText(params: $params);
+		if ($text !== null) {
+			return $text;
+		}
+
 		$objectTitle = (string)($params['objectTitle'] ?? $l->t('object'));
 		$registerName = trim((string)($params['registerName'] ?? ''));
-		// Only a canonical object subject has a template; a custom subject
-		// (e.g. a flow send's `flow_message`) reaches this point purely on its
-		// `_text`, and indexing SUBJECT_TEMPLATES with it would be an
-		// undefined-key error that killed the render.
-		$parsedSubject = '';
-		if ($isObject === true && $registerName !== '') {
-			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+		if ($registerName === '') {
+			return $l->t(self::SUBJECT_TEMPLATES_WITHOUT_REGISTER[$subject], [$objectTitle]);
 		}
 
-		if ($isObject === true && $registerName === '') {
-			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES_WITHOUT_REGISTER[$subject], [$objectTitle]);
-		}
+		return $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+	}//end parsedSubject()
 
-		if ($hasText === true) {
-			$parsedSubject = $text;
-		}
-
-		$notification->setParsedSubject($parsedSubject);
-
-		// Notification BODY (distinct from the title/subject). The dispatcher
-		// pre-resolves the recipient-localised body — the rule's `message`
-		// template, or an auto-derived "Open in {AppName}." when the rule has
-		// actions but no message. Left unset when empty (back-compat: rules
-		// with neither message nor actions render exactly as before).
+	/**
+	 * Set the notification BODY (distinct from the title/subject).
+	 *
+	 * The dispatcher pre-resolves the recipient-localised body — the rule's
+	 * `message` template, or an auto-derived "Open in {AppName}." when the rule
+	 * has actions but no message. Left unset when empty (back-compat: rules
+	 * with neither message nor actions render exactly as before).
+	 *
+	 * @param INotification $notification Notification to prepare.
+	 * @param array         $params       Subject parameters.
+	 *
+	 * @return void
+	 */
+	private function setParsedBody(INotification $notification, array $params): void {
 		$message = ($params['_message'] ?? null);
 		if (is_string($message) === true && $message !== '') {
 			$notification->setParsedMessage($message);
 		}
+	}//end setParsedBody()
 
-		// Icon: when the rule resolved an originApp, point at the hex-composite
-		// raster endpoint (the originApp's white glyph on the cobalt hexagon)
-		// instead of the static openregister app image — so the OS popup
-		// carries the originating app's identity. Falls back to app.svg.
+	/**
+	 * The absolute icon URL.
+	 *
+	 * When the rule resolved an originApp, the hex-composite raster endpoint
+	 * (the originApp's white glyph on the cobalt hexagon) so the OS popup
+	 * carries the originating app's identity; otherwise app.svg. setIcon()
+	 * only accepts absolute http(s) URLs — a relative imagePath() throws
+	 * InvalidValueException on every render.
+	 *
+	 * @param array $params Subject parameters.
+	 *
+	 * @return string The icon URL.
+	 */
+	private function iconUrl(array $params): string {
 		$originApp = (string)($params['originApp'] ?? 'openregister');
 		if ($originApp !== '' && $originApp !== 'openregister') {
-			$notification->setIcon(
-				$this->urlGenerator->linkToRouteAbsolute(
-					'openregister.webPush.hexIcon',
-					['app' => $originApp]
-				)
-			);
-		} else {
-			// The setIcon() method only accepts absolute http(s) URLs (desktop and
-			// mobile client support) — a relative imagePath() throws
-			// InvalidValueException on every render, so the notification never
-			// reaches the client.
-			$notification->setIcon(
-				$this->urlGenerator->getAbsoluteURL(
-					$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-				)
-			);
+			return $this->links->urls->linkToRouteAbsolute('openregister.webPush.hexIcon', ['app' => $originApp]);
 		}
 
+		return $this->links->urls->getAbsoluteURL(
+			$this->links->urls->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+	}//end iconUrl()
+
+	/**
+	 * Link the object and add the action buttons.
+	 *
+	 * Declared actions render when the rule provided any. The implicit "View"
+	 * action is the fallback when no declared action rendered — none declared
+	 * (back-compat) or every one resolved to an empty link — so a notification
+	 * never ships with zero actions when an object-detail target exists.
+	 *
+	 * @param NotificationPrepareRun $run    The notification, its localiser and locale.
+	 * @param array<string, mixed>   $params The notification's subject parameters.
+	 *
+	 * @return void
+	 */
+	private function addActions(NotificationPrepareRun $run, array $params): void {
 		// Link to the object; without it a click went nowhere (cloud check, `link: ""`).
-		$objectLink = $this->linkToObject(notification: $notification, params: $params);
+		$objectLink = $this->linkToObject(notification: $run->notification, params: $params);
 
-		// Render declared action buttons when the rule provided any; otherwise
-		// keep the implicit single "View" action (back-compat — existing rules
-		// are unchanged).
 		$actions = ($params['_actions'] ?? []);
-		$rendered = 0;
 		if (is_array($actions) === true && count($actions) > 0) {
-			$rendered = $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $languageCode);
+			$this->addDeclaredActions(run: $run, actions: $actions);
 		}
 
-		// Fall back to the implicit "View" action when no declared action was
-		// rendered — either none were declared (back-compat) or every declared
-		// action resolved to an empty link. This guarantees a notification
-		// never ships with zero actions when an object-detail target exists.
-		if ($rendered === 0 && $objectLink !== null) {
-			$this->addViewAction(notification: $notification, link: $objectLink, label: $l->t('View'));
+		if ($run->rendered === 0 && $objectLink !== null) {
+			$this->addViewAction(run: $run, link: $objectLink);
 		}
-
-		return $notification;
-	}//end prepare()
+	}//end addActions()
 
 	/**
 	 * Render the schema-declared action buttons via addParsedAction().
@@ -234,67 +292,110 @@ class AnnotationNotifier implements INotifier {
 	 * method is whitelisted here so a resolved action can never smuggle an
 	 * arbitrary verb into the client.
 	 *
-	 * @param INotification $notification Notification to attach actions to.
-	 * @param array<int, mixed> $actions Resolved actions (each element validated at runtime).
-	 * @param string $languageCode Active recipient locale.
+	 * @param NotificationPrepareRun $run     The notification, the recipient locale and the count so far.
+	 * @param array<int, mixed>      $actions Resolved actions (each element validated at runtime).
 	 *
-	 * @return int The number of action buttons actually rendered.
+	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
-	private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int {
-		$rendered = 0;
+	private function addDeclaredActions(NotificationPrepareRun $run, array $actions): void {
 		foreach ($actions as $action) {
-			if (is_array($action) === false) {
-				continue;
+			if (is_array($action) === true) {
+				$this->addDeclaredAction(run: $run, action: $action);
 			}
-
-			$url = (string)($action['url'] ?? '');
-			if ($url === '') {
-				continue;
-			}
-
-			// The dispatcher returns a registry deep link as a path, so a browser
-			// keeps the page's own port. Nextcloud refuses a relative action
-			// link and the whole notification then failed to render.
-			if (str_starts_with($url, '/') === true) {
-				$url = $this->urlGenerator->getAbsoluteURL($url);
-			}
-
-			$labelMap = ($action['label'] ?? []);
-			if (is_array($labelMap) === false) {
-				$labelMap = [];
-			}
-
-			$fallbackLabel = 'Open';
-			$firstLabel = reset($labelMap);
-			if ($firstLabel !== false) {
-				$fallbackLabel = $firstLabel;
-			}
-
-			$label = (string)($labelMap[$languageCode] ?? ($labelMap['en'] ?? $fallbackLabel));
-
-			$method = strtoupper((string)($action['method'] ?? 'GET'));
-			if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE'], true) === false) {
-				$method = 'GET';
-			}
-
-			// Nextcloud's notification API returns PARSED actions only, so an
-			// action added with addAction() never reached the client. The raw
-			// label is a short key (Nextcloud caps it at 32 characters); the
-			// person reads the parsed label.
-			$actionObject = $notification->createAction();
-			$actionObject->setLabel('action-'.$rendered)
-				->setParsedLabel($label)
-				->setPrimary((bool)($action['primary'] ?? false))
-				->setLink($url, $method);
-			$notification->addParsedAction($actionObject);
-			$rendered++;
-		}//end foreach
-
-		return $rendered;
+		}
 	}//end addDeclaredActions()
+
+	/**
+	 * Render one declared action, unless it resolved to an empty link.
+	 *
+	 * Nextcloud's notification API returns PARSED actions only, so an action
+	 * added with addAction() never reached the client. The raw label is a
+	 * short key (Nextcloud caps it at 32 characters); the person reads the
+	 * parsed label.
+	 *
+	 * @param NotificationPrepareRun $run    The notification, the recipient locale and the count so far.
+	 * @param array<string, mixed>   $action One resolved action.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function addDeclaredAction(NotificationPrepareRun $run, array $action): void {
+		$url = $this->actionUrl(action: $action);
+		if ($url === '') {
+			return;
+		}
+
+		$actionObject = $run->notification->createAction();
+		$actionObject->setLabel('action-'.$run->rendered)
+			->setParsedLabel($this->actionLabel(action: $action, languageCode: $run->languageCode))
+			->setPrimary((bool)($action['primary'] ?? false))
+			->setLink($url, $this->actionMethod(action: $action));
+		$run->notification->addParsedAction($actionObject);
+		$run->rendered++;
+	}//end addDeclaredAction()
+
+	/**
+	 * The absolute link of a declared action, or '' when it has none.
+	 *
+	 * The dispatcher returns a registry deep link as a path, so a browser
+	 * keeps the page's own port. Nextcloud refuses a relative action link
+	 * and the whole notification then failed to render.
+	 *
+	 * @param array<string, mixed> $action One resolved action.
+	 *
+	 * @return string The absolute url, or ''.
+	 */
+	private function actionUrl(array $action): string {
+		$url = (string)($action['url'] ?? '');
+		if (str_starts_with($url, '/') === true) {
+			return $this->links->urls->getAbsoluteURL($url);
+		}
+
+		return $url;
+	}//end actionUrl()
+
+	/**
+	 * The label of a declared action: the recipient's locale, else `en`, else the first, else "Open".
+	 *
+	 * @param array<string, mixed> $action       One resolved action.
+	 * @param string               $languageCode The recipient's locale.
+	 *
+	 * @return string The parsed label.
+	 */
+	private function actionLabel(array $action, string $languageCode): string {
+		$labelMap = ($action['label'] ?? []);
+		if (is_array($labelMap) === false) {
+			$labelMap = [];
+		}
+
+		$fallbackLabel = 'Open';
+		$firstLabel = reset($labelMap);
+		if ($firstLabel !== false) {
+			$fallbackLabel = $firstLabel;
+		}
+
+		return (string)($labelMap[$languageCode] ?? ($labelMap['en'] ?? $fallbackLabel));
+	}//end actionLabel()
+
+	/**
+	 * The whitelisted HTTP method of a declared action; GET for anything else.
+	 *
+	 * @param array<string, mixed> $action One resolved action.
+	 *
+	 * @return string GET, POST, PUT or DELETE.
+	 */
+	private function actionMethod(array $action): string {
+		$method = strtoupper((string)($action['method'] ?? 'GET'));
+		if (in_array($method, ['GET', 'POST', 'PUT', 'DELETE'], true) === false) {
+			return 'GET';
+		}
+
+		return $method;
+	}//end actionMethod()
 
 	/**
 	 * Set the notification link to the object, and return that link.
@@ -338,7 +439,7 @@ class AnnotationNotifier implements INotifier {
 			return null;
 		}
 
-		$owned = $this->resolveOwnedLink(registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		$owned = $this->resolveOwnedLink(ref: new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid));
 		if ($owned !== null) {
 			return $owned;
 		}
@@ -346,30 +447,28 @@ class AnnotationNotifier implements INotifier {
 		// OpenRegister runs in history mode: its object view is
 		// objects/{register}/{schema}/{uuid}. The old #/registers/... hash
 		// opened the dashboard (cloud check, 9 October 2026).
-		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
+		return $this->links->urls->linkToRouteAbsolute('openregister.dashboard.page')
 			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectLink()
 
 	/**
 	 * The owning app's absolute detail link from the deep link registry, or null.
 	 *
-	 * @param string $registerId The register id.
-	 * @param string $schemaId The schema id.
-	 * @param string $objectUuid The object uuid.
+	 * @param ObjectRef $ref The register id, schema id and object uuid, as the notification carries them.
 	 *
 	 * @return string|null The absolute link, or null when no app claimed the schema.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
-		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+	private function resolveOwnedLink(ObjectRef $ref): ?string {
+		if ($this->links->resolver === null || is_numeric($ref->register) === false || is_numeric($ref->schema) === false) {
 			return null;
 		}
 
-		$owned = $this->deepLinks->resolveUrl(
-			registerId: (int)$registerId,
-			schemaId: (int)$schemaId,
-			objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+		$owned = $this->links->resolver->resolveUrl(
+			registerId: (int)$ref->register,
+			schemaId: (int)$ref->schema,
+			objectData: ['uuid' => $ref->id, 'id' => $ref->id]
 		);
 		if ($owned === null || $owned === '') {
 			return null;
@@ -379,26 +478,25 @@ class AnnotationNotifier implements INotifier {
 			return $owned;
 		}
 
-		return $this->urlGenerator->getAbsoluteURL($owned);
+		return $this->links->urls->getAbsoluteURL($owned);
 	}//end resolveOwnedLink()
 
 	/**
 	 * Attach the primary "View" action, linking where the notification links.
 	 *
-	 * @param INotification $notification Notification to attach the action to.
-	 * @param string $link The absolute link to the object.
-	 * @param string $label Localised label for the action button.
+	 * @param NotificationPrepareRun $run  The notification and the recipient's localiser.
+	 * @param string                 $link The absolute link to the object.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function addViewAction(INotification $notification, string $link, string $label): void {
-		$action = $notification->createAction();
+	private function addViewAction(NotificationPrepareRun $run, string $link): void {
+		$action = $run->notification->createAction();
 		$action->setLabel('view')
-			->setParsedLabel($label)
+			->setParsedLabel($run->l->t('View'))
 			->setPrimary(true)
 			->setLink($link, 'GET');
-		$notification->addParsedAction($action);
+		$run->notification->addParsedAction($action);
 	}//end addViewAction()
 }//end class

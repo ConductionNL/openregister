@@ -27,10 +27,14 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -49,12 +53,34 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialVault
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialTokens
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
+ * @uses \OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialUpdateTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequests
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
  */
 class CredentialControllerTest extends TestCase {
 
@@ -124,6 +150,7 @@ class CredentialControllerTest extends TestCase {
 
 		// A real ObjectEntity — getOwner()/jsonSerialize() are magic accessors.
 		$entity = new ObjectEntity();
+		$entity->setUuid('cred-1');
 		$entity->setOwner($ownerUid);
 		$entity->setObject($credData);
 
@@ -151,13 +178,19 @@ class CredentialControllerTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		$broker = new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$session,
-			$clientService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $clientService,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$request = $this->createMock(IRequest::class);
@@ -167,7 +200,7 @@ class CredentialControllerTest extends TestCase {
 			}
 		);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,
@@ -560,7 +593,7 @@ class CredentialControllerTest extends TestCase {
 		array $params,
 		CredentialStore $store,
 		bool $saveFails = false,
-		?string $storedUuid = null,
+		?string $storedUuid = 'cred-1',
 	): CredentialController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($ownerUid);
@@ -575,13 +608,15 @@ class CredentialControllerTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($entity);
 		$objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->writtenUuids[] = $uuid;
 				return true;
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest) use ($saveFails) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($saveFails) {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves++;
 				$this->writtenUuids[] = ($rest[3] ?? null);
 				if ($saveFails === true) {
@@ -608,7 +643,7 @@ class CredentialControllerTest extends TestCase {
 			}
 		);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,
@@ -650,28 +685,31 @@ class CredentialControllerTest extends TestCase {
 	}//end testAnUpdateWritesTheCheckedRowByItsUuid()
 
 	/**
-	 * A stored row that carries no uuid is written by the identifier as sent, never by an empty one.
+	 * A stored row that carries no uuid is refused: its writes would have nothing to name it by.
+	 *
+	 * @return array<string, array{0: string}>
 	 */
-	public function testARowWithoutUuidIsWrittenByTheIdentifierAsSent(): void {
-		$puts = [];
+	public static function writes(): array {
+		return ['update' => ['update'], 'share update' => ['updateShares'], 'delete' => ['destroy']];
+	}//end writes()
+
+	#[DataProvider('writes')]
+	public function testARowWithoutUuidIsRefused(string $method): void {
 		$store = $this->createMock(CredentialStore::class);
-		$store->method('put')->willReturnCallback(
-			function (string $uuid) use (&$puts): void {
-				$puts[] = $uuid;
-			}
-		);
+		$store->expects($this->never())->method('put');
+		$store->expects($this->never())->method('delete');
 
 		$controller = $this->makeUpdateController(
 			ownerUid: 'alice',
 			credData: ['name' => 'My GitHub', 'provider' => 'github'],
-			params: ['secret' => 'gho_rotated'],
-			store: $store
+			params: ['secret' => 'gho_rotated', 'sharedWith' => [['type' => 'user', 'id' => 'bob']]],
+			store: $store,
+			storedUuid: null
 		);
 
-		$this->assertSame(Http::STATUS_OK, $controller->update('cred-1')->getStatus());
-		$this->assertSame(['cred-1'], $puts);
-		$this->assertSame(['cred-1'], $this->writtenUuids);
-	}//end testARowWithoutUuidIsWrittenByTheIdentifierAsSent()
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->{$method}('cred-1')->getStatus());
+		$this->assertSame([], $this->writtenUuids);
+	}//end testARowWithoutUuidIsRefused()
 
 	/**
 	 * A share update is written by the uuid of the row the guard checked.
@@ -744,7 +782,7 @@ class CredentialControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$session,

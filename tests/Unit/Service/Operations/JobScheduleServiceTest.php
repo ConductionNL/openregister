@@ -28,6 +28,7 @@ namespace Unit\Service\Operations;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use DateTime;
+use OCA\OpenRegister\Service\Operations\JobScheduleChange;
 use OCA\OpenRegister\Service\Operations\JobScheduleService;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
@@ -58,6 +59,11 @@ final class JobScheduleServiceTest extends TestCase {
 				$this->stored[$key] = $value;
 			}
 		);
+		$config->method('deleteAppValue')->willReturnCallback(
+			function (string $app, string $key): void {
+				unset($this->stored[$key]);
+			}
+		);
 
 		return new JobScheduleService($config);
 	}
@@ -86,7 +92,7 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testADisabledJobHasNoNextDueTimeAndMayNotRun(): void {
 		$service = $this->service();
-		$row = $service->administer(self::JOB, false);
+		$row = $service->administer(self::JOB, new JobScheduleChange(false));
 
 		$this->assertFalse($row['enabled']);
 		$this->assertNull($row['nextDue'], 'A disabled job still reported a next due time.');
@@ -105,9 +111,9 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testEnablingItAgainMakesItDue(): void {
 		$service = $this->service();
-		$service->administer(self::JOB, false);
+		$service->administer(self::JOB, new JobScheduleChange(false));
 
-		$row = $service->administer(self::JOB, true);
+		$row = $service->administer(self::JOB, new JobScheduleChange(true));
 
 		$this->assertTrue($row['enabled']);
 		$this->assertNotNull($row['nextDue']);
@@ -123,7 +129,7 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testTheRowCarriesTheLastRunAndTheNextDueAnIntervalApart(): void {
 		$service = $this->service();
-		$service->administer(self::JOB, null, 7200);
+		$service->administer(self::JOB, new JobScheduleChange(null, 7200));
 
 		$lastRun = (new DateTime('2026-09-18 04:00:00'))->getTimestamp();
 		$row = $service->describe(self::JOB, $lastRun);
@@ -144,7 +150,7 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testAWindowRefusesTheHoursOutsideIt(): void {
 		$service = $this->service();
-		$service->administer(self::JOB, null, null, 1, 5);
+		$service->administer(self::JOB, new JobScheduleChange(null, null, 1, 5));
 
 		$this->assertTrue($service->mayRun(self::JOB, new DateTime('2026-09-18 03:00:00')));
 		$this->assertFalse($service->mayRun(self::JOB, new DateTime('2026-09-18 13:00:00')));
@@ -162,7 +168,7 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testAWindowAcrossMidnightAllowsBothSidesOfIt(): void {
 		$service = $this->service();
-		$service->administer(self::JOB, null, null, 22, 6);
+		$service->administer(self::JOB, new JobScheduleChange(null, null, 22, 6));
 
 		$this->assertTrue($service->mayRun(self::JOB, new DateTime('2026-09-18 23:30:00')));
 		$this->assertTrue($service->mayRun(self::JOB, new DateTime('2026-09-18 05:30:00')));
@@ -178,13 +184,50 @@ final class JobScheduleServiceTest extends TestCase {
 	 */
 	public function testAdministeringOneFieldDoesNotResetTheOthers(): void {
 		$service = $this->service();
-		$service->administer(self::JOB, null, 7200, 22, 6);
+		$service->administer(self::JOB, new JobScheduleChange(null, 7200, 22, 6));
 
-		$row = $service->administer(self::JOB, false);
+		$row = $service->administer(self::JOB, new JobScheduleChange(false));
 
 		$this->assertFalse($row['enabled']);
 		$this->assertSame(7200, $row['intervalSeconds']);
 		$this->assertSame(22, $row['windowStartHour']);
 		$this->assertSame(6, $row['windowEndHour']);
+	}
+
+	/**
+	 * A moved job keeps the schedule administered under its old class name.
+	 *
+	 * @return void
+	 */
+	public function testAMovedJobKeepsItsSchedule(): void {
+		$service = $this->service();
+		$service->administer(self::JOB, new JobScheduleChange(false, 7200, 22, 6));
+
+		$service->moveSchedule('Acme\\Moved\\NightlyJob', 'Acme\\Other\\NightlyJob');
+		$service->moveSchedule(self::JOB, 'Acme\\Moved\\NightlyJob');
+
+		$row = $service->describe('Acme\\Moved\\NightlyJob');
+		$this->assertFalse($row['enabled']);
+		$this->assertSame(7200, $row['intervalSeconds']);
+		$this->assertSame(22, $row['windowStartHour']);
+		$this->assertTrue($service->describe(self::JOB)['enabled']);
+		$this->assertCount(1, $this->stored);
+	}
+
+	/**
+	 * A schedule already stored under the new name is not overwritten, and the old one is dropped.
+	 *
+	 * @return void
+	 */
+	public function testAScheduleUnderTheNewNameWins(): void {
+		$service = $this->service();
+		$service->administer(self::JOB, new JobScheduleChange(null, 7200));
+		$service->administer('Acme\\Moved\\NightlyJob', new JobScheduleChange(null, 600));
+
+		$service->moveSchedule(self::JOB, 'Acme\\Moved\\NightlyJob');
+
+		$this->assertSame(600, $service->describe('Acme\\Moved\\NightlyJob')['intervalSeconds']);
+		$this->assertSame(JobScheduleService::DEFAULT_INTERVAL_SECONDS, $service->describe(self::JOB)['intervalSeconds']);
+		$this->assertCount(1, $this->stored);
 	}
 }

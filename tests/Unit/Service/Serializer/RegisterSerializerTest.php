@@ -29,6 +29,8 @@ namespace Unit\Service\Serializer;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -62,7 +64,7 @@ class RegisterSerializerTest extends TestCase {
 
 		$this->schemaMapper->expects($this->never())->method('find');
 
-		$result = $this->serializer->serialize($register);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: []));
 
 		$this->assertSame([10, 20], $result['schemas']);
 
@@ -82,7 +84,7 @@ class RegisterSerializerTest extends TestCase {
 			}
 		);
 
-		$result = $this->serializer->serialize($register, ['schemas']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas']));
 
 		$this->assertCount(2, $result['schemas']);
 		$this->assertSame(10, $result['schemas'][0]['id']);
@@ -111,7 +113,7 @@ class RegisterSerializerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('warning');
 
-		$result = $this->serializer->serialize($register, ['schemas']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas']));
 
 		$this->assertIsArray($result['schemas'][0]);
 		$this->assertSame(999, $result['schemas'][1]);
@@ -133,7 +135,7 @@ class RegisterSerializerTest extends TestCase {
 			}
 		);
 
-		$result = $this->serializer->serialize($register, ['schemas']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas']));
 
 		$this->assertSame('uuid-abc-123', $result['schemas'][0]);
 		$this->assertIsArray($result['schemas'][1]);
@@ -160,7 +162,7 @@ class RegisterSerializerTest extends TestCase {
 			20 => ['total' => 0],
 		];
 
-		$result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas', '@self.stats'], schemaStats: $stats));
 
 		$this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
 		$this->assertSame(0, $result['schemas'][1]['stats']['objects']['total']);
@@ -182,7 +184,7 @@ class RegisterSerializerTest extends TestCase {
 		);
 
 		$stats = [10 => ['total' => 5]];
-		$result = $this->serializer->serialize($register, ['schemas', '@self.stats'], $stats);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas', '@self.stats'], schemaStats: $stats));
 
 		$this->assertIsArray($result['schemas'][0]);
 		$this->assertSame(5, $result['schemas'][0]['stats']['objects']['total']);
@@ -196,7 +198,7 @@ class RegisterSerializerTest extends TestCase {
 
 		$this->schemaMapper->expects($this->never())->method('find');
 
-		$result = $this->serializer->serialize($register, ['@self.stats']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['@self.stats']));
 
 		$this->assertSame([10, 20], $result['schemas']);
 
@@ -209,7 +211,7 @@ class RegisterSerializerTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($schema10);
 		$this->logger->expects($this->never())->method('warning');
 
-		$result = $this->serializer->serialize($register, ['schemas', 'nonexistent-key']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas', 'nonexistent-key']));
 
 		$this->assertCount(1, $result['schemas']);
 		$this->assertIsArray($result['schemas'][0]);
@@ -221,7 +223,7 @@ class RegisterSerializerTest extends TestCase {
 
 		$this->schemaMapper->expects($this->never())->method('find');
 
-		$result = $this->serializer->serialize($register, ['schemas']);
+		$result = $this->serializer->serializeExpanded($register, RegisterExpansion::fromExtend(extend: ['schemas']));
 
 		$this->assertSame([], $result['schemas']);
 
@@ -257,7 +259,7 @@ class RegisterSerializerTest extends TestCase {
 			2 => [20 => ['total' => 0]],
 		];
 
-		$result = $this->serializer->serializeMany([$registerA, $registerB], ['schemas', '@self.stats'], $stats);
+		$result = $this->serializer->serializePage([$registerA, $registerB], new RegisterListExtension(extend: ['schemas', '@self.stats'], schemaStatsByRegisterId: $stats));
 
 		$this->assertCount(2, $result);
 		$this->assertSame(3, $result[0]['schemas'][0]['stats']['objects']['total']);
@@ -280,7 +282,7 @@ class RegisterSerializerTest extends TestCase {
 	}//end makeSchema()
 
 	/**
-	 * Registers share schemas, and serializeMany() expands the schemas of EVERY register.
+	 * Registers share schemas, and serializePage() expands the schemas of EVERY register.
 	 * Each schema used to be re-fetched once per register that referenced it — and
 	 * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
 	 * id = ?`, which no index covers. On a dev instance (76 registers, 1,231 schemas) that
@@ -308,7 +310,7 @@ class RegisterSerializerTest extends TestCase {
 			}
 		);
 
-		$result = $this->serializer->serializeMany($registers, ['schemas']);
+		$result = $this->serializer->serializePage($registers, new RegisterListExtension(extend: ['schemas']));
 
 		// Six references, two distinct schemas → two reads, not six.
 		$this->assertSame([10, 20], $fetched);
@@ -347,7 +349,7 @@ class RegisterSerializerTest extends TestCase {
 			}
 		);
 
-		$result = $this->serializer->serializeMany($registers, ['schemas']);
+		$result = $this->serializer->serializePage($registers, new RegisterListExtension(extend: ['schemas']));
 
 		foreach ($result as $register) {
 			$this->assertSame(10, $register['schemas'][0]['id']);

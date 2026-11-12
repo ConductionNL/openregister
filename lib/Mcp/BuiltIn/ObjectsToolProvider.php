@@ -28,9 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * ObjectsToolProvider
@@ -43,7 +45,7 @@ use OCA\OpenRegister\Service\WriteCause;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class ObjectsToolProvider implements IMcpToolProvider {
+class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the objects tool
@@ -53,28 +55,19 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
-
-	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
 
 	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'objects',
@@ -82,11 +75,7 @@ class ObjectsToolProvider implements IMcpToolProvider {
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
-					'action' => [
-						'type' => 'string',
-						'enum' => ['list', 'get', 'create', 'update', 'delete'],
-						'description' => 'The CRUD action to perform',
-					],
+					...CrudToolSchema::ACTION,
 					'register' => [
 						'type' => 'integer',
 						'description' => 'Register ID (required for all object actions)',
@@ -103,28 +92,12 @@ class ObjectsToolProvider implements IMcpToolProvider {
 						'type' => 'object',
 						'description' => 'Object data fields (for create and update)',
 					],
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results (for list)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip (for list)',
-					],
+					...CrudToolSchema::PAGING,
 				],
 				'required' => ['action', 'register', 'schema'],
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the objects tool.
@@ -237,9 +210,10 @@ class ObjectsToolProvider implements IMcpToolProvider {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			register: $existing->getRegister(),
-			schema: $existing->getSchema(),
-			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existing->getRegister(), schema: $existing->getSchema()),
+				uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			)
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()
@@ -253,23 +227,7 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$this->objectService->deleteObject(uuid: $arguments['id']);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $arguments['id']));
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteObject()
-
-	/**
-	 * Assert a parameter is present in arguments.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If parameter is missing
-	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
-		}
-	}//end requireParam()
 }//end class

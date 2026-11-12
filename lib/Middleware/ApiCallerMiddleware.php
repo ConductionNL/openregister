@@ -43,13 +43,14 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
-use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
-use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Middleware\Exception\CeilingBreach;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
 
 /**
  * Applies the per-caller bounds and writes the caller record.
@@ -58,7 +59,7 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Middleware
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
- * Reason: `CallerRefusedException::overLimit()` and `::wrongAddress()` are
+ * Reason: `CallerRefusedException::overCeiling()` and `::wrongAddress()` are
  *         named constructors, the same factory pattern phpmd's StaticAccess
  *         rule cannot tell apart from a hidden dependency.
  */
@@ -87,21 +88,18 @@ class ApiCallerMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecorder $recorder Writes the caller record.
-	 * @param CallerRateLimiter $limiter Applies the administered ceiling.
-	 * @param CallerPolicy $policy Resolves the address binding.
-	 * @param ApiVersionNegotiator $negotiator Names the contract that will answer.
+	 * @param ApiCallerServices $services Call recorder and version negotiator.
+	 * @param CallerRateLimiterInterface $limiter Applies the administered ceiling.
+	 * @param CallerPolicyInterface $policy Resolves the address binding.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiCallRecorder $recorder,
-		private readonly CallerRateLimiter $limiter,
-		private readonly CallerPolicy $policy,
-		private readonly ApiVersionNegotiator $negotiator,
+		private readonly ApiCallerServices $services,
+		private readonly CallerRateLimiterInterface $limiter,
+		private readonly CallerPolicyInterface $policy,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -124,30 +122,8 @@ class ApiCallerMiddleware extends Middleware {
 			return;
 		}
 
-		$principal = $this->recorder->principal();
-
-		// The binding first: a call from the wrong address must not spend the
-		// budget of the caller it is impersonating.
-		if ($this->policy->allowsAddress(principal: $principal, address: $this->request->getRemoteAddress()) === false) {
-			throw CallerRefusedException::wrongAddress();
-		}
-
-		$now = time();
-		$outcome = $this->limiter->consume(principal: $principal, now: $now);
-		if ($outcome !== null && $outcome['allowed'] === false) {
-			$ceiling = $this->policy->limitFor(principal: $principal);
-			throw CallerRefusedException::overLimit(
-				limit: $outcome['limit'],
-				windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
-				resetAt: $outcome['resetAt'],
-				now: $now,
-			);
-		}
-
-		$version = $this->negotiator->negotiate(request: $this->request)->version;
-		if ($version !== null) {
-			$this->servedVersion = $version->id;
-		}
+		$this->refuseOutOfBounds(principal: $this->services->recorder->principal());
+		$this->servedVersion = $this->services->negotiator->negotiate(request: $this->request)->version?->id;
 
 	}//end beforeController()
 
@@ -165,23 +141,33 @@ class ApiCallerMiddleware extends Middleware {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
-		if ($this->servedVersion === null) {
-			return $response;
-		}
-
-		$path = $this->request->getPathInfo();
-		if (is_string($path) === true && $path !== '') {
-			$this->recorder->record(
-				principal: $this->recorder->principal(),
-				path: $path,
-				method: $this->request->getMethod(),
-				apiVersion: $this->servedVersion,
-			);
-		}
-
+		$this->recordServedCall();
 		return $response;
 
 	}//end afterController()
+
+	/**
+	 * Write the caller record of a call this middleware saw being served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	private function recordServedCall(): void {
+		if ($this->servedVersion === null) {
+			return;
+		}
+
+		$path = $this->request->getPathInfo();
+		if (is_string($path) === false || $path === '') {
+			return;
+		}
+
+		$this->services->recorder->recordCall(
+			call: new ApiCallObservation(path: $path, method: $this->request->getMethod(), apiVersion: $this->servedVersion)
+		);
+
+	}//end recordServedCall()
 
 	/**
 	 * Turn a refusal into its response; re-throw anything else.
@@ -199,13 +185,81 @@ class ApiCallerMiddleware extends Middleware {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
+		return $this->refusalResponse(exception: $exception);
+
+	}//end afterException()
+
+	/**
+	 * The response of a CallerRefusedException; anything else is re-thrown.
+	 *
+	 * @param Exception $exception The thrown exception.
+	 *
+	 * @return Response The refusal.
+	 *
+	 * @throws Exception The passed-in exception when it is not ours to handle.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md
+	 */
+	private function refusalResponse(Exception $exception): Response {
 		if ($exception instanceof CallerRefusedException) {
 			return $exception->toResponse();
 		}
 
 		throw $exception;
 
-	}//end afterException()
+	}//end refusalResponse()
+
+	/**
+	 * Refuse a caller calling from off its address list, or over its ceiling.
+	 *
+	 * @param string $principal The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws CallerRefusedException When the caller is bounded out.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	private function refuseOutOfBounds(string $principal): void {
+		// The binding first: a call from the wrong address must not spend the
+		// budget of the caller it is impersonating.
+		if ($this->policy->allowsAddress(principal: $principal, address: $this->request->getRemoteAddress()) === false) {
+			throw CallerRefusedException::wrongAddress();
+		}
+
+		$this->refuseOverLimit(principal: $principal);
+
+	}//end refuseOutOfBounds()
+
+	/**
+	 * Spend one call of the caller's budget, and refuse a caller over its administered ceiling.
+	 *
+	 * @param string $principal The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws CallerRefusedException When the caller is over its ceiling.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	private function refuseOverLimit(string $principal): void {
+		$now = time();
+		$outcome = $this->limiter->consume(principal: $principal, now: $now);
+		if ($outcome === null || $outcome['allowed'] !== false) {
+			return;
+		}
+
+		$ceiling = $this->policy->limitFor(principal: $principal);
+		throw CallerRefusedException::overCeiling(
+			breach: new CeilingBreach(
+				limit: $outcome['limit'],
+				windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
+				resetAt: $outcome['resetAt'],
+				now: $now,
+			)
+		);
+
+	}//end refuseOverLimit()
 
 	/**
 	 * Whether the current request is part of the API surface.

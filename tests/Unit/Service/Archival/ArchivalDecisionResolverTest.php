@@ -20,12 +20,11 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
-use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 /**
  * Tests for ArchivalDecisionResolver.
@@ -725,9 +724,9 @@ class ArchivalDecisionResolverTest extends TestCase {
 	 * path's strip.
 	 *
 	 * `ObjectsController::show()` runs its whole response through
-	 * `stripEmptyValues()` unless `_empty=true`; create, update and patch do
+	 * `EmptyValueStripper::stripped()` unless `_empty=true`; create, update and patch do
 	 * not. A block that the strip leaves unchanged therefore reads the same on
-	 * every verb. This drives the real private method rather than restating its
+	 * every verb. This drives the real stripper rather than restating its
 	 * rule, over a decision that exercises every nullable key at once, so a
 	 * null reintroduced anywhere in the resolver (or a strip that learns a new
 	 * kind of empty) reddens here.
@@ -761,8 +760,7 @@ class ArchivalDecisionResolverTest extends TestCase {
 			),
 		];
 
-		$controller = (new ReflectionClass(ObjectsController::class))->newInstanceWithoutConstructor();
-		$strip = new \ReflectionMethod(ObjectsController::class, 'stripEmptyValues');
+		$stripper = new EmptyValueStripper();
 
 		foreach ($cases as $label => $entity) {
 			$decision = $this->resolver->resolve(entity: $entity);
@@ -770,7 +768,7 @@ class ArchivalDecisionResolverTest extends TestCase {
 
 			$this->assertSame(
 				$decision,
-				$strip->invoke($controller, $decision),
+				$stripper->stripped($decision),
 				"{$label}: the read path's strip changed the decision, so create and GET would answer in different shapes"
 			);
 		}

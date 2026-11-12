@@ -1,0 +1,894 @@
+<?php
+
+/**
+ * OpenRegister NotificationPreferenceService
+ *
+ * Override-only resolver for notification preferences. Rules and their on/off
+ * (and channel) defaults live ONLY in the schema annotation
+ * `x-openregister-notifications`; everything stored here is an OVERRIDE, so:
+ *   - absence of a stored value falls through to the layer below, and
+ *   - adding a NEW schema or a NEW notification to an existing schema keeps
+ *     working with zero migration (no row needs to pre-exist).
+ *
+ * Three layers decide, narrowest party last:
+ *   schema default → group default → the user's own value.
+ * A group default is a team's decision, set by someone who administers that
+ * group, and it lives in app config because it belongs to the group rather
+ * than to whoever set it. The user's own value always wins over it.
+ *
+ * Each layer may also be pinned to a SCOPE — one register, one schema, or a
+ * domain a leaf app declares — and within a layer a scoped value beats that
+ * same party's global one. That is how "loud for vergunningen, quiet for
+ * meldingen" is expressed without a second hierarchy.
+ *
+ * Key shapes (NB: Nextcloud's `configkey` column is 64 chars, so a long
+ * slug + key is deterministically compressed; typical ones fit unchanged):
+ *   notification_pref/<schemaSlug>/<notificationKey>            user, global
+ *   notif_pref_s/<scope>/<schemaSlug>/<notificationKey>         user, scoped
+ *   notif_grp_pref/<gid>/<scope>/<schemaSlug>/<notificationKey> group
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Notification
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Notifications\Service\Notification;
+
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
+use OCP\IConfig;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Resolves and stores override-only notification preferences.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Three layers times four scopes, each with its
+ * own key shape and its own fall-through; the branches are the resolution order itself.
+ */
+class NotificationPreferenceService implements NotificationPreferenceServiceInterface, NotificationPreferencesInterface {
+	/**
+	 * App id used for the user-config namespace.
+	 */
+	private const APP_NAME = 'openregister';
+
+	/**
+	 * Prefix for every per-(schema, notification) override config key.
+	 */
+	private const KEY_PREFIX = 'notification_pref/';
+
+	/**
+	 * Prefix for a SCOPED preference, user or group.
+	 *
+	 * Distinct from {@see KEY_PREFIX} on purpose: every preference stored before
+	 * scopes existed is a global one, and it keeps the key it has. A scoped
+	 * value is a new key, so nothing needs migrating and an instance that never
+	 * uses a scope stores nothing extra.
+	 */
+	private const SCOPED_KEY_PREFIX = 'notif_pref_s/';
+
+	/**
+	 * Prefix for a group default. App config, not user config: the value
+	 * belongs to the group, not to whoever happened to set it.
+	 */
+	private const GROUP_KEY_PREFIX = 'notif_grp_pref/';
+
+	/**
+	 * The scope kinds a preference may be pinned to, most specific first.
+	 *
+	 * The order IS the resolution order. A schema is narrower than a domain,
+	 * which is narrower than a register, and anything scoped beats the same
+	 * party's global value. Reordering this reorders which preference wins.
+	 *
+	 * @var array<int, string>
+	 */
+	public const SCOPE_KINDS = ['schema', 'domain', 'register'];
+
+	/**
+	 * Maximum length of a Nextcloud `oc_preferences.configkey` value.
+	 */
+	private const MAX_KEY_LENGTH = 64;
+
+	/**
+	 * The channels a rule delivers on when it declares none.
+	 */
+	public const DEFAULT_CHANNELS = ['nc-notification'];
+
+	/**
+	 * The channels a person can switch per notification. Webhook and Talk are
+	 * broadcast once per rule, so nobody can opt in or out of them.
+	 */
+	public const PER_RECIPIENT_CHANNELS = ['nc-notification', 'email', 'activity', 'web-push'];
+
+	/**
+	 * The opt-in channels a rule declares: delivered only to someone who
+	 * switched them on for that notification. A channel that is also in
+	 * `channels` is on by default and so not opt-in.
+	 *
+	 * @param array<string, mixed> $spec The notification spec block.
+	 *
+	 * @return array<int, string> The opt-in channels.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 */
+	public static function optInChannelsOf(array $spec): array {
+		$declared = (array)($spec['channels'] ?? self::DEFAULT_CHANNELS);
+		$optIn = [];
+		foreach ((array)($spec['optInChannels'] ?? []) as $channel) {
+			if (self::isOfferableOptIn(channel: $channel, declared: $declared) === true && in_array($channel, $optIn, true) === false) {
+				$optIn[] = $channel;
+			}
+		}
+
+		return $optIn;
+	}//end optInChannelsOf()
+
+	/**
+	 * Whether a listed opt-in channel can be offered: a known per-recipient
+	 * channel that is not already a default. The caller skips duplicates.
+	 *
+	 * @param mixed             $channel  The listed value.
+	 * @param array<int, mixed> $declared The default channels.
+	 *
+	 * @return bool True when the channel is offerable as an opt-in.
+	 */
+	private static function isOfferableOptIn(mixed $channel, array $declared): bool {
+		return is_string($channel) === true
+			&& in_array($channel, self::PER_RECIPIENT_CHANNELS, true) === true
+			&& in_array($channel, $declared, true) === false;
+	}//end isOfferableOptIn()
+
+	/**
+	 * Every channel a rule can deliver on: its default channels, then its
+	 * opt-in ones.
+	 *
+	 * @param array<string, mixed> $spec The notification spec block.
+	 *
+	 * @return array<int, string> The channels.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 */
+	public static function availableChannelsOf(array $spec): array {
+		$declared = array_values((array)($spec['channels'] ?? self::DEFAULT_CHANNELS));
+		return array_values(array_merge($declared, self::optInChannelsOf(spec: $spec)));
+	}//end availableChannelsOf()
+
+	/**
+	 * Per-request cache of each user's group ids.
+	 *
+	 * One dispatch evaluates every rule on a schema, and the same recipient
+	 * turns up in several of them. Without this, "which groups is Anna in" is
+	 * asked once per rule for the same answer (ADR-009). Only successful reads
+	 * are cached: a transient backend failure is not evidence that somebody has
+	 * no groups, and caching it would leave them with no team default for the
+	 * rest of the request.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private array $groupCache = [];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IConfig $config Nextcloud config for per-user values.
+	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate accessible schemas.
+	 * @param LoggerInterface $logger Logger for diagnostics.
+	 * @param UserGroupServices|null $userGroups The user and group resolvers; null leaves the group layer empty.
+	 */
+	public function __construct(
+		private readonly IConfig $config,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LoggerInterface $logger,
+		private readonly ?UserGroupServices $userGroups = null,
+	) {
+	}//end __construct()
+
+	/**
+	 * Build the user-config key for a `(schemaSlug, notificationKey)` pair.
+	 *
+	 * Nextcloud's `oc_preferences.configkey` column is 64 chars. Most
+	 * `(slug, key)` pairs fit comfortably, but long system-schema slugs
+	 * (e.g. `openregister_configuration` + `configuration-changed` = 66 chars)
+	 * overflow and make the underlying `getUserValue()` / `setUserValue()`
+	 * throw "for key is too long (64)". When the natural key fits, it is
+	 * returned unchanged (full backward compatibility for every stored
+	 * preference); when it would overflow, it is deterministically compressed
+	 * to a stable 64-char key so the same pair always maps to the same key.
+	 *
+	 * @param string $schemaSlug The owning schema's slug.
+	 * @param string $notificationKey The notification annotation key.
+	 *
+	 * @return string The namespaced config key (<= 64 chars).
+	 */
+	public function configKey(string $schemaSlug, string $notificationKey): string {
+		return $this->compressedKey(prefix: self::KEY_PREFIX, tail: $schemaSlug . '/' . $notificationKey);
+	}//end configKey()
+
+	/**
+	 * The config key for a scoped preference address.
+	 *
+	 * The scope is part of the key rather than part of the value, so an unset
+	 * scope is an absent row and falls through to the global value with nothing
+	 * to migrate — the same property that makes adding a schema free today.
+	 *
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope reads as ''.
+	 * @param string|null       $groupId The group the default belongs to, or null for a user's own value.
+	 *
+	 * @return string The namespaced config key (<= 64 chars).
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	public function scopedKeyFor(PreferenceAddress $address, ?string $groupId = null): string {
+		$prefix = self::SCOPED_KEY_PREFIX;
+		$tail = (string)$address->scope . '/' . $address->schemaSlug . '/' . $address->notificationKey;
+		if ($groupId !== null) {
+			$prefix = self::GROUP_KEY_PREFIX;
+			$tail = $groupId . '/' . $tail;
+		}
+
+		return $this->compressedKey(prefix: $prefix, tail: $tail);
+	}//end scopedKeyFor()
+
+	/**
+	 * The prefix and tail as one config key of at most MAX_KEY_LENGTH characters.
+	 *
+	 * A key that fits is the plain concatenation. A longer one keeps a readable
+	 * head and appends a stable hash of the whole tail, so the compression is
+	 * deterministic and two distinct tails can never land on one row.
+	 *
+	 * @param string $prefix The key prefix.
+	 * @param string $tail   The part that identifies the value.
+	 *
+	 * @return string The config key.
+	 */
+	private function compressedKey(string $prefix, string $tail): string {
+		$key = $prefix . $tail;
+		if (strlen($key) <= self::MAX_KEY_LENGTH) {
+			return $key;
+		}
+
+		$hash = substr(hash('sha256', $tail), 0, 16);
+		$budget = (self::MAX_KEY_LENGTH - strlen($prefix) - 1 - strlen($hash));
+		$readable = substr($tail, 0, max($budget, 0));
+
+		return $prefix . $readable . '~' . $hash;
+	}//end compressedKey()
+
+	/**
+	 * The key a group default for a preference address is stored under, global or scoped.
+	 *
+	 * @param string            $groupId The group id.
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the group's global default.
+	 *
+	 * @return string The app-config key.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function groupKeyFor(string $groupId, PreferenceAddress $address): string {
+		return $this->scopedKeyFor(address: $address->scopedOrGlobal(), groupId: $groupId);
+	}//end groupKeyFor()
+
+
+	/**
+	 * Read a group's stored default at a preference address, or null when the group has none.
+	 *
+	 * @param string            $groupId The group id.
+	 * @param PreferenceAddress $address The notification and scope; a null scope is the group's global default.
+	 *
+	 * @return array<string, mixed>|null The decoded default, or null when none/invalid.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function groupDefaultAt(string $groupId, PreferenceAddress $address): ?array {
+		$key = $this->groupKeyFor(groupId: $groupId, address: $address);
+
+		return self::decodedValue(raw: $this->config->getAppValue(self::APP_NAME, $key, ''));
+	}//end groupDefaultAt()
+
+
+	/**
+	 * Write or clear a group's default; the write's party is the group id.
+	 *
+	 * The caller is responsible for having established that the writer
+	 * administers this group; this method stores what it is given.
+	 *
+	 * @param PreferenceWrite $write The group, the address and the default (null clears it).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function storeGroupDefault(PreferenceWrite $write): void {
+		$this->writeAppValue(key: $this->groupKeyFor(groupId: $write->party, address: $write->address), value: $write->value);
+	}//end storeGroupDefault()
+
+	/**
+	 * Store a cleaned value under an app-config key, or clear the key for null.
+	 *
+	 * @param string                    $key   The app-config key.
+	 * @param array<string, mixed>|null $value The value, or null to clear.
+	 *
+	 * @return void
+	 */
+	private function writeAppValue(string $key, ?array $value): void {
+		if ($value === null) {
+			$this->config->deleteAppValue(self::APP_NAME, $key);
+			return;
+		}
+
+		$this->config->setAppValue(self::APP_NAME, $key, json_encode($this->cleanValue(value: $value)));
+	}//end writeAppValue()
+
+	/**
+	 * The groups a user belongs to, or an empty list when they cannot be read.
+	 *
+	 * Failing to an EMPTY list rather than throwing keeps the merge working
+	 * when the group backend is briefly unavailable: the user's own value and
+	 * the schema default still decide, which is the same answer they got before
+	 * group defaults existed.
+	 *
+	 * @param string $userId The user UID.
+	 *
+	 * @return array<int, string> The group ids.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function groupsOf(string $userId): array {
+		if ($this->userGroups?->groupManager === null || $this->userGroups->userManager === null) {
+			return [];
+		}
+
+		if (isset($this->groupCache[$userId]) === false) {
+			$groups = $this->readGroups(userId: $userId);
+			if ($groups === null) {
+				return [];
+			}
+
+			$this->groupCache[$userId] = $groups;
+		}
+
+		return $this->groupCache[$userId];
+	}//end groupsOf()
+
+	/**
+	 * Read a user's group ids from the group manager.
+	 *
+	 * @param string $userId The user UID.
+	 *
+	 * @return array<int, string>|null The group ids, or null when the user is
+	 *                                 unknown or the read failed (nothing is cached then).
+	 */
+	private function readGroups(string $userId): ?array {
+		try {
+			$user = $this->userGroups?->userManager?->get($userId);
+			if ($user === null) {
+				return null;
+			}
+
+			return array_values((array)$this->userGroups?->groupManager?->getUserGroupIds($user));
+		} catch (\Throwable $e) {
+			$this->logger->debug('[NotificationPreferenceService] group membership read failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end readGroups()
+
+	/**
+	 * Normalise a stored preference body to the two keys that are read back.
+	 *
+	 * @param array<string, mixed> $value The raw body.
+	 *
+	 * @return array<string, mixed> The cleaned body.
+	 */
+	private function cleanValue(array $value): array {
+		$clean = ['enabled' => (bool)($value['enabled'] ?? true)];
+		if (isset($value['channels']) === true && is_array($value['channels']) === true) {
+			$clean['channels'] = array_values(
+				array_filter($value['channels'], static fn ($c): bool => is_string($c) === true && $c !== '')
+			);
+		}
+
+		return $clean;
+	}//end cleanValue()
+
+
+	/**
+	 * Read a user's stored override at a preference address, or null when none is stored.
+	 *
+	 * @param string            $userId  The user UID.
+	 * @param PreferenceAddress $address The notification and scope; a null scope is the user's global value.
+	 *
+	 * @return array<string, mixed>|null The decoded override, or null when none/invalid.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	public function overrideAt(string $userId, PreferenceAddress $address): ?array {
+		$key = $this->userConfigKey(address: $address);
+
+		return self::decodedValue(raw: $this->config->getUserValue($userId, self::APP_NAME, $key, ''));
+	}//end overrideAt()
+
+	/**
+	 * The key a user's override is stored under: scoped when a scope is given.
+	 *
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the global value.
+	 *
+	 * @return string The user config key.
+	 */
+	private function userConfigKey(PreferenceAddress $address): string {
+		if ($address->scope !== null) {
+			return $this->scopedKeyFor(address: $address);
+		}
+
+		return $this->configKey(schemaSlug: $address->schemaSlug, notificationKey: $address->notificationKey);
+	}//end userConfigKey()
+
+	/**
+	 * A stored JSON value as an array, or null when it is absent or not an object/list.
+	 *
+	 * @param string $raw The stored text; empty when nothing is stored.
+	 *
+	 * @return array<string, mixed>|null The value, or null.
+	 */
+	private static function decodedValue(string $raw): ?array {
+		if ($raw === '') {
+			return null;
+		}
+
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end decodedValue()
+
+
+	/**
+	 * Write or clear a user's override; the write's party is the user UID.
+	 *
+	 * A null value clears the override so the schema default applies again.
+	 *
+	 * @param PreferenceWrite $write The user, the address and the override (null clears it).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	public function storeOverride(PreferenceWrite $write): void {
+		$key = $this->userConfigKey(address: $write->address);
+		if ($write->value === null) {
+			$this->config->deleteUserValue($write->party, self::APP_NAME, $key);
+			return;
+		}
+
+		$this->config->setUserValue($write->party, self::APP_NAME, $key, json_encode($this->cleanValue(value: $write->value)));
+	}//end storeOverride()
+
+	/**
+	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
+	 *
+	 * Three layers, narrowest party last: the schema says what the rule does by
+	 * default, the groups the user belongs to may change it for the team, and
+	 * the user's own value always wins. Each layer may be pinned to a scope,
+	 * and within a layer a scoped value beats that same party's global one, in
+	 * the order {@see SCOPE_KINDS} declares.
+	 *
+	 * `source` names the layer that decided, which is the answer to "why am I
+	 * not getting this": without it the question has three possible answers and
+	 * the read offers none of them. `scope` names how narrowly that layer was
+	 * pinned, and `layers` carries the full trace for a support screen.
+	 *
+	 * Unknown keys with no stored value at any layer resolve to the schema
+	 * default without error, exactly as before.
+	 *
+	 * @param PreferenceResolution $resolution The rule's default, the user, the topic and the user's groups.
+	 *
+	 * @return array{enabled: bool, channels: array<int, string>|null, source: string, scope: string, layers: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function resolve(PreferenceResolution $resolution): array {
+		[$defaultChannels, $allowedChannels] = self::declaredChannels(schemaDefault: $resolution->schemaDefault);
+		$lookup = $resolution->topic->lookup(allowedChannels: $allowedChannels);
+		$winner = self::schemaDefaultLayer(schemaDefault: $resolution->schemaDefault, channels: $defaultChannels);
+		$userId = $resolution->userId;
+		$group = $this->firstGroupValue(lookup: $lookup, groupIds: ($resolution->groupIds ?? $this->groupsOf(userId: $userId)));
+
+		return $this->stackLayers(lookup: $lookup, layers: [$winner, $group, $this->ownValue(lookup: $lookup, userId: $userId)]);
+	}//end resolve()
+
+	/**
+	 * The schema default as the bottom layer.
+	 *
+	 * @param array<string, mixed>   $schemaDefault The declaration.
+	 * @param array<int, mixed>|null $channels      The default channels, or null for the transport's own.
+	 *
+	 * @return array{enabled: bool, channels: array<int, mixed>|null, source: string, scope: string} The layer.
+	 */
+	private static function schemaDefaultLayer(array $schemaDefault, ?array $channels): array {
+		return [
+			'enabled' => (bool)($schemaDefault['enabled'] ?? true),
+			'channels' => $channels,
+			'source' => 'schema-default',
+			'scope' => 'global',
+		];
+	}//end schemaDefaultLayer()
+
+	/**
+	 * The user's own value, which always wins when it is there.
+	 *
+	 * @param PreferenceLookup $lookup The preference being resolved.
+	 * @param string           $userId The user UID.
+	 *
+	 * @return array<string, mixed>|null The found value tagged `user-override`, or null.
+	 */
+	private function ownValue(PreferenceLookup $lookup, string $userId): ?array {
+		$own = $this->firstScopedValue(
+			lookup: $lookup,
+			read: fn (?string $scope): ?array => $this->overrideAt(
+				userId: $userId,
+				address: new PreferenceAddress(schemaSlug: $lookup->schemaSlug, notificationKey: $lookup->notificationKey, scope: $scope)
+			)
+		);
+		if ($own !== null) {
+			$own['layer'] = 'user-override';
+		}
+
+		return $own;
+	}//end ownValue()
+
+	/**
+	 * Lay each found value over the schema default, in order, recording every layer.
+	 *
+	 * @param PreferenceLookup                      $lookup The preference being resolved.
+	 * @param array<int, array<string, mixed>|null> $layers The schema default, then the group value, then the user's own; null where absent.
+	 *
+	 * @return array<string, mixed> The effective preference with its `layers`.
+	 */
+	private function stackLayers(PreferenceLookup $lookup, array $layers): array {
+		$winner = array_shift($layers);
+		$found  = $layers;
+		$layers = [self::layerRecord(winner: $winner, found: ['layer' => 'schema-default', 'scope' => 'global'])];
+		foreach ($found as $value) {
+			if ($value !== null) {
+				$winner = $lookup->applyLayer(base: $winner, found: $value);
+				$layers[] = self::layerRecord(winner: $winner, found: $value);
+			}
+		}
+
+		$winner['layers'] = $layers;
+
+		return $winner;
+	}//end stackLayers()
+
+	/**
+	 * The entry a layer leaves in the resolution's `layers` trail.
+	 *
+	 * @param array<string, mixed> $winner The answer after this layer.
+	 * @param array<string, mixed> $found  The layer's name, scope and, for a group, its id.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private static function layerRecord(array $winner, array $found): array {
+		$record = ['layer' => $found['layer']];
+		if (isset($found['group']) === true) {
+			$record['group'] = $found['group'];
+		}
+
+		return $record + [
+			'scope' => $found['scope'],
+			'enabled' => $winner['enabled'],
+			'channels' => $winner['channels'],
+		];
+	}//end layerRecord()
+
+	/**
+	 * The default channels a rule declares, and the channels a layer may choose among.
+	 *
+	 * An opt-in channel is off by default and on for whoever chose it, so the
+	 * default needs naming even when the rule leaves `channels` out.
+	 *
+	 * @param array<string, mixed> $schemaDefault The rule's `{enabled, channels, optInChannels}` block.
+	 *
+	 * @return array{0: array<int, string>|null, 1: array<int, string>|null} The default and the allowed channels.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private static function declaredChannels(array $schemaDefault): array {
+		$defaultChannels = null;
+		if (isset($schemaDefault['channels']) === true && is_array($schemaDefault['channels']) === true) {
+			$defaultChannels = array_values($schemaDefault['channels']);
+		}
+
+		if (self::optInChannelsOf(spec: $schemaDefault) === []) {
+			return [$defaultChannels, $defaultChannels];
+		}
+
+		return [($defaultChannels ?? self::DEFAULT_CHANNELS), self::availableChannelsOf(spec: $schemaDefault)];
+	}//end declaredChannels()
+
+	/**
+	 * The default of the first group that holds one, at its narrowest scope.
+	 *
+	 * Several groups may hold a default for the same kind; the narrowest scope
+	 * wins, and among equally scoped groups the first one the group manager
+	 * returns does. Deliberately not "the strictest wins": a team default is a
+	 * team's decision, not a vote.
+	 *
+	 * @param PreferenceLookup $lookup   The kind, scopes and channels.
+	 * @param array            $groupIds The user's group ids, in group-manager order.
+	 *
+	 * @return array{value: array<string, mixed>, scope: string, layer: string, group: string}|null
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	private function firstGroupValue(PreferenceLookup $lookup, array $groupIds): ?array {
+		foreach ($groupIds as $groupId) {
+			$group = (string)$groupId;
+			$found = $this->firstScopedValue(lookup: $lookup, read: $this->groupDefaultReader(lookup: $lookup, groupId: $group));
+			if ($found !== null) {
+				return $found + ['layer' => 'group-default', 'group' => $group];
+			}
+		}
+
+		return null;
+	}//end firstGroupValue()
+
+	/**
+	 * Reads one group's default for the preference, per scope (null for global).
+	 *
+	 * @param PreferenceLookup $lookup  The preference being resolved.
+	 * @param string           $groupId The group.
+	 *
+	 * @return \Closure(?string): ?array The reader.
+	 */
+	private function groupDefaultReader(PreferenceLookup $lookup, string $groupId): \Closure {
+		return fn (?string $scope): ?array => $this->groupDefaultAt(
+			groupId: $groupId,
+			address: new PreferenceAddress(schemaSlug: $lookup->schemaSlug, notificationKey: $lookup->notificationKey, scope: $scope)
+		);
+	}//end groupDefaultReader()
+
+	/**
+	 * Find one party's value, trying each scope in order before the global one.
+	 *
+	 * @param PreferenceLookup $lookup The kind and its candidate scopes, narrowest first.
+	 * @param \Closure         $read   Reads the party's value at a scope, or at null for the global one.
+	 *
+	 * @return array{value: array<string, mixed>, scope: string}|null The value and the scope it came from, or null.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
+	 */
+	private function firstScopedValue(PreferenceLookup $lookup, \Closure $read): ?array {
+		foreach ($lookup->scopes as $scope) {
+			$value = $read((string)$scope);
+			if ($value !== null) {
+				return ['value' => $value, 'scope' => (string)$scope];
+			}
+		}
+
+		// No scoped value: the party's global one, and an absent one there is
+		// the fall-through this whole design is built on.
+		$value = $read(null);
+		if ($value === null) {
+			return null;
+		}
+
+		return ['value' => $value, 'scope' => 'global'];
+	}//end firstScopedValue()
+
+	/**
+	 * One schema per owning app and slug, the highest version.
+	 *
+	 * A preference is keyed by the schema slug, so two rows with one slug (an
+	 * older version an import left behind) could only list every rule twice.
+	 * The highest version wins, then the highest id; another app's schema with
+	 * the same slug stays its own row.
+	 *
+	 * @param iterable<Schema> $schemas The schemas.
+	 *
+	 * @return array<int, Schema> The schemas to list.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
+	 */
+	private function onePerSlug(iterable $schemas): array {
+		$kept = [];
+		foreach ($schemas as $schema) {
+			$key = self::slugKeyOf(schema: $schema);
+			if (isset($kept[$key]) === false || $this->isNewer(schema: $schema, than: $kept[$key]) === true) {
+				$kept[$key] = $schema;
+			}
+		}
+
+		return array_values($kept);
+	}//end onePerSlug()
+
+	/**
+	 * The identity a schema is de-duplicated on: its owning app and its slug (or id).
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string The key.
+	 */
+	private static function slugKeyOf(Schema $schema): string {
+		return (string)($schema->getApplication() ?? '').'|'.(string)($schema->getSlug() ?? $schema->getId());
+	}//end slugKeyOf()
+
+	/**
+	 * Whether a schema row is a later version of another with its slug.
+	 *
+	 * @param Schema $schema The candidate.
+	 * @param Schema $than   The row kept so far.
+	 *
+	 * @return bool
+	 */
+	private function isNewer(Schema $schema, Schema $than): bool {
+		$order = version_compare((string)($schema->getVersion() ?? '0'), (string)($than->getVersion() ?? '0'));
+		if ($order !== 0) {
+			return $order > 0;
+		}
+
+		return (int)$schema->getId() > (int)$than->getId();
+	}//end isNewer()
+
+	/**
+	 * Enumerate the EFFECTIVE notifications for a user: every notification
+	 * declared by the user's accessible schemas, merged with that user's
+	 * overrides, each tagged with its `source`.
+	 *
+	 * RBAC + multitenancy on `SchemaMapper::findAll()` already scope the
+	 * schemas to those the user may read, so this never leaks notifications
+	 * for inaccessible schemas.
+	 *
+	 * @param string $userId The user UID.
+	 * @param array<int, string> $scopes Candidate scopes to answer for, narrowest first; empty for the global answer.
+	 *
+	 * @return array<int, array<string, mixed>> One entry per (schema, notification) pair.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
+	 */
+	public function getEffectiveForUser(string $userId, array $scopes = []): array {
+		// Read once for the whole enumeration rather than once per rule: a
+		// membership lookup per (schema, notification) pair is the same answer
+		// fetched hundreds of times (ADR-009).
+		$groupIds = $this->groupsOf(userId: $userId);
+
+		try {
+			$schemas = $this->schemaMapper->findAll();
+		} catch (\Throwable $e) {
+			$this->logger->warning('[NotificationPreferenceService] schema enumeration failed: ' . $e->getMessage());
+			return [];
+		}
+
+		$reader = ['userId' => $userId, 'scopes' => $scopes, 'groupIds' => $groupIds];
+		$entries = [];
+		foreach ($this->onePerSlug(schemas: $schemas) as $schema) {
+			$entries = array_merge($entries, $this->entriesFor(schema: $schema, reader: $reader));
+		}
+
+		return $entries;
+	}//end getEffectiveForUser()
+
+	/**
+	 * The effective preference of every notification one schema declares.
+	 *
+	 * @param Schema                                                          $schema The schema.
+	 * @param array{userId: string, scopes: array<int, string>, groupIds: array<int, string>} $reader Who is reading, and in which scopes.
+	 *
+	 * @return array<int, array<string, mixed>> One entry per declared notification.
+	 */
+	private function entriesFor(Schema $schema, array $reader): array {
+		$notifications = self::notificationsOf(schema: $schema);
+		if ($notifications === []) {
+			return [];
+		}
+
+		$owner = self::ownerOf(schema: $schema);
+		$entries = [];
+		foreach ($notifications as $key => $spec) {
+			if (is_array($spec) === true) {
+				$declared  = new DeclaredNotification(schemaSlug: $owner['schema'], key: (string)$key, spec: $spec);
+				$entries[] = $owner + $this->entry(declared: $declared, reader: $reader);
+			}
+		}
+
+		return $entries;
+	}//end entriesFor()
+
+	/**
+	 * The notifications a schema declares, or none when the annotation is not a map.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int|string, mixed> The declarations by key.
+	 */
+	private static function notificationsOf(Schema $schema): array {
+		$notifications = (($schema->getConfiguration() ?? [])['x-openregister-notifications'] ?? null);
+		if (is_array($notifications) === false) {
+			return [];
+		}
+
+		return $notifications;
+	}//end notificationsOf()
+
+	/**
+	 * The schema fields every entry carries.
+	 *
+	 * `application` is the owning app id (e.g. "pipelinq"), set by the
+	 * register/schema import (ImportHandler::setApplication()) when the schema
+	 * was seeded from an app's configuration. It is null for schemas with no
+	 * known owning app (e.g. hand-authored/system schemas); the consuming
+	 * settings UI groups those under an "other" bucket rather than dropping them.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array{schema: string, schemaTitle: string, application: string|null} The fields.
+	 */
+	private static function ownerOf(Schema $schema): array {
+		$schemaSlug = (string)($schema->getSlug() ?? $schema->getId());
+
+		return ['schema' => $schemaSlug, 'schemaTitle' => (string)($schema->getTitle() ?? $schemaSlug), 'application' => $schema->getApplication()];
+	}//end ownerOf()
+
+	/**
+	 * One entry of the effective list.
+	 *
+	 * @param DeclaredNotification                                                            $declared The notification and its declaration.
+	 * @param array{userId: string, scopes: array<int, string>, groupIds: array<int, string>} $reader   Who is reading.
+	 *
+	 * @return array<string, mixed> The entry, without the schema fields.
+	 */
+	private function entry(DeclaredNotification $declared, array $reader): array {
+		$effective = $this->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $declared->spec,
+				userId: $reader['userId'],
+				topic: new PreferenceTopic(schemaSlug: $declared->schemaSlug, notificationKey: $declared->key, scopes: $reader['scopes']),
+				groupIds: $reader['groupIds']
+			)
+		);
+
+		return ['notification' => $declared->key] + self::entryFields(effective: $effective, spec: $declared->spec);
+	}//end entry()
+
+	/**
+	 * The preference fields of an entry.
+	 *
+	 * `availableChannels` and `optInChannels` are what a person can choose
+	 * from, so a screen can draw one column each; `scope` and `layers` say which
+	 * layer decided and how narrowly it was pinned, the screen a person reads
+	 * when they want to know why they are or are not being told something.
+	 *
+	 * @param array<string, mixed> $effective The resolved preference.
+	 * @param array<string, mixed> $spec      The declaration.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private static function entryFields(array $effective, array $spec): array {
+		return [
+			'enabled' => $effective['enabled'],
+			'channels' => $effective['channels'],
+			'availableChannels' => self::availableChannelsOf(spec: $spec),
+			'optInChannels' => self::optInChannelsOf(spec: $spec),
+			'source' => $effective['source'],
+			'scope' => $effective['scope'],
+			'layers' => $effective['layers'],
+		];
+	}//end entryFields()
+}//end class

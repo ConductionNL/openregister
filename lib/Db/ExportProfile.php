@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ExportProfile\ExportProfileFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -69,6 +70,9 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfile extends Entity implements JsonSerializable {
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
+
 
 	/**
 	 * Values written as the object holds them.
@@ -200,20 +204,9 @@ class ExportProfile extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'fields', type: 'string');
-		$this->addType(fieldName: 'valueMode', type: 'string');
-		$this->addType(fieldName: 'format', type: 'string');
-		$this->addType(fieldName: 'filters', type: 'string');
-		$this->addType(fieldName: 'wholeSet', type: 'boolean');
-		$this->addType(fieldName: 'retentionDays', type: 'integer');
-		$this->addType(fieldName: 'createdAt', type: 'datetime');
-		$this->addType(fieldName: 'updatedAt', type: 'datetime');
+		foreach (ExportProfileFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -291,29 +284,18 @@ class ExportProfile extends Entity implements JsonSerializable {
 	}//end getRetentionSeconds()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that are not the stored column as is: the decoded field and
+	 * filter lists, and the defaults of an unset value mode, format and whole-set flag.
 	 *
-	 * @return array<string, mixed> The published shape.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'owner' => $this->owner,
-			'name' => $this->name,
-			'description' => $this->description,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
 			'fields' => $this->getFieldsArray(),
 			'valueMode' => ($this->valueMode ?? self::MODE_STORED),
 			'format' => ($this->format ?? 'csv'),
 			'filters' => $this->getFiltersArray(),
 			'wholeSet' => ($this->wholeSet ?? false),
-			'retentionDays' => $this->retentionDays,
-			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

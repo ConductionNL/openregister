@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TablesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\TablesController;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -11,8 +12,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -25,7 +28,6 @@ use Psr\Log\LoggerInterface;
 class TablesControllerTest extends TestCase {
 	private TablesController $controller;
 	private IRequest&MockObject $request;
-	private IAppConfig&MockObject $config;
 	private MagicMapper&MockObject $magicMapper;
 	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
@@ -35,21 +37,87 @@ class TablesControllerTest extends TestCase {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new TablesController(
+		$this->controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
-			$this->config,
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->logger
+			$this->logger,
+			$this->userSessionFor('admin'),
+			$this->groupManagerSaying(true)
 		);
+	}
+
+	private function userSessionFor(string $uid): IUserSession {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		return $session;
+	}
+
+	private function groupManagerSaying(bool $isAdmin): IGroupManager {
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturn($isAdmin);
+		return $groupManager;
+	}
+
+	public function testSyncAndSyncAllRefuseANonAdmin(): void {
+		$controller = TablesControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->logger,
+			$this->userSessionFor('bob'),
+			$this->groupManagerSaying(false)
+		);
+		$this->registerMapper->expects($this->never())->method('find');
+		$this->registerMapper->expects($this->never())->method('findAll');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$single = $controller->sync(1, 1);
+		$all = $controller->syncAll();
+
+		$this->assertSame(403, $single->getStatus());
+		$this->assertSame(403, $all->getStatus());
+		$this->assertFalse($single->getData()['success']);
+		$this->assertFalse($all->getData()['success']);
+	}
+
+	public function testSyncAndSyncAllRefuseWithoutASignedInUser(): void {
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->expects($this->never())->method('isAdmin');
+		$controller = TablesControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->logger,
+			$session,
+			$groupManager
+		);
+		$this->registerMapper->expects($this->never())->method('find');
+		$this->registerMapper->expects($this->never())->method('findAll');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$single = $controller->sync(1, 1);
+		$all = $controller->syncAll();
+
+		$this->assertSame(403, $single->getStatus());
+		$this->assertSame(403, $all->getStatus());
+		$this->assertFalse($single->getData()['success']);
+		$this->assertFalse($all->getData()['success']);
 	}
 
 	/**

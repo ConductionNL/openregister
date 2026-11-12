@@ -343,6 +343,13 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** results MUST be ordered by `aanmaakdatum` descending
 
 The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+
+#### Scenario: Every form of `_order` orders the same
+- **GIVEN** a search on one schema or across several
+- **WHEN** `_order` is a map, that map as JSON, a list of objects with `field` and `direction`, a list of names, or one name, where a name is `field` or `field:direction`
+- **THEN** the search MUST order on those fields, ascending unless the direction is `desc` in any case
+- **AND** an entry that names no field MUST be left out, not end in an error
+- **AND** a field that may not be sorted on MUST be refused in every form
 It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
 production code called; over HTTP `ordering` is read as a filter on a property no
 schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live
@@ -362,11 +369,11 @@ The system MUST support pagination through `_limit`, `_offset`, and `_page` para
 - **GIVEN** 150 matching objects
 - **WHEN** the user requests `?_offset=60&_limit=30`
 - **THEN** the system MUST return objects 61-90
-- **AND** `SearchQueryHandler.addPaginationUrls()` MUST add `next` and `prev` URL links
+- **AND** `PaginationLinks.around()` (applied by the objects controller) MUST add `next` and `prev` URL links
 
 #### Scenario: Pagination URLs generated only when needed
 - **GIVEN** a query returning 20 results with `_limit=30`
-- **WHEN** `addPaginationUrls()` is called with `page=1, pages=1`
+- **WHEN** `PaginationLinks.around()` is called with `page=1, pages=1`
 - **THEN** no `next` or `prev` URLs MUST be added (single page of results)
 
 #### Scenario: First page has no prev URL
@@ -1152,6 +1159,69 @@ The search index status SHALL read the index names of all tables in scope in one
 #### Scenario: Three tables
 - WHEN the status is read for three tables
 - THEN one pg_indexes query runs and each table lists its index names
+
+### Requirement: The search index status names how many rows it covers
+
+The search index status SHALL answer `rowsInTables`, the rows of all tables in scope, and `indexed`, the rows per schema slug, summed over the registers that hold that slug. It SHALL count the rows of up to 200 tables in one query. A slug with a table that cannot be counted SHALL be left out of `indexed`, and `rowsInTables` SHALL then be left out too, so a reader never sees a count that is too low.
+
+#### Scenario: Cases and documents
+- WHEN the status is read and the tables in scope hold 12418 cases and 31902 documents
+- THEN it answers `rowsInTables` 44320 and `indexed` with `cases` 12418 and `documents` 31902
+
+#### Scenario: A table that cannot be counted
+- WHEN one table of the `documents` schema cannot be counted
+- THEN `indexed` leaves `documents` out, keeps `cases`, and the answer has no `rowsInTables`
+
+### Requirement: The object query filters on rows of a related schema
+
+The object query SHALL accept `_related[<schema>][<fk>]` blocks holding one
+or more field conditions with the existing operators, and SHALL return the
+objects for which at least one row of `<schema>` whose `<fk>` references the
+object satisfies every condition in the block. Two blocks SHALL be
+independent existence tests. The related schema's read predicate SHALL be
+applied inside the subquery. The clause SHALL be one `EXISTS` subquery per
+block on both supported databases.
+
+#### Scenario: a case is found by a property row's value
+
+- **GIVEN** a `case` object with a `caseProperty` row (`case` = the object, `propertyDefinition` = P, `value` = 120) and another case whose row for P has value 80
+- **WHEN** the case list is queried with `_related[caseProperty][case][propertyDefinition]=P` and `_related[caseProperty][case][value][gte]=100`
+- **THEN** only the first case is returned
+- @e2e exclude {proposal only; task 3.2 adds tests/e2e/ci/query-related-schema-rows.spec.ts when the parser ships}
+
+#### Scenario: an unreadable related row cannot be probed
+
+- **GIVEN** a user with no read scope on `caseProperty`
+- **WHEN** they query cases with a `_related[caseProperty]` block
+- **THEN** no case is returned by that block, and no error reveals the row's existence
+- @e2e exclude {the predicate injection is covered by unit tests on both query builders}
+
+### Requirement: Facets over a related schema's field
+
+The facet request SHALL accept the same `_related` addressing so that an
+index page can show the value distribution of a related field across the
+matching objects, bounded by the facet limit.
+
+#### Scenario: chips from property definitions
+
+- **GIVEN** cases whose `caseProperty` rows for P hold values `A`, `A` and `B`
+- **WHEN** facets are requested for `_related[caseProperty][case][value]`
+- **THEN** the facet lists `A` with count 2 and `B` with count 1
+- @e2e exclude {facet counts are covered by unit tests on the facet builder}
+
+### Requirement: The search backend translates or falls back
+
+With a search backend configured the `_related` block SHALL be translated to
+the backend's join query when the related schema is mirrored, and SHALL
+otherwise fall back to the database path for that request and name the path
+taken in the response.
+
+#### Scenario: an unmirrored related schema falls back
+
+- **GIVEN** a Solr backend and a related schema that is not mirrored
+- **WHEN** a query with a `_related` block on it runs
+- **THEN** the results come from the database path and the response names it
+- @e2e exclude {backend selection is a fixture condition covered by unit tests}
 
 ## Current Implementation Status
 

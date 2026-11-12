@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
+use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -109,13 +111,13 @@ class RegisterServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new RegisterService(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			db: $this->db,
-			fileService: $this->fileService,
+			storage: new RegisterServiceStorage(db: $this->db, catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			helpers: new RegisterServiceHelpers(
+				$this->fileService,
+				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			),
 			organisationService: $this->organisationService,
-			logger: $this->logger,
-			registerSerializer: new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}
 
@@ -761,7 +763,7 @@ class RegisterServiceTest extends TestCase {
 		$result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
 		// Should return empty array on exception (error is logged, not thrown).
-		$this->assertIsArray($result);
+		$this->assertSame([10 => ['total' => 0, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 0]], $result);
 	}
 
 	/**

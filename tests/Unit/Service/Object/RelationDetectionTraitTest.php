@@ -4,10 +4,9 @@
  * RelationDetectionTrait Unit Tests
  *
  * Tests the single relation-detection rule shared by every relation-recording
- * scan path (SaveObjects, BulkRelationHandler):
+ * scan path (SaveObjects):
  * - genuine references (UUID / prefixed-UUID / URL / schema-declared) ARE recorded
  * - dates, enum values and business identifiers are NOT recorded
- * - the bulk recording path produces the same decision as the shared rule
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object
@@ -25,13 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\RelationDetectionTrait;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Test double exposing the protected trait method for direct assertions.
@@ -132,31 +127,4 @@ class RelationDetectionTraitTest extends TestCase {
 		$this->assertFalse($this->rule->check('bank_transfer', ['type' => 'text', 'format' => 'string']));
 		$this->assertFalse($this->rule->check('2026-05-20', ['type' => 'text', 'format' => 'date']));
 	}//end testNonReferenceSchemaPropertyDoesNotPromoteScalar()
-
-	/**
-	 * Cross-path: the BulkRelationHandler recording path produces the same
-	 * relation set as the shared rule for the same payload. Because both
-	 * SaveObjects and BulkRelationHandler delegate to RelationDetectionTrait,
-	 * the recording paths cannot diverge.
-	 *
-	 * @return void
-	 */
-	public function testBulkRecordingPathMatchesSharedRule(): void {
-		$handler = new BulkRelationHandler(
-			$this->createMock(BulkValidationHandler::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(LoggerInterface::class)
-		);
-
-		$payload = [
-			'customerId' => '00000000-0000-0000-0000-000000000000',
-			'invoiceNumber' => 'DEMO-F-2026-04-02',
-			'paymentMethod' => 'bank_transfer',
-			'dueDate' => '2026-05-20',
-		];
-
-		$relations = $handler->scanForRelations(data: $payload, prefix: '', schema: null);
-
-		$this->assertSame(['customerId' => '00000000-0000-0000-0000-000000000000'], $relations);
-	}//end testBulkRecordingPathMatchesSharedRule()
 }//end class

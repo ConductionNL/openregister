@@ -1,0 +1,46 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by several components under src/dialogs.
+// Each mixin emits one complete rule; a component includes it where the rule belongs.
+
+@mixin clear-dialog-content-h3 {
+	.clear-dialog-content h3 {
+		color: var(--color-text-light);
+		margin: 0 0 16px 0;
+	}
+}
+
+@mixin clear-dialog-content-p {
+	.clear-dialog-content p {
+		color: var(--color-text-light);
+		line-height: 1.5;
+		margin: 0 0 12px 0;
+	}
+}
+
+@mixin dialog-actions {
+	.dialog-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		margin-top: 24px;
+	}
+}
+
+@mixin clear-dialog-content-h3-rules {
+	@include clear-dialog-content-h3;
+	@include clear-dialog-content-p;
+}
+
+@mixin clear-dialog-content-h3-rules-2 {
+	@include clear-dialog-content-h3-rules;
+	@include dialog-actions;
+}
+
+// A row of dialog buttons aligned to the end, under the form.
+@mixin end-aligned-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}

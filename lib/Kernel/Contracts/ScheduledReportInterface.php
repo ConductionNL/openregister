@@ -25,7 +25,7 @@ use JsonSerializable;
 /**
  * A scheduled report: an export that runs on a schedule and goes to its recipients.
  *
- * Implemented by \OCA\OpenRegister\Db\ScheduledReport. The column accessors are
+ * Implemented by \OCA\OpenRegister\Notifications\Db\ScheduledReport. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  *
  * @method int getId()

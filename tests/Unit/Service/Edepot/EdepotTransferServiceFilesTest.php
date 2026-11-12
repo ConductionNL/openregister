@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace Unit\Service\Edepot;
 
-use Closure;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\PackagedFileChecksum;
+use OCA\OpenRegister\Service\Edepot\TransferObjectGatherer;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
@@ -29,8 +29,10 @@ use RuntimeException;
  * checksum and its date, and that a fixity failure propagates to the
  * per-object catch instead of being swallowed here.
  *
- * `getObjectFiles()` touches no other collaborator, so the service is built
- * without its constructor and only the checksum dependency is initialised.
+ * The file metadata is read by TransferObjectGatherer::filesOf(), which
+ * touches no other collaborator than the checksum.
+ *
+ * @covers \OCA\OpenRegister\Service\Edepot\TransferObjectGatherer
  */
 class EdepotTransferServiceFilesTest extends TestCase {
 
@@ -70,7 +72,7 @@ class EdepotTransferServiceFilesTest extends TestCase {
 	}
 
 	/**
-	 * Run the private file gathering for one file reference.
+	 * Run the file gathering for one file reference.
 	 *
 	 * @param array<string, mixed> $fileRef The file reference on the object.
 	 *
@@ -83,18 +85,11 @@ class EdepotTransferServiceFilesTest extends TestCase {
 			->getMock();
 		$object->method('getObject')->willReturn(['_files' => [$fileRef]]);
 
-		$reflection = new ReflectionClass(EdepotTransferService::class);
-		$service = $reflection->newInstanceWithoutConstructor();
+		$gatherer = new TransferObjectGatherer(
+			stores: new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->createMock(originalClassName: MagicMapperInterface::class), records: $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: new NullLogger()),
+			packagedFileChecksum: new PackagedFileChecksum()
+		);
 
-		// A readonly property may be initialised once, from inside its class.
-		Closure::bind(
-			function (): void {
-				$this->packagedFileChecksum = new PackagedFileChecksum();
-			},
-			$service,
-			EdepotTransferService::class
-		)();
-
-		return $reflection->getMethod('getObjectFiles')->invoke($service, $object);
+		return $gatherer->filesOf(object: $object);
 	}
 }

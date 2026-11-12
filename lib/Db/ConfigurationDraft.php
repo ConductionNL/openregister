@@ -71,6 +71,28 @@ use OCP\AppFramework\Db\Entity;
 class ConfigurationDraft extends Entity implements JsonSerializable {
 
 	/**
+	 * The serialised fields, in response order; the key and the two values are renamed on the way out.
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_FIELDS = [
+		'id',
+		'uuid',
+		'setUuid',
+		'layer',
+		'layerRef',
+		'configKey',
+		'baseValue',
+		'basePresent',
+		'draftValue',
+		'removes',
+		'createdBy',
+		'created',
+		'updated',
+	];
+	use HydrateBySettersTrait;
+
+	/**
 	 * Stable UUID.
 	 *
 	 * @var string|null
@@ -177,30 +199,6 @@ class ConfigurationDraft extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore properties this entity does not carry.
-			}
-		}
-
-		return $this;
-
-	}//end hydrate()
-
-	/**
 	 * The pending value, unwrapped.
 	 *
 	 * @return mixed The value the draft would make live.
@@ -230,21 +228,24 @@ class ConfigurationDraft extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised draft.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'setUuid' => $this->setUuid,
-			'layer' => $this->layer,
-			'layerRef' => $this->layerRef,
-			'key' => $this->configKey,
-			'base' => $this->readBaseValue(),
-			'basePresent' => ($this->basePresent ?? false),
-			'value' => $this->readDraftValue(),
-			'removes' => ($this->removes ?? false),
-			'createdBy' => $this->createdBy,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		$typed = new TypedFieldsJson();
+		$json = array_merge($typed->pick(values: get_object_vars($this), names: self::JSON_FIELDS), $this->servedValues());
 
+		return $typed->renamed(json: $json, names: ['configKey' => 'key', 'baseValue' => 'base', 'draftValue' => 'value']);
 	}//end jsonSerialize()
+
+	/**
+	 * The served values that are not the stored column as is: the unwrapped base and
+	 * draft values, and the flags as false when unset.
+	 *
+	 * @return array{baseValue: mixed, basePresent: bool, draftValue: mixed, removes: bool}
+	 */
+	private function servedValues(): array {
+		return [
+			'baseValue' => $this->readBaseValue(),
+			'basePresent' => ($this->basePresent ?? false),
+			'draftValue' => $this->readDraftValue(),
+			'removes' => ($this->removes ?? false),
+		];
+	}//end servedValues()
 }//end class

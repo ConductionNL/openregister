@@ -1,0 +1,189 @@
+{
+    "table, defaults": {
+        "rows": {
+            "r1": [
+                "r1",
+                {
+                    "id": "r1",
+                    "a": 1
+                }
+            ],
+            "r2": [
+                "r2",
+                {
+                    "id": "r2",
+                    "b": 2
+                }
+            ]
+        },
+        "calls": [
+            [
+                "table",
+                [
+                    null,
+                    null,
+                    {
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    null,
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "table, everything": {
+        "rows": {
+            "r1": [
+                "r1",
+                {
+                    "id": "r1",
+                    "a": 1
+                }
+            ],
+            "r2": [
+                "r2",
+                {
+                    "id": "r2",
+                    "b": 2
+                }
+            ]
+        },
+        "calls": [
+            [
+                "table",
+                [
+                    5,
+                    2,
+                    {
+                        "x": 1,
+                        "_rbac": false,
+                        "_multitenancy": false
+                    },
+                    null,
+                    null,
+                    {
+                        "y": "asc"
+                    },
+                    "q",
+                    [
+                        "i"
+                    ],
+                    "u",
+                    false,
+                    9,
+                    4
+                ]
+            ]
+        ]
+    },
+    "table, files": {
+        "rows": {
+            "r1": [
+                "r1",
+                {
+                    "id": "r1",
+                    "a": 1
+                }
+            ],
+            "r2": [
+                "r2",
+                {
+                    "id": "r2",
+                    "b": 2
+                }
+            ]
+        },
+        "calls": [
+            [
+                "table",
+                [
+                    null,
+                    null,
+                    {
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    null,
+                    null,
+                    [],
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    "source": {
+        "rows": [
+            {
+                "live": true
+            }
+        ],
+        "calls": [
+            [
+                "source",
+                9,
+                4,
+                {
+                    "limit": 5,
+                    "offset": 2,
+                    "filters": {
+                        "x": 1
+                    },
+                    "sort": {
+                        "y": "asc"
+                    },
+                    "search": "q",
+                    "ids": [
+                        "i"
+                    ]
+                },
+                {
+                    "k": "v"
+                }
+            ]
+        ]
+    },
+    "source without config": {
+        "rows": [
+            {
+                "live": true
+            }
+        ],
+        "calls": [
+            [
+                "source",
+                9,
+                4,
+                {
+                    "limit": null,
+                    "offset": null,
+                    "filters": [],
+                    "sort": [],
+                    "search": null,
+                    "ids": null
+                },
+                []
+            ]
+        ]
+    },
+    "source disabled": {
+        "rows": [],
+        "calls": []
+    },
+    "source missing": {
+        "rows": [],
+        "calls": []
+    }
+}

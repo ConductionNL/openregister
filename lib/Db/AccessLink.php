@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AccessLink\AccessLinkFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -48,9 +50,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUuid(?string $uuid)
  * @method string|null getAnchor()
  * @method void setAnchor(?string $anchor)
- * @method string|null getSubjectType()
  * @method void setSubjectType(?string $subjectType)
- * @method string|null getSubjectId()
  * @method void setSubjectId(?string $subjectId)
  * @method string|null getCapabilities()
  * @method void setCapabilities(?string $capabilities)
@@ -77,7 +77,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLink extends Entity implements JsonSerializable {
+class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface {
 
 	/**
 	 * A link over one object.
@@ -248,21 +248,32 @@ class AccessLink extends Entity implements JsonSerializable {
 	 * Constructor: declare the field types Nextcloud's Entity hydrates.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'anchor', type: 'string');
-		$this->addType(fieldName: 'subjectType', type: 'string');
-		$this->addType(fieldName: 'subjectId', type: 'string');
-		$this->addType(fieldName: 'capabilities', type: 'string');
-		$this->addType(fieldName: 'label', type: 'string');
-		$this->addType(fieldName: 'passwordHash', type: 'string');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'revokedAt', type: 'datetime');
-		$this->addType(fieldName: 'disabled', type: 'boolean');
-		$this->addType(fieldName: 'lastUsedAt', type: 'datetime');
-		$this->addType(fieldName: 'useCount', type: 'integer');
+		foreach (AccessLinkFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
+
+	/**
+	 * The kind of subject the link opens.
+	 *
+	 * @return string|null The subject type.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getSubjectType(): ?string {
+		return $this->subjectType;
+	}//end getSubjectType()
+
+	/**
+	 * The identifier of the subject the link opens.
+	 *
+	 * @return string|null The subject id.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getSubjectId(): ?string {
+		return $this->subjectId;
+	}//end getSubjectId()
 
 	/**
 	 * Whether this link still answers at the given moment.
@@ -278,22 +289,12 @@ class AccessLink extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 */
-	public function isLive(?DateTime $now = null): bool {
-		$moment = ($now ?? new DateTime());
-
-		if ($this->revokedAt !== null) {
+	public function isLive(DateTime|null $now = null): bool {
+		if ($this->revokedAt !== null || $this->disabled === true) {
 			return false;
 		}
 
-		if ($this->disabled === true) {
-			return false;
-		}
-
-		if ($this->expiresAt === null || $this->expiresAt <= $moment) {
-			return false;
-		}
-
-		return true;
+		return $this->expiresAt !== null && $this->expiresAt > ($now ?? new DateTime());
 	}//end isLive()
 
 	/**
@@ -304,23 +305,30 @@ class AccessLink extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function declaredCapabilities(): array {
-		$raw = trim((string)$this->capabilities);
-		if ($raw === '') {
-			return [];
-		}
-
 		$declared = [];
-		foreach (explode(',', $raw) as $candidate) {
+		foreach (explode(',', (string)$this->capabilities) as $candidate) {
 			$name = strtolower(trim($candidate));
-			if ($name !== '' && in_array($name, self::CAPABILITIES, true) === true
-				&& in_array($name, $declared, true) === false
-			) {
+			if ($this->isDeclarable(name: $name, declared: $declared) === true) {
 				$declared[] = $name;
 			}
 		}
 
 		return $declared;
 	}//end declaredCapabilities()
+
+	/**
+	 * Whether a normalised name is a known capability not yet in the list.
+	 *
+	 * @param string             $name     The lower-cased, trimmed name.
+	 * @param array<int, string> $declared The capabilities declared so far.
+	 *
+	 * @return bool
+	 */
+	private function isDeclarable(string $name, array $declared): bool {
+		return $name !== ''
+			&& in_array($name, self::CAPABILITIES, true) === true
+			&& in_array($name, $declared, true) === false;
+	}//end isDeclarable()
 
 	/**
 	 * Whether this link declares one capability.
@@ -394,6 +402,15 @@ class AccessLink extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function jsonSerialize(): array {
+		return array_merge($this->subjectJson(), $this->lifecycleJson());
+	}//end jsonSerialize()
+
+	/**
+	 * The link's identity, subject and what it grants; never the password hash.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function subjectJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -404,6 +421,16 @@ class AccessLink extends Entity implements JsonSerializable {
 			'label' => $this->label,
 			'hasPassword' => $this->hasPassword(),
 			'createdBy' => $this->createdBy,
+		];
+	}//end subjectJson()
+
+	/**
+	 * The link's timestamps, use and whether it answers now.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function lifecycleJson(): array {
+		return [
 			'created' => $this->created?->format('c'),
 			'expiresAt' => $this->expiresAt?->format('c'),
 			'revokedAt' => $this->revokedAt?->format('c'),
@@ -412,7 +439,7 @@ class AccessLink extends Entity implements JsonSerializable {
 			'useCount' => $this->useCount,
 			'live' => $this->isLive(),
 		];
-	}//end jsonSerialize()
+	}//end lifecycleJson()
 
 	/**
 	 * What the holder of the link is told about it.

@@ -19,11 +19,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use GuzzleHttp\Client;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Service\EndpointMappers;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\NotificationService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\Notification\IManager;
@@ -91,7 +92,7 @@ class UninitialisedPropertyConstructionTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$agents = $this->createMock(AgentMapper::class);
 
-		$service = new EndpointService($mapper, $logger, $session, $groups, $agents);
+		$service = new EndpointService(new EndpointMappers($mapper, $agents), $logger, new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $this->createMock(\OCP\IUserManager::class), groups: $groups));
 
 		$this->assertSame($mapper, $this->readProperty($service, 'endpointLogMapper'));
 		$this->assertSame($logger, $this->readProperty($service, 'logger'));

@@ -29,14 +29,18 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
+use OCA\OpenRegister\Service\Case\CaseRealisationRuns;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Coverage of CaseRealisationService.
@@ -94,7 +98,7 @@ class CaseRealisationServiceTest extends TestCase {
 	 * @return CaseRealisationService The service.
 	 */
 	private function service(): CaseRealisationService {
-		return new CaseRealisationService(tasks: $this->tasks, taskRows: $this->taskRows, runs: $this->runs, runRows: $this->runRows, logger: new NullLogger());
+		return new CaseRealisationService(tasks: new CaseRealisationTasks(tasks: $this->tasks, taskRows: $this->taskRows), runs: new CaseRealisationRuns(runs: $this->runs, runRows: $this->runRows), logger: new NullLogger());
 	}//end service()
 
 	/**
@@ -166,13 +170,7 @@ class CaseRealisationServiceTest extends TestCase {
 		$stage->setPlanSettings(['flows' => ['auto' => 'flow-7']]);
 		$run = new FlowRun();
 		$run->setUuid('run-3');
-		$this->runs->expects($this->once())->method('queue')->with(
-			'flow-7',
-			['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'],
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-1'],
-			'alice'
-		)->willReturn($run);
+		$this->runs->expects($this->once())->method('queueRun')->with('flow-7', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'], trigger: CaseRealisationService::RUN_TRIGGER, context: ['caseItem' => 'item-1'], user: 'alice')))->willReturn($run);
 
 		$service = $this->service();
 		$service->realise(item: $stage, actor: 'alice');
@@ -197,13 +195,7 @@ class CaseRealisationServiceTest extends TestCase {
 		$task->setPlanSettings(['flows' => ['verwerk' => 'flow-9']]);
 		$run = new FlowRun();
 		$run->setUuid('run-9');
-		$this->runs->expects($this->once())->method('queue')->with(
-			'flow-9',
-			$this->anything(),
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-3'],
-			null
-		)->willReturn($run);
+		$this->runs->expects($this->once())->method('queueRun')->with('flow-9', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == CaseRealisationService::RUN_TRIGGER && $o->context == ['caseItem' => 'item-3'] && $o->user === null))->willReturn($run);
 
 		$this->service()->realise(item: $task, actor: CasePlanService::SYSTEM_ACTOR_PREFIX . 'dossiq');
 
@@ -221,13 +213,7 @@ class CaseRealisationServiceTest extends TestCase {
 		$task->setPlanSettings(['flows' => ['verwerk' => 'flow-9']]);
 		$run = new FlowRun();
 		$run->setUuid('run-9');
-		$this->runs->expects($this->once())->method('queue')->with(
-			'flow-9',
-			$this->anything(),
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-3'],
-			null
-		)->willReturn($run);
+		$this->runs->expects($this->once())->method('queueRun')->with('flow-9', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == CaseRealisationService::RUN_TRIGGER && $o->context == ['caseItem' => 'item-3'] && $o->user === null))->willReturn($run);
 
 		$this->service()->realise(item: $task, actor: CasePlanStateMachine::SYSTEM_ACTOR);
 
@@ -310,7 +296,9 @@ class CaseRealisationServiceTest extends TestCase {
 		$taskItem->setRealisationKind(CaseItem::REALISATION_TASK);
 		$taskItem->setRealisationUuid('task-1');
 		$this->tasks->expects($this->exactly(3))->method('terminateAsMoot')->willReturnCallback(
-			static function (string $uuid, string $reason, string $source): Task {
+			static function (string $uuid, TaskTrigger $trigger): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				if ($reason === 'gone') {
 					throw new DoesNotExistException('gone');
 				}

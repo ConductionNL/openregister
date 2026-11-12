@@ -206,6 +206,17 @@ class FlowRunStep extends Entity implements JsonSerializable {
 	 * Constructor: declare field types so the mapper hydrates them correctly.
 	 */
 	public function __construct() {
+		$this->addPositionTypes();
+		$this->addOutcomeTypes();
+
+	}//end __construct()
+
+	/**
+	 * Register the types of the columns that place the step in its run.
+	 *
+	 * @return void
+	 */
+	private function addPositionTypes(): void {
 		$this->addType(fieldName: 'runUuid', type: 'string');
 		$this->addType(fieldName: 'flowId', type: 'string');
 		$this->addType(fieldName: 'nodeId', type: 'string');
@@ -214,6 +225,15 @@ class FlowRunStep extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'streamId', type: 'string');
 		$this->addType(fieldName: 'ordinalPath', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
+
+	}//end addPositionTypes()
+
+	/**
+	 * Register the types of the columns that record how the step went.
+	 *
+	 * @return void
+	 */
+	private function addOutcomeTypes(): void {
 		$this->addType(fieldName: 'started', type: 'datetime');
 		$this->addType(fieldName: 'finished', type: 'datetime');
 		$this->addType(fieldName: 'durationMs', type: 'integer');
@@ -221,7 +241,7 @@ class FlowRunStep extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'error', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
-	}//end __construct()
+	}//end addOutcomeTypes()
 
 	/**
 	 * Serialise for the API.
@@ -231,21 +251,16 @@ class FlowRunStep extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	public function jsonSerialize(): array {
-		$started = null;
-		if ($this->started !== null) {
-			$started = $this->started->format('c');
-		}
+		return array_merge($this->positionJson(), $this->outcomeJson());
 
-		$finished = null;
-		if ($this->finished !== null) {
-			$finished = $this->finished->format('c');
-		}
+	}//end jsonSerialize()
 
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
+	/**
+	 * Where the step sits in its run.
+	 *
+	 * @return array<string, mixed> The position fields.
+	 */
+	private function positionJson(): array {
 		return [
 			'id' => $this->id,
 			'runUuid' => $this->runUuid,
@@ -256,13 +271,24 @@ class FlowRunStep extends Entity implements JsonSerializable {
 			'streamId' => $this->streamId,
 			'ordinalPath' => $this->ordinalPath,
 			'status' => $this->status,
-			'started' => $started,
-			'finished' => $finished,
+		];
+
+	}//end positionJson()
+
+	/**
+	 * How the step went, with timestamps as ISO-8601 strings.
+	 *
+	 * @return array<string, mixed> The outcome fields.
+	 */
+	private function outcomeJson(): array {
+		return [
+			'started' => $this->started?->format('c'),
+			'finished' => $this->finished?->format('c'),
 			'durationMs' => $this->durationMs,
 			'output' => $this->output,
 			'error' => $this->error,
-			'created' => $created,
+			'created' => $this->created?->format('c'),
 		];
 
-	}//end jsonSerialize()
+	}//end outcomeJson()
 }//end class

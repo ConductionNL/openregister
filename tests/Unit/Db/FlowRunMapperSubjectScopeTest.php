@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -161,7 +162,7 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 	public function testFindActiveWithASubjectKeepsTheOrganisationPredicateAndAddsTheSubject(): void {
 		$mapper = $this->recordingMapper();
 
-		$mapper->findActive(organisation: 'org-a', limit: 25, subject: 'case-x');
+		$mapper->findActive(scope: new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), limit: 25);
 
 		// The organisation predicate is unconditional and comes FIRST; the
 		// subject narrows after it. This is the two-organisation scenario: a
@@ -176,7 +177,7 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 	public function testFindActiveWithoutASubjectIsTodaysRead(): void {
 		$mapper = $this->recordingMapper();
 
-		$mapper->findActive(organisation: 'org-a', limit: 25);
+		$mapper->findActive(scope: new FlowRunSubjectScope(organisation: 'org-a'), limit: 25);
 
 		$this->assertSame([self::statusIn(FlowRun::ACTIVE), 'organisation = "org-a"'], $this->predicates);
 		$this->assertSame([['id', 'DESC']], $this->orderBy);
@@ -186,7 +187,7 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 	public function testABlankSubjectAddsNoPredicate(): void {
 		$mapper = $this->recordingMapper();
 
-		$mapper->findActive(organisation: 'org-a', limit: 25, subject: '');
+		$mapper->findActive(scope: new FlowRunSubjectScope(organisation: 'org-a', subject: ''), limit: 25);
 
 		$this->assertNotContains('subject_uuid = ""', $this->predicates);
 		$this->assertCount(2, $this->predicates);
@@ -207,7 +208,7 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 	public function testTheCompletedReadAsksForTheTerminalSetOnThisOrganisationAndSubjectNewestFirst(): void {
 		$mapper = $this->recordingMapper();
 
-		$mapper->findCompletedForSubject(organisation: 'org-a', subject: 'case-x', limit: 7);
+		$mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), limit: 7);
 
 		$this->assertSame(
 			[self::statusIn(FlowRun::TERMINAL), 'organisation = "org-a"', 'subject_uuid = "case-x"'],
@@ -227,7 +228,7 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 		$this->assertContains(FlowRun::STATUS_DEAD_LETTER, FlowRun::TERMINAL);
 
 		$mapper = $this->recordingMapper();
-		$mapper->findCompletedForSubject(organisation: 'org-a', subject: 'case-x');
+		$mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'));
 
 		$this->assertStringContainsString('"failed"', $this->predicates[0]);
 	}//end testTheTerminalSetTheCompletedReadUsesIncludesFailed()
@@ -249,8 +250,10 @@ class FlowRunMapperSubjectScopeTest extends TestCase {
 
 		// Dropping a required predicate would answer a WIDER question than was
 		// asked. Nothing is queried; the answer is empty and zero.
-		$this->assertSame([], $mapper->findCompletedForSubject(organisation: 'org-a', subject: ''));
-		$this->assertSame([], $mapper->findCompletedForSubject(organisation: '', subject: 'case-x'));
+		$this->assertSame([], $mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(organisation: 'org-a', subject: '')));
+		$this->assertSame([], $mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(organisation: '', subject: 'case-x')));
+		$this->assertSame([], $mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(subject: 'case-x')));
+		$this->assertSame([], $mapper->findCompletedForSubject(scope: new FlowRunSubjectScope(organisation: 'org-a')));
 		$this->assertSame(0, $mapper->countCompletedForSubject(organisation: 'org-a', subject: ''));
 		$this->assertSame(0, $mapper->countCompletedForSubject(organisation: '', subject: 'case-x'));
 		$this->assertSame(0, $this->queries);

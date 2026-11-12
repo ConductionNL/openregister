@@ -113,9 +113,8 @@ class ReadableAuditCursor {
 			return 0;
 		}
 
-		try {
-			$plain = $this->crypto->decrypt($cursor);
-		} catch (Throwable $e) {
+		$plain = $this->decrypted(cursor: $cursor);
+		if ($plain === null) {
 			return 0;
 		}
 
@@ -127,4 +126,19 @@ class ReadableAuditCursor {
 
 		return (int)$offset;
 	}//end open()
+
+	/**
+	 * A cursor's plain text, or null when it does not decrypt.
+	 *
+	 * @param string $cursor The opaque cursor.
+	 *
+	 * @return string|null The plain text.
+	 */
+	private function decrypted(string $cursor): ?string {
+		try {
+			return $this->crypto->decrypt($cursor);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end decrypted()
 }//end class

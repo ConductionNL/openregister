@@ -14,7 +14,6 @@ import {
 			v-if="navigationStore.modal === 'viewObject'"
 			:name="getModalTitle()"
 			size="large"
-			:canClose="true"
 			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Register/Schema Selection (for new objects with multiple options) -->
@@ -121,10 +120,7 @@ import {
 													'non-editable-row':
 														!isPropertyEditable(
 															key,
-															formData[key]
-																!== undefined
-																? formData[key]
-																: value,
+															propertyValue(key, value),
 														),
 													...getPropertyValidationClass(
 														key,
@@ -185,23 +181,13 @@ import {
 															v-else-if="
 																!isPropertyEditable(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:title="
 																getEditabilityWarning(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															class="validation-icon lock-icon"
@@ -227,10 +213,7 @@ import {
 															selectedProperty === key
 															&& isPropertyEditable(
 																key,
-																formData[key]
-																	!== undefined
-																	? formData[key]
-																	: value,
+																propertyValue(key, value),
 															)
 														"
 														class="value-input-container"
@@ -244,10 +227,7 @@ import {
 																=== 'NcCheckboxRadioSwitch'
 															"
 															:modelValue="
-																formData[key]
-																!== undefined
-																	? formData[key]
-																	: value
+																propertyValue(key, value)
 															"
 															type="switch"
 															@update:modelValue="
@@ -273,12 +253,7 @@ import {
 															"
 															:modelValue="
 																stringToDate(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																	currentSchema
 																		.properties[
 																		key
@@ -312,12 +287,7 @@ import {
 															:modelValue="
 																enumOptionFor(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:options="
@@ -369,12 +339,7 @@ import {
 															"
 															:value="
 																translationValueFor(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:languages="
@@ -398,13 +363,9 @@ import {
 															ref="propertyValueInput"
 															:modelValue="
 																String(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value
-																				|| '',
+																	formData[key] !== undefined
+																		? formData[key]
+																		: value || '',
 																)
 															"
 															:type="
@@ -443,108 +404,31 @@ import {
 															" />
 													</div>
 													<div v-else>
-														<template
+														<pre
 															v-if="
-																formData[key]
-																!== undefined
-															">
-															<!-- Show edited value -->
-															<pre
-																v-if="
-																	typeof formData[
-																		key
-																	] === 'object'
-																	&& formData[key]
-																		!== null
-																"
-																title="JSON object (edited)"
-																class="json-value"
-																>{{
-																	formatValue(
-																		formData[
-																			key
-																		],
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		formData[
-																			key
-																		],
-																	)
-																"
-																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`"
-																>{{
-																	new Date(
-																		formData[
-																			key
-																		],
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key} (edited)`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
-														<template v-else>
-															<!-- Show original value -->
-															<pre
-																v-if="
-																	typeof value
-																		=== 'object'
-																	&& value !== null
-																"
-																title="JSON object"
-																class="json-value"
-																>{{
-																	formatValue(
-																		value,
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		value,
-																	)
-																"
-																:title="`Date: ${new Date(value).toISOString()}`"
-																>{{
-																	new Date(
-																		value,
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key}`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
+																typeof propertyValue(key, value) === 'object'
+																&& propertyValue(key, value) !== null
+															"
+															:title="`JSON object${editedSuffix(key)}`"
+															class="json-value"
+															>{{ formatValue(propertyValue(key, value)) }}</pre>
+														<span
+															v-else-if="isValidDate(propertyValue(key, value))"
+															:title="`Date: ${new Date(propertyValue(key, value)).toISOString()}${editedSuffix(key)}`"
+															>{{
+																new Date(
+																	propertyValue(key, value),
+																).toLocaleString()
+															}}</span
+														>
+														<span
+															v-else
+															:title="
+																currentSchema?.properties?.[key]?.description
+																|| `Property: ${key}${editedSuffix(key)}`
+															"
+															>{{ getDisplayValue(key, value) }}</span
+														>
 													</div>
 												</td>
 											</tr>
@@ -677,163 +561,26 @@ import {
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Uses')">
-								<div
-									v-if="objectStore.uses.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="use in objectStore.uses
-													.results"
-												:key="use['@self'].id"
-												class="table-row">
-												<td>{{ use['@self'].id }}</td>
-												<td>{{ use['@self'].uri }}</td>
-												<td>{{ use['@self'].schema }}</td>
-												<td>{{ use['@self'].register }}</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	use,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No uses found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.uses.results"
+									emptyText="No uses found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Used by')">
-								<div
-									v-if="objectStore.used.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="usedBy in objectStore.used
-													.results"
-												:key="usedBy['@self'].id"
-												class="table-row">
-												<td>{{ usedBy['@self'].id }}</td>
-												<td>{{ usedBy['@self'].uri }}</td>
-												<td>{{ usedBy['@self'].schema }}</td>
-												<td>
-													{{ usedBy['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	usedBy,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No objects are using this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.used.results"
+									emptyText="No objects are using this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Contracts')">
-								<div
-									v-if="objectStore.contracts.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="contract in objectStore.contracts"
-												:key="contract['@self'].id"
-												class="table-row">
-												<td>{{ contract['@self'].id }}</td>
-												<td>{{ contract['@self'].uri }}</td>
-												<td>
-													{{ contract['@self'].schema }}
-												</td>
-												<td>
-													{{ contract['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	contract,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No contracts found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.contracts"
+									emptyText="No contracts found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
@@ -1177,58 +924,25 @@ import {
 									@pageChanged="onFilesPageChanged"
 									@pageSizeChanged="onFilesPageSizeChanged" />
 							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Emails">
-								<EmailsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Events">
-								<EventsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Contacts">
-								<ContactsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Deck">
-								<DeckTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Relations">
-								<RelationsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
+							<template v-if="!isNewObject && relationContext">
+								<AppTab
+									v-for="tab in relationTabs"
+									:key="tab.title"
+									:title="tab.title">
+									<component
+										:is="tab.component"
+										:register="relationContext.register"
+										:schema="relationContext.schema"
+										:objectId="relationContext.id" />
+								</AppTab>
+							</template>
 						</AppTabs>
 					</div>
 				</div>
 			</div>
 
 			<template #actions>
-				<NcButton @click="closeModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Close
-				</NcButton>
+				<CloseCancelButton label="Close" @click="closeModal" />
 				<NcButton
 					v-if="!isNewObject"
 					@click="
@@ -1295,7 +1009,6 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
@@ -1309,10 +1022,13 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
+import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { uploadSizeLabel } from '../../services/byteSize.js'
 import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
@@ -1328,6 +1044,15 @@ import {
 	isValidDate,
 	isValidPropertyValue,
 } from '../../services/propertyValues.js'
+import {
+	attachmentState,
+	dialogState,
+	editorState,
+	filesPage,
+	newObjectSelection,
+	propertySaveState,
+	viewObjectTabs,
+} from './viewObjectState.js'
 
 /**
  * A metadata value, or 'Not set' when it is empty.
@@ -1384,6 +1109,147 @@ function blankValueFor(property) {
 }
 
 /**
+ * The rows of a new object: each property of its schema, if any, with its
+ * default value.
+ *
+ * @param {object|undefined} schema The current schema.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function newObjectRows(schema) {
+	const schemaProperties = schema?.properties
+	if (!schemaProperties) {
+		return []
+	}
+	return schemaDefaultRows(schemaProperties)
+}
+
+/**
+ * Each schema property with its default value.
+ *
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function schemaDefaultRows(schemaProperties) {
+	return Object.entries(schemaProperties).map(([key, schemaProperty]) => [
+		key,
+		defaultValueFor(schemaProperty),
+	])
+}
+
+/**
+ * The rows of the schema properties a stored object does not hold yet, with
+ * their default values.
+ *
+ * @param {object} objectData The stored object.
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function missingSchemaRows(objectData, schemaProperties) {
+	return Object.entries(schemaProperties)
+		.filter(([key]) => !Object.hasOwn(objectData, key))
+		.map(([key, schemaProperty]) => [key, defaultValueFor(schemaProperty)])
+}
+
+/**
+ * The `@self` metadata of a blank object in a register and schema.
+ *
+ * @param {number|string} register The register id, or ''.
+ * @param {number|string} schema The schema id, or ''.
+ * @return {object} The metadata.
+ */
+function blankSelf(register, schema) {
+	return {
+		id: '',
+		uuid: '',
+		uri: '',
+		register,
+		schema,
+		...blankBookkeeping(),
+	}
+}
+
+/**
+ * The bookkeeping metadata of a blank object: no relations, files, folder,
+ * dates, lock or owner yet.
+ *
+ * @return {object} The metadata.
+ */
+function blankBookkeeping() {
+	return {
+		relations: '',
+		files: '',
+		folder: '',
+		updated: '',
+		created: '',
+		locked: null,
+		owner: '',
+	}
+}
+
+/**
+ * The value a blank object starts with for a property: its default, else the
+ * blank value of its type.
+ *
+ * @param {object} property The schema property.
+ * @return {unknown} The value.
+ */
+function initialValueFor(property) {
+	return property.default !== undefined
+		? property.default
+		: blankValueFor(property)
+}
+
+/**
+ * Clear what the modal showed: the edits, titles, tab, attachments, outcome
+ * and copy state.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearFormState(modal) {
+	modal.isUpdated = false
+	modal.registerTitle = ''
+	modal.schemaTitle = ''
+	modal.activeTab = 0
+	modal.selectedAttachments = []
+	modal.activeAttachment = null
+	modal.success = null
+	modal.error = null
+	modal.isCopied = false
+}
+
+/**
+ * Forget the register and schema chosen for a new object, and the choices
+ * the store offered.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearNewObjectScope(modal) {
+	// Clear register/schema selection state
+	modal.selectedRegisterForNewObject = null
+	modal.selectedSchemaForNewObject = null
+	modal.registerSchemaSelectionConfirmed = false
+	objectStore.availableRegistersForNewObject = null
+	objectStore.availableSchemasForNewObject = null
+}
+
+/**
+ * Stop the pending property change notifications.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearPropertyChangeTimers(modal) {
+	// Clear debounce timers
+	Object.values(modal.propertyChangeDebounceTimers).forEach((timer) => {
+		if (timer) clearTimeout(timer)
+	})
+	modal.propertyChangeDebounceTimers = {}
+	modal.pendingNotifications = {}
+}
+
+/**
  * The id of a reference that is either an object with an id or the id itself.
  *
  * @param {unknown} reference The reference.
@@ -1393,6 +1259,236 @@ function idOf(reference) {
 	return typeof reference === 'object' && reference !== null
 		? reference.id
 		: reference
+}
+
+/**
+ * The properties a schema inherits from its allOf parents, later parents
+ * overriding earlier ones.
+ *
+ * @param {Array} allOf The parent references: ids, uuids or objects with an id
+ * @param {Array<object>} schemas The known schemas
+ * @return {object} The inherited properties
+ */
+function inheritedProperties(allOf, schemas) {
+	const inherited = {}
+	for (const ref of allOf) {
+		const parent = schemaById(schemas, typeof ref === 'object' ? ref.id : ref)
+		if (parent?.properties) {
+			Object.assign(inherited, parent.properties)
+		}
+	}
+	return inherited
+}
+
+/**
+ * The schema with an id or uuid, compared loosely so '3' finds 3.
+ *
+ * @param {Array<object>} schemas The known schemas
+ * @param {string|number} id The id or uuid
+ * @return {object|undefined} The schema
+ */
+function schemaById(schemas, id) {
+	return schemas.find(
+		(s) => s.id === id || s.uuid === id || String(s.id) === String(id),
+	)
+}
+
+/**
+ * The form fields of a schema's properties; a property without a definition
+ * is a string.
+ *
+ * @param {object|null} schema The schema
+ * @return {object} The fields
+ */
+function schemaFields(schema) {
+	const fields = {}
+	if (schema && schema.properties) {
+		for (const [key, value] of Object.entries(schema.properties)) {
+			fields[key] = value || { type: 'string' }
+		}
+	}
+	return fields
+}
+
+const NOT_FIELDS = ['@self', 'id']
+
+/**
+ * Add a field for each object property that has none yet, typed by its value.
+ *
+ * @param {object} fields The fields so far; extended in place
+ * @param {object|null} item The object
+ */
+function addObjectFields(fields, item) {
+	for (const [key, value] of Object.entries(item || {})) {
+		if (!NOT_FIELDS.includes(key) && !fields[key]) {
+			fields[key] = {
+				type: valueType(value),
+				title: key,
+				description: `Property: ${key}`,
+			}
+		}
+	}
+}
+
+/**
+ * The JSON schema type a value looks like; anything else is a string.
+ *
+ * @param {*} value The value
+ * @return {string} The type
+ */
+function valueType(value) {
+	if (typeof value === 'boolean' || typeof value === 'number') {
+		return typeof value
+	}
+	if (Array.isArray(value)) {
+		return 'array'
+	}
+	return typeof value === 'object' && value !== null ? 'object' : 'string'
+}
+
+/**
+ * Whether a schema uses composition but has no properties yet, so the list
+ * endpoint returned it un-resolved.
+ *
+ * @param {object|null} schema The schema
+ * @return {boolean} Whether to fetch the resolved schema
+ */
+function isUnresolved(schema) {
+	if (!schema?.id) {
+		return false
+	}
+	const composed = ['allOf', 'oneOf', 'anyOf'].some(
+		(key) => (schema[key]?.length || 0) > 0,
+	)
+	return composed && Object.keys(schema.properties || {}).length === 0
+}
+
+/**
+ * Fetch the resolved schema into the store.
+ *
+ * @param {object} schema The un-resolved schema
+ * @return {Promise<boolean>} Whether the fetch succeeded
+ */
+async function fetchResolvedSchema(schema) {
+	try {
+		await schemaStore.getSchema(schema.id, { setItem: true })
+		return true
+	} catch {
+		return false
+	}
+}
+
+/**
+ * Whether a value is missing or empty.
+ *
+ * @param {*} value The value
+ * @return {boolean} Whether it is blank
+ */
+function isBlank(value) {
+	return value === null || value === undefined || value === ''
+}
+
+/**
+ * The actual type of a value as a schema names it.
+ *
+ * @param {*} value The value
+ * @return {string} The type
+ */
+function actualType(value) {
+	return Array.isArray(value) ? 'array' : typeof value
+}
+
+/**
+ * The checks of a property value, in order; each returns its message or null.
+ */
+const PROPERTY_PROBLEMS = [
+	(c) =>
+		isBlank(c.value) && c.required
+			? `Required property '${c.key}' is missing or empty`
+			: null,
+	(c) =>
+		c.property.type !== actualType(c.value)
+			? `Property '${c.key}' should be ${c.property.type} but is ${actualType(c.value)}`
+			: null,
+	(c) =>
+		c.property.format === 'date-time' && !c.isValidDate(c.value)
+			? `Property '${c.key}' should be a valid date-time format`
+			: null,
+	(c) =>
+		c.property.const && c.value !== c.property.const
+			? `Property '${c.key}' should be '${c.property.const}' but is '${c.value}'`
+			: null,
+]
+
+/**
+ * A value as JSON, or as plain text when it cannot be serialised.
+ *
+ * @param {object} value The value
+ * @return {string} The text
+ */
+function jsonOrString(value) {
+	try {
+		return JSON.stringify(value)
+	} catch {
+		return String(value)
+	}
+}
+
+/**
+ * Whether a click landed on an inline control rather than on the row.
+ *
+ * @param {Element} target The clicked element
+ * @return {boolean} Whether it is a control
+ */
+function isInlineControl(target) {
+	return (
+		target.tagName === 'INPUT'
+		|| target.tagName === 'BUTTON'
+		|| Boolean(target.closest('.value-input-container'))
+	)
+}
+
+const INLINE_TYPES = ['string', 'number', 'integer', 'boolean']
+
+/**
+ * The object-relation tabs, in order: each shows its component for the open
+ * object's register, schema and id.
+ */
+const RELATION_TABS = [
+	{ title: 'Emails', component: 'EmailsTab' },
+	{ title: 'Events', component: 'EventsTab' },
+	{ title: 'Contacts', component: 'ContactsTab' },
+	{ title: 'Deck', component: 'DeckTab' },
+	{ title: 'Relations', component: 'RelationsTab' },
+]
+
+/**
+ * How a property change toast looks.
+ */
+const CHANGE_TOAST_STYLE = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-success);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 300px;
+			`
+
+/**
+ * Take an element out of the page, if it is still in it.
+ *
+ * @param {HTMLElement} element The element
+ * @return {void}
+ */
+function removeElement(element) {
+	if (element.parentNode) {
+		element.parentNode.removeChild(element)
+	}
 }
 
 export default {
@@ -1414,10 +1510,10 @@ export default {
 		CodeMirror,
 		AppTabs,
 		AppTab,
+		CloseCancelButton,
 		Cancel,
 		FileOutline,
 		OpenInNew,
-		Eye,
 		Delete,
 		Upload,
 		LockOutline,
@@ -1437,61 +1533,32 @@ export default {
 		EventsTab,
 		ContactsTab,
 		DeckTab,
+		RelatedObjectsTable,
 		RelationsTab,
 	},
 
 	data() {
 		return {
-			closeModalTimeout: null,
-			activeAttachment: null,
-			registerTitle: '',
-			schemaTitle: '',
-			isUpdated: false,
-			isCopied: false,
-			error: null,
-			success: null,
-			formData: {},
-			jsonData: '',
-			activeTab: 0,
-			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
-			// Vue 3 initialises `instance.update` to null and only assigns the render
-			// effect in setupRenderEffect, i.e. AFTER the `immediate: true` watchers
-			// below have already run. Calling $forceUpdate() in that window makes Vue
-			// queue a null job and throw `Cannot read properties of null (reading
-			// 'flags')`. Vue 2's $forceUpdate() guarded on `vm._watcher &&` so the same
-			// call was a silent no-op there. Gate the call on this flag instead.
-			isMounted: false,
-			objectEditors: {},
-			tabOptions: [
-				'Properties',
-				'Metadata',
-				'Data',
-				'Uses',
-				'Used by',
-				'Contracts',
-				'Files',
-			],
-
-			selectedAttachments: [],
-			fileIdsLoading: [],
-			editingLabelsFileId: null,
-			editingLabels: [],
-			availableLabels: [],
-			labelsLoading: false,
+			...dialogState(),
+			...editorState(),
+			tabOptions: viewObjectTabs(),
+			...attachmentState(),
 			// Register/Schema selection for new objects with multiple options
-			selectedRegisterForNewObject: null,
-			selectedSchemaForNewObject: null,
-			registerSchemaSelectionConfirmed: false,
-			filesCurrentPage: 1,
-			filesPerPage: 10,
-			selectedProperty: null,
-			isSaving: false,
-			propertyChangeDebounceTimers: {}, // Track debounce timers per property
-			pendingNotifications: {}, // Store pending notification info per property
+			...newObjectSelection(),
+			...filesPage(),
+			...propertySaveState(),
 		}
 	},
 
 	computed: {
+		/**
+		 * @return {Array<{title: string, component: string}>} The relation tabs
+		 * @spec exclude static tab list
+		 */
+		relationTabs() {
+			return RELATION_TABS
+		},
+
 		// Check if we need to show register/schema selection
 		/**
 		 * @spec exclude computed gate for register/schema selection step
@@ -1540,20 +1607,7 @@ export default {
 		objectProperties() {
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
-				const schemaProperties = this.currentSchema?.properties
-				if (!schemaProperties) {
-					return []
-				}
-
-				const defaultProperties = []
-
-				for (const [key, schemaProperty] of Object.entries(
-					schemaProperties,
-				)) {
-					defaultProperties.push([key, defaultValueFor(schemaProperty)])
-				}
-
-				return defaultProperties
+				return newObjectRows(this.currentSchema)
 			}
 
 			const objectData = objectStore.objectItem
@@ -1565,15 +1619,10 @@ export default {
 			)
 
 			// Add schema properties that don't exist in the object yet
-			const missingSchemaProperties = []
-			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
-				if (!Object.hasOwn(objectData, key)) {
-					missingSchemaProperties.push([
-						key,
-						defaultValueFor(schemaProperty),
-					])
-				}
-			}
+			const missingSchemaProperties = missingSchemaRows(
+				objectData,
+				schemaProperties,
+			)
 
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
@@ -1609,24 +1658,16 @@ export default {
 		 */
 		currentSchema() {
 			const schema = schemaStore.schemaItem
-			if (!schema) return schema
-			const allOf = schema.allOf || []
-			if (!allOf.length) return schema
+			const allOf = schema?.allOf || []
+			if (!allOf.length) {
+				return schema
+			}
 			// Merge inherited properties from allOf parent schemas so extended schemas
 			// expose the full property set (own + inherited) in the form dialog.
-			const inherited = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inherited, parentSchema.properties)
-				}
-			}
+			const inherited = inheritedProperties(
+				schema.allOf,
+				schemaStore.schemaList,
+			)
 			return {
 				...schema,
 				properties: { ...inherited, ...(schema.properties || {}) },
@@ -1681,43 +1722,9 @@ export default {
 		 * @spec exclude computed display helper merging schema + object fields
 		 */
 		formFields() {
-			// Combine schema properties and object properties
-			const fields = {}
-
-			// First, add all schema properties
-			if (this.currentSchema && this.currentSchema.properties) {
-				for (const [key, value] of Object.entries(
-					this.currentSchema.properties,
-				)) {
-					fields[key] = value || { type: 'string' }
-				}
-			}
-
-			// Then, add any object properties that aren't in the schema
-			if (objectStore.objectItem) {
-				for (const [key, value] of Object.entries(objectStore.objectItem)) {
-					if (key !== '@self' && key !== 'id' && !fields[key]) {
-						// Infer type from the value
-						let type = 'string'
-						if (typeof value === 'boolean') {
-							type = 'boolean'
-						} else if (typeof value === 'number') {
-							type = 'number'
-						} else if (Array.isArray(value)) {
-							type = 'array'
-						} else if (typeof value === 'object' && value !== null) {
-							type = 'object'
-						}
-
-						fields[key] = {
-							type,
-							title: key,
-							description: `Property: ${key}`,
-						}
-					}
-				}
-			}
-
+			// Schema properties first, then object properties the schema lacks.
+			const fields = schemaFields(this.currentSchema)
+			addObjectFields(fields, objectStore.objectItem)
 			return fields
 		},
 
@@ -1801,25 +1808,14 @@ export default {
 				// using composition (allOf/oneOf/anyOf) `properties` is empty until
 				// the detail endpoint merges in the parent's properties. When the
 				// active schema looks un-resolved, refetch via the detail endpoint
-				// and let the watcher fire again with merged properties.
-				if (newSchema?.id) {
-					const usesComposition =
-						(newSchema.allOf?.length || 0) > 0
-						|| (newSchema.oneOf?.length || 0) > 0
-						|| (newSchema.anyOf?.length || 0) > 0
-					const propsCount = Object.keys(newSchema.properties || {}).length
-					if (usesComposition && propsCount === 0) {
-						try {
-							await schemaStore.getSchema(newSchema.id, {
-								setItem: true,
-							})
-							return
-						} catch {
-							// Fall through to use the un-resolved schema if the detail fetch fails
-						}
-					}
+				// and let the watcher fire again with merged properties. If that
+				// fetch fails, the un-resolved schema is used.
+				if (
+					isUnresolved(newSchema)
+					&& (await fetchResolvedSchema(newSchema))
+				) {
+					return
 				}
-
 				if (newSchema && this.isNewObject) {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
@@ -1916,12 +1912,49 @@ export default {
 
 	methods: {
 		/**
-		 * Returns { type, objectId } needed for all file store operations.
-		 * Handles both string IDs and embedded register/schema objects.
+		 * Open a related object (a use, a user or a contract) in this modal.
 		 *
-		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @param {object} object The related object
+		 * @return {void}
+		 * @spec exclude navigation from a related-object row, UI plumbing
 		 */
-		_getFileParams() {
+		viewRelatedObject(object) {
+			objectStore.setObjectItem(object)
+			navigationStore.setModal('viewObject')
+		},
+
+		/**
+		 * The value a property row shows: the edited one when the form holds
+		 * one, else the stored one.
+		 *
+		 * @param {string} key The property
+		 * @param {unknown} value Its stored value
+		 * @return {unknown} The value to show
+		 * @spec exclude property-table display helper
+		 */
+		propertyValue(key, value) {
+			return this.formData[key] !== undefined ? this.formData[key] : value
+		},
+
+		/**
+		 * The tooltip suffix that marks a property row as edited.
+		 *
+		 * @param {string} key The property
+		 * @return {string} ' (edited)' for an edited property, else ''
+		 * @spec exclude property-table display helper
+		 */
+		editedSuffix(key) {
+			return this.formData[key] !== undefined ? ' (edited)' : ''
+		},
+
+		/**
+		 * The register and schema ids of the open object, whether its `@self`
+		 * holds them as ids or as embedded objects.
+		 *
+		 * @return {{registerId: (string|number), schemaId: (string|number)}} The ids
+		 * @spec exclude id extraction shared by the file operations
+		 */
+		_getRegisterSchemaIds() {
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
 			const registerId =
@@ -1932,6 +1965,17 @@ export default {
 				typeof rawSchema === 'object' && rawSchema !== null
 					? rawSchema.id
 					: rawSchema
+			return { registerId, schemaId }
+		},
+
+		/**
+		 * Returns { type, objectId } needed for all file store operations.
+		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		_getFileParams() {
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 			const objectId =
 				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
 			const type = `${registerId}-${schemaId}`
@@ -2009,29 +2053,9 @@ export default {
 		 */
 		closeModal() {
 			// Clear state first
-			this.isUpdated = false
-			this.registerTitle = ''
-			this.schemaTitle = ''
-			this.activeTab = 0
-			this.selectedAttachments = []
-			this.activeAttachment = null
-			this.success = null
-			this.error = null
-			this.isCopied = false
-
-			// Clear register/schema selection state
-			this.selectedRegisterForNewObject = null
-			this.selectedSchemaForNewObject = null
-			this.registerSchemaSelectionConfirmed = false
-			objectStore.availableRegistersForNewObject = null
-			objectStore.availableSchemasForNewObject = null
-
-			// Clear debounce timers
-			Object.values(this.propertyChangeDebounceTimers).forEach((timer) => {
-				if (timer) clearTimeout(timer)
-			})
-			this.propertyChangeDebounceTimers = {}
-			this.pendingNotifications = {}
+			clearFormState(this)
+			clearNewObjectScope(this)
+			clearPropertyChangeTimers(this)
 
 			// Clear any timeouts
 			clearTimeout(this.closeModalTimeout)
@@ -2064,21 +2088,7 @@ export default {
 			window.open(filesAppUrl, '_blank')
 		},
 
-		/**
-		 * Format file size for display
-		 *
-		 * @param {number} bytes - The file size in bytes
-		 * @return {string} The formatted file size
-		 * @spec exclude display helper formatting file size
-		 */
-		formatFileSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		formatFileSize: uploadSizeLabel,
 
 		/**
 		 * Truncate file name to prevent dialog alignment issues
@@ -2149,28 +2159,15 @@ export default {
 		 */
 		blankObjectData() {
 			const initialData = {
-				'@self': {
-					id: '',
-					uuid: '',
-					uri: '',
-					register: this.currentRegister?.id || '',
-					schema: this.currentSchema?.id || '',
-					relations: '',
-					files: '',
-					folder: '',
-					updated: '',
-					created: '',
-					locked: null,
-					owner: '',
-				},
+				'@self': blankSelf(
+					this.currentRegister?.id || '',
+					this.currentSchema?.id || '',
+				),
 			}
 			for (const [key, property] of Object.entries(
 				this.currentSchema?.properties || {},
 			)) {
-				initialData[key] =
-					property.default !== undefined
-						? property.default
-						: blankValueFor(property)
+				initialData[key] = initialValueFor(property)
 			}
 			return initialData
 		},
@@ -2580,16 +2577,7 @@ export default {
 		 */
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
-			const rawRegister = objectStore.objectItem['@self']?.register
-			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId =
-				typeof rawRegister === 'object' && rawRegister !== null
-					? rawRegister.id
-					: rawRegister
-			const schemaId =
-				typeof rawSchema === 'object' && rawSchema !== null
-					? rawSchema.id
-					: rawSchema
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 
 			// Snapshot the current value so we can revert on failure.
 			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
@@ -2678,42 +2666,34 @@ export default {
 		 * @spec exclude display helper building property error message
 		 */
 		getPropertyErrorMessage(key, value) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-
-			if (!schemaProperty) {
+			const property = this.currentSchema?.properties?.[key]
+			if (!property) {
 				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
-
-			// Check if required but empty
-			const isRequired =
-				this.currentSchema?.required?.includes(key)
-				|| schemaProperty.required
-			if (
-				(value === null || value === undefined || value === '')
-				&& isRequired
-			) {
-				return `Required property '${key}' is missing or empty`
+			const check = {
+				key,
+				value,
+				property,
+				required: this.isRequiredProperty(key, property),
+				isValidDate: (v) => this.isValidDate(v),
 			}
-
-			// Check type mismatch
-			const expectedType = schemaProperty.type
-			const actualType = Array.isArray(value) ? 'array' : typeof value
-
-			if (expectedType !== actualType) {
-				return `Property '${key}' should be ${expectedType} but is ${actualType}`
+			for (const problem of PROPERTY_PROBLEMS) {
+				const message = problem(check)
+				if (message) return message
 			}
-
-			// Check format constraints
-			if (schemaProperty.format === 'date-time' && !this.isValidDate(value)) {
-				return `Property '${key}' should be a valid date-time format`
-			}
-
-			// Check const constraint
-			if (schemaProperty.const && value !== schemaProperty.const) {
-				return `Property '${key}' should be '${schemaProperty.const}' but is '${value}'`
-			}
-
 			return `Property '${key}' has an invalid value`
+		},
+
+		/**
+		 * Whether a property must have a value: the schema lists it as
+		 * required, or the property says so itself.
+		 *
+		 * @param {string} key The property
+		 * @param {object} property Its schema definition
+		 * @return {boolean} True when required
+		 */
+		isRequiredProperty(key, property) {
+			return this.currentSchema?.required?.includes(key) || property.required
 		},
 
 		getPropertyWarningMessage(key, _value) {
@@ -2735,21 +2715,7 @@ export default {
 			if (value === null || value === undefined) {
 				return ''
 			}
-			if (typeof value === 'string') {
-				return value
-			}
-			if (typeof value === 'number' || typeof value === 'boolean') {
-				return String(value)
-			}
-			if (typeof value === 'object') {
-				// For objects and arrays, return JSON string
-				try {
-					return JSON.stringify(value)
-				} catch {
-					return String(value)
-				}
-			}
-			return String(value)
+			return typeof value === 'object' ? jsonOrString(value) : String(value)
 		},
 
 		/**
@@ -2758,52 +2724,51 @@ export default {
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
 		handleRowClick(key, event) {
-			// Don't select if clicking on an input or button
-			if (
-				event.target.tagName === 'INPUT'
-				|| event.target.tagName === 'BUTTON'
-				|| event.target.closest('.value-input-container')
-			) {
+			// Don't select when clicking an input or button, or reselect the selected row.
+			if (isInlineControl(event.target) || this.selectedProperty === key) {
 				return
 			}
-
-			// Don't deselect if already selected
-			if (this.selectedProperty === key) {
-				return
-			}
-
-			// Check if property is editable
 			const value =
 				this.formData[key] !== undefined
 					? this.formData[key]
 					: this.objectProperties.find(([k]) => k === key)?.[1]
 			if (!this.isPropertyEditable(key, value)) {
-				// Show warning for non-editable properties
-				const warning = this.getEditabilityWarning(key, value)
-				if (warning) {
-					showWarning(warning)
-				}
+				this.warnNotEditable(key, value)
 				return
 			}
+			this.editInline(key)
+		},
 
-			// Only allow editing for supported property types (same as EditObject.vue)
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (
-				schemaProperty
-				&& ['string', 'number', 'integer', 'boolean'].includes(
-					schemaProperty.type,
-				)
-			) {
-				this.selectProperty(key)
-			} else if (!schemaProperty) {
-				// Allow editing for properties not in schema (free-form)
-				this.selectProperty(key)
-			} else {
-				// Show info for unsupported types
-				showWarning(
-					`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`,
-				)
+		/**
+		 * Show why a property cannot be edited, when there is a reason.
+		 *
+		 * @param {string} key The property
+		 * @param {*} value Its value
+		 * @spec exclude UI plumbing — editability warning toast
+		 */
+		warnNotEditable(key, value) {
+			const warning = this.getEditabilityWarning(key, value)
+			if (warning) {
+				showWarning(warning)
 			}
+		},
+
+		/**
+		 * Start editing a property inline when its type allows it (same as
+		 * EditObject.vue); free-form properties outside the schema always can.
+		 *
+		 * @param {string} key The property
+		 * @spec exclude UI plumbing — inline edit selection
+		 */
+		editInline(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty || INLINE_TYPES.includes(schemaProperty.type)) {
+				this.selectProperty(key)
+				return
+			}
+			showWarning(
+				`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`,
+			)
 		},
 
 		/**
@@ -2836,10 +2801,7 @@ export default {
 		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
-			const oldValue =
-				this.formData[key] !== undefined
-					? this.formData[key]
-					: this.objectProperties.find(([k]) => k === key)?.[1]
+			const oldValue = this.shownValueOf(key)
 
 			// Convert value based on schema property type
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2855,26 +2817,59 @@ export default {
 					oldValue,
 					newValue: convertedValue,
 				}
-
-				// Clear existing debounce timer for this property
-				if (this.propertyChangeDebounceTimers[key]) {
-					clearTimeout(this.propertyChangeDebounceTimers[key])
-				}
-
-				// Set new debounce timer (500ms delay)
-				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
-					const notification = this.pendingNotifications[key]
-					if (notification) {
-						this.showPropertyChangeNotification(
-							key,
-							notification.oldValue,
-							notification.newValue,
-						)
-						delete this.pendingNotifications[key]
-					}
-					delete this.propertyChangeDebounceTimers[key]
-				}, 500)
+				this.debounceChangeNotice(key)
 			}
+		},
+
+		/**
+		 * A property's value as the form shows it: the edited value, else the
+		 * value of its row.
+		 *
+		 * @param {string} key The property
+		 * @return {unknown} The value
+		 */
+		shownValueOf(key) {
+			return this.formData[key] !== undefined
+				? this.formData[key]
+				: this.objectProperties.find(([k]) => k === key)?.[1]
+		},
+
+		/**
+		 * Show a property's pending change notice 500 ms after its last change.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		debounceChangeNotice(key) {
+			// Clear existing debounce timer for this property
+			if (this.propertyChangeDebounceTimers[key]) {
+				clearTimeout(this.propertyChangeDebounceTimers[key])
+			}
+
+			// Set new debounce timer (500ms delay)
+			this.propertyChangeDebounceTimers[key] = setTimeout(
+				() => this.showPendingChange(key),
+				500,
+			)
+		},
+
+		/**
+		 * Show a property's pending change notice, and forget it and its timer.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		showPendingChange(key) {
+			const notification = this.pendingNotifications[key]
+			if (notification) {
+				this.showPropertyChangeNotification(
+					key,
+					notification.oldValue,
+					notification.newValue,
+				)
+				delete this.pendingNotifications[key]
+			}
+			delete this.propertyChangeDebounceTimers[key]
 		},
 
 		/**
@@ -2906,29 +2901,13 @@ export default {
 			// Create a simple notification - you could replace this with a proper toast library
 			const notification = document.createElement('div')
 			notification.className = 'property-change-toast'
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-success);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 300px;
-			`
+			notification.style.cssText = CHANGE_TOAST_STYLE
 			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
 
 			document.body.appendChild(notification)
 
 			// Remove notification after 3 seconds
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 3000)
+			setTimeout(() => removeElement(notification), 3000)
 		},
 
 		/**
@@ -3241,104 +3220,15 @@ export default {
 	font-size: 14px;
 }
 
-/* Property table row border colors matching validation states */
-.viewTableRow.property-invalid {
-	background-color: var(--color-error-light);
-	border-left: 4px solid var(--color-error);
-}
-
-.viewTableRow.property-warning {
-	background-color: var(--color-warning-light);
-	border-left: 4px solid var(--color-warning);
-}
-
-.viewTableRow.property-new {
-	background-color: var(--color-primary-element-light);
-	border-left: 4px solid var(--color-primary-element);
-}
-
+/* Property table row border colors matching validation states; the other
+   row and icon rules live in the SCSS block below. */
 .viewTableRow.property-valid {
 	border-left: 4px solid var(--color-success);
 }
-
-/* Icon colors for file status */
-.warningIcon {
-	color: var(--color-warning);
-}
-
-.publishedIcon {
-	color: var(--color-success);
-}
-
-/* Validation icons */
-.validation-icon {
-	flex-shrink: 0;
-}
-
-.error-icon {
-	color: var(--color-error);
-}
-
-.warning-icon {
-	color: var(--color-warning);
-}
-
-.lock-icon {
-	color: var(--color-text-lighter);
-}
-
-.new-icon {
-	color: var(--color-primary-element);
-}
-
-.prop-cell-content {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-/* Other necessary styles */
-.viewTableRow {
-	cursor: pointer;
-	transition: background-color 0.2s ease;
-}
-
-.viewTableRow:hover {
-	background-color: var(--color-background-hover);
-}
-
-.viewTableRow.selected-row {
-	background-color: var(--color-primary-light);
-}
-
-.viewTableRow.edited-row {
-	background-color: var(--color-success-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.edited-row.selected-row {
-	background-color: var(--color-primary-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.non-editable-row {
-	background-color: var(--color-background-dark);
-	cursor: not-allowed;
-	opacity: 0.7;
-}
-
-.viewTableRow.non-editable-row:hover {
-	background-color: var(--color-background-dark);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.viewTableRow {
-		transition: none;
-	}
-}
 </style>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 /* ViewObject-specific overrides only */
 .tableColumnActions {
 	width: 100px;
@@ -3486,96 +3376,7 @@ export default {
 	border: 1px dotted grey;
 }
 
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color - THIS FIXES THE WHITE SELECTION ISSUE */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string selection */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean selection */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null selection */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number selection */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
+@include code-mirror-theme;
 
 @media (prefers-reduced-motion: reduce) {
 	.viewTableRow {

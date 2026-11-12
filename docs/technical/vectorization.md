@@ -73,7 +73,7 @@ classDiagram
 
 ### VectorizationService (Public API)
 
-**Location**: `lib/Service/VectorizationService.php`
+**Location**: `lib/Search/Service/VectorizationService.php`
 
 **Purpose**: Public API facade for all vector operations. Orchestrates vectorization using strategies and delegates to VectorEmbeddingService.
 

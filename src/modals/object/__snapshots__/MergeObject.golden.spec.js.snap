@@ -1,5 +1,63 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`MergeObject merge choices (golden) offers the options for absent 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for city 1`] = `"[{"label":"From Source: Ede","value":"Ede"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for empty 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for name 1`] = `"[{"label":"From Source: Source","value":"Source"},{"label":"From Target: Target","value":"Target"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for nested 1`] = `"[{"label":"From Source: {\\n  \\"a\\": 1\\n}","value":{"a":1}},{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for onlySource 1`] = `"[{"label":"From Source: x","value":"x"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for onlyTarget 1`] = `"[{"label":"From Target: false","value":false},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for zero 1`] = `"[{"label":"From Source: 0","value":0},{"label":"From Target: 0","value":0},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) searches merge targets fails 1`] = `
+{
+  "availableObjects": [],
+  "fetched": [
+    [
+      "/index.php/apps/openregister/api/objects/1/2?_search=a b",
+    ],
+  ],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) searches merge targets finds candidates 1`] = `
+{
+  "availableObjects": [
+    {
+      "@self": {
+        "id": "other",
+      },
+    },
+  ],
+  "fetched": [
+    [
+      "/index.php/apps/openregister/api/objects/1/2?_search=a b",
+    ],
+  ],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) searches merge targets without a register 1`] = `
+{
+  "availableObjects": [
+    "stale",
+  ],
+  "fetched": [],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) seeds the merge data, custom values and dropdown selections 1`] = `"{"mergedData":{"id":"t","name":"Target","city":"Ede","empty":"custom","zero":0,"nested":{"b":2},"onlySource":"x","onlyTarget":false},"customValues":{"empty":""},"propertySelections":{"name":{"label":"From Target: Target","value":"Target"},"city":{"label":"From Source: Ede","value":"Ede"},"empty":{"label":"Other/Custom","value":"custom"},"zero":{"label":"From Source: 0","value":0},"nested":{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},"onlySource":{"label":"From Source: x","value":"x"},"onlyTarget":{"label":"From Target: false","value":false}}}"`;
+
 exports[`MergeObject.loadSourceData loads bare, noRegister, answering brokenJson 1`] = `
 {
   "files": [],

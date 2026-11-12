@@ -32,7 +32,7 @@
                     "objectId": "u-fail",
                     "objectTitle": "F",
                     "success": false,
-                    "error": "update failed"
+                    "error": "The object could not be written at its new address, so it was not moved: update failed"
                 },
                 {
                     "objectId": "u-nameless",
@@ -54,7 +54,7 @@
             "errors": [
                 "Failed to migrate object u-reg: Object u-reg does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='7', schema='2'",
                 "Failed to migrate object u-sch: Object u-sch does not belong to the specified source register/schema. Expected: register='1', schema='2'. Actual: register='1', schema='8'",
-                "Failed to migrate object u-fail: update failed",
+                "Failed to migrate object u-fail: The object could not be written at its new address, so it was not moved: update failed",
                 "Failed to migrate object missing: Object not found"
             ]
         },
@@ -90,6 +90,14 @@
                     12,
                     "12"
                 ]
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -133,7 +141,25 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-fail",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -164,7 +190,17 @@
                 {
                     "id": "u-fail"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-nameless",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -194,7 +230,17 @@
                 {
                     "id": "u-nameless"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-nameless",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -255,6 +301,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -296,7 +350,25 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-nameless",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -326,86 +398,17 @@
                 {
                     "id": "u-nameless"
                 },
-                3
-            ]
-        ]
-    },
-    "saved under another uuid": {
-        "result": {
-            "success": true,
-            "statistics": {
-                "objectsMigrated": 1,
-                "objectsFailed": 0,
-                "propertiesMapped": 0,
-                "propertiesDiscarded": 1
-            },
-            "details": [
-                {
-                    "objectId": "u-new",
-                    "objectTitle": "N",
-                    "success": true,
-                    "error": null,
-                    "newObjectId": "u-other"
-                }
-            ],
-            "warnings": [],
-            "errors": []
-        },
-        "calls": [
-            [
-                "normalizeEntity",
-                "1",
-                "register"
+                30,
+                40,
+                "1"
             ],
             [
-                "normalizeEntity",
-                "2",
-                "schema"
-            ],
-            [
-                "normalizeEntity",
-                "target",
-                "register"
-            ],
-            [
-                "normalizeEntity",
-                "target",
-                "schema"
-            ],
-            [
-                "findMultiple",
-                [
-                    "u-new"
-                ]
-            ],
-            [
-                "mapObjectProperties",
-                {
-                    "id": "u-new"
-                },
-                {
-                    "title": "title",
-                    "kept": "keep",
-                    "gone": "absent",
-                    "register": "register"
-                }
-            ],
-            [
-                "log.debug",
-                "[MigrationHandler] Object properties mapped",
-                {
-                    "mappedData": []
-                }
-            ],
-            [
-                "update",
-                "u-new",
-                "30",
-                "40",
-                {
-                    "id": "u-new"
-                },
-                3
+                "deleteObjectEntity",
+                "u-nameless",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -620,6 +623,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -661,7 +672,17 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                3,
+                4,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -714,6 +735,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -755,7 +784,17 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -808,6 +847,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -849,7 +896,17 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -909,6 +966,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -950,7 +1015,25 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -994,7 +1077,17 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -1047,6 +1140,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-nameless",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-nameless",
@@ -1080,7 +1181,17 @@
                     "y": 1,
                     "z": 1
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-nameless",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -1133,6 +1244,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -1162,7 +1281,17 @@
                 {
                     "id": "u-ok"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },
@@ -1223,6 +1352,14 @@
                 ]
             ],
             [
+                "findInRegisterSchemaTable",
+                "u-ok",
+                1,
+                2,
+                false,
+                false
+            ],
+            [
                 "mapObjectProperties",
                 {
                     "id": "u-ok",
@@ -1264,7 +1401,25 @@
                     "kept": 1,
                     "register": "99"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-ok",
+                1,
+                2,
+                true,
+                false
+            ],
+            [
+                "findInRegisterSchemaTable",
+                "u-nameless",
+                1,
+                2,
+                false,
+                false
             ],
             [
                 "mapObjectProperties",
@@ -1294,7 +1449,17 @@
                 {
                     "id": "u-nameless"
                 },
-                3
+                30,
+                40,
+                "1"
+            ],
+            [
+                "deleteObjectEntity",
+                "u-nameless",
+                1,
+                2,
+                true,
+                false
             ]
         ]
     },

@@ -20,7 +20,7 @@ class LlmSettingsHandlerCoverageTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->appConfig = $this->createMock(IAppConfig::class);
-		$this->handler = new LlmSettingsHandler($this->appConfig, 'openregister');
+		$this->handler = new LlmSettingsHandler($this->appConfig);
 	}
 
 	public function testGetLLMSettingsOnlyReturnsDefaultsWhenEmpty(): void {

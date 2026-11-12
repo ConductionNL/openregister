@@ -22,16 +22,19 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -40,10 +43,6 @@ use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Service\WebPush\HexIconService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -111,15 +110,7 @@ final class ServiceRegistrar {
 		// own counter: nothing would ever reach depth zero with a record in it,
 		// so no automatic transition would ever fire, silently and with no
 		// error anywhere.
-		$context->registerService(
-			AutoTransitionPass::class,
-			function ($c) {
-				return new AutoTransitionPass(
-					runner: $c->get(AutoTransitionRunner::class),
-					logger: $c->get(LoggerInterface::class)
-				);
-			}
-		);
+		$context->registerService(AutoTransitionPass::class, self::buildAutoTransitionPass(...));
 
 		// The register-slug resolver MUST be shared. It memoises one indexed
 		// read per candidate list for the life of the request, and a sweep asks
@@ -127,15 +118,7 @@ final class ServiceRegistrar {
 		// auto-wires a fresh instance at every injection point, so without this
 		// registration the memo would be empty every time and the probe would
 		// re-read the register table once per call site.
-		$context->registerService(
-			RegisterSlugResolver::class,
-			function ($c) {
-				return new RegisterSlugResolver(
-					registerMapper: $c->get(RegisterMapper::class),
-					logger: $c->get(LoggerInterface::class)
-				);
-			}
-		);
+		$context->registerService(RegisterSlugResolver::class, self::buildRegisterSlugResolver(...));
 
 		// The published contract (ADR-084) consuming apps type-hint. Bound to
 		// the same shared instance, so an app that injects the interface and one
@@ -191,54 +174,20 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// Office conversion (ODT and PDF) goes through Nextcloud's conversion
-		// API, so whichever office server registered a provider does the work:
-		// Collabora through richdocuments, or Euro-Office. PDF export, PDF
-		// reports and the Path B PDF anonymisation fallback all use it.
-		$context->registerServiceAlias(
-			\OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
-			\OCA\OpenRegister\Service\File\Office\ConversionManagerConverter::class
-		);
-
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
-		$context->registerService(
-			\OCA\OpenRegister\Service\WebPush\HexIconService::class,
-			function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
-				return new HexIconService(
-					appManager: $c->get(\OCP\App\IAppManager::class),
-					appData: $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
-					logger: $c->get(\Psr\Log\LoggerInterface::class)
-				);
-			}
-		);
 
 		// Register the data-sync source-fetcher registry pre-loaded with the
 		// built-in REST/OpenRegister fetcher. Apps can register additional
 		// fetchers (OData, SOAP, CSV) by resolving and extending this service.
-		$context->registerService(
-			\OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
-			function ($c) {
-				$registry = new SourceFetcherRegistry();
-				$registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
-				return $registry;
-			}
-		);
+		$context->registerService(\OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
 
 		// Register the standards schema-import service with the bundled,
 		// versioned snapshot resources (schema-import-standards). Built
 		// explicitly so the resource root is deterministic; the dialect
 		// registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
-		$context->registerService(
-			\OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
-			function () {
-				return new SchemaImportService(
-					detector: new DialectDetector(),
-					merge: new ThreeWayMerge()
-				);
-			}
-		);
+		$context->registerService(\OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class, self::buildSchemaImportService(...));
 	}//end registerSeams()
 
 	/**
@@ -252,44 +201,10 @@ final class ServiceRegistrar {
 	 */
 	private static function registerUserAndOrganisation(IRegistrationContext $context): void {
 		// Register OrganisationService without SettingsService to break circular dependency.
-		$context->registerService(
-			OrganisationService::class,
-			function (ContainerInterface $container) {
-				return new OrganisationService(
-					organisationMapper: $container->get(OrganisationMapper::class),
-					userSession: $container->get('OCP\IUserSession'),
-					session: $container->get('OCP\ISession'),
-					config: $container->get('OCP\IConfig'),
-					appConfig: $container->get('OCP\IAppConfig'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					userManager: $container->get('OCP\IUserManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					settingsService: null
-				);
-			}
-		);
+		$context->registerService(OrganisationService::class, self::buildOrganisationService(...));
 
 		// Register UserService for UserController (after OrganisationService which it depends on).
-		$context->registerService(
-			\OCA\OpenRegister\Service\UserService::class,
-			function (ContainerInterface $container) {
-				return new UserService(
-					userManager: $container->get('OCP\IUserManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					config: $container->get('OCP\IConfig'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					accountManager: $container->get('OCP\Accounts\IAccountManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					organisationService: $container->get(OrganisationService::class),
-					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-					avatarManager: $container->get('OCP\IAvatarManager'),
-					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-					secureRandom: $container->get('OCP\Security\ISecureRandom'),
-					db: $container->get('OCP\IDBConnection'),
-					l10nFactory: $container->get('OCP\L10N\IFactory')
-				);
-			}
-		);
+		$context->registerService(\OCA\OpenRegister\Service\UserService::class, self::buildUserService(...));
 	}//end registerUserAndOrganisation()
 
 	/**
@@ -307,129 +222,217 @@ final class ServiceRegistrar {
 		// abstract) and would silently default to null: an inbox row without
 		// subject context, and a portal task that can match nobody. Both are
 		// wired to the MagicMapper explicitly for that reason.
-		$context->registerService(
-			TaskInboxService::class,
-			function (ContainerInterface $container) {
-				return new TaskInboxService(
-					tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					objects: $container->get(MagicMapper::class),
-					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
-					// Reads a located task's subject from its own table instead
-					// of searching every magic table for it.
-					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
-				);
-			}
-		);
+		$context->registerService(TaskInboxService::class, self::buildTaskInboxService(...));
 
 		$context->registerService(
 			PortalPartyResolver::class,
 			function (ContainerInterface $container) {
 				return new PortalPartyResolver(
-					objects: $container->get(MagicMapper::class)
+					objects: $container->get(MagicMapperInterface::class)
 				);
 			}
 		);
 
-		$context->registerService(
-			CacheHandler::class,
-			function (ContainerInterface $container) {
-				return new CacheHandler(
-					organisationMapper: $container->get(OrganisationMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					cacheFactory: $container->get('OCP\ICacheFactory'),
-					userSession: $container->get('OCP\IUserSession'),
-					container: $container,
-					registerMapper: $container->get(RegisterMapper::class),
-					schemaMapper: $container->get(SchemaMapper::class),
-					db: $container->get('OCP\IDBConnection')
-				);
-			}
-		);
+		$context->registerService(CacheHandler::class, self::buildCacheHandler(...));
 
 		// FolderManagementHandler without FileService to break circular dependency.
-		$context->registerService(
-			FolderManagementHandler::class,
-			function (ContainerInterface $container) {
-				return new FolderManagementHandler(
-					rootFolder: $container->get('OCP\Files\IRootFolder'),
-					objectEntityMapper: $container->get(MagicMapper::class),
-					registerMapper: $container->get(RegisterMapper::class),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-					mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
-					folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
-					fileService: null
-				);
-			}
-		);
+		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
 
-		$context->registerService(
-			VectorizationService::class,
-			function (ContainerInterface $container) {
-				$service = new VectorizationService(
-					vectorService: $container->get(VectorEmbeddings::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-
-				$fileStrategy = $container->get(FileVectorizationStrategy::class);
-				$objectStrategy = $container->get(ObjectVectorizationStrategy::class);
-				$service->registerStrategy('file', $fileStrategy);
-				$service->registerStrategy('object', $objectStrategy);
-
-				return $service;
-			}
-		);
-
-		$context->registerService(
-			TaskService::class,
-			function (ContainerInterface $container) {
-				// The write-back gate is resolved lazily and best-effort: without
-				// it a PROJECTED VTODO's update is refused (fail closed), and
-				// standalone VTODOs are unaffected either way.
-				$gate = null;
-				try {
-					$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
-				} catch (\Throwable $e) {
-					$container->get('Psr\Log\LoggerInterface')->debug(
-						'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
-					);
-				}
-
-				return new TaskService(
-					calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
-					userSession: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					urlGenerator: $container->get('OCP\IURLGenerator'),
-					gate: $gate
-				);
-			}
-		);
-
-		$context->registerService(
-			NoteService::class,
-			function (ContainerInterface $container) {
-				return new NoteService(
-					commentsManager: $container->get('OCP\Comments\ICommentsManager'),
-					userSession: $container->get('OCP\IUserSession'),
-					userManager: $container->get('OCP\IUserManager'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class),
-					versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
-				);
-			}
-		);
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\TimeProvider::class,
-			function (ContainerInterface $container) {
-				return new IntegrationTimeProvider(
-					appConfig: $container->get('OCP\IAppConfig')
-				);
-			}
-		);
+		$context->registerService(TaskService::class, self::buildTaskService(...));
 	}//end registerObjectServices()
+
+	/**
+	 * Build the AutoTransitionPass service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return AutoTransitionPass
+	 */
+	private static function buildAutoTransitionPass(ContainerInterface $container): AutoTransitionPass {
+			return new AutoTransitionPass(
+				runner: $container->get(AutoTransitionRunner::class),
+				logger: $container->get(LoggerInterface::class)
+			);
+	}//end buildAutoTransitionPass()
+
+	/**
+	 * Build the RegisterSlugResolver service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return RegisterSlugResolver
+	 */
+	private static function buildRegisterSlugResolver(ContainerInterface $container): RegisterSlugResolver {
+			return new RegisterSlugResolver(
+				registerMapper: $container->get(RegisterMapperInterface::class),
+				logger: $container->get(LoggerInterface::class)
+			);
+	}//end buildRegisterSlugResolver()
+
+	/**
+	 * Build the OrganisationService service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return OrganisationServiceInterface
+	 */
+	private static function buildOrganisationService(ContainerInterface $container): OrganisationServiceInterface {
+			return new OrganisationService(
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				session: $container->get('OCP\ISession'),
+				config: $container->get('OCP\IConfig'),
+				appConfig: $container->get('OCP\IAppConfig'),
+				groupManager: $container->get('OCP\IGroupManager'),
+				userManager: $container->get('OCP\IUserManager'),
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				settingsService: null
+			);
+	}//end buildOrganisationService()
+
+	/**
+	 * Build the UserService service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return \OCA\OpenRegister\Service\UserService
+	 */
+	private static function buildUserService(ContainerInterface $container): \OCA\OpenRegister\Service\UserService {
+			return new UserService(
+				userManager: $container->get('OCP\IUserManager'),
+				userSession: $container->get('OCP\IUserSession'),
+				config: $container->get('OCP\IConfig'),
+				groupManager: $container->get('OCP\IGroupManager'),
+				accountManager: $container->get('OCP\Accounts\IAccountManager'),
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				organisationService: $container->get(OrganisationServiceInterface::class),
+				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+				avatarManager: $container->get('OCP\IAvatarManager'),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
+				secureRandom: $container->get('OCP\Security\ISecureRandom'),
+				db: $container->get('OCP\IDBConnection'),
+				l10nFactory: $container->get('OCP\L10N\IFactory')
+			);
+	}//end buildUserService()
+
+	/**
+	 * Build the TaskInboxService service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return TaskInboxService
+	 */
+	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
+			return new TaskInboxService(
+				tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				objects: $container->get(MagicMapperInterface::class),
+				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
+				// Reads a located task's subject from its own table instead
+				// of searching every magic table for it.
+				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+			);
+	}//end buildTaskInboxService()
+
+	/**
+	 * Build the CacheHandler service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return CacheHandlerInterface
+	 */
+	private static function buildCacheHandler(ContainerInterface $container): CacheHandlerInterface {
+			return new CacheHandler(
+				stores: new CacheHandlerStores(
+					organisationMapper: $container->get(OrganisationMapperInterface::class),
+					registerMapper: $container->get(RegisterMapperInterface::class),
+					schemaMapper: $container->get(SchemaMapperInterface::class),
+					db: $container->get('OCP\IDBConnection')
+				),
+				runtime: new CacheHandlerRuntime(
+					logger: $container->get('Psr\Log\LoggerInterface'),
+					cacheFactory: $container->get('OCP\ICacheFactory'),
+					container: $container
+				),
+				nameScope: new CacheNameScopeSources(
+					userSession: $container->get('OCP\IUserSession')
+				)
+			);
+	}//end buildCacheHandler()
+
+	/**
+	 * Build the FolderManagementHandler service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return FolderManagementHandler
+	 */
+	private static function buildFolderManagementHandler(ContainerInterface $container): FolderManagementHandler {
+			return new FolderManagementHandler(
+				rootFolder: $container->get('OCP\Files\IRootFolder'),
+				objectEntityMapper: $container->get(MagicMapperInterface::class),
+				registerMapper: $container->get(RegisterMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager'),
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
+				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
+				folderRecorder: $container->get(\OCA\OpenRegister\Files\Db\RegisterFolderRecorder::class),
+				fileService: null,
+				// Not FileService itself (that would be the cycle this
+				// factory breaks), only the means to resolve it on first use.
+				container: $container
+			);
+	}//end buildFolderManagementHandler()
+
+	/**
+	 * Build the TaskService service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return TaskService
+	 */
+	private static function buildTaskService(ContainerInterface $container): TaskService {
+			// The write-back gate is resolved lazily and best-effort: without
+			// it a PROJECTED VTODO's update is refused (fail closed), and
+			// standalone VTODOs are unaffected either way.
+			$gate = null;
+			try {
+				$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
+			} catch (\Throwable $e) {
+				$container->get('Psr\Log\LoggerInterface')->debug(
+					'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
+				);
+			}
+
+			return new TaskService(
+				calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
+				userSession: $container->get('OCP\IUserSession'),
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				urlGenerator: $container->get('OCP\IURLGenerator'),
+				gate: $gate
+			);
+	}//end buildTaskService()
+
+	/**
+	 * Build the SourceFetcherRegistry service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return SourceFetcherRegistry
+	 */
+	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
+		$registry = new SourceFetcherRegistry();
+		$registry->register($container->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+		return $registry;
+	}//end buildSourceFetcherRegistry()
+
+	/**
+	 * Build the SchemaImportService service.
+	 *
+	 * @return SchemaImportService
+	 */
+	private static function buildSchemaImportService(): SchemaImportService {
+		return new SchemaImportService(detector: new DialectDetector(), merge: new ThreeWayMerge());
+	}//end buildSchemaImportService()
 }//end class

@@ -26,12 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
-use Closure;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -52,18 +54,41 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedImport
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedDataObject
  * @uses   \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses   \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Configuration
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
-
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
@@ -272,7 +297,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		}
 
 		$routing->method('findSlugHolders')->willReturnCallback(
-			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
+			fn (RegisterSchema $table, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
 		);
 		return $this->buildSlugHandler(
 			magicMapper: $routing,
@@ -335,7 +360,8 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 		$routing->method('findSlugsByPrefix')->willReturnCallback(
-			function ($register, $schema, string $prefix): array {
+			function (RegisterSchema $table, string $prefix): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$matches = [];
 				foreach ($this->inserted as $entity) {
 					if (str_starts_with((string)$entity->getSlug(), $prefix) === true) {
@@ -364,17 +390,20 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $registerMapper,
-			objectEntityMapper:  $plainMapper,
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
-			appConfig:           $appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $plainMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
 		$handler->setSlugHandler($this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders));
@@ -402,7 +431,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		$result = ['objects' => []];
 		$method = $ref->getMethod('importSeedData');
 		for ($run = 0; $run < $runs; $run++) {
-			$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+			$seed = new SeedImport(configData: $configData, result: $result);
+			$seed->appId = 'learniq';
+			$method->invokeArgs($handler, [$seed, $configuration]);
 		}
 	}//end importSeed()
 
@@ -423,17 +454,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 
-		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
-		Closure::bind(
-			function (LoggerInterface $logger): void {
-				$this->logger = $logger;
-			},
-			$mapper,
-			MagicMapper::class
-		)($logger);
-
-		$report = new \ReflectionMethod(MagicMapper::class, 'reportDroppedProperties');
-		$report->invoke($mapper, $data, $schema->getProperties(), $schema);
+		(new MagicDroppedProperties($logger))->report($data, $schema);
 
 		return $warnings;
 	}//end discardWarnings()

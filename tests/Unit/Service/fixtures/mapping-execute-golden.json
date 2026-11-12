@@ -163,12 +163,20 @@
             "zip": "2611"
         }
     },
+    "root hash missing path": {
+        "output": []
+    },
     "root hash null": {
         "output": []
     },
     "root hash scalar": {
         "output": [
             "Ada"
+        ]
+    },
+    "root hash template": {
+        "output": [
+            "Hi Ada"
         ]
     },
     "root hash with other key": {

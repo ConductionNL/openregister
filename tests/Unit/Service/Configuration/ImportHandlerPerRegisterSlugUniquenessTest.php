@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -34,8 +33,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -87,10 +87,8 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		$objectEntityMapper = $this->createMock(MagicMapper::class);
 		$configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$mappingMapper = $this->createMock(MappingMapper::class);
-		$client = $this->createMock(Client::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$logger = $this->createMock(LoggerInterface::class);
-		$uploadHandler = $this->createMock(UploadHandler::class);
 		$objectService = $this->createMock(ObjectService::class);
 
 		$appConfig->method('getValueString')->willReturn('');
@@ -202,17 +200,20 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		$this->registerMapper->method('update')->willReturnArgument(0);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $objectEntityMapper,
-			configurationMapper: $configurationMapper,
-			mappingMapper:       $mappingMapper,
-			client:              $client,
-			appConfig:           $appConfig,
-			logger:              $logger,
-			appDataPath:         '/tmp',
-			uploadHandler:       $uploadHandler,
-			objectService:       $objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configurationMapper,
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $logger,
+			appDataPath: '/tmp',
+			objectService: $objectService
 		);
 
 	}//end setUp()
@@ -450,26 +451,29 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		$appScoped->method('update')->willReturnArgument(0);
 
 		$handler = new ImportHandler(
-			schemaMapper:        $appScoped,
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $appScoped,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 		$result = $handler->importSchema(
-			data:              ['slug' => 'standalone', 'title' => 'Standalone', 'version' => '2.0.0'],
-			slugsAndIdsMap:    [],
-			appId:             'my-app',
-			version:           '2.0.0',
-			force:             true,
-			registerSchemaIds: null
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'standalone', 'title' => 'Standalone', 'version' => '2.0.0'],
+				registerSchemaIds: null,
+				options: new SchemaImportOptions(appId: 'my-app', version: '2.0.0', force: true)
+			),
+			slugsAndIdsMap: []
 		);
 
 		// Resolved via the app-scoped fallback (id 555), not created fresh.
@@ -503,25 +507,29 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		$mapper->method('update')->willReturnArgument(0);
 
 		$handler = new ImportHandler(
-			schemaMapper:        $mapper,
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $mapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 		$result = $handler->importSchema(
-			data:              ['slug' => 'automation', 'title' => 'Automation', 'version' => '1.0.0'],
-			slugsAndIdsMap:    [],
-			appId:             'openbuild-app',
-			version:           '1.0.0',
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'automation', 'title' => 'Automation', 'version' => '1.0.0'],
+				registerSchemaIds: [],
+				options: new SchemaImportOptions(appId: 'openbuild-app', version: '1.0.0')
+			),
+			slugsAndIdsMap: []
 		);
 
 		// A NEW schema (999), not the foreign one (71).
@@ -529,7 +537,6 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		$this->assertNotSame(71, $result->getId());
 
 	}//end testImportSchemaWithEmptyRegisterScopeCreatesNewSchema()
-
 
 	/**
 	 * Wire findBySlug() and getAllRegisterIdsWithSchema() onto the fake

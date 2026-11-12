@@ -224,6 +224,7 @@ import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
 import Printer from 'vue-material-design-icons/Printer.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { saveBlob } from '../../services/saveFile.js'
 import { reportsStore } from '../../store/store.js'
 
 const ICON_MAP = {
@@ -231,6 +232,38 @@ const ICON_MAP = {
 	AccountGroupOutline,
 	FileDocumentOutline,
 	DatabaseOutline,
+}
+
+/**
+ * Ask the server to render a report in a format, as a blob.
+ *
+ * @param {string} id The report id
+ * @param {string} format The export format (e.g. pdf, xlsx)
+ * @return {Promise<object>} The response; its data is the file
+ */
+function requestRender(id, format) {
+	return axios.post(
+		generateUrl(
+			`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
+		),
+		null,
+		{ params: { format }, responseType: 'blob' },
+	)
+}
+
+/**
+ * The JSON body of a failed blob request, or null when it has none.
+ *
+ * @param {object} error The axios error
+ * @return {Promise<object|null>} The parsed body
+ */
+async function jsonErrorBody(error) {
+	try {
+		return JSON.parse(await error.response?.data?.text())
+	} catch {
+		// Not a JSON error body; fall back to the generic message.
+		return null
+	}
 }
 
 export default {
@@ -401,22 +434,11 @@ export default {
 			const id = this.$route.params.id
 			if (!id) return
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
-					),
-					null,
-					{ params: { format }, responseType: 'blob' },
-				)
+				const response = await requestRender(id, format)
 				const filename =
 					this._extractFilename(response)
 					|| `${this.dashboard?.titel || 'dashboard'}.${format}`
-				const url = URL.createObjectURL(response.data)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = filename
-				a.click()
-				URL.revokeObjectURL(url)
+				saveBlob(response.data, filename)
 			} catch (e) {
 				showError(await this._downloadErrorMessage(e))
 			}
@@ -430,12 +452,7 @@ export default {
 		 * @return {Promise<string>}
 		 */
 		async _downloadErrorMessage(error) {
-			let body = null
-			try {
-				body = JSON.parse(await error.response?.data?.text())
-			} catch {
-				// Not a JSON error body; fall back to the generic message.
-			}
+			const body = await jsonErrorBody(error)
 
 			if (body?.error === 'office_server_required') {
 				return t(
@@ -770,18 +787,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitle {
 	display: flex;

@@ -27,8 +27,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use ArrayObject;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -41,7 +44,11 @@ use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -54,6 +61,7 @@ use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The `accessLinks` and `grants` parts of an example set.
@@ -68,6 +76,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 	/** @var IUser|null The active user of the fake session. */
 	private ?IUser $activeUser = null;
+
+	/** @var DateTimeImmutable|null The day today() answers for this test. */
+	private ?DateTimeImmutable $startDay = null;
 
 	/** @var array<int, string|null> The active user each mint guard call saw. */
 	private array $guardSaw = [];
@@ -104,6 +115,27 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The link service holds an expiry against the real clock, so this suite plays on the real day.
+	 *
+	 * @return DateTimeImmutable Noon on the day this test started.
+	 */
+	protected function today(): DateTimeImmutable {
+		$this->startDay ??= new DateTimeImmutable('today 12:00', new DateTimeZone('Europe/Amsterdam'));
+		return $this->startDay;
+	}
+
+	/**
+	 * A day relative to today().
+	 *
+	 * @param int $days Days after today, negative for before.
+	 *
+	 * @return string The day as Y-m-d.
+	 */
+	private function daysAhead(int $days): string {
+		return $this->today()->modify(sprintf('%+d days', $days))->format('Y-m-d');
+	}
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->store->offer(register: 'dossiq', schema: 'case');
@@ -121,7 +153,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$mapper = $this->linkMapper();
 		$this->services = [
 			ExampleSetActingAs::class   => new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: true),
-			AccessLinkMapper::class     => $mapper,
+			AccessLinkMapperInterface::class => $mapper,
 			AccessLinkService::class    => $this->linkService(mapper: $mapper),
 			AccessLinkMintGuard::class  => $this->mintGuard(),
 			ObjectSharingService::class => $this->sharingService(session: $this->session),
@@ -151,7 +183,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $link->getCreatedBy());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getLabel());
 		$this->assertSame(expected: 'read', actual: $link->getCapabilities());
-		$this->assertSame(expected: '2036-10-10 23:59', actual: $link->getExpiresAt()?->format('Y-m-d H:i'));
+		$this->assertSame(expected: $this->daysAhead(days: 3650).' 23:59', actual: $this->local(moment: $link->getExpiresAt()));
 		$this->assertSame(expected: $this->caseId(), actual: $link->getSubjectId());
 		$this->assertSame(expected: ['esra.demir'], actual: $this->guardSaw, message: 'the mint guard decided for Esra');
 		$this->assertNull(actual: $this->activeUser, message: 'nobody is left signed in');
@@ -206,7 +238,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$new = array_values($this->links)[0];
 		$this->assertNotSame(expected: $old->getId(), actual: $new->getId());
 		$this->assertNull(actual: $new->getRevokedAt());
-		$this->assertSame(expected: '2036-10-15 23:59', actual: $new->getExpiresAt()?->format('Y-m-d H:i'));
+		$this->assertSame(expected: $this->daysAhead(days: 3655).' 23:59', actual: $this->local(moment: $new->getExpiresAt()));
 		$this->assertSame(expected: $new->getId(), actual: $this->record->read(set: 'demo')['accessLinks']['alpha/link-sanne']['id']);
 	}//end testARefreshMintsTheLinkAgainFromTheRefreshDay()
 
@@ -221,10 +253,14 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 		$outside = $this->services[AccessLinkService::class]->mint(
-			userId: 'esra.demir',
-			subjectType: 'object',
-			subjectId: $this->caseId(),
-			expiresAt: '+10 years'
+			new LinkMintRequest(
+				minter: 'esra.demir',
+				subjectType: 'object',
+				subjectId: $this->caseId(),
+				terms: new AccessLinkTerms(
+					expiresAt: '+10 years'
+				)
+			)
 		);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -294,6 +330,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 				['key' => 'extra-field', 'data' => $link + ['password' => 'x']],
 				['key' => 'no-expiry', 'data' => array_diff_key($link, ['expiresAt' => true])],
 				['key' => 'expired', 'data' => ['expiresAt' => '{{date:-1}}'] + $link],
+				['key' => 'expired-late-yesterday', 'data' => ['expiresAt' => '{{datetime:-1 23:30}}'] + $link],
+				['key' => 'ends-early-on-the-day', 'data' => ['expiresAt' => '{{datetime:0 00:30}}'] + $link],
 				['key' => 'bad-capability', 'data' => ['capabilities' => ['delete']] + $link],
 				['key' => 'stranger', 'data' => ['createdBy' => 'admin'] + $link],
 				['key' => 'not-ours', 'data' => ['object' => '0a0b0c0d-0000-4000-8000-000000000000'] + $link],
@@ -312,6 +350,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			'access link "extra-field": field "password"',
 			'access link "no-expiry": an access link needs an expiry',
 			'access link "expired": expiresAt',
+			'access link "expired-late-yesterday": expiresAt',
 			'access link "bad-capability": capability "delete"',
 			'access link "stranger": createdBy',
 			'access link "not-ours": object',
@@ -323,6 +362,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		] as $expected) {
 			$this->assertStringContainsString(needle: 'demo.json: '.$expected, haystack: $refusals);
 		}
+
+		$this->assertStringNotContainsString(needle: 'ends-early-on-the-day', haystack: $refusals, message: 'the install day is a local day');
 	}//end testTheCheckRefusesEveryBadRow()
 
 	/**
@@ -346,8 +387,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $share['sharedBy']);
 		$this->assertSame(expected: IShare::TYPE_GROUP, actual: $share['shareType']);
 		$this->assertSame(expected: 'demo-staff', actual: $share['sharedWith']);
-		$this->assertSame(expected: '2026-10-27', actual: $share['expiration']->format('Y-m-d'));
-		$this->assertSame(expected: '2026-09-17 10:00', actual: $share['shareTime']->format('Y-m-d H:i'));
+		$this->assertSame(expected: $this->daysAhead(days: 14), actual: $share['expiration']->format('Y-m-d'));
+		$this->assertSame(expected: $this->daysAhead(days: -26).' 10:00', actual: $this->local(moment: $share['shareTime']));
 		$this->assertSame(expected: ['esra.demir'], actual: $this->sharedAs);
 		$this->assertNull(actual: $this->activeUser);
 		$first = array_keys($this->shares)[0];
@@ -746,7 +787,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	private function shareRow(): array {
 		$id = (string) $this->record->read(set: 'demo')['objects']['alpha/share-sanne']['id'];
-		return (array) $this->store->get(register: 'dossiq', schema: 'caseShare', id: $id);
+		return (array) $this->store->row(ref: new ObjectRef(register: 'dossiq', schema: 'caseShare', id: $id));
 	}//end shareRow()
 
 	/**
@@ -802,11 +843,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 		return new AccessLinkService(
 			mapper: $mapper,
-			auditTrail: $this->createMock(AuditTrailMapper::class),
-			secureRandom: $random,
-			hasher: $this->createMock(IHasher::class),
-			urlGenerator: $urls,
-			logger: new NullLogger()
+			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
+			urlGenerator: $urls
 		);
 	}//end linkService()
 
@@ -850,17 +889,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		});
 
 		return new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $this->shareManager(),
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
-			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			shareTimes: $times
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager(), shareTimes: $times),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger()),
+			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
 		);
 	}//end sharingService()
 

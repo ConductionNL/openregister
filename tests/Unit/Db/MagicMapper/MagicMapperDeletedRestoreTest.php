@@ -19,14 +19,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -95,17 +100,22 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 
 		return new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->userSession,
+				$this->groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->systemDefaults(),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			)
 		);
 	}//end makeMapper()
 
@@ -124,17 +134,17 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === ObjectSlugHandler::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface::class) {
 					return ($this->slugHandler ?? $this->standInSlugHandler());
 				}
 
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
 					return $conditionMatcher;
 				}
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 				return null;
@@ -478,7 +488,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
 		// Only the original slug is taken; its suffixed variant is free.
 		$mapper->method('findSlugHolders')->willReturnCallback(
-			static fn (Register $r, Schema $sc, string $slug): array => (($slug === 'hello-world') ? $holders : [])
+			static fn (RegisterSchema $table, string $slug): array => (($slug === 'hello-world') ? $holders : [])
 		);
 
 		$qb = $this->createMock(IQueryBuilder::class);
@@ -576,17 +586,34 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 
 		return [
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			$this->createMock(SettingsService::class),
-			$container,
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->systemDefaults(),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			),
 		];
 	}//end constructorArgs()
+
+	/**
+	 * System config that answers every key with its default.
+	 *
+	 * @return IConfig
+	 */
+	private function systemDefaults(): IConfig {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(static fn (string $key, mixed $default = ''): mixed => $default);
+
+		return $config;
+	}//end systemDefaults()
 }//end class

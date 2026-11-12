@@ -250,21 +250,14 @@ class RecordTemplate extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'values' => $this->getValues(),
-			'owner' => $this->owner,
-			'isPublic' => $this->isPublic,
-			'sharedWith' => $this->getSharedWith(),
-			// Absent rather than guessed when nobody resolved it, as on a view.
-			'@self' => ['access' => $this->access],
-			'created' => $this->created?->format(format: 'c'),
-			'updated' => $this->updated?->format(format: 'c'),
-		];
+		$typed = new TypedFieldsJson();
+		$json = array_merge(
+			$typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)),
+			['templateValues' => $this->getValues(), 'sharedWith' => $this->getSharedWith()]
+		);
+		// Absent rather than guessed when nobody resolved it, as on a view.
+		$json = $typed->inserted(json: $json, entriesAfter: ['sharedWith' => ['@self' => ['access' => $this->access]]]);
+
+		return $typed->renamed(json: $json, names: ['templateValues' => 'values']);
 	}//end jsonSerialize()
 }//end class

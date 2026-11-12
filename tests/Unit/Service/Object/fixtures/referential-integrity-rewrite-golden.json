@@ -1,0 +1,426 @@
+{
+    "null scalar": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null,
+                "name": "n"
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null array": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": [
+                    "a",
+                    "b"
+                ],
+                "name": "n"
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null array, no marker": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null,
+                "name": "n"
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null scalar, array marker": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null missing property": {
+        "updated": [
+            {
+                "id": "dep",
+                "name": "n",
+                "parent": null
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null no source, no schema": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": null,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": null,
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "null lookup fails": {
+        "updated": [],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [
+            [
+                "[ReferentialIntegrity] Failed to apply SET_NULL",
+                {
+                    "objectUuid": "dep",
+                    "property": "parent",
+                    "error": "not found"
+                }
+            ]
+        ],
+        "result": {
+            "retained": []
+        }
+    },
+    "null update fails": {
+        "updated": [],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [
+            [
+                "[ReferentialIntegrity] Failed to apply SET_NULL",
+                {
+                    "objectUuid": "dep",
+                    "property": "parent",
+                    "error": "write failed"
+                }
+            ]
+        ],
+        "result": {
+            "retained": []
+        }
+    },
+    "default": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": "fallback",
+                "name": "n"
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": "fallback",
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "default new property": {
+        "updated": [
+            {
+                "id": "dep",
+                "name": "n",
+                "parent": {
+                    "x": 1
+                }
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": {
+                        "x": 1
+                    },
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "default null value": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    },
+    "default lookup fails": {
+        "updated": [],
+        "audit": [
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": "f",
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [
+            [
+                "[ReferentialIntegrity] Failed to apply SET_DEFAULT",
+                {
+                    "objectUuid": "dep",
+                    "property": "parent",
+                    "error": "not found"
+                }
+            ]
+        ],
+        "result": {
+            "retained": []
+        }
+    },
+    "default update fails": {
+        "updated": [],
+        "audit": [
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": "f",
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [
+            [
+                "[ReferentialIntegrity] Failed to apply SET_DEFAULT",
+                {
+                    "objectUuid": "dep",
+                    "property": "parent",
+                    "error": "write failed"
+                }
+            ]
+        ],
+        "result": {
+            "retained": []
+        }
+    },
+    "both kinds": {
+        "updated": [
+            {
+                "id": "dep",
+                "parent": null
+            },
+            {
+                "id": "dep",
+                "parent": "d"
+            }
+        ],
+        "audit": [
+            {
+                "action": "referential_integrity.set_null",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "newValue": null,
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            },
+            {
+                "action": "referential_integrity.set_default",
+                "object": "dep",
+                "schema": 3,
+                "changed": {
+                    "property": "parent",
+                    "previousValue": "root-uuid",
+                    "defaultValue": "d",
+                    "triggerObject": "root-uuid",
+                    "triggerSchema": "parent-schema"
+                },
+                "user": "alice"
+            }
+        ],
+        "warnings": [],
+        "result": {
+            "retained": []
+        }
+    }
+}

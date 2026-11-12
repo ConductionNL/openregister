@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -23,15 +24,23 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowEngines;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowRun;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IUser;
@@ -54,6 +63,8 @@ class ObjectActionRunnerTest extends TestCase {
 	private FlowService&MockObject $flows;
 
 	private MacroActionResolver&MockObject $macros;
+
+	private ObjectActionElevationEntries&MockObject $elevation;
 
 	/**
 	 * Rights the caller holds, by action.
@@ -78,6 +89,7 @@ class ObjectActionRunnerTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->macros->method('changesOf')->willReturn([['step' => 'Datum gezet', 'kind' => 'write']]);
 		$this->macros->method('nextForRun')->willReturn('stay');
+		$this->elevation = $this->createMock(ObjectActionElevationEntries::class);
 	}//end setUp()
 
 	/**
@@ -94,16 +106,14 @@ class ObjectActionRunnerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$l10n->method('getLanguageCode')->willReturn('nl');
 
+		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($this->permissions, $session, $l10n, $this->elevation), new ObjectActionInputs(new OasRequestValidator()));
+		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit);
+
 		return new ObjectActionRunner(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($this->permissions, $session, $l10n),
-			new ObjectActionInputs(new OasRequestValidator()),
-			$this->steps,
-			$this->audit,
+			$checks,
 			new ObjectActionWriters($this->transitions, $this->createMock(ObjectActionSelfAssign::class)),
-			$this->flows,
-			$this->macros,
-			$this->createMock(LoggerInterface::class)
+			$recorder,
+			new ObjectActionFlowRun(new ObjectActionFlowEngines($this->steps, $this->flows, $this->macros), $checks->inputs, $recorder, $this->createMock(LoggerInterface::class))
 		);
 	}//end runner()
 
@@ -142,6 +152,12 @@ class ObjectActionRunnerTest extends TestCase {
 						'steps' => [['type' => 'acme.sign']],
 					],
 					'sendMail' => ['name' => 'Send mail', 'description' => 'Grant only.'],
+					'release' => [
+						'name' => 'Release',
+						'description' => 'Publish into the publication register.',
+						'steps' => [['type' => 'openregister.object-write']],
+						'elevate' => [['register' => 'publication', 'schema' => 'publication', 'verbs' => ['create']]],
+					],
 				],
 			]
 		);
@@ -187,7 +203,7 @@ class ObjectActionRunnerTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run($object ?? $this->object(), $this->schema(), $key, $inputs, ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'besluit']);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), new ObjectActionRequest($key, $inputs));
 	}//end invoke()
 
 	/**
@@ -242,17 +258,17 @@ class ObjectActionRunnerTest extends TestCase {
 
 	public function testInputsReachTheStepsRunAndTheRunIsAudited(): void {
 		$this->flows->expects($this->once())->method('runForAction')
-			->with('steps-flow', $this->anything(), ['action' => 'publish', 'inputs' => ['from' => '2026-11-01']], true)
+			->with('steps-flow', $this->callback(fn (\OCA\OpenRegister\Service\Flow\FlowRunOptions $o): bool => $o->context == ['action' => 'publish', 'inputs' => ['from' => '2026-11-01']] && $o->sync === true))
 			->willReturn($this->flowRun(FlowRun::STATUS_COMPLETED));
 		$this->audit->expects($this->once())->method('record')->with(
 			$this->anything(),
-			'publish',
-			'steps',
-			'run-9',
-			$this->stringStartsWith('sha256:'),
-			[['step' => 'Datum gezet', 'kind' => 'write']],
-			'completed',
-			'anna'
+			$this->callback(fn ($definition): bool => $definition->key === 'publish' && $definition->kind === 'steps'),
+			$this->callback(
+				fn ($outcome): bool => $outcome->run === 'run-9'
+					&& $outcome->changes === [['step' => 'Datum gezet', 'kind' => 'write']]
+					&& $outcome->outcome === 'completed'
+			),
+			$this->stringStartsWith('sha256:')
 		);
 
 		$answer = $this->invoke('publish', ['from' => '2026-11-01']);
@@ -264,8 +280,8 @@ class ObjectActionRunnerTest extends TestCase {
 
 	public function testADefaultIsResolvedBeforeValidation(): void {
 		$this->flows->expects($this->once())->method('runForAction')->willReturnCallback(
-			function (string $uuid, array $subject, array $context): FlowRun {
-				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $context['inputs']['from']);
+			function (string $uuid, \OCA\OpenRegister\Service\Flow\FlowRunOptions $options): FlowRun {
+				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $options->context['inputs']['from']);
 				return $this->flowRun(FlowRun::STATUS_COMPLETED);
 			}
 		);
@@ -298,7 +314,11 @@ class ObjectActionRunnerTest extends TestCase {
 	public function testATransitionRunsSyncAndAnswersTheObject(): void {
 		$saved = $this->object('done');
 		$this->transitions->expects($this->once())->method('transition')->willReturn($saved);
-		$this->audit->expects($this->once())->method('record')->with($saved, 'finish', 'transition', null);
+		$this->audit->expects($this->once())->method('record')->with(
+			$saved,
+			$this->callback(fn ($definition): bool => $definition->key === 'finish' && $definition->kind === 'transition'),
+			$this->callback(fn ($outcome): bool => $outcome->run === null)
+		);
 
 		$answer = $this->invoke('finish');
 
@@ -321,14 +341,14 @@ class ObjectActionRunnerTest extends TestCase {
 			}
 		);
 
-		$answer = $this->runner()->run($this->object(), $schema, 'reopen', ['reason' => 'x'], []);
+		$answer = $this->runner()->run(new ObjectActionTarget($this->object(), $schema, '', ''), new ObjectActionRequest('reopen', ['reason' => 'x']));
 
 		$this->assertSame(Http::STATUS_OK, $answer['status']);
 		$this->assertSame(['update'], $asked);
 	}//end testAnUndeclaredLifecycleTransitionRunsUnderTheUpdateRight()
 
 	public function testAnAsyncActionAnswers202WithItsRun(): void {
-		$this->flows->expects($this->once())->method('runForAction')->with('steps-flow', $this->anything(), $this->anything(), false)
+		$this->flows->expects($this->once())->method('runForAction')->with('steps-flow', $this->callback(fn (\OCA\OpenRegister\Service\Flow\FlowRunOptions $o): bool => $o->sync === false))
 			->willReturn($this->flowRun(FlowRun::STATUS_QUEUED));
 
 		$answer = $this->invoke('export');
@@ -359,18 +379,42 @@ class ObjectActionRunnerTest extends TestCase {
 		$this->assertSame('flow', $answer['body']['kind']);
 	}//end testAnExistingMacroRunsItsFlowAsBefore()
 
+	public function testAnElevatingActionOpensItsElevationAroundTheBodyOnly(): void {
+		$this->elevation->expects($this->once())->method('resolve')
+			->with([['register' => 'publication', 'schema' => 'publication', 'verbs' => ['create']]])
+			->willReturn([['register' => '4', 'schema' => '9', 'verbs' => ['create']]]);
+		$during = null;
+		$this->flows->method('runForAction')->willReturnCallback(
+			function () use (&$during): FlowRun {
+				$during = ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
+				return $this->flowRun(FlowRun::STATUS_COMPLETED);
+			}
+		);
+
+		$this->assertSame(Http::STATUS_OK, $this->invoke('release')['status']);
+		$this->assertTrue($during, 'the listed write was not elevated during the run');
+		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')), 'the elevation outlived the run');
+	}//end testAnElevatingActionOpensItsElevationAroundTheBodyOnly()
+
+	public function testARefusedActionNeverOpensItsElevation(): void {
+		$this->rights['release'] = false;
+		$this->elevation->expects($this->never())->method('resolve');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->invoke('release')['status']);
+	}//end testARefusedActionNeverOpensItsElevation()
+
 	public function testAWriteOnlyInputNeverReachesTheStoredContextOrTheDigest(): void {
 		$seen = [];
 		$this->flows->method('runForAction')->willReturnCallback(
-			function (string $uuid, array $subject, array $context) use (&$seen): FlowRun {
-				$seen = $context;
-				$seen['held'] = ObjectActionSecrets::read($context[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+			function (string $uuid, \OCA\OpenRegister\Service\Flow\FlowRunOptions $options) use (&$seen): FlowRun {
+				$seen = $options->context;
+				$seen['held'] = ObjectActionSecrets::read($options->context[ObjectActionSecrets::CONTEXT_KEY] ?? null);
 				return $this->flowRun(FlowRun::STATUS_COMPLETED);
 			}
 		);
 		$digests = [];
 		$this->audit->method('record')->willReturnCallback(
-			function ($object, $action, $kind, $run, string $digest) use (&$digests): void {
+			function ($object, $definition, $outcome, string $digest) use (&$digests): void {
 				$digests[] = $digest;
 			}
 		);

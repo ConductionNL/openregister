@@ -115,6 +115,33 @@ import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 
+/**
+ * Fetch the registers, to find the register of each schema.
+ *
+ * @return {Promise<object>} The axios response.
+ */
+function fetchRegisters() {
+	return axios.get(generateUrl('/apps/openregister/api/registers'), {
+		params: { _limit: 500 },
+	})
+}
+
+/**
+ * The per-schema search state the tab starts from: no terms, results,
+ * running searches, shown results or pending debounce timers.
+ *
+ * @return {object} The state.
+ */
+function searchState() {
+	return {
+		searchTerms: {},
+		searchResults: {},
+		searching: {},
+		visibleResults: {},
+		debounceTimers: {},
+	}
+}
+
 export default {
 	name: 'ActionsTab',
 	components: {
@@ -131,11 +158,7 @@ export default {
 		return {
 			schemas: [],
 			loading: true,
-			searchTerms: {},
-			searchResults: {},
-			searching: {},
-			visibleResults: {},
-			debounceTimers: {},
+			...searchState(),
 			registerCache: {},
 			creating: {},
 			linking: {},
@@ -189,35 +212,83 @@ export default {
 				// first page would miss mail-linked schemas) and registers.
 				const [allSchemas, regResponse] = await Promise.all([
 					this.fetchAllSchemas(),
-					axios.get(generateUrl('/apps/openregister/api/registers'), {
-						params: { _limit: 500 },
-					}),
+					fetchRegisters(),
 				])
-
-				const registers = regResponse.data?.results || regResponse.data || []
-
-				// Cache register lookups
-				for (const reg of registers) {
-					for (const schemaId of reg.schemas || []) {
-						this.registerCache[schemaId] = reg
-					}
-				}
-
-				// Filter to schemas with mail in linkedTypes
-				this.schemas = allSchemas.filter((s) => {
-					const lt = s.configuration?.linkedTypes || []
-					return lt.includes('mail')
-				})
-
-				// Load initial results for each schema
-				for (const schema of this.schemas) {
-					this.loadInitialResults(schema)
-				}
+				this.cacheRegisters(regResponse.data?.results || regResponse.data || [])
+				this.showMailSchemas(allSchemas)
 			} catch (err) {
 				console.error('[ActionsTab] Failed to load schemas:', err)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Remember which register holds each schema.
+		 *
+		 * @param {Array<object>} registers The registers.
+		 * @return {void}
+		 */
+		cacheRegisters(registers) {
+			for (const reg of registers) {
+				for (const schemaId of reg.schemas || []) {
+					this.registerCache[schemaId] = reg
+				}
+			}
+		},
+
+		/**
+		 * Offer the schemas that list mail among their linked types, and load
+		 * the first results of each.
+		 *
+		 * @param {Array<object>} allSchemas Every schema.
+		 * @return {void}
+		 */
+		showMailSchemas(allSchemas) {
+			this.schemas = allSchemas.filter((s) => {
+				const lt = s.configuration?.linkedTypes || []
+				return lt.includes('mail')
+			})
+			for (const schema of this.schemas) {
+				this.loadInitialResults(schema)
+			}
+		},
+
+		/**
+		 * The objects endpoint of a schema in a register.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @return {string} The URL
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		objectsUrl(register, schema) {
+			return generateUrl(
+				'/apps/openregister/api/objects/{register}/{schema}',
+				{
+					register: register.id,
+					schema: schema.id,
+				},
+			)
+		},
+
+		/**
+		 * Fetch up to 20 objects of a schema, narrowed by the given query, and
+		 * keep them as the schema's results.
+		 *
+		 * @param {object} register The register
+		 * @param {object} schema The schema
+		 * @param {object} params Extra query parameters
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async fetchResults(register, schema, params) {
+			const response = await axios.get(this.objectsUrl(register, schema), {
+				params: { ...params, _limit: 20 },
+				timeout: 10000,
+			})
+			const results = response.data?.results || response.data || []
+			this.searchResults[schema.id] = results
 		},
 
 		/**
@@ -229,19 +300,7 @@ export default {
 			if (!register) return
 
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, {})
 			} catch (err) {
 				console.error(
 					'[ActionsTab] Initial load failed for',
@@ -290,19 +349,7 @@ export default {
 			this.searching[schema.id] = true
 			this.visibleResults[schema.id] = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
-				)
-				const response = await axios.get(url, {
-					params: { _search: term, _limit: 20 },
-					timeout: 10000,
-				})
-				const results = response.data?.results || response.data || []
-				this.searchResults[schema.id] = results
+				await this.fetchResults(register, schema, { _search: term })
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
@@ -469,14 +516,11 @@ export default {
 
 			this.createSaving = true
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/{register}/{schema}',
-					{
-						register: register.id,
-						schema: schema.id,
-					},
+				const response = await axios.post(
+					this.objectsUrl(register, schema),
+					data,
+					{ timeout: 15000 },
 				)
-				const response = await axios.post(url, data, { timeout: 15000 })
 				await this.linkObject(schema, response.data)
 				this.createDialog = { show: false, schema: null, data: {} }
 			} catch (err) {

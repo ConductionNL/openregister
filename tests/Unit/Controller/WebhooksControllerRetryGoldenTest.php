@@ -9,11 +9,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -33,8 +36,14 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
+ * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @uses \OCA\OpenRegister\Db\Webhook
  * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
  */
 class WebhooksControllerRetryGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-retry-golden.json';
@@ -107,7 +116,7 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 			$this->calls[] = ['logger.error' => $args];
 		});
 
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$request,
 			$this->webhookMapper($case),
@@ -126,7 +135,7 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 	public function testRetryFailsClosedWithoutTheSessionCollaborators(): void {
 		$logMapper = $this->createMock(WebhookLogMapper::class);
 		$logMapper->expects($this->never())->method('find');
-		$controller = new WebhooksController(
+		$controller = WebhooksControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
@@ -169,8 +178,8 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 
 			return $this->log($case['log'] ?? []);
 		});
-		$mapper->method('findByWebhook')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['logMapper.findByWebhook' => $args];
+		$mapper->method('findByWebhook')->willReturnCallback(function (int $webhookId, ListQuery $page) use ($case) {
+			$this->calls[] = ['logMapper.findByWebhook' => [$webhookId, $page->limitOrNull(), $page->offset]];
 			return array_map(fn (array $fields) => $this->log($fields), $case['latest'] ?? []);
 		});
 		return $mapper;
@@ -200,8 +209,9 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 	 */
 	private function service(array $case): WebhookService {
 		$service = $this->createMock(WebhookService::class);
-		$service->method('deliverWebhook')->willReturnCallback(function (...$args) use ($case) {
-			$args[0] = 'webhook#' . $args[0]->getId();
+		$service->method('deliverWebhook')->willReturnCallback(function (WebhookDelivery $delivery) use ($case) {
+			$event = $delivery->event;
+			$args  = ['webhook#' . $delivery->webhook->getId(), $event->name, $event->payload, $delivery->attempt, $delivery->timeoutCapSeconds];
 			$this->calls[] = ['service.deliverWebhook' => $args];
 			if (isset($case['deliveryThrows']) === true) {
 				throw new Exception($case['deliveryThrows']);

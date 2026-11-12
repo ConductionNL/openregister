@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob;
-use OCA\OpenRegister\Db\QueuedNotification;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushDelivery;
+use OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushTiming;
+use OCA\OpenRegister\Notifications\Db\QueuedNotification;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\DigestScheduleEvaluator;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -102,12 +104,8 @@ class NotificationQueueFlushJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new NotificationQueueFlushJob(
 			$this->time,
-			$this->queuedMapper,
-			$this->schemaMapper,
-			$this->dispatcher,
-			$this->windowService,
-			$this->digestEvaluator,
-			$this->logger
+			new QueueFlushTiming($this->schemaMapper, $this->windowService, $this->digestEvaluator),
+			new QueueFlushDelivery($this->queuedMapper, $this->dispatcher, $this->logger)
 		);
 
 		$reflection = new \ReflectionClass($job);

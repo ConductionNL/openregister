@@ -15,12 +15,14 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCA\OpenRegister\Service\Flow\PreviewStepDispatcher;
 use PHPUnit\Framework\TestCase;
+use UnexpectedValueException;
 
 /**
  * A node that counts its runs.
@@ -56,7 +58,8 @@ class DryRunCountingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$this->runs++;
 		return array_map(
 			static fn (array $item): array => FlowItems::item(json: array_merge((array)($item['json'] ?? []), ['touched' => true])),
@@ -75,8 +78,18 @@ class DryRunPureNode extends DryRunCountingNode implements IFlowSideEffectFree {
  * A node that says what it would do.
  */
 class DryRunPreviewingNode extends DryRunCountingNode implements IFlowNodePreview {
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$config = $call->config;
 		return ['summary' => 'Would write', 'changes' => [['field' => 'status', 'value' => (string)($config['status'] ?? '')]]];
+	}
+}
+
+/**
+ * A node with side effects that refuses its configuration.
+ */
+class DryRunRefusingNode extends DryRunCountingNode {
+	public function validateConfig(array $config): void {
+		throw new UnexpectedValueException('An object-write step needs an operation.');
 	}
 }
 
@@ -131,6 +144,16 @@ class PreviewStepDispatcherTest extends TestCase {
 			['performed' => false, 'summary' => 'Would write', 'changes' => [['field' => 'status', 'value' => 'closed']]],
 			$dispatcher->previews()['n3']
 		);
+	}
+
+	public function testFailsAStepTheRealRunWouldFail(): void {
+		$node = new DryRunRefusingNode('object-write');
+		$dispatcher = new PreviewStepDispatcher(registry: $this->registry(['object-write' => $node]));
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('An object-write step needs an operation.');
+
+		$dispatcher->dispatch(step: ['id' => 'n4', 'type' => 'object-write'], items: [FlowItems::item(json: ['a' => 1])], context: []);
 	}
 
 	public function testPassesARoutingEdgeThrough(): void {

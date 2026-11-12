@@ -28,7 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,13 +49,13 @@ class AuditHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
 	 * @param LoggerInterface $logger PSR-3 logger
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -92,7 +93,7 @@ class AuditHandler {
 			$auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
 
 			// Fetch logs from mapper.
-			$logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
+			$logs = $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $auditFilters, sort: ['created' => 'DESC']));
 
 			$this->logger->info(
 				message: '[AuditHandler] Logs retrieved successfully',

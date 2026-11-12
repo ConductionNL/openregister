@@ -8,7 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
-use OC\Files\AppData\Factory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
+use OCP\Files\AppData\IAppDataFactory as Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\Files\GenericFileException;
@@ -33,6 +34,7 @@ use RuntimeException;
  * left out. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\CacheSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices
  */
 class CacheSettingsControllerAppStoreGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/cache-appstore-golden.json';
@@ -114,7 +116,7 @@ class CacheSettingsControllerAppStoreGoldenTest extends TestCase {
 			});
 		}
 
-		$controller = new CacheSettingsController(
+		$controller = CacheSettingsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(SettingsService::class),

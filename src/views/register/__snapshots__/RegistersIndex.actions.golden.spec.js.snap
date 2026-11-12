@@ -1,0 +1,161 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RegistersIndex.registerActions leaves edit and delete open for a free, empty register 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "Publish OAS",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Import",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "View API Documentation",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Download API Specification",
+    "title": undefined,
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "View Details",
+    "title": undefined,
+  },
+]
+`;
+
+exports[`RegistersIndex.registerActions leaves edit open for a locally managed register 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "Publish OAS",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Import",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "View API Documentation",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Download API Specification",
+    "title": undefined,
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "View Details",
+    "title": undefined,
+  },
+]
+`;
+
+exports[`RegistersIndex.registerActions locks delete while objects are attached 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "Publish OAS",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Import",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "View API Documentation",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Download API Specification",
+    "title": undefined,
+  },
+  {
+    "disabled": true,
+    "label": "Delete",
+    "title": "Cannot delete: objects are still attached",
+  },
+  {
+    "disabled": undefined,
+    "label": "View Details",
+    "title": undefined,
+  },
+]
+`;
+
+exports[`RegistersIndex.registerActions locks edit for an externally managed register and names the configuration 1`] = `
+[
+  {
+    "disabled": true,
+    "label": "Edit",
+    "title": "Cannot edit: This register is managed by external configuration {title} {"title":"Remote config"}",
+  },
+  {
+    "disabled": undefined,
+    "label": "Publish OAS",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Import",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "View API Documentation",
+    "title": undefined,
+  },
+  {
+    "disabled": undefined,
+    "label": "Download API Specification",
+    "title": undefined,
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+  {
+    "disabled": undefined,
+    "label": "View Details",
+    "title": undefined,
+  },
+]
+`;

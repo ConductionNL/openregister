@@ -14,7 +14,6 @@ import { useQualityStore } from '../store/modules/quality.js'
 import { useRegisterStore } from '../store/modules/register.js'
 import { useReportsStore } from '../store/modules/reports.js'
 import { useSchemaStore } from '../store/modules/schema.js'
-import { AppInstallService } from './appInstallService.js'
 
 jest.mock('@nextcloud/axios', () => ({
 	__esModule: true,
@@ -407,49 +406,5 @@ describe('branchy stores golden', () => {
 			})
 		}
 		expect({ out, sources }).toMatchSnapshot()
-	})
-
-	it('installs and uninstalls apps', async () => {
-		const list = OK({
-			apps: [
-				{ id: 'on', active: true },
-				{ id: 'off', active: false },
-			],
-		})
-		const cases = [
-			['installApp', [null]],
-			['installApp', ['on']],
-			['installApp', ['off']],
-			['installApp', [['on', 'off', 'missing']]],
-			['uninstallApp', [undefined]],
-			['uninstallApp', ['off']],
-			['uninstallApp', ['on']],
-			['uninstallApp', [['on', 'off', 'missing']]],
-		]
-		const out = []
-		for (const [action, args] of cases) {
-			for (const [answerName, answers] of [
-				['ok', [list, OK({ status: 'ok' }), list]],
-				['request fails', [list, FAIL(403), list]],
-				['bad list', [OK({}), OK({})]],
-			]) {
-				global.window.OC = { requestToken: 'tok' }
-				global.fetch = fetchAnswering(answers)
-				const service = new AppInstallService()
-				out.push({
-					action,
-					args,
-					answerName,
-					result: await outcome(() => service[action](...args)),
-					requests: global.fetch.mock.calls.map(([url, init]) => [
-						url,
-						init.method,
-						init.body ?? null,
-						init.headers,
-					]),
-				})
-			}
-		}
-		expect(out).toMatchSnapshot()
 	})
 })

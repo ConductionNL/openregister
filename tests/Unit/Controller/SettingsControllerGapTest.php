@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
@@ -42,55 +43,16 @@ class SettingsControllerGapTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new SettingsController(
+		$this->controller = SettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$l10n
 		);
-	}
-
-	/**
-	 * Test getObjectService when openregister is installed.
-	 */
-	public function testGetObjectServiceReturnsNullWhenInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister', 'files']);
-
-		$result = $this->controller->getObjectService();
-
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test getObjectService when openregister is not installed.
-	 */
-	public function testGetObjectServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['files', 'contacts']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->expectExceptionMessage('OpenRegister service is not available');
-
-		$this->controller->getObjectService();
-	}
-
-	/**
-	 * Test getConfigurationService when openregister is not installed.
-	 */
-	public function testGetConfigurationServiceThrowsWhenNotInstalled(): void {
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['files']);
-
-		$this->expectException(\RuntimeException::class);
-		$this->expectExceptionMessage('Configuration service is not available');
-
-		$this->controller->getConfigurationService();
 	}
 
 	/**

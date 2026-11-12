@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -55,8 +56,7 @@ class TranslationHandlerTargetLanguageTest extends TestCase {
 
 		$normalised = $handler->normalizeTranslationsForSave(
 			objectData: ['title' => 'Welcome'],
-			schema: $this->schema,
-			register: $this->register
+			scope: new TranslationScope($this->schema, $this->register)
 		);
 
 		$this->assertSame(['en' => 'Welcome'], $normalised['title']);
@@ -72,8 +72,7 @@ class TranslationHandlerTargetLanguageTest extends TestCase {
 
 		$handler->normalizeTranslationsForSave(
 			objectData: ['title' => ['nl' => 'Hallo', 'en' => 'Hello']],
-			schema: $this->schema,
-			register: $this->register
+			scope: new TranslationScope($this->schema, $this->register)
 		);
 	}//end testFullLanguageBodyAndHeaderThrowsConflict()
 
@@ -85,8 +84,7 @@ class TranslationHandlerTargetLanguageTest extends TestCase {
 
 		$normalised = $handler->normalizeTranslationsForSave(
 			objectData: ['title' => 'Welkom'],
-			schema: $this->schema,
-			register: $this->register
+			scope: new TranslationScope($this->schema, $this->register)
 		);
 
 		$this->assertSame(['nl' => 'Welkom'], $normalised['title']);

@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
-use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -49,12 +51,12 @@ class CaseItemTimerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanItemTimers $timers What a deadline means for an item.
-	 * @param CasePlanService $plans The one transition path.
+	 * @param CasePlanItemTimersInterface $timers What a deadline means for an item.
+	 * @param CasePlanServiceInterface $plans The one transition path.
 	 */
 	public function __construct(
-		private readonly CasePlanItemTimers $timers,
-		private readonly CasePlanService $plans,
+		private readonly CasePlanItemTimersInterface $timers,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()
@@ -70,23 +72,49 @@ class CaseItemTimerListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof CaseItemTransitionedEvent) {
-			$item = $event->getItem();
-			if ($item->getState() === CaseItem::STATE_ACTIVE) {
-				$this->timers->onEntered(item: $item, actor: null);
-			}
-
-			if ($item->isInTerminalState() === true) {
-				$this->timers->onTerminal(item: $item);
-			}
+			$this->onTransitioned(event: $event);
 
 			return;
 		}
 
 		if ($event instanceof FlowTimerFiredEvent) {
-			$itemUuid = $this->timers->itemToTerminate(event: $event);
-			if ($itemUuid !== null) {
-				$this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: (string)$event->getTimer()->getUuid());
-			}
+			$this->onTimerFired(event: $event);
 		}
 	}//end handle()
+
+	/**
+	 * Arm an item's deadlines on entering active; disarm them on going terminal.
+	 *
+	 * @param CaseItemTransitionedEvent $event The transition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function onTransitioned(CaseItemTransitionedEvent $event): void {
+		$item = $event->getItem();
+		if ($item->getState() === CaseItem::STATE_ACTIVE) {
+			$this->timers->onEntered(item: $item, act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
+		}
+
+		if ($item->isInTerminalState() === true) {
+			$this->timers->onTerminal(item: $item);
+		}
+	}//end onTransitioned()
+
+	/**
+	 * Expire the plan item a fired timer names, if it names one.
+	 *
+	 * @param FlowTimerFiredEvent $event The fired timer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function onTimerFired(FlowTimerFiredEvent $event): void {
+		$itemUuid = $this->timers->itemToTerminate(event: $event);
+		if ($itemUuid !== null) {
+			$this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: (string)$event->getTimer()->getUuid());
+		}
+	}//end onTimerFired()
 }//end class

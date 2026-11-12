@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tries a flow against an object without effect.
+ * Tries a flow against an object, or an example payload, without effect.
  *
  * The flow's graph is walked by the real engine, so branches are decided
  * exactly as in a run, with a {@see PreviewStepDispatcher} in place of the
@@ -30,7 +30,8 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -38,22 +39,16 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowDryRunService {
+class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowService      $flows    Finds the flow within the caller's organisation.
-	 * @param FlowLocator      $locator  Builds the flow document the engine walks.
-	 * @param ObjectService    $objects  Reads the object with the caller's access.
-	 * @param FlowEngine       $engine   The engine runs walk.
-	 * @param FlowNodeRegistry $registry Resolves each step's node.
+	 * @param FlowDryRunLookups   $lookups Finds the flow, builds its document and reads the object.
+	 * @param FlowRunWalkServices $walk    The engine runs walk and the registry resolving each step's node.
 	 */
 	public function __construct(
-		private readonly FlowService $flows,
-		private readonly FlowLocator $locator,
-		private readonly ObjectService $objects,
-		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowDryRunLookups $lookups,
+		private readonly FlowRunWalkServices $walk,
 	) {
 	}//end __construct()
 
@@ -72,67 +67,159 @@ class FlowDryRunService {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dryRun(string $flowId, string $register, string $schema, string $objectId): array {
-		// Throws for a flow outside the caller's organisation.
-		$this->flows->find(uuid: $flowId);
+		return $this->dryRunObject(flowId: $flowId, ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	}//end dryRun()
 
-		$document = $this->locator->resolveFlow(flowId: $flowId);
-		if ($document === null) {
-			throw new DoesNotExistException('No such flow');
-		}
+	/**
+	 * The steps a flow would take for the referenced object, and what each would do.
+	 *
+	 * @param string    $flowId The flow uuid.
+	 * @param ObjectRef $ref    The object's register, schema and uuid.
+	 *
+	 * @return array{status: string, error?: string, steps: array<int, array<string, mixed>>}
+	 *
+	 * @throws DoesNotExistException When the flow or the object is out of the caller's reach.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	public function dryRunObject(string $flowId, ObjectRef $ref): array {
+		$document = $this->flowDocument(flowId: $flowId);
 
 		// A lookup, not a person opening the object: no audit-trail row, so the
 		// object does not land in anyone's recent list.
-		$object = $this->objects->find(
-			id: $objectId,
-			_extend: [],
-			files: false,
-			register: $register,
-			schema: $schema,
+		$object = $this->lookups->objects->find(
+			id: $ref->id,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, audit: false),
 			_rbac: true,
-			_multitenancy: true,
-			_render: true,
-			_audit: false
+			_multitenancy: true
 		);
 		if ($object instanceof ObjectEntity === false) {
 			throw new DoesNotExistException('No such object');
 		}
 
-		$dispatcher = new PreviewStepDispatcher(registry: $this->registry);
-		$result = $this->engine->run(
-			flow: $document,
-			store: new FlowRunMarkingStore(run: new FlowRun()),
-			subject: $object,
-			dispatcher: $dispatcher,
-			context: ['dryRun' => true]
-		);
+		return $this->walk(document: $document, object: $object);
+	}//end dryRunObject()
 
-		$labels = [];
-		foreach (($document['nodes'] ?? []) as $node) {
-			if (is_array($node) === true) {
-				$labels[(string)($node['id'] ?? '')] = (string)($node['label'] ?? '');
-			}
+	/**
+	 * The steps a flow would take for an example payload, and what each would do.
+	 *
+	 * The payload stands in for the object: it is the data of an object that
+	 * does not exist, so nothing is read and there is nothing to authorise
+	 * beyond the flow itself.
+	 *
+	 * @param string              $flowId  The flow uuid.
+	 * @param array<string,mixed> $payload The example object data.
+	 *
+	 * @return array{status: string, error?: string, steps: array<int, array<string, mixed>>}
+	 *
+	 * @throws DoesNotExistException When the flow is out of the caller's reach.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	public function dryRunPayload(string $flowId, array $payload): array {
+		$object = new ObjectEntity();
+		$object->setObject($payload);
+
+		return $this->walk(document: $this->flowDocument(flowId: $flowId), object: $object);
+	}//end dryRunPayload()
+
+	/**
+	 * The flow document the engine walks.
+	 *
+	 * @param string $flowId The flow uuid.
+	 *
+	 * @return array<string, mixed> The document.
+	 *
+	 * @throws DoesNotExistException When the flow is out of the caller's reach.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function flowDocument(string $flowId): array {
+		// Throws for a flow outside the caller's organisation.
+		$this->lookups->flows->find(uuid: $flowId);
+
+		$document = $this->lookups->locator->resolveFlow(flowId: $flowId);
+		if ($document === null) {
+			throw new DoesNotExistException('No such flow');
 		}
 
-		$previews = $dispatcher->previews();
-		$steps = [];
-		foreach (($result['log'] ?? []) as $entry) {
-			$nodeId = (string)($entry['transition'] ?? '');
-			$steps[] = [
-				'nodeId' => $nodeId,
-				'type' => (string)($entry['type'] ?? ''),
-				'label' => ($labels[$nodeId] ?? ''),
-				'status' => (string)($entry['status'] ?? ''),
-				'itemsIn' => (int)($entry['itemsIn'] ?? 0),
-				'itemsOut' => (int)($entry['itemsOut'] ?? 0),
-				'preview' => ($previews[$nodeId] ?? null),
-			];
-		}
+		return $document;
+	}//end flowDocument()
 
-		$answer = ['status' => (string)($result['status'] ?? ''), 'steps' => $steps];
+	/**
+	 * Walk the flow with the object and report each step.
+	 *
+	 * @param array<string, mixed> $document The flow document.
+	 * @param ObjectEntity         $object   The object, stored or an example.
+	 *
+	 * @return array{status: string, error?: string, steps: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function walk(array $document, ObjectEntity $object): array {
+		$dispatcher = new PreviewStepDispatcher(registry: $this->walk->registry);
+		$start = new FlowRunStart(flow: $document, store: new FlowRunMarkingStore(run: new FlowRun()), subject: $object, dispatcher: $dispatcher);
+		$result = $this->walk->engine->run(start: $start->withContext(context: ['dryRun' => true]));
+
+		$answer = [
+			'status' => (string)($result['status'] ?? ''),
+			'steps' => $this->steps(log: ($result['log'] ?? []), nodes: $this->nodeReports(document: $document, previews: $dispatcher->previews())),
+		];
 		if (isset($result['error']) === true) {
 			$answer['error'] = (string)$result['error'];
 		}
 
 		return $answer;
-	}//end dryRun()
+	}//end walk()
+
+	/**
+	 * The name of each node and what it would do, by id.
+	 *
+	 * @param array<string, mixed>                $document The flow document.
+	 * @param array<string, array<string, mixed>> $previews What each step would do, by id.
+	 *
+	 * @return array<string, array{label: string, preview: array<string, mixed>|null}> The reports.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function nodeReports(array $document, array $previews): array {
+		$reports = [];
+		foreach (($document['nodes'] ?? []) as $node) {
+			if (is_array($node) === true) {
+				$id = (string)($node['id'] ?? '');
+				$reports[$id] = ['label' => (string)($node['label'] ?? ''), 'preview' => ($previews[$id] ?? null)];
+			}
+		}
+
+		return $reports;
+	}//end nodeReports()
+
+	/**
+	 * The engine's log as the steps of the answer.
+	 *
+	 * @param array<int, array<string, mixed>>   $log   The engine's log.
+	 * @param array<string, array<string, mixed>> $nodes The node reports, by id.
+	 *
+	 * @return array<int, array<string, mixed>> The steps.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function steps(array $log, array $nodes): array {
+		$steps = [];
+		foreach ($log as $entry) {
+			$nodeId = (string)($entry['transition'] ?? '');
+			$steps[] = [
+				'nodeId' => $nodeId,
+				'type' => (string)($entry['type'] ?? ''),
+				'label' => ($nodes[$nodeId]['label'] ?? ''),
+				'status' => (string)($entry['status'] ?? ''),
+				'error' => ($entry['error'] ?? null),
+				'itemsIn' => (int)($entry['itemsIn'] ?? 0),
+				'itemsOut' => (int)($entry['itemsOut'] ?? 0),
+				'preview' => ($nodes[$nodeId]['preview'] ?? null),
+			];
+		}
+
+		return $steps;
+	}//end steps()
 }//end class

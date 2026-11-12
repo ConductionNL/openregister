@@ -22,16 +22,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCA\OpenRegister\Exception\RepairRefusedException;
-use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
-use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
+use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
 
 /**
  * The consistency check, the repair plan and the repair.
@@ -49,22 +51,40 @@ use OCP\IUserSession;
 class OperationsConsistencyController extends Controller {
 
 	/**
+	 * The acting administrator and the parameter readers.
+	 *
+	 * @var OperationsActingRequest
+	 */
+	private readonly OperationsActingRequest $acting;
+
+	/**
+	 * The read-only consistency check.
+	 *
+	 * @var ConsistencyCheckServiceInterface
+	 */
+	private readonly ConsistencyCheckServiceInterface $check;
+
+	/**
+	 * The repair, as a separate act.
+	 *
+	 * @var ConsistencyRepairServiceInterface
+	 */
+	private readonly ConsistencyRepairServiceInterface $repair;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName     Application name.
 	 * @param IRequest                 $request     HTTP request.
-	 * @param ConsistencyCheckService  $check       The read-only consistency check.
-	 * @param ConsistencyRepairService $repair      The repair, as a separate act.
-	 * @param IUserSession             $userSession Names the administrator acting.
+	 * @param OperationsConsistencyControllerServices $services The services, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ConsistencyCheckService $check,
-		private readonly ConsistencyRepairService $repair,
-		private readonly IUserSession $userSession,
+		OperationsConsistencyControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->check = $services->check;
+		$this->repair = $services->repair;
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
 	}//end __construct()
 
 	/**
@@ -99,7 +119,7 @@ class OperationsConsistencyController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	public function repairPlan(): JSONResponse {
-		return $this->repairing(apply: false);
+		return $this->repairing(act: fn (string $slug): array => $this->repair->plan(slug: $slug));
 	}//end repairPlan()
 
 	/**
@@ -114,22 +134,19 @@ class OperationsConsistencyController extends Controller {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function repair(): JSONResponse {
-		return $this->repairing(apply: true);
+		return $this->repairing(act: fn (string $slug): array => $this->repair->apply(slug: $slug, actor: $this->acting->actor()));
 	}//end repair()
 
 	/**
 	 * The plan-or-apply half both repair endpoints share.
 	 *
-	 * @param bool $apply False to say what would change, true to change it.
+	 * @param callable $act The act on the named check: (string $slug): array —
+	 *                      the plan, or the applied repair.
 	 *
 	 * @return JSONResponse The plan, or what was changed.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two endpoints are the
-	 * two acts D-5 separates; this is their shared body, not a switch a caller
-	 * reaches.
 	 */
-	private function repairing(bool $apply): JSONResponse {
-		$slug = $this->stringParam(name: 'check');
+	private function repairing(callable $act): JSONResponse {
+		$slug = $this->acting->stringParam(name: 'check');
 
 		if ($slug === null) {
 			return new JSONResponse(
@@ -139,50 +156,29 @@ class OperationsConsistencyController extends Controller {
 		}
 
 		try {
-			if ($apply === false) {
-				return new JSONResponse(data: $this->repair->plan(slug: $slug));
-			}
-
-			return new JSONResponse(data: $this->repair->apply(slug: $slug, actor: $this->actor()));
+			return new JSONResponse(data: $act($slug));
 		} catch (RepairRefusedException $refusal) {
-			return new JSONResponse(
-				[
-					'error' => 'refused',
-					'reason' => $refusal->getReason(),
-					'message' => $refusal->getMessage(),
-				],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->refusedRepair(refusal: $refusal);
 		}
 	}//end repairing()
 
 	/**
-	 * The uid acting.
+	 * The 422 for a repair the service refused.
 	 *
-	 * Every write here is an administrator's act and is recorded as theirs, so
-	 * an unresolvable session is an empty string the services refuse rather
-	 * than a system identity the record would blame.
+	 * @param RepairRefusedException $refusal Why it was refused.
 	 *
-	 * @return string The uid, or the empty string.
+	 * @return JSONResponse The refusal.
 	 */
-	private function actor(): string {
-		return (string)($this->userSession->getUser()?->getUID() ?? '');
-	}//end actor()
+	private function refusedRepair(RepairRefusedException $refusal): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => 'refused',
+				'reason' => $refusal->getReason(),
+				'message' => $refusal->getMessage(),
+			],
+			Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end refusedRepair()
 
-	/**
-	 * Read a non-empty string request parameter.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
 
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringParam()
 }//end class

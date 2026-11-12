@@ -46,7 +46,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
  */
-class DecisionMapper extends QBMapper {
+class DecisionMapper extends QBMapper implements DecisionMapperInterface {
 
 	/**
 	 * The table.

@@ -9,12 +9,15 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\ViewsController;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Service\Rbac\ReachedView;
+use OCA\OpenRegister\Search\Controller\ViewsController;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -32,11 +35,18 @@ use Psr\Log\LoggerInterface;
  * nothing, so a forged owner or userId in the body shows up as a refusal or
  * as a different recorded uid. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Db\View
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachedView
  */
 class ViewsControllerWriteGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/views-write-golden.json';
@@ -106,12 +116,13 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		});
 
 		$controller = new ViewsController(
-			'openregister',
 			$request,
-			$this->viewService($case),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			$this->resolver($case)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService($case),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				$this->resolver($case)
+			)
 		);
 
 		$response = match ($case['action']) {
@@ -140,7 +151,8 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 			$this->calls[] = ['viewers.reaches' => [$view['owner'] ?? null, $reach->userId]];
 			return $reach->userId === 'alice' && ($view['owner'] === 'alice' || $view['name'] === 'reachable');
 		});
-		$resolver->method('refusedFields')->willReturnCallback(function (array $view, ViewerReach $reach, array $update) use ($case) {
+		$resolver->method('refusedFields')->willReturnCallback(function (ReachedView $reached, array $update) use ($case) {
+			[$view, $reach] = [$reached->view, $reached->reach];
 			$this->calls[] = ['viewers.refusedFields' => [$view['owner'] ?? null, $reach->userId, $update]];
 			if ($reach->userId !== 'alice') {
 				return array_keys($update);
@@ -148,7 +160,8 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 
 			return $case['refused'] ?? [];
 		});
-		$resolver->method('assertMayNameRecipients')->willReturnCallback(function (array $view, ViewerReach $reach, array $data) use ($case) {
+		$resolver->method('assertMayNameRecipients')->willReturnCallback(function (ReachedView $reached, array $data) use ($case) {
+			[$view, $reach] = [$reached->view, $reached->reach];
 			$this->calls[] = ['viewers.assertMayNameRecipients' => [$view['owner'] ?? null, $reach->userId, $data]];
 			if ($reach->userId !== 'alice') {
 				throw new InvalidArgumentException('reach is not the acting user');
@@ -178,21 +191,53 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 
 			return $this->storedView($case['stored'] ?? []);
 		});
-		foreach (['create', 'update'] as $method) {
-			$service->method($method)->willReturnCallback(function (...$args) use ($case, $method) {
-				$this->calls[] = ['viewService.' . $method => $args];
+		foreach (['create' => 'create', 'revise' => 'update'] as $method => $recordedAs) {
+			$service->method($method)->willReturnCallback(function (...$args) use ($case, $recordedAs) {
+				if ($recordedAs === 'update') {
+					$args = self::updateArguments(id: $args[0], edit: $args[1]);
+				}
+
+				if ($recordedAs === 'create') {
+					$args = [$args[0]->definition, $args[0]->audience, $args[0]->alert];
+				}
+
+				$this->calls[] = ['viewService.' . $recordedAs => $args];
 				if (isset($case['serviceThrows']) === true) {
 					throw new Exception($case['serviceThrows']);
 				}
 
 				$view = new View();
-				$view->setName($args['name'] ?? $args[0] ?? 'saved');
+				$first = $args['name'] ?? $args[0] ?? 'saved';
+				$view->setName($first instanceof ViewDefinition ? $first->name : $first);
 				$view->setOwner('saved-owner');
 				return $view;
 			});
 		}
 
 		return $service;
+	}
+
+	/**
+	 * The edit as the positional field list the recording holds.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function updateArguments(int|string $id, ViewEdit $edit): array {
+		$definition = $edit->definition;
+		$audience   = $edit->audience;
+		return [
+			$id,
+			$definition->name,
+			$definition->description,
+			$audience->owner,
+			$audience->isPublic,
+			$audience->isDefault,
+			$definition->query,
+			$edit->favoredBy,
+			$definition->presentation,
+			$audience->sharedWith,
+			$edit->alert,
+		];
 	}
 
 	/**

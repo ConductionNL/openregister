@@ -734,6 +734,24 @@ class NotifierTest extends TestCase {
 	}
 
 	/**
+	 * The holder of an external grant is told when and what access ends.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	public function testPrepareExternalGrantLapsing(): void {
+		$parsed = $this->renderSubject(
+			'external_grant_lapsing',
+			['schema' => 'Zaken', 'action' => 'update', 'endsAt' => '2026-11-12T00:00:00+00:00', 'daysLeft' => 7]
+		);
+
+		$this->assertSame('Your access to "Zaken" ends in 7 days', $parsed[0]);
+		$this->assertSame(
+			'Your update access ends on 2026-11-12T00:00:00+00:00. Finish or hand over your work before then, or ask for an extension.',
+			$parsed[1]
+		);
+	}
+
+	/**
 	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
 	 */
 	public function testPrepareViewAlertCrossedBelow(): void {

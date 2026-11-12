@@ -24,10 +24,14 @@ class MiddlewareRegistrarTest extends TestCase {
 	 */
 	public function testRegistersTheMiddlewaresInOrder(): void {
 		$registered = [];
+		$globals    = [];
 		$context    = $this->createMock(originalClassName: IRegistrationContext::class);
 		$context->method('registerMiddleware')->willReturnCallback(
-			function (string $class) use (&$registered): void {
+			function (string $class, bool $global = false) use (&$registered, &$globals): void {
 				$registered[] = $class;
+				if ($global === true) {
+					$globals[] = $class;
+				}
 			}
 		);
 		$context->expects($this->never())->method('registerService');
@@ -36,10 +40,12 @@ class MiddlewareRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			expected: [
+				'OCA\OpenRegister\Middleware\ProblemDetailsMiddleware',
 				'OCA\OpenRegister\Middleware\LanguageMiddleware',
 				'OCA\OpenRegister\Middleware\TenantQuotaMiddleware',
 				'OCA\OpenRegister\Middleware\OasValidationMiddleware',
 				'OCA\OpenRegister\Middleware\RevealAuditMiddleware',
+				'OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware',
 				'OCA\OpenRegister\Middleware\RateLimitMiddleware',
 				'OCA\OpenRegister\Middleware\PublicApiCorsMiddleware',
 				'OCA\OpenRegister\Middleware\ChatCompatMiddleware',
@@ -50,8 +56,13 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\MaintenanceModeMiddleware',
 				'OCA\OpenRegister\Middleware\ApiVersionMiddleware',
 				'OCA\OpenRegister\Middleware\ApiCallerMiddleware',
+				'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware',
 			],
 			actual: $registered
+		);
+		$this->assertSame(
+			expected: ['OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware', 'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware'],
+			actual: $globals
 		);
 	}//end testRegistersTheMiddlewaresInOrder()
 }//end class

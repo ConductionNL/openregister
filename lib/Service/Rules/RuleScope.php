@@ -53,12 +53,23 @@ final class RuleScope {
 
 		$property = ($scope['property'] ?? null);
 		$value = ($scope['value'] ?? null);
-		if (is_string($property) === false || $property === '' || is_scalar($value) === false) {
+		if ($this->isProperty(property: $property) === false || is_scalar($value) === false) {
 			return null;
 		}
 
 		return ['property' => $property, 'value' => (string)$value];
 	}//end fromDeclaration()
+
+	/**
+	 * Whether a scope names a property.
+	 *
+	 * @param mixed $property The scope's `property`.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isProperty(mixed $property): bool {
+		return is_string($property) === true && $property !== '';
+	}//end isProperty()
 
 	/**
 	 * Whether a rule with this scope passes a filter.

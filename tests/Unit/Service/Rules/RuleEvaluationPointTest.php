@@ -114,6 +114,10 @@ class RuleEvaluationPointTest extends TestCase {
 		// apps that an object they can still read is gone, and the rules would
 		// act on a deletion that did not happen.
 		'MoveObject.php' => 'a move removes the source ROW, not the object; the object still exists',
+		// The permanent delete. The flag only skips the mapper's ObjectDeletingEvent:
+		// DeleteObject::delete() has dispatched that same event through
+		// assertDeletable() before the folder goes, so the guards answer once.
+		'DeleteObject.php' => 'delete() already asked the guards; the mapper must not ask a second time',
 	];
 
 	public function testBothWriteMethodsDispatchTheSaveEvent(): void {

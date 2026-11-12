@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<RunObjectLock>
  */
-class RunObjectLockMapper extends QBMapper {
+class RunObjectLockMapper extends QBMapper implements RunObjectLockMapperInterface {
 
 	/**
 	 * Constructor.
@@ -64,16 +64,44 @@ class RunObjectLockMapper extends QBMapper {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function record(RunObjectLock $lock): void {
+		if ($this->insertUnlessRecorded(lock: $lock) === true) {
+			return;
+		}
+
+		// Already recorded: refresh the expiry, which the extend branch moved.
+		$this->refresh(lock: $lock);
+	}//end record()
+
+	/**
+	 * Insert the lock, unless the run already holds a record for the object.
+	 *
+	 * @param RunObjectLock $lock The lock to record.
+	 *
+	 * @return bool True when inserted, false when the record already existed.
+	 *
+	 * @throws DbException On any database failure other than the duplicate.
+	 */
+	private function insertUnlessRecorded(RunObjectLock $lock): bool {
 		try {
 			$this->insert(entity: $lock);
-			return;
+			return true;
 		} catch (DbException $e) {
 			if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
 				throw $e;
 			}
 		}
 
-		// Already recorded: refresh the expiry, which the extend branch moved.
+		return false;
+	}//end insertUnlessRecorded()
+
+	/**
+	 * Move an existing record's expiry and node to the lock's.
+	 *
+	 * @param RunObjectLock $lock The lock whose record to refresh.
+	 *
+	 * @return void
+	 */
+	private function refresh(RunObjectLock $lock): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
 			->set('expires_at', $qb->createNamedParameter($lock->getExpiresAt(), IQueryBuilder::PARAM_DATETIME_MUTABLE))
@@ -81,7 +109,7 @@ class RunObjectLockMapper extends QBMapper {
 			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($lock->getRunUuid())))
 			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($lock->getObjectUuid())));
 		$qb->executeStatement();
-	}//end record()
+	}//end refresh()
 
 	/**
 	 * Every lock one run holds.
@@ -144,6 +172,16 @@ class RunObjectLockMapper extends QBMapper {
 	 *  - the underlying lock has expired anyway, so the row is stale
 	 *    bookkeeping for a lock that already blocks nobody.
 	 *
+	 * TWO plain queries rather than one composite. The obvious single query
+	 * is an orX() of a `run_uuid NOT IN (sub-select)` built with
+	 * createFunction() and an `expires_at <` comparison. On PostgreSQL that
+	 * composes to `(a) OR (b)` where the createFunction half is not
+	 * recognised as a boolean, and the whole sweep dies with "argument of OR
+	 * must be type boolean, not type record" — which the sweep's own catch
+	 * would have swallowed into a log line while releasing nothing, forever.
+	 * Two readable queries and a merge cost one extra round trip per cron
+	 * tick and cannot fail that way.
+	 *
 	 * @param DateTime $now The sweep's clock.
 	 * @param int $limit Batch ceiling.
 	 *
@@ -152,17 +190,6 @@ class RunObjectLockMapper extends QBMapper {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function findOrphaned(DateTime $now, int $limit = 100): array {
-		// TWO plain queries rather than one composite.
-		//
-		// The obvious single query is an orX() of a `run_uuid NOT IN
-		// (sub-select)` built with createFunction() and an `expires_at <`
-		// comparison. On PostgreSQL that composes to `(a) OR (b)` where the
-		// createFunction half is not recognised as a boolean, and the whole
-		// sweep dies with "argument of OR must be type boolean, not type
-		// record" — which the sweep's own catch would have swallowed into a
-		// log line while releasing nothing, forever. Two readable queries and
-		// a merge cost one extra round trip per cron tick and cannot fail
-		// that way.
 		$byRun = $this->findNotHeldByAnActiveRun(limit: $limit);
 		$byExpiry = $this->findExpired(now: $now, limit: $limit);
 
@@ -183,6 +210,26 @@ class RunObjectLockMapper extends QBMapper {
 	 */
 	private function findNotHeldByAnActiveRun(int $limit): array {
 		$qb = $this->db->getQueryBuilder();
+		$active = $this->activeRunUuidsSql(qb: $qb);
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->createFunction('run_uuid NOT IN (' . $active . ')'))
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findNotHeldByAnActiveRun()
+
+	/**
+	 * The sub-select of every active run's uuid.
+	 *
+	 * The status list is bound on the OUTER builder, because only the outer
+	 * query is executed and the sub-select travels into it as plain SQL.
+	 *
+	 * @param IQueryBuilder $qb The outer builder the parameter is bound on.
+	 *
+	 * @return string The sub-select's SQL.
+	 */
+	private function activeRunUuidsSql(IQueryBuilder $qb): string {
 		$active = $this->db->getQueryBuilder();
 		$active->select('uuid')
 			->from('openregister_flow_runs')
@@ -193,13 +240,8 @@ class RunObjectLockMapper extends QBMapper {
 				)
 			);
 
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->createFunction('run_uuid NOT IN (' . $active->getSQL() . ')'))
-			->setMaxResults($limit);
-
-		return $this->findEntities(query: $qb);
-	}//end findNotHeldByAnActiveRun()
+		return $active->getSQL();
+	}//end activeRunUuidsSql()
 
 	/**
 	 * Rows whose underlying lock has expired anyway.

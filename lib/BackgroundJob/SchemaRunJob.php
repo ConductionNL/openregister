@@ -7,7 +7,7 @@
  * single batch and re-enqueues itself while work remains, so very large
  * populations are processed incrementally with a resumable cursor that
  * survives a worker restart. Revalidation runs delegate to
- * {@see \OCA\OpenRegister\Service\Schema\SchemaRevalidationService};
+ * {@see \OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface};
  * migration runs to {@see \OCA\OpenRegister\Service\Schema\SchemaMigrationService}.
  *
  * @category BackgroundJob
@@ -30,36 +30,57 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\SchemaRun;
-use OCA\OpenRegister\Db\SchemaRunMapper;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
-use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Db\SchemaRunStoreInterface;
+use OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\SchemaRunServices;
 
 /**
  * Background executor for schema runs.
  */
 class SchemaRunJob extends QueuedJob {
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunStoreInterface
+	 */
+	private readonly SchemaRunStoreInterface $runMapper;
+
+	/**
+	 * Revalidation engine.
+	 *
+	 * @var SchemaRevalidatorInterface
+	 */
+	private readonly SchemaRevalidatorInterface $revalidationService;
+
+	/**
+	 * Migration engine.
+	 *
+	 * @var SchemaBatchMigratorInterface
+	 */
+	private readonly SchemaBatchMigratorInterface $migrationService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param SchemaRunMapper $runMapper Run persistence.
-	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
-	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param SchemaRunServices $services Run store, revalidation and migration passes.
 	 * @param IJobList $jobList Job list for re-enqueue.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaRunMapper $runMapper,
-		private readonly SchemaRevalidationService $revalidationService,
-		private readonly SchemaMigrationService $migrationService,
+		SchemaRunServices $services,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->runMapper = $services->runMapper;
+		$this->revalidationService = $services->revalidationService;
+		$this->migrationService = $services->migrationService;
 		parent::__construct(time: $time);
 
 	}//end __construct()
@@ -75,46 +96,99 @@ class SchemaRunJob extends QueuedJob {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	protected function run($argument): void {
+		$run = $this->runningRun(argument: $argument);
+		if ($run === null || $this->advanceOrFail(run: $run, argument: $argument) === false) {
+			return;
+		}
+
+		$this->jobList->add(self::class, ['run_id' => $argument['run_id'], 'batch_size' => $this->batchSize(argument: $argument)]);
+
+	}//end run()
+
+	/**
+	 * The run named by the job argument, or null when there is nothing to do.
+	 *
+	 * A terminal or otherwise non-running run is left alone.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return SchemaRun|null The run when it exists and is running.
+	 */
+	private function runningRun(mixed $argument): ?SchemaRun {
 		$runId = ($argument['run_id'] ?? null);
 		if ($runId === null) {
 			$this->logger->error('[SchemaRunJob] Missing run_id argument', ['argument' => $argument]);
-			return;
+			return null;
 		}
 
-		$batchSize = (int)($argument['batch_size'] ?? 100);
+		$run = $this->findRun(runId: $runId);
+		if ($run === null || $run->getState() !== SchemaRun::STATE_RUNNING) {
+			return null;
+		}
 
+		return $run;
+	}//end runningRun()
+
+	/**
+	 * Load a run, logging and returning null when it cannot be found.
+	 *
+	 * @param mixed $runId The run id from the job argument.
+	 *
+	 * @return SchemaRun|null
+	 */
+	private function findRun(mixed $runId): ?SchemaRun {
 		try {
-			$run = $this->runMapper->find((int)$runId);
+			return $this->runMapper->find((int)$runId);
 		} catch (\Throwable $e) {
 			$this->logger->error('[SchemaRunJob] Run not found', ['run_id' => $runId, 'error' => $e->getMessage()]);
-			return;
+			return null;
 		}
+	}//end findRun()
 
-		if ($run->getState() !== SchemaRun::STATE_RUNNING) {
-			// Nothing to do for a terminal/non-running run.
-			return;
-		}
+	/**
+	 * The batch size from the job argument; 100 by default.
+	 *
+	 * @param mixed $argument The job argument.
+	 *
+	 * @return int
+	 */
+	private function batchSize(mixed $argument): int {
+		return (int)($argument['batch_size'] ?? 100);
+	}//end batchSize()
 
+	/**
+	 * Advance the run by one batch; on failure mark it failed.
+	 *
+	 * @param SchemaRun $run      The run.
+	 * @param mixed     $argument The job argument.
+	 *
+	 * @return bool True when more work remains; false when done or failed.
+	 */
+	private function advanceOrFail(SchemaRun $run, mixed $argument): bool {
 		try {
-			$more = $this->advance(run: $run, batchSize: $batchSize);
+			return $this->advance(run: $run, batchSize: $this->batchSize(argument: $argument));
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'[SchemaRunJob] Batch processing failed',
-				['run_id' => $runId, 'error' => $e->getMessage()]
-			);
-			$run->setState(SchemaRun::STATE_FAILED);
-			$report = ($run->getReport() ?? []);
-			$report['fatal'] = $e->getMessage();
-			$run->setReport($report);
-			$this->runMapper->save($run);
-			return;
+			$this->markFailed(run: $run, context: ['run_id' => $argument['run_id'], 'error' => $e->getMessage()]);
+			return false;
 		}
+	}//end advanceOrFail()
 
-		if ($more === true) {
-			$this->jobList->add(self::class, ['run_id' => $runId, 'batch_size' => $batchSize]);
-		}
-
-	}//end run()
+	/**
+	 * Log a failed batch and persist the run as failed, keeping its report.
+	 *
+	 * @param SchemaRun                              $run     The run.
+	 * @param array{run_id: mixed, error: string}    $context The run id and the error message.
+	 *
+	 * @return void
+	 */
+	private function markFailed(SchemaRun $run, array $context): void {
+		$this->logger->error('[SchemaRunJob] Batch processing failed', $context);
+		$run->setState(SchemaRun::STATE_FAILED);
+		$report          = ($run->getReport() ?? []);
+		$report['fatal'] = $context['error'];
+		$run->setReport($report);
+		$this->runMapper->save($run);
+	}//end markFailed()
 
 	/**
 	 * Advance the run by one batch, dispatching by run type.

@@ -44,11 +44,11 @@ class IntegrationGlobalScriptListenerTest extends TestCase {
 	 * Non-BeforeTemplateRenderedEvent events must be ignored silently.
 	 */
 	public function testIgnoresNonBeforeTemplateRenderedEvent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$event = $this->createMock(Event::class);
 
 		$this->listener->handle($event);
-
-		$this->assertTrue(true);
 	}
 
 	/**

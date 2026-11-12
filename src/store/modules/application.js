@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
 import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
 import { okJson, sendJson } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { itemRequest } from './itemRequest.js'
 import { listStateActions } from './listState.js'
 
@@ -99,7 +100,8 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
-			const request = itemRequest(this, {
+			return itemRequest(this, {
+				clearsError: true,
 				soft,
 				log: (error) => console.error('Error fetching applications:', error),
 				run: async () => {
@@ -111,8 +113,6 @@ export const useApplicationStore = defineStore('application', {
 					return { response, data }
 				},
 			})
-			this.error = null
-			return request
 		},
 
 		/**
@@ -145,9 +145,9 @@ export const useApplicationStore = defineStore('application', {
 				failure: 'Failed to delete application',
 				log: (error) => console.error('Error deleting application:', error),
 				run: async () => {
-					const response = await fetch(applicationUrl(applicationItem), {
+					const response = await fetch(applicationUrl(applicationItem), withRequestToken({
 						method: 'DELETE',
-					})
+					}))
 					if (!response.ok) {
 						throw new Error(`HTTP error! status: ${response.status}`)
 					}

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -39,6 +39,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 class IdOrUuidBindingTest extends TestCase {
 
@@ -141,10 +143,14 @@ class IdOrUuidBindingTest extends TestCase {
 	private function views(array $row): ViewMapper {
 		return new ViewMapper(
 			$this->connection($row),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$this->createMock(OrganisationMapper::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class)
+				),
+				$this->createMock(IAppConfig::class)
+			),
 			$this->createMock(IEventDispatcher::class)
 		);
 	}//end views()
@@ -182,14 +188,18 @@ class IdOrUuidBindingTest extends TestCase {
 	 */
 	public function testASchemaReferenceBySlugBindsNoTextAsAnInteger(): void {
 		$mapper = new SchemaMapper(
-			$this->connection(['id' => 7, 'uuid' => 'parent-uuid', 'slug' => 'parent', 'title' => 'Parent']),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->connection(['id' => 7, 'uuid' => 'parent-uuid', 'slug' => 'parent', 'title' => 'Parent']),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$load = new \ReflectionMethod(SchemaMapper::class, 'loadSchema');

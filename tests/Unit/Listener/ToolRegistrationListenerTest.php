@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace Unit\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
-use OCA\OpenRegister\Listener\ToolRegistrationListener;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Tool\AgentTool;
-use OCA\OpenRegister\Tool\ApplicationTool;
-use OCA\OpenRegister\Tool\ObjectsTool;
-use OCA\OpenRegister\Tool\RegisterTool;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 class ToolRegistrationListenerTest extends TestCase {
 	private ToolRegistrationListener $listener;
@@ -38,21 +40,26 @@ class ToolRegistrationListenerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->listener = new ToolRegistrationListener(
-			registerTool: $this->registerTool,
-			schemaTool: $this->schemaTool,
-			objectsTool: $this->objectsTool,
-			applicationTool: $this->applicationTool,
-			agentTool: $this->agentTool,
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->registerTool,
+				schemaTool: $this->schemaTool,
+				objectsTool: $this->objectsTool,
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->applicationTool,
+				agentTool: $this->agentTool,
+			),
 			mcpToolsService: $this->mcpToolsService,
 			logger: $this->logger,
 		);
 	}
 
 	public function testEarlyReturnForNonToolRegistrationEvent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$event = $this->createMock(Event::class);
 		// Should not throw, just return
 		$this->listener->handle($event);
-		$this->assertTrue(true);
 	}
 
 	public function testRegistersAllFiveTools(): void {

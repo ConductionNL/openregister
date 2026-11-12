@@ -32,9 +32,11 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\EmptyPropertyClaim;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserSession;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write of a self-assign action.
@@ -48,11 +50,11 @@ class ObjectActionSelfAssign {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects     Writes the property.
+	 * @param ObjectOperationsInterface $objects     Writes the property.
 	 * @param IUserSession  $userSession The caller.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()
@@ -81,12 +83,13 @@ class ObjectActionSelfAssign {
 		EmptyPropertyClaim::hold(uuid: $uuid, property: $field);
 		try {
 			return $this->objects->patchObject(
-				objectId: $uuid,
-				data: [$field => $user->getUID()],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				_rbac: false,
-				currentUser: $user
+				patch: new ObjectPatch(
+					objectId: $uuid,
+					data: [$field => $user->getUID()],
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $user
+				),
+				_rbac: false
 			);
 		} finally {
 			EmptyPropertyClaim::consume(uuid: $uuid);

@@ -16,6 +16,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\EventDispatcher\Event;
 use OCP\IDBConnection;
@@ -137,14 +139,14 @@ class WebhookServiceIntegrationTest extends TestCase {
 			'url' => $data['url'] ?? 'http://192.0.2.1:9999/nonexistent',
 			'method' => $data['method'] ?? 'POST',
 			'events' => json_decode($data['events'] ?? '[]', true) ?: [],
-			'headers' => $data['headers'] !== null ? (json_decode($data['headers'], true) ?: []) : null,
+			'headers' => ($data['headers'] ?? null) !== null ? (json_decode($data['headers'], true) ?: []) : null,
 			'secret' => $data['secret'] ?? null,
 			'enabled' => $data['enabled'] ?? true,
-			'filters' => $data['filters'] !== null ? (json_decode($data['filters'], true) ?: []) : null,
+			'filters' => ($data['filters'] ?? null) !== null ? (json_decode($data['filters'], true) ?: []) : null,
 			'retryPolicy' => $data['retry_policy'] ?? 'exponential',
 			'maxRetries' => $data['max_retries'] ?? 3,
 			'timeout' => $data['timeout'] ?? 5,
-			'configuration' => $data['configuration'] !== null ? (json_decode($data['configuration'], true) ?: []) : null,
+			'configuration' => ($data['configuration'] ?? null) !== null ? (json_decode($data['configuration'], true) ?: []) : null,
 			'mapping' => $data['mapping'] ?? null,
 		]);
 
@@ -160,7 +162,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.event.' . uniqid(),
 			['test' => 'data']
 		);
@@ -177,7 +178,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.empty.payload.' . uniqid(),
 			[]
 		);
@@ -204,7 +204,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		];
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.complex.payload.' . uniqid(),
 			$payload
 		);
@@ -234,9 +233,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$webhook = $this->insertWebhookDirect(['enabled' => false]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -254,9 +254,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -273,9 +274,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'document']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'document'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -294,9 +296,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'person']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'person'])
+			)
 		);
 
 		// Filters pass, but delivery fails (unreachable URL)
@@ -314,9 +317,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'animal']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'animal'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -335,9 +339,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'person']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'person'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -354,9 +359,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['data' => ['type' => 'document']]
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['data' => ['type' => 'document']])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -375,9 +381,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['data' => ['type' => 'person']]
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['data' => ['type' => 'person']])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -394,9 +401,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['data' => ['type' => 'person']]
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['data' => ['type' => 'person']])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -419,9 +427,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['uuid' => 'test-123']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['uuid' => 'test-123'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -440,9 +449,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['uuid' => 'test-123']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['uuid' => 'test-123'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -461,9 +471,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -482,9 +493,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -503,9 +515,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -524,10 +537,11 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data'],
-			1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data']),
+				attempt: 1
+			)
 		);
 
 		$this->assertFalse($result);
@@ -546,10 +560,11 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data'],
-			1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data']),
+				attempt: 1
+			)
 		);
 
 		$this->assertFalse($result);
@@ -568,10 +583,11 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data'],
-			1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data']),
+				attempt: 1
+			)
 		);
 
 		$this->assertFalse($result);
@@ -589,10 +605,11 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data'],
-			3
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data']),
+				attempt: 3
+			)
 		);
 
 		$this->assertFalse($result);
@@ -611,10 +628,11 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data'],
-			1
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data']),
+				attempt: 1
+			)
 		);
 
 		$this->assertFalse($result);
@@ -633,9 +651,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectUpdatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectUpdatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -654,9 +673,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectDeletedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectDeletedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -679,7 +699,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			$eventName,
 			['uuid' => 'test-dispatch-' . uniqid()]
 		);
@@ -747,9 +766,10 @@ class WebhookServiceIntegrationTest extends TestCase {
 		]);
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['test' => 'data']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['test' => 'data'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -764,7 +784,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			['uuid' => 'test-' . uniqid()]
 		);

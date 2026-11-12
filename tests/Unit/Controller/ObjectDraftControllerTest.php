@@ -20,19 +20,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\OCSController;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -47,10 +53,19 @@ use RuntimeException;
  * Decision 216: the owner's action on the object API.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices
  * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\UserDraftActivation
  */
 class ObjectDraftControllerTest extends TestCase {
 
@@ -109,7 +124,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
 		$this->objects->method('renderEntity')->willReturnCallback(
-			function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+			function (ObjectEntity $entity, ?RenderSelection $selection = null, bool $_rbac = true): array {
 				if ($this->renderFails === true) {
 					throw new RuntimeException('render boundary down');
 				}
@@ -122,15 +137,8 @@ class ObjectDraftControllerTest extends TestCase {
 			}
 		);
 		$this->objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$this->reads[] = ['id' => $id, 'register' => $register, 'schema' => $schema, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 
 				return $this->readable;
@@ -164,7 +172,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new ObjectDraftController(
+		$this->controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -173,7 +181,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -207,8 +216,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'user' => $user, 'changes' => $changes];
+			function (UserDraftActivation $activation) use ($answer): ObjectEntity {
+				$address             = $activation->address;
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $activation->user, 'changes' => $activation->changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -430,7 +440,7 @@ class ObjectDraftControllerTest extends TestCase {
 		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -439,7 +449,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$response = $controller->activate(register: '27', schema: '43', id: 'd1');
@@ -466,7 +477,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$this->activation->expects($this->never())->method('activateAsUser');
 
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $objects,
@@ -475,7 +486,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame(404, $controller->activate(register: 'service', schema: 'ticket', id: 'd1')->getStatus());

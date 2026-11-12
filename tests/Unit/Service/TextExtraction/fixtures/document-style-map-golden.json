@@ -1,0 +1,746 @@
+{
+    "no-parts": {
+        "none": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "empty-ppr": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading1": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading9": {
+            "kind": "heading",
+            "level": 9,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading0": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading10": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-heading1": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyTitle": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyHeading": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline0": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline8": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline9": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Child": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-GrandChild": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-LoopA": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep24": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep5": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading4": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "style-HeadingX": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Normal": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Listed": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-ListedChild": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-ListedNoNum": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Bulleted": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Unknown": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Spaced": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading3": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title2": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-NotParagraph": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-0": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-9-on-heading": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-3-on-list": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-text": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own": {
+            "kind": "list",
+            "level": 2,
+            "numId": "1",
+            "ordered": false
+        },
+        "num-own-no-level": {
+            "kind": "list",
+            "level": 1,
+            "numId": "2",
+            "ordered": false
+        },
+        "num-own-zero": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-unknown": {
+            "kind": "list",
+            "level": 1,
+            "numId": "99",
+            "ordered": false
+        },
+        "num-own-level-only-on-style": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-on-heading": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-deep-level": {
+            "kind": "list",
+            "level": 6,
+            "numId": "1",
+            "ordered": false
+        }
+    },
+    "styles-only": {
+        "none": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "empty-ppr": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading1": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading9": {
+            "kind": "heading",
+            "level": 9,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading0": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading10": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-heading1": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyTitle": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyHeading": {
+            "kind": "heading",
+            "level": 2,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline0": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline8": {
+            "kind": "heading",
+            "level": 9,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline9": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Child": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-GrandChild": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-LoopA": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep24": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep5": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading4": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "style-HeadingX": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Normal": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Listed": {
+            "kind": "list",
+            "level": 2,
+            "numId": "1",
+            "ordered": false
+        },
+        "style-ListedChild": {
+            "kind": "list",
+            "level": 2,
+            "numId": "2",
+            "ordered": false
+        },
+        "style-ListedNoNum": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Bulleted": {
+            "kind": "list",
+            "level": 1,
+            "numId": "2",
+            "ordered": false
+        },
+        "style-Unknown": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Spaced": {
+            "kind": "heading",
+            "level": 5,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading3": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title2": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-NotParagraph": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-0": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-9-on-heading": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-3-on-list": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-text": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own": {
+            "kind": "list",
+            "level": 2,
+            "numId": "1",
+            "ordered": false
+        },
+        "num-own-no-level": {
+            "kind": "list",
+            "level": 1,
+            "numId": "2",
+            "ordered": false
+        },
+        "num-own-zero": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-unknown": {
+            "kind": "list",
+            "level": 1,
+            "numId": "99",
+            "ordered": false
+        },
+        "num-own-level-only-on-style": {
+            "kind": "list",
+            "level": 3,
+            "numId": "1",
+            "ordered": false
+        },
+        "num-own-on-heading": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-deep-level": {
+            "kind": "list",
+            "level": 6,
+            "numId": "1",
+            "ordered": false
+        }
+    },
+    "with-parts": {
+        "none": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "empty-ppr": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading1": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading9": {
+            "kind": "heading",
+            "level": 9,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading0": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading10": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-heading1": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyTitle": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-MyHeading": {
+            "kind": "heading",
+            "level": 2,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline0": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline8": {
+            "kind": "heading",
+            "level": 9,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Outline9": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Child": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-GrandChild": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-LoopA": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep24": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Deep5": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading4": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "style-HeadingX": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Normal": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Listed": {
+            "kind": "list",
+            "level": 2,
+            "numId": "1",
+            "ordered": true
+        },
+        "style-ListedChild": {
+            "kind": "list",
+            "level": 2,
+            "numId": "2",
+            "ordered": false
+        },
+        "style-ListedNoNum": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Bulleted": {
+            "kind": "list",
+            "level": 1,
+            "numId": "2",
+            "ordered": false
+        },
+        "style-Unknown": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Spaced": {
+            "kind": "heading",
+            "level": 5,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Heading3": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "style-Title2": {
+            "kind": "title",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "style-NotParagraph": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-0": {
+            "kind": "heading",
+            "level": 1,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-9-on-heading": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-3-on-list": {
+            "kind": "heading",
+            "level": 4,
+            "numId": "",
+            "ordered": false
+        },
+        "outline-own-text": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own": {
+            "kind": "list",
+            "level": 2,
+            "numId": "1",
+            "ordered": true
+        },
+        "num-own-no-level": {
+            "kind": "list",
+            "level": 1,
+            "numId": "2",
+            "ordered": false
+        },
+        "num-own-zero": {
+            "kind": "text",
+            "level": 0,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-unknown": {
+            "kind": "list",
+            "level": 1,
+            "numId": "99",
+            "ordered": false
+        },
+        "num-own-level-only-on-style": {
+            "kind": "list",
+            "level": 3,
+            "numId": "1",
+            "ordered": false
+        },
+        "num-own-on-heading": {
+            "kind": "heading",
+            "level": 3,
+            "numId": "",
+            "ordered": false
+        },
+        "num-own-deep-level": {
+            "kind": "list",
+            "level": 6,
+            "numId": "1",
+            "ordered": false
+        }
+    }
+}

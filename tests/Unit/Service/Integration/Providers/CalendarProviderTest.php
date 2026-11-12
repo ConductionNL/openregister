@@ -31,13 +31,16 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters
 
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Integration\Providers\CalendarProviderServices;
 
 class CalendarProviderTest extends TestCase {
 	private function buildL10n(): IL10N {
@@ -52,8 +55,10 @@ class CalendarProviderTest extends TestCase {
 
 	public function testMetadataGetters(): void {
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$this->createMock(CalendarLinkService::class),
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$this->createMock(CalendarLinkService::class),
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
@@ -77,14 +82,16 @@ class CalendarProviderTest extends TestCase {
 			]);
 
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$link,
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$link,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
 		);
 
-		$result = $provider->list('r', 's', 'obj-1');
+		$result = $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 		$this->assertCount(1, $result);
 		$this->assertSame('both', $result[0]['source']);
 	}
@@ -99,14 +106,35 @@ class CalendarProviderTest extends TestCase {
 		$linkSvc->expects($this->never())->method('unlinkEvent');
 
 		$provider = new CalendarProvider(
-			$eventSvc,
-			$linkSvc,
+			new CalendarProviderServices(
+				$eventSvc,
+				$linkSvc,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
 		);
 
-		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), '7/event.ics');
+	}
+
+	public function testDeleteLegacyShapeOfAnotherObjectIsRefused(): void {
+		$eventSvc = $this->createMock(CalendarEventService::class);
+		$eventSvc->method('requireEventOf')->with('obj-1', new CalendarObjectAddress(calendarId: '7', uri: 'event.ics'))->willThrowException(new \Exception('Calendar event not found', 404));
+		$eventSvc->expects($this->never())->method('unlinkEvent');
+
+		$provider = new CalendarProvider(
+			new CalendarProviderServices(
+				$eventSvc,
+				$this->createMock(CalendarLinkService::class),
+			),
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
+
+		$this->expectExceptionCode(404);
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), '7/event.ics');
 	}
 
 	public function testDeleteBareUidUsesLinkService(): void {
@@ -119,14 +147,16 @@ class CalendarProviderTest extends TestCase {
 			->with('obj-1', 'ev-uid');
 
 		$provider = new CalendarProvider(
-			$eventSvc,
-			$linkSvc,
+			new CalendarProviderServices(
+				$eventSvc,
+				$linkSvc,
+			),
 			$this->createMock(IAppManager::class),
 			$this->buildL10n(),
 			$this->buildLogger(),
 		);
 
-		$provider->delete('r', 's', 'obj-1', 'ev-uid');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), 'ev-uid');
 	}
 
 	public function testHealthReportsUnavailableWhenNotInstalled(): void {
@@ -134,8 +164,10 @@ class CalendarProviderTest extends TestCase {
 		$appManager->method('isInstalled')->with('calendar')->willReturn(false);
 
 		$provider = new CalendarProvider(
-			$this->createMock(CalendarEventService::class),
-			$this->createMock(CalendarLinkService::class),
+			new CalendarProviderServices(
+				$this->createMock(CalendarEventService::class),
+				$this->createMock(CalendarLinkService::class),
+			),
 			$appManager,
 			$this->buildL10n(),
 			$this->buildLogger(),

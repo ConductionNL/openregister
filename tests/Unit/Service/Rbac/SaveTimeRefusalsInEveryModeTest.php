@@ -56,6 +56,13 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class SaveTimeRefusalsInEveryModeTest extends TestCase {
 

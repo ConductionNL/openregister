@@ -23,12 +23,16 @@ use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
+use OCA\OpenRegister\Notifications\NotificationsRegistrar;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\MetricsService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TaskService;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,6 +44,10 @@ use PHPUnit\Framework\TestCase;
  * that type-hints the class get the same object.
  *
  * @covers \OCA\OpenRegister\Service\ContractBindings
+ * @uses   \OCA\OpenRegister\Notifications\NotificationsRegistrar
+ * @uses   \OCA\OpenRegister\Search\SearchRegistrar
+ * @uses \OCA\OpenRegister\Notifications\NotificationsWiring
+ * @uses \OCA\OpenRegister\Search\SearchWiring
  */
 class HubInterfaceBindingsTest extends TestCase {
 
@@ -53,6 +61,7 @@ class HubInterfaceBindingsTest extends TestCase {
 			'settings'                   => [AppSettingsInterface::class, SettingsService::class],
 			'contact matching'           => [ContactMatcherInterface::class, ContactMatchingService::class],
 			'embeddings'                 => [EmbeddingGeneratorInterface::class, VectorEmbeddings::class],
+			'metrics retention'          => [MetricsRetentionInterface::class, MetricsService::class],
 			'notification preferences'   => [NotificationPreferencesInterface::class, NotificationPreferenceService::class],
 			'notification templates'     => [NotificationTemplatesInterface::class, NotificationTemplateRegistry::class],
 			'object calendar events'     => [ObjectCalendarEventsInterface::class, CalendarEventService::class],
@@ -74,6 +83,8 @@ class HubInterfaceBindingsTest extends TestCase {
 	public function testTheInterfaceResolvesToItsImplementation(string $interface, string $implementation): void {
 		$context = new RecordingRegistrationContext();
 		ContractBindings::register(context: $context);
+		NotificationsRegistrar::register(context: $context);
+		SearchRegistrar::register(context: $context);
 
 		$this->assertContains(needle: ['alias' => $interface, 'target' => $implementation], haystack: $context->aliases);
 		$this->assertTrue(is_subclass_of($implementation, $interface));

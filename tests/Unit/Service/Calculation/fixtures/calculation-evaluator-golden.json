@@ -1,0 +1,1212 @@
+{
+    "scalar": {
+        "type": "int",
+        "value": 5
+    },
+    "scalar placeholder": {
+        "type": "string",
+        "value": "$userId"
+    },
+    "null": {
+        "type": "null",
+        "value": null
+    },
+    "two keys": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Expression must be a single-key object."
+    },
+    "empty": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Expression must be a single-key object."
+    },
+    "list node": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Unknown operator \"0\"."
+    },
+    "unknown": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Unknown operator \"nope\"."
+    },
+    "source": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "A calculation cannot read the value source {\"id\":\"x\"}: its result is stored."
+    },
+    "lit": {
+        "type": "string",
+        "value": "$userId"
+    },
+    "lit array": {
+        "type": "array",
+        "value": [
+            1,
+            2
+        ]
+    },
+    "prop": {
+        "type": "string",
+        "value": "Ann"
+    },
+    "prop list": {
+        "type": "int",
+        "value": 7
+    },
+    "prop missing": {
+        "type": "null",
+        "value": null
+    },
+    "prop null": {
+        "type": "null",
+        "value": null
+    },
+    "prop dotted": {
+        "type": "int",
+        "value": 5
+    },
+    "prop dotted null": {
+        "type": "null",
+        "value": null
+    },
+    "prop dotted missing": {
+        "type": "null",
+        "value": null
+    },
+    "prop through scalar": {
+        "type": "null",
+        "value": null
+    },
+    "prop self": {
+        "type": "string",
+        "value": "2023-05-01"
+    },
+    "prop empty": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "prop requires a non-empty field name."
+    },
+    "prop int": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "prop requires a non-empty field name."
+    },
+    "prop empty list": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "prop requires a non-empty field name."
+    },
+    "concat": {
+        "type": "string",
+        "value": "Ann-1"
+    },
+    "concat bare": {
+        "type": "string",
+        "value": "x"
+    },
+    "if true": {
+        "type": "string",
+        "value": "y"
+    },
+    "if false": {
+        "type": "string",
+        "value": "n"
+    },
+    "if no else": {
+        "type": "null",
+        "value": null
+    },
+    "if short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "if requires (cond, then[, else])."
+    },
+    "if bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "if requires (cond, then[, else])."
+    },
+    "not": {
+        "type": "bool",
+        "value": true
+    },
+    "not true": {
+        "type": "bool",
+        "value": false
+    },
+    "not missing": {
+        "type": "bool",
+        "value": true
+    },
+    "and all": {
+        "type": "bool",
+        "value": true
+    },
+    "and stops": {
+        "type": "bool",
+        "value": false
+    },
+    "and bare": {
+        "type": "bool",
+        "value": true
+    },
+    "and empty": {
+        "type": "bool",
+        "value": true
+    },
+    "or first": {
+        "type": "bool",
+        "value": true
+    },
+    "or none": {
+        "type": "bool",
+        "value": false
+    },
+    "or bare": {
+        "type": "bool",
+        "value": false
+    },
+    "or empty": {
+        "type": "bool",
+        "value": false
+    },
+    "add": {
+        "type": "float",
+        "value": "6.5"
+    },
+    "add empty": {
+        "type": "int",
+        "value": 0
+    },
+    "add bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Arithmetic requires an array of operands."
+    },
+    "add text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Arithmetic operand is not numeric."
+    },
+    "multiply": {
+        "type": "int",
+        "value": 6
+    },
+    "multiply empty": {
+        "type": "int",
+        "value": 1
+    },
+    "multiply null": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Arithmetic operand is not numeric."
+    },
+    "multiply bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "Arithmetic requires an array of operands."
+    },
+    "add overflow": {
+        "type": "float",
+        "value": "9.223372036854776E+18"
+    },
+    "minus one": {
+        "type": "int",
+        "value": -4
+    },
+    "minus text": {
+        "type": "float",
+        "value": "-4.5"
+    },
+    "minus many": {
+        "type": "float",
+        "value": "6.5"
+    },
+    "minus empty": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "- requires at least one operand."
+    },
+    "minus bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "- requires at least one operand."
+    },
+    "minus first bad": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "- first operand not numeric."
+    },
+    "minus later bad": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "- operand not numeric."
+    },
+    "minus float order": {
+        "type": "float",
+        "value": "0.09999999999999998"
+    },
+    "divide": {
+        "type": "float",
+        "value": "3.5"
+    },
+    "divide by zero": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires non-zero numeric operands."
+    },
+    "divide zero text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires non-zero numeric operands."
+    },
+    "divide text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires non-zero numeric operands."
+    },
+    "divide short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires two operands."
+    },
+    "divide bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires two operands."
+    },
+    "divide denominator text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "/ requires non-zero numeric operands."
+    },
+    "mod": {
+        "type": "float",
+        "value": "1.0"
+    },
+    "mod float": {
+        "type": "float",
+        "value": "1.5"
+    },
+    "mod zero": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "% requires non-zero numeric operands."
+    },
+    "mod text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "% requires non-zero numeric operands."
+    },
+    "mod short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "% requires two operands."
+    },
+    "mod numerator text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "% requires non-zero numeric operands."
+    },
+    "mod bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "% requires two operands."
+    },
+    "now type": {
+        "type": "string",
+        "value": "fixed"
+    },
+    "diffDays": {
+        "type": "int",
+        "value": 29
+    },
+    "diffDays negative": {
+        "type": "int",
+        "value": -30
+    },
+    "diffDays bad": {
+        "type": "null",
+        "value": null
+    },
+    "diffDays bad second": {
+        "type": "null",
+        "value": null
+    },
+    "diffDays short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "diffDays requires (later, earlier)."
+    },
+    "diffDays bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "diffDays requires (later, earlier)."
+    },
+    "diffDays mutable": {
+        "type": "int",
+        "value": 2
+    },
+    "formatDate": {
+        "type": "string",
+        "value": "31/01/2024"
+    },
+    "formatDate bad": {
+        "type": "null",
+        "value": null
+    },
+    "formatDate short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "formatDate requires (date, fmt)."
+    },
+    "formatDate empty": {
+        "type": "null",
+        "value": null
+    },
+    "formatDate int": {
+        "type": "null",
+        "value": null
+    },
+    "formatDate bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "formatDate requires (date, fmt)."
+    },
+    "dateDiff bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateDiff requires an object argument with keys: from, to, unit."
+    },
+    "dateDiff no from": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateDiff requires keys: from, to, unit."
+    },
+    "dateDiff no to": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateDiff requires keys: from, to, unit."
+    },
+    "dateDiff no unit": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateDiff requires keys: from, to, unit."
+    },
+    "dateDiff bad unit": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateDiff unit \"ages\" is invalid. Supported: years, months, weeks, days, hours, minutes, seconds."
+    },
+    "dateDiff bad from": {
+        "type": "null",
+        "value": null
+    },
+    "dateDiff bad to": {
+        "type": "null",
+        "value": null
+    },
+    "dateDiff now": {
+        "type": "int",
+        "value": 0
+    },
+    "dateDiff null key": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateAdd requires a \"date\" key plus either (\"amount\" + \"unit\") or \"duration\"."
+    },
+    "dateAdd no date": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateAdd requires a \"date\" key plus either (\"amount\" + \"unit\") or \"duration\"."
+    },
+    "dateAdd no shape": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateAdd requires either (\"amount\" + \"unit\") or \"duration\"."
+    },
+    "dateAdd amount only": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateAdd requires either (\"amount\" + \"unit\") or \"duration\"."
+    },
+    "dateAdd unit only": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "dateAdd requires either (\"amount\" + \"unit\") or \"duration\"."
+    },
+    "dateAdd bad date": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd null date": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd duration": {
+        "type": "string",
+        "value": "2024-03-02"
+    },
+    "dateAdd bad duration": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd empty duration": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd int duration": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd both shapes": {
+        "type": "string",
+        "value": "2024-02-01"
+    },
+    "dateAdd time": {
+        "type": "string",
+        "value": "2024-03-12T12:30:00+00:00"
+    },
+    "dateAdd object": {
+        "type": "string",
+        "value": "2024-01-02"
+    },
+    "dateAdd weeks": {
+        "type": "string",
+        "value": "2024-01-15"
+    },
+    "dateAdd months": {
+        "type": "string",
+        "value": "2024-03-02"
+    },
+    "dateAdd years": {
+        "type": "string",
+        "value": "2025-03-01"
+    },
+    "dateAdd bad unit": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd text amount": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd negative": {
+        "type": "null",
+        "value": null
+    },
+    "dateAdd float": {
+        "type": "string",
+        "value": "2024-01-02"
+    },
+    "max": {
+        "type": "int",
+        "value": 3
+    },
+    "max equal": {
+        "type": "int",
+        "value": 1
+    },
+    "max int first": {
+        "type": "int",
+        "value": 1
+    },
+    "max float first": {
+        "type": "float",
+        "value": "1.0"
+    },
+    "max none": {
+        "type": "null",
+        "value": null
+    },
+    "max empty": {
+        "type": "null",
+        "value": null
+    },
+    "max bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "max/min requires an array of operands."
+    },
+    "max text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "max/min operand is not numeric."
+    },
+    "min": {
+        "type": "int",
+        "value": 1
+    },
+    "min equal": {
+        "type": "float",
+        "value": "1.0"
+    },
+    "min int first": {
+        "type": "int",
+        "value": 1
+    },
+    "min none": {
+        "type": "null",
+        "value": null
+    },
+    "min text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "max/min operand is not numeric."
+    },
+    "min bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "max/min requires an array of operands."
+    },
+    "coalesce": {
+        "type": "int",
+        "value": 0
+    },
+    "coalesce none": {
+        "type": "null",
+        "value": null
+    },
+    "coalesce bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "coalesce requires an array of operands."
+    },
+    "abs": {
+        "type": "int",
+        "value": 3
+    },
+    "abs bare": {
+        "type": "float",
+        "value": "2.5"
+    },
+    "abs null": {
+        "type": "null",
+        "value": null
+    },
+    "abs text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "abs operand is not numeric."
+    },
+    "abs dict": {
+        "type": "int",
+        "value": 7
+    },
+    "abs none": {
+        "type": "null",
+        "value": null
+    },
+    "round": {
+        "type": "float",
+        "value": "2.57"
+    },
+    "round default": {
+        "type": "float",
+        "value": "3.0"
+    },
+    "round null": {
+        "type": "null",
+        "value": null
+    },
+    "round text": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "round value is not numeric."
+    },
+    "round bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "round requires [value, precision?]."
+    },
+    "round bad precision": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "round precision must be an integer."
+    },
+    "round text precision": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "round precision must be an integer."
+    },
+    "round negative": {
+        "type": "float",
+        "value": "1300.0"
+    },
+    "round empty": {
+        "type": "null",
+        "value": null
+    },
+    "round text then bad": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "round value is not numeric."
+    },
+    "year": {
+        "type": "int",
+        "value": 2024
+    },
+    "year bare": {
+        "type": "int",
+        "value": 2024
+    },
+    "year bad": {
+        "type": "null",
+        "value": null
+    },
+    "year none": {
+        "type": "null",
+        "value": null
+    },
+    "monthsElapsed": {
+        "type": "int",
+        "value": 14
+    },
+    "monthsElapsed negative": {
+        "type": "int",
+        "value": -14
+    },
+    "monthsElapsed bad": {
+        "type": "null",
+        "value": null
+    },
+    "monthsElapsed bad second": {
+        "type": "null",
+        "value": null
+    },
+    "monthsElapsed short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "monthsElapsed requires (later, earlier)."
+    },
+    "monthsElapsed bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "monthsElapsed requires (later, earlier)."
+    },
+    "monthsElapsed now": {
+        "type": "int",
+        "value": 0
+    },
+    "graduated": {
+        "type": "int",
+        "value": 25
+    },
+    "graduated cap": {
+        "type": "int",
+        "value": 20
+    },
+    "graduated null cap": {
+        "type": "int",
+        "value": 25
+    },
+    "graduated null": {
+        "type": "null",
+        "value": null
+    },
+    "graduated short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "graduated/bandRate requires (quantity, bands)."
+    },
+    "graduated dict": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "graduated/bandRate requires (quantity, bands)."
+    },
+    "graduated bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "graduated/bandRate requires (quantity, bands)."
+    },
+    "graduated bad": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "graduated/bandRate needs a numeric quantity and a list of bands."
+    },
+    "bandRate": {
+        "type": "int",
+        "value": 2
+    },
+    "bandRate high": {
+        "type": "int",
+        "value": 1
+    },
+    "bandRate short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "graduated/bandRate requires (quantity, bands)."
+    },
+    "bandRate null bands": {
+        "type": "null",
+        "value": null
+    },
+    "sha256": {
+        "type": "string",
+        "value": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"
+    },
+    "sha256 bare": {
+        "type": "string",
+        "value": "7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451"
+    },
+    "sha256 null": {
+        "type": "null",
+        "value": null
+    },
+    "sequence bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "sequence requires a \"scope\" key (yearly, monthly or global)."
+    },
+    "sequence no scope": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "sequence requires a \"scope\" key (yearly, monthly or global)."
+    },
+    "sequence bad scope": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "sequence scope \"daily\" is invalid. Supported: yearly, monthly, global."
+    },
+    "sequence read path": {
+        "type": "null",
+        "value": null
+    },
+    "nested": {
+        "type": "string",
+        "value": "2.5 big"
+    },
+    "eq bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "eq requires two operands."
+    },
+    "eq short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "eq requires two operands."
+    },
+    "eq 0": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 1": {
+        "type": "bool",
+        "value": true
+    },
+    "eq 2": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 3": {
+        "type": "bool",
+        "value": true
+    },
+    "eq 4": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 5": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 6": {
+        "type": "bool",
+        "value": true
+    },
+    "eq 7": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 8": {
+        "type": "bool",
+        "value": false
+    },
+    "eq 9": {
+        "type": "bool",
+        "value": true
+    },
+    "eq 10": {
+        "type": "bool",
+        "value": false
+    },
+    "eq dates": {
+        "type": "bool",
+        "value": false
+    },
+    "eq dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "eq dates equal": {
+        "type": "bool",
+        "value": true
+    },
+    "eq arrays": {
+        "type": "bool",
+        "value": false
+    },
+    "ne bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "ne requires two operands."
+    },
+    "ne short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "ne requires two operands."
+    },
+    "ne 0": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 1": {
+        "type": "bool",
+        "value": false
+    },
+    "ne 2": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 3": {
+        "type": "bool",
+        "value": false
+    },
+    "ne 4": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 5": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 6": {
+        "type": "bool",
+        "value": false
+    },
+    "ne 7": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 8": {
+        "type": "bool",
+        "value": true
+    },
+    "ne 9": {
+        "type": "bool",
+        "value": false
+    },
+    "ne 10": {
+        "type": "bool",
+        "value": true
+    },
+    "ne dates": {
+        "type": "bool",
+        "value": true
+    },
+    "ne dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "ne dates equal": {
+        "type": "bool",
+        "value": false
+    },
+    "ne arrays": {
+        "type": "bool",
+        "value": true
+    },
+    "lt bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "lt requires two operands."
+    },
+    "lt short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "lt requires two operands."
+    },
+    "lt 0": {
+        "type": "bool",
+        "value": true
+    },
+    "lt 1": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 2": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 3": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 4": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 5": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 6": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 7": {
+        "type": "bool",
+        "value": true
+    },
+    "lt 8": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 9": {
+        "type": "bool",
+        "value": false
+    },
+    "lt 10": {
+        "type": "bool",
+        "value": true
+    },
+    "lt dates": {
+        "type": "bool",
+        "value": true
+    },
+    "lt dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "lt dates equal": {
+        "type": "bool",
+        "value": false
+    },
+    "lt arrays": {
+        "type": "bool",
+        "value": false
+    },
+    "lte bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "lte requires two operands."
+    },
+    "lte short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "lte requires two operands."
+    },
+    "lte 0": {
+        "type": "bool",
+        "value": true
+    },
+    "lte 1": {
+        "type": "bool",
+        "value": true
+    },
+    "lte 2": {
+        "type": "bool",
+        "value": false
+    },
+    "lte 3": {
+        "type": "bool",
+        "value": true
+    },
+    "lte 4": {
+        "type": "bool",
+        "value": false
+    },
+    "lte 5": {
+        "type": "bool",
+        "value": false
+    },
+    "lte 6": {
+        "type": "bool",
+        "value": false
+    },
+    "lte 7": {
+        "type": "bool",
+        "value": true
+    },
+    "lte 8": {
+        "type": "bool",
+        "value": false
+    },
+    "lte 9": {
+        "type": "bool",
+        "value": true
+    },
+    "lte 10": {
+        "type": "bool",
+        "value": true
+    },
+    "lte dates": {
+        "type": "bool",
+        "value": true
+    },
+    "lte dates later": {
+        "type": "bool",
+        "value": false
+    },
+    "lte dates equal": {
+        "type": "bool",
+        "value": true
+    },
+    "lte arrays": {
+        "type": "bool",
+        "value": false
+    },
+    "gt bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "gt requires two operands."
+    },
+    "gt short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "gt requires two operands."
+    },
+    "gt 0": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 1": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 2": {
+        "type": "bool",
+        "value": true
+    },
+    "gt 3": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 4": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 5": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 6": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 7": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 8": {
+        "type": "bool",
+        "value": true
+    },
+    "gt 9": {
+        "type": "bool",
+        "value": false
+    },
+    "gt 10": {
+        "type": "bool",
+        "value": false
+    },
+    "gt dates": {
+        "type": "bool",
+        "value": false
+    },
+    "gt dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "gt dates equal": {
+        "type": "bool",
+        "value": false
+    },
+    "gt arrays": {
+        "type": "bool",
+        "value": false
+    },
+    "gte bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "gte requires two operands."
+    },
+    "gte short": {
+        "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",
+        "message": "gte requires two operands."
+    },
+    "gte 0": {
+        "type": "bool",
+        "value": false
+    },
+    "gte 1": {
+        "type": "bool",
+        "value": true
+    },
+    "gte 2": {
+        "type": "bool",
+        "value": true
+    },
+    "gte 3": {
+        "type": "bool",
+        "value": true
+    },
+    "gte 4": {
+        "type": "bool",
+        "value": false
+    },
+    "gte 5": {
+        "type": "bool",
+        "value": false
+    },
+    "gte 6": {
+        "type": "bool",
+        "value": false
+    },
+    "gte 7": {
+        "type": "bool",
+        "value": false
+    },
+    "gte 8": {
+        "type": "bool",
+        "value": true
+    },
+    "gte 9": {
+        "type": "bool",
+        "value": true
+    },
+    "gte 10": {
+        "type": "bool",
+        "value": false
+    },
+    "gte dates": {
+        "type": "bool",
+        "value": false
+    },
+    "gte dates later": {
+        "type": "bool",
+        "value": true
+    },
+    "gte dates equal": {
+        "type": "bool",
+        "value": true
+    },
+    "gte arrays": {
+        "type": "bool",
+        "value": false
+    },
+    "dateDiff years": {
+        "type": "int",
+        "value": 2
+    },
+    "dateDiff back years": {
+        "type": "int",
+        "value": -2
+    },
+    "dateDiff months": {
+        "type": "int",
+        "value": 26
+    },
+    "dateDiff back months": {
+        "type": "int",
+        "value": -26
+    },
+    "dateDiff weeks": {
+        "type": "int",
+        "value": 113
+    },
+    "dateDiff back weeks": {
+        "type": "int",
+        "value": -113
+    },
+    "dateDiff days": {
+        "type": "int",
+        "value": 795
+    },
+    "dateDiff back days": {
+        "type": "int",
+        "value": -795
+    },
+    "dateDiff hours": {
+        "type": "int",
+        "value": 19086
+    },
+    "dateDiff back hours": {
+        "type": "int",
+        "value": -19086
+    },
+    "dateDiff minutes": {
+        "type": "int",
+        "value": 1145190
+    },
+    "dateDiff back minutes": {
+        "type": "int",
+        "value": -1145190
+    },
+    "dateDiff seconds": {
+        "type": "int",
+        "value": 68711410
+    },
+    "dateDiff back seconds": {
+        "type": "int",
+        "value": -68711410
+    },
+    "sequence": {
+        "default": "#0042",
+        "yearly": "#000042",
+        "monthly": "#42",
+        "text pad": "#0042",
+        "pad expr": "#042",
+        "context gone after": null,
+        "context gone after a throw": null,
+        "scopes": [
+            "",
+            "9999",
+            "9999-99",
+            "",
+            ""
+        ]
+    },
+    "walkers": {
+        "references": [
+            "a",
+            "b"
+        ],
+        "references scalar": [],
+        "references prop first": [],
+        "uses sequence": true,
+        "uses no sequence": false,
+        "uses scalar": false
+    }
+}

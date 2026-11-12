@@ -7,14 +7,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\ConversationController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -36,7 +37,13 @@ use RuntimeException;
  * cannot grant access. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ConversationController
- * @uses \OCA\OpenRegister\Db\Conversation
+ * @uses \OCA\OpenRegister\Controller\Support\ChatMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationFailure
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationChange
  */
 class ConversationControllerDeleteGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/conversation-delete-golden.json';
@@ -148,8 +155,7 @@ class ConversationControllerDeleteGoldenTest extends TestCase {
 			});
 		}
 
-		$controller = new ConversationController(
-			'openregister',
+		$controller = ConversationControllerFactory::create(
 			$request,
 			$conversations,
 			$messages,

@@ -1,0 +1,1139 @@
+{
+    "publishFile full-path-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'deep/b.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'deep/b.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'b.txt' (from 'deep/b.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'b.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'deep/b.txt' (full path) from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "deep/b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file using full path: b.txt at /objects/42/b.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/b.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                5,
+                "openregister"
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper - ID: 3, Token: tok, URL: https://x/s/tok",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully published file: b.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/b.txt"
+        }
+    ],
+    "publishFile get-throws": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'deep/boom.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'deep/boom.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'boom.txt' (from 'deep/boom.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'boom.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "boom.txt"
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: Unexpected error getting file from object folder: storage error",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ],
+    "publishFile id-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: '7'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: File ID provided: 7",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Found file by ID: seven.txt (ID: 9)",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/seven.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/seven.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                9,
+                "openregister"
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper - ID: 3, Token: tok, URL: https://x/s/tok",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully published file: seven.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/seven.txt"
+        }
+    ],
+    "publishFile id-missing": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: '8'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: File ID provided: 8",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: No file found with ID: 8",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File with ID 8 does not exist"
+        }
+    ],
+    "publishFile listing-fails": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: Error listing object folder contents: listing failed",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                5,
+                "openregister"
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper - ID: 3, Token: tok, URL: https://x/s/tok",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully published file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "publishFile mapper-fails": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                5,
+                "openregister"
+            ]
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: Failed to create share via FileMapper: db down",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "Failed to create share link: db down"
+        }
+    ],
+    "publishFile name-equals-path": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                5,
+                "openregister"
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper - ID: 3, Token: tok, URL: https://x/s/tok",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully published file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "publishFile name-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Creating share link for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.publish": [
+                5,
+                "openregister"
+            ]
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper - ID: 3, Token: tok, URL: https://x/s/tok",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully published file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "publishFile no-folder": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: Could not get object folder for object: 42",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "Object folder not found."
+        }
+    ],
+    "publishFile nothing-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'deep/none.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'deep/none.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'none.txt' (from 'deep/none.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'none.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "none.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'deep/none.txt' (full path) from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "deep/none.txt"
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: File 'none.txt' and 'deep/none.txt' not found in object folder. NotFoundException: no deep/none.txt",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ],
+    "publishFile path-is-folder": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Original file parameter received: 'docs/sub'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: After cleaning: 'docs/sub'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Extracted filename from path: 'sub' (from 'docs/sub')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Attempting to get file 'sub' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "sub"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] publishFile: Successfully found file: 42 at /objects/42",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] publishFile: Found node is not a File instance, it's a: MockObject_Folder",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ],
+    "unpublishFile full-path-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'deep/b.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'deep/b.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'b.txt' (from 'deep/b.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'b.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'deep/b.txt' (full path) from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "deep/b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file using full path: b.txt at /objects/42/b.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/b.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/b.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 5
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: 0, File ID: 5",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: b.txt",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully unpublished file: b.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/b.txt"
+        }
+    ],
+    "unpublishFile get-throws": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'deep/boom.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'deep/boom.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'boom.txt' (from 'deep/boom.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'boom.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "boom.txt"
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: Unexpected error getting file from object folder: storage error",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ],
+    "unpublishFile id-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: '7'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: File ID provided: 7",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Found file by ID: seven.txt (ID: 9)",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/seven.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/seven.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 9
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: 2, File ID: 9",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully unpublished file: seven.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/seven.txt"
+        }
+    ],
+    "unpublishFile id-missing": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: '8'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: File ID provided: 8",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: No file found with ID: 8",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File with ID 8 does not exist"
+        }
+    ],
+    "unpublishFile listing-fails": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: Error listing object folder contents: listing failed",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 5
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: 0, File ID: 5",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: a.txt",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully unpublished file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "unpublishFile mapper-fails": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 5
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: db down",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "Failed to remove share links: db down"
+        }
+    ],
+    "unpublishFile name-equals-path": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 5
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: 1, File ID: 5",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully unpublished file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "unpublishFile name-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'a.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file: a.txt at /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "checkOwnership": "/objects/42/a.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Removing share links for file: /objects/42/a.txt",
+            "context": []
+        },
+        {
+            "share.depublish": 5
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: 0, File ID: 5",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: a.txt",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully unpublished file: a.txt",
+            "context": []
+        },
+        {
+            "returned": "/objects/42/a.txt"
+        }
+    ],
+    "unpublishFile no-folder": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'docs/a.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'a.txt' (from 'docs/a.txt')",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: Could not get object folder for object: 42",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "Object folder not found."
+        }
+    ],
+    "unpublishFile nothing-found": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'deep/none.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'deep/none.txt'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'none.txt' (from 'deep/none.txt')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'none.txt' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "none.txt"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'deep/none.txt' (full path) from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "deep/none.txt"
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: File 'none.txt' and 'deep/none.txt' not found in object folder. NotFoundException: no deep/none.txt",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ],
+    "unpublishFile path-is-folder": [
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Original file path received: 'docs/sub'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: After cleaning: 'docs/sub'",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Extracted filename from path: 'sub' (from 'docs/sub')",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Object folder path: /objects/42",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Files in object folder: [\"a.txt\"]",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Attempting to get file 'sub' from object folder",
+            "context": []
+        },
+        {
+            "folder.get": "sub"
+        },
+        {
+            "log": "debug",
+            "message": "[FilePublishingHandler] unpublishFile: Successfully found file: 42 at /objects/42",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[FilePublishingHandler] unpublishFile: Found node is not a File instance, it's a: MockObject_Folder",
+            "context": []
+        },
+        {
+            "threw": "Exception",
+            "message": "File not found."
+        }
+    ]
+}

@@ -76,7 +76,7 @@ class FrozenNodeWriteListenerTest extends TestCase {
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(
 			function (string $id): MagicMapper {
-				$this->assertSame(MagicMapper::class, $id);
+				$this->assertSame(\OCA\OpenRegister\Db\MagicMapperInterface::class, $id);
 				$this->mapperRequests++;
 
 				return $this->objects;

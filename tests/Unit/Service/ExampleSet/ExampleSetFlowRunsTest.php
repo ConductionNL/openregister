@@ -25,6 +25,53 @@ use OCA\OpenRegister\Db\FlowRun;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	/**
@@ -163,7 +210,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'claim', actual: $claim->getAction());
 		$this->assertSame(expected: 'esra.demir', actual: $claim->getActor());
 		$this->assertSame(expected: (int) $task->getId(), actual: $claim->getTaskId());
-		$this->assertSame(expected: '2026-10-12 09:05', actual: $claim->getCreated()->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-12 09:05', actual: $this->local(moment: $claim->getCreated()));
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue(condition: $again['ok'], message: (string) json_encode($again));
@@ -245,7 +292,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 			'a claim by someone else'         => [$wait, [self::hearingTask(extra: ['claimedBy' => '{{cast:sanne.uid}}'])], 'claimedBy is the assignee'],
 			'a claim in the future'           => [
 				$wait,
-				[self::hearingTask(extra: ['claimedAt' => '2099-01-01T09:00:00+01:00'])],
+				[self::hearingTask(extra: ['claimedAt' => date('c', strtotime('+10 years'))])],
 				'claimedAt lies in the future',
 			],
 			'a claim that is no date'         => [$wait, [self::hearingTask(extra: ['claimedAt' => 'gisteren'])], 'claimedAt "gisteren" is not a date'],

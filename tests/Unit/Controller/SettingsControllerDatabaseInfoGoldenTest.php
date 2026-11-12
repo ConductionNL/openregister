@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
@@ -32,6 +33,11 @@ use Psr\Log\LoggerInterface;
  * The timestamp is replaced by a marker. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\DatabaseServerProfile
+ * @uses \OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
+ * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices
  */
 class SettingsControllerDatabaseInfoGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/settings-database-info-golden.json';
@@ -121,13 +127,12 @@ class SettingsControllerDatabaseInfoGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 
-		$controller = new SettingsController(
+		$controller = SettingsControllerFactory::create(
 			'openregister',
 			$request,
 			$config,
 			$this->connection($case),
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$logger,
 			$l10n

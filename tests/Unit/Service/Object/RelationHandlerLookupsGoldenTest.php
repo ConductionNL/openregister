@@ -10,15 +10,19 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,6 +36,10 @@ use Psr\Log\LoggerInterface;
  * object data. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @covers \OCA\OpenRegister\Service\Object\RelationTables
+ * @covers \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @covers \OCA\OpenRegister\Service\Object\RelationLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -141,6 +149,8 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 			'anonymous'                    => $base + ['uid' => null],
 			'administrator'                => $base + ['uid' => 'root'],
 			'access filter off'            => $base + ['rbac' => false, 'uid' => 'bob'],
+			'access filter off, fallback'  => ['tables' => ['1_3' => ['b1']]] + $base + ['rbac' => false, 'uid' => 'bob'],
+			'tenancy off, filter schema fails' => $base + ['tenancy' => false, 'schemaFails' => [5]],
 			'drafts, null schema, loose'   => $withDraft,
 			'drafts as their owner'        => $withDraft + ['uid' => 'bob', 'readable' => ['bob' => ['d1', 'b1', 'x1']]],
 			'schema lookup fails in filter' => $base + ['schemaFails' => [5]],
@@ -219,20 +229,16 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 
 		$handler = $this->handler(noResolver: ($scenario['noResolver'] ?? false));
 		$pin = $scenario['pin'] ?? [null, null];
-		$result = $handler->$method(
-			objectId: 'lead-id',
-			query: ($scenario['query'] ?? []),
-			_rbac: ($scenario['rbac'] ?? true),
-			_multitenancy: true,
-			_registerId: $pin[0],
-			_schemaId: $pin[1],
-		);
+		$lookup = (new RelationLookup(objectId: 'lead-id', query: ($scenario['query'] ?? [])))
+			->filteredBy(rbac: ($scenario['rbac'] ?? true), multitenancy: ($scenario['tenancy'] ?? true))
+			->pinnedTo(registerId: $pin[0], schemaId: $pin[1]);
+		$result = $handler->$method(lookup: $lookup);
 		$record = ['result' => $this->rows(result: $result), 'calls' => $this->calls];
 
 		if (isset($scenario['then']) === true) {
 			$this->calls = [];
 			$then = $scenario['then'];
-			$record['then'] = ['result' => $this->rows(result: $handler->$then(objectId: 'lead-id')), 'calls' => $this->calls];
+			$record['then'] = ['result' => $this->rows(result: $handler->$then(lookup: new RelationLookup(objectId: 'lead-id'))), 'calls' => $this->calls];
 		}
 
 		return $record;
@@ -284,7 +290,11 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 				return array_map(fn (array $data): ObjectEntity => $this->entity(data: $data), ($this->world['located'] ?? []));
 			}
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(fn (...$args): array => $this->tableRead(args: $args));
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			fn (RegisterSchema $table, ListQuery $listing): array => $this->tableRead(
+				args: [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort]
+			)
+		);
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturnCallback(
@@ -317,11 +327,13 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturnCallback(fn (): bool => in_array($this->uid, $this->admins, true));
 		$rbac->method('getCurrentUserId')->willReturnCallback(fn (): ?string => $this->uid);
-		$rbac->method('hasPermission')->willReturnCallback(
-			function (...$args): bool {
-				$this->record(name: 'hasPermission', args: $args);
-				$uuid = $args[5] ?? null;
-				return $this->uid !== null && in_array($uuid, ($this->readableByUser[$this->uid] ?? []), true) === true;
+		$rbac->method('hasRowPermission')->willReturnCallback(
+			function (RbacPermissionAsk $ask, ObjectEntity $row): bool {
+				// The row's facts are recorded as the old six-argument call passed
+				// them, so the golden shows the same facts reach the verdict.
+				$facts = [$ask->schema, $ask->action, $row->getOwner(), $row->getMatchEnvelope(), $row->getAuthorization(), $row->getUuid()];
+				$this->record(name: 'hasRowPermission', args: $facts);
+				return $this->uid !== null && in_array($row->getUuid(), ($this->readableByUser[$this->uid] ?? []), true) === true;
 			}
 		);
 
@@ -354,13 +366,14 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		}
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
-			performanceHandler: $this->createMock(PerformanceHandler::class),
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper,
+				relationTypes: $resolver
+			),
 			rbacHandler: $rbac,
-			logger: $logger,
-			registerMapper: $registerMapper,
-			relationTypes: $resolver
+			logger: $logger
 		);
 	}//end handler()
 

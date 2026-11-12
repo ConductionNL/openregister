@@ -28,13 +28,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Webhook;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -43,16 +46,20 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<SchemaCreatedEvent|SchemaUpdatedEvent>
  */
-class NotificationsAnnotationInstaller implements IEventListener {
+class NotificationsAnnotationInstaller implements IEventListener, NotificationsAnnotationInstallerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param WebhookMapper $webhookMapper Mapper used to upsert Webhook rows.
+	 * @param WebhookMapperInterface $webhookMapper Mapper used to upsert Webhook rows.
 	 * @param LoggerInterface $logger Logger for installer diagnostics.
+	 * @param IUserSession $userSession The user the schema is saved for.
+	 * @param IGroupManager $groupManager Says whether that user is an administrator.
 	 */
 	public function __construct(
-		private readonly WebhookMapper $webhookMapper,
+		private readonly WebhookMapperInterface $webhookMapper,
 		private readonly LoggerInterface $logger,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
 	) {
 	}//end __construct()
 
@@ -118,56 +125,53 @@ class NotificationsAnnotationInstaller implements IEventListener {
 				continue;
 			}
 
+			if ($this->mayWriteWebhooks() === false) {
+				$this->logger->warning(
+					sprintf('[NotificationsAnnotationInstaller] skipped Webhook for "%s": only an administrator installs webhooks', (string)$name)
+				);
+				continue;
+			}
+
 			$this->upsertWebhook(
-				schemaSlug: $schemaSlug,
-				notificationName: (string)$name,
+				webhookName: sprintf('or-notif-%s-%s', $schemaSlug, (string)$name),
 				hookSpec: $hook
 			);
 		}//end foreach
 	}//end installSchema()
 
 	/**
+	 * Whether this save may write instance webhooks: as an administrator, or without a signed-in user.
+	 *
+	 * A run without a user is the app itself (install, repair, background
+	 * import). Webhooks direct outbound requests from the server, so a
+	 * signed-in user who is not an administrator writes none, the same rule
+	 * the webhook routes apply.
+	 *
+	 * @return bool
+	 */
+	private function mayWriteWebhooks(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return true;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID()) === true;
+	}//end mayWriteWebhooks()
+
+	/**
 	 * Upsert a single Webhook row from one notification's `webhook` spec.
 	 *
-	 * @param string $schemaSlug Slug of the owning schema.
-	 * @param string $notificationName Name of the declared notification.
+	 * @param string $webhookName The row's unique name, `or-notif-<schema slug>-<notification name>`.
 	 * @param array<string, mixed> $hookSpec The `webhook` sub-document of the annotation.
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
-	private function upsertWebhook(string $schemaSlug, string $notificationName, array $hookSpec): void {
-		$webhookName = sprintf('or-notif-%s-%s', $schemaSlug, $notificationName);
-
+	private function upsertWebhook(string $webhookName, array $hookSpec): void {
 		try {
 			$existing = $this->findByName(name: $webhookName);
-			$events = (array)($hookSpec['events'] ?? ['ObjectUpdatedEvent', 'ObjectTransitionedEvent']);
-			$headers = (array)($hookSpec['headers'] ?? []);
-			$secret = ($hookSpec['secret'] ?? null);
-
-			$headersEncoded = null;
-			if (count($headers) > 0) {
-				$headersEncoded = json_encode($headers);
-			}
-
-			$secretValue = null;
-			if (is_string($secret) === true && $secret !== '') {
-				$secretValue = $secret;
-			}
-
-			$payload = [
-				'name' => $webhookName,
-				'url' => (string)$hookSpec['url'],
-				'method' => strtoupper((string)($hookSpec['method'] ?? 'POST')),
-				'events' => json_encode($events),
-				'headers' => $headersEncoded,
-				'secret' => $secretValue,
-				'enabled' => true,
-				'retryPolicy' => 'exponential',
-				'maxRetries' => 5,
-				'timeout' => 5,
-			];
+			$payload = $this->webhookPayload(webhookName: $webhookName, hookSpec: $hookSpec);
 
 			if ($existing === null) {
 				$payload['uuid'] = (string)\Symfony\Component\Uid\Uuid::v4();
@@ -190,6 +194,43 @@ class NotificationsAnnotationInstaller implements IEventListener {
 	}//end upsertWebhook()
 
 	/**
+	 * The Webhook row's fields for one notification's `webhook` spec.
+	 *
+	 * @param string $webhookName The row's unique name.
+	 * @param array<string, mixed> $hookSpec The `webhook` sub-document of the annotation.
+	 *
+	 * @return array<string, mixed> The fields to create or update the row with.
+	 */
+	private function webhookPayload(string $webhookName, array $hookSpec): array {
+		$events = (array)($hookSpec['events'] ?? ['ObjectUpdatedEvent', 'ObjectTransitionedEvent']);
+		$headers = (array)($hookSpec['headers'] ?? []);
+		$secret = ($hookSpec['secret'] ?? null);
+
+		$headersEncoded = null;
+		if (count($headers) > 0) {
+			$headersEncoded = json_encode($headers);
+		}
+
+		$secretValue = null;
+		if (is_string($secret) === true && $secret !== '') {
+			$secretValue = $secret;
+		}
+
+		return [
+			'name' => $webhookName,
+			'url' => (string)$hookSpec['url'],
+			'method' => strtoupper((string)($hookSpec['method'] ?? 'POST')),
+			'events' => json_encode($events),
+			'headers' => $headersEncoded,
+			'secret' => $secretValue,
+			'enabled' => true,
+			'retryPolicy' => 'exponential',
+			'maxRetries' => 5,
+			'timeout' => 5,
+		];
+	}//end webhookPayload()
+
+	/**
 	 * Look up an existing Webhook row by its unique name.
 	 *
 	 * @param string $name The webhook's `name` field.
@@ -198,7 +239,7 @@ class NotificationsAnnotationInstaller implements IEventListener {
 	 */
 	private function findByName(string $name): ?Webhook {
 		try {
-			$matches = $this->webhookMapper->findAll(filters: ['name' => $name]);
+			$matches = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['name' => $name]));
 			foreach ($matches as $w) {
 				if ($w->getName() === $name) {
 					return $w;

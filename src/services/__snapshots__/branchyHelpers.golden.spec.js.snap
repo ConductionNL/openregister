@@ -1,48 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`branchy helpers golden finds representative points of polygons 1`] = `
-[
-  null,
-  null,
-  [
-    1,
-    2,
-  ],
-  [
-    1,
-    2,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    2,
-    3,
-  ],
-  [
-    2,
-    3,
-  ],
-  null,
-  null,
-  [
-    0.3,
-    0.4000000000000001,
-  ],
-  [
-    0.3,
-    0.4000000000000001,
-  ],
-  null,
-  null,
-]
-`;
-
 exports[`branchy helpers golden maps search trail statistics 1`] = `
 [
   {
@@ -936,6 +893,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -946,6 +904,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"description":"d"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -956,6 +915,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"category":"c","labels":["a"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -966,6 +926,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"category":"","labels":[]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -976,6 +937,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"description":"d","category":"c"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },

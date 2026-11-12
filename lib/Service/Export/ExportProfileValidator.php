@@ -121,6 +121,24 @@ class ExportProfileValidator {
 	 * @throws InvalidArgumentException When one of the three is not a value this writes.
 	 */
 	private function validateChoices(array $data): void {
+		self::validateValueMode(data: $data);
+		self::validateFormat(data: $data);
+
+		if (isset($data['filters']) === true && is_array($data['filters']) === false) {
+			throw new InvalidArgumentException('The filter of an export profile is a map.');
+		}
+	}//end validateChoices()
+
+	/**
+	 * A submitted value mode must be one the profile knows.
+	 *
+	 * @param array<string, mixed> $data The submission.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not.
+	 */
+	private static function validateValueMode(array $data): void {
 		if (isset($data['valueMode']) === true
 			&& in_array($data['valueMode'], ExportProfile::MODES, true) === false
 		) {
@@ -128,7 +146,18 @@ class ExportProfileValidator {
 				'An export profile writes stored values or rendered ones, and names which.'
 			);
 		}
+	}//end validateValueMode()
 
+	/**
+	 * A submitted format must be one the profile writes.
+	 *
+	 * @param array<string, mixed> $data The submission.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not.
+	 */
+	private static function validateFormat(array $data): void {
 		if (isset($data['format']) === true
 			&& in_array($data['format'], ExportProfile::FORMATS, true) === false
 		) {
@@ -136,11 +165,7 @@ class ExportProfileValidator {
 				'An export profile writes ' . implode(' or ', ExportProfile::FORMATS) . '.'
 			);
 		}
-
-		if (isset($data['filters']) === true && is_array($data['filters']) === false) {
-			throw new InvalidArgumentException('The filter of an export profile is a map.');
-		}
-	}//end validateChoices()
+	}//end validateFormat()
 
 	/**
 	 * The file retention: whole days from 1 to the cap, or absent to keep the files.

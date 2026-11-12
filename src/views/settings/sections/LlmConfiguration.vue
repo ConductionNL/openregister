@@ -4,7 +4,7 @@
 		:name="t('openregister', 'LLM Configuration')"
 		description="Configure Large Language Model settings for AI features"
 		:loading="loadingStats"
-		:loadingMessage="t('openregister', 'Loading LLM configuration...')">
+		:loadingMessage="t('openregister', 'Loading LLM configuration…')">
 		<template #actions>
 			<!-- LLM Actions Menu -->
 			<NcActions
@@ -43,7 +43,7 @@
 
 				<!-- Vectorize All Objects -->
 				<NcActionButton
-					:disabled="!llmSettings.enabled || vectorizing"
+					:disabled="!llmSettings.enabled"
 					@click="showVectorizeObjectsDialog">
 					<template #icon>
 						<VectorSquare :size="20" />
@@ -53,7 +53,7 @@
 
 				<!-- Vectorize All Files -->
 				<NcActionButton
-					:disabled="!llmSettings.enabled || vectorizing"
+					:disabled="!llmSettings.enabled"
 					@click="showVectorizeFilesDialog">
 					<template #icon>
 						<FileVectorOutline :size="20" />
@@ -117,7 +117,7 @@
 					)
 				}}
 				<span v-if="saving" class="saving-indicator">
-					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving...') }}
+					<NcLoadingIcon :size="14" /> {{ t('openregister', 'Saving…') }}
 				</span>
 			</p>
 		</div>
@@ -416,6 +416,7 @@ import FileVectorizationModal from '../../../modals/settings/FileVectorizationMo
 import LLMConfigModal from '../../../modals/settings/LLMConfigModal.vue'
 import ObjectManagementModal from '../../../modals/settings/ObjectManagementModal.vue'
 import ObjectVectorizationModal from '../../../modals/settings/ObjectVectorizationModal.vue'
+import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 
 /**
@@ -453,6 +454,15 @@ const FILE_COUNTS = {
 	vectorizedFiles: 'vectorized_files',
 	pendingFiles: 'pending_files',
 	totalChunks: 'total_chunks',
+}
+
+/**
+ * Chat stats fields and the response keys they come from.
+ */
+const CHAT_COUNTS = {
+	totalAgents: 'total_agents',
+	totalConversations: 'total_conversations',
+	totalMessages: 'total_messages',
 }
 
 /**
@@ -577,6 +587,78 @@ function databaseExtrasOf(db) {
  * LLM configuration settings component for managing AI/LLM integration.
  * Allows users to configure LLM providers, models, and AI features.
  */
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	llmSettings: {
+		enabled: false,
+		provider: null,
+		apiEndpoint: '',
+		apiKey: '',
+		model: null,
+		temperature: 0.7,
+		maxTokens: 2000,
+	},
+
+	saving: false,
+	loadingStats: false,
+	llmError: false,
+	llmErrorMessage: '',
+	llmConnectionStatus: 'Unknown',
+	showLLMConfigDialog: false,
+	showFileManagementDialog: false,
+	showObjectManagementDialog: false,
+	showObjectVectorizationModal: false,
+	showFileVectorizationModal: false,
+	providerConfig: {
+		embeddingProvider: null,
+		embeddingModel: null,
+		chatProvider: null,
+		chatModel: null,
+	},
+
+	databaseInfo: {
+		type: 'Unknown',
+		version: 'Unknown',
+		vectorSupport: false,
+		recommendedPlugin: null,
+		performanceNote: null,
+		extensions: [],
+		hybridSearch: null,
+		lastUpdated: null,
+	},
+
+	refreshingDatabase: false,
+	chatStats: {
+		totalAgents: 0,
+		totalConversations: 0,
+		totalMessages: 0,
+	},
+
+	vectorStats: {
+		totalVectors: 0,
+		objectVectors: 0,
+		fileVectors: 0,
+		storageMB: '0.0',
+	},
+
+	fileStats: {
+		totalFiles: 0,
+		vectorizedFiles: 0,
+		filesExtracted: 0,
+		pendingFiles: 0,
+		totalChunks: 0,
+	},
+
+	objectStats: {
+		totalObjects: 0,
+		vectorizedObjects: 0,
+		pendingObjects: 0,
+		progressPercentage: 0,
+	},
+}
+
 export default {
 	name: 'LlmConfiguration',
 
@@ -603,75 +685,7 @@ export default {
 	},
 
 	data() {
-		return {
-			llmSettings: {
-				enabled: false,
-				provider: null,
-				apiEndpoint: '',
-				apiKey: '',
-				model: null,
-				temperature: 0.7,
-				maxTokens: 2000,
-			},
-
-			saving: false,
-			loadingStats: false,
-			vectorizing: false,
-			llmError: false,
-			llmErrorMessage: '',
-			llmConnectionStatus: 'Unknown',
-			showLLMConfigDialog: false,
-			showFileManagementDialog: false,
-			showObjectManagementDialog: false,
-			showObjectVectorizationModal: false,
-			showFileVectorizationModal: false,
-			providerConfig: {
-				embeddingProvider: null,
-				embeddingModel: null,
-				chatProvider: null,
-				chatModel: null,
-			},
-
-			databaseInfo: {
-				type: 'Unknown',
-				version: 'Unknown',
-				vectorSupport: false,
-				recommendedPlugin: null,
-				performanceNote: null,
-				extensions: [],
-				hybridSearch: null,
-				lastUpdated: null,
-			},
-
-			refreshingDatabase: false,
-			chatStats: {
-				totalAgents: 0,
-				totalConversations: 0,
-				totalMessages: 0,
-			},
-
-			vectorStats: {
-				totalVectors: 0,
-				objectVectors: 0,
-				fileVectors: 0,
-				storageMB: '0.0',
-			},
-
-			fileStats: {
-				totalFiles: 0,
-				vectorizedFiles: 0,
-				filesExtracted: 0,
-				pendingFiles: 0,
-				totalChunks: 0,
-			},
-
-			objectStats: {
-				totalObjects: 0,
-				vectorizedObjects: 0,
-				pendingObjects: 0,
-				progressPercentage: 0,
-			},
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -790,18 +804,12 @@ export default {
 		 */
 		async loadChatStats() {
 			try {
-				// TODO: Implement API endpoint to get chat stats
-				// For now, use placeholder or existing API
 				const response = await this.settingsStore.getChatStats()
 				if (response) {
-					this.chatStats.totalAgents = response.total_agents || 0
-					this.chatStats.totalConversations =
-						response.total_conversations || 0
-					this.chatStats.totalMessages = response.total_messages || 0
+					Object.assign(this.chatStats, countsOf(response, CHAT_COUNTS))
 				}
 			} catch (error) {
 				console.error('Failed to load chat stats:', error)
-				// Don't throw error, just use zeros
 			}
 		},
 
@@ -820,13 +828,24 @@ export default {
 				await this.loadDatabaseInfo()
 				showSuccess(this.t('openregister', 'Database information refreshed'))
 			} catch (error) {
-				console.error('Failed to refresh database info:', error)
-				showError(
-					this.t('openregister', 'Failed to refresh database information'),
-				)
+				this.databaseRefreshFailed(error)
 			} finally {
 				this.refreshingDatabase = false
 			}
+		},
+
+		/**
+		 * Report a failed database refresh.
+		 *
+		 * @param {Error} error The failure
+		 * @spec exclude UI plumbing — reports a failed database refresh
+		 * @return {void}
+		 */
+		databaseRefreshFailed(error) {
+			console.error('Failed to refresh database info:', error)
+			showError(
+				this.t('openregister', 'Failed to refresh database information'),
+			)
 		},
 
 		/**
@@ -975,24 +994,44 @@ export default {
 		async loadVectorStats() {
 			if (!this.llmSettings.enabled) return
 
-			this.loadingStats = true
-			this.llmError = false
-			this.llmErrorMessage = ''
-
+			this.beginVectorStatsLoad()
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
 					this.applyVectorStats(response)
 				}
 			} catch (error) {
-				console.error('Failed to load vector stats:', error)
-				this.llmError = true
-				this.llmErrorMessage =
-					error.message || 'Failed to connect to LLM service'
-				this.llmConnectionStatus = 'Disconnected'
+				this.vectorStatsFailed(error)
 			} finally {
 				this.loadingStats = false
 			}
+		},
+
+		/**
+		 * Mark the vector stats as loading and clear the last LLM error.
+		 *
+		 * @spec exclude UI plumbing — resets the vector stats state
+		 * @return {void}
+		 */
+		beginVectorStatsLoad() {
+			this.loadingStats = true
+			this.llmError = false
+			this.llmErrorMessage = ''
+		},
+
+		/**
+		 * Show the LLM service as unreachable after a failed stats request.
+		 *
+		 * @param {Error} error The failure
+		 * @spec exclude UI plumbing — reports failed vector stats
+		 * @return {void}
+		 */
+		vectorStatsFailed(error) {
+			console.error('Failed to load vector stats:', error)
+			this.llmError = true
+			this.llmErrorMessage =
+				error.message || 'Failed to connect to LLM service'
+			this.llmConnectionStatus = 'Disconnected'
 		},
 
 		/**
@@ -1009,6 +1048,17 @@ export default {
 				? 'Connected'
 				: 'Disconnected'
 			assignVectorCounts(this.vectorStats, stats)
+			this.applyFileAndObjectCounts(response)
+		},
+
+		/**
+		 * Show the file and object counts a vector stats response carries.
+		 *
+		 * @param {object} response The vector stats response
+		 * @spec exclude UI plumbing — maps vector stats for display
+		 * @return {void}
+		 */
+		applyFileAndObjectCounts(response) {
 			if (response.files) {
 				Object.assign(this.fileStats, countsOf(response.files, FILE_COUNTS))
 			}
@@ -1050,76 +1100,17 @@ export default {
 		showVectorizeFilesDialog() {
 			this.showFileVectorizationModal = true
 		},
-
-		/**
-		 * Vectorize all files
-		 *
-		 * @spec exclude UI plumbing — starts a background vectorize job via API
-		 * @return {Promise<void>}
-		 */
-		async vectorizeAllFiles() {
-			this.vectorizing = true
-
-			try {
-				// Start background job
-				await axios.post(
-					generateUrl('/apps/openregister/api/files/vectorize/batch'),
-					{
-						batchSize: 25,
-					},
-				)
-
-				showSuccess(
-					this.t(
-						'openregister',
-						'File vectorization started. Check the statistics section for progress.',
-					),
-				)
-				await this.loadAllStats()
-			} catch (error) {
-				console.error('Failed to start file vectorization:', error)
-				showError(
-					this.t(
-						'openregister',
-						'Failed to start vectorization: {error}',
-						{
-							error: error.response?.data?.error || error.message,
-						},
-					),
-				)
-			} finally {
-				this.vectorizing = false
-			}
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
-
-.main-description.info-note {
-	background: var(--color-background-dark);
-	border-left: 4px solid var(--color-primary-element);
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -1167,86 +1158,7 @@ export default {
 	margin-top: 32px;
 }
 
-.loading-section {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 40px;
-	gap: 16px;
-}
-
-.loading-section p {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
-
-.dashboard-section {
-	margin-top: 20px;
-}
-
-.section-title {
-	color: var(--color-text-light);
-	font-size: 16px;
-	font-weight: 600;
-	margin: 24px 0 16px 0;
-}
-
-.section-title:first-child {
-	margin-top: 0;
-}
-
-.dashboard-stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 16px;
-	margin-bottom: 24px;
-}
-
-.stat-card {
-	background: var(--color-main-background);
-	border: 2px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	text-align: center;
-	transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-	border-color: var(--color-primary-element);
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h5 {
-	color: var(--color-text-maxcontrast);
-	font-size: 13px;
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin: 0 0 12px 0;
-}
-
-.stat-card p {
-	color: var(--color-primary-element);
-	font-size: 32px;
-	font-weight: 700;
-	margin: 0;
-	font-variant-numeric: tabular-nums;
-}
-
-.stat-card p.status-connected {
-	color: var(--color-success);
-}
-
-.stat-card p.status-disconnected {
-	color: var(--color-error);
-}
-
-.stat-card p.status-unknown {
-	color: var(--color-text-maxcontrast);
-}
-
+.loading-section,
 .error-section {
 	display: flex;
 	flex-direction: column;
@@ -1254,6 +1166,15 @@ export default {
 	justify-content: center;
 	padding: 40px;
 	gap: 16px;
+}
+
+@include loading-section-p;
+
+.dashboard-section {
+	margin-top: 20px;
+}
+
+.error-section {
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius-large);
@@ -1264,42 +1185,6 @@ export default {
 	font-size: 16px;
 	font-weight: 500;
 	margin: 0;
-}
-
-/* Collapsible Sections (matching File Configuration) */
-.collapsible-section {
-	margin-bottom: 16px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	background: var(--color-main-background);
-}
-
-.collapsible-section summary {
-	cursor: pointer;
-	padding: 16px;
-	font-size: 14px;
-	font-weight: 600;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	user-select: none;
-	transition: background-color 0.2s ease;
-}
-
-.collapsible-section summary:hover {
-	background: var(--color-background-hover);
-}
-
-.collapsible-section summary .icon {
-	font-size: 18px;
-}
-
-.collapsible-section[open] summary {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.section-content {
-	padding: 20px;
 }
 
 /* Provider Info Cards */
@@ -1493,21 +1378,6 @@ export default {
 }
 
 @media (max-width: 768px) {
-	.section-header-inline {
-		position: static;
-		margin-bottom: 1rem;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-
-	.dashboard-stats-grid {
-		grid-template-columns: repeat(2, 1fr);
-	}
-
 	.provider-info-grid {
 		grid-template-columns: 1fr;
 	}
@@ -1525,8 +1395,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.stat-card,
-	.collapsible-section summary,
 	.stat-tile {
 		transition: none;
 	}

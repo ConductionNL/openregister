@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PermissionsAuditControllerFactory;
 use OCA\OpenRegister\Controller\PermissionsAuditController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -86,7 +87,7 @@ class PermissionsAuditControllerTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('findAll')->willReturn($schemas);
 
-		return new PermissionsAuditController(
+		return PermissionsAuditControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			catalogue: new PermissionCatalogue(),

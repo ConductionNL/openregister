@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use PHPUnit\Framework\TestCase;
@@ -66,7 +67,6 @@ class TaskInboxDeliveryStateTest extends TestCase {
 	private function service(?PortalTaskDeliveryMapper $deliveries): TaskInboxService {
 		return new TaskInboxService(
 			tasks: $this->createMock(TaskMapper::class),
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: null,
 			deliveries: $deliveries
@@ -91,14 +91,14 @@ class TaskInboxDeliveryStateTest extends TestCase {
 		$deliveries->method('findForTask')->with('t-1')->willReturn([$row]);
 		$service = $this->service($deliveries);
 
-		$rendered = $service->row(task: $this->externalTask(), subjects: [], now: new DateTime());
+		$rendered = $service->row(task: $this->externalTask(), listing: new InboxListing(subjects: [], now: new DateTime(), openBlockers: []));
 		$this->assertSame('delivered', $rendered['delivery']['state']);
 		$this->assertArrayHasKey('portal-inbox', $rendered['delivery']['channels']);
 
 		$user = $this->externalTask();
 		$user->setPerformerType(Task::PERFORMER_USER);
 		$user->setAssignee('alice');
-		$this->assertArrayNotHasKey('delivery', $service->row(task: $user, subjects: [], now: new DateTime()));
+		$this->assertArrayNotHasKey('delivery', $service->row(task: $user, listing: new InboxListing(subjects: [], now: new DateTime(), openBlockers: [])));
 	}//end testTheExternalRowCarriesTheSummarisedDeliveryState()
 
 	/**

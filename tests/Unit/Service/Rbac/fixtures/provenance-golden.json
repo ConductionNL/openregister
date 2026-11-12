@@ -1,0 +1,3514 @@
+{
+    "ana-behandelaars|empty": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|all-null": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|empty-arrays": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-group": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "user:ana",
+            "principal": "user:ana",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|object-beats-schema": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "register",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|register-only": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "register",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-roles": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|flat-role-map": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|malformed-roles": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|direct-before-role-same-level": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|role-at-register-direct-at-schema-miss": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|empty|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|empty|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|empty|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|empty|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-group|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "schema"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "user:ana",
+            "principal": "user:ana",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-group|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "user:ana",
+            "principal": "user:ana",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-group|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "user:ana",
+            "principal": "user:ana",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-group|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "user:ana",
+            "principal": "user:ana",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-roles|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "role"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-roles|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-roles|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "ana-behandelaars|schema-roles|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|all-null": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty-arrays": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-group": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|object-beats-schema": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "object",
+            "rule": "user:bob",
+            "principal": "user:bob",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|register-only": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-roles": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|flat-role-map": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|malformed-roles": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|direct-before-role-same-level": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|role-at-register-direct-at-schema-miss": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|empty|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-group|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-group|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-group|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-group|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-roles|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-roles|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-roles|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "bob-none|schema-roles|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|all-null": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty-arrays": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-group": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|object-beats-schema": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "schema",
+            "rule": "admin",
+            "principal": "admin",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "register",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|register-only": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "register",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-roles": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "admin"
+            ],
+            "principal": "admin",
+            "role": "beheerder",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|flat-role-map": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|malformed-roles": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|direct-before-role-same-level": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "schema",
+            "rule": "admin",
+            "principal": "admin",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|role-at-register-direct-at-schema-miss": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars",
+                "admin"
+            ],
+            "principal": "behandelaars",
+            "role": "beheerder",
+            "declaredAt": "register",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "default-open"
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|empty|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-group|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "schema"
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-group|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-group|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-group|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "schema",
+            "rule": "behandelaars",
+            "principal": "behandelaars",
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-roles|read-and-delete|enforced": {
+        "read": {
+            "action": "read",
+            "granted": false,
+            "source": "deny",
+            "rule": {
+                "group": "behandelaars"
+            },
+            "principal": "behandelaars",
+            "role": null,
+            "deny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "role"
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": false,
+            "source": "deny",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": {
+                "action": "delete"
+            },
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": "role"
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-roles|read-and-delete|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": {
+                "rule": {
+                    "group": "behandelaars"
+                },
+                "principal": "behandelaars",
+                "action": "read",
+                "conditional": false
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "admin"
+            ],
+            "principal": "admin",
+            "role": "beheerder",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": {
+                "action": "delete"
+            },
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-roles|explicit-null|enforced": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "admin"
+            ],
+            "principal": "admin",
+            "role": "beheerder",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "cor-admins|schema-roles|explicit-null|staged": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "behandelaars"
+            ],
+            "principal": "behandelaars",
+            "role": "behandelaar",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "role",
+            "rule": [
+                "admin"
+            ],
+            "principal": "admin",
+            "role": "beheerder",
+            "declaredAt": "schema",
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": false,
+            "source": "none",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "defaults": {
+        "read": {
+            "action": "read",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "update": {
+            "action": "update",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "delete": {
+            "action": "delete",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        },
+        "publish": {
+            "action": "publish",
+            "granted": true,
+            "source": "default-open",
+            "rule": null,
+            "principal": null,
+            "role": null,
+            "deny": null,
+            "stagedDeny": null,
+            "wouldHaveBeenGrantedBy": null
+        }
+    },
+    "no-actions": []
+}

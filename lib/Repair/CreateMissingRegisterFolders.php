@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -81,29 +81,54 @@ class CreateMissingRegisterFolders implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
-			$provisioner = $this->container->get(RegisterFolderProvisioner::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
+			$provisioner = $this->container->get(RegisterFolderProvisionerInterface::class);
 			// Every register, whatever organisation owns it: occ upgrade has no
 			// active organisation, and the write is bookkeeping, not an edit.
 			$registers = $registerMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->info(
-				message: '[CreateMissingRegisterFolders] Skipped: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$output->info('Register folders: skipped, services unavailable (' . $e->getMessage() . ')');
+			$this->reportSkipped(error: $e, output: $output);
 			return;
 		}
 
 		$tally = $provisioner->ensureFolders(registers: $registers);
 
-		$output->info(
-			sprintf(
-				'Register folders: %d provisioned, %d already present, %d could not be made',
-				$tally['provisioned'],
-				$tally['present'],
-				$tally['failed']
-			)
-		);
+		$output->info(self::tallyLine(tally: $tally));
 	}//end run()
+
+	/**
+	 * Log and print that the step was skipped because its services are unavailable.
+	 *
+	 * @param Throwable $error  Why the services could not be resolved.
+	 * @param IOutput   $output Migration output handle.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+	 */
+	private function reportSkipped(Throwable $error, IOutput $output): void {
+		$this->logger->info(
+			message: '[CreateMissingRegisterFolders] Skipped: ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$output->info('Register folders: skipped, services unavailable (' . $error->getMessage() . ')');
+	}//end reportSkipped()
+
+	/**
+	 * The closing line: folders provisioned, already present and not made.
+	 *
+	 * @param array{provisioned: int, present: int, failed: int} $tally The provisioner's tally.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+	 */
+	private static function tallyLine(array $tally): string {
+		return sprintf(
+			'Register folders: %d provisioned, %d already present, %d could not be made',
+			$tally['provisioned'],
+			$tally['present'],
+			$tally['failed']
+		);
+	}//end tallyLine()
 }//end class

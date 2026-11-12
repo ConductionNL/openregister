@@ -29,6 +29,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler::resolveSchemaReference
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler
  */
 class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 
@@ -63,12 +64,7 @@ class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 				return [$this->schema(7, 'supplier')];
 			}
 		);
-		$handler = new RelationCascadeHandler(
-			$this->createMock(MagicMapper::class),
-			$mapper,
-			$this->createMock(RegisterMapper::class),
-			new NullLogger()
-		);
+		$handler = new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $mapper, tables: $this->createMock(MagicMapper::class)), logger: new NullLogger());
 
 		$this->assertSame('7', $handler->resolveSchemaReference(reference: '#/components/schemas/Supplier'));
 		$this->assertSame('7', $handler->resolveSchemaReference(reference: 'supplier', scope: RelationCascadeHandler::SYSTEM_SCOPE));
@@ -90,12 +86,7 @@ class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 				return $this->schema(12, 'x');
 			}
 		);
-		$handler = new RelationCascadeHandler(
-			$this->createMock(MagicMapper::class),
-			$mapper,
-			$this->createMock(RegisterMapper::class),
-			new NullLogger()
-		);
+		$handler = new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $mapper, tables: $this->createMock(MagicMapper::class)), logger: new NullLogger());
 
 		$this->assertSame('12', $handler->resolveSchemaReference(reference: '12', scope: RelationCascadeHandler::SYSTEM_SCOPE));
 		$this->assertSame('12', $handler->resolveSchemaReference(reference: '12'));

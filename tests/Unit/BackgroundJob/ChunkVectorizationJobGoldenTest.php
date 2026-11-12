@@ -7,11 +7,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
+use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -31,9 +36,16 @@ use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
  * Compared with fixtures/chunk-vectorization-job-golden.json; set
  * UPDATE_GOLDEN=1 to rewrite it.
  *
- * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob
- * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationBatch
- * @uses   \OCA\OpenRegister\Db\Chunk
+ * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob
+ * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationBatch
+ * @uses   \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\BackgroundJob\ChunkAsVectorSource
+ * @uses \OCA\OpenRegister\Files\Db\FileSourceOrder
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
  */
 class ChunkVectorizationJobGoldenTest extends TestCase
 {
@@ -229,9 +241,9 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $storage = $this->createMock(VectorStorageHandler::class);
         $storeCalls = 0;
         $storage->method('storeVector')->willReturnCallback(
-            function (...$args) use ($case, &$storeCalls): int {
+            function (StoredVector $vector) use ($case, &$storeCalls): int {
                 $storeCalls++;
-                $this->record('storeVector', $args);
+                $this->record('storeVector', array_values(get_object_vars($vector)));
                 if (in_array($storeCalls, $case['storeThrow'] ?? [], true) === true) {
                     throw new \Exception('store failed '.$storeCalls);
                 }
@@ -285,9 +297,10 @@ class ChunkVectorizationJobGoldenTest extends TestCase
 
         $this->registerService(LoggerInterface::class, fn () => $logger);
         $this->registerService(IAppConfig::class, fn () => $config);
-        $this->registerService(ChunkMapper::class, fn () => $mapper);
+        $this->registerService(ChunkStoreInterface::class, fn () => $mapper);
         $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
-        $this->registerService(VectorStorageHandler::class, fn () => $storage);
+        $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
+        $this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
     }//end wire()
 
     /**

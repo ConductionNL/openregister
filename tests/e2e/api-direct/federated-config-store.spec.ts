@@ -79,6 +79,12 @@ test.describe('Federated config store', () => {
 	const objects: string[] = []
 
 	test.beforeAll(async ({ request }) => {
+		// These bundles are unsigned, which an administrator has to allow.
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: 'true' },
+		})
+
 		const sch = await (
 			await request.post(`${API}/schemas`, {
 				headers: JSON_HEADERS,
@@ -108,6 +114,11 @@ test.describe('Federated config store', () => {
 	})
 
 	test.afterAll(async ({ request }) => {
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: '' },
+		})
+
 		for (const u of objects)
 			await request
 				.delete(`${API}/objects/${regId}/${schId}/${u}`)
@@ -196,7 +207,7 @@ test.describe('Federated config store', () => {
 		}
 	})
 
-	test('unsigned install succeeds when signing is not enforced', async ({
+	test('unsigned install succeeds when an administrator allows unverified bundles', async ({
 		request,
 	}) => {
 		const b = await bundle(request)

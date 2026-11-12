@@ -1,0 +1,111 @@
+{
+    "none": {
+        "order": [],
+        "skipped": []
+    },
+    "cast only": {
+        "order": [
+            "openregister"
+        ],
+        "skipped": []
+    },
+    "no cast": {
+        "order": [
+            "decidesk",
+            "zaak"
+        ],
+        "skipped": []
+    },
+    "ties by id": {
+        "order": [
+            "openregister",
+            "decidesk",
+            "mydash",
+            "zaak"
+        ],
+        "skipped": []
+    },
+    "chain": {
+        "order": [
+            "openregister",
+            "pipelinq",
+            "decidesk",
+            "zaak"
+        ],
+        "skipped": []
+    },
+    "cast waits": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through openregister, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "cast waits chain": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through mydash, openregister, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "after disabled": {
+        "order": [
+            "openregister",
+            "zaak"
+        ],
+        "skipped": [
+            "ghostapp"
+        ]
+    },
+    "after enabled absent": {
+        "order": [
+            "zaak"
+        ],
+        "skipped": []
+    },
+    "expected skipped": {
+        "order": [
+            "openregister"
+        ],
+        "skipped": [
+            "betaapp",
+            "zaak"
+        ]
+    },
+    "skipped sorted": {
+        "order": [
+            "decidesk",
+            "zaak"
+        ],
+        "skipped": [
+            "aa",
+            "bb",
+            "mm",
+            "zz"
+        ]
+    },
+    "self loop": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "two cycle": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through decidesk, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "cycle with tail": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through decidesk, pipelinq, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "cycle via cast": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through openregister, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "cast cycle": {
+        "threw": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetException: The fragments of this set wait on each other in a cycle through openregister, zaak. Fix the \"after\" lists of these apps; nothing was written."
+    },
+    "diamond": {
+        "order": [
+            "openregister",
+            "d",
+            "b",
+            "c",
+            "a"
+        ],
+        "skipped": []
+    },
+    "duplicate after": {
+        "order": [
+            "decidesk",
+            "zaak"
+        ],
+        "skipped": []
+    }
+}

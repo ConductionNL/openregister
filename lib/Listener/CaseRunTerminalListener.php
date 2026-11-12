@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -44,10 +44,10 @@ class CaseRunTerminalListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer.
+	 * @param CasePlanServiceInterface $plans The case layer.
 	 */
 	public function __construct(
-		private readonly CasePlanService $plans,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()

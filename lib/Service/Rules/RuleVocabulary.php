@@ -92,50 +92,13 @@ final class RuleVocabulary {
 	/**
 	 * Every kind, with the annotation it is read from and what it does.
 	 *
-	 * `order` is the position the save pipeline evaluates the kind in, and it
-	 * is the sort key of the inventory. It is a property of the pipeline, not
-	 * of an individual rule: a calculation always runs before a lifecycle
-	 * condition sees the object, because the condition reads what it wrote.
+	 * `order` is the position the save pipeline evaluates the kind in, and the
+	 * sort key of the inventory; the table, and why each kind sits where it
+	 * does, is {@see RuleVocabularyTable::KINDS}.
 	 *
 	 * @var array<string, array{order: int, source: string, actions: array<int, string>, description: string}>
 	 */
-	public const KINDS = [
-		self::KIND_CALCULATION => [
-			'order' => 1,
-			'source' => 'x-openregister-calculations',
-			'actions' => [self::ACTION_SET_VALUE],
-			'description' => 'Derives a value from the object and writes it before the object is stored.',
-		],
-		self::KIND_STATE_FIELD_RULE => [
-			'order' => 2,
-			'source' => 'x-openregister-lifecycle.states',
-			'actions' => [self::ACTION_HIDE_FIELD, self::ACTION_READ_ONLY_FIELD, self::ACTION_REQUIRE_FIELD],
-			'description' => 'Hides, freezes or requires a property while the object is in one state.',
-		],
-		self::KIND_LIFECYCLE_CONDITION => [
-			'order' => 3,
-			'source' => 'x-openregister-lifecycle.transitions',
-			'actions' => [self::ACTION_REFUSE_TRANSITION],
-			'description' => 'Decides whether a transition may proceed, and refuses it when it may not.',
-		],
-		self::KIND_ADMINISTERED_VALIDATION => [
-			'order' => 4,
-			'source' => 'x-openregister-validations',
-			'actions' => [self::ACTION_REFUSE_WRITE],
-			'description' => 'Refuses or warns about a write, in the sentence the administrator wrote.',
-		],
-		self::KIND_FLOW => [
-			// Moved from 4 to 5 so the validation sits in front of it. That is
-			// the pipeline's real order, not a preference: a validation refuses
-			// BEFORE the object is stored, and a flow runs AFTER it is. `order`
-			// is the sort key of the inventory, so this changes where the two
-			// appear in a list and nothing else.
-			'order' => 5,
-			'source' => 'openregister_flow_triggers',
-			'actions' => [self::ACTION_RUN_FLOW],
-			'description' => 'Runs a flow after the object is stored.',
-		],
-	];
+	public const KINDS = RuleVocabularyTable::KINDS;
 
 	/**
 	 * Refuses the write outright, in the administrator's own words.
@@ -177,27 +140,14 @@ final class RuleVocabulary {
 	 *
 	 * @var array<string, string>
 	 */
-	public const VERDICTS = [
-		self::VERDICT_FIRED => 'The rule ran and did what it declares.',
-		self::VERDICT_NO_MATCH => 'The rule was evaluated and its condition did not hold.',
-		self::VERDICT_REFUSED => 'The rule held and refused the write it was guarding.',
-		self::VERDICT_ERROR => 'The rule could not be evaluated.',
-	];
+	public const VERDICTS = RuleVocabularyTable::VERDICTS;
 
 	/**
 	 * Every action, with the sentence a surface renders for it.
 	 *
 	 * @var array<string, string>
 	 */
-	public const ACTIONS = [
-		self::ACTION_SET_VALUE => 'Writes a value onto the object being saved.',
-		self::ACTION_HIDE_FIELD => 'Keeps a property out of the rendered object.',
-		self::ACTION_READ_ONLY_FIELD => 'Renders a property but refuses a change to it.',
-		self::ACTION_REQUIRE_FIELD => 'Refuses a save that leaves a property empty.',
-		self::ACTION_REFUSE_TRANSITION => 'Refuses the transition the condition guards.',
-		self::ACTION_REFUSE_WRITE => 'Refuses the write, in the sentence the administrator wrote.',
-		self::ACTION_RUN_FLOW => 'Starts a flow run.',
-	];
+	public const ACTIONS = RuleVocabularyTable::ACTIONS;
 
 	/**
 	 * The whole vocabulary, in the shape a consuming surface renders.
@@ -208,28 +158,7 @@ final class RuleVocabulary {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function all(): array {
-		$kinds = [];
-		foreach (self::KINDS as $kind => $descriptor) {
-			$kinds[] = [
-				'kind' => (string)$kind,
-				'order' => $descriptor['order'],
-				'source' => $descriptor['source'],
-				'actions' => $descriptor['actions'],
-				'description' => $descriptor['description'],
-			];
-		}
-
-		$verdicts = [];
-		foreach (self::VERDICTS as $verdict => $description) {
-			$verdicts[] = ['verdict' => (string)$verdict, 'description' => $description];
-		}
-
-		$actions = [];
-		foreach (self::ACTIONS as $action => $description) {
-			$actions[] = ['action' => (string)$action, 'description' => $description];
-		}
-
-		return ['kinds' => $kinds, 'verdicts' => $verdicts, 'actions' => $actions];
+		return (new RuleVocabularyTable())->listing();
 	}//end all()
 
 	/**

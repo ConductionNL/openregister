@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Endpoint\EndpointFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use RuntimeException;
 
@@ -46,6 +47,9 @@ use RuntimeException;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Endpoint extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Unique identifier for the endpoint.
@@ -208,27 +212,9 @@ class Endpoint extends Entity implements JsonSerializable {
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'reference', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'endpoint', type: 'string');
-		$this->addType(fieldName: 'endpointArray', type: 'json');
-		$this->addType(fieldName: 'endpointRegex', type: 'string');
-		$this->addType(fieldName: 'method', type: 'string');
-		$this->addType(fieldName: 'targetType', type: 'string');
-		$this->addType(fieldName: 'targetId', type: 'string');
-		$this->addType(fieldName: 'conditions', type: 'json');
-		$this->addType(fieldName: 'inputMapping', type: 'string');
-		$this->addType(fieldName: 'outputMapping', type: 'string');
-		$this->addType(fieldName: 'rules', type: 'json');
-		$this->addType(fieldName: 'configurations', type: 'json');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (EndpointFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -288,24 +274,6 @@ class Endpoint extends Entity implements JsonSerializable {
 	}//end getConfigurations()
 
 	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Get the slug for the endpoint.
 	 * If the slug is not set, generate one from the name.
 	 *
@@ -332,73 +300,18 @@ class Endpoint extends Entity implements JsonSerializable {
 	}//end getSlug()
 
 	/**
-	 * Hydrate the entity from an array of data
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @param array $object Array of data to hydrate the entity with
-	 *
-	 * @return static Returns the hydrated entity
+	 * @return array<string, mixed>
 	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = [];
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
-	 * Serialize the entity to JSON format
-	 *
-	 * @return ((mixed|string[])[]|int|null|string)[]
-	 *
-	 * @phpstan-return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		$result = [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'reference' => $this->reference,
-			'version' => $this->version,
-			'endpoint' => $this->endpoint,
+	protected function jsonOverrides(): array {
+		return [
 			'endpointArray' => $this->getEndpointArray(),
-			'endpointRegex' => $this->endpointRegex,
-			'method' => $this->method,
-			'targetType' => $this->targetType,
-			'targetId' => $this->targetId,
 			'conditions' => $this->getConditions(),
-			'inputMapping' => $this->inputMapping,
-			'outputMapping' => $this->outputMapping,
 			'rules' => $this->getRules(),
 			'configurations' => $this->getConfigurations(),
 			'slug' => $this->getSlug(),
 			'groups' => $this->getGroups(),
-			'organisation' => $this->organisation,
 		];
-
-		$result['created'] = null;
-		if (isset($this->created) === true) {
-			$result['created'] = $this->created->format('c');
-		}
-
-		$result['updated'] = null;
-		if (isset($this->updated) === true) {
-			$result['updated'] = $this->updated->format('c');
-		}
-
-		return $result;
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

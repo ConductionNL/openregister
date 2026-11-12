@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileExtractionController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -66,7 +69,7 @@ class FileExtractionControllerTest extends TestCase {
 		IGroupManager $groupManager,
 		IRootFolder $rootFolder,
 	): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -246,6 +249,30 @@ class FileExtractionControllerTest extends TestCase {
 		$this->assertTrue($data['success']);
 	}
 
+	public function testIndexTreatsAnEmptySearchAsNone(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['limit', 50, 50],
+				['offset', 0, 0],
+				['search', null, ''],
+				['status', null, null],
+				['riskLevel', null, null],
+				['sort', 'extractedAt', 'extractedAt'],
+				['order', 'DESC', 'DESC'],
+			]);
+
+		$this->chunkMapper->expects($this->once())
+			->method('getFileSourceSummaries')
+			->with(50, 0, $this->identicalTo(null), new FileSourceOrder('extractedAt', 'DESC'))
+			->willReturn([]);
+		$this->chunkMapper->expects($this->once())
+			->method('countFileSourceSummaries')
+			->with($this->identicalTo(null))
+			->willReturn(0);
+
+		$this->assertEquals(200, $this->controller->index()->getStatus());
+	}
+
 	public function testIndexWithSearchTerm(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -260,7 +287,7 @@ class FileExtractionControllerTest extends TestCase {
 
 		$this->chunkMapper->expects($this->once())
 			->method('getFileSourceSummaries')
-			->with(50, 0, 'report', 'extractedAt', 'DESC')
+			->with(50, 0, 'report', new FileSourceOrder('extractedAt', 'DESC'))
 			->willReturn([]);
 		$this->chunkMapper->expects($this->once())
 			->method('countFileSourceSummaries')
@@ -286,7 +313,7 @@ class FileExtractionControllerTest extends TestCase {
 
 		$this->chunkMapper->expects($this->once())
 			->method('getFileSourceSummaries')
-			->with(50, 0, null, 'extractedAt', 'DESC')
+			->with(50, 0, null, new FileSourceOrder('extractedAt', 'DESC'))
 			->willReturn([]);
 		$this->chunkMapper->method('countFileSourceSummaries')->willReturn(0);
 
@@ -412,7 +439,7 @@ class FileExtractionControllerTest extends TestCase {
 		// PHP sort: fetch all from DB (null limit/offset, fallback sort).
 		$this->chunkMapper->expects($this->once())
 			->method('getFileSourceSummaries')
-			->with(null, null, null, 'extractedAt', 'ASC')
+			->with(null, null, null, new FileSourceOrder('extractedAt', 'ASC'))
 			->willReturn($summaries);
 		$this->chunkMapper->method('countFileSourceSummaries')->willReturn(3);
 
@@ -714,7 +741,7 @@ class FileExtractionControllerTest extends TestCase {
 
 		$this->chunkMapper->expects($this->once())
 			->method('getFileSourceSummaries')
-			->with(10, 5, null, 'fileName', 'ASC')
+			->with(10, 5, null, new FileSourceOrder('fileName', 'ASC'))
 			->willReturn([]);
 		$this->chunkMapper->method('countFileSourceSummaries')->willReturn(0);
 
@@ -784,7 +811,7 @@ class FileExtractionControllerTest extends TestCase {
 	// ─── show() ─────────────────────────────────────────────────────
 
 	public function testShowSuccess(): void {
-		$chunk1 = $this->createMock(\OCA\OpenRegister\Db\Chunk::class);
+		$chunk1 = $this->createMock(\OCA\OpenRegister\Files\Db\Chunk::class);
 		$chunk1->method('jsonSerialize')->willReturn([
 			'id' => 1,
 			'sourceType' => 'file',
@@ -792,7 +819,7 @@ class FileExtractionControllerTest extends TestCase {
 			'chunkIndex' => 0,
 		]);
 
-		$chunk2 = $this->createMock(\OCA\OpenRegister\Db\Chunk::class);
+		$chunk2 = $this->createMock(\OCA\OpenRegister\Files\Db\Chunk::class);
 		$chunk2->method('jsonSerialize')->willReturn([
 			'id' => 2,
 			'sourceType' => 'file',
@@ -844,7 +871,7 @@ class FileExtractionControllerTest extends TestCase {
 	public function testExtractSuccess(): void {
 		$this->textExtractor->expects($this->once())
 			->method('extractFile')
-			->with(1, false);
+			->with(1, new FileExtractionOptions(forceReExtract: false));
 
 		$result = $this->controller->extract(1);
 
@@ -857,7 +884,7 @@ class FileExtractionControllerTest extends TestCase {
 	public function testExtractWithForceReExtract(): void {
 		$this->textExtractor->expects($this->once())
 			->method('extractFile')
-			->with(1, true);
+			->with(1, new FileExtractionOptions(forceReExtract: true));
 
 		$result = $this->controller->extract(1, true);
 
@@ -1259,7 +1286,7 @@ class FileExtractionControllerTest extends TestCase {
 		];
 		$this->chunkMapper->expects($this->once())
 			->method('getFileSourceSummaries')
-			->with(null, null, null, 'extractedAt', 'DESC')
+			->with(null, null, null, new FileSourceOrder('extractedAt', 'DESC'))
 			->willReturn([['sourceId' => 43] + $summary, ['sourceId' => 42] + $summary, ['sourceId' => 44] + $summary]);
 		$this->chunkMapper->method('countFileSourceSummaries')->willReturn(3);
 		$this->entityRelationMapper->method('findByFileId')->willReturn([]);
