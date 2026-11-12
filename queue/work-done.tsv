@@ -985,3 +985,4 @@ fix:buildiq:1469:6c309825	problem details limited to /api/v1, unversioned errors
 cover:integriq:9b0f5894m2367:js906774c0	failed: lang=js but lib/Service/AgentTools/ holds only PHP files (11, no js/ts); task payload inconsistent	session-20261112T234655-793f46ee	2026-11-12T23:57:24Z
 cover:filinq:8ecceb86:14722ee7	PR #1977: 7 Conversion classes, 14 tests; suite 5318 -> 5332 OK	session-20261112T234653-57d11a5b	2026-11-12T23:57:28Z
 cover:integriq:9b0f5894m2367:js5df53342	failed: lang=js but lib/Broker/Transport/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:57:49Z
+cover:integriq:9b0f5894m2367:js63ce5d61	failed: lang=js but lib/PropertySource/Provider/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:11Z
