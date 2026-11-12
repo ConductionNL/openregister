@@ -778,6 +778,7 @@ cover:pipelinq:f67520ecm9d2c:jse19add4c	failed: payload lang=js but dirs=lib/Ser
 cover:pipelinq:f67520ecm9d2c:js0a24f15f	failed: payload lang=js but dirs=lib/Service/Letter/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:41Z
 cover:pipelinq:f67520ecm9d2c:jsf0c02922	failed: payload lang=js but dirs=lib/Service/External/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:50Z
 cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Service/Lifecycle/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:58:00Z
+review:openregister:10055:0f5d134c	APPROVE: quality-config only (licence exclusion pattern), no code change	session-20261112T221531-958a2fbc	2026-11-12T22:58:29Z
 cover:keepiq:d76c2121:e372e6ff	PR #1689: 7 tests for 4 Event classes, suite 3722->3729 OK	session-20261112T224529-41d77a96	2026-11-12T22:58:26Z
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
 cover:integriq:9b0f5894m2367:jsb2c9296a	failed: lib/Service/Engine/ does not exist in integriq development (no Engine dir anywhere, never in history); stale row	session-20261112T220141-9622e2a0	2026-11-12T22:58:41Z
@@ -796,12 +797,41 @@ review:openregister:10054:8b2cc5b6	APPROVE	session-20261112T224530-d70ae278	2026
 verify:thematiq:1663:479ef12f	stale	session-20261112T224535-bdffbbbc	2026-11-12T23:00:31Z
 cover:integriq:9b0f5894m2367:js9c1d94a2	failed: lib/Tenant no longer exists on integriq development (code moved); obsolete task	session-20261112T224530-d70ae278	2026-11-12T23:00:54Z
 cover:integriq:9b0f5894m2367:js5597bc7b	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:10Z
+verify:versioniq:661:8548c87f	stale: 661 head moved (b0a8175b != 772880d6), skipped	session-20261112T224526-3200a03f	2026-11-12T23:01:15Z
 cover:integriq:9b0f5894m2367:js9d3a1784	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:20Z
+cover:integriq:9b0f5894m2367:js65e30692	failed: row inconsistent: lang=js but dirs=lib/Service/Intake/ (PHP); needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T23:01:36Z
 cover:integriq:9b0f5894m2367:jsd39f9857	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:35Z
 cover:integriq:9b0f5894m2367:js568ec52a	failed: lang=js but dirs=lib/Lifecycle/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T23:01:50Z
 cover:integriq:9b0f5894m2367:js59826f43	failed: lang=js but dirs=lib/Settings/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T23:02:00Z
 cover:pipelinq:f67520ecm9d2c:js28cccfd9	failed: payload lang=js but dirs=lib/Repair/Support/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T23:02:18Z
+cover:pipelinq:f67520ecm9d2c:jsf3231970	failed: malformed payload (lang=js but dirs=lib/Service/ScheduledTask/); needs a php or src/ row	session-20261112T221520-70f29253	2026-11-12T23:02:47Z
 cover:integriq:9b0f5894m2367:js1b97f731	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:02:53Z
 cover:keepiq:d76c2121:34763eb4	PR #1691: 19 tests, VaultKeyProof edges + OcsRefusal (3722->3741 OK)	session-20261112T221532-752808b3	2026-11-12T23:02:52Z
+cover:integriq:9b0f5894m2367:jsd81d2d49	failed: permission (npm ci refused in this session; note lang=js names a lib/ PHP dir)	session-20261112T221533-911acbf2	2026-11-12T23:03:08Z
+cover:stackiq:8cfacb29m2f4b:81b1241f	PR #1778: 13 tests for PortalContributionProvider (catalogue delegation, audience routing); suite 2359->2372, 0 failures	session-20261112T224535-bdffbbbc	2026-11-12T23:03:13Z
+cover:pipelinq:f67520ecm9d2c:js0798b7cf	failed: payload lang=js but dirs=lib/Service/PosCart/ holds only PHP; no JS to cover (queue generator mislabels PHP dirs as js)	session-20261112T224531-d3b6ae48	2026-11-12T23:03:22Z
 cover:integriq:9b0f5894m2367:js6f346b68	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:03:19Z
 cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
+cover:keepiq:d76c2121:f91e7417	failed: permission (running the PHP unit suite is refused in this session)	session-20261112T221239-5f377795	2026-11-12T23:03:42Z
+verify:pipelinq:3561:a83ed2a7	8 GREEN (3561,3569-3574,3576), 3575 CONFLICT with 3569; 0 new failures	session-20261112T224530-faaec44c	2026-11-12T23:05:06Z
+cover:openregister:7350e3ef:js6236636d	PR #10059: 19 PHPUnit tests (lang=js but dir is PHP), 5 Timer classes to 100% lines; Timer suite 355->374 OK; full baseline 11E/11F inherited	session-20261112T220138-0741264a	2026-11-12T23:04:35Z
+cover:pipelinq:f67520ecm9d2c:jsdb675bd6	no PR: lib/Activity/Setting is getter-only and every class already has a test plus the settings golden; task said js but dir is PHP	session-20261112T221235-39b35722	2026-11-12T23:05:48Z
+cover:openregister:7350e3ef:js9d3a1784	PR #10060: 20 PHP unit tests for 6 BackgroundJob classes (row said lang=js but dir is PHP); 0 new failures	session-20261112T220138-f0050f42	2026-11-12T23:05:51Z
+cover:stackiq:8cfacb29m2f4b:2861e5ef	already done: lib/Examples/ContactpersoonServiceExample.php 93/93 statements covered by existing ContactpersoonServiceExampleTest on development; no PR	session-20261112T221537-97382091	2026-11-12T23:05:37Z
+cover:pipelinq:f67520ecm9d2c:0a8f160f	PR opened: 16 tests SlaPolicyQuery/SlaRecipient; suite 5773->5789, same 1 inherited failure	session-20261112T215819-2dd7b64e	2026-11-12T23:06:09Z
+cover:pipelinq:f67520ecm9d2c:a215617b	PR #3581: 7 tests, lib/Integration leaf providers all 100%; suite 5773->5780, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T23:06:35Z
+cover:integriq:9b0f5894m2367:jsdfaef732	PR #3419: Notification ApprovalNotifier+Registrar 8 PHP tests (dirs were PHP), suite 7110->7118, 3 inherited	session-20261112T221237-c40cb74c	2026-11-12T23:07:07Z
+cover:keepiq:d76c2121:38e80a9f	PR keepiq#1692: 13 tests for lib/Command (4 classes), suite 3722->3735 green	session-20261112T221532-ade53a05	2026-11-12T23:07:04Z
+verify:keepiq:1682:32fecc34	GREEN 1682,1683,1684: 3781 tests vs baseline 3722, no failures	session-20261112T221528-d486fac0	2026-11-12T23:07:15Z
+cover:pipelinq:f67520ecm9d2c:50cc8442	PR pipelinq#3583: 29 tests for 13 lib/Util traits; suite 5773->5802, same 1 inherited failure	session-20261112T224530-a1180ad3	2026-11-12T23:07:50Z
+cover:pipelinq:f67520ecm9d2c:e372e6ff	PR pipelinq#3582: 5 tests, TenderPostedEvent to 100% + LandingPage event outcome; rest of lib/Event is getter-only; suite 5773->5778	session-20261112T221235-9e827ed1	2026-11-12T23:07:45Z
+verify:pipelinq:3561:a83ed2a7	8 GREEN (3561,3569-3574,3576), 3575 CONFLICT with 3569; 0 new failures	session-20261112T224530-faaec44c	2026-11-12T23:08:06Z
+cover:keepiq:d76c2121:11ebfefd	PR #1694: +20 tests (SchemaFingerprint, TableStore, ArchiveStore, BackupService listing); lib/Backup 387->444/481	session-20261112T223908-abd0da4a	2026-11-12T23:08:41Z
+cover:hermiq:755cdfe7m7444:17bbac84	PR #1624: 19 tests for TaskProcessing providers; suite 3567->3586, no new failures (169 inherited)	session-20261112T224535-bdffbbbc	2026-11-12T23:08:39Z
+cover:pipelinq:f67520ecm9d2c:2cc09f74	PR #3584: ConnectorSourceTransport 80.2->97.9% (10 tests)	session-20261112T221234-13fcfd6a	2026-11-12T23:09:03Z
+cover:keepiq:d76c2121:882bd950	PR #1696: 5 tests, SecretSearchProvider 0->100% (3722->3727 OK)	session-20261112T221532-752808b3	2026-11-12T23:09:35Z
+cover:keepiq:d76c2121:1b97f731	PR #1695: 16 tests for 5 Listener classes, suite 3722->3738 OK	session-20261112T224529-41d77a96	2026-11-12T23:09:34Z
+cover:keepiq:d76c2121:9d3a1784	PRs #1693 (8 jobs, 38 tests) and #1697 (5 jobs, 15 tests): all 13 untested lib/BackgroundJob classes 0->100%, suite 3722->3775 combined, 0 failures	session-20261112T221530-7c794770	2026-11-12T23:10:58Z
+gap:pipelinq:axe:lic2	PR #3585: axe-core moved to devDependencies, lock+SBOM regenerated, build passes	session-20261112T221532-752808b3	2026-11-12T23:12:27Z
+cover:pipelinq:f67520ec:jseedd6bb8	PR #3586: 35 vitest tests for LeadList, LeadForm, LeadProbabilityCell; src/views/leads 74.5 -> 86.1%; suite 3164 -> 3199 all green	session-20261112T221537-97382091	2026-11-12T23:13:30Z
+cover:pipelinq:f67520ec:jsc41b6099	PR #3587: 34 tests for 5 src/mixins (linkedPartyCascade 21%->100% lines); suite 3164->3198 green	session-20261112T224526-3200a03f	2026-11-12T23:13:45Z

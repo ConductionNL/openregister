@@ -4297,3 +4297,15 @@ decidiq	2094	31582a8f29e687b0676787c4269f2af54dbd625e	GREEN	worker-05	3188 tests
 decidiq	2095	28e186ab069f14fbfcb83fdcc20a8bd81f8b41d7	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
 decidiq	2096	86c26a22e6bf2fce232252cf424602be8447b6f5	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
 decidiq	2097	608db5c0643fea6d7d340b55a005f09b267394f8	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
+keepiq	1682	aad996eff8ec23fa8f827c8276f8d65db201c331	GREEN	worker-51	tree 3781 tests (baseline 3722, 0 failures); new failures none; tests-only (+24)
+pipelinq	3561	04914a6b79f5a6c349f09a3fe96933176ede3a3c	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3569	73076f8deef9d9e5e9d6de4c4196a6f029b36901	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3570	f8b261f8303f77c83e453f132ec5f029121fbd75	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3571	12b3fb6c6269a15b9101711f83ece824848228eb	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3572	b2cfd1332d80a0cd7b1d4ca66c18c156694aa14a	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3573	d5e2f3f6613bbcb4bdcb32cf427846067f706ca4	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3574	3ade8202a2d3067240b650c018f46d5af5eb1600	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3576	c7fa75b3515130ab33fd99f2604856db739dd7c9	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3575	6d34ed3ac459461bd8fb5b4c06aeee6c1cef28ca	CONFLICT	worker-58	add/add conflict with 3569 on tests/Unit/Service/Export/Export{Job,Run}ServiceTest.php
+keepiq	1683	72facf5e23747c0981b962def108fd4a60101820	GREEN	worker-51	tree 3781 tests (baseline 3722, 0 failures); new failures none; tests-only (+20)
+keepiq	1684	9572dbdfe7af6b7387d139664bb57160949d2a17	GREEN	worker-51	tree 3781 tests (baseline 3722, 0 failures); new failures none; tests-only (+15)
