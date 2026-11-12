@@ -613,3 +613,4 @@ cover:openregister:7350e3ef:js0c3677df	failed: row inconsistent: lang=js but dir
 cover:openregister:7350e3ef:js5a1ec62c	failed: lang=js but every listed lib/Service/* dir holds only PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:24:35Z
 measure:buildiq:20261112h18	php 79.08% (pcov, needs openregister sibling + pcov.directory=lib), js 78.41% @5495c2c	session-20261112T221532-ade53a05	2026-11-12T22:25:10Z
 cover:hermiq:755cdfe7:34f5c300	PR #1602: 25 tests for 4 Service classes, suite 3536->3561 no new failures	session-20261112T221235-39b35722	2026-11-12T22:25:18Z
+cover:openregister:7350e3ef:jsfa1de263	already done: src/modals/webhook/ at 98.2% stmts / 93.9% branch on main (46 tests), above 80 target; no PR	session-20261112T221239-5f377795	2026-11-12T22:25:50Z
