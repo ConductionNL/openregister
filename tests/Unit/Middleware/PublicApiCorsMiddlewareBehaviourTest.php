@@ -31,6 +31,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\PublicApiCorsMiddleware
+ * @uses \OCA\OpenRegister\Middleware\DispatchedMethod
+ * @uses \OCA\OpenRegister\Middleware\InboundCall
  */
 class PublicApiCorsMiddlewareBehaviourTest extends TestCase {
 

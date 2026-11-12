@@ -6,6 +6,8 @@
  * @copyright 2026 Conduction B.V.
  */
 
+import { withRequestToken } from '../../services/requestToken.js'
+
 /**
  * POST to a bulk endpoint, with a JSON body when there is a payload.
  *
@@ -23,7 +25,7 @@ export function postJson(url, payload) {
 	if (payload !== undefined) {
 		init.body = JSON.stringify(payload)
 	}
-	return fetch(url, init)
+	return fetch(url, withRequestToken(init))
 }
 
 /**
