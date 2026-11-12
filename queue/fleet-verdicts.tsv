@@ -4320,3 +4320,4 @@ keepiq	1686	222eb1c494c64a3d43a094af5c634f55688b9693	GREEN	worker-18	tree of 7: 
 keepiq	1687	5f724f63b0f276502f4cbd82058e921f09400bff	GREEN	worker-18	tree of 7: phpunit 3841 run vs baseline 3722 (OK, 241 skipped), 0 new failures; vitest 5481 passed; tests-only
 keepiq	1688	1a99a7d5281feecb263a10fcabd6b5f9563bab87	GREEN	worker-18	tree of 7: phpunit 3841 run vs baseline 3722 (OK, 241 skipped), 0 new failures; vitest 5481 passed; tests-only
 keepiq	1689	7e41a57e9966540605061a109b09279b52bf3505	GREEN	worker-18	tree of 7: phpunit 3841 run vs baseline 3722 (OK, 241 skipped), 0 new failures; vitest 5481 passed; tests-only
+keepiq	1690	f5feabc390d7e92ed8113c85039b1000e83ad400	GREEN	worker-18	tree of 7: phpunit 3841 run vs baseline 3722 (OK, 241 skipped), 0 new failures; vitest 5481 passed; new spec + quoted object key in favicon.js (no behaviour change)
