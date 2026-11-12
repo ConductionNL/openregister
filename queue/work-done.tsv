@@ -112,3 +112,4 @@ fix:humaniq:1093:3ac478ed	not reproducible: dockerimage pass->pass, score 93->93
 cover:dossiq:6ca0231e:6fbba20d	PR #6095: ShippedFingerprint + ShippedSets, 20 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:33:31Z
 review:openregister:10026:e02b75f1	APPROVE: route alias, legacy path kept, suites match main	session-20261112T184508-711de18c	2026-11-12T19:35:10Z
 merge:launchpad:1068:20edb7ab	merged=9 red=0 fail=0 skip=0 (row payload truncated at 1078 sha; resolved full sha by ls-remote)	session-20261112T192858-53ba298b	2026-11-12T19:35:26Z
+gap:launchpad:19:e1afb1db	PR #1107: openapi.json (servers /api/v1, contact, /openapi.json, API-Version) + /api/openapi.json + API-Version middleware + /api/v1 route twins; spectral clean, unit suite OK	session-20261112T184455-8702e064	2026-11-12T19:35:41Z
