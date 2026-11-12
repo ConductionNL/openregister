@@ -112,3 +112,4 @@ fix:humaniq:1093:3ac478ed	not reproducible: dockerimage pass->pass, score 93->93
 cover:dossiq:6ca0231e:6fbba20d	PR #6095: ShippedFingerprint + ShippedSets, 20 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:33:31Z
 review:openregister:10026:e02b75f1	APPROVE: route alias, legacy path kept, suites match main	session-20261112T184508-711de18c	2026-11-12T19:35:10Z
 merge:launchpad:1068:20edb7ab	merged=9 red=0 fail=0 skip=0 (row payload truncated at 1078 sha; resolved full sha by ls-remote)	session-20261112T192858-53ba298b	2026-11-12T19:35:26Z
+gap:launchpad:13:302052c1	PR #1106 @379ed362: npm audit 54->42 (critical 0, high 2), lockfile + sbom only; dompurify/vite/vitest remain; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:35:40Z
