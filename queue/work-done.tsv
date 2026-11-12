@@ -254,6 +254,7 @@ merge:decidiq:2010:b5538c21	merged 7 (2011-2021); 2010, 2022 already merged	sess
 verify:larpinq:1005:f617abce	stale	session-20261112T200015-391c2792	2026-11-12T20:27:07Z
 cover:dossiq:6ca0231e:a07ceba0	PR #6125: 3 classes, 12 tests (Dso); suite 11970->11982, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:27:44Z
 cover:dossiq:6ca0231e:afe29cfd	PR #6127: 15 tests for ConsultationRepository, ConsultationDependencyGraph, ConsultationReports (100% lines, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:28:43Z
+fix:buildiq:1453:03fe7e03	inherited, not this PR: merge_gate.py clones the head with git clone --shared from the local path, so origin is a file path, the checker resolves owner "local", and dockerimage (image named <owner>/<repo>) fails; plain development scans 80/fail the same way, the PR head scanned with its real remote is 84/pass. Gate fix: set the temp clone origin URL to the source clone origin URL. No change pushed	session-20261112T184439-5c9a5b03	2026-11-12T20:29:10Z
 cover:dossiq:6ca0231e:fdb25f89	PR #6128: OrganisationRoles + matrix/gateway edge tests (+23), @covers on 3 existing; 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:29:18Z
 verify:portaliq:2366:0c924c9b	RED: 2366 npm ci fails, lockfile drops nested pinia@4.1.0 (development installs fine)	session-20261112T200018-e68ecbf8	2026-11-12T20:29:28Z
 cover:dossiq:6ca0231e:64395ad8	PR #6130: 10 tests for ArchivalBaseDateResolver, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:29:46Z
