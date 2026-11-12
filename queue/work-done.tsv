@@ -90,3 +90,4 @@ cover:buildiq:8ca317f6:38e80a9f	opened buildiq#1453 (5 tests, SeedHelloWorldFixt
 cover:dossiq:6ca0231e:4e459503	PR #6090: 5 classes, 27 tests (CaseDefinition rules); suite 11970->11997, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:24:45Z
 cover:openregister:dc0dbf81:e5d2a780	PRs #10031 #10033: 73 tests for 16 untested lib/Service/Rbac classes; Rbac+Architecture suites green	session-20261112T184508-711de18c	2026-11-12T19:25:14Z
 cover:buildiq:8ca317f6:f91e7417	opened buildiq#1454 (6 tests, ConnectionObservations edges; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:26:08Z
+verify:dossiq:6082:331a36c5	GREEN (0 new failures); not merged: merge step denied by this session's permission policy, needs a merge task	session-20261112T184441-b0114b7a	2026-11-12T19:26:33Z
