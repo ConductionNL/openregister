@@ -4183,3 +4183,8 @@ decidiq	2079	62d9e4e15b980f40afea226c97fece3db6d9ffe6	GREEN	worker-44	3136 tests
 decidiq	2080	82300cca05841ad5c8740f4f42cef4361e30d61d	GREEN	worker-44	3136 tests on 3-PR tree, baseline 3109 all passing, 0 failures; tests only
 decidiq	2081	a6cb87247d0cfa388fd944dd86ca63decfd22408	GREEN	worker-44	3136 tests on 3-PR tree, baseline 3109 all passing, 0 failures; tests only
 learniq	2414	61204dabdd99de0e5ab657634eb96fabd3b438ea	REVERIFY	worker-49	gate RED (dockerimage pass->fail) not reproducible: checker_floor compare reports dockerimage pass; also restored the tracked scripts/example-sets/__pycache__ .pyc to development's copy so the PR is tests-only; new head 17d4c32f7f99055907db99de8965e032899697ec, verify it
+pipelinq	3549	9b65d5875ae9cea0540730ca41cd12184fdef566	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
+pipelinq	3550	adedf75098af94ad6b54998311186cb4b0526df1	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
+pipelinq	3551	7b78b024740628f232b879859712a5cea656c957	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
+pipelinq	3552	99d72b1dc2d7b50647d157e095e70df261f17e3a	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
+pipelinq	3553	251eba3f9230230ca4f3c699d078c78df9591125	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
