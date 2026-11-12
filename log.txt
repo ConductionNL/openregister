@@ -3203,3 +3203,4 @@
 2026-11-12T16:10:05Z integrator-20261111T115842-a749432d CONFLICT-DEV #6223 76f81e85
 2026-11-12T16:10:24Z integrator-20261111T115842-a749432d CONFLICT-DEV #6224 f50bc7f9
 2026-11-12T17:03:27Z integrator-20261111T115842-a749432d RED tree 32ea794873 prs 40 front=ok: Tests: 57191, Assertions: 189801, Errors: 6, Failures: 3, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Service\ObjectServiceDraftWriteTest::testANewObjectCannotTakeAUuidOfOnlyDigits;OCA\OpenRegister\Tests\Unit\Service\ObjectServiceDraftWriteTest::testANewObjectCannotTakeAnUpperCaseUuid;OCA\OpenRegister\Tests\Unit\Service\ObjectServiceDraftWriteTest::testWithRbacOffAUuidOfOnlyDigitsIsStillACreat
+2026-11-12T17:37:50Z integrator-20261111T115842-a749432d GREEN tree e29e5e18e2 on dev c14c238a11 prs 37 front=ok: Tests: 57181, Assertions: 189773, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
