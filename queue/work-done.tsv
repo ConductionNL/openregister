@@ -563,3 +563,4 @@ cover:launchpad:755175ff:59826f43	PR #1124: 7 tests for admin settings form/sect
 verify:integriq:3411:3393bdbb	4 GREEN (3411-3414), test-only, vitest 1496 green	session-20261112T220141-9622e2a0	2026-11-12T22:08:55Z
 review:openregister:10043:ddfa9503	APPROVE (test-only, jest 84 green)	session-20261112T220141-9622e2a0	2026-11-12T22:10:35Z
 cover:launchpad:755175ff:f545d745	PR #1125: 3 tests RegisterBackgroundJobs 0/13->13/13; remaining Repair gaps need injectable seed path; suite 3256->3259 green	session-20261112T215819-2dd7b64e	2026-11-12T22:10:39Z
+cover:openregister:7350e3ef:js23008f2b	PR #10044: 40 jest tests for SchemaDetails/SchemasIndex; views lines 78.5%->92.3%; suite 7075->7115 passed	session-20261112T220138-0741264a	2026-11-12T22:11:14Z
