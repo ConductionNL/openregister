@@ -1,0 +1,264 @@
+{
+ "app": "keepiq",
+ "commit": "4034d61899f87957c2986d53a8a7df7a3e45f12f",
+ "measured_at": "2026-11-12T22:46:47Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 80.2,
+  "statements": 25032,
+  "covered": 20076,
+  "dirs": {
+   "lib/AppInfo/": [
+    145,
+    143
+   ],
+   "lib/Attribute/": [
+    5,
+    5
+   ],
+   "lib/BackgroundJob/": [
+    407,
+    201
+   ],
+   "lib/Backup/": [
+    481,
+    387
+   ],
+   "lib/Command/": [
+    181,
+    72
+   ],
+   "lib/Controller/": [
+    4097,
+    3654
+   ],
+   "lib/Db/": [
+    3212,
+    1253
+   ],
+   "lib/Event/": [
+    43,
+    41
+   ],
+   "lib/Event/Audit/": [
+    19,
+    19
+   ],
+   "lib/Exception/": [
+    30,
+    30
+   ],
+   "lib/Federation/": [
+    13,
+    13
+   ],
+   "lib/Listener/": [
+    418,
+    293
+   ],
+   "lib/Mcp/": [
+    139,
+    134
+   ],
+   "lib/Middleware/": [
+    156,
+    143
+   ],
+   "lib/Notification/": [
+    396,
+    389
+   ],
+   "lib/Repair/": [
+    1051,
+    856
+   ],
+   "lib/Search/": [
+    31,
+    0
+   ],
+   "lib/Sections/": [
+    5,
+    5
+   ],
+   "lib/Service/": [
+    13236,
+    11500
+   ],
+   "lib/Service/Connection/": [
+    150,
+    142
+   ],
+   "lib/Service/ShareSave/": [
+    399,
+    391
+   ],
+   "lib/Service/ShareSync/": [
+    174,
+    171
+   ],
+   "lib/Service/Siem/": [
+    193,
+    186
+   ],
+   "lib/Settings/": [
+    28,
+    28
+   ],
+   "lib/SetupCheck/": [
+    8,
+    7
+   ],
+   "lib/Support/": [
+    15,
+    13
+   ]
+  }
+ },
+ "js": {
+  "pct": 79.46,
+  "statements": 12607,
+  "covered": 10017,
+  "dirs": {
+   "src/": [
+    120,
+    60
+   ],
+   "src/bootstrap/": [
+    33,
+    33
+   ],
+   "src/cardIdentity/": [
+    96,
+    95
+   ],
+   "src/certificates/": [
+    114,
+    105
+   ],
+   "src/components/": [
+    1439,
+    1011
+   ],
+   "src/components/KeepiqAppNav/": [
+    146,
+    64
+   ],
+   "src/components/application/": [
+    92,
+    51
+   ],
+   "src/components/import/": [
+    17,
+    7
+   ],
+   "src/components/secretRequest/": [
+    105,
+    91
+   ],
+   "src/components/settings/": [
+    1020,
+    769
+   ],
+   "src/components/share/": [
+    255,
+    177
+   ],
+   "src/crypto/": [
+    748,
+    714
+   ],
+   "src/cxf/": [
+    189,
+    188
+   ],
+   "src/dialogs/": [
+    1703,
+    1325
+   ],
+   "src/export/": [
+    155,
+    152
+   ],
+   "src/generator/": [
+    258,
+    256
+   ],
+   "src/health/": [
+    111,
+    108
+   ],
+   "src/import/": [
+    82,
+    79
+   ],
+   "src/import/parsers/": [
+    275,
+    266
+   ],
+   "src/migration/": [
+    118,
+    103
+   ],
+   "src/mixins/": [
+    109,
+    106
+   ],
+   "src/modals/": [
+    243,
+    145
+   ],
+   "src/offline/": [
+    152,
+    64
+   ],
+   "src/passkey/": [
+    39,
+    39
+   ],
+   "src/policy/": [
+    30,
+    29
+   ],
+   "src/router/": [
+    52,
+    52
+   ],
+   "src/send/": [
+    30,
+    30
+   ],
+   "src/services/": [
+    297,
+    295
+   ],
+   "src/store/": [
+    3,
+    3
+   ],
+   "src/store/modules/": [
+    3158,
+    2607
+   ],
+   "src/totp/": [
+    187,
+    187
+   ],
+   "src/utils/": [
+    273,
+    252
+   ],
+   "src/views/": [
+    941,
+    538
+   ],
+   "src/views/flows/": [
+    2,
+    1
+   ],
+   "src/views/settings/": [
+    15,
+    15
+   ]
+  }
+ }
+}
