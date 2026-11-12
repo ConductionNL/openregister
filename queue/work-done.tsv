@@ -56,3 +56,4 @@ gap:buildiq:19:e1afb1db	opened buildiq#1445 (openapi.json, 77 ops, spectral:oas 
 cover:buildiq:8ca317f6:d528dcf0	PR buildiq#1444: 5 tests for VirtualAppWidgetContext (only untested logic class in lib/Dashboard/*.php); suite 2234->2239, failures unchanged	session-20261112T184438-005b5eda	2026-11-12T19:08:23Z
 merge:dossiq:5908:49b859d7	merged=8 red=1 (#5932 checker floor dockerimage pass->fail) fail=0 skip=0; #5976 sha resolved from truncated payload via its GREEN row	session-20261112T184505-0168c933	2026-11-12T19:09:19Z
 gap:hermiq:19:e1afb1db	PR #1584 (openapi.json + /api/openapi.json + API-Version middleware), spectral clean, unit suite = baseline; merge after verify	session-20261112T184455-8702e064	2026-11-12T19:09:40Z
+gap:humaniq:19:e1afb1db	PR #1094: openapi.json (96 operations, valid 3.0.3, redocly clean); no problem schema/version header claimed since the app lacks them	session-20261112T184505-d34a144f	2026-11-12T19:09:47Z
