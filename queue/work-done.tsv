@@ -338,3 +338,4 @@ fix:buildiq:1445:b639bf56	failed: real regression, not transient: the new openap
 cover:dossiq:6ca0231e:js7de78384	failed: src/manifest.d/ holds only JSON manifest fragments and a README, no executable JS for unit coverage	session-20261112T200014-a0c0c232	2026-11-12T20:56:15Z
 verify:stackiq:1742:e705c34f	GREEN 1742-1750 (9 PRs, tests only)	session-20261112T202437-4020bd95	2026-11-12T20:56:26Z
 cover:dossiq:6ca0231e:d39f9857	PR #6166: 9 tests for FleetAppId (resolve/enabled/appPath) and NormalisesObjectRows; suite 11976->11985, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:56:42Z
+cover:dossiq:6ca0231e:63eef43f	PR #6167: 2 classes, 15 tests (Mandaat thin); suite 11976->11991, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:57:21Z
