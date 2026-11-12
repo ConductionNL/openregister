@@ -4074,3 +4074,4 @@ stackiq	1748	a641f6f911c78f15c096c31a7ea80e1858bbabac	GREEN	worker-39	tree of 9:
 stackiq	1749	6bea11889a9ee33306d8c61e2ac305932c799344	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
 stackiq	1750	b4edb7ef5bca26db7b33b97dd5c3978ca33af4dd	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
 buildiq	1437	e8a1f0f93d8dfdd884831a1c43524e673f33bfeb	GREEN	worker-25	unit 2239 tests on tree, baseline 2234 with 1269 inherited errors/failures, 0 new; @uses metadata only
+buildiq	1450	342188a463de39501504c7690708204a8e34c84e	GREEN	worker-25	unit 2239 tests on tree, baseline 2234 with 1269 inherited errors/failures, 0 new; new CompileInput test
