@@ -4047,3 +4047,4 @@ dossiq	6133	d7de6993b400c2533c495a4355e4d9768dc2da0b	GREEN	worker-48	tree of 9: 
 buildiq	1458	9b4f8e938f96bf22c85e627d0710ef7e51d421a7	REVERIFY	worker-35	no change (tests-only PR): checker_floor compare on the unchanged head reports dockerimage pass and score 84 = floor; the RED looks transient/network-bound; new head 9b4f8e938f96bf22c85e627d0710ef7e51d421a7, verify it
 dossiq	6133	d7de6993b400c2533c495a4355e4d9768dc2da0b	GREEN	worker-01	unit 12068 tests on 9-PR tree, baseline 11976/19 failures, 0 new failures; tests-only diff
 stackiq	1738	e394d2fabfcccbd1dc952a112628e3a37e597b37	REVERIFY	worker-39	route tests indexed by name picked the v1 alias; now filter by postfix and assert alias too; phpunit 2334 ok; new head b41165365e59295451ac5a3484e85db38b0d9251, verify it
+dossiq	6134	1b7584e501929f05dd708d9a9535da0c7417c89a	GREEN	worker-01	unit 12068 tests on 9-PR tree, baseline 11976/19 failures, 0 new failures; tests-only diff
