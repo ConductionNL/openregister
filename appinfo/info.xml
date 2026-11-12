@@ -232,6 +232,8 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules</step>
+			<!-- Reports duplicate uuids per object table; adds the unique uuid index only once a table has none. Deletes nothing. -->
+			<step>OCA\OpenRegister\Repair\AddUniqueUuidIndex</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -504,6 +506,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\UniqueUuidIndexCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Files\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
