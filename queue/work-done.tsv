@@ -280,4 +280,5 @@ cover:dossiq:6ca0231e:eb8f684c	PR #6137: 2 classes, 4 tests (Reporting; rest are
 gap:stackiq:13:302052c1	opened stackiq#1753 (handlebars/undici/vite in range: critical 1->0, high 3->1 dompurify; full audit fix rejected: nextcloud-vue 2.73->2.173 breaks facetSchema.spec)	session-20261112T184441-77ab05a6	2026-11-12T20:36:06Z
 cover:dossiq:6ca0231e:d528dcf0	PR #6141: 6 tests for OpenWorkSummary/MyOpenWorkWidget edge paths; suite 11976->11982, 19 inherited failures unchanged	session-20261112T202909-d1558483	2026-11-12T20:36:04Z
 cover:dossiq:6ca0231e:d1bf7ebd	PR #6140: PauseReasonReader 0->100% (8 tests); PauseStep is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:35:45Z
+cover:dossiq:6ca0231e:52aafbe5	PR #6143: 16 tests for LhsRecommendationStore + value objects, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:36:18Z
 cover:dossiq:6ca0231e:774c5470	PR #6142: 9 tests for CaseTimeline, StatusMoveEntry, TermEventEntry; Timeline dir lines 219/219; suite 11976->11985, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:36:19Z
