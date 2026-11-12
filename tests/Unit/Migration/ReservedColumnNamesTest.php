@@ -35,9 +35,6 @@
  * sources for them would not be robust: the first builds the name from an array
  * key interpolated into the statement, the second spreads it over concatenated strings.
  *
- * It needs a Nextcloud server's classes for the migrated schema, like the
- * other MigratedSqliteDatabase tests, so it runs in CI and not in a bare clone.
- *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
