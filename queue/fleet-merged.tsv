@@ -49,3 +49,4 @@ launchpad	1070	38d7377f00969a8f88b8f8457c143837cad57691	MERGED	worker-29	GATE OK
 keepiq	1502	401b4b757a03be7eeea5267b246721b66a16b3de	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure complexity, secretscanning, sourcecode; this is not a pass
 integriq	3285	bb593551e211b47751919405f60b3fd48c24fdaa	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1071	e83aa457dc1a05f8debc70896ee5088a89dfdc0f	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
+integriq	3286	7ade92cd69f71b54c75ed8b5c36e1127771832c5	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold
