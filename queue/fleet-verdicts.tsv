@@ -4388,3 +4388,4 @@ pipelinq	3594	20cf4f34176749b27f146e0ddcdc4cdf9c28223b	GREEN	worker-54	tests onl
 pipelinq	3595	f46936b62dfec2097a11e2afcc6f49b3d9b79173	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
 pipelinq	3596	58d4a62bb73347ddf475471cc5f5ae45118e5faa	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
 stackiq	1779	f466d0f0d7202f23683e77fc7a1b667f663e286d	GREEN	worker-24	2572 tests run on tree 1779+1782, baseline 2539 0 failures, new failures 0; tests only
+stackiq	1780	0a28fb0969cc5ecb65c8171e9a6453ecf54e764b	RED	worker-24	OrganizationContactSyncJobLinkRefreshTest (6 tests) error: SettingsService::__construct() argument roleGroupSettings not passed; fails alone on development
