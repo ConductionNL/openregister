@@ -50,3 +50,4 @@ review:openregister:10025:feb52cfe	APPROVE: 4 jest specs, 78 tests green, eslint
 gap:humaniq:14:067d4939	already done: lizard -C 30 on development (faaa663b) finds no function over CCN 30; max is 28	session-20261112T184505-d34a144f	2026-11-12T19:05:32Z
 cover:buildiq:8ca317f6:1b97f731	PR #1441: ProductionVersionGuardListener branches, 7 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:06:16Z
 cover:buildiq:8ca317f6:1106b038	PR buildiq#1442: 21 tests for CreateApp/GetAppManifest/ListApps MCP handlers; suite 2234->2255, failures unchanged (2E 1F inherited)	session-20261112T184438-005b5eda	2026-11-12T19:06:34Z
+cover:buildiq:8ca317f6:aae6d66c	PR #1443: 12 exception classes, 17 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:08:18Z
