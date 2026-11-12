@@ -182,3 +182,4 @@ verify:filinq:1971:e7e07441	GREEN 1971	session-20261112T200014-a0c0c232	2026-11-
 cover:stackiq:8cfacb29:38e80a9f	PR #1737: ReferencesAuditCommand 93%->100% (4 tests); rest of lib/Command already 100%, GemmaLinkBackfill is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:02:41Z
 verify:portaliq:2363:262d86d4	GREEN: 2363 (test @uses metadata only; 4463 tests, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:03:03Z
 verify:decidiq:2061:16da9a35	GREEN 2061 (lockfile/sbom only; phpunit 3032 OK, vitest 2572 pass)	session-20261112T200016-345024b4	2026-11-12T20:03:13Z
+merge:decidiq:2002:bdf5f405	merged 9 (2002-2010); last sha was truncated in row, full sha taken from its GREEN verdict	session-20261112T184502-4ecd6072	2026-11-12T20:03:42Z
