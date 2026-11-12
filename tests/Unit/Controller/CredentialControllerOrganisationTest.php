@@ -51,6 +51,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
@@ -256,7 +257,7 @@ class CredentialControllerOrganisationTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
 				$this->savedObject = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid);

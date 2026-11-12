@@ -107,8 +107,6 @@ class PrincipalReachController extends Controller {
 	 *
 	 * @return JSONResponse One record naming every grant removed and every one retained.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function revoke(string $principal): JSONResponse {

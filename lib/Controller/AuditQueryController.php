@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
@@ -210,7 +211,7 @@ class AuditQueryController extends Controller {
 		foreach ($entries as $entry) {
 			fputcsv(
 				$handle,
-				[
+				SpreadsheetCell::csvRow(row: [
 					($entry['id'] ?? ''),
 					($entry['registerId'] ?? ''),
 					($entry['schemaId'] ?? ''),
@@ -218,7 +219,7 @@ class AuditQueryController extends Controller {
 					json_encode($entry['data'] ?? []),
 					($entry['created'] ?? ''),
 					($entry['userId'] ?? ''),
-				]
+				])
 			);
 		}
 

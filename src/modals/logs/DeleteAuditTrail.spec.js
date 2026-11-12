@@ -69,7 +69,7 @@ describe('DeleteAuditTrail', () => {
 		const wrapper = mount(DeleteAuditTrail)
 		frame(wrapper).vm.$emit('confirm')
 		await flushPromises()
-		expect(global.fetch).toHaveBeenCalledWith('/index.php/apps/openregister/api/audit-trails/42', { method: 'DELETE' })
+		expect(global.fetch).toHaveBeenCalledWith('/index.php/apps/openregister/api/audit-trails/42', { method: 'DELETE', headers: { requesttoken: 'test-request-token' } })
 		expect(auditTrailStore.refreshAuditTrailList).toHaveBeenCalledTimes(1)
 		expect(attrs(wrapper).success).toBe(true)
 		expect(attrs(wrapper).loading).toBe(false)

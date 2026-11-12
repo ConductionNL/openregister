@@ -67,7 +67,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 				'byReadHandler' => $doc, 'existingTags' => ['object:abc', 'object:def', 'objective', 'red'],
 			],
 			'id via read handler, same content' => ['path' => 7, 'object' => true, 'content' => 'old', 'byReadHandler' => $doc],
-			'id read handler misses, user folder by id' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
+			'id read handler misses, object given' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
 			'id without object, user folder by id' => ['path' => 7, 'userById' => [7 => $doc], 'content' => 'new'],
 			'id not found' => ['path' => 9, 'userById' => []],
 			'id user folder throws' => ['path' => 9, 'userFolderThrows' => 'exception'],

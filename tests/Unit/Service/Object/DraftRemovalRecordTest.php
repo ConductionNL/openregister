@@ -158,12 +158,10 @@ class DraftRemovalRecordTest extends TestCase {
 		return new DeleteObject(
 			$this->createMock(MagicMapper::class),
 			$this->createMock(CacheHandler::class),
-			$this->createMock(IUserSession::class),
 			new \OCA\OpenRegister\Service\Object\AuditRecording($auditTrail, $this->logger()),
 			$this->createMock(SettingsService::class),
-			$this->createMock(ReferentialIntegrityService::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(OrganisationMapper::class)
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->createMock(IUserSession::class), $this->createMock(OrganisationMapper::class), $this->logger())
 		);
 	}//end handler()
 

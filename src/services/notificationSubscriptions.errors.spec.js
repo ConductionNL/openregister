@@ -16,7 +16,7 @@ describe('notification subscriptions — request shapes and HTTP errors', () => 
 		await expect(subscribe()).rejects.toThrow('Failed to subscribe: HTTP 403')
 		expect(global.fetch).toHaveBeenCalledWith(BASE, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 			body: JSON.stringify({ registerId: null, schemaId: null }),
 		})
 	})
@@ -26,7 +26,7 @@ describe('notification subscriptions — request shapes and HTTP errors', () => 
 		await expect(unsubscribe({ schemaId: 4 })).rejects.toThrow('Failed to unsubscribe: HTTP 500')
 		expect(global.fetch).toHaveBeenCalledWith(`${BASE}?schemaId=4`, {
 			method: 'DELETE',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 		})
 	})
 

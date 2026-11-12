@@ -37,12 +37,12 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -204,13 +204,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @return array{results: array, total: int}
 	 */
 	private function listDeletedConversations(?string $organisationUuid, array $page): array {
+		$scope         = new ConversationScope(userId: $this->userId, organisation: $organisationUuid);
 		$conversations = $this->conversationMapper->findDeletedByUser(
-			userId: $this->userId,
-			organisation: $organisationUuid,
-			limit: $page['limit'],
-			offset: $page['offset']
+			scope: $scope,
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
-		$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
+		$total         = $this->conversationMapper->countDeletedByUser(scope: $scope);
 		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
 	}//end listDeletedConversations()
 
@@ -223,14 +222,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @return array{results: array, total: int}
 	 */
 	private function listActiveConversations(?string $organisationUuid, array $page): array {
+		$scope         = new ConversationScope(userId: $this->userId, organisation: $organisationUuid);
 		$conversations = $this->conversationMapper->findByUser(
-			userId: $this->userId,
-			organisation: $organisationUuid,
-			includeDeleted: false,
-			limit: $page['limit'],
-			offset: $page['offset']
+			scope: $scope,
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
-		$total         = $this->conversationMapper->countByUser(userId: $this->userId, organisation: $organisationUuid, includeDeleted: false);
+		$total         = $this->conversationMapper->countByUser(scope: $scope);
 
 		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
 	}//end listActiveConversations()
@@ -387,8 +384,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Created conversation
 	 *
 	 * @psalm-return JSONResponse<
@@ -413,7 +408,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		try {
 			$data             = $this->request->getParams();
@@ -522,8 +516,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated conversation
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -580,8 +572,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response confirming conversation deletion
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -615,8 +605,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with restored conversation
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -648,8 +636,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @param string $uuid Conversation UUID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response confirming permanent deletion
 	 *
@@ -758,8 +744,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		$organisation = $this->organisationService->getActiveOrganisation();
 		$mayRead = $this->conversationMapper->canUserAccessConversation(
 			conversation: $conversation,
-			userId: $this->userId,
-			organisationUuid: $organisation?->getUuid()
+			scope: new ConversationScope(userId: $this->userId, organisation: $organisation?->getUuid())
 		);
 		if ($mayRead === false) {
 			return $this->accessDenied(message: 'You do not have access to this conversation');

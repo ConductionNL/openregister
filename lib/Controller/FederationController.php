@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -50,6 +52,9 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
@@ -144,6 +149,13 @@ class FederationController extends Controller {
 	private readonly IThrottler $throttler;
 
 	/**
+	 * Keeps an object-scope share to the properties its creator may read.
+	 *
+	 * @var CreatorPropertyFilter
+	 */
+	private readonly CreatorPropertyFilter $creatorProperties;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
@@ -162,6 +174,7 @@ class FederationController extends Controller {
 		$this->objectService = $services->objectService;
 		$this->shareService = $services->shareService;
 		$this->throttler = $services->throttler;
+		$this->creatorProperties = $services->creatorProperties;
 	}//end __construct()
 
 	/**
@@ -394,8 +407,9 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -404,7 +418,7 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Could not create object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
+		return new JSONResponse(data: $this->rendered(share: $share, object: $saved), statusCode: Http::STATUS_CREATED);
 	}//end createObject()
 
 	/**
@@ -439,9 +453,10 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
-				uuid: $target['uuid'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					uuid: $target['uuid']
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -450,7 +465,7 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Could not update object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new JSONResponse(data: $saved->jsonSerialize());
+		return new JSONResponse(data: $this->rendered(share: $share, object: $saved));
 	}//end updateObject()
 
 	/**
@@ -476,9 +491,10 @@ class FederationController extends Controller {
 		$share = $target['share'];
 		try {
 			$ok = $this->objectService->deleteObject(
-				uuid: $target['uuid'],
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				deletion: new ObjectDeletion(
+					uuid: $target['uuid'],
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -588,8 +604,7 @@ class FederationController extends Controller {
 		try {
 			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectFindOptions(register: $share->getRegister(), schema: $share->getSchema()),
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -772,6 +787,16 @@ class FederationController extends Controller {
 			return null;
 		}
 
+		// A share hands out only what its creator still holds, judged on every use.
+		$refusal = $this->shareService->servingRefusal(share: $share);
+		if ($refusal !== null) {
+			$this->logger->warning(
+				'[Federation] share not served: '.$refusal,
+				['shareId' => $share->getId(), 'owner' => (string)$share->getOwner()]
+			);
+			return null;
+		}
+
 		return $share;
 	}//end resolveAcceptedShare()
 
@@ -883,7 +908,7 @@ class FederationController extends Controller {
 	 *
 	 * Confidentiality guard: register/schema/query shares never serve an object
 	 * marked confidential; object-scope shares serve exactly the one object the
-	 * sharer chose.
+	 * sharer chose, with only the properties the sharer may read.
 	 *
 	 * @param array<int, mixed> $objects The records found.
 	 * @param FederatedShare    $share   The share being served.
@@ -898,10 +923,13 @@ class FederationController extends Controller {
 				continue;
 			}
 
-			$rendered = $object->jsonSerialize();
-			if ($share->getScope() !== 'object'
-				&& in_array($this->readConfidentiality(object: $rendered), self::PUBLIC_CONFIDENTIALITY, true) === false
-			) {
+			$rendered = $this->rendered(share: $share, object: $object);
+			if ($share->getScope() === 'object') {
+				$visible[] = $rendered;
+				continue;
+			}
+
+			if (in_array($this->readConfidentiality(object: $rendered), self::PUBLIC_CONFIDENTIALITY, true) === false) {
 				continue;
 			}
 
@@ -910,6 +938,23 @@ class FederationController extends Controller {
 
 		return $visible;
 	}//end applyShareVisibility()
+
+	/**
+	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read.
+	 *
+	 * @param FederatedShare $share  The share being served.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return array<string, mixed> The rendered object.
+	 */
+	private function rendered(FederatedShare $share, ObjectEntity $object): array {
+		$rendered = $object->jsonSerialize();
+		if ($share->getScope() !== 'object') {
+			return $rendered;
+		}
+
+		return $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
+	}//end rendered()
 
 	/**
 	 * Read an object's confidentiality under any of its known property names.

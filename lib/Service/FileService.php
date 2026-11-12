@@ -66,7 +66,10 @@ use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
@@ -1700,9 +1703,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 */
 	public function replaceWords(Node $node, array $replacements, ?string $outputName = null): File {
 		return $this->documentProcessingHandler->replaceWords(
-			node: $node,
-			replacements: $replacements,
-			outputName: $outputName
+			request: new WordReplacementRequest(node: $node, replacements: $replacements, outputName: $outputName)
 		);
 	}//end replaceWords()
 
@@ -1719,15 +1720,16 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return Node The anonymized file node.
 	 *
-	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
+	 * @spec exclude Delegation to DocumentProcessingHandler::anonymize; no facade-owned logic.
 	 */
 	public function anonymizeDocument(Node $node, DocumentAnonymization $anonymization): Node {
-		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node,
-			entities: $anonymization->entities,
+		$options = new DocumentAnonymisationOptions(
 			scope: $anonymization->scope,
 			fileKey: $anonymization->fileKey,
 			preserveStructure: $anonymization->preserveStructure
+		);
+		return $this->documentProcessingHandler->anonymize(
+			request: new DocumentAnonymisationRequest(node: $node, entities: $anonymization->entities, options: $options)
 		);
 	}//end anonymizeDocument()
 

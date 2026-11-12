@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Service\Oas;
 /**
  * ProblemDetailsBuilder, typed for callers outside the Service component.
  *
- * Its outside caller, the OAS validation middleware, calls validationFailed() and reads
- * CONTENT_TYPE, so those are the whole contract. Binding it in ContractBindings lets that caller resolve
+ * Its outside callers, the OAS validation and problem details middlewares, call
+ * build() and validationFailed() and read CONTENT_TYPE, so those are the whole contract. Binding it in ContractBindings lets that caller resolve
  * ProblemDetailsBuilder without naming the class.
  */
 interface ProblemDetailsBuilderInterface {
@@ -36,6 +36,17 @@ interface ProblemDetailsBuilderInterface {
 	 * @var string
 	 */
 	public const CONTENT_TYPE = 'application/problem+json';
+
+	/**
+	 * Build a problem document from a stated problem.
+	 *
+	 * @param ProblemStatement $statement Status, title, description and extension fields.
+	 *
+	 * @return array<string, mixed> The problem-json payload.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function build(ProblemStatement $statement): array;
 
 	/**
 	 * Wrap a list of validation errors as a 422 problem document.

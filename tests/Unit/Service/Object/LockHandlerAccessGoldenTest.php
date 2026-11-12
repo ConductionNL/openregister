@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -253,7 +254,7 @@ final class LockHandlerAccessGoldenTest extends TestCase {
 				runLocks: $this->createMock(RunLockRegistry::class)
 			),
 			$this->createMock(LoggerInterface::class),
-			new LockAuthorization($this->session(uid: $caller), $groupManager, $schemaMapper)
+			new LockAuthorization($this->session(uid: $caller), $groupManager, $schemaMapper, $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end handler()
 }//end class

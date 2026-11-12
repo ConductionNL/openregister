@@ -32,7 +32,7 @@ Every link carries:
 ## Mint a link
 
 ```bash
-curl -u behandelaar:pass -X POST \
+curl -H 'OCS-APIRequest: true' -u behandelaar:pass -X POST \
   https://your-instance/index.php/apps/openregister/api/access-links \
   -H 'Content-Type: application/json' \
   -d '{
@@ -55,7 +55,7 @@ link rather than looked up from it.
 The holder needs no account and no session:
 
 ```bash
-curl https://your-instance/index.php/apps/openregister/api/public/links/<anchor> \
+curl -H 'OCS-APIRequest: true' https://your-instance/index.php/apps/openregister/api/public/links/<anchor> \
   -H 'X-OpenRegister-Link-Password: Geheim-2026'
 ```
 
@@ -84,7 +84,7 @@ one.
 ## Revoke a link
 
 ```bash
-curl -u behandelaar:pass -X DELETE \
+curl -H 'OCS-APIRequest: true' -u behandelaar:pass -X DELETE \
   https://your-instance/index.php/apps/openregister/api/access-links/<id>
 ```
 

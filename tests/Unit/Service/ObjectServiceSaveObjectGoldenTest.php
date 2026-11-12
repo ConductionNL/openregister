@@ -70,6 +70,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
@@ -183,21 +188,17 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		try {
 			$saved = $service->saveObject(
-				$object,
-				array_key_exists('extend', $case) === true ? $case['extend'] : [],
-				(array_key_exists('register', $case) === true ? $case['register'] : $this->register()),
-				(($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case)),
-				($case['uuid'] ?? null),
-				($case['rbac'] ?? true),
-				($case['multi'] ?? true),
-				($case['silent'] ?? false),
-				($case['validation'] ?? true),
-				($case['files'] ?? null),
-				$user,
-				($case['failIfExists'] ?? false),
-				($case['unowned'] ?? false),
-				($case['dedup'] ?? false),
-				($case['owner'] ?? null)
+				object: $object,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: (array_key_exists('register', $case) === true ? $case['register'] : $this->register()), schema: (($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case))),
+					uuid: ($case['uuid'] ?? null),
+					extend: array_key_exists('extend', $case) === true ? $case['extend'] : [],
+					uploadedFiles: ($case['files'] ?? null),
+					policy: new SavePolicy(silent: ($case['silent'] ?? false), validation: ($case['validation'] ?? true), failIfExists: ($case['failIfExists'] ?? false), dedupOverride: ($case['dedup'] ?? false)),
+					actor: new SaveActor(currentUser: $user, owner: ($case['owner'] ?? null), unowned: ($case['unowned'] ?? false))
+				),
+				_rbac: ($case['rbac'] ?? true),
+				_multitenancy: ($case['multi'] ?? true)
 			);
 			$actual = ['result' => $this->describe($saved)];
 		} catch (\Throwable $e) {
@@ -313,6 +314,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 				'applyExpressionDefaults' => fn (array $a): array => $a[1] + ['expression' => 1],
 				'seedLifecycleFieldOnCreate' => fn (array $a): array => $a[1] + ['seeded' => 1],
 				'saveObject' => function (array $a) use ($case): ObjectEntity {
+					$a = SaveObjectArgs::flat(args: $a);
 					if (($case['saveThrows'] ?? false) === true) {
 						throw new Exception('database refused');
 					}
@@ -413,6 +415,10 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 		if ($method === 'permissions.checkPermission' && ($args[2] ?? null) instanceof PermissionCheckOptions) {
 			$options = $args[2];
 			$args    = [$args[0], $args[1], $options->userId, $options->objectOwner, $args[3], $options->object, $options->register];
+		}
+
+		if ($method === 'saveHandler.saveObject') {
+			$args = SaveObjectArgs::flat(args: $args);
 		}
 
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {

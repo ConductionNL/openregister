@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
@@ -1710,9 +1711,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array Array of ObjectEntity objects from all tables, sorted by relevance.
 	 *
+	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldSortException When the order names an encrypted property of any table.
+	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 */
 	public function searchAcrossMultipleTables(array $query, array $registerSchemaPairs): array {
+		(new EncryptedOrderRefusal(order: $query['_order'] ?? []))->check(schemas: array_column($registerSchemaPairs, 'schema'));
+
 		// The `_recent` lens (`recently-opened-means-opened`): the same order,
 		// paging and `@self.viewedAt` as the single-schema path. When the
 		// history orders the page, the restricted set is fetched whole (it is
@@ -9116,6 +9122,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param RegisterSchema|null $table  The register and schema to route to, or null to resolve them from the object.
 	 *
 	 * @return ObjectEntity Updated entity.
+	 * @throws ObjectLookupFailedException If the stored object cannot be read first.
 	 * @throws Exception If update fails.
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -9141,16 +9148,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				);
 			} catch (\Exception $e) {
 				$this->logger->warning(
-					message: '[MagicMapper] Could not fetch old entity for update event',
+					message: '[MagicMapper] Could not read the stored object before an update; the update is refused',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'entityId' => $entity->getId(),
 						'entityUuid' => $entity->getUuid(),
-						'error' => $e->getMessage(),
+						'exception' => get_class($e),
 					]
 				);
-				$oldEntity = $entity;
+				throw new ObjectLookupFailedException(message: 'The stored object could not be read, so it was not updated.', previous: $e);
 			}//end try
 		}//end if
 

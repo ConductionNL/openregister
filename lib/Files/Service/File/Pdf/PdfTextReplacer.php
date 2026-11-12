@@ -514,7 +514,6 @@ class PdfTextReplacer {
 				context: [
 					'stage' => 'validate.extract',
 					'parser_exception' => get_class($e),
-					'parser_exception_msg' => $e->getMessage(),
 					'output_bytes' => strlen($output->bytes),
 					'streams_scanned' => ($output->replaceStats['streams_scanned'] ?? null),
 					'streams_modified' => ($output->replaceStats['streams_modified'] ?? null),

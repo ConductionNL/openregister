@@ -612,7 +612,7 @@ class ObjectEntityTest extends TestCase {
 		$envelope = $record->getMatchEnvelope();
 
 		$this->assertSame(['id', 'title', '@self'], array_keys($envelope));
-		$this->assertSame(array_merge($record->getObjectArray(), ['expires' => null]), $envelope['@self']);
+		$this->assertSame(array_merge($record->getObjectArray(), ['expires' => null, 'name' => null, 'description' => null]), $envelope['@self']);
 		$this->assertSame('bob', $envelope['@self']['owner']);
 		$this->assertSame('org-b', $envelope['@self']['organisation']);
 		$this->assertSame('7', $envelope['@self']['schema']);

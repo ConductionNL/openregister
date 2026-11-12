@@ -20,6 +20,9 @@ exports[`item request actions golden application.deleteApplication([{"id":"a1"}]
     [
       "/index.php/apps/openregister/api/applications/a1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "DELETE",
       },
     ],
@@ -56,6 +59,9 @@ exports[`item request actions golden application.deleteApplication([{"id":"a1"}]
     [
       "/index.php/apps/openregister/api/applications/a1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "DELETE",
       },
     ],
@@ -142,6 +148,9 @@ exports[`item request actions golden application.deleteApplication([{"id":"a1"}]
     [
       "/index.php/apps/openregister/api/applications/a1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "DELETE",
       },
     ],
@@ -188,6 +197,9 @@ exports[`item request actions golden application.deleteApplication([{"id":"a1"}]
     [
       "/index.php/apps/openregister/api/applications/a1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "DELETE",
       },
     ],
@@ -1158,6 +1170,7 @@ exports[`item request actions golden application.saveApplication([{"id":"a1","na
         "body": "{"name":"App","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1233,6 +1246,7 @@ exports[`item request actions golden application.saveApplication([{"id":"a1","na
         "body": "{"name":"App","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1357,6 +1371,7 @@ exports[`item request actions golden application.saveApplication([{"id":"a1","na
         "body": "{"name":"App","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1441,6 +1456,7 @@ exports[`item request actions golden application.saveApplication([{"id":"a1","na
         "body": "{"name":"App","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1485,6 +1501,7 @@ exports[`item request actions golden application.saveApplication([{"name":"New"}
         "body": "{"name":"New"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1560,6 +1577,7 @@ exports[`item request actions golden application.saveApplication([{"name":"New"}
         "body": "{"name":"New"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1684,6 +1702,7 @@ exports[`item request actions golden application.saveApplication([{"name":"New"}
         "body": "{"name":"New"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1768,6 +1787,7 @@ exports[`item request actions golden application.saveApplication([{"name":"New"}
         "body": "{"name":"New"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },

@@ -765,6 +765,9 @@ class AggregationRunner implements AggregationRunnerInterface {
 	): array {
 		$this->gateAdhoc(schema: $schema, bypassRbac: $bypassRbac);
 		$this->assertAdhocRevealsNothing(schema: $schema, query: $query);
+		if ($bypassRbac === false) {
+			$this->assertFieldsAreReadable(schema: $schema, fields: $this->adhocFields(query: $query));
+		}
 
 		$run = new AdhocAggregationRun(
 			register: $register,
@@ -833,16 +836,24 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @throws NotAuthorizedException When the query reads an explicit-reveal property.
 	 */
 	private function assertAdhocRevealsNothing(Schema $schema, AggregationQuery $query): void {
-		$this->assertNoExplicitValues(
-			schema: $schema,
-			fields: array_merge(
-				[(string)$query->field],
-				$this->groupByFields(groupBy: $query->groupBy),
-				$this->metricFields(metrics: $query->metrics)
-			)
-		);
+		$this->assertNoExplicitValues(schema: $schema, fields: $this->adhocFields(query: $query));
 		$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
 	}//end assertAdhocRevealsNothing()
+
+	/**
+	 * Every property an ad-hoc query reads: its field, its group-by fields and its metric fields.
+	 *
+	 * @param AggregationQuery $query The caller's query.
+	 *
+	 * @return array<int, string>
+	 */
+	private function adhocFields(AggregationQuery $query): array {
+		return array_merge(
+			[(string)$query->field],
+			$this->groupByFields(groupBy: $query->groupBy),
+			$this->metricFields(metrics: $query->metrics)
+		);
+	}//end adhocFields()
 
 	/**
 	 * The query with placeholders inside its filter resolved.

@@ -87,15 +87,16 @@ final class AuditTrailCollaborators {
 	}//end aggregation()
 
 	/**
-	 * The elevation attribution of the open object-action frame, if it used this schema and verb.
+	 * The elevation attribution of the open object-action frame, if it used this register, schema and verb.
 	 *
-	 * @param string|int|null $schemaId The schema of the audited object.
-	 * @param string          $verb     The audited action.
+	 * @param string|int|null $registerId The register of the audited object.
+	 * @param string|int|null $schemaId   The schema of the audited object.
+	 * @param string          $verb       The audited action.
 	 *
 	 * @return array{elevatedBy: string, triggeredBy: string|null, runAs: string}|null The attribution.
 	 */
-	public static function elevationAttribution(string|int|null $schemaId, string $verb): ?array {
-		return ObjectActionElevationScope::attributionFor(schemaId: $schemaId, verb: $verb);
+	public static function elevationAttribution(string|int|null $registerId, string|int|null $schemaId, string $verb): ?array {
+		return ObjectActionElevationScope::attributionFor(registerId: $registerId, schemaId: $schemaId, verb: $verb);
 	}//end elevationAttribution()
 
 	/**

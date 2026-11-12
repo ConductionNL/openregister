@@ -22,9 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * What callers outside lib/Service need of MoveObject: perform one move.
@@ -34,23 +31,11 @@ use OCA\OpenRegister\Db\Schema;
 interface MoveObjectInterface {
 
 	/**
-	 * Move one object, keeping its uuid and everything keyed on it.
+	 * Perform a move, keeping the object's uuid and everything keyed on it.
 	 *
-	 * @param ObjectEntity $object         The object.
-	 * @param Register     $sourceRegister Where it is.
-	 * @param Schema       $sourceSchema   Where it is.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
-	 * @param string       $actor          Who asked.
+	 * @param ObjectMove $move The object, where it is, where it is going and who asked.
 	 *
 	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
 	 */
-	public function move(
-		ObjectEntity $object,
-		Register $sourceRegister,
-		Schema $sourceSchema,
-		Register $targetRegister,
-		Schema $targetSchema,
-		string $actor,
-	): array;
+	public function perform(ObjectMove $move): array;
 }//end interface

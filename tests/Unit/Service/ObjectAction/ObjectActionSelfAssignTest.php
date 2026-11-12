@@ -74,6 +74,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
@@ -275,7 +276,10 @@ class ObjectActionSelfAssignTest extends TestCase {
 		/** @var ObjectService&MockObject $objects */
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('patchObject')->willReturnCallback(
-			function (string $objectId, array $data, mixed $register, mixed $schema, bool $_rbac, bool $_multitenancy = true, ?IUser $currentUser = null): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
+				$currentUser = $patch->currentUser;
 				// The row, as the database holds it: a held claim writes only while its property is empty.
 				$claimed = EmptyPropertyClaim::consume(uuid: $objectId);
 				if ($claimed !== null && in_array($this->stored[$claimed] ?? null, [null, ''], true) === false) {

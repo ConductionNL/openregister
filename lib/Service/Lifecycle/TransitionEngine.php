@@ -50,6 +50,9 @@ use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -718,12 +721,13 @@ class TransitionEngine {
 			action: $action,
 			write: fn (): ObjectEntity => $this->objectService->saveObject(
 				object: $objectData,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					actor: new SaveActor(currentUser: $actingUser)
+				),
 				_rbac: ($asSystem === false),
-				_multitenancy: ($asSystem === false),
-				currentUser: $actingUser
+				_multitenancy: ($asSystem === false)
 			)
 		);
 
@@ -1882,12 +1886,13 @@ class TransitionEngine {
 
 		$saved = $this->objectService->saveObject(
 			object: $objectData,
-			register: $request->object->getRegister(),
-			schema: $request->object->getSchema(),
-			uuid: $request->object->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $request->object->getRegister(), schema: $request->object->getSchema()),
+				uuid: $request->object->getUuid(),
+				actor: new SaveActor(currentUser: $actingUser)
+			),
 			_rbac: ($request->asSystem === false),
-			_multitenancy: ($request->asSystem === false),
-			currentUser: $actingUser
+			_multitenancy: ($request->asSystem === false)
 		);
 
 		$this->dispatchTransitioned(

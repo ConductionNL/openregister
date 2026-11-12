@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
@@ -179,38 +178,6 @@ class MoveObject implements MoveObjectInterface {
 
 		return $errors;
 	}//end errorsOf()
-
-	/**
-	 * Move an object, keeping its uuid and everything keyed on it.
-	 *
-	 * @param ObjectEntity $object         The object.
-	 * @param Register     $sourceRegister Where it is.
-	 * @param Schema       $sourceSchema   Where it is.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
-	 * @param string       $actor          Who asked.
-	 *
-	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
-	 *
-	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
-	 */
-	public function move(
-		ObjectEntity $object,
-		Register $sourceRegister,
-		Schema $sourceSchema,
-		Register $targetRegister,
-		Schema $targetSchema,
-		string $actor,
-	): array {
-		return $this->perform(
-			move: new ObjectMove(
-				object: $object,
-				source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
-				target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
-				actor: $actor
-			)
-		);
-	}//end move()
 
 	/**
 	 * Perform a move, keeping the object's uuid and everything keyed on it.

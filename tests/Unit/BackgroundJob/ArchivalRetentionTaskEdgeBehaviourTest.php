@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -50,6 +51,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 
@@ -97,7 +99,7 @@ class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 
 		$task = new ArchivalRetentionTask(
 			$this->createMock(ITimeFactory::class),
-			new ArchivalRetentionSources($this->db, $this->registers, $this->schemas, $this->magic),
+			new ArchivalRetentionSources($this->db, new SchemaCatalog($this->registers, $this->schemas, $this->magic)),
 			new ArchivalRetentionPlatform($this->objects, $this->holds, $this->container, $logger)
 		);
 		$run = new ReflectionMethod($task, 'run');
@@ -244,7 +246,8 @@ class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 		$this->rows([self::expiredRow('u1'), self::expiredRow('u2')]);
 		$this->magic->method('find')->willReturn(new ObjectEntity());
 		$this->holds->method('hasActiveLegalHold')->willReturn(false);
-		$this->objects->method('deleteObject')->willReturnCallback(static function (string $uuid): bool {
+		$this->objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+			$uuid = $deletion->uuid;
 			if ($uuid === 'u2') {
 				throw new Exception('locked');
 			}

@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Coordinates the registry subscription lifecycle and the inbound update.
@@ -319,10 +321,11 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 			// own, on every update. patchObject() merges onto the stored
 			// object and leaves the rest alone.
 			return $this->inbound->objectService->patchObject(
-				objectId: (string)$row->getObjectUuid(),
-				data: $run->update->properties,
-				register: $row->getRegister(),
-				schema: $row->getSchema(),
+				patch: new ObjectPatch(
+					objectId: (string)$row->getObjectUuid(),
+					data: $run->update->properties,
+					target: new ObjectFindTarget(register: $row->getRegister(), schema: $row->getSchema())
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

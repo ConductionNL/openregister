@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -67,12 +68,9 @@ class CaseAnchorReader {
 		try {
 			$entity = $this->objects->find(
 				id: $anchor->objectUuid,
-				register: $anchor->registerId,
-				schema: $anchor->schemaId,
+				options: new ObjectFindOptions(register: $anchor->registerId, schema: $anchor->schemaId, render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
@@ -108,10 +106,7 @@ class CaseAnchorReader {
 		try {
 			return $this->objects->find(
 				id: $anchor->objectUuid,
-				register: $anchor->registerId,
-				schema: $anchor->schemaId,
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(register: $anchor->registerId, schema: $anchor->schemaId, render: false, audit: false)
 			) !== null;
 		} catch (Throwable) {
 			return false;

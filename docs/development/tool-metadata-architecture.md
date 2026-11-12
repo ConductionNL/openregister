@@ -178,7 +178,7 @@ What you see in the UI comes from:
 
 After updates, verified API response:
 ```bash
-$ curl http://localhost/index.php/apps/openregister/api/agents/tools
+$ curl -H 'OCS-APIRequest: true' http://localhost/index.php/apps/openregister/api/agents/tools
 ```
 
 Response shows tools using their self-describing names:

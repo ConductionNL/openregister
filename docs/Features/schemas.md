@@ -2218,7 +2218,7 @@ The system automatically resolves the entire chain:
 The `allOf` array accepts schema IDs (integer), UUIDs, or slugs.
 
 ```bash
-curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+curl -H 'OCS-APIRequest: true' -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
   -H "Content-Type: application/json" \
   -u admin:admin \
   -d '{
@@ -2235,7 +2235,7 @@ curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
 **Via API - Multiple Inheritance:**
 
 ```bash
-curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+curl -H 'OCS-APIRequest: true' -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
   -H "Content-Type: application/json" \
   -u admin:admin \
   -d '{
@@ -2250,7 +2250,7 @@ curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
 **Via API - Using oneOf:**
 
 ```bash
-curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+curl -H 'OCS-APIRequest: true' -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
   -H "Content-Type: application/json" \
   -u admin:admin \
   -d '{
@@ -2476,7 +2476,7 @@ OrganisationBase
 Schemas are always returned fully resolved — parent properties are merged in automatically.
 
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
   -u admin:admin
 ```
 
@@ -2512,7 +2512,7 @@ Note: There is no API endpoint to retrieve the raw delta — schemas are always 
 #### Update Extended Schema
 
 ```bash
-curl -X PUT "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
+curl -H 'OCS-APIRequest: true' -X PUT "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
   -H "Content-Type: application/json" \
   -u admin:admin \
   -d '{
@@ -2529,7 +2529,7 @@ The system automatically extracts the delta before saving — only properties th
 All schema endpoints automatically include an `@self.extendedBy` array listing the UUIDs of schemas that extend the current schema:
 
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/schemas/person-schema" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/schemas/person-schema" \
   -u admin:admin
 ```
 
@@ -2638,7 +2638,7 @@ Test schemas with extension:
 
 ```bash
 # Create a test object using the extended schema
-curl -X POST "http://localhost:8080/index.php/apps/openregister/api/objects/{register}/{extended-schema}" \
+curl -H 'OCS-APIRequest: true' -X POST "http://localhost:8080/index.php/apps/openregister/api/objects/{register}/{extended-schema}" \
   -H "Content-Type: application/json" \
   -u admin:admin \
   -d '{

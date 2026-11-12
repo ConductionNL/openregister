@@ -25,6 +25,7 @@ use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup;
 use OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserManager;
@@ -52,7 +53,7 @@ class DeferredObjectEventSupportTest extends TestCase {
 		$registers = $this->createMock(RegisterMapperInterface::class);
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 
-		$lookup = new DeferredObjectEventLookup($objects, $registers, $schemas);
+		$lookup = new DeferredObjectEventLookup(new SchemaCatalog($registers, $schemas, $objects));
 
 		$this->assertSame($objects, $lookup->objectMapper);
 		$this->assertSame($registers, $lookup->registerMapper);

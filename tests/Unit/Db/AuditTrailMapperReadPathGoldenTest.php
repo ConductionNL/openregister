@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
@@ -381,7 +382,7 @@ final class AuditTrailMapperReadPathGoldenTest extends TestCase {
 		}
 
 		try {
-			$reverted = $this->mapper(container: $container)->revertObject($identifier, ($case['until'] ?? null), ($case['overwrite'] ?? false));
+			$reverted = $this->mapper(container: $container)->revertObjectWith($identifier, new RevertOptions(($case['until'] ?? null), ($case['overwrite'] ?? false)));
 			$outcome = [
 				'same instance' => $reverted === $object,
 				'version' => $reverted->getVersion(),

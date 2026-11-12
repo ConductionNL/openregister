@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\DraftCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -148,6 +150,7 @@ class DeferredObjectEventJobGoldenTest extends TestCase {
 			MagicMapperInterface::class    => $objects,
 			RegisterMapperInterface::class => $registers,
 			SchemaMapperInterface::class   => $schemas,
+			SchemaCatalogInterface::class  => new SchemaCatalog($registers, $schemas, $objects),
 			IEventDispatcher::class        => $events,
 			IUserSession::class            => $session,
 			IUserManager::class            => $users,

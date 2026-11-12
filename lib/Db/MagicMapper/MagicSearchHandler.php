@@ -53,6 +53,7 @@ use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\EncryptedFieldSortException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
@@ -4539,10 +4540,15 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
+	 * @throws EncryptedFieldSortException When the order names an encrypted property.
+	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 */
 	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		(new EncryptedOrderRefusal(order: $sort->order))->check(schemas: [$sort->schema]);
+
 		$properties = $sort->schema->getProperties();
 
 		foreach ($sort->order as $field => $direction) {
@@ -4647,26 +4653,61 @@ class MagicSearchHandler {
 			array_filter(($register->getLanguages() ?? []), 'is_string')
 		);
 
-		$chain = [];
-		if ($this->languageService !== null) {
-			if ($registerLanguages === []) {
-				$chain[] = $this->languageService->getPreferredLanguage();
-			}
-
-			foreach ($this->languageService->getAcceptedLanguages() as $accepted) {
-				$base = strtolower(explode('-', (string) $accepted)[0]);
-				foreach ([(string) $accepted, $base] as $candidate) {
-					if (in_array($candidate, $registerLanguages, true) === true) {
-						$chain[] = $candidate;
-					}
-				}
-			}
-		}
-
+		$chain = $this->requestLanguageChain(registerLanguages: $registerLanguages);
 		$chain = array_merge($chain, $registerLanguages, [$register->getDefaultLanguage()]);
 
 		return array_values(array_unique($chain));
 	}//end sortLanguageChain()
+
+	/**
+	 * The request's languages that lead the sort chain: the preferred language
+	 * when the register lists none, then each accepted language (in full, then
+	 * by its base) that the register offers.
+	 *
+	 * @param array<int, string> $registerLanguages The register's languages.
+	 *
+	 * @return array<int, string> Language codes, first wins; none without a language service.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function requestLanguageChain(array $registerLanguages): array {
+		if ($this->languageService === null) {
+			return [];
+		}
+
+		$chain = [];
+		if ($registerLanguages === []) {
+			$chain[] = $this->languageService->getPreferredLanguage();
+		}
+
+		foreach ($this->languageService->getAcceptedLanguages() as $accepted) {
+			array_push($chain, ...$this->offeredCandidates(accepted: $accepted, offered: $registerLanguages));
+		}
+
+		return $chain;
+	}//end requestLanguageChain()
+
+	/**
+	 * An accepted language in full and by its base, kept where the register offers it.
+	 *
+	 * @param mixed              $accepted The accepted language, e.g. `en-GB`.
+	 * @param array<int, string> $offered  The register's languages.
+	 *
+	 * @return array<int, string> The offered candidates, in full first.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function offeredCandidates(mixed $accepted, array $offered): array {
+		$base       = strtolower(explode('-', (string) $accepted)[0]);
+		$candidates = [];
+		foreach ([(string) $accepted, $base] as $candidate) {
+			if (in_array($candidate, $offered, true) === true) {
+				$candidates[] = $candidate;
+			}
+		}
+
+		return $candidates;
+	}//end offeredCandidates()
 
 	/**
 	 * Build the ORDER BY expression for a translatable property column.
@@ -4851,7 +4892,7 @@ class MagicSearchHandler {
 	 * dated object on PostgreSQL (NULLs are largest there) and below the
 	 * oldest on MySQL/MariaDB (NULLs are smallest), so the same list read
 	 * differently per database. A text property (a string that is not a
-	 * date, and not encrypted) sorts by its lower-cased value. Every other
+	 * date) sorts by its lower-cased value. Every other
 	 * property keeps its bare column.
 	 *
 	 * The fallback is only applied when the column is known to be a real date
@@ -4880,8 +4921,7 @@ class MagicSearchHandler {
 	): string|IQueryFunction {
 		$isText = is_array($propertyConfig) === true
 			&& ($propertyConfig['type'] ?? 'string') === 'string'
-			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
-			&& ($propertyConfig['x-openregister-encrypted'] ?? false) === false;
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
 		if ($isText === true) {
 			// Text orders without regard to case, as OpenRegister's own lists
 			// do: "Leverancier accreditatie" before "Leverancier IBAN-wijziging"
@@ -4895,7 +4935,6 @@ class MagicSearchHandler {
 			|| is_array($propertyConfig) === false
 			|| ($propertyConfig['type'] ?? 'string') !== 'string'
 			|| in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
-			|| ($propertyConfig['x-openregister-encrypted'] ?? false) === true
 		) {
 			return "t.{$columnName}";
 		}
@@ -4949,33 +4988,38 @@ class MagicSearchHandler {
 			return $this->schemaColumnMapCache[$schemaId];
 		}
 
-		$propertyTypes = [];
-		$propertyFormats = [];
-		$columnToPropertyMap = [];
-		$properties = $schema->getProperties();
-		if (is_array($properties) === true) {
-			foreach ($properties as $propName => $propDef) {
-				$propertyTypes[$propName] = ($propDef['type'] ?? 'string');
-				if (isset($propDef['format']) === true) {
-					$propertyFormats[$propName] = $propDef['format'];
-				}
-
-				$columnName = $this->sanitizeColumnName(name: $propName);
-				$columnToPropertyMap[$columnName] = $propName;
-			}
-		}
-
-		$maps = [
-			'types' => $propertyTypes,
-			'formats' => $propertyFormats,
-			'columns' => $columnToPropertyMap,
-		];
+		$maps = $this->schemaColumnMaps(properties: $schema->getProperties());
 		if ($schemaId !== null) {
 			$this->schemaColumnMapCache[$schemaId] = $maps;
 		}
 
 		return $maps;
 	}//end getSchemaColumnMaps()
+
+	/**
+	 * The property-type, property-format and column-to-property maps of a schema's properties.
+	 *
+	 * @param mixed $properties The schema's properties; anything but an array yields empty maps.
+	 *
+	 * @return array{types: array<string, string>, formats: array<string, string>, columns: array<string, string>}
+	 */
+	private function schemaColumnMaps(mixed $properties): array {
+		$maps = ['types' => [], 'formats' => [], 'columns' => []];
+		if (is_array($properties) === false) {
+			return $maps;
+		}
+
+		foreach ($properties as $propName => $propDef) {
+			$maps['types'][$propName] = ($propDef['type'] ?? 'string');
+			if (isset($propDef['format']) === true) {
+				$maps['formats'][$propName] = $propDef['format'];
+			}
+
+			$maps['columns'][$this->sanitizeColumnName(name: $propName)] = $propName;
+		}
+
+		return $maps;
+	}//end schemaColumnMaps()
 
 	/**
 	 * Convert database row from dynamic table to ObjectEntity
@@ -5077,13 +5121,20 @@ class MagicSearchHandler {
 			return $value;
 		}
 
-		if ($format === 'date') {
-			$normalised = $this->dateTimeNormalizer->normalize($value);
-			if ($normalised === null) {
-				return null;
-			}
+		return $this->formattedRowValue(value: $value, format: $format);
+	}//end convertRowValue()
 
-			return $normalised->format('Y-m-d');
+	/**
+	 * A text column value as its `date` or `date-time` format reads it; any other format keeps it.
+	 *
+	 * @param string $value  The column value, after its type conversion
+	 * @param mixed  $format The schema property format, as the schema stores it
+	 *
+	 * @return string|null The value, or null for a date that does not parse
+	 */
+	private function formattedRowValue(string $value, mixed $format): ?string {
+		if ($format === 'date') {
+			return $this->dateRowValue(value: $value);
 		}
 
 		if ($format === 'date-time') {
@@ -5091,7 +5142,23 @@ class MagicSearchHandler {
 		}
 
 		return $value;
-	}//end convertRowValue()
+	}//end formattedRowValue()
+
+	/**
+	 * A `date` column value as `Y-m-d`, or null when it does not parse.
+	 *
+	 * @param string $value The column value
+	 *
+	 * @return string|null The date
+	 */
+	private function dateRowValue(string $value): ?string {
+		$normalised = $this->dateTimeNormalizer->normalize($value);
+		if ($normalised === null) {
+			return null;
+		}
+
+		return $normalised->format('Y-m-d');
+	}//end dateRowValue()
 
 	/**
 	 * Set every metadata column the row holds a value for, in the order of {@see self::ROW_METADATA_KINDS}.
@@ -5125,20 +5192,14 @@ class MagicSearchHandler {
 	 * @return list<mixed>
 	 */
 	private function rowMetadataValues(string $kind, mixed $value): array {
-		switch ($kind) {
-			case 'datetime':
-				return [new DateTime($value)];
-			case 'deleted':
-				return [$this->deletedMarker(raw: $value)];
-			case 'float':
-				return [(float)$value];
-			case 'json':
-				return $this->rowJsonValues(value: $value, fallback: []);
-			case 'json-or-null':
-				return $this->rowJsonValues(value: $value, fallback: null);
-			default:
-				return [$value];
-		}
+		return match ($kind) {
+			'datetime' => [new DateTime($value)],
+			'deleted' => [$this->deletedMarker(raw: $value)],
+			'float' => [(float)$value],
+			'json' => $this->rowJsonValues(value: $value, fallback: []),
+			'json-or-null' => $this->rowJsonValues(value: $value, fallback: null),
+			default => [$value],
+		};
 	}//end rowMetadataValues()
 
 	/**
@@ -5254,36 +5315,42 @@ class MagicSearchHandler {
 	 * @return string The (optionally text-cast) column reference.
 	 */
 	private function buildFilterColumnRef(TypedColumnRef $column, mixed $value): string {
-		$columnRef    = $column->ref;
-		$propertyType = $column->propertyType;
-		$isPostgres   = $column->isPostgres;
-		if ($this->isNumericColumnType(propertyType: $propertyType) === false) {
+		$columnRef = $column->ref;
+		if ($this->isNumericColumnType(propertyType: $column->propertyType) === false) {
 			return $columnRef;
 		}
 
-		// Determine whether any value in play is a non-numeric scalar.
-		$needsTextCast = false;
-		if (is_array($value) === true) {
-			foreach ($value as $candidate) {
-				if ($this->isNonNumericScalar(value: $candidate) === true) {
-					$needsTextCast = true;
-					break;
-				}
-			}
-		} else {
-			$needsTextCast = $this->isNonNumericScalar(value: $value);
-		}
-
-		if ($needsTextCast === false) {
+		if ($this->needsTextCast(value: $value) === false) {
 			return $columnRef;
 		}
 
-		if ($isPostgres === true) {
+		if ($column->isPostgres === true) {
 			return $columnRef . '::text';
 		}
 
 		return 'CAST(' . $columnRef . ' AS CHAR)';
 	}//end buildFilterColumnRef()
+
+	/**
+	 * Whether any value in play is a non-numeric scalar, so a numeric column must compare as text.
+	 *
+	 * @param mixed $value The value, or list of values, the column is compared with.
+	 *
+	 * @return bool True when the column needs a text cast.
+	 */
+	private function needsTextCast(mixed $value): bool {
+		if (is_array($value) === false) {
+			return $this->isNonNumericScalar(value: $value);
+		}
+
+		foreach ($value as $candidate) {
+			if ($this->isNonNumericScalar(value: $candidate) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end needsTextCast()
 
 	/**
 	 * Quote a column or identifier name for the current database platform.

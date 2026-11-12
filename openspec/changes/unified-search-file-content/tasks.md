@@ -9,7 +9,7 @@
 ## Implementation Tasks
 
 ### Task 1: Pass `_content_search` from the provider
-- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-file-content/spec.md#requirement-the-unified-search-provider-must-search-extracted-file-text`
+- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-provider/spec.md#requirement-the-unified-search-provider-must-search-extracted-file-text`
 - **files**: `lib/Search/ObjectsProvider.php`, `tests/Unit/Search/ObjectsProviderTest.php`
 - **acceptance_criteria**:
   - `searchObjectsPaginated()` is called with `_content_search: true`, alongside the existing `_rbac: true` / `_multitenancy: true` — the provider still performs NO second access filter, per its stated contract
@@ -20,7 +20,7 @@
 - [x] Test
 
 ### Task 2: Prove file text cannot route around RBAC or redaction
-- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-file-content/spec.md#requirement-excerpts-must-continue-to-derive-from-the-rendered-object`
+- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-provider/spec.md#requirement-excerpts-must-continue-to-derive-from-the-rendered-object`
 - **files**: `lib/Search/ObjectsProvider.php`, `tests/Unit/Search/ObjectsProviderTest.php`
 - **acceptance_criteria**:
   - A file attached to an object outside the caller's RBAC/tenant scope yields no hit, PAIRED with an entitled caller who does get it — a content search matching nothing would pass the refusal alone
@@ -30,7 +30,7 @@
 - [x] Test
 
 ### Task 3: Bound it, and measure what it costs
-- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-file-content/spec.md#requirement-content-search-must-be-bounded-and-measured`
+- **spec_ref**: `openspec/changes/unified-search-file-content/specs/unified-search-provider/spec.md#requirement-content-search-must-be-bounded-and-measured`
 - **files**: `lib/Search/ObjectsProvider.php`, `lib/Service/Object/ContentSearchHandler.php`, the change's own notes
 - **acceptance_criteria**:
   - The chunk-candidate set is capped; a term matching a very large number of chunks returns within the bound instead of scanning the corpus

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\GetObjectSources;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -189,27 +191,27 @@ class GetObjectFindGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['v-x', [['source', 2, 4, 'x', ['k' => 'v']]], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'x', register: self::register(), schema: $live))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: true), scope: new ReadScope(register: self::register(), schema: $live)))
 		);
 		$this->assertSame(
 			['404: Object missing not found', [['source', 2, 4, 'missing', ['k' => 'v']]], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'missing', register: self::register(), schema: $live))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'missing', extend: [], files: false, rbac: true, multitenancy: true, audit: true), scope: new ReadScope(register: self::register(), schema: $live)))
 		);
 		$this->assertSame(
 			['404: Object x not found', [], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'x', register: self::register(), schema: self::schema(['provider' => 'off'])))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: true), scope: new ReadScope(register: self::register(), schema: self::schema(['provider' => 'off']))))
 		);
 		$this->assertSame(
 			['404: Object x not found', [], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'x', register: self::register(), schema: self::schema(['provider' => 'gone'])))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: true), scope: new ReadScope(register: self::register(), schema: self::schema(['provider' => 'gone']))))
 		);
 		$this->assertSame(
 			['v-y', [['source', 2, 4, 'y', []]], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'y', register: self::register(), schema: self::schema(['provider' => 'live'])))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'y', extend: [], files: false, rbac: true, multitenancy: true, audit: true), scope: new ReadScope(register: self::register(), schema: self::schema(['provider' => 'live']))))
 		);
 
 		$table = $this->route(
-			fn (GetObject $g) => $g->find(id: 'x', register: self::register(), schema: self::schema(null), files: true, _rbac: false, _multitenancy: false, _audit: false)
+			fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'x', extend: [], files: true, rbac: false, multitenancy: false, audit: false), scope: new ReadScope(register: self::register(), schema: self::schema(null)))
 		);
 		$this->assertSame('t-1', $table[0]);
 		$this->assertSame([['table', 'x', 2, 4, false, false, false], ['audit', 't-1', false]], $table[1]);
@@ -218,7 +220,7 @@ class GetObjectFindGoldenTest extends TestCase {
 		$this->auditRow = false;
 		$this->assertSame(
 			['t-1', [['table', 'x', null, null, false, true, true], ['audit', 't-1', true]], null],
-			$this->route(fn (GetObject $g) => $g->find(id: 'x'))
+			$this->route(fn (GetObject $g) => $g->find(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: true)))
 		);
 	}//end testFindRoutes()
 
@@ -232,23 +234,23 @@ class GetObjectFindGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['v-x', [['source', 2, 4, 'x', ['k' => 'v']]], null],
-			$this->route(fn (GetObject $g) => $g->findSilent(id: 'x', register: self::register(), schema: $live))
+			$this->route(fn (GetObject $g) => $g->findSilent(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: false), scope: new ReadScope(register: self::register(), schema: $live)))
 		);
 		$this->assertSame(
 			['404: Object missing not found', [['source', 2, 4, 'missing', ['k' => 'v']]], null],
-			$this->route(fn (GetObject $g) => $g->findSilent(id: 'missing', register: self::register(), schema: $live))
+			$this->route(fn (GetObject $g) => $g->findSilent(request: new ObjectFindRequest(id: 'missing', extend: [], files: false, rbac: true, multitenancy: true, audit: false), scope: new ReadScope(register: self::register(), schema: $live)))
 		);
 		$this->assertSame(
 			['404: Object x not found', [], null],
-			$this->route(fn (GetObject $g) => $g->findSilent(id: 'x', register: self::register(), schema: self::schema(['provider' => 'off'])))
+			$this->route(fn (GetObject $g) => $g->findSilent(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: false), scope: new ReadScope(register: self::register(), schema: self::schema(['provider' => 'off']))))
 		);
 		$this->assertSame(
 			['t-1', [['table', 'x', 2, 4, false, false, true]], null],
-			$this->route(fn (GetObject $g) => $g->findSilent(id: 'x', register: self::register(), schema: self::schema(null), files: true, _rbac: false))
+			$this->route(fn (GetObject $g) => $g->findSilent(request: new ObjectFindRequest(id: 'x', extend: [], files: true, rbac: false, multitenancy: true, audit: false), scope: new ReadScope(register: self::register(), schema: self::schema(null))))
 		);
 		$this->assertSame(
 			['t-1', [['table', 'x', null, null, false, true, true]], null],
-			$this->route(fn (GetObject $g) => $g->findSilent(id: 'x'))
+			$this->route(fn (GetObject $g) => $g->findSilent(request: new ObjectFindRequest(id: 'x', extend: [], files: false, rbac: true, multitenancy: true, audit: false)))
 		);
 	}//end testFindSilentRoutes()
 }//end class

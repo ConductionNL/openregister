@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
 use OCA\OpenRegister\Service\LinkedEntityMappers;
 use OCA\OpenRegister\Service\LinkedEntityService;

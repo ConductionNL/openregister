@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
@@ -82,6 +83,8 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -103,7 +106,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
@@ -145,6 +148,9 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	/** @var MockObject&DateTimeNormalizer */
 	private MockObject $dateTimeNormalizer;
 
+	/** @var MockObject&PermissionHandler */
+	private MockObject $permissionHandler;
+
 	/** @var array<int, array<string, mixed>> What reached the save handler. */
 	private array $saves = [];
 
@@ -163,6 +169,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
 		$this->dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// saveObject() returns renderHandler->renderEntity($savedObject, …);
 		// echo the saved entity back so the tests can assertSame() on it.
@@ -198,7 +205,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
-			$this->createMock(PermissionHandler::class),
+			$this->permissionHandler,
 			$this->renderHandler,
 			$this->saveHandler,
 			$this->createMock(SaveObjects::class),
@@ -278,14 +285,15 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 *
 	 * With the read rule on the lookup finds nothing; with it off it finds the object.
 	 *
-	 * @param string|null $status The stored status, or null for no stored object at all.
-	 * @param bool        $exists False when the uuid is not stored.
+	 * @param string|null $status           The stored status, or null for no stored object at all.
+	 * @param bool        $exists           False when the uuid is not stored.
+	 * @param bool        $sameOrganisation False when the row belongs to another organisation.
 	 *
 	 * @return void
 	 */
-	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
-		// The stored row lies inside the caller's organisations; only the read rules hide it.
-		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+	private function hiddenFromTheCaller(?string $status, bool $exists = true, bool $sameOrganisation = true): void {
+		// By default the stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn($sameOrganisation);
 		$this->objectMapper->method('find')->willReturnCallback(
 			static function (
 				string|int $identifier,
@@ -329,13 +337,15 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function saveOver(bool $rbac = true, bool $draftsVisible = false): void {
+	private function saveOver(bool $rbac = true, bool $draftsVisible = false, bool $appendOnly = false): void {
 		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible);
+		if ($appendOnly === true) {
+			$schema->setAppendOnly(true);
+		}
+
 		$this->service->saveObject(
 			object: ['subject' => 'changed by somebody else'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -475,4 +485,62 @@ class ObjectServiceDraftWriteTest extends TestCase {
 
 		$this->assertCount(1, $this->saves);
 	}//end testASchemaThatShowsItsDraftsKeepsItsOwnRules()
+
+	/**
+	 * A draft in another organisation gets the organisation refusal, the answer any of its rows gets.
+	 *
+	 * @return void
+	 */
+	public function testADraftInAnotherOrganisationGetsTheOrganisationRefusal(): void {
+		$this->signedIn(uid: 'colleague');
+		$this->hiddenFromTheCaller(status: 'draft', sameOrganisation: false);
+
+		try {
+			$this->saveOver();
+			$this->fail('A save over another organisation\'s draft was let through.');
+		} catch (NotAuthorizedException $refused) {
+			$this->assertSame('You may not change this object.', $refused->getMessage());
+		}
+
+		$this->assertSame([], $this->saves);
+	}//end testADraftInAnotherOrganisationGetsTheOrganisationRefusal()
+
+	/**
+	 * A caller who may not create gets the create refusal, whether or not the uuid holds a draft.
+	 *
+	 * @return void
+	 */
+	public function testACallerWhoMayNotCreateGetsTheCreateRefusalOverADraft(): void {
+		$this->signedIn(uid: 'colleague');
+		$this->hiddenFromTheCaller(status: 'draft');
+		$this->permissionHandler->method('checkPermission')->willReturnCallback(
+			static function (Schema $schema, string $action): void {
+				if ($action === 'create') {
+					throw new NotAuthorizedException('No create.');
+				}
+			}
+		);
+
+		try {
+			$this->saveOver();
+			$this->fail('A caller without create rights wrote over a draft.');
+		} catch (NotAuthorizedException $refused) {
+			$this->assertSame('No create.', $refused->getMessage());
+		}
+
+		$this->assertSame([], $this->saves);
+	}//end testACallerWhoMayNotCreateGetsTheCreateRefusalOverADraft()
+
+	/**
+	 * On an append-only schema a hidden draft gets the append-only answer every stored row gets.
+	 *
+	 * @return void
+	 */
+	public function testAHiddenDraftOnAnAppendOnlySchemaGetsTheAppendOnlyAnswer(): void {
+		$this->signedIn(uid: 'colleague');
+		$this->hiddenFromTheCaller(status: 'draft');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->saveOver(appendOnly: true);
+	}//end testAHiddenDraftOnAnAppendOnlySchemaGetsTheAppendOnlyAnswer()
 }//end class

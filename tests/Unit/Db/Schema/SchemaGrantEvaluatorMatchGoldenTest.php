@@ -20,9 +20,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db\Schema;
 
-use OCA\OpenRegister\Db\Schema\GrantActor;
-use OCA\OpenRegister\Db\Schema\GrantObject;
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantObject;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\Schema\SchemaGrantEvaluator;
 use PHPUnit\Framework\TestCase;
 

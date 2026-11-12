@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,18 +34,36 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class DeferredObjectEventLookup {
 	/**
+	 * Re-reads the object at run time.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Resolves the register to scope the read.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves the schema to scope the read.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param MagicMapperInterface    $objectMapper   Re-reads the object at run time.
-	 * @param RegisterMapperInterface $registerMapper Resolves the register to scope the read.
-	 * @param SchemaMapperInterface   $schemaMapper   Resolves the schema to scope the read.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 *
 	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
 	 */
-	public function __construct(
-		public readonly MagicMapperInterface $objectMapper,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->objectMapper = $catalog->tables();
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
 	}//end __construct()
 }//end class
