@@ -596,3 +596,4 @@ verify:decidiq:2082:59f88077	5 GREEN (2082-2086), tests-only, 3159 tests 0 failu
 verify:portaliq:2367:5ef59120	BLOCK 2367: behaviour change (API error bodies/content-type rewritten, route aliases); tests green	session-20261112T221235-9e827ed1	2026-11-12T22:22:06Z
 verify:pipelinq:3562:2e620028	3 GREEN (3562,3563,3564); 5834 tests, 1 inherited failure, 0 new	session-20261112T221537-97382091	2026-11-12T22:22:20Z
 verify:hermiq:1598:1005c106	1598 BLOCK: tests green (0 new failures), but API error bodies/content-type change via new ApiContractMiddleware	session-20261112T221237-836ed3f0	2026-11-12T22:22:33Z
+verify:integriq:3410:2d266f89	GREEN (0 new failures, additive headers/aliases)	session-20261112T220138-f0050f42	2026-11-12T22:22:47Z
