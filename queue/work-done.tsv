@@ -298,3 +298,4 @@ cover:dossiq:6ca0231e:6f346b68	PR opened: SettingsSection 0->100% (1 test)	sessi
 cover:dossiq:6ca0231e:6925f818	PR #6146: 1 class, 7 tests (SetupCheck); suite 11976->11983, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:40:27Z
 verify:dossiq:6117:4a4f7d19	GREEN: 6117-6125 (9 test-only PRs; 12133 tests, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:41:06Z
 verify:thematiq:1661:b54fc704	GREEN thematiq#1661	session-20261112T202437-4020bd95	2026-11-12T20:41:28Z
+merge:portaliq:2305:018fc716	2305 MERGED 2314 MERGED 2315 MERGED 2316 MERGED 2317 MERGED 2318 MERGED 2319 MERGED 2320 MERGED 2321 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T20:41:42Z
