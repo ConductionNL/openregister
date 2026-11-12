@@ -583,7 +583,7 @@ A 4xx or 5xx JSON response under the app's `/api/` MUST be served as `applicatio
 
 ### Requirement: API paths are versioned, and the unversioned paths are deprecated aliases (REQ-OAS-PATH-001)
 
-Every route under `/api/` MUST also be served under `/api/v1/` with the same controller, requirements and defaults, after the original routes so their precedence is unchanged. Routes that already carry a version and standard protocol paths (`StandardProtocolPaths`) MUST get no alias. The unversioned paths MUST keep working; their responses MUST carry the RFC 9745 `Deprecation` header and a `Link` with `rel="successor-version"` naming the `/api/v1/` path. `/api/objects/{register}/{schema}/{id}/files/multipart` MUST serve the multipart upload, and `filesMultipart` MUST remain as its deprecated name. The root OpenAPI document MUST name `/api/v1` in its server URL and list each unversioned path as a deprecated twin. It MUST NOT list `filesMultipart`, whose camelCase spelling breaks the kebab-case path rule of the NL API Design Rules.
+Every route under `/api/` MUST also be served under `/api/v1/` with the same controller, requirements and defaults, after the original routes so their precedence is unchanged. Routes that already carry a version and standard protocol paths (`StandardProtocolPaths`) MUST get no alias. The unversioned paths MUST keep working; their responses MUST carry the RFC 9745 `Deprecation` header and a `Link` with `rel="successor-version"` naming the `/api/v1/` path. `/api/objects/{register}/{schema}/{id}/files-multipart` MUST serve the multipart upload, and `filesMultipart` MUST remain as its deprecated name. The root OpenAPI document MUST name `/api/v1` in its server URL and list each unversioned path as a deprecated twin. It MUST NOT list `filesMultipart`, whose camelCase spelling breaks the kebab-case path rule of the NL API Design Rules.
 
 #### Scenario: an existing integration keeps working and learns the new path
 
@@ -592,7 +592,7 @@ Every route under `/api/` MUST also be served under `/api/v1/` with the same con
 - GIVEN a client that uploads with `POST /api/objects/zaken/zaak/42/filesMultipart`
 - WHEN the upload succeeds
 - THEN the response MUST be the same as before
-- AND it MUST carry `Deprecation` and `Link: </index.php/apps/openregister/api/v1/objects/zaken/zaak/42/files/multipart>; rel="successor-version"`
+- AND it MUST carry `Deprecation` and `Link: </index.php/apps/openregister/api/v1/objects/zaken/zaak/42/files-multipart>; rel="successor-version"`
 
 #### Scenario: a versioned path answers without a deprecation
 

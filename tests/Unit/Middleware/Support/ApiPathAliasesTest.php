@@ -36,8 +36,8 @@ class ApiPathAliasesTest extends TestCase {
 		return [
 			'object list'          => ['/api/objects/a/b', '/api/v1/objects/a/b'],
 			'request path'         => ['/apps/openregister/api/registers/1', '/apps/openregister/api/v1/registers/1'],
-			'renamed multipart'    => ['/api/objects/a/b/c/filesMultipart', '/api/v1/objects/a/b/c/files/multipart'],
-			'kebab multipart'      => ['/api/objects/a/b/c/files/multipart', '/api/v1/objects/a/b/c/files/multipart'],
+			'renamed multipart'    => ['/api/objects/a/b/c/filesMultipart', '/api/v1/objects/a/b/c/files-multipart'],
+			'kebab multipart'      => ['/api/objects/a/b/c/files-multipart', '/api/v1/objects/a/b/c/files-multipart'],
 			'already v1'           => ['/api/v1/objects/a/b', null],
 			'already v2'           => ['/api/v2/audit', null],
 			'versioned family'     => ['/api/mcp/v1/discover', null],
@@ -116,8 +116,8 @@ class ApiPathAliasesTest extends TestCase {
 		}
 
 		$this->assertArrayHasKey(key: 'POST /api/objects/{register}/{schema}/{id}/filesMultipart', array: $byKey);
-		$this->assertArrayHasKey(key: 'POST /api/objects/{register}/{schema}/{id}/files/multipart', array: $byKey);
-		$this->assertSame(expected: 'files#createMultipart', actual: $byKey['POST /api/v1/objects/{register}/{schema}/{id}/files/multipart']['name']);
+		$this->assertArrayHasKey(key: 'POST /api/objects/{register}/{schema}/{id}/files-multipart', array: $byKey);
+		$this->assertSame(expected: 'files#createMultipart', actual: $byKey['POST /api/v1/objects/{register}/{schema}/{id}/files-multipart']['name']);
 		$this->assertArrayNotHasKey(key: 'POST /api/v1/objects/{register}/{schema}/{id}/filesMultipart', array: $byKey);
 		$this->assertArrayHasKey(key: 'GET /api/v1/registers/{id}', array: $byKey);
 		$this->assertArrayHasKey(key: 'GET /api/v1/openapi.json', array: $byKey);

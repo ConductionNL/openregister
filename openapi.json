@@ -3,7 +3,7 @@
     "info": {
         "title": "openregister",
         "version": "2.2.0-dev.0",
-        "description": "The OpenRegister API for the endpoints this document covers: the object file actions (upload, download, rename, copy, move, versions, locks, labels, previews and batches) and the GitHub issues proxy behind the features and roadmap menu. OpenRegister serves many more endpoints than are described here; the OpenAPI document of each register is generated at `/api/registers/{id}/oas`. Errors are RFC 9457 problem details (`application/problem+json`, schema `Problem`). Every path is served under `/api/v1/`, the version this document describes. The same paths without the version (`/api/...`) still answer and are listed here as deprecated; their responses carry a `Deprecation` header and a `Link` to the `/api/v1/` path. The old upload path `filesMultipart` still answers, with the same headers, but is not listed: use `files/multipart`.",
+        "description": "The OpenRegister API for the endpoints this document covers: the object file actions (upload, download, rename, copy, move, versions, locks, labels, previews and batches) and the GitHub issues proxy behind the features and roadmap menu. OpenRegister serves many more endpoints than are described here; the OpenAPI document of each register is generated at `/api/registers/{id}/oas`. Errors are RFC 9457 problem details (`application/problem+json`, schema `Problem`). Every path is served under `/api/v1/`, the version this document describes. The same paths without the version (`/api/...`) still answer and are listed here as deprecated; their responses carry a `Deprecation` header and a `Link` to the `/api/v1/` path. The old upload path `filesMultipart` still answers, with the same headers, but is not listed: use `files-multipart`.",
         "license": {
             "name": "EUPL-1.2",
             "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
@@ -1251,7 +1251,7 @@
                 }
             }
         },
-        "/objects/{register}/{schema}/{id}/files/multipart": {
+        "/objects/{register}/{schema}/{id}/files-multipart": {
             "parameters": [
                 {
                     "name": "register",
@@ -3700,7 +3700,7 @@
                 "deprecated": true
             }
         },
-        "/api/objects/{register}/{schema}/{id}/files/multipart": {
+        "/api/objects/{register}/{schema}/{id}/files-multipart": {
             "servers": [
                 {
                     "url": "https://{host}/index.php/apps/openregister",
@@ -3745,7 +3745,7 @@
             "post": {
                 "operationId": "files-create-multipart-unversioned",
                 "summary": "Upload one or more files via multipart form",
-                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/multipart`, which answers the same. Accepts `multipart/form-data` with a single `file` field or a `files[]` array, plus optional `share` and `tags`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files-multipart`, which answers the same. Accepts `multipart/form-data` with a single `file` field or a `files[]` array, plus optional `share` and `tags`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
                 "tags": [
                     "files"
                 ],

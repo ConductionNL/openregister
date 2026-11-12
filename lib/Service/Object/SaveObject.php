@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
@@ -105,6 +106,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
 use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
@@ -334,6 +336,18 @@ class SaveObject implements SaveObjectInterface {
 	 * @var OrphanDeletionGuard|null
 	 */
 	private ?OrphanDeletionGuard $orphanGuard = null;
+
+	/**
+	 * Runs a save that writes nested objects as one database transaction.
+	 *
+	 * @var NestedSaveTransaction
+	 */
+	private readonly NestedSaveTransaction $nestedSave;
+
+	/**
+	 * How deep the schema graph is followed when tables are healed before a nested save.
+	 */
+	private const NESTED_HEAL_DEPTH = 8;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -575,6 +589,7 @@ class SaveObject implements SaveObjectInterface {
 		$this->urlGenerator = $platform->urlGenerator;
 		$this->logger = $platform->logger;
 		$this->eventDispatcher = $platform->eventDispatcher;
+		$this->nestedSave = new NestedSaveTransaction(db: $platform->db);
 		$this->organisationService = $tenancy->organisationService;
 		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $tenancy->appConfig;
@@ -866,7 +881,13 @@ class SaveObject implements SaveObjectInterface {
 	 * @return InverseWriteBack
 	 */
 	private function inverseWriteBack(): InverseWriteBack {
-		return new InverseWriteBack(objects: $this->objectEntityMapper, saver: $this, lookups: $this->lookups(), urls: $this->urlGenerator);
+		return new InverseWriteBack(
+			objects: $this->objectEntityMapper,
+			saver: $this,
+			lookups: $this->lookups(),
+			urls: $this->urlGenerator,
+			guard: $this
+		);
 	}//end inverseWriteBack()
 
 	/**
@@ -2183,8 +2204,189 @@ class SaveObject implements SaveObjectInterface {
 			register: $options->target->register
 		);
 
-		return $this->saveResolvedObject(call: $call);
+		return $this->saveInNestedTransaction(call: $call);
 	}//end saveObject()
+
+	/**
+	 * Save an object; a save that writes nested objects runs as one transaction.
+	 *
+	 * A refused or failing nested object then undoes the parent, the nested
+	 * objects saved before it and any orphan cleanup of the same save.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return ObjectEntity The saved object entity.
+	 *
+	 * @throws \Throwable Whatever the save throws, after its writes are rolled back.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveInNestedTransaction(ObjectSaveCall $call): ObjectEntity {
+		try {
+			return $this->nestedSave->run(
+				opens: $this->writesNestedObjects(call: $call) || $this->isSystemWrite(call: $call),
+				heal: function () use ($call): void {
+					$this->healNestedSaveTables(call: $call);
+				},
+				save: fn (): ObjectEntity => $this->saveResolvedObject(call: $call)
+			);
+		} catch (\Throwable $e) {
+			if ($this->nestedSave->isOpen() === false) {
+				$this->createdSubObjects = [];
+				$this->pendingOrphans = [];
+			}
+
+			throw $e;
+		}
+	}//end saveInNestedTransaction()
+
+	/**
+	 * Whether a save persists inside a system operation, whose audit row is written in the same transaction.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return bool True for a persisting save while a system operation runs.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function isSystemWrite(ObjectSaveCall $call): bool {
+		return $call->flags->persist === true && SystemOperationContext::isActive() === true;
+	}//end isSystemWrite()
+
+	/**
+	 * Whether a save writes its audit row: never when audit trails are off, always inside a system operation, else unless silent.
+	 *
+	 * A system operation withholds the lifecycle events, so its audit row is
+	 * the only record of the write; `silent` does not skip it there.
+	 *
+	 * @param bool $silent Whether the save asked to skip its audit row.
+	 *
+	 * @return bool True when the audit row is written.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The silent flag follows the save API
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function writesAuditRow(bool $silent): bool {
+		if ($this->isAuditTrailsEnabled() === false) {
+			return false;
+		}
+
+		return $silent === false || SystemOperationContext::isActive() === true;
+	}//end writesAuditRow()
+
+	/**
+	 * Whether a save carries a property whose objects cascade into rows of their own.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return bool True when the save persists and its data holds a cascading property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function writesNestedObjects(ObjectSaveCall $call): bool {
+		if ($call->flags->persist === false || $call->schema === null || $call->schema->getObjectSource() !== null) {
+			return false;
+		}
+
+		foreach (($call->schema->getProperties() ?? []) as $name => $definition) {
+			if (array_key_exists((string)$name, $call->data) === true && self::isCascadingDefinition(definition: $definition) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end writesNestedObjects()
+
+	/**
+	 * Whether a property definition cascades its objects, as a single object or a list.
+	 *
+	 * @param mixed $definition The property definition.
+	 *
+	 * @return bool True for a cascading property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isCascadingDefinition(mixed $definition): bool {
+		if (is_array($definition) === false || isset($definition['type']) === false) {
+			return false;
+		}
+
+		return CascadeRules::isObjectProperty(property: $definition) === true
+			|| CascadeRules::isArrayProperty(property: $definition) === true;
+	}//end isCascadingDefinition()
+
+	/**
+	 * Create or sync the tables a nested save writes to, before its transaction opens.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function healNestedSaveTables(ObjectSaveCall $call): void {
+		if ($call->register === null || $call->schema === null) {
+			return;
+		}
+
+		$healed = [];
+		$this->healNestedSaveTable(register: $call->register, schema: $call->schema, healed: $healed, depth: 0);
+	}//end healNestedSaveTables()
+
+	/**
+	 * Create or sync one register+schema table, then the tables its cascading properties write to.
+	 *
+	 * A reference that does not resolve is skipped here; the save itself reports it.
+	 *
+	 * @param Register             $register The register.
+	 * @param Schema               $schema   The schema.
+	 * @param array<string, true>  $healed   The tables healed so far, by register and schema id.
+	 * @param int                  $depth    How far from the saved object's schema this one is.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function healNestedSaveTable(Register $register, Schema $schema, array &$healed, int $depth): void {
+		$key = $register->getId() . '_' . $schema->getId();
+		if (isset($healed[$key]) === true || $depth > self::NESTED_HEAL_DEPTH) {
+			return;
+		}
+
+		$healed[$key] = true;
+		$this->objectEntityMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+
+		foreach (($schema->getProperties() ?? []) as $definition) {
+			if (self::isCascadingDefinition(definition: $definition) === false) {
+				continue;
+			}
+
+			$target = $definition;
+			if ($definition['type'] === 'array') {
+				$target = CascadeRules::itemsDefinition(property: $definition);
+			}
+
+			if ($target === null || is_string($target['$ref'] ?? null) === false) {
+				continue;
+			}
+
+			try {
+				$schemaId = $this->resolveSchemaReference(reference: $target['$ref']);
+				$registerRef = CascadeItem::register(definition: $target, parentRegister: $register->getId());
+				if ($schemaId === null || (is_int($registerRef) === false && is_string($registerRef) === false)) {
+					continue;
+				}
+
+				$nestedRegister = $this->getCachedRegister(registerId: $registerRef);
+				$nestedSchema = $this->getCachedSchema(schemaId: $schemaId);
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			$this->healNestedSaveTable(register: $nestedRegister, schema: $nestedSchema, healed: $healed, depth: $depth + 1);
+		}//end foreach
+	}//end healNestedSaveTable()
 
 	/**
 	 * Take the duplicate-override flag off the body before anything reads it as data.
@@ -2706,6 +2908,35 @@ class SaveObject implements SaveObjectInterface {
 			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
 		);
 	}//end assertMayCascadeCreate()
+
+	/**
+	 * Refuse a write to a related object the caller may not update.
+	 *
+	 * @param ObjectEntity $target The stored object about to be written.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not update it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayUpdateRelated(ObjectEntity $target): void {
+		$register = $target->getRegister();
+		if ($register !== null) {
+			$register = (string)$register;
+		}
+
+		$this->permissionHandler->checkPermission(
+			schema: $this->getCachedSchema(schemaId: (string)$target->getSchema()),
+			action: 'update',
+			options: new PermissionCheckOptions(
+				objectOwner: $target->getOwner(),
+				object: $target,
+				register: $register
+			),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+		);
+	}//end assertMayUpdateRelated()
 
 	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when
@@ -3352,7 +3583,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function auditCreation(ObjectSaveCall $call, ObjectEntity $savedEntity): void {
-		if ($call->flags->silent === true || $this->isAuditTrailsEnabled() === false) {
+		if ($this->writesAuditRow(silent: $call->flags->silent) === false) {
 			return;
 		}
 
@@ -4848,7 +5079,7 @@ class SaveObject implements SaveObjectInterface {
 			]
 		);
 
-		if ($run->silent === false && $this->isAuditTrailsEnabled() === true) {
+		if ($this->writesAuditRow(silent: $run->silent) === true) {
 			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}

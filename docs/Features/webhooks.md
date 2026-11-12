@@ -511,6 +511,8 @@ Example with array filter:
 
 When you provide a `secret` during webhook creation, OpenRegister signs each payload with HMAC-SHA256 and includes the signature in the `X-Webhook-Signature` header.
 
+The secret is stored encrypted with Nextcloud's `ICrypto` and decrypted only to sign a delivery; the API returns it as `***`. A secret the instance can no longer decrypt (for example after the instance secret changed) stops deliveries for that webhook instead of sending them unsigned; set the secret again to resume.
+
 To verify signatures:
 
 ```python

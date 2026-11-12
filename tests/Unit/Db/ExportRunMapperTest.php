@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * Walks findForActor() against a recording query builder.
  *
  * @covers \OCA\OpenRegister\Db\ExportRunMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ExportRunMapperTest extends TestCase {
 	use FluentQueryBuilderTrait;

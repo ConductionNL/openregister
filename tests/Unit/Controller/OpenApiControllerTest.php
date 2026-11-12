@@ -100,7 +100,7 @@ class OpenApiControllerTest extends TestCase {
 	public function testUnversionedPathsAreDeprecatedTwins(): void {
 		$document = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/openapi.json'), true);
 		$this->assertSame(expected: 'https://{host}/index.php/apps/openregister/api/v1', actual: $document['servers'][0]['url']);
-		$this->assertArrayHasKey(key: '/objects/{register}/{schema}/{id}/files/multipart', array: $document['paths']);
+		$this->assertArrayHasKey(key: '/objects/{register}/{schema}/{id}/files-multipart', array: $document['paths']);
 		$this->assertArrayNotHasKey(key: '/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
 		$this->assertArrayNotHasKey(key: '/api/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
 

@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DerivedLineage;
@@ -988,7 +989,7 @@ class ObjectRelationsController extends Controller {
 	private function csvOf(iterable $rows): string {
 		$handle = fopen('php://temp', 'r+');
 		foreach ($rows as $row) {
-			fputcsv($handle, $row, escape: '');
+			fputcsv($handle, SpreadsheetCell::csvRow(row: $row), escape: '');
 		}
 
 		rewind($handle);

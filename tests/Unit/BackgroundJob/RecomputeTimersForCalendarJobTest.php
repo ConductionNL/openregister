@@ -37,6 +37,13 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
+ * @uses \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarBatch
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
  */
 final class RecomputeTimersForCalendarJobTest extends TestCase {
 

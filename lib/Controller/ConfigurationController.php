@@ -713,15 +713,16 @@ class ConfigurationController extends Controller {
 	}//end export()
 
 	/**
-	 * Export a configuration; its objects only when `includeObjects` is
-	 * exactly true.
+	 * Export a configuration; its objects only when `includeObjects` is true,
+	 * as a boolean or as the query string `true` the export modal sends.
 	 *
 	 * @param Configuration $configuration The configuration
 	 *
 	 * @return JSONResponse The export data, for download
 	 */
 	private function exported(Configuration $configuration): JSONResponse {
-		$includeObjects = ($this->request->getParams()['includeObjects'] ?? false) === true;
+		$flag           = ($this->request->getParams()['includeObjects'] ?? false);
+		$includeObjects = ($flag === true || $flag === 'true');
 		$exportData     = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
 		return new JSONResponse(data: $exportData, statusCode: 200);

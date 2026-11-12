@@ -77,7 +77,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
@@ -239,11 +238,6 @@ class TaskController extends Controller {
 			params: []
 		);
 
-		// The same relaxation the dashboard shell carries: the SPA calls the
-		// API from this page, so the shell's CSP must allow it.
-		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedConnectDomain('*');
-		$response->setContentSecurityPolicy($csp);
 
 		return $response;
 	}//end open()

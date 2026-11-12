@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\FlowRunViewer
  * @uses   \OCA\OpenRegister\Db\FlowRunMapper
+ * @uses \OCA\OpenRegister\Db\FlowRunFilter
+ * @uses \OCA\OpenRegister\Db\FlowRunListing
  */
 class FlowRunViewerScopeTest extends TestCase {
 	use RecordsQueries;

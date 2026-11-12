@@ -39,6 +39,7 @@ use Psr\EventDispatcher\StoppableEventInterface;
  * @covers \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @covers \OCA\OpenRegister\Event\WriteVetoState
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
  */
 class ObjectWriteVetoEventsTest extends TestCase {
 

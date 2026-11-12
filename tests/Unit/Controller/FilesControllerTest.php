@@ -1507,12 +1507,33 @@ class FilesControllerTest extends TestCase {
 
 	public function testDownloadByIdSuccess(): void {
 		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(1);
 		$this->fileService->method('getFileById')->willReturn($file);
 
 		$streamResponse = $this->createMock(StreamResponse::class);
 		$this->fileService->method('streamFile')->willReturn($streamResponse);
 
-		$result = $this->controller->downloadById(1);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
+		$userFolder = $this->createMock(\OCP\Files\Folder::class);
+		$userFolder->method('getFirstNodeById')->with(1)->willReturn($file);
+		$this->rootFolder->method('getUserFolder')->with('alice')->willReturn($userFolder);
+
+		$controller = FilesControllerFactory::create(
+			$this->request,
+			$this->fileService,
+			$this->objectService,
+			$this->rootFolder,
+			$this->userManager,
+			$this->createMock(IEventDispatcher::class),
+			null,
+			null,
+			$userSession
+		);
+
+		$result = $controller->downloadById(1);
 
 		$this->assertNotInstanceOf(JSONResponse::class, $result);
 	}

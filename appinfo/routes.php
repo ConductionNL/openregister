@@ -46,6 +46,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // segment and is registered next to `providers`, before the `{id}` routes,
         // so a future `GET /api/credentials/{id}` cannot swallow it.
         ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        // Organisation picker of the organisation-credential form. A LITERAL, like shared-with-me.
+        ['name' => 'credentialOrganisation#index', 'url' => '/api/credentials/organisations',     'verb' => 'GET'],
         ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
@@ -1514,15 +1516,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		// `filesMultipart` is the deprecated name of `files/multipart`.
-		[
-			'name'         => 'files#createMultipart',
-			'url'          => '/api/objects/{register}/{schema}/{id}/files/multipart',
-			'verb'         => 'POST',
-			'requirements' => ['id' => '[^/]+'],
-			'postfix'      => 'kebab',
-		],
-		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files-multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Legacy camelCase address of the same upload, kept so existing clients keep working.
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'legacy'],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
@@ -2028,6 +2024,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
+		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
 		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
 		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],

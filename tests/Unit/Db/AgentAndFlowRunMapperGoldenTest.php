@@ -42,6 +42,12 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Mcp\Db\AgentMapper
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Db\Tenancy\EntityRbacTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Mcp\Db\AgentMapperPlatform
  */
 class AgentAndFlowRunMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

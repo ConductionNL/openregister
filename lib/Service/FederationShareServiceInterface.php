@@ -80,4 +80,15 @@ interface FederationShareServiceInterface {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
 	public function setStatus(int $id, string $status): FederatedShare;
+
+	/**
+	 * Why a share may not be served now, or null when its creator still holds what it hands out.
+	 *
+	 * @param FederatedShare $share The share about to be served.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function servingRefusal(FederatedShare $share): ?string;
 }//end interface

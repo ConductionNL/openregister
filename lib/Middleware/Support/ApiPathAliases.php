@@ -56,7 +56,7 @@ final class ApiPathAliases {
 	 * @var array<string, string>
 	 */
 	public const RENAMED = [
-		'#^(/api/objects/[^/]+/[^/]+/[^/]+)/filesMultipart$#' => '$1/files/multipart',
+		'#^(/api/objects/[^/]+/[^/]+/[^/]+)/filesMultipart$#' => '$1/files-multipart',
 	];
 
 	/**

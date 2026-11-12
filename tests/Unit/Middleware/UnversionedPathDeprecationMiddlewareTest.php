@@ -61,7 +61,7 @@ class UnversionedPathDeprecationMiddlewareTest extends TestCase {
 
 		$this->assertSame(expected: '@1794441600', actual: $headers['Deprecation']);
 		$this->assertSame(
-			expected: '</index.php/apps/openregister/api/v1/objects/a/b/c/files/multipart>; rel="successor-version"',
+			expected: '</index.php/apps/openregister/api/v1/objects/a/b/c/files-multipart>; rel="successor-version"',
 			actual: $headers['Link']
 		);
 	}//end testAnUnversionedPathIsDeprecated()
