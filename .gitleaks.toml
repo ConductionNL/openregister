@@ -1,0 +1,117 @@
+# gitleaks configuration: the default rules, plus allowlists for findings
+# that are not secrets. Each allowlist names the exact files and only the
+# rules that fire there, so anything else in those files is still reported.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "CI job: curl with the default admin:admin login of the throwaway Nextcloud container the job starts."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)\.github/workflows/api\-test\-coverage\.yml$''',
+]
+
+[[allowlists]]
+description = "Local development stack: the AppAPI registration secrets that pair the throwaway dev Nextcloud with its ExApp containers; they protect no deployed system."
+targetRules = ["generic-api-key"]
+paths = [
+  '''(^|/)docker\-compose\.yml$''',
+]
+
+[[allowlists]]
+description = "Quickstart example: curl with the default admin:admin login of the local development container."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)docker/QUICKSTART\.md$''',
+]
+
+[[allowlists]]
+description = "Documentation examples: curl with the default admin:admin login (or a user:password placeholder) of the local development container, and example UUIDs as facet keys."
+targetRules = ["curl-auth-user", "generic-api-key"]
+paths = [
+  '''(^|/)docs/Features/access\-control\.md$''',
+  '''(^|/)docs/Features/faceting\.md$''',
+  '''(^|/)docs/Features/schemas\.md$''',
+  '''(^|/)docs/Features/webhooks\.md$''',
+  '''(^|/)docs/Installation/demo\-environment\.md$''',
+  '''(^|/)docs/Integrations/activity\.md$''',
+  '''(^|/)docs/Integrations/analytics\.md$''',
+  '''(^|/)docs/Integrations/bookmarks\.md$''',
+  '''(^|/)docs/Integrations/collectives\.md$''',
+  '''(^|/)docs/Integrations/cospend\.md$''',
+  '''(^|/)docs/Integrations/custom\-webhooks\.md$''',
+  '''(^|/)docs/Integrations/flow\.md$''',
+  '''(^|/)docs/Integrations/forms\.md$''',
+  '''(^|/)docs/Integrations/maps\.md$''',
+  '''(^|/)docs/Integrations/n8n\.md$''',
+  '''(^|/)docs/Integrations/openproject\.md$''',
+  '''(^|/)docs/Integrations/photos\.md$''',
+  '''(^|/)docs/Integrations/polls\.md$''',
+  '''(^|/)docs/Integrations/talk\.md$''',
+  '''(^|/)docs/Integrations/time\-tracker\.md$''',
+  '''(^|/)docs/Integrations/verification\-report\.md$''',
+  '''(^|/)docs/Integrations/windmill\.md$''',
+  '''(^|/)docs/Integrations/xwiki\.md$''',
+  '''(^|/)docs/api/bulk\-operations\.md$''',
+  '''(^|/)docs/api/objects\.md$''',
+  '''(^|/)docs/api/organisations\.md$''',
+  '''(^|/)docs/api/schemas\.md$''',
+  '''(^|/)docs/api/vector\-search\-api\.md$''',
+  '''(^|/)docs/development\-notes/magic\-mapper\-auto\-table\-creation\.md$''',
+  '''(^|/)docs/development/api\-validation\.md$''',
+  '''(^|/)docs/development/bulk\-import\-deduplication\.md$''',
+  '''(^|/)docs/development/commands\.md$''',
+  '''(^|/)docs/development/postgresql\-migration\.md$''',
+  '''(^|/)docs/development/tool\-registration\-testing\.md$''',
+  '''(^|/)docs/features/chat\-rag\-deepdive\.md$''',
+  '''(^|/)docs/features/model\-selection\-for\-tools\.md$''',
+  '''(^|/)docs/features/ner\-nlp\-concepts\.md$''',
+  '''(^|/)docs/features/working\-calendars\.md$''',
+  '''(^|/)docs/installation\.md$''',
+  '''(^|/)docs/technical/MultiTenancyTestingResults\.md$''',
+  '''(^|/)docs/technical/MultiTenancy_Implementation_Summary\.md$''',
+  '''(^|/)docs/technical/MultiTenancy_Test_Results\.md$''',
+  '''(^|/)docs/technical/aggregation\-api\.md$''',
+  '''(^|/)docs/technical/faceting\-performance\.md$''',
+  '''(^|/)docs/technical/mcp\-standard\.md$''',
+  '''(^|/)docs/technical/php\.md$''',
+]
+
+[[allowlists]]
+description = "README example: curl with the default admin:admin login of the local development container."
+targetRules = ["curl-auth-user"]
+paths = [
+  '''(^|/)n8n\-templates/README\.md$''',
+]
+
+[[allowlists]]
+description = "Spec scenarios: an example Stripe-style API key string in a Given/When/Then step, not a credential."
+targetRules = ["curl-auth-user", "stripe-access-token"]
+paths = [
+  '''(^|/)openspec/changes/archive/2026\-03\-06\-mcp\-discovery\-endpoint/tasks\.md$''',
+  '''(^|/)openspec/changes/archive/2026\-03\-21\-data\-sync\-harvesting/specs/data\-sync\-harvesting/spec\.md$''',
+  '''(^|/)openspec/changes/archive/2026\-05\-02\-data\-sync\-harvesting/specs/data\-sync\-harvesting/spec\.md$''',
+  '''(^|/)openspec/changes/archive/2026\-06\-14\-data\-sync\-harvesting/specs/data\-sync\-harvesting/spec\.md$''',
+  '''(^|/)openspec/specs/data\-sync\-harvesting/spec\.md$''',
+]
+
+[[allowlists]]
+description = "Unit tests, fixtures and test scripts: AWS's documented example key ids, made-up tokens and secrets, seed slugs, and the default admin:admin login of the test containers."
+targetRules = ["aws-access-token", "curl-auth-user", "generic-api-key", "jwt"]
+paths = [
+  '''(^|/)tests/Unit/Controller/UserSettingsControllerTest\.php$''',
+  '''(^|/)tests/Unit/Service/AuthorizationServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/Case/fixtures/zaaktype\-skeleton\-golden\.json$''',
+  '''(^|/)tests/Unit/Service/ContentScanServiceGoldenTest\.php$''',
+  '''(^|/)tests/Unit/Service/ContentScanServiceLogTest\.php$''',
+  '''(^|/)tests/Unit/Service/Portal/PortalSubjectAssertionRefusalTest\.php$''',
+  '''(^|/)tests/Unit/Service/SettingsServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/TenantLogRedactorTest\.php$''',
+  '''(^|/)tests/Unit/Service/fixtures/content\-scan\-golden\.json$''',
+  '''(^|/)tests/e2e/ci/seed\.sh$''',
+  '''(^|/)tests/federation/federation\-tests\.postman_collection\.json$''',
+  '''(^|/)tests/integration/test\-magic\-csv\-import\.sh$''',
+  '''(^|/)tests/run_rbac_tests\.sh$''',
+  '''(^|/)tests/test\-chat\-api\.sh$''',
+]
