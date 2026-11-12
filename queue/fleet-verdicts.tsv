@@ -3992,3 +3992,4 @@ larpinq	1000	6b3e22c3ef1f0190225c0d6b09049e6203467e02	GREEN	worker-39	phpunit 68
 planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	GREEN	worker-33	PHP 869 OK (baseline 869 OK), vitest 3105/3105 (baseline same), 0 new failures; openapi.json added, valid JSON
 buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
+buildiq	1440	b7d26e4b238d6db80c4397af549bb2e9f34c6de0	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
