@@ -2843,6 +2843,39 @@
    }
   },
   {
+   "id": "mod-field-range-image",
+   "area": "modelling",
+   "name": "Store a date range, or an image with its size and alt text, as one field of its own.",
+   "source": "spec-triage-2026-11-12",
+   "openregister": "no",
+   "built": {
+    "state": "planned",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Not built: lib/Service/Schemas/PropertyValidatorHandler.php TYPES lists color and recurrence as the only extended types (checked by lib/Service/Object/ExtendedFieldCheck.php); no calendar-range or image-url type, so a period is two loose date properties and an image a string with format uri. Decided on 12 Nov 2026 (decision 402), planned in the open change.",
+    "change": "extended-field-types-range-and-image",
+    "plan": "extended-field-types-range-and-image",
+    "readOn": "2026-11-12",
+    "requirement": [
+     "openspec/changes/extended-field-types-range-and-image/specs/extended-field-types :: A calendar-range property holds a start and an end as one value",
+     "openspec/changes/extended-field-types-range-and-image/specs/extended-field-types :: An image-url property holds an image address with its size and alt text"
+    ]
+   },
+   "reachedOn": "Not reached yet: the schema editor's property type list once built",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added for decision 402 (12 Nov 2026) from the archived add-openregister-discovered-capabilities change. Of the six types that dump proposed, color and recurrence are built; this row covers calendar-range and image-url. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "feature": "field-types",
+   "screen": {
+    "canvas": "design-system",
+    "board": null
+   }
+  },
+  {
    "id": "mod-relations",
    "area": "modelling",
    "name": "Link a record to records of another type and follow the link from either side.",
@@ -6059,6 +6092,39 @@
      "OrAuditTrails",
      "OrObjectHistorie"
     ]
+   }
+  },
+  {
+   "id": "hist-read-rule-digest",
+   "area": "history",
+   "name": "See which access rule let someone view a record, in the record's read log.",
+   "source": "spec-triage-2026-11-12",
+   "openregister": "no",
+   "built": {
+    "state": "planned",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Not built: read entries are written by lib/Service/Interaction/ReadHistoryService.php registerAuditRead() with the reader and the object only; lib/Db/AuditTrail.php has no rule digest or rule version field. Decided on 12 Nov 2026 (decision 402), planned in the open change.",
+    "change": "read-audit-entries-name-the-rule",
+    "plan": "read-audit-entries-name-the-rule",
+    "readOn": "2026-11-12",
+    "requirement": [
+     "openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable :: A read entry names the access rule that let the reader see the object",
+     "openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable :: The rule digest is part of the hash chain"
+    ]
+   },
+   "reachedOn": "Not reached yet: the audit trail detail of a read entry once built",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added for decision 402 (12 Nov 2026) from the row-level-security-audit delta of the archived add-openregister-discovered-capabilities change. Builds on hist-reads. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "feature": "audit-hash-chain",
+   "screen": {
+    "canvas": "design-system",
+    "board": null
    }
   },
   {
