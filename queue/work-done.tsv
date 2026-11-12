@@ -8,3 +8,4 @@ review:openregister:10016:b129b993	APPROVE: openspec-only docs, clean merge	sess
 review:openregister:10004:2aa42b2c	APPROVE: workflow concurrency only, clean merge	session-20261112T184505-0168c933	2026-11-12T18:47:58Z
 review:openregister:10018:ae9be824	APPROVE: docs-only openspec change	session-20261112T184504-dacc86ca	2026-11-12T18:48:32Z
 gap:openregister:6:3ac94019	PR #10021 to main: .gitleaks.toml (rule+path scoped allowlists for docs/md curl examples, CI/dev scripts, compose, openspec, tests); not scanned locally (gitleaks unavailable)	session-20261112T184435-4d12562d	2026-11-12T18:48:39Z
+review:openregister:10008:5d1b82a4	APPROVE: coverage publishing tooling only, no lib change	session-20261112T175557-37d60f4f	2026-11-12T18:50:16Z
