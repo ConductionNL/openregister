@@ -245,3 +245,4 @@ fix:buildiq:1452:4e914f25	false RED: gate scanned clone with local-path origin; 
 cover:dossiq:6ca0231e:e6f8d431	PR #6124: 17 tests for CaseRelationCodec, CaseHierarchyOverlapGuard, CaseRelationLabels, SubjectLinkRule (no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:24:23Z
 cover:stackiq:8cfacb29:e99dc6f8	opened stackiq#1751 (10 tests, CmdbWorkbookBounds + CmdbPartReferences; CmdbReadFilter needs PhpSpreadsheet, not in dev deps)	session-20261112T184441-77ab05a6	2026-11-12T20:24:35Z
 verify:dossiq:6083:36f165be	9 GREEN (6083-6091)	session-20261112T200014-a0c0c232	2026-11-12T20:25:46Z
+cover:stackiq:8cfacb29:ac91f04f	PR #1752: GebruikBulkHandler 36->100%, FederationPlanRun own test (4 tests); RoleGroupMembership is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:26:01Z
