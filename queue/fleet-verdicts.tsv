@@ -4216,5 +4216,6 @@ dossiq	6175	15cf32e006e95a15919b6131a77e215baddab7b4	GREEN	worker-56	phpunit 125
 dossiq	6176	626a8ce6762c7fc9ee733cdb027bb9ef6a8a6abd	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6177	60c61ba076eecf8ac1f7ccdd57fe48c8c98a06e4	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6178	264c089149b4c8d760687f4c6003ca6422682877	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
+versioniq	660	cc4e8f8a5de1d9a9ece060b05d8a4261f778fd43	GREEN	worker-45	no phpunit in dev deps (0 tests run, baseline n/a); php -l clean; additive v1 route aliases + deprecation headers, access checks unchanged
 dossiq	6179	58b3a24db5041d85c52fa304e4381f6f1a6db53d	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6180	d8e124989e0f69cbb33d22da2e8eb63911110e9e	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
