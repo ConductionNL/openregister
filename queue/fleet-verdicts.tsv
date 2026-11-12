@@ -3684,3 +3684,13 @@ integriq	3278	a426b3d77b18c17b147d9ce1541d4e4c16938e31	GREEN	fv11-20:integriq-t1
 integriq	3291	ba0229759dabad6133b5eb87968e0347b315d4d9	RED	fv11-20:integriq-t123002	new unit failure: BroadServiceCollaboratorsTest::testEveryCollaboratorResolvesToTheSameClass (new EventEmission::$eventService collaborator not in expected map)
 integriq	3122	ef653c4cdd5108b33dc94bfdc7e8f42fac0ca724	CONFLICT	fv11-20:integriq-t123002	merge conflict against origin/development
 integriq	3124	bbce81a0740a93184b64cccddb9c28e04792fb61	CONFLICT	fv11-20:integriq-t123002	merge conflict against origin/development
+dossiq	5858	dac097c873bc2a9f658797318d72d95e43c3fda6	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5860	d41695676e3a56f33a13f750394c1086a79f56e9	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5861	210206be9b9ddfb3dcff1bc653c1101f721db3aa	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5864	658223561b95d3700ec0d6d0b648a7ed8aeb35ae	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5866	525fb8deb6aef79579108ca4b95ffd54a4f07493	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5867	f165220bd45db6d7bee384d3dc4753bd38bf7102	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5869	53a991e443ac9f19344ef988ece4b3f1ae2fb967	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5872	46c9c03521e2f3d686bedcff9d4ea912f8fe9a9e	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5894	03d8cb952801b6fcf0890daa7837ff65d17e3ea7	GREEN	fv11-20:dossiq-t124210	unit 12279 run, 19 failures all baseline, no new; no JS; diff review: duplicate helper consolidation, equivalent on every input
+dossiq	5887	7b01d4a14a9edca88ec1585f91c962fb7d86be8d	CONFLICT	fv11-20:dossiq-t124210	merge conflict against origin/development
