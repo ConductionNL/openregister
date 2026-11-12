@@ -35,6 +35,7 @@ use OCP\IRequest;
  *
  * Registered after ApiVersionMiddleware, so it runs before it in
  * afterController and a deprecated contract version's own headers win.
+ * A response the controller already marked deprecated keeps its own headers.
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
@@ -72,7 +73,7 @@ class UnversionedPathDeprecationMiddleware extends Middleware {
 		}
 
 		$successor = ApiPathAliases::successorOf(path: $path);
-		if ($successor === null) {
+		if ($successor === null || $this->isAlreadyDeprecated(response: $response) === true) {
 			return $response;
 		}
 
@@ -81,6 +82,19 @@ class UnversionedPathDeprecationMiddleware extends Middleware {
 
 		return $response;
 	}//end afterController()
+
+	/**
+	 * Whether the controller already marked the response deprecated, naming its own successor.
+	 *
+	 * @param Response $response The response.
+	 *
+	 * @return bool True when the response carries a `Deprecation` or `Link` header.
+	 */
+	private function isAlreadyDeprecated(Response $response): bool {
+		$names = array_map('strtolower', array_keys($response->getHeaders()));
+
+		return in_array('deprecation', $names, true) === true || in_array('link', $names, true) === true;
+	}//end isAlreadyDeprecated()
 
 	/**
 	 * The front controller that precedes the path info in the request URI, such as `/index.php`.

@@ -33,11 +33,12 @@ class UnversionedPathDeprecationMiddlewareTest extends TestCase {
 	/**
 	 * The headers of a response after the middleware, for a request on a path.
 	 *
-	 * @param string $path The path info.
+	 * @param string            $path     The path info.
+	 * @param JSONResponse|null $response The controller's response, or a plain one.
 	 *
 	 * @return array<string, string> The response headers.
 	 */
-	private function headersFor(string $path): array {
+	private function headersFor(string $path, ?JSONResponse $response=null): array {
 		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getPathInfo')->willReturn($path);
 		$request->method('getRequestUri')->willReturn('/index.php' . $path . '?_limit=5');
@@ -45,7 +46,7 @@ class UnversionedPathDeprecationMiddlewareTest extends TestCase {
 		$response = (new UnversionedPathDeprecationMiddleware(request: $request))->afterController(
 			controller: $this->createMock(originalClassName: Controller::class),
 			methodName: 'index',
-			response: new JSONResponse(data: ['ok' => true])
+			response: ($response ?? new JSONResponse(data: ['ok' => true]))
 		);
 
 		return $response->getHeaders();
@@ -76,4 +77,20 @@ class UnversionedPathDeprecationMiddlewareTest extends TestCase {
 			$this->assertArrayNotHasKey(key: 'Deprecation', array: $this->headersFor(path: $path), message: $path);
 		}
 	}//end testOtherPathsAreNotMarked()
+
+	/**
+	 * A response the controller already marked deprecated keeps its own successor.
+	 *
+	 * @return void
+	 */
+	public function testAControllerSetSuccessorIsKept(): void {
+		$response = new JSONResponse(data: ['ok' => true]);
+		$response->addHeader('Deprecation', 'true');
+		$response->addHeader('Link', '</apps/openregister/api/objects/a/b/c/watch>; rel="successor-version"');
+
+		$headers = $this->headersFor(path: '/apps/openregister/api/objects/a/b/c/favourite', response: $response);
+
+		$this->assertSame(expected: 'true', actual: $headers['Deprecation']);
+		$this->assertSame(expected: '</apps/openregister/api/objects/a/b/c/watch>; rel="successor-version"', actual: $headers['Link']);
+	}//end testAControllerSetSuccessorIsKept()
 }//end class

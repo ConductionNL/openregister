@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
@@ -247,8 +248,7 @@ class ObjectDraftControllerTest extends TestCase {
 	 * The route exists and points at this action.
 	 */
 	public function testTheRouteIsRegistered(): void {
-		$routes = include dirname(__DIR__, 3) . '/appinfo/routes.php';
-		$matches = array_values(array_filter($routes['routes'], static fn (array $route): bool => $route['name'] === 'objectDraft#activate'));
+		$matches = array_values(array_filter(DeclaredRoutes::unversioned(), static fn (array $route): bool => $route['name'] === 'objectDraft#activate'));
 
 		$this->assertCount(1, $matches);
 		$this->assertSame('/api/objects/{register}/{schema}/{id}/activate', $matches[0]['url']);
