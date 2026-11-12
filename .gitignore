@@ -150,3 +150,6 @@ __pycache__/
 /scratchpad/
 /task-audit.json
 bom-*.cdx.json
+
+# Local docker compose settings; .env.example is the committed template
+.env

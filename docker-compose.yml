@@ -1060,7 +1060,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23000
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=00iz5gkT+brtNwjpZR/28ttzZFdEFo9elARhgMQd0cMu7Kq6OF63KMFwFbxZTx9VbgsNBTVKhHnLUBo4RYg2pjINRluTUj0Vwb2aQDG0ffT4/8TX1UZC8tU42oi5MuV6
+      - APP_SECRET=${N8N_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # n8n specific
       - N8N_TIMEZONE=Europe/Amsterdam
@@ -1230,7 +1230,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23002
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=kgPs6ikvLhHMAuC3havDYDvvWw/CYjmlfBMDpYfBY73WgRjdPL6naVC7IGV30D3/5DvNyLGPHrfrln/GYQO80CJzgexWN+1M11FsOt6cljd7EI9T0AZeShEQVt2BAzCM
+      - APP_SECRET=${KEYCLOAK_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # Keycloak Configuration
       - KC_DB=postgres
@@ -1290,7 +1290,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23005
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=qM1kgYpOVLEDCILz/2v4t9eSRdt1JKZTuxFNQbyveVC3QurU6zpdOWyIgRzd0nNxba7q7al6cX9bkWNbkkEdd3uQ9uyt4pgaxjfkozaub/fphD0h2dB5RIBD6wC4C1qW
+      - APP_SECRET=${OPENKLANT_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # OpenKlant Django Configuration
       - DB_HOST=openregister-postgres
@@ -1344,7 +1344,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23003
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=GV7aEmqVY/NXnA0adbIhQsl0QL9XoUEtr611xlwVU3G4D7t5Xv4pscZ+8sRb4k2LKCDDTrbDWowIwOkhSs5s/czEN+M2TPSPq2Y6Xgd4VSFZfi1Rdofvc1WtBlmPrQYQ
+      - APP_SECRET=${OPENZAAK_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # OpenZaak Django Configuration
       - DB_HOST=openregister-postgres
@@ -1398,7 +1398,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23004
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=piXIP+iaGAvzbULzEXtwAUZAAuybaS0tUwAe1JFxQqmhemQHbUqF7teFxsWq/ydjUXbC84ZXRfQyS3c88ObBwhALLdPoAKDBzUn1a+d2ghRoYkInoMUde1QzncFFfOWt
+      - APP_SECRET=${VALTIMO_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # Valtimo Spring Boot Configuration
       - SPRING_PROFILES_ACTIVE=docker
@@ -1448,7 +1448,7 @@ services:
       - APP_HOST=0.0.0.0
       - APP_PORT=23005
       - APP_PERSISTENT_STORAGE=/data
-      - APP_SECRET=HGF41cZ42HnNoA4eWUqhMquI9RFnk206ZVtJyT/1xK+X3u1bvSiyRdlfJlxL7YLn8uTMpKh/Bqb9VGKkRYAaoQUj6xtIcCdx4hTBJDrspEPTBgVbAF6/sg/VL6oNdhmv
+      - APP_SECRET=${OPENTALK_APP_SECRET:-}
       - NEXTCLOUD_URL=http://nextcloud
       # OpenTalk Controller config is in controller.toml
       # Env vars with OPENTALK_CTRL_ prefix override entire TOML sections, so avoid them
