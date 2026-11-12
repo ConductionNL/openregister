@@ -51,3 +51,4 @@ gap:humaniq:14:067d4939	already done: lizard -C 30 on development (faaa663b) fin
 cover:buildiq:8ca317f6:1b97f731	PR #1441: ProductionVersionGuardListener branches, 7 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:06:16Z
 cover:buildiq:8ca317f6:1106b038	PR buildiq#1442: 21 tests for CreateApp/GetAppManifest/ListApps MCP handlers; suite 2234->2255, failures unchanged (2E 1F inherited)	session-20261112T184438-005b5eda	2026-11-12T19:06:34Z
 cover:openregister:dc0dbf81:913a213e	PR #10028: 8 Flow classes, 31 tests; suite 57334->57365, same 80 env failures; rest of untested Flow/*.php are value objects	session-20261112T184435-4d12562d	2026-11-12T19:08:19Z
+cover:buildiq:8ca317f6:aae6d66c	PR #1443: 12 exception classes, 17 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:08:18Z
