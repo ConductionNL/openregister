@@ -1,0 +1,61 @@
+publiccodeYmlVersion: "0.4"
+
+name: OpenRegister
+url: "https://github.com/ConductionNL/openregister"
+softwareVersion: "2.1.0"
+releaseDate: "2026-09-06"
+developmentStatus: stable
+softwareType: addon
+
+platforms:
+  - nextcloud
+
+categories:
+  - data-collection
+  - application-development
+
+description:
+  nl:
+    shortDescription: "Gestructureerd gegevensbeheer voor Nextcloud"
+    longDescription: |
+      OpenRegister is de basis voor gestructureerd gegevensbeheer in Nextcloud.
+      Je legt datamodellen vast met JSON Schema, slaat objecten op in registers
+      en laat andere apps bouwen op één gedeelde, op standaarden gebaseerde
+      datalaag. OpenRegister is de basis onder apps als OpenCatalogi, Dossiq en
+      Pipelinq.
+    features:
+      - Registers op basis van JSON Schema
+      - Volledige REST API voor objecten
+      - Zoeken met facetten over registers heen
+      - Rolgebaseerde toegang en multitenancy per organisatie
+      - Synchronisatie met externe bronnen
+  en:
+    shortDescription: "Structured data management for Nextcloud"
+    longDescription: |
+      OpenRegister is the foundation for structured data management in
+      Nextcloud. Define your data models with JSON Schema, store objects in
+      registers, and let other apps build on one shared, standards-based data
+      layer. OpenRegister powers apps such as OpenCatalogi, Dossiq and
+      Pipelinq.
+    features:
+      - Registers based on JSON Schema
+      - Full REST API for objects
+      - Faceted search across registers
+      - Role-based access control and multitenancy per organisation
+      - Synchronisation with external sources
+
+legal:
+  license: EUPL-1.2
+
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - nl
+    - en
+
+maintenance:
+  type: internal
+  contacts:
+    - name: Conduction Development Team
+      email: info@conduction.nl
+      affiliation: Conduction B.V.
