@@ -645,4 +645,5 @@ cover:decidiq:13261b1b:3d4b295b	PR #2094: RegisterFragmentMerger 10 tests, suite
 cover:pipelinq:f67520ecm9d2c:js8f2b650b	failed: malformed payload (lang=js but dirs=lib/Service/Competitor/*.php); needs a php or src/ row	session-20261112T221520-70f29253	2026-11-12T22:32:28Z
 cover:pipelinq:f67520ec:197c84b8	PR pipelinq#3571: 44 tests, lib/Adapter 9 classes to 100%; suite 5773->5817, no new failures	session-20261112T221235-9e827ed1	2026-11-12T22:32:32Z
 cover:openregister:7350e3ef:js1b97f731	PR #10054: 4 PHPUnit tests for ValidatesPreWriteObject (only lib/Listener/*.php file with logic and no tests; row said js but dir is PHP)	session-20261112T220141-9622e2a0	2026-11-12T22:32:36Z
+cover:hermiq:755cdfe7:js0b44ffaf	PR #1608: 5 vitest contract tests for src/icons, 944->949 passing	session-20261112T221235-39b35722	2026-11-12T22:33:14Z
 cover:pipelinq:f67520ecm9d2c:jsa13d1ab7	failed: payload lang=js but dirs=lib/Service/WebForm/ is PHP (lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:33:17Z
