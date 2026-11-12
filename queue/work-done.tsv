@@ -472,3 +472,4 @@ cover:pipelinq:f67520ec:js16d0f1b3	PR pipelinq#3553: 30 specs (3 xwiki component
 verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response behaviour change); 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:38:20Z
 merge:shillinq:2796:1f5d6d5b	2796 RED 2797 SKIP 2798 RED 	session-20261112T184502-4ecd6072	2026-11-12T21:38:55Z
 merge:buildiq:1437:bee6449f	failed: tree contains heads/PRs authored by this worker (1437,1440,1450 fixes; 1464,1467); merge needs another worker	session-20261112T184508-711de18c	2026-11-12T21:39:25Z
+cover:launchpad:755175ff:34f5c300	PR #1118: 74 tests for 8 lib/Service classes; suite 3256->3330, 0 failures	session-20261112T212855-9d7d9581	2026-11-12T21:39:46Z
