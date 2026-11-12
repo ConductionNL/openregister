@@ -37,7 +37,13 @@ rather than a model to add.
 
 ## 5. Seeding
 
-- [ ] 5.1 The repair-time seed available as an administered action on a running instance, writing drafts. **Part two**, with 1.3. A `lib/Service/ConfigurationDeployment/SeedActionProvider.php` interface lets a leaf app expose the payload its repair seeder writes (dossiq's `lib/Repair/Seed.php` first). `POST /api/configuration/seed/{provider}` (admin only) opens a draft set named after the provider and writes the payload through `draftValue()`, so the seed is previewed and deployed, never written live.
+- [x] 5.1 The repair-time seed available as an administered action on a running
+  instance, writing drafts. `POST /api/configuration/seed` (admin only,
+  `ConfigurationSeedController`) opens a draft set and stages the defaults the
+  settings getters answer, so the defaults live in one place. Keys the instance
+  already sets are skipped and named in the response. A provider interface for
+  leaf apps' repair seeders is not part of this; it waits for a leaf app that
+  needs it.
 
 ## 6. Tests
 

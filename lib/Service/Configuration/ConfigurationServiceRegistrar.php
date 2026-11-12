@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadH
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSeedService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRecords;
@@ -577,6 +578,7 @@ final class ConfigurationServiceRegistrar {
 		$context->registerService(DeploymentPreviewService::class, self::buildDeploymentPreviewService(...));
 		$context->registerService(DeploymentService::class, self::buildDeploymentService(...));
 		$context->registerService(ConfigurationExplainer::class, self::buildConfigurationExplainer(...));
+		$context->registerService(ConfigurationSeedService::class, self::buildConfigurationSeedService(...));
 	}//end registerConfigurationDeploymentServices()
 
 	/**
@@ -718,4 +720,21 @@ final class ConfigurationServiceRegistrar {
 			deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
 		);
 	}//end buildConfigurationExplainer()
+
+	/**
+	 * Build the seed action over the drafts, the live values and the settings getters.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationSeedService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
+	 */
+	private static function buildConfigurationSeedService(ContainerInterface $container): ConfigurationSeedService {
+		return new ConfigurationSeedService(
+			drafts: $container->get(ConfigurationDraftService::class),
+			store: $container->get(ConfigurationValueStore::class),
+			settings: $container->get(SettingsService::class)
+		);
+	}//end buildConfigurationSeedService()
 }//end class

@@ -14,6 +14,7 @@ import type { APIRequestContext } from '@playwright/test'
  * @e2e configuration-deployment::a-broken-weekend-is-undone-in-one-act
  * @e2e configuration-deployment::a-partial-deployment-does-not-happen
  * @e2e configuration-deployment::why-does-this-instance-behave-like-this
+ * @e2e settings-management::a-new-instance-gets-a-working-vocabulary-to-review
  *
  * WHAT THIS FILE CAN PROVE, AND WHAT IT DELIBERATELY DOES NOT.
  *
@@ -377,5 +378,61 @@ test.describe('configuration as a deployment over HTTP', () => {
 		expect(String((await keyless.json()).message ?? '')).toContain(
 			'key is required',
 		)
+	})
+})
+
+/*
+ * THE SEED. Safe by construction: seeding writes drafts, never live values, and
+ * this block asserts that by reading an instance key before and after, then
+ * discards the set it opened rather than deploying it.
+ */
+test.describe('the configuration seed over HTTP', () => {
+	let admin: APIRequestContext
+
+	const SEED = `${API}/configuration/seed`
+
+	test.beforeAll(async () => {
+		admin = await contextFor(ADMIN, ADMIN_PASS)
+	})
+
+	test.afterAll(async () => {
+		await admin.dispose()
+	})
+
+	test('a new instance gets a working vocabulary to review', async () => {
+		/* rbac is the instance key the seed would stage on a fresh instance.
+		 * Reading it before and after is the assertion that seeding stages
+		 * rather than applies: whatever this instance holds, it still holds. */
+		const before = (await (await admin.get(`${EFFECTIVE}?key=rbac`)).json()) as Record<string, unknown>
+
+		const seeded = await admin.post(SEED, { data: { name: `e2e seed ${RUN}` } })
+		expect(seeded.status(), `the seed failed: ${await seeded.text()}`).toBe(201)
+
+		const body = (await seeded.json()) as Record<string, unknown>
+		const set = body.set as Record<string, unknown>
+		const staged = body.seeded as Array<Record<string, unknown>>
+		const skipped = body.skipped as Array<Record<string, unknown>>
+
+		expect(String(set.uuid ?? ''), 'the seed opened no set to review').toMatch(/[0-9a-f-]{36}/)
+		expect(set.state, 'the seed published instead of staging').toBe('open')
+		expect(
+			staged.length + skipped.length,
+			'the seed accounted for no domain at all',
+		).toBeGreaterThan(0)
+
+		/* Every domain it touched is accounted for by name, staged or skipped,
+		 * so an operator reads what it did rather than only what it changed. */
+		for (const row of [...staged, ...skipped]) {
+			expect(String(row.key ?? ''), 'the seed staged an unnamed key').not.toBe('')
+		}
+
+		const after = (await (await admin.get(`${EFFECTIVE}?key=rbac`)).json()) as Record<string, unknown>
+		expect(after.found, 'the seed changed a live value').toBe(before.found)
+		expect(after.value, 'the seed changed a live value').toEqual(before.value)
+
+		/* Discard the set rather than leaving an instance-key draft open for
+		 * the next person to deploy by accident. */
+		const discarded = await admin.delete(`${SETS}/${String(set.uuid)}`)
+		expect(discarded.ok(), `discarding the seeded set failed: ${await discarded.text()}`).toBeTruthy()
 	})
 })

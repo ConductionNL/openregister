@@ -229,6 +229,7 @@ Controller/CollectiveLinksController.php,112,Controller,Integrations,Integration
 Controller/CompanyLookupController.php,63,Controller,Integrations,Integrations/Controller/CompanyLookupController.php,0,,Integrations
 Controller/ConfigurationController.php,1118,Controller,Configuration,Configuration/Controller/ConfigurationController.php,0,,Configuration
 Controller/ConfigurationDeploymentController.php,208,Controller,Configuration,Configuration/Controller/ConfigurationDeploymentController.php,0,,Configuration
+Controller/ConfigurationSeedController.php,,Controller,,,,,Configuration
 Controller/ConfigurationsController.php,213,Controller,Configuration,Configuration/Controller/ConfigurationsController.php,0,,Configuration
 Controller/ConsumersController.php,68,Controller,Integrations,Integrations/Controller/ConsumersController.php,0,,Integrations
 Controller/ContactsController.php,273,Controller,Integrations,Integrations/Controller/ContactsController.php,0,,Integrations
@@ -1933,6 +1934,7 @@ Service/ConfigurationDeployment/ConfigurationDraftService.php,225,Service,Config
 Service/ConfigurationDeployment/ConfigurationExplainer.php,127,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationExplainer.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,103,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationLayer.php,28,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationLayer.php,0,,Configuration
+Service/ConfigurationDeployment/ConfigurationSeedService.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/ConfigurationSnapshot.php,39,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationSnapshot.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationValueStore.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration

@@ -578,6 +578,9 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        // Stage the working defaults as a draft set. Administrator only, same as above.
+        ['name' => 'configurationSeed#create', 'url' => '/api/configuration/seed',
+            'verb' => 'POST'],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
