@@ -424,3 +424,4 @@ cover:buildiq:8ca317f6:js2cb0b4ec	PR #1470: 42 vitest tests, 4 components, dirs 
 cover:integriq:9b0f5894:js3d68c23d	PR #3398: 22 vitest tests for 4 v2 modals (0%->91-95%); src/modals/v2 57.98->76.12%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:21:29Z
 cover:buildiq:8ca317f6:js15d64f25	opened buildiq#1471 (8 vitest tests, ConnectorDataView; suite 2962->2970 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:22:32Z
 cover:stackiq:8cfacb29:jsd29a5f26	PR #1773: 6 vitest mount tests, cards dir 77.0% -> 98.4% statements	session-20261112T200014-a0c0c232	2026-11-12T21:22:51Z
+cover:hermiq:755cdfe7:js0246d36e	PR #1593: 5 vitest tests for API fallback branches (agentTemplates, chat, talk); suite 944->949, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:23:56Z
