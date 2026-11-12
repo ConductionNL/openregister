@@ -1,1 +1,2 @@
 # pr	head	last_approved	reason
+9998	6c44979c53d01ba4db9c1248a35c4b99f5692a6a	-	dev compose secrets to .env + .gitleaks.toml allowlist of verified non-secrets (fleetsec)
