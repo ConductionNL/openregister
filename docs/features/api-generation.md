@@ -183,9 +183,20 @@ All generated REST endpoints comply with the NL API Design Rules:
 - Resource-based URL structure (`/api/objects/{register}/{schema}`)
 - HTTP methods follow REST semantics (GET, POST, PUT, PATCH, DELETE)
 - Pagination via `_start`/`_limit` and `Link` headers
-- Versioning via URL path (`/api/v1/...`) or `API-Version` header
+- Versioning via URL path (`/api/v1/...`) or `API-Version` header (see below)
 - Error responses follow Problem Details (RFC 7807)
 - Dutch field names supported alongside English aliases
+
+### Versioned paths
+
+Every API path is served twice: under `/api/v1/` and at its unversioned path.
+
+- `/index.php/apps/openregister/api/v1/<path>` is the current form. The root `openapi.json` describes it.
+- `/index.php/apps/openregister/api/<path>` keeps working and answers the same, but it is deprecated. Its responses carry `Deprecation: @1794441600` (RFC 9745, 12 November 2026) and `Link: <.../api/v1/<path>>; rel="successor-version"`. No sunset date is set yet.
+- `filesMultipart` is the deprecated name of `files-multipart`. Its successor is `/api/v1/objects/{register}/{schema}/{id}/files-multipart`. It still answers, but `openapi.json` does not list it, because its spelling breaks the kebab-case path rule.
+- Paths that already carry a version (`/api/v2/audit`, `/api/mcp/v1/...`) and paths that speak another standard (MCP, GraphQL, WFS, iCalendar feeds, metrics, health, federation) get no alias and are not deprecated.
+
+`ApiPathAliases` in `lib/Middleware/Support/` adds the aliases to `appinfo/routes.php`, so a new route gets its `/api/v1/` alias automatically.
 
 ## Standards
 

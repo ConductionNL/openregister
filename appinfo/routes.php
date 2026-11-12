@@ -1,6 +1,7 @@
 <?php
 
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases([
     'resources' => [
         'Registers' => ['url' => 'api/registers'],
         'Schemas' => ['url' => 'api/schemas'],
@@ -2341,4 +2342,4 @@ return [
 		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
 			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
-];
+]);

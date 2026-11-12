@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -73,9 +74,8 @@ class ObjectShareRoutesTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryFileShareRouteIsReachable(): void {
-		$declared = require dirname(__DIR__, 3) . '/appinfo/routes.php';
-		$checked  = 0;
-		foreach (($declared['routes'] ?? []) as $route) {
+		$checked = 0;
+		foreach (DeclaredRoutes::unversioned() as $route) {
 			if (str_starts_with((string) ($route['name'] ?? ''), 'shareLinks#') === false) {
 				continue;
 			}
