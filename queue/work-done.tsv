@@ -308,3 +308,5 @@ cover:dossiq:6ca0231e:b12f5203	PR #6152: 2 classes, 10 tests (Import thin); suit
 gap:dossiq:opensourcehealth:baa6a862	failed: stars come from ~390 transitive npm deps (activity, freshness; licence use from GPL/AGPL Nextcloud libraries); no bounded app-level change lifts it to 4 stars	session-20261112T200014-a0c0c232	2026-11-12T20:43:47Z
 verify:stackiq:1737:948db7de	GREEN 1737,1739,1740,1741; RED 1738 (2 route tests)	session-20261112T202437-4020bd95	2026-11-12T20:44:14Z
 cover:dossiq:6ca0231e:38e8c328	PR #6153: dirs already 91% lines; thinnest two (CaseActNotices 62.5%, ScanVerdictReader 87.5%) now 100%, 8 tests; suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:44:19Z
+verify:dossiq:6125:66068c8d	9/9 GREEN: tests-only, 12087 tests, 19 inherited failures, 0 new	session-20261112T202914-c73e3765	2026-11-12T20:45:54Z
+cover:stackiq:8cfacb29:jsea7197ec	already done: src/utils/* now at 99.34% lines (target 80); no PR	session-20261112T202437-4020bd95	2026-11-12T20:45:56Z
