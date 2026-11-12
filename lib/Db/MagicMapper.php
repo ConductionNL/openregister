@@ -5863,6 +5863,53 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end findFolderIdsByOrganisation()
 
 	/**
+	 * The stored folder file id of each live object, by uuid, across the live magic tables.
+	 *
+	 * Reads only the uuid and folder columns and applies no RBAC: the object
+	 * grant resolver calls it while deciding RBAC. A table that cannot be read
+	 * is logged and skipped, which leaves its objects without a folder and so
+	 * without a share grant.
+	 *
+	 * @param string[] $uuids The object uuids.
+	 *
+	 * @return array<string, int> Uuid => folder file id; objects without a numeric folder are absent.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function findFolderIdsByUuids(array $uuids): array {
+		$uuids = array_values(array_unique(array_filter($uuids, static fn ($uuid) => is_string($uuid) === true && $uuid !== '')));
+		if ($uuids === []) {
+			return [];
+		}
+
+		$folders = [];
+		foreach (array_keys($this->getLiveMagicTables()) as $table) {
+			try {
+				$qb = $this->db->getQueryBuilder();
+				$qb->select(self::METADATA_PREFIX.'uuid', self::METADATA_PREFIX.'folder')
+					->from($table)
+					->where($qb->expr()->in(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)))
+					->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+				$result = $qb->executeQuery();
+				while (($row = $result->fetch()) !== false) {
+					if (is_numeric($row[self::METADATA_PREFIX.'folder'] ?? null) === true) {
+						$folders[(string)$row[self::METADATA_PREFIX.'uuid']] = (int)$row[self::METADATA_PREFIX.'folder'];
+					}
+				}
+
+				$result->closeCursor();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] findFolderIdsByUuids: could not read a table',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $table, 'error' => $e->getMessage()]
+				);
+			}//end try
+		}//end foreach
+
+		return $folders;
+	}//end findFolderIdsByUuids()
+
+	/**
 	 * Count an organisation's live objects across the magic tables, of the
 	 * given schemas only when ids are given.
 	 *
