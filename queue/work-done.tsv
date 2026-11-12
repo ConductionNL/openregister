@@ -570,4 +570,5 @@ verify:filinq:1972:9b413630	failed: permission	session-20261112T221243-3762bc6e	
 verify:dossiq:6174:1a10083c	7 GREEN (tests only, 0 new failures)	session-20261112T220138-f0050f42	2026-11-12T22:13:45Z
 cover:launchpad:755175ff:882bd950	PR #1126: 5 tests, LaunchPadSearchProvider 187/199->199/199; suite 3256->3261 green	session-20261112T215819-2dd7b64e	2026-11-12T22:13:51Z
 verify:versioniq:660:e05e562e	GREEN 660 (lint clean; no unit suite installed)	session-20261112T221234-13fcfd6a	2026-11-12T22:14:05Z
+verify:humaniq:1097:d593a976	failed: permission	session-20261112T221235-91821e68	2026-11-12T22:14:20Z
 cover:openregister:7350e3ef:js8fc0e203	PR #10045: 12 jest tests, RegistersSideBar 59%->100% lines; sidebars lines 83%->92%; suite 7075->7087 passed	session-20261112T220138-0741264a	2026-11-12T22:14:39Z
