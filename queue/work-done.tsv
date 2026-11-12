@@ -769,3 +769,4 @@ review:openregister:10053:db69d331	APPROVE: test-only, 40 jest tests green on ma
 verify:larpinq:1006:14c4c964	stale	session-20261112T224530-faaec44c	2026-11-12T22:56:26Z
 cover:hermiq:755cdfe7m7444:9910e837	PR #1619: 10 tests for OutsideCall, OutsideCallRefusedException, OutsideToolSurface; suite 3559->3569, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:56:33Z
 cover:pipelinq:f67520ecm9d2c:jse19add4c	failed: payload lang=js but dirs=lib/Service/Consent/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:30Z
+cover:pipelinq:f67520ecm9d2c:js0a24f15f	failed: payload lang=js but dirs=lib/Service/Letter/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:41Z
