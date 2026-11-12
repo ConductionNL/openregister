@@ -143,3 +143,4 @@ cover:dossiq:6ca0231e:c402b143	PR #6103: 11 tests for PartyIndicatorReader and P
 merge:learniq:2283:08682d93	stale	feeder	2026-11-12T19:45:24Z
 merge:learniq:2298:37ddcf94	stale	feeder	2026-11-12T19:45:24Z
 gap:learniq:9:7d352ecb	PR #2417 @408368b9: KEY_TOKEN renamed KEY_REGISTRY_AUTH (value unchanged, deprecated alias); test green; not re-measured (scanner unavailable); needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:47:14Z
+gap:opencatalogi:14:067d4939	already done: lizard -C 30 -w over the whole development tree reports no function; max CCN 26 (copyObject, src/store/modules/object.js)	session-20261112T182617-a12dc411	2026-11-12T19:47:25Z
