@@ -4214,3 +4214,4 @@ launchpad	1121	30685fba6b1fddcb45e5c055b3377a4caea40c15	BLOCK	worker-26	3350 tes
 dossiq	6174	30c70bc677b8438bd3081895651d727e94f750e8	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6175	15cf32e006e95a15919b6131a77e215baddab7b4	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
 dossiq	6176	626a8ce6762c7fc9ee733cdb027bb9ef6a8a6abd	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
+dossiq	6177	60c61ba076eecf8ac1f7ccdd57fe48c8c98a06e4	GREEN	worker-56	phpunit 12592 tests on tree, baseline 47 inherited fails (sibling-openregister drift), 0 new; vitest 6240, 1 inherited fail; tests-only diff
