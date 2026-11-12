@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -100,4 +102,37 @@ class ExportServiceSelectedIdsTest extends TestCase {
 	public function testWithoutIdsNothingIsNarrowed(): void {
 		$this->assertNull($this->idsFor(filters: ['format' => 'json']));
 	}//end testWithoutIdsNothingIsNarrowed()
+
+	/**
+	 * The export's read runs as one revealing process.
+	 *
+	 * @return void
+	 */
+	public function testTheExportReadIsRecordedAsARevealingProcess(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->once())->method('searchObjects')->willReturn([]);
+		$audit = $this->createMock(ProcessRevealAuditInterface::class);
+		$audit->expects($this->once())->method('run')->willReturnCallback(
+			function (RevealingProcess $run, callable $operation): mixed {
+				$this->assertSame('export', $run->process);
+				$this->assertNotSame('', $run->runId);
+				return $operation();
+			}
+		);
+
+		$service = new ExportService(
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(IGroupManager::class),
+			$objectService,
+			$this->createMock(CacheHandler::class),
+			$this->createMock(PropertyRbacHandler::class),
+			null,
+			$audit
+		);
+		$schema = new Schema();
+		$schema->setId(9);
+
+		$service->countExportRows(request: new ObjectExportRequest(register: null, schema: $schema, filters: []));
+	}//end testTheExportReadIsRecordedAsARevealingProcess()
 }//end class

@@ -45,6 +45,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
+ * @uses \OCA\OpenRegister\Service\Audit\AuditRowAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailCollaborators
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

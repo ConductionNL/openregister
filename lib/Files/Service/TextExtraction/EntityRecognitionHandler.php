@@ -22,7 +22,6 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use CurlHandle;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -1122,7 +1121,9 @@ class EntityRecognitionHandler {
 	/**
 	 * Post an analyze request to an external entity detection service.
 	 *
-	 * Handles the curl POST request, error checking, and JSON response parsing.
+	 * Goes through Nextcloud's HTTP client, so the instance's outbound rules
+	 * apply: an endpoint on a local or private address is refused unless the
+	 * administrator set `allow_local_remote_servers`.
 	 * Returns null on any failure (connection error, non-200, invalid JSON).
 	 *
 	 * @param AnalyzeCall $call URL, request body, service name and extra headers.
@@ -1133,21 +1134,30 @@ class EntityRecognitionHandler {
 	 */
 	private function postAnalyzeRequest(AnalyzeCall $call): ?array {
 		$serviceName = $call->serviceName;
-		$ch = $this->analyzeHandle(call: $call);
+		$clientService = $this->backends->clientService;
+		if ($clientService === null) {
+			$this->logConnectionError(serviceName: $serviceName, error: 'no HTTP client available');
+			return null;
+		}
 
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$curlError = curl_error($ch);
-		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-		// CurlHandle object is freed when it goes out of scope.
-		if ($curlError !== '') {
-			$this->logConnectionError(serviceName: $serviceName, curlError: $curlError);
+		try {
+			$response = $clientService->newClient()->post(
+				$call->url,
+				[
+					'body' => json_encode($call->requestBody),
+					'headers' => $this->analyzeHeaders(call: $call),
+					'timeout' => 30,
+					'http_errors' => false,
+				]
+			);
+		} catch (Exception $e) {
+			$this->logConnectionError(serviceName: $serviceName, error: $e->getMessage());
 			return null;
 		}
 
 		return $this->acceptedAnalyzeResponse(
 			serviceName: $serviceName,
-			response: new AnalyzeResponse(status: $httpCode, body: $response)
+			response: new AnalyzeResponse(status: $response->getStatusCode(), body: $response->getBody())
 		);
 	}//end postAnalyzeRequest()
 
@@ -1155,62 +1165,45 @@ class EntityRecognitionHandler {
 	 * Log that the service could not be reached.
 	 *
 	 * @param string $serviceName Human-readable service name.
-	 * @param string $curlError   The curl error.
+	 * @param string $error       Why the request did not get an answer.
 	 *
 	 * @return void
 	 */
-	private function logConnectionError(string $serviceName, string $curlError): void {
+	private function logConnectionError(string $serviceName, string $error): void {
 		$this->logger->error(
-			message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $curlError,
+			message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $error,
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end logConnectionError()
 
 	/**
-	 * A curl handle that POSTs the call's JSON body with the call's extra headers.
+	 * The JSON content headers followed by the call's extra headers, by header name.
 	 *
-	 * @param AnalyzeCall $call URL, request body and extra headers.
+	 * @param AnalyzeCall $call The call, with its extra headers as `Name: value` lines.
 	 *
-	 * @return CurlHandle|false The configured handle.
-	 */
-	private function analyzeHandle(AnalyzeCall $call): CurlHandle|false {
-		$ch = curl_init($call->url);
-		curl_setopt_array(
-			$ch,
-			[
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_POST => true,
-				CURLOPT_POSTFIELDS => json_encode($call->requestBody),
-				CURLOPT_HTTPHEADER => $this->analyzeHeaders(call: $call),
-				CURLOPT_TIMEOUT => 30,
-			]
-		);
-
-		return $ch;
-	}//end analyzeHandle()
-
-	/**
-	 * The JSON content headers followed by the call's extra headers.
-	 *
-	 * @param AnalyzeCall $call The call, with its extra headers.
-	 *
-	 * @return array<int, string>
+	 * @return array<string, string>
 	 */
 	private function analyzeHeaders(AnalyzeCall $call): array {
-		return array_merge(
-			[
-				'Content-Type: application/json',
-				'Accept: application/json',
-			],
-			$call->extraHeaders
-		);
+		$headers = [
+			'Content-Type' => 'application/json',
+			'Accept' => 'application/json',
+		];
+
+		foreach ($call->extraHeaders as $line) {
+			$parts = explode(':', (string)$line, 2);
+			if (count($parts) === 2) {
+				$headers[trim($parts[0])] = trim($parts[1]);
+			}
+		}
+
+		return $headers;
 	}//end analyzeHeaders()
 
 	/**
 	 * The decoded body of an answered analyze request; a request error throws, any other non-200 is null.
 	 *
 	 * @param string          $serviceName Human-readable service name.
-	 * @param AnalyzeResponse $response    The HTTP status curl reported and the raw response body.
+	 * @param AnalyzeResponse $response    The HTTP status and the raw response body.
 	 *
 	 * @return array|null The decoded array, or null on failure.
 	 *
@@ -1234,7 +1227,7 @@ class EntityRecognitionHandler {
 	 * Throw when the service answered with a request (4xx) error.
 	 *
 	 * @param string          $serviceName Human-readable service name.
-	 * @param AnalyzeResponse $response    The HTTP status curl reported and the raw response body.
+	 * @param AnalyzeResponse $response    The HTTP status and the raw response body.
 	 *
 	 * @return void
 	 *

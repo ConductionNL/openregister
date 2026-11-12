@@ -43,7 +43,6 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -385,8 +384,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Created conversation
 	 *
 	 * @psalm-return JSONResponse<
@@ -411,7 +408,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		try {
 			$data             = $this->request->getParams();
@@ -520,8 +516,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated conversation
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -578,8 +572,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response confirming conversation deletion
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -613,8 +605,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with restored conversation
 	 *
 	 * @psalm-return JSONResponse<200|403|404|500,
@@ -646,8 +636,6 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @param string $uuid Conversation UUID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response confirming permanent deletion
 	 *

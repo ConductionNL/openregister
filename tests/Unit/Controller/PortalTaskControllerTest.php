@@ -62,6 +62,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Exception\TaskCompleteViaAppException
  * @uses \OCA\OpenRegister\Service\Portal\PortalSubject
+ * @uses \OCA\OpenRegister\Service\Portal\PortalCompletion
+ * @uses \OCA\OpenRegister\Service\Portal\PortalSubjectClaims
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class PortalTaskControllerTest extends TestCase {
 

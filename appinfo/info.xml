@@ -420,6 +420,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
 			<!-- A schedule in an app's own manifest has no publisher: say so, it does not run. -->
 			<step>OCA\OpenRegister\Repair\ReportUnpublishedSchedules</step>
+			<!-- Encrypts webhook and consumer secrets stored in clear and hashes stored
+			     calendar feed tokens; idempotent. -->
+			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

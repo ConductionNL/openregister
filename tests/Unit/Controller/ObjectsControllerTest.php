@@ -6844,6 +6844,38 @@ class ObjectsControllerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * A JSON export runs as the signed-in caller, so the service can honour an admin's `_multi`.
+	 *
+	 * @return void
+	 */
+	public function testAJsonExportRunsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'json');
+		$this->exportService->expects($this->once())->method('exportToJson')->with(
+			$this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user)
+		)->willReturn('[]');
+
+		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * A PDF export counts its recorded rows as the signed-in caller, the same scope the served file used.
+	 *
+	 * @return void
+	 */
+	public function testAPdfExportCountsItsRowsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'pdf');
+		$asCaller = $this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user);
+		$this->exportService->expects($this->once())->method('exportToPdf')->with($asCaller)->willReturn('%PDF');
+		$this->exportService->expects($this->once())->method('countExportRows')->with($asCaller)->willReturn(4);
+
+		$this->assertSame('%PDF', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
 	// =========================================================================
 	// downloadFiles() — returns 404 when object not found (via DoesNotExist)
 	// =========================================================================

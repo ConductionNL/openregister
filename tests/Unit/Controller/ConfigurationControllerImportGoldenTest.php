@@ -45,6 +45,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
  * @uses \OCA\OpenRegister\Controller\Support\ConfigurationControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationImport
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
+ * @uses \OCA\OpenRegister\Service\Configuration\GitLabProjectRef
  */
 class ConfigurationControllerImportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/configuration-import-golden.json';

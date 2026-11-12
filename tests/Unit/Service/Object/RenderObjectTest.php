@@ -3317,6 +3317,17 @@ class RenderObjectTest extends TestCase {
 		$this->assertCount(2, $result['items']);
 	}
 
+	public function testHandleWildcardExtendsLeavesScalarEntriesAsTheyAre(): void {
+		$uuid = '12345678-1234-1234-1234-123456789012';
+		$objectData = ['items' => [$uuid, ['ref' => 'val']]];
+		$extend = ['items.$.ref'];
+
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
+
+		$this->assertSame($uuid, $result['items'][0]);
+		$this->assertSame('val', $result['items'][1]['ref']);
+	}
+
 	public function testHandleWildcardExtendsWithNonIterableRoot(): void {
 		$objectData = ['items' => 'not-iterable'];
 		$extend = ['items.$.ref'];

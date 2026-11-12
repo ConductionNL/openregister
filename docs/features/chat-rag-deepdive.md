@@ -809,12 +809,12 @@ docker logs -f master-nextcloud-1 | grep '\[ChatService\]'
 
 **Test vectorization stats:**
 ```bash
-curl -u admin:admin http://localhost/index.php/apps/openregister/api/vectors/stats
+curl -H 'OCS-APIRequest: true' -u admin:admin http://localhost/index.php/apps/openregister/api/vectors/stats
 ```
 
 **Test semantic search directly:**
 ```bash
-curl -u admin:admin -X POST \
+curl -H 'OCS-APIRequest: true' -u admin:admin -X POST \
   http://localhost/index.php/apps/openregister/api/vectors/search \
   -H 'Content-Type: application/json' \
   -d '{"query":"Wat is de kleur van Mokkum?","limit":5}'
@@ -822,7 +822,7 @@ curl -u admin:admin -X POST \
 
 **Test chat conversation:**
 ```bash
-curl -u admin:admin -X POST \
+curl -H 'OCS-APIRequest: true' -u admin:admin -X POST \
   http://localhost/index.php/apps/openregister/api/conversations/1/messages \
   -H 'Content-Type: application/json' \
   -d '{"message":"Wat is de kleur van Mokkum?"}'

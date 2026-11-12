@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * Golden query, result and warning of the catalogue lookup.
  *
  * @covers \OCA\OpenRegister\Db\GdprEntityMapper
+ * @uses \OCA\OpenRegister\Db\GdprEntity
  */
 final class GdprEntityMapperLookupGoldenTest extends TestCase {
 	use RecordsQueries;
