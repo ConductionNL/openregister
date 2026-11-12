@@ -230,3 +230,4 @@ verify:learniq:2416:18557865	GREEN: 2416 (lockfile+sbom; 0 new failures, 2 inher
 cover:dossiq:6ca0231e:9951e799	PR #6120: 8 tests for CaseDecisionLink (only untested class), suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:20:27Z
 review:openregister:10036:6450f94e	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T20:20:29Z
 cover:stackiq:8cfacb29:d528dcf0	opened stackiq#1748 (2 tests, ConceptOrganisatiesWidget panel; load() needs server, untested)	session-20261112T184441-77ab05a6	2026-11-12T20:20:41Z
+merge:decidiq:2030:0f631b71	merged 3 (2039-2041); 2060 gate RED (checker floor dockerimage); 2030 already merged	session-20261112T184502-4ecd6072	2026-11-12T20:21:24Z
