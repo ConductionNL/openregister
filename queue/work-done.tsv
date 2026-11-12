@@ -676,4 +676,5 @@ review:openregister:10046:04d5ae77	APPROVE: test-only, 228 jest tests green merg
 review:openregister:10050:77f81a29	APPROVE: tests only, 496 object modal tests pass	session-20261112T221235-91821e68	2026-11-12T22:38:13Z
 cover:openregister:7350e3ef:jse6f8d431	failed: lang=js but lib/Service/Relation/ is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:38:28Z
 cover:hermiq:755cdfe7m7444:js0f20d6d0	failed: lang=js but dirs=lib/Service/Talk/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:38:42Z
+cover:decidiq:13261b1b:be0dcca9	PR #2097: 14 tests for MCP scope resolver, validator, tool failure paths; lib/Mcp 98.9%; suite 3116->3130 OK	session-20261112T221533-911acbf2	2026-11-12T22:38:54Z
 verify:decidiq:2089:c911a1b6	3 GREEN (2089-2091), tests-only, 3145 tests 0 failures	session-20261112T221237-c40cb74c	2026-11-12T22:38:55Z
