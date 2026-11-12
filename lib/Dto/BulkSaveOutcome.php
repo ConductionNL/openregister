@@ -283,6 +283,25 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			return '';
 		}
 
+		$messages = self::unattributedMessages(errors: $errors);
+		if ($messages === []) {
+			return '';
+		}
+
+		return ' Reported errors: ' . implode('; ', $messages);
+
+	}//end describeUnattributedErrors()
+
+	/**
+	 * The messages of the batch-level errors that belong to no row, at most MAX_REPORTED_BATCH_ERRORS.
+	 *
+	 * @param array $errors The `errors` list of the bulk result.
+	 *
+	 * @return list<string> The messages, in order.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function unattributedMessages(array $errors): array {
 		$messages = [];
 		foreach ($errors as $error) {
 			if (is_array($error) === false || ($error['type'] ?? '') === 'BulkSafeguardException') {
@@ -295,13 +314,8 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			}
 		}
 
-		if ($messages === []) {
-			return '';
-		}
-
-		return ' Reported errors: ' . implode('; ', $messages);
-
-	}//end describeUnattributedErrors()
+		return $messages;
+	}//end unattributedMessages()
 
 	/**
 	 * Pull the caller-supplied identifier out of a rejected row.

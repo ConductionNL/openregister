@@ -134,6 +134,16 @@ class RenderObject implements RenderObjectInterface {
 	private array $fileTagsCache = [];
 
 	/**
+	 * Page-scoped ids of the files in each object's own folder, keyed by object UUID.
+	 *
+	 * Filled before a page render and cleared after it, so a single render
+	 * always reads the folder as it is now.
+	 *
+	 * @var array<string, array<int, int>>
+	 */
+	private array $pageOwnFileIds = [];
+
+	/**
 	 * Whether a full page render is in progress (PERF-8).
 	 *
 	 * Set by renderEntities() around its per-entity loop. When true, extendObject()
@@ -1577,9 +1587,45 @@ class RenderObject implements RenderObjectInterface {
 			$schema->getProperties() ?? [],
 			fn (array $config): bool => $this->isFilePropertyConfig(propertyConfig: $config)
 		);
+		if ($fileProperties === []) {
+			return;
+		}
+
 		$objectData = self::withEmptyFileArrays(objectData: $entity->getObject(), fileProperties: $fileProperties);
-		$entity->setObject($this->hydrateFileValues(objectData: $objectData, fileProperties: $fileProperties));
+		$entity->setObject(
+			$this->hydrateFileValues(
+				objectData: $objectData,
+				fileProperties: $fileProperties,
+				ownFileIds: $this->ownFileIds(entity: $entity)
+			)
+		);
 	}//end hydrateFilesOf()
+
+	/**
+	 * The ids of the files in an object's own folder, keyed by themselves.
+	 *
+	 * A file property only ever names one of these: a stored id outside the
+	 * folder is not the object's file, so it renders as no file.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 *
+	 * @return array<int, int> The file ids, keyed by themselves.
+	 */
+	private function ownFileIds(ObjectEntity $entity): array {
+		$uuid = $entity->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return [];
+		}
+
+		$fileIds = ($this->pageOwnFileIds[$uuid] ?? null);
+		if ($fileIds === null) {
+			$fileIds = ($this->stores->files->fileMapper->getFileIdsForObjects([$uuid])[$uuid] ?? []);
+		}
+
+		$fileIds = array_map('intval', $fileIds);
+
+		return array_combine($fileIds, $fileIds);
+	}//end ownFileIds()
 
 	/**
 	 * Object data in which every unset file array property is an empty array.
@@ -1604,15 +1650,17 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param array|null                          $objectData     The object data.
 	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 * @param array<int, int>                     $ownFileIds     The ids of the files in the object's folder.
 	 *
 	 * @return array|null The object data.
 	 */
-	private function hydrateFileValues(?array $objectData, array $fileProperties): ?array {
+	private function hydrateFileValues(?array $objectData, array $fileProperties, array $ownFileIds): ?array {
 		foreach ($objectData ?? [] as $propertyName => $propertyValue) {
 			if (self::isFileKey(key: $propertyName, fileProperties: $fileProperties) === true) {
 				$objectData[$propertyName] = $this->hydrateFileProperty(
 					propertyValue: $propertyValue,
-					propertyConfig: $fileProperties[$propertyName]
+					propertyConfig: $fileProperties[$propertyName],
+					ownFileIds: $ownFileIds
 				);
 			}
 		}
@@ -1658,8 +1706,9 @@ class RenderObject implements RenderObjectInterface {
 	 * If the property config has `format: base64`, returns the file content as a base64
 	 * data URI string. Otherwise, returns the file metadata object with URLs.
 	 *
-	 * @param mixed $propertyValue The property value (file ID or array of file IDs).
-	 * @param array $propertyConfig The property configuration from schema.
+	 * @param mixed           $propertyValue  The property value (file ID or array of file IDs).
+	 * @param array           $propertyConfig The property configuration from schema.
+	 * @param array<int, int> $ownFileIds     The ids of the files in the object's folder.
 	 *
 	 * @psalm-param   mixed $propertyValue
 	 * @psalm-param   array<string, mixed> $propertyConfig
@@ -1676,11 +1725,12 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function hydrateFileProperty($propertyValue, array $propertyConfig) {
+	private function hydrateFileProperty($propertyValue, array $propertyConfig, array $ownFileIds) {
 		if (($propertyConfig['type'] ?? '') === 'array') {
 			return $this->hydrateFileArray(
 				propertyValue: $propertyValue,
-				base64: $this->embedsBase64(fileConfig: ($propertyConfig['items'] ?? []))
+				base64: $this->embedsBase64(fileConfig: ($propertyConfig['items'] ?? [])),
+				ownFileIds: $ownFileIds
 			);
 		}
 
@@ -1689,8 +1739,24 @@ class RenderObject implements RenderObjectInterface {
 			return $propertyValue;
 		}
 
+		if (self::isOwnFileId(fileId: $propertyValue, ownFileIds: $ownFileIds) === false) {
+			return null;
+		}
+
 		return $this->hydrateFileId(fileId: $propertyValue, base64: $this->embedsBase64(fileConfig: $propertyConfig));
 	}//end hydrateFileProperty()
+
+	/**
+	 * Whether a value is the id of a file in the object's own folder.
+	 *
+	 * @param mixed           $fileId     The value.
+	 * @param array<int, int> $ownFileIds The ids of the files in the object's folder.
+	 *
+	 * @return bool
+	 */
+	private static function isOwnFileId(mixed $fileId, array $ownFileIds): bool {
+		return is_numeric($fileId) === true && isset($ownFileIds[(int)$fileId]) === true;
+	}//end isOwnFileId()
 
 	/**
 	 * Whether a file property renders as base64 content.
@@ -1711,19 +1777,24 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * The files of an array property; a value that is not an array stays as it is.
 	 *
-	 * @param mixed $propertyValue The file IDs.
-	 * @param bool  $base64        Whether to render base64 content.
+	 * @param mixed           $propertyValue The file IDs.
+	 * @param bool            $base64        Whether to render base64 content.
+	 * @param array<int, int> $ownFileIds    The ids of the files in the object's folder.
 	 *
 	 * @return mixed The readable files.
 	 */
-	private function hydrateFileArray($propertyValue, bool $base64) {
+	private function hydrateFileArray($propertyValue, bool $base64, array $ownFileIds) {
 		if (is_array($propertyValue) === false) {
 			return $propertyValue;
 		}
 
+		$owned = array_filter(
+			array_values($propertyValue),
+			static fn ($fileId): bool => self::isOwnFileId(fileId: $fileId, ownFileIds: $ownFileIds)
+		);
 		$hydrated = array_map(
 			fn ($fileId) => $this->hydrateFileId(fileId: $fileId, base64: $base64),
-			array_values($propertyValue)
+			array_values($owned)
 		);
 
 		return array_values(array_filter($hydrated, static fn ($file): bool => $file !== null));
@@ -3832,6 +3903,9 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Extend every entry of the list at the run's key with the key's nested extends.
 	 *
+	 * Only object entries have nested keys to extend; a scalar entry, such as a
+	 * uuid in a list of references, is left as it is.
+	 *
 	 * @param ExtendDotRun $run The extend pass, on one wildcard root.
 	 *
 	 * @return void
@@ -3845,6 +3919,10 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		foreach ($data as $key => $date) {
+			if (is_array($date) === false) {
+				continue;
+			}
+
 			$tmpExtends = $run->keyExtends;
 			$nested = new ExtendDotRun();
 			$nested->depth = $run->depth;
@@ -4990,6 +5068,28 @@ class RenderObject implements RenderObjectInterface {
 	}//end preloadPage()
 
 	/**
+	 * Load the own-folder file ids of every page object that has a file property value, in one query.
+	 *
+	 * @param array $entities The page of entities.
+	 *
+	 * @return void
+	 */
+	private function prefetchPageOwnFileIds(array $entities): void {
+		$uuids = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true && $entity->getUuid() !== null
+				&& $this->referencedFileIds(entity: $entity) !== []
+			) {
+				$uuids[] = $entity->getUuid();
+			}
+		}
+
+		if ($uuids !== []) {
+			$this->pageOwnFileIds = $this->stores->files->fileMapper->getFileIdsForObjects($uuids);
+		}
+	}//end prefetchPageOwnFileIds()
+
+	/**
 	 * An extend option as a list: a comma-separated string split, null as no extends.
 	 *
 	 * @param array|string|null $extend The extend option
@@ -5177,6 +5277,7 @@ class RenderObject implements RenderObjectInterface {
 			}
 		} finally {
 			$this->batchFileIdsCache = null;
+			$this->pageOwnFileIds = [];
 			// PERF-1: drop request-scoped file caches after the page render.
 			$this->fileObjectCache = [];
 			$this->fileTagsCache = [];
@@ -5210,6 +5311,7 @@ class RenderObject implements RenderObjectInterface {
 
 		try {
 			$this->preloadFiles(fileIds: $fileIds);
+			$this->prefetchPageOwnFileIds(entities: $entities);
 		} catch (Exception $e) {
 			// A prefetch failure must never break rendering: per-row paths will simply
 			// fall back to individual lookups (the pre-PERF-1 behaviour).

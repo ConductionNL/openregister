@@ -74,7 +74,6 @@ class SubjectExportController extends Controller {
 	 * @return JSONResponse The recorded request.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: the assembler is
 	 *   DataSubjectRequestService::assembleAccessExport, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever exports what it may read.

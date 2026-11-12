@@ -34,6 +34,8 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialOutbound;
 use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
 use OCA\OpenRegister\Service\Credential\CredentialSources;
@@ -46,6 +48,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -74,18 +77,19 @@ class CredentialOAuth2MintTest extends TestCase {
 				'scope' => 'read:accounts write:statuses',
 			])->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
 
-		$broker->mint(
-			name: 'Mastodon company account',
-			provider: 'mastodon',
-			owner: 'alice',
-			allowedApps: ['pipelinq'],
-			secret: $tokenSet->toStoredJson(),
-			metadata: [
-				'kind' => 'oauth2-token-set',
-				'status' => 'active',
-				'instanceBaseUrl' => 'https://mastodon.example/',
-				'clientId' => 'CLIENT_ID_HERE',
-			]
+		$broker->mintCredential(
+			mint: new CredentialMint(
+				name: 'Mastodon company account',
+				provider: 'mastodon',
+				owner: 'alice',
+				metadata: [
+					'kind' => 'oauth2-token-set',
+					'status' => 'active',
+					'instanceBaseUrl' => 'https://mastodon.example/',
+					'clientId' => 'CLIENT_ID_HERE',
+				]
+			),
+			options: new CredentialMintOptions(allowedApps: ['pipelinq'], secret: $tokenSet->toStoredJson())
 		);
 
 		$this->assertSame('oauth2-token-set', $this->savedObject['kind']);
@@ -103,16 +107,19 @@ class CredentialOAuth2MintTest extends TestCase {
 	public function testMetadataOutsideTheAllowListIsDropped(): void {
 		$broker = $this->makeBroker();
 
-		$broker->mint(
-			name: 'Mastodon company account',
-			provider: 'mastodon',
-			owner: 'alice',
-			metadata: [
-				'kind' => 'oauth2-token-set',
-				'accessToken' => 'SMUGGLED_TOKEN_VALUE',
-				'sharedUsers' => ['mallory'],
-				'authorization' => ['read' => []],
-			]
+		$broker->mintCredential(
+			mint: new CredentialMint(
+				name: 'Mastodon company account',
+				provider: 'mastodon',
+				owner: 'alice',
+				metadata: [
+					'kind' => 'oauth2-token-set',
+					'accessToken' => 'SMUGGLED_TOKEN_VALUE',
+					'sharedUsers' => ['mallory'],
+					'authorization' => ['read' => []],
+				]
+			),
+			options: new CredentialMintOptions()
 		);
 
 		$this->assertArrayNotHasKey('accessToken', $this->savedObject);
@@ -126,11 +133,14 @@ class CredentialOAuth2MintTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 
 		try {
-			$broker->mint(
-				name: 'Mastodon company account',
-				provider: 'mastodon',
-				owner: 'alice',
-				metadata: ['kind' => 'oauth2-token-set', 'instanceBaseUrl' => 'https://192.168.1.10'],
+			$broker->mintCredential(
+				mint: new CredentialMint(
+					name: 'Mastodon company account',
+					provider: 'mastodon',
+					owner: 'alice',
+					metadata: ['kind' => 'oauth2-token-set', 'instanceBaseUrl' => 'https://192.168.1.10']
+				),
+				options: new CredentialMintOptions()
 			);
 		} finally {
 			$this->assertNull($this->savedObject, 'a refused host must not leave a credential object behind');
@@ -141,7 +151,10 @@ class CredentialOAuth2MintTest extends TestCase {
 	public function testAClassicMintIsUnchangedByTheNewParameter(): void {
 		$broker = $this->makeBroker();
 
-		$broker->mint(name: 'My GitHub', provider: 'github', owner: 'alice', allowedApps: ['hermiq'], secret: 'hunter2');
+		$broker->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(allowedApps: ['hermiq'], secret: 'hunter2')
+		);
 
 		$this->assertSame(
 			['name', 'provider', 'owner', 'allowedApps', 'createdAt'],
@@ -158,7 +171,7 @@ class CredentialOAuth2MintTest extends TestCase {
 	private function makeBroker(): CredentialBrokerService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array | ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->savedObject = (is_array($object) === true ? $object : $object->getObject());
 				$saved = new ObjectEntity();
 				$saved->setUuid('minted-uuid');

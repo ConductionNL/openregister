@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
+use OCA\OpenRegister\Service\Object\DeletionAttribution;
+use OCA\OpenRegister\Service\Object\DeletionIntegrity;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
@@ -167,13 +169,10 @@ class DeleteObjectCascadeChildChecksTest extends TestCase {
 		return new DeleteObject(
 			$this->objectMapper,
 			$this->createMock(CacheHandler::class),
-			$userSession,
 			new AuditRecording($this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class)),
 			$settings,
-			$this->integrity,
-			$this->db,
-			$this->createMock(OrganisationMapper::class),
-			null,
+			new DeletionIntegrity($this->integrity, $this->db),
+			new DeletionAttribution($userSession, $this->createMock(OrganisationMapper::class), $this->createMock(LoggerInterface::class)),
 			null,
 			null,
 			null,

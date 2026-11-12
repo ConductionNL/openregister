@@ -42,6 +42,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetColumnFilter
  */
 class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 

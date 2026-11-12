@@ -28,6 +28,9 @@ use Psr\Container\ContainerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\RevertOptions
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditTrailMapperRevertTargetTest extends TestCase {
 

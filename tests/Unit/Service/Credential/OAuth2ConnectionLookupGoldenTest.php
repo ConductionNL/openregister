@@ -33,10 +33,12 @@ use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -99,7 +101,10 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		});
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = ['save', $object, $register, $schema, $uuid, $_rbac, $_multitenancy];
 				return new ObjectEntity();
 			}
@@ -187,7 +192,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$http = $this->createMock(IClientService::class);
 		$http->method('newClient')->willReturn($client);
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->expects($this->never())->method('mint');
+		$broker->expects($this->never())->method('mintCredential');
 
 		$service = new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: null), clientService: $http);
 
@@ -232,7 +237,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$minted = new ObjectEntity();
 		$minted->setUuid('minted');
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturn($minted);
+		$broker->method('mintCredential')->willReturn($minted);
 
 		return new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: $stored), clientService: $http);
 	}
@@ -247,7 +252,8 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 	private function objects(array|null|\Throwable $stored): ObjectOperationsInterface {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('find')->willReturnCallback(
-			function (string|int $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true) use ($stored): ?ObjectEntity {
+			function (...$args) use ($stored): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render] = FindCallShape::find(args: $args);
 				$this->finds[] = ['id' => $id, 'register' => $register, 'schema' => $schema, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy, '_render' => $_render];
 				if ($stored instanceof \Throwable) {
 					throw $stored;

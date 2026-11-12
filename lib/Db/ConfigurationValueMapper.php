@@ -70,16 +70,25 @@ class ConfigurationValueMapper extends QBMapper {
 			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
-
 		$qb->andWhere($this->layerRefMatch(qb: $qb, layerRef: $layerRef));
 
+		return $this->findOneOrNull(qb: $qb);
+	}//end findAtAddress()
+
+	/**
+	 * The one value a query finds, or null when it finds none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ConfigurationValue|null The value.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ?ConfigurationValue {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $exception) {
 			return null;
 		}
-
-	}//end findAtAddress()
+	}//end findOneOrNull()
 
 	/**
 	 * The condition on the layer reference: equal to it, or none when there is none.

@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Resilience + no-user-context fallback regression tests for ImportHandler.
@@ -148,7 +149,8 @@ class ImportHandlerComponentsObjectsIdentityTest extends TestCase {
 
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null) use (&$saved) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved) {
+				$uuid = $options->uuid;
 				$saved[] = ['object' => $object, 'uuid' => $uuid];
 				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 				$entity->setUuid($uuid ?? 'random');
