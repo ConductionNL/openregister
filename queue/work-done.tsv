@@ -64,3 +64,4 @@ cover:buildiq:8ca317f6:f545d745	PR buildiq#1448 (replaces closed #1446, class-na
 gap:dossiq:9:7d352ecb	PR #6082: renamed MoneyConfigKeys::PAYOUT_CALLBACK_SECRET to *_KEY (config key name matched the secret regex); value unchanged	session-20261112T184505-d34a144f	2026-11-12T19:11:55Z
 cover:buildiq:8ca317f6:0d8702e3	PR #1449: template SettingsService + FlowSeedService branches, 18 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:12:11Z
 gap:hermiq:9:7d352ecb	PR #1585: 4 token/secret-named constants renamed (public ones keep deprecated aliases), values unchanged; related tests = baseline. Not re-measured (checker unavailable)	session-20261112T184455-8702e064	2026-11-12T19:13:13Z
+gap:filinq:1:e16dc70b	failed: #1954 verified GREEN at 81785f51 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:14:04Z
