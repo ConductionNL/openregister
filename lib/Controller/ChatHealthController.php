@@ -113,43 +113,63 @@ class ChatHealthController extends Controller implements ChatFamilyControllerInt
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function health(): JSONResponse {
 		try {
-			$llmConfig = $this->settingsService->getLLMSettingsOnly();
-			$chatProvider = $llmConfig['chatProvider'] ?? null;
-
-			if (empty($chatProvider) === true) {
-				return new JSONResponse(
-					data: ['status' => 'no_provider'],
-					statusCode: 503
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'status' => 'ok',
-					'capabilities' => ['chat', 'stream'],
-				],
-				statusCode: 200
-			);
+			return $this->providerHealth();
 		} catch (\Throwable $e) {
-			// Distinguish "configuration service failed" from "no provider
-			// configured". Returning 'no_provider' for both made it
-			// impossible to tell a fresh instance (genuinely unconfigured)
-			// from a broken config service (deserialisation, DB connectivity
-			// etc.). Operators need that signal; the widget can still treat
-			// any non-200 as "no AI" without branching.
-			$this->logger->warning(
-				message: '[ChatHealthController] Health probe failed reading LLM settings',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->configError(exception: $e);
+		}
+	}//end health()
+
+	/**
+	 * The probe answer from the configured chat provider.
+	 *
+	 * @return JSONResponse 200 with the capabilities, or 503 `no_provider` when none is configured
+	 */
+	private function providerHealth(): JSONResponse {
+		$llmConfig = $this->settingsService->getLLMSettingsOnly();
+		$chatProvider = $llmConfig['chatProvider'] ?? null;
+
+		if (empty($chatProvider) === true) {
 			return new JSONResponse(
-				data: ['status' => 'config_error'],
+				data: ['status' => 'no_provider'],
 				statusCode: 503
 			);
-		}//end try
-	}//end health()
+		}
+
+		return new JSONResponse(
+			data: [
+				'status' => 'ok',
+				'capabilities' => ['chat', 'stream'],
+			],
+			statusCode: 200
+		);
+	}//end providerHealth()
+
+	/**
+	 * The probe answer when the LLM settings could not be read.
+	 *
+	 * Distinguish "configuration service failed" from "no provider
+	 * configured". Returning 'no_provider' for both made it impossible to tell
+	 * a fresh instance (genuinely unconfigured) from a broken config service
+	 * (deserialisation, DB connectivity etc.). Operators need that signal; the
+	 * widget can still treat any non-200 as "no AI" without branching.
+	 *
+	 * @param \Throwable $exception Why the settings could not be read
+	 *
+	 * @return JSONResponse 503 `config_error`
+	 */
+	private function configError(\Throwable $exception): JSONResponse {
+		$this->logger->warning(
+			message: '[ChatHealthController] Health probe failed reading LLM settings',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'exception' => $exception,
+				'error' => $exception->getMessage(),
+			]
+		);
+		return new JSONResponse(
+			data: ['status' => 'config_error'],
+			statusCode: 503
+		);
+	}//end configError()
 }//end class

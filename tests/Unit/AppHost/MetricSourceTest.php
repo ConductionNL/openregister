@@ -170,7 +170,7 @@ class MetricSourceTest extends TestCase {
 	public function testProviderEscapeHatchDiscoveredByAlias(): void {
 		$provider = new class implements IMetricsProvider {
 			public function metrics(): array {
-				return [MetricSample::single('bridge_state', 'gauge', 'Bridge', 1)];
+				return [new MetricSample('bridge_state', 'gauge', 'Bridge', [['labels' => [], 'value' => 1]])];
 			}
 		};
 
@@ -201,7 +201,7 @@ class MetricSourceTest extends TestCase {
 	public function testProviderIsResolvedFromTheAppsOwnContainerNotOpenRegisters(): void {
 		$provider = new class implements IMetricsProvider {
 			public function metrics(): array {
-				return [MetricSample::single('wrong_container', 'gauge', 'Wrong', 1)];
+				return [new MetricSample('wrong_container', 'gauge', 'Wrong', [['labels' => [], 'value' => 1]])];
 			}
 		};
 

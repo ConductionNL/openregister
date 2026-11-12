@@ -133,7 +133,6 @@ class PhotoLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -152,8 +151,7 @@ class PhotoLinksController extends Controller {
 		return $this->whenPhotosInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'albumId',
 					link: fn (ObjectEntity $object, int $albumId) => $this->photoLinkService->linkAlbum($this->linkTargetOf(object: $object), $albumId)
 				)
@@ -173,7 +171,6 @@ class PhotoLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -208,7 +205,6 @@ class PhotoLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */

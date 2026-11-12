@@ -302,7 +302,7 @@ class AuthorizationService {
 		// The algorithm comes from the issuer's stored configuration, never
 		// from the token header (algorithm confusion); RS/PS are verified
 		// against the RSA public key and never fall through to HMAC.
-		$validator->verifyPinned(token: $token, header: $header, configuration: $authConf);
+		$validator->verifyPinned(jwt: new Consumer\DecodedJwt(token: $token, header: $header), configuration: $authConf);
 		$validator->validateClaims(payload: $payload);
 
 		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
@@ -351,7 +351,8 @@ class AuthorizationService {
 		$this->resolvedConsumer = null;
 		$user = $this->basicUser(header: $header);
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 		$this->actAs(user: $user);
 
 	}//end authorizeBasic()
@@ -412,7 +413,8 @@ class AuthorizationService {
 		$this->assertRequestCarriedBearer();
 		$user = $this->oauthSessionUser();
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 
 	}//end authorizeOAuth()
 
@@ -512,7 +514,8 @@ class AuthorizationService {
 			);
 		}
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 
 	}//end authorizeNcSession()
 

@@ -21,7 +21,7 @@ use Psr\Log\LoggerInterface;
 final class FilePropertyLogTest extends TestCase {
 
 	/**
-	 * write() puts file, line and app ahead of the given context, at the given level.
+	 * warning() puts file, line and app ahead of the given context.
 	 *
 	 * @return void
 	 */
@@ -35,8 +35,26 @@ final class FilePropertyLogTest extends TestCase {
 			)
 		);
 
-		(new FilePropertyLog($logger))->write('warning', 'msg', ['k' => 'v']);
+		(new FilePropertyLog($logger))->warning('msg', ['k' => 'v']);
 	}//end testWritePrefixesFileLineAndApp()
+
+	/**
+	 * debug() and info() log at their own level with file, line and app ahead of the context.
+	 *
+	 * @return void
+	 */
+	public function testDebugAndInfoKeepTheirLevel(): void {
+		$prefixed = $this->callback(
+			static fn (array $context): bool => array_keys($context) === ['file', 'line', 'app', 'k']
+		);
+		$logger   = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('debug')->with('d', $prefixed);
+		$logger->expects($this->once())->method('info')->with('i', $prefixed);
+
+		$log = new FilePropertyLog($logger);
+		$log->debug('d', ['k' => 1]);
+		$log->info('i', ['k' => 2]);
+	}//end testDebugAndInfoKeepTheirLevel()
 
 	/**
 	 * note() logs with only file and line as context.

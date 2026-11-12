@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
@@ -65,6 +66,17 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperUltraFastBulkSaveGoldenTest extends TestCase {
 
@@ -224,7 +236,8 @@ class MagicMapperUltraFastBulkSaveGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('bulkUpsert')->willReturnCallback(
-			function (array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
+			function (BulkUpsertCommand $command): array {
+				[$objects, $tableName, $needsPreUpdateState] = [$command->objects, $command->tableName, $command->needsPreUpdateState];
 				$ids = array_map(static fn (array $o): string => $o['id'], $objects);
 				$this->trace[] = 'upsert ' . $tableName . ' ' . implode(',', $ids) . ' pre=' . var_export($needsPreUpdateState, true);
 				return array_map(static fn (string $id): string => $tableName . ':' . $id, $ids);

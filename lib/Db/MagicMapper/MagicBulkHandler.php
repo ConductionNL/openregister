@@ -86,6 +86,14 @@ class MagicBulkHandler {
 	private float $maxPacketSizeBuffer = 0.5;
 
 	/**
+	 * Metadata columns whose value keeps a row from the expiry purge: an archived,
+	 * frozen or locked row, or one with retention metadata (a legal hold lives there).
+	 *
+	 * @var list<string>
+	 */
+	private const PURGE_KEEPING_COLUMNS = ['_archived', '_frozen', '_locked', '_retention'];
+
+	/**
 	 * Cache for table columns to avoid repeated database queries
 	 *
 	 * @var array<string, array<string>>
@@ -198,13 +206,11 @@ class MagicBulkHandler {
 			);
 
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
-			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
+			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object);
 
-			$preparedObject = $this->withDisplayColumns(
-				prepared: $preparedObject,
-				selfData: $selfData,
-				object: $object,
-				managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
+			$preparedObject = array_merge(
+				$preparedObject,
+				$this->displayColumns(object: $object, managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema))
 			);
 
 			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
@@ -243,6 +249,9 @@ class MagicBulkHandler {
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
 
+				// Date/date-time normalization, matching the non-bulk path — see normalizeDateProperty().
+				$value = $this->normalizeDateProperty(value: $value, propertyFormat: ($schema->getProperties()[$propertyName]['format'] ?? null));
+
 				// Convert complex values for database storage.
 				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
 			}//end foreach
@@ -255,38 +264,42 @@ class MagicBulkHandler {
 
 
 	/**
-	 * Map the six display-metadata columns onto a prepared row.
+	 * The six display-metadata columns of a prepared row.
 	 *
 	 * Each reads `@self` first and the raw payload second, which is the same
 	 * fallback the surrounding method applies to every other metadata column.
 	 * Extracted as a group because they share that rule exactly, and because
 	 * `prepareObjectsForDynamicTable()` sits on the method-length threshold.
 	 *
-	 * @param array<string, mixed> $prepared The row being built.
-	 * @param array<string, mixed> $selfData The object's `@self` metadata.
-	 * @param array<string, mixed> $object The raw object payload.
-	 * @param bool $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
+	 * @param array<string, mixed> $object      The raw object payload; its `@self` block, when present, is the metadata.
+	 * @param bool                 $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
 	 *
-	 * @return array<string, mixed> The row with the display columns set.
+	 * @return array<string, mixed> The display columns, in column order.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `managedSlug` is a fact about the schema, carried to the one column that varies on it.
 	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
-	private function withDisplayColumns(array $prepared, array $selfData, array $object, bool $managedSlug=false): array {
-		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
-		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
-		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
-		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = match ($managedSlug) {
+	private function displayColumns(array $object, bool $managedSlug=false): array {
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
+		$columns = [];
+		$columns['_name'] = $selfData['name'] ?? $object['name'] ?? null;
+		$columns['_description'] = $selfData['description'] ?? $object['description'] ?? null;
+		$columns['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
+		$columns['_image'] = $selfData['image'] ?? $object['image'] ?? null;
+		$columns['_slug'] = match ($managedSlug) {
 			true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object),
 			false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object),
 		};
-		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
+		$columns['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
-		return $prepared;
-	}//end withDisplayColumns()
+		return $columns;
+	}//end displayColumns()
 
 	/**
 	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
@@ -302,15 +315,19 @@ class MagicBulkHandler {
 	 * never purged.
 	 *
 	 * @param array $prepared The prepared row so far.
-	 * @param array $object   The object as passed to bulkUpsert().
-	 * @param array $selfData The object's metadata block.
+	 * @param array $object   The object as passed to bulkUpsert(); its `@self` block, when present, is the metadata.
 	 *
 	 * @return array The prepared row, with `_expires` set when the object carries an expiry.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
-	private function withExpiry(array $prepared, array $object, array $selfData): array {
+	private function withExpiry(array $prepared, array $object): array {
 		$hasMetadataBlock = (($object['@self'] ?? null) !== null || isset($object['object']) === true);
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
 		$expiresValue = $selfData['expires'] ?? null;
 		if ($expiresValue === null || $hasMetadataBlock === false) {
 			return $prepared;
@@ -413,49 +430,21 @@ class MagicBulkHandler {
 			}
 		} catch (\Exception $e) {
 			// Use default buffer on error.
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Could not size the packet buffer, keeping the default',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 	}//end initializeMaxPacketSize()
 
 	/**
-	 * Perform bulk upsert operation on dynamic table
-	 *
-	 * This method provides high-performance INSERT...ON CONFLICT DO UPDATE (PostgreSQL)
-	 * or INSERT...ON DUPLICATE KEY UPDATE (MySQL/MariaDB) operations for dynamic tables.
-	 * It returns complete objects with database-computed classification (created/updated/unchanged).
-	 *
-	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
-	 * @param string $tableName Target table name
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
-	 *                                  See the SuppressWarnings note below.
-	 *
-	 * @return array Array of complete objects with object_status field
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @psalm-return list<array<string, mixed>>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $needsPreUpdateState reports a
-	 * FACT about the caller — whether anything will read the pre-update rows —
-	 * rather than switching this method between two behaviours. The rows are
-	 * fetched for an audit changeset or an update event; a caller with both off
-	 * reads only the uuid, and this is how that reaches the query. Inverting it
-	 * into two methods would duplicate the whole chunk path to vary one column
-	 * list.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
-		$table = new RegisterSchema(register: $register, schema: $schema);
-		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
-		return $this->upsert(command: $command);
-	}//end bulkUpsert()
-
-	/**
 	 * Run one bulk upsert, chunk by chunk, each chunk in its own transaction.
+	 *
+	 * INSERT...ON CONFLICT DO UPDATE (PostgreSQL) or INSERT...ON DUPLICATE KEY UPDATE
+	 * (MySQL/MariaDB), returning complete objects with their database-computed
+	 * classification (created/updated/unchanged).
 	 *
 	 * @param BulkUpsertCommand $command The upsert.
 	 *
@@ -930,6 +919,34 @@ class MagicBulkHandler {
 	}//end formatDateTimeForDatabase()
 
 	/**
+	 * Normalise a date/date-time property, matching the non-bulk path
+	 * (MagicMapper::prepareObjectDataForTable()). Shares one `datetime` column
+	 * for both formats; see DateTimeNormalizer::formatForDatabase()/
+	 * formatDateForDatabase() for the offset-handling difference. Anything else
+	 * passes through unchanged.
+	 *
+	 * @param mixed $value The raw property value.
+	 * @param mixed $propertyFormat The schema property's `format`, if any; any
+	 *                              non-string (malformed schema) passes through.
+	 *
+	 * @return mixed The normalised value, or $value unchanged when not applicable.
+	 */
+	private function normalizeDateProperty(mixed $value, mixed $propertyFormat): mixed {
+		if (in_array($propertyFormat, ['date-time', 'date'], true) === false || $value === null) {
+			return $value;
+		}
+
+		if ($value instanceof \DateTimeInterface === false && is_string($value) === false) {
+			return $value;
+		}
+
+		return match ($propertyFormat) {
+			'date' => $this->dateTimeNormalizer->formatDateForDatabase($value),
+			default => $this->dateTimeNormalizer->formatForDatabase($value),
+		};
+	}//end normalizeDateProperty()
+
+	/**
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
 	 *
 	 * The counterpart of a raw append: rows written through `bulkUpsert()` with an
@@ -957,7 +974,9 @@ class MagicBulkHandler {
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
 	 *
 	 * See purgeExpired() for why the rows are removed rather than soft-deleted
-	 * and why the database clock decides.
+	 * and why the database clock decides. A row with any value in one of the
+	 * PURGE_KEEPING_COLUMNS the table has is kept; when the table's columns cannot
+	 * be read, nothing is purged.
 	 *
 	 * @param RegisterSchema $table     The register and schema whose rows are swept.
 	 * @param string         $tableName The bare (unprefixed) table name to sweep.
@@ -969,12 +988,27 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
 	public function purgeExpiredRows(RegisterSchema $table, string $tableName): int {
+		$columns = $this->getTableColumns(tableName: $tableName);
+		if ($columns === []) {
+			$this->sql->logger->warning(
+				message: '[MagicBulkHandler] Skipped the expiry purge: the table columns could not be read',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName]
+			);
+			return 0;
+		}
+
 		$qb = $this->sql->db->getQueryBuilder();
 		$qb->delete($tableName)
 			->where($qb->expr()->eq('_register', $qb->createNamedParameter($table->register->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($table->schema->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->isNotNull('_expires'))
 			->andWhere($qb->expr()->lt('_expires', $qb->createFunction('NOW()')));
+
+		foreach (self::PURGE_KEEPING_COLUMNS as $keeping) {
+			if (in_array($keeping, $columns, true) === true) {
+				$qb->andWhere($qb->expr()->isNull($keeping));
+			}
+		}
 
 		$purged = $qb->executeStatement();
 

@@ -661,6 +661,33 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertStringContainsString('No such flow', $response->getData()['error']);
 	}//end testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow()
 
+	public function testRetryIsNotFoundForAnUnknownRun(): void {
+		$this->mapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no such run'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('nope');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('No such run', $response->getData()['error']);
+	}//end testRetryIsNotFoundForAnUnknownRun()
+
+	public function testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('someone-elses-flow');
+		$run->setStatus(FlowRun::STATUS_FAILED);
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->flows->method('find')->willThrowException(new \RuntimeException('not visible'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('run-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringContainsString('No such flow', $response->getData()['error']);
+	}//end testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow()
+
 	public function testResumeConflictsWhenTheRunIsNotSuspended(): void {
 		$run = new FlowRun();
 		$run->setUuid('run-1');

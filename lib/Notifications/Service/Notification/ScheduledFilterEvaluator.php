@@ -103,21 +103,6 @@ final class ScheduledFilterEvaluator {
 	}//end __construct()
 
 	/**
-	 * Evaluate the filter against the given object data.
-	 *
-	 * @param array<string, mixed> $objectData Flat field map (typically `$object->getObject()`).
-	 * @param array<string, mixed> $filter Filter map per the class docblock.
-	 * @param DateTimeImmutable $now Logical "now" for the entire scan pass.
-	 *
-	 * @return bool True when every entry matches, false otherwise.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	public function matches(array $objectData, array $filter, DateTimeImmutable $now): bool {
-		return $this->matchesTarget(filter: $filter, target: new ScheduledFilterTarget(objectData: $objectData, now: $now));
-	}//end matches()
-
-	/**
 	 * Evaluate the filter against one object's data at one moment.
 	 *
 	 * @param array<string, mixed>  $filter Filter map per the class docblock.

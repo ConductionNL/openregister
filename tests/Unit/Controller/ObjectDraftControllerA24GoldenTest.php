@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +38,8 @@ use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -47,6 +50,19 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\UserDraftActivation
  */
 final class ObjectDraftControllerA24GoldenTest extends TestCase {
 
@@ -107,7 +123,8 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 			activation: $this->activation,
 			session: $session,
 			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end controller()
 
@@ -152,7 +169,7 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 		$this->registers->expects($this->once())->method('find')->with('reg', false, false)->willReturn(new Register());
 		$this->schemas->expects($this->once())->method('find')->with('sch', [], false, false)->willReturn(new Schema());
 		$this->objects->expects($this->once())->method('find')
-			->with('d1', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), true, true, false, false)
+			->with(...FindCallShape::findArgs('d1', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), true, true, false, false))
 			->willReturn(null);
 		$this->activation->expects($this->never())->method('activateAsUser');
 		$response = $controller->activate('reg', 'sch', 'd1');
@@ -204,7 +221,7 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(user: $user, body: ['a' => 1]);
 		[$register, $schema] = $this->resolves();
 		$activated = new ObjectEntity();
-		$this->activation->expects($this->once())->method('activateAsUser')->with(new DraftAddress(register: $register, schema: $schema, draftId: 'd1'), $user, ['a' => 1])->willReturn($activated);
+		$this->activation->expects($this->once())->method('activateAsUser')->with(new UserDraftActivation(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd1'), user: $user, changes: ['a' => 1]))->willReturn($activated);
 		$this->objects->method('renderEntity')->willReturn(['rendered' => true]);
 		$response = $controller->activate('reg', 'sch', 'd1');
 

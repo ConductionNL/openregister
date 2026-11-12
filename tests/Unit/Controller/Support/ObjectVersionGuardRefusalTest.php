@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +76,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->auditTrail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->auditTrail->method('findAll')->willReturn([]);
+		$this->auditTrail->method('findTrail')->willReturn([]);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger    = $this->createMock(LoggerInterface::class);
 	}//end setUp()
@@ -119,7 +120,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoOrMatchingClaimPasses(): void {
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertNull($this->guard(null)->refusal($this->stored(), new SentWrite(['title' => 'x'])));
 		$this->assertNull($this->guard(self::CURRENT)->refusal($this->stored(), new SentWrite(['title' => 'x'])));
@@ -131,7 +132,7 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStaleClaimIsRefusedWithThePlainBody(): void {
-		$this->auditTrail->expects($this->once())->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->auditTrail->expects($this->once())->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->container->expects($this->never())->method('get');
 
 		$response = $this->guard('2026-04-01T00:00:00+00:00')->refusal($this->stored(), new SentWrite(['title' => 'x']));
@@ -162,7 +163,14 @@ class ObjectVersionGuardRefusalTest extends TestCase {
 		$report = $this->createMock(ConflictReportInterface::class);
 		$report->expects($this->once())
 			->method('build')
-			->with($this->isInstanceOf(ObjectEntity::class), $schema, ['title' => 'mine'], [])
+			->with(
+				$this->callback(
+					callback: static fn (RefusedWrite $write): bool => $write->stored instanceof ObjectEntity
+						&& $write->schema === $schema
+						&& $write->sent === ['title' => 'mine']
+				),
+				[]
+			)
 			->willReturn(['error' => 'detailed', 'conflicts' => ['title' => ['theirs', 'mine', 'base']]]);
 		$this->container->method('get')->with(ConflictReportInterface::class)->willReturn($report);
 

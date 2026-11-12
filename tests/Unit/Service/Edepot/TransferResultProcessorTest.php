@@ -82,7 +82,7 @@ class TransferResultProcessorTest extends TestCase {
 		$logger   = new NullLogger();
 		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), $logger), new TransferSettings($this->createMock(IAppConfig::class), $logger), $this->createMock(INotificationManager::class));
 
-		return new TransferResultProcessor(new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger), $auditLog);
+		return new TransferResultProcessor(new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog), $auditLog);
 	}//end processor()
 
 	/**

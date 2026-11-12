@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -73,7 +75,7 @@ class ExportAuditRecorder implements ExportAuditRecorderInterface {
 	}//end __construct()
 
 	/**
-	 * Record a completed export.
+	 * Record a completed export from its fields; see {@see recordCompletion()}.
 	 *
 	 * @param string      $profile  The profile name, or `ad-hoc` when the caller named no profile.
 	 * @param int         $rowCount How many rows left the instance.
@@ -96,22 +98,12 @@ class ExportAuditRecorder implements ExportAuditRecorderInterface {
 		?int $schema = null,
 		?string $actorId = null,
 	): void {
-		$this->write(
-			entry: new ExportAuditEntry(
-				outcome: self::OUTCOME_COMPLETED,
-				summary: [
-					'profile' => $profile,
-					'rowCount' => $rowCount,
-					'format' => $format,
-					'valueMode' => $valueMode,
-				],
-				scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId)
-			)
-		);
+		$completion = new ExportCompletion(profile: $profile, rowCount: $rowCount, format: $format, valueMode: $valueMode);
+		$this->recordCompletion(completion: $completion, scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId));
 	}//end recordCompleted()
 
 	/**
-	 * Record a refused export.
+	 * Record a refused export from its fields; see {@see recordRefusal()}.
 	 *
 	 * @param string      $profile  The profile name, or `ad-hoc` when the caller named no profile.
 	 * @param string      $rule     The rule that refused.
@@ -132,20 +124,50 @@ class ExportAuditRecorder implements ExportAuditRecorderInterface {
 		?int $schema = null,
 		?string $actorId = null,
 	): void {
-		$this->write(
-			entry: new ExportAuditEntry(
-				outcome: self::OUTCOME_REFUSED,
-				summary: [
-					'profile' => $profile,
-					'rowCount' => 0,
-					'verb' => ExportRightService::ACTION,
-					'rule' => $rule,
-					'reason' => $reason,
-				],
-				scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId)
-			)
-		);
+		$refusal = new ExportRefusal(profile: $profile, rule: $rule, reason: $reason);
+		$this->recordRefusal(refusal: $refusal, scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId));
 	}//end recordRefused()
+
+	/**
+	 * Record a completed export.
+	 *
+	 * @param ExportCompletion $completion The profile, the row count, the format and the value mode.
+	 * @param ExportScope      $scope      The register and schema exported, and the principal when it is not the session user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function recordCompletion(ExportCompletion $completion, ExportScope $scope): void {
+		$summary = [
+			'profile' => $completion->profile,
+			'rowCount' => $completion->rowCount,
+			'format' => $completion->format,
+			'valueMode' => $completion->valueMode,
+		];
+		$this->write(entry: new ExportAuditEntry(outcome: self::OUTCOME_COMPLETED, summary: $summary, scope: $scope));
+	}//end recordCompletion()
+
+	/**
+	 * Record a refused export.
+	 *
+	 * @param ExportRefusal $refusal The profile asked for, the rule that refused and the reason given.
+	 * @param ExportScope   $scope   The register and schema asked for, and the principal when it is not the session user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function recordRefusal(ExportRefusal $refusal, ExportScope $scope): void {
+		$summary = [
+			'profile' => $refusal->profile,
+			'rowCount' => 0,
+			'verb' => ExportRightService::ACTION,
+			'rule' => $refusal->rule,
+			'reason' => $refusal->reason,
+		];
+		$this->write(entry: new ExportAuditEntry(outcome: self::OUTCOME_REFUSED, summary: $summary, scope: $scope));
+	}//end recordRefusal()
 
 	/**
 	 * Write one entry, swallowing a ledger failure.
@@ -156,12 +178,9 @@ class ExportAuditRecorder implements ExportAuditRecorderInterface {
 	 */
 	private function write(ExportAuditEntry $entry): void {
 		try {
-			$this->auditTrailMapper->createExportEntry(
-				outcome: $entry->outcome,
-				summary: $entry->summary,
-				register: $entry->scope->register,
-				schema: $entry->scope->schema,
-				actorId: $entry->scope->actorId
+			$target = new AuditedObject(register: $entry->scope->register, schema: $entry->scope->schema);
+			$this->auditTrailMapper->recordExport(
+				export: new ExportOutcome(outcome: $entry->outcome, summary: $entry->summary, target: $target, actorId: $entry->scope->actorId)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

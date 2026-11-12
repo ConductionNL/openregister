@@ -48,6 +48,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -125,14 +126,13 @@ class TimeTrackerLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['entryType', 'id'], link: $this->linkEntry(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['entryType', 'id'], link: $this->linkEntry(...));
 
 		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
@@ -149,7 +149,6 @@ class TimeTrackerLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -172,7 +171,6 @@ class TimeTrackerLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -217,7 +215,7 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function linkEntry(ObjectEntity $object, string $entryType, string $entryId): TimeTrackerLink {
-		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), $entryType, $entryId);
+		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), new TimeEntry(type: $entryType, id: $entryId));
 	}//end linkEntry()
 
 	/**

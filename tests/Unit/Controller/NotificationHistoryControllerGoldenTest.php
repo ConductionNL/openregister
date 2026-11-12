@@ -34,6 +34,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Pins every endpoint's status and body for fixed request parameters, and
@@ -148,8 +149,8 @@ class NotificationHistoryControllerGoldenTest extends TestCase {
 
 		$mapper = $this->createMock(NotificationHistoryMapper::class);
 		$mapper->method('findFiltered')->willReturnCallback(
-			static function (array $filters, $limit, $offset) use (&$calls): array {
-				$calls[] = ['findFiltered', $filters, $limit, $offset];
+			static function (ListQuery $query) use (&$calls): array {
+				$calls[] = ['findFiltered', $query->filters, $query->limit, $query->offset];
 				return [];
 			}
 		);

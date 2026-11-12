@@ -21,9 +21,11 @@ use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyRoleRecords;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -112,7 +114,7 @@ class PartyRoleServiceTest extends TestCase {
 			->getMock();
 		$this->audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createAuditTrailEntry'])
+			->onlyMethods(['recordObjectEvent'])
 			->getMock();
 
 		$this->links->method('findPartiesForObject')->willReturnCallback(fn (): array => $this->rows);
@@ -378,14 +380,14 @@ class PartyRoleServiceTest extends TestCase {
 
 		$recorded = [];
 		$this->audit->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $context) use (&$recorded): AuditTrail {
 					$recorded = ['action' => $action, 'context' => $context];
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$object = new ObjectEntity();
 		$object->setUuid('case-1');
@@ -422,7 +424,7 @@ class PartyRoleServiceTest extends TestCase {
 			}
 		);
 
-		$removed = $this->service->removeParty(objectUuid: 'case-1', partyUuid: 'party-a', role: 'gemachtigde');
+		$removed = $this->service->removeParty(objectUuid: 'case-1', holding: new PartyHolding(partyUuid: 'party-a', role: 'gemachtigde'));
 
 		$this->assertSame(1, $removed);
 		$this->assertSame(['gemachtigde'], $deleted);
@@ -442,6 +444,6 @@ class PartyRoleServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 
-		$this->service->removeParty(objectUuid: 'case-1', partyUuid: 'party-a');
+		$this->service->removeParty(objectUuid: 'case-1', holding: new PartyHolding(partyUuid: 'party-a'));
 	}//end testRemovingAPartyThatIsNotThereIs404()
 }//end class

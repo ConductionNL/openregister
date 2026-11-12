@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ProcessingLogController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -53,6 +54,14 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
  * @covers \OCA\OpenRegister\Controller\ProcessingLogController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRegisterAccess
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRegisterReplies
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRequestParams
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogAccess
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogPolicy
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ProcessingLogControllerTest extends TestCase {
 
@@ -141,7 +150,7 @@ class ProcessingLogControllerTest extends TestCase {
 	 */
 	public function testAnonymousIsUnauthorized(): void {
 		$this->asUser(null);
-		$this->logMapper->expects($this->never())->method('findFiltered');
+		$this->logMapper->expects($this->never())->method('findListed');
 
 		$response = $this->controller->index();
 		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
@@ -155,7 +164,7 @@ class ProcessingLogControllerTest extends TestCase {
 	 */
 	public function testNonPrivilegedUserIsForbidden(): void {
 		$this->asUser('bob', ['users']);
-		$this->logMapper->expects($this->never())->method('findFiltered');
+		$this->logMapper->expects($this->never())->method('findListed');
 
 		$response = $this->controller->index();
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
@@ -176,9 +185,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(null);
 
 		$this->logMapper->expects($this->once())
-			->method('findFiltered')
+			->method('findListed')
 			->willReturnCallback(
-				function (array $filters, ProcessingLogReadScope $scope): array {
+				function (ListQuery $query, ProcessingLogReadScope $scope): array {
 					$organisationId = $scope->organisationId;
 					$includeConfidential = $scope->includeConfidential;
 					$this->assertSame('org-7', $organisationId);
@@ -202,9 +211,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(null);
 
 		$this->logMapper->expects($this->once())
-			->method('findFiltered')
+			->method('findListed')
 			->willReturnCallback(
-				function (array $filters, ProcessingLogReadScope $scope): array {
+				function (ListQuery $query, ProcessingLogReadScope $scope): array {
 					$organisationId = $scope->organisationId;
 					$includeConfidential = $scope->includeConfidential;
 					$this->assertNull($organisationId);

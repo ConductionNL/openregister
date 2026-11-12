@@ -15,6 +15,31 @@ import { t } from '@nextcloud/l10n'
 import RadioFilterSidebar from './shared/RadioFilterSidebar.vue'
 import { radioFilterSidebarHost } from './shared/radioFilterSidebarHost.js'
 
+/**
+ * The options of the enabled-status filter: all, enabled or disabled webhooks.
+ *
+ * @return {Array<{id: string, value: boolean|null, label: string}>} The options
+ */
+function enabledOptions() {
+	return [
+		{
+			id: 'all',
+			value: null,
+			label: t('openregister', 'All Webhooks'),
+		},
+		{
+			id: 'enabled',
+			value: true,
+			label: t('openregister', 'Enabled'),
+		},
+		{
+			id: 'disabled',
+			value: false,
+			label: t('openregister', 'Disabled'),
+		},
+	]
+}
+
 export default {
 	name: 'WebhooksSidebar',
 
@@ -47,23 +72,7 @@ export default {
 				{
 					key: 'enabled',
 					heading: t('openregister', 'Status'),
-					options: [
-						{
-							id: 'all',
-							value: null,
-							label: t('openregister', 'All Webhooks'),
-						},
-						{
-							id: 'enabled',
-							value: true,
-							label: t('openregister', 'Enabled'),
-						},
-						{
-							id: 'disabled',
-							value: false,
-							label: t('openregister', 'Disabled'),
-						},
-					],
+					options: enabledOptions(),
 				},
 			]
 		},

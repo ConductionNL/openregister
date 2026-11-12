@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use PHPUnit\Framework\TestCase;
@@ -134,21 +135,13 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListTermNamesTheGroupAndReadsTheBlock(): void {
-		$mariadb = $this->resolver->ownedByMyGroupSql(
-			authColumn: 't._authorization',
-			isPostgres: false,
-			quotedUserGroups: ["'redactie'"]
-		);
+		$mariadb = $this->resolver->ownedByMyGroupSql(column: new AuthorizationColumn(name: 't._authorization', isPostgres: false), quotedUserGroups: ["'redactie'"]);
 
 		$this->assertIsString($mariadb);
 		$this->assertStringContainsString("JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup'))", $mariadb);
 		$this->assertStringContainsString("IN ('redactie')", $mariadb);
 
-		$postgres = $this->resolver->ownedByMyGroupSql(
-			authColumn: 't._authorization',
-			isPostgres: true,
-			quotedUserGroups: ["'redactie'", "'financien'"]
-		);
+		$postgres = $this->resolver->ownedByMyGroupSql(column: new AuthorizationColumn(name: 't._authorization', isPostgres: true), quotedUserGroups: ["'redactie'", "'financien'"]);
 
 		$this->assertIsString($postgres);
 		$this->assertStringContainsString("->> 'ownerGroup'", $postgres);
@@ -165,11 +158,7 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 	 */
 	public function testACallerInNoGroupGetsNoTerm(): void {
 		$this->assertNull(
-			$this->resolver->ownedByMyGroupSql(
-				authColumn: 't._authorization',
-				isPostgres: false,
-				quotedUserGroups: []
-			)
+			$this->resolver->ownedByMyGroupSql(column: new AuthorizationColumn(name: 't._authorization', isPostgres: false), quotedUserGroups: [])
 		);
 	}//end testACallerInNoGroupGetsNoTerm()
 
@@ -186,7 +175,7 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 		$this->assertStringNotContainsString(
 			'ownerGroup',
 			$this->resolver->notPrivateOrGrantedSql(
-				notPrivateSql: $this->resolver->notPrivateSql(columnName: '_authorization', defaultPrivate: true, isPostgres: false),
+				notPrivateSql: $this->resolver->notPrivateSql(column: new AuthorizationColumn(name: '_authorization', isPostgres: false), defaultPrivate: true),
 				granted: new GrantedRows(uuidColumn: '_uuid', quotedUuids: ["'uuid-1'"])
 			)
 		);

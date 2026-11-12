@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Service\Object\DraftPromotion;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -40,6 +42,7 @@ use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Decision 216. The save in this test is judged by the REAL DraftStatusPolicy,
@@ -147,17 +150,8 @@ class DraftActivationTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $_render = true,
-				bool $_audit = true,
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->finds[] = ['id' => $id, 'rbac' => $_rbac, 'register' => $register, 'schema' => $schema];
 				if ($id === 'gone') {
 					throw new RuntimeException('not found');
@@ -202,7 +196,7 @@ class DraftActivationTest extends TestCase {
 	 * @param int                    $_depth      Unused.
 	 * @param array<string, string>  $notSupplied Excused properties.
 	 */
-	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), int $_depth = 0, array $notSupplied = []): ValidationResult {
+	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), array $notSupplied = []): ValidationResult {
 		$this->assertInstanceOf(Schema::class, $schema);
 		$properties = [];
 		foreach ($schema->getProperties() as $name => $property) {
@@ -227,17 +221,14 @@ class DraftActivationTest extends TestCase {
 	 */
 	private function realGateSave(
 		array|ObjectEntity $object,
-		?array $extend = [],
-		$register = null,
-		$schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
 	): ObjectEntity {
+		$register = $options->target->register;
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$currentUser = $options->actor->currentUser;
 		$this->saves[] = ['object' => $object, 'uuid' => $uuid, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'user' => $currentUser, 'register' => $register, 'schema' => $schema];
 		if ($this->refuseSave !== null) {
 			throw $this->refuseSave;
@@ -348,13 +339,13 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 		$this->store(uuid: 'd2', owner: 'agent', status: 'draft', data: ['subject' => 'B', 'channel' => 'phone']);
 
-		$saved = $this->activation->activateAsUser(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), user: $this->user(uid: 'agent'), changes: ['channel' => 'email']);
+		$saved = $this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), user: $this->user(uid: 'agent'), changes: ['channel' => 'email']));
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertSame('email', $this->saves[0]['object']['channel']);
 
 		// Control: another user is refused through the same door.
 		try {
-			$this->activation->activateAsUser(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd2'), user: $this->user(uid: 'colleague'));
+			$this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd2'), user: $this->user(uid: 'colleague')));
 			$this->fail('A colleague made somebody else\'s draft definitive.');
 		} catch (DraftActivationRefusedException $refused) {
 			$this->assertSame(403, $refused->getStatus());

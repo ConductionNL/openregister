@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Logs what an update changed in a register's authorization and roles.
@@ -91,11 +92,13 @@ final class RegisterAccessAudit {
 			return;
 		}
 
-		$service->logRegisterAuthorizationChange(
-			$this->update->id,
-			$after->getTitle() ?? '',
-			$this->authorization,
-			$after->getAuthorization()
+		$service->recordRegisterChange(
+			change: new AuthorizationChange(
+				entityId: $this->update->id,
+				entityTitle: $after->getTitle() ?? '',
+				before: $this->authorization,
+				after: $after->getAuthorization()
+			)
 		);
 	}//end logAuthorization()
 
@@ -112,11 +115,13 @@ final class RegisterAccessAudit {
 			return;
 		}
 
-		$service->logRoleDefinitionChange(
-			$this->update->id,
-			$after->getTitle() ?? '',
-			$this->roles,
-			($after->getConfiguration()['roles'] ?? null)
+		$service->recordRoleChange(
+			change: new AuthorizationChange(
+				entityId: $this->update->id,
+				entityTitle: $after->getTitle() ?? '',
+				before: $this->roles,
+				after: ($after->getConfiguration()['roles'] ?? null)
+			)
 		);
 	}//end logRoles()
 }//end class

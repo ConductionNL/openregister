@@ -51,19 +51,18 @@ final readonly class CaseTransitionCause {
 	/**
 	 * The unsaved, authorized audit row of this cause moving an item between two states.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $fromState The state before ('' on creation).
-	 * @param string $toState The state after, or the one requested.
+	 * @param CaseItem        $item   The item.
+	 * @param CaseStateChange $change The state before ('' on creation) and the state after, or the one requested.
 	 *
 	 * @return CaseItemAudit The audit row.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function auditFor(CaseItem $item, string $fromState, string $toState): CaseItemAudit {
+	public function auditFor(CaseItem $item, CaseStateChange $change): CaseItemAudit {
 		$entry = new CaseItemAudit();
 		$entry->setCaseItemId((int)$item->getId());
-		$entry->setFromState($fromState);
-		$entry->setToState($toState);
+		$entry->setFromState($change->from);
+		$entry->setToState($change->to);
 
 		return $this->stamped(entry: $entry);
 	}//end auditFor()

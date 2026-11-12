@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 
 final class ConfigurationExplainerSentenceTest extends TestCase {
 
@@ -54,7 +55,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 					return $snapshot;
 				}
 
-				return ConfigurationSnapshot::absent($layer, $ref, $key);
+				return ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $ref, $key));
 			}
 		);
 
@@ -77,7 +78,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 		$deployment->setUuid('dep-1');
 		$deployment->setName('mail relay');
 
-		$answer = $this->explainer($this->snapshot(ConfigurationLayer::REGISTER, 'zaken', 'dep-1'), $deployment)->explain('k', 'zaken');
+		$answer = $this->explainer($this->snapshot(ConfigurationLayer::REGISTER, 'zaken', 'dep-1'), $deployment)->explain('k', new ConfigurationScope('zaken'));
 
 		$this->assertSame(
 			sprintf('"k" is set at the %s layer by zaken, last moved by the deployment "mail relay"', ConfigurationLayer::REGISTER),
@@ -104,7 +105,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 	}//end testAValueOlderThanTheFirstDeploymentSaysSo()
 
 	public function testAKeyNoLayerSetsSaysSo(): void {
-		$answer = $this->explainer(ConfigurationSnapshot::absent(ConfigurationLayer::INSTANCE, null, 'k'), null)->explain('k');
+		$answer = $this->explainer(ConfigurationSnapshot::absent(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'k')), null)->explain('k');
 
 		$this->assertSame('no layer sets "k"', $answer['explanation']);
 	}//end testAKeyNoLayerSetsSaysSo()

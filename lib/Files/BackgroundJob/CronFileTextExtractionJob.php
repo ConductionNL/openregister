@@ -196,14 +196,9 @@ class CronFileTextExtractionJob extends TimedJob {
 		// on an empty queue: the offset is not carried between ticks, so every
 		// following tick re-walks the same windows. Logged at warning level,
 		// because in the counters alone a truncated run reads as a finished one.
-		$truncated  = ($stats['truncated'] ?? false);
-		$logContext = [
-			'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $tick->startTime, 2),
-			'files_processed' => $stats['processed'], 'files_failed' => $stats['failed'], 'truncated' => $truncated,
-			'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-		];
+		$logContext = $this->completionContext(tick: $tick, stats: $stats);
 
-		if ($truncated === true) {
+		if ($logContext['truncated'] === true) {
 			// phpcs:ignore Generic.Files.LineLength.MaxExceeded
 			$logger->warning(message: '[CronFileTextExtractionJob] Cron File Text Extraction Job stopped on the window limit before filling its batch - the queue head is not extractable and every tick will re-walk it', context: $logContext);
 			return;
@@ -211,6 +206,22 @@ class CronFileTextExtractionJob extends TimedJob {
 
 		$logger->info(message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed', context: $logContext);
 	}//end logOutcome()
+
+	/**
+	 * The completion log context: the run's counters, whether the walk was truncated, and the next run.
+	 *
+	 * @param CronExtractionRun    $tick  The run (logger and start time).
+	 * @param array<string, mixed> $stats The run's stats.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function completionContext(CronExtractionRun $tick, array $stats): array {
+		return [
+			'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $tick->startTime, 2),
+			'files_processed' => $stats['processed'], 'files_failed' => $stats['failed'], 'truncated' => ($stats['truncated'] ?? false),
+			'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+		];
+	}//end completionContext()
 
 	/**
 	 * Log a run that threw.

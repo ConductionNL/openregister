@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
@@ -87,8 +88,8 @@ class FlowRunMigrationTimerFailureBehaviourTest extends TestCase {
 		$timers->method('findOpenByRun')->with('run-1')->willReturn([$this->timer('t-locked', 'review'), $this->timer('t-ok', 'second'), $this->timer('t-stays', 'other')]);
 		$timerService = $this->createMock(FlowTimerService::class);
 		$timerService->expects(self::exactly(2))->method('supersede')->willReturnCallback(
-			static function (string $uuid): FlowTimer {
-				if ($uuid === 't-locked') {
+			static function (TimerAnchorMove $move): FlowTimer {
+				if ($move->uuid === 't-locked') {
 					throw new RuntimeException('row locked');
 				}
 

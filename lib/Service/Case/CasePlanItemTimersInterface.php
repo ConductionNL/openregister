@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 
 /**
  * Plan-item deadline timers, as the case item timer listener uses them. Only
@@ -44,13 +44,12 @@ interface CasePlanItemTimersInterface {
 	/**
 	 * Arm an item's timers as it enters a state.
 	 *
-	 * @param CaseItem               $item  The item.
-	 * @param string|null            $actor The identity that moved it.
-	 * @param DateTimeInterface|null $now   The clock; null is the real clock.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The identity that moved it and the clock.
 	 *
 	 * @return integer How many timers were armed.
 	 */
-	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int;
+	public function onEntered(CaseItem $item, FlowTimerAct $act): int;
 
 	/**
 	 * Cancel an item's timers as it ends.

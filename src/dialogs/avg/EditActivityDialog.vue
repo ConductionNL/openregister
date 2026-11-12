@@ -263,20 +263,29 @@ export default {
 			this.saving = true
 			this.error = null
 			try {
-				if (this.activity) {
-					await avgStore.updateActivity(
-						this.activity.uuid,
-						this.buildPayload(),
-					)
-				} else {
-					await avgStore.createActivity(this.buildPayload())
-				}
+				await this.storeActivity()
 				this.$emit('saved')
 			} catch (e) {
 				this.error = avgStore.getError ?? e.message ?? 'Save failed'
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Update the activity being edited, or create a new one.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+		 */
+		storeActivity() {
+			if (this.activity) {
+				return avgStore.updateActivity(
+					this.activity.uuid,
+					this.buildPayload(),
+				)
+			}
+			return avgStore.createActivity(this.buildPayload())
 		},
 	},
 }

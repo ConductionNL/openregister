@@ -56,6 +56,29 @@ final class ObjectSourceWiring {
 	];
 
 	/**
+	 * The built-in object-source providers boot() adds to the registry, in order.
+	 *
+	 * @var array<int, class-string>
+	 */
+	private const BUILTIN_PROVIDERS = [
+		CalDavVtodoObjectSourceProvider::class,
+		UserDirectoryObjectSourceProvider::class,
+		GroupObjectSourceProvider::class,
+		OrganisationObjectSourceProvider::class,
+		ContactsObjectSourceProvider::class,
+		CalendarEventObjectSourceProvider::class,
+		FilesObjectSourceProvider::class,
+		DeckObjectSourceProvider::class,
+		TalkObjectSourceProvider::class,
+		FederatedObjectSourceProvider::class,
+		TablesObjectSourceProvider::class,
+		// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
+		DbalObjectSourceProvider::class,
+		// A saved view's rows as a read-only type (modelling-query-backed-type).
+		\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
+	];
+
+	/**
 	 * The services register() adds, in order: per service, its constructor
 	 * arguments by name and the container id each one is resolved from.
 	 *
@@ -238,35 +261,30 @@ final class ObjectSourceWiring {
 		// Register each built-in provider independently so one absent provider
 		// never blocks the others — a failing provider simply won't serve its
 		// bound schemas.
-		$providerClasses = [
-			CalDavVtodoObjectSourceProvider::class,
-			UserDirectoryObjectSourceProvider::class,
-			GroupObjectSourceProvider::class,
-			OrganisationObjectSourceProvider::class,
-			ContactsObjectSourceProvider::class,
-			CalendarEventObjectSourceProvider::class,
-			FilesObjectSourceProvider::class,
-			DeckObjectSourceProvider::class,
-			TalkObjectSourceProvider::class,
-			FederatedObjectSourceProvider::class,
-			TablesObjectSourceProvider::class,
-			// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
-			DbalObjectSourceProvider::class,
-			// A saved view's rows as a read-only type (modelling-query-backed-type).
-			\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
-		];
-		foreach ($providerClasses as $providerClass) {
+		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
 			try {
 				$registry->addProvider($server->get($providerClass));
 			} catch (\Throwable $e) {
-				try {
-					$server->get(\Psr\Log\LoggerInterface::class)->warning(
-						'[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage()
-					);
-				} catch (\Throwable $inner) {
-					// Logger unavailable on this build — nothing to do.
-				}
+				self::warnUnregistered(server: $server, message: '[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
 			}
 		}
 	}//end boot()
+
+	/**
+	 * Log that a built-in provider could not be registered, when a logger can be resolved.
+	 *
+	 * @param mixed  $server  Server container (passed in from boot()).
+	 * @param string $message The warning.
+	 *
+	 * @return void
+	 */
+	private static function warnUnregistered($server, string $message): void {
+		try {
+			$server->get(\Psr\Log\LoggerInterface::class)->warning(
+				$message
+			);
+		} catch (\Throwable $inner) {
+			// Logger unavailable on this build — nothing to do.
+		}
+	}//end warnUnregistered()
 }//end class

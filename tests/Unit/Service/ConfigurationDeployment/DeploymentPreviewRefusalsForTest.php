@@ -62,7 +62,7 @@ class DeploymentPreviewRefusalsForTest extends TestCase
         $store->method('read')->willReturnCallback(
             static fn(string $layer, ?string $ref, string $key): ConfigurationSnapshot => match ($key) {
                 'rbac'  => new ConfigurationSnapshot(new ConfigurationAddress($layer, null, $key), ['enabled' => true], true, new ConfigurationProvenance('dep-1', 'admin')),
-                default => ConfigurationSnapshot::absent($layer, $ref, $key),
+                default => ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $ref, $key)),
             }
         );
         return new DeploymentPreviewService($draftService, $store, new ConfigurationKeyRegistry());

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -97,7 +100,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			'field1' => ['type' => 'string'],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty with public group ──
@@ -111,7 +114,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty with authenticated group ──
@@ -125,7 +128,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── canReadProperty denied ──
@@ -139,7 +142,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertFalse($this->handler->canReadProperty($schema, 'field1', []));
+		$this->assertFalse($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([])));
 	}
 
 	// ── getUnauthorizedProperties ──
@@ -153,7 +156,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$result = $this->handler->getUnauthorizedProperties($schema, [], ['secret' => 'new'], false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], false), ['secret' => 'new']));
 		$this->assertSame([], $result);
 	}
 
@@ -163,7 +166,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			'field1' => ['type' => 'string'],
 		]);
 
-		$result = $this->handler->getUnauthorizedProperties($schema, [], ['field1' => 'val'], false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], false), ['field1' => 'val']));
 		$this->assertSame([], $result);
 	}
 
@@ -179,7 +182,7 @@ class PropertyRbacHandlerTest extends TestCase {
 		$existing = ['secret' => 'same'];
 		$incoming = ['secret' => 'same'];
 
-		$result = $this->handler->getUnauthorizedProperties($schema, $existing, $incoming, false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest($existing, false), $incoming));
 		$this->assertSame([], $result);
 	}
 
@@ -192,7 +195,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$result = $this->handler->getUnauthorizedProperties($schema, ['secret' => 'old'], ['secret' => 'new'], false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest(['secret' => 'old'], false), ['secret' => 'new']));
 		$this->assertSame(['secret'], $result);
 	}
 
@@ -205,7 +208,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$result = $this->handler->getUnauthorizedProperties($schema, [], ['other_field' => 'val'], false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], false), ['other_field' => 'val']));
 		$this->assertSame([], $result);
 	}
 
@@ -220,7 +223,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canUpdateProperty($schema, 'field1', [], false));
+		$this->assertTrue($this->handler->canUpdateProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([], false)));
 	}
 
 	// ── Conditional rule with match ──
@@ -240,7 +243,7 @@ class PropertyRbacHandlerTest extends TestCase {
 
 		$this->conditionMatcher->method('objectMatchesConditions')->willReturn(true);
 
-		$this->assertTrue($this->handler->canReadProperty($schema, 'field1', ['_organisation' => 'org1']));
+		$this->assertTrue($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest(['_organisation' => 'org1'])));
 	}
 
 	public function testCanReadPropertyWithConditionalMatchFailing(): void {
@@ -258,7 +261,7 @@ class PropertyRbacHandlerTest extends TestCase {
 
 		$this->conditionMatcher->method('objectMatchesConditions')->willReturn(false);
 
-		$this->assertFalse($this->handler->canReadProperty($schema, 'field1', ['_organisation' => 'wrong']));
+		$this->assertFalse($this->handler->canReadProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest(['_organisation' => 'wrong'])));
 	}
 
 	// ── writeOnly stripping (property-level-read-rbac / closes #380) ──
@@ -322,7 +325,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			'apiToken' => ['type' => 'string', 'writeOnly' => true],
 		]);
 
-		$result = $this->handler->getUnauthorizedProperties($schema, [], ['apiToken' => 'new'], false);
+		$result = $this->handler->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], false), ['apiToken' => 'new']));
 		$this->assertSame([], $result);
 	}
 

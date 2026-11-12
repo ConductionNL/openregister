@@ -132,6 +132,19 @@ class FlowPublishedGraph implements FlowPublishedGraphInterface {
 			return null;
 		}
 
+		return self::withPinnedDefinition(live: $live, pinned: $pinned);
+
+	}//end overlayOnto()
+
+	/**
+	 * The live flow with the definition keys the pinned graph carries laid over it.
+	 *
+	 * @param array<string, mixed> $live   The live flow.
+	 * @param array<string, mixed> $pinned The pinned graph.
+	 *
+	 * @return array<string, mixed> The flow to walk.
+	 */
+	private static function withPinnedDefinition(array $live, array $pinned): array {
 		foreach (['nodes', 'edges', 'limits', 'executionMode'] as $key) {
 			if (array_key_exists($key, $pinned) === true) {
 				$live[$key] = $pinned[$key];
@@ -139,7 +152,6 @@ class FlowPublishedGraph implements FlowPublishedGraphInterface {
 		}
 
 		return $live;
-
-	}//end overlayOnto()
+	}//end withPinnedDefinition()
 
 }//end class

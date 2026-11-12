@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 /**
  * SaveObject::scanForRelations(): which values the schema makes relations,
@@ -125,10 +126,8 @@ final class SaveObjectScanForRelationsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -186,8 +185,8 @@ final class SaveObjectScanForRelationsTest extends TestCase {
 	private function stoppingDedupPolicy(array &$seen): void {
 		$policy = $this->createMock(DedupCreatePolicy::class);
 		$policy->method('guardCreate')->willReturnCallback(
-			static function ($register, $schema, array $data, bool $overrideRequested) use (&$seen): array {
-				$seen = ['register' => $register, 'schema' => $schema, 'data' => $data, 'override' => $overrideRequested];
+			static function (CreateCandidate $candidate) use (&$seen): array {
+				$seen = ['register' => $candidate->register, 'schema' => $candidate->schema, 'data' => $candidate->data, 'override' => $candidate->overrideRequested];
 				throw new RuntimeException('stop');
 			}
 		);

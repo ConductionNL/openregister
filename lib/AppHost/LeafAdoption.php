@@ -43,7 +43,7 @@ final class LeafAdoption {
 	 */
 	public function __construct(
 		public readonly string $appId,
-		private readonly array $options,
+		private readonly array $options = [],
 	) {
 	}//end __construct()
 

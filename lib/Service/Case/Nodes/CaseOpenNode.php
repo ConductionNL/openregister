@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Exception\CasePlanExistsException;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use UnexpectedValueException;
 
 /**
@@ -132,15 +134,16 @@ class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 	/**
 	 * Open the case on each distinct object.
 	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 * @param array $context The run context.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying `case` = {opened, reason}.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$definition = ($config['definition'] ?? null);
 		$work = fn (CaseStepCall $call): array => $this->open(call: $call, definition: $definition);
 
@@ -160,13 +163,7 @@ class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 	private function open(CaseStepCall $call, array $definition): array {
 		$target = $call->target;
 		try {
-			$this->steps->plans->createPlan(
-				objectUuid: $target->objectUuid,
-				registerId: $target->registerId,
-				schemaId: $target->schemaId,
-				definition: $definition,
-				uid: $call->uid
-			);
+			$this->steps->plans->createPlan(creation: new CasePlanCreation(anchor: $target, definition: $definition, actor: $call->uid));
 		} catch (CasePlanExistsException) {
 			return ['opened' => false, 'reason' => 'exists'];
 		}

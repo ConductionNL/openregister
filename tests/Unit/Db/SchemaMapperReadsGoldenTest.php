@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -32,6 +33,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -43,6 +46,14 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class SchemaMapperReadsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -80,9 +91,9 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 			'optimized empty' => [[], static fn (SchemaMapper $mapper) => $mapper->findMultipleOptimized([])],
 			'optimized one chunk' => [[[self::ROW, self::TWIN]], $optimized],
 			'optimized two chunks' => [[[self::ROW], [self::TWIN]], $manyIds],
-			'slug page' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', 2, 4)],
-			'slug without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', _multitenancy: false)],
-			'slug none' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven')],
+			'slug page' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 2, offset: 4))],
+			'slug without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10), _multitenancy: false)],
+			'slug none' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10))],
 			'all defaults' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findAll()],
 			'all without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findAll(_multitenancy: false)],
 			'all filtered and searched' => [
@@ -217,14 +228,18 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 		);
 
 		return new SchemaMapper(
-			$db,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end makeMapper()
 }//end class

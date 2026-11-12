@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use Exception;
 use InvalidArgumentException;
@@ -72,10 +73,8 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	/**
 	 * One page, newest first.
 	 *
-	 * @param array<string, mixed> $filters  Keys of FILTER_COLUMNS plus `from` and `to` (dates).
-	 * @param string|null          $search   Full text on the change summary.
-	 * @param int                  $limit    Page size, at most MAX_LIMIT.
-	 * @param int|null             $beforeId The cursor: only rows with a smaller id.
+	 * @param AuditPageRequest $request The criteria (keys of FILTER_COLUMNS plus `from` and `to`, and the
+	 *                                  full-text search), the page size (at most MAX_LIMIT) and the cursor.
 	 *
 	 * @return array{results: AuditTrail[], nextCursor: int|null} The rows and the cursor of the next page, null at the end.
 	 *
@@ -83,15 +82,15 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
 	 */
-	public function page(array $filters, ?string $search, int $limit, ?int $beforeId = null): array {
-		$limit = max(1, min($limit, self::MAX_LIMIT));
+	public function page(AuditPageRequest $request): array {
+		$limit = max(1, min($request->limit, self::MAX_LIMIT));
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from('openregister_audit_trails');
 
-		$this->applyFilters(qb: $qb, filters: $filters);
-		$this->applySearch(qb: $qb, search: $search);
-		$this->applyCursor(qb: $qb, beforeId: $beforeId);
+		$this->applyFilters(qb: $qb, filters: $request->criteria->filters);
+		$this->applySearch(qb: $qb, search: $request->criteria->search);
+		$this->applyCursor(qb: $qb, beforeId: $request->beforeId);
 
 		// One row more than the page, to know whether a next page exists
 		// without counting anything.
@@ -152,38 +151,22 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 	}//end pageOf()
 
 	/**
-	 * Every row matching the filters, in pages, up to a ceiling.
+	 * Every row matching the criteria, in pages, up to a ceiling.
 	 *
-	 * @param array<string, mixed> $filters The filters, as for page().
-	 * @param string|null          $search  Full text on the change summary.
-	 * @param int                  $ceiling The most rows to return.
+	 * @param AuditTrailCriteria $criteria The filters, as for page(), and the full-text search.
+	 * @param int                $ceiling  The most rows to return.
 	 *
 	 * @return array{results: AuditTrail[], truncated: bool} The rows, and whether more matched than the ceiling.
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
-	public function collect(array $filters, ?string $search, int $ceiling): array {
-		return $this->collectUpTo(criteria: new AuditTrailCriteria(filters: $filters, search: $search), ceiling: $ceiling);
-	}//end collect()
-
-	/**
-	 * Walk the pages of the criteria until the ceiling is passed or the rows run out.
-	 *
-	 * @param AuditTrailCriteria $criteria The filters and the search term.
-	 * @param int                $ceiling  The most rows to return.
-	 *
-	 * @return array{results: AuditTrail[], truncated: bool} The rows, and whether more matched than the ceiling.
-	 */
-	private function collectUpTo(AuditTrailCriteria $criteria, int $ceiling): array {
+	public function collect(AuditTrailCriteria $criteria, int $ceiling): array {
 		$rows = [];
 		$cursor = null;
 		$held = 0;
 		do {
 			$page = $this->page(
-				filters: $criteria->filters,
-				search: $criteria->search,
-				limit: min(self::MAX_LIMIT, ($ceiling - $held + 1)),
-				beforeId: $cursor
+				request: new AuditPageRequest(criteria: $criteria, limit: min(self::MAX_LIMIT, ($ceiling - $held + 1)), beforeId: $cursor)
 			);
 			$rows = array_merge($rows, $page['results']);
 			$held = count($rows);
@@ -191,7 +174,7 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 		} while ($cursor !== null && $held <= $ceiling);
 
 		return ['results' => array_slice($rows, 0, $ceiling), 'truncated' => (count($rows) > $ceiling)];
-	}//end collectUpTo()
+	}//end collect()
 
 	/**
 	 * Apply the column filters and the period.

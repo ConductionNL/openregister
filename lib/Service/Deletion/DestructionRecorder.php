@@ -35,6 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deletion;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUserSession;
@@ -69,31 +72,6 @@ class DestructionRecorder {
 	/**
 	 * Record one destruction: who, when, what went and under which rule.
 	 *
-	 * Facade over {@see self::recordDestruction()} for callers that pass the parts.
-	 *
-	 * @param ObjectEntity         $object  The object about to be destroyed.
-	 * @param array<string, mixed> $scope   The scope report from DestructionScopeService.
-	 * @param string               $rule    The rule the act ran under, e.g. `destroy-right-granted`.
-	 * @param array<string, mixed> $context Anything else worth keeping, such as the window it ran after.
-	 *
-	 * @return array<string, mixed> The record as it was written.
-	 *
-	 * @throws DestructionRefusedException When the record cannot be written.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function record(
-		ObjectEntity $object,
-		array $scope,
-		string $rule,
-		array $context=[],
-	): array {
-		return $this->recordDestruction(command: new RecordDestructionCommand(object: $object, scope: $scope, rule: $rule, context: $context));
-	}//end record()
-
-	/**
-	 * Record one destruction: who, when, what went and under which rule.
-	 *
 	 * The context is merged over the statement, so a caller can add to it. A
 	 * record that cannot be written refuses the destruction.
 	 *
@@ -110,12 +88,13 @@ class DestructionRecorder {
 		$record = array_merge($this->statement(command: $command, actor: $actor), $command->context);
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $command->object,
-				action: DestructionScope::DESTRUCTION_ACTION,
-				context: $record,
-				actorId: $actor['id'],
-				actorName: $actor['name']
+			$this->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $command->object,
+					action: DestructionScope::DESTRUCTION_ACTION,
+					context: $record,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actor['id'], name: $actor['name']))
+				)
 			);
 		} catch (Throwable $e) {
 			throw $this->unrecordable(object: $command->object, error: $e);

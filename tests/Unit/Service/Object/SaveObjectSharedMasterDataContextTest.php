@@ -44,6 +44,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
@@ -91,13 +93,13 @@ class SaveObjectSharedMasterDataContextTest extends TestCase {
 		$this->expectException(SharedMasterDataWriteException::class);
 		OrganisationContext::run(
 			'org-consumer',
-			fn () => $handler->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false)
+			fn () => $handler->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false)
 		);
 	}//end testASaveInsideAContextIsGuardedWithMultitenancyOff()
 
 	public function testASaveOutsideAContextWithMultitenancyOffIsNotGuarded(): void {
 		try {
-			$this->handler()->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false);
+			$this->handler()->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false);
 		} catch (SharedMasterDataWriteException $e) {
 			self::fail('the guard must not run when the caller turned multitenancy off outside a context');
 		} catch (Throwable $e) {
@@ -133,10 +135,8 @@ class SaveObjectSharedMasterDataContextTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),

@@ -51,72 +51,58 @@ export default {
 		 * @return {Array<object>} The groups
 		 */
 		groups() {
-			return [
-				{
-					key: 'status',
-					heading: t('openregister', 'Extraction Status'),
-					options: [
-						{
-							id: 'all',
-							value: null,
-							label: t('openregister', 'All Files'),
-						},
-						{
-							id: 'pending',
-							value: 'pending',
-							label: t('openregister', 'Pending'),
-						},
-						{
-							id: 'processing',
-							value: 'processing',
-							label: t('openregister', 'Processing'),
-						},
-						{
-							id: 'completed',
-							value: 'completed',
-							label: t('openregister', 'Completed'),
-						},
-						{
-							id: 'failed',
-							value: 'failed',
-							label: t('openregister', 'Failed'),
-						},
-					],
-				},
-				{
-					key: 'riskLevel',
-					heading: t('openregister', 'Risk Level'),
-					options: [
-						{
-							id: 'all',
-							value: null,
-							label: t('openregister', 'All Levels'),
-						},
-						{
-							id: 'none',
-							value: 'none',
-							label: t('openregister', 'None'),
-						},
-						{ id: 'low', value: 'low', label: t('openregister', 'Low') },
-						{
-							id: 'medium',
-							value: 'medium',
-							label: t('openregister', 'Medium'),
-						},
-						{
-							id: 'high',
-							value: 'high',
-							label: t('openregister', 'High'),
-						},
-						{
-							id: 'very_high',
-							value: 'very_high',
-							label: t('openregister', 'Very High'),
-						},
-					],
-				},
-			]
+			return [statusGroup(), riskLevelGroup()]
 		},
 	},
+}
+
+/**
+ * One radio option: its id is the value, or `all` for the unfiltered choice.
+ *
+ * @param {string|null} value The filter value, null for no filter
+ * @param {string} label The translated label
+ * @return {object} The option
+ */
+function radioOption(value, label) {
+	return { id: value ?? 'all', value, label }
+}
+
+/**
+ * The extraction status radio group.
+ *
+ * @return {object} The group
+ */
+function statusGroup() {
+	return {
+		key: 'status',
+		heading: t('openregister', 'Extraction Status'),
+		options: [
+			radioOption(null, t('openregister', 'All Files')),
+			radioOption('pending', t('openregister', 'Pending')),
+			radioOption('processing', t('openregister', 'Processing')),
+			radioOption('completed', t('openregister', 'Completed')),
+			radioOption('failed', t('openregister', 'Failed')),
+		],
+	}
+}
+
+/**
+ * The risk level radio group.
+ *
+ * @return {object} The group
+ */
+function riskLevelGroup() {
+	return {
+		key: 'riskLevel',
+		heading: t('openregister', 'Risk Level'),
+		options: [
+			radioOption(null, t('openregister', 'All Levels')),
+			radioOption('none', t('openregister', 'None')),
+			radioOption('low', t('openregister', 'Low')),
+			radioOption('medium', t('openregister', 'Medium')),
+			radioOption('high', t('openregister', 'High')),
+			radioOption('very_high', t('openregister', 'Very High')),
+		],
+	}
 }
 </script>

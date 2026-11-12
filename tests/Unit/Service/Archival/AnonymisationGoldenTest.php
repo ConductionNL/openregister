@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
 use OCA\OpenRegister\Service\Archival\AnonymisationSubject;
 use OCA\OpenRegister\Service\Archival\AnonymisationService;
+use OCA\OpenRegister\Service\Archival\AnonymisationBatch;
 use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
 use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
 use OCA\OpenRegister\Service\Archival\SaltedProfile;
@@ -309,7 +310,7 @@ class AnonymisationGoldenTest extends TestCase {
 			return [$this->target('db', $log)];
 		};
 
-		$result = $sweep->run($candidates, $targetsFor, 'salt');
+		$result = $sweep->sweep(batch: new AnonymisationBatch(candidates: $candidates, targetsFor: \Closure::fromCallable($targetsFor), salt: 'salt'));
 
 		$this->assertSame(['ok'], array_column($result['anonymised'], 'uuid'));
 		$this->assertSame('complete', $result['anonymised'][0]['marker']['state']);

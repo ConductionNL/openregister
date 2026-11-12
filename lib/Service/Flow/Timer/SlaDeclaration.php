@@ -98,18 +98,29 @@ class SlaDeclaration {
 		}
 
 		if (is_int($number) === false || $number < SlaCalculatorInterface::MIN_VALUE || $number > SlaCalculatorInterface::MAX_VALUE) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"SLA value '%s' is refused: it must be an integer from %d to %d.",
-					var_export($value, true),
-					SlaCalculatorInterface::MIN_VALUE,
-					SlaCalculatorInterface::MAX_VALUE
-				)
-			);
+			throw self::valueRefusal(value: $value);
 		}
 
 		return $number;
 	}//end validValue()
+
+	/**
+	 * The refusal of an SLA value outside the allowed integers.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return FlowTimerValidationException The refusal.
+	 */
+	private static function valueRefusal(mixed $value): FlowTimerValidationException {
+		return new FlowTimerValidationException(
+			message: sprintf(
+				"SLA value '%s' is refused: it must be an integer from %d to %d.",
+				var_export($value, true),
+				SlaCalculatorInterface::MIN_VALUE,
+				SlaCalculatorInterface::MAX_VALUE
+			)
+		);
+	}//end valueRefusal()
 
 	/**
 	 * Validate a roll name.

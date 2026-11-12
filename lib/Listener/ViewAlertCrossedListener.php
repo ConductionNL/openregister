@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -235,12 +236,12 @@ class ViewAlertCrossedListener implements IEventListener {
 	 */
 	private function resolve(string $viewId, ViewAlert $alert): array {
 		[$users, $groups] = self::splitRecipients(alert: $alert);
-		$resolved = $this->audience->recipients->resolveWithDiagnostics(
+		$resolved = $this->audience->recipients->resolveFromSource(
 			recipientsSpec: [
 				['kind' => 'users', 'users' => $users],
 				['kind' => 'groups', 'groups' => $groups],
 			],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->nameUnresolved(viewId: $viewId, unresolved: $this->unresolvedOf(resolved: $resolved, users: $users));

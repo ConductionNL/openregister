@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
@@ -47,8 +48,8 @@ class DashboardAuditReadsTest extends TestCase {
 	public function testChartForwardsItsPeriodAndScope(): void {
 		$from = new DateTime('2026-01-01');
 		$till = new DateTime('2026-01-31');
-		$this->mapper->expects($this->once())->method('getActionChartData')
-			->with($this->identicalTo($from), $this->identicalTo($till), 1, 2)->willReturn(['labels' => ['a'], 'series' => []]);
+		$this->mapper->expects($this->once())->method('actionChartData')
+			->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->from, $s->till, $s->registerId, $s->schemaId] === [$from, $till, 1, 2]))->willReturn(['labels' => ['a'], 'series' => []]);
 
 		$result = $this->reads->getAuditTrailActionChartData((new DashboardScope(1, 2))->during($from, $till));
 
@@ -56,32 +57,32 @@ class DashboardAuditReadsTest extends TestCase {
 	}
 
 	public function testStatisticsForwardScopeAndHours(): void {
-		$this->mapper->expects($this->once())->method('getDetailedStatistics')->with(1, 2, 48)->willReturn(['total' => 9]);
+		$this->mapper->expects($this->once())->method('detailedStatistics')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->hours] === [1, 2, 48]))->willReturn(['total' => 9]);
 
 		$this->assertSame(['total' => 9], $this->reads->getAuditTrailStatistics(new DashboardScope(1, 2), 48));
 	}
 
 	public function testDistributionForwardsScopeAndHours(): void {
-		$this->mapper->expects($this->once())->method('getActionDistribution')->with(1, 2, 72)->willReturn(['actions' => ['x']]);
+		$this->mapper->expects($this->once())->method('actionDistribution')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->hours] === [1, 2, 72]))->willReturn(['actions' => ['x']]);
 
 		$this->assertSame(['actions' => ['x']], $this->reads->getAuditTrailActionDistribution(new DashboardScope(1, 2), 72));
 	}
 
 	public function testMostActiveForwardsScopeLimitAndHours(): void {
-		$this->mapper->expects($this->once())->method('getMostActiveObjects')->with(1, 2, 5, 96)->willReturn(['objects' => ['o']]);
+		$this->mapper->expects($this->once())->method('mostActiveObjects')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->limit, $s->hours] === [1, 2, 5, 96]))->willReturn(['objects' => ['o']]);
 
 		$this->assertSame(['objects' => ['o']], $this->reads->getMostActiveObjects((new DashboardScope(1, 2))->mostActive(5, 96)));
 	}
 
 	public function testMostActiveDefaultsToTenOverADay(): void {
-		$this->mapper->expects($this->once())->method('getMostActiveObjects')->with(null, null, 10, 24)->willReturn([]);
+		$this->mapper->expects($this->once())->method('mostActiveObjects')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->limit, $s->hours] === [null, null, 10, 24]))->willReturn([]);
 
 		$this->reads->getMostActiveObjects(new ActivityWindow(new DashboardScope()));
 	}
 
 	public function testHoursDefaultToADay(): void {
-		$this->mapper->expects($this->once())->method('getDetailedStatistics')->with(null, null, 24)->willReturn([]);
-		$this->mapper->expects($this->once())->method('getActionDistribution')->with(null, null, 24)->willReturn([]);
+		$this->mapper->expects($this->once())->method('detailedStatistics')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->hours] === [null, null, 24]))->willReturn([]);
+		$this->mapper->expects($this->once())->method('actionDistribution')->with($this->callback(static fn (AuditStatisticsScope $s): bool => [$s->registerId, $s->schemaId, $s->hours] === [null, null, 24]))->willReturn([]);
 
 		$this->reads->getAuditTrailStatistics(new DashboardScope());
 		$this->reads->getAuditTrailActionDistribution(new DashboardScope());

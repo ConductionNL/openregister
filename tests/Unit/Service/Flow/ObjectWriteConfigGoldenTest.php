@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
@@ -47,6 +48,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -286,11 +288,11 @@ final class ObjectWriteConfigGoldenTest extends TestCase {
 		];
 
 		try {
-			$out = $node->execute(
+			$out = $node->execute(new FlowNodeCall(
 				items: [FlowItems::item(json: $record)],
 				config: array_merge(['register' => '1', 'schema' => '2', 'operation' => 'create'], $config),
 				context: [FlowRunServiceInterface::RUN_AS_CONTEXT_KEY => 'alice']
-			);
+			));
 		} catch (Throwable $e) {
 			return get_class($e) . ': ' . $e->getMessage();
 		}
@@ -344,7 +346,7 @@ final class ObjectWriteConfigGoldenTest extends TestCase {
 		$store = $this->createMock(ObjectOperationsInterface::class);
 		$store->method('runAs')->willReturnCallback(static fn (IUser $user, callable $work): mixed => $work());
 		$store->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->saved[] = (array)$object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('fixed-uuid');

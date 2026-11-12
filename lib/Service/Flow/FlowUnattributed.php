@@ -89,16 +89,27 @@ class FlowUnattributed extends RuntimeException implements FlowUnattributedInter
 			message: sprintf(
 				'Refusing to start flow "%s": %s',
 				$flowId,
-				($reason ?? sprintf(
-					'the "%s" trigger named no acting identity. '
-					. 'A run started by a person acts as that person; a run started on a schedule acts as the '
-					. 'user its schedule trigger declares in "runAs". The flow\'s owner is not used as a '
-					. 'fallback — authoring a flow is not consent to unattended execution as its author.',
-					$trigger
-				))
+				($reason ?? self::noIdentityReason(trigger: $trigger))
 			)
 		);
 	}//end __construct()
+
+	/**
+	 * Why a run whose trigger named no acting identity is refused.
+	 *
+	 * @param string $trigger What started the run.
+	 *
+	 * @return string The reason.
+	 */
+	private static function noIdentityReason(string $trigger): string {
+		return sprintf(
+			'the "%s" trigger named no acting identity. '
+			. 'A run started by a person acts as that person; a run started on a schedule acts as the '
+			. 'user its schedule trigger declares in "runAs". The flow\'s owner is not used as a '
+			. 'fallback — authoring a flow is not consent to unattended execution as its author.',
+			$trigger
+		);
+	}//end noIdentityReason()
 
 	/**
 	 * The flow that could not be attributed.

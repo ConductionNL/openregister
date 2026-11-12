@@ -46,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * DEPRECATED per-user (register, schema) notification subscription surface.
@@ -141,7 +142,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
@@ -219,7 +219,8 @@ class NotificationSubscriptionsController extends Controller {
 	 */
 	private function subscribe(?int $registerId, ?int $schemaId): JSONResponse {
 		try {
-			$entity = $this->mapper->subscribe(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$key    = new SubscriptionKey(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$entity = $this->mapper->subscribeTo(key: $key);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -235,7 +236,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
@@ -248,10 +248,8 @@ class NotificationSubscriptionsController extends Controller {
 		$registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
 		$schemaId = $this->coerceNullableInt(value: $this->request->getParam('schemaId'));
 
-		$deleted = $this->mapper->unsubscribe(
-			userId: $userId,
-			registerId: $registerId,
-			schemaId: $schemaId
+		$deleted = $this->mapper->unsubscribeFrom(
+			key: new SubscriptionKey(userId: $userId, registerId: $registerId, schemaId: $schemaId)
 		);
 
 		return new JSONResponse(data: ['deleted' => $deleted]);

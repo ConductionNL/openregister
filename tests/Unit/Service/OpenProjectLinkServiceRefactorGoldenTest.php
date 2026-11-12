@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use Exception;
@@ -141,7 +142,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->build();
 		$this->router->method('call')->willReturnCallback(
 			function (...$args) use ($response) {
-				$this->calls[] = ['method' => $args[1], 'path' => $args[2], 'options' => $args[3]];
+				$this->calls[] = ['method' => $args[1]->method, 'path' => $args[1]->path, 'options' => $args[1]->options];
 				return $response;
 			}
 		);
@@ -152,7 +153,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->build();
 		$this->provider->method('create')->willReturnCallback(
 			function (...$args) use ($created) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($created instanceof Exception) {
 					throw $created;
 				}
@@ -161,7 +162,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 			}
 		);
 		$target = (new LinkTarget('obj-1', 3))->inSchema(4);
-		return $this->outcome(fn () => $this->service->createAndLinkWorkPackage($target, $project, $subject, $type));
+		return $this->outcome(fn () => $this->service->createAndLinkDraft($target, new WorkPackageDraft($project, $subject, $type)));
 	}//end observeCreate()
 
 	private function observeLink(bool $connector, array|Exception|null $row): array {
@@ -169,7 +170,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->mapper->method('findByObjectAndWorkPackage')->willReturn(null);
 		$this->provider->method('get')->willReturnCallback(
 			function (...$args) use ($row) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($row instanceof Exception) {
 					throw $row;
 				}
@@ -199,7 +200,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->mapper->method('findByObjectUuid')->willReturn([self::storedLink(cachedAt: $cachedAt)]);
 		$this->provider->method('get')->willReturnCallback(
 			function (...$args) use ($row) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($row instanceof Exception) {
 					throw $row;
 				}

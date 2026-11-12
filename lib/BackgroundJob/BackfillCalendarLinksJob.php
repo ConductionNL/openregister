@@ -211,17 +211,44 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 */
 	private function backfillEvent(array $event): ?string {
 		$objectUuid = (string)$event['objectUuid'];
-		$eventUid = (string)$event['uid'];
+		$eventUid   = (string)$event['uid'];
+		if ($this->isAlreadyLinked(objectUuid: $objectUuid, eventUid: $eventUid) === true) {
+			return 'skipped';
+		}
+
+		return $this->insertLink(event: $event, eventUid: $eventUid);
+	}//end backfillEvent()
+
+	/**
+	 * Whether the object already has a link row for this event.
+	 *
+	 * @param string $objectUuid The object's UUID.
+	 * @param string $eventUid   The event's UID.
+	 *
+	 * @return bool
+	 */
+	private function isAlreadyLinked(string $objectUuid, string $eventUid): bool {
 		try {
 			$this->linkMapper->findByObjectAndEvent(
 				objectUuid: $objectUuid,
 				eventUid: $eventUid
 			);
-			return 'skipped';
+			return true;
 		} catch (DoesNotExistException $e) {
-			// No row yet — insert it below.
+			// No row yet — insert it.
+			return false;
 		}
+	}//end isAlreadyLinked()
 
+	/**
+	 * Insert the link row for one event, logging a failure.
+	 *
+	 * @param array<string,mixed> $event    Raw event data array.
+	 * @param string              $eventUid The event's UID.
+	 *
+	 * @return string|null `inserted`, or null when the insert failed.
+	 */
+	private function insertLink(array $event, string $eventUid): ?string {
 		try {
 			$link = $this->buildLink(event: $event);
 			$this->linkMapper->insert(entity: $link);
@@ -232,7 +259,7 @@ class BackfillCalendarLinksJob extends QueuedJob {
 			);
 			return null;
 		}//end try
-	}//end backfillEvent()
+	}//end insertLink()
 
 	/**
 	 * Build the link row for one event.
@@ -243,6 +270,27 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 */
 	private function buildLink(array $event): CalendarLink {
 		$link = new CalendarLink();
+		self::placeLink(link: $link, event: $event);
+		self::describeEvent(link: $link, event: $event);
+
+		$this->applyEventDates(link: $link, event: $event);
+
+		$link->setLinkedBy('system:backfill');
+		$link->setLinkedAt(new DateTime());
+		$link->setTaggedWithXor(true);
+
+		return $link;
+	}//end buildLink()
+
+	/**
+	 * Set where the link belongs: the object, its register and schema, and the calendar.
+	 *
+	 * @param CalendarLink        $link  The link being built.
+	 * @param array<string,mixed> $event Raw event data array.
+	 *
+	 * @return void
+	 */
+	private static function placeLink(CalendarLink $link, array $event): void {
 		$link->setObjectUuid((string)$event['objectUuid']);
 		$link->setRegisterId((int)($event['registerId'] ?? 0));
 		$link->setSchemaId((int)($event['schemaId'] ?? 0));
@@ -253,30 +301,39 @@ class BackfillCalendarLinksJob extends QueuedJob {
 			$calendarId = (int)$event['calendarId'];
 		}
 
-		$summary = null;
-		if (isset($event['summary']) === true) {
-			$summary = (string)$event['summary'];
-		}
-
-		$location = null;
-		if (isset($event['location']) === true) {
-			$location = (string)$event['location'];
-		}
-
 		$link->setCalendarId($calendarId);
+	}//end placeLink()
+
+	/**
+	 * Set what the link points at: the event's UID and URI, summary and location.
+	 *
+	 * @param CalendarLink        $link  The link being built.
+	 * @param array<string,mixed> $event Raw event data array.
+	 *
+	 * @return void
+	 */
+	private static function describeEvent(CalendarLink $link, array $event): void {
 		$link->setEventUid((string)$event['uid']);
 		$link->setEventUri((string)($event['id'] ?? ''));
-		$link->setSummary($summary);
-		$link->setLocation($location);
+		$link->setSummary(self::optionalString(event: $event, key: 'summary'));
+		$link->setLocation(self::optionalString(event: $event, key: 'location'));
+	}//end describeEvent()
 
-		$this->applyEventDates(link: $link, event: $event);
+	/**
+	 * An event field as a string; null when it is not set.
+	 *
+	 * @param array<string,mixed> $event Raw event data array.
+	 * @param string              $key   The field.
+	 *
+	 * @return string|null
+	 */
+	private static function optionalString(array $event, string $key): ?string {
+		if (isset($event[$key]) === true) {
+			return (string)$event[$key];
+		}
 
-		$link->setLinkedBy('system:backfill');
-		$link->setLinkedAt(new DateTime());
-		$link->setTaggedWithXor(true);
-
-		return $link;
-	}//end buildLink()
+		return null;
+	}//end optionalString()
 
 	/**
 	 * Apply dtstart / dtend from the raw event array to a CalendarLink entity.

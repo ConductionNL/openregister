@@ -35,10 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCP\App\IAppManager;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
@@ -89,14 +88,12 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager (availability check).
-	 * @param LoggerInterface $logger Logger for the degraded (empty result) path.
+	 * @param IDBConnection      $db      NC DB connection.
+	 * @param LinkServiceRuntime $runtime App availability check and the logger for the degraded (empty result) path.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -106,42 +103,27 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 * @return bool
 	 */
 	public function isActivityAvailable(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isInstalled(self::REQUIRED_APP);
 	}//end isActivityAvailable()
 
 	/**
 	 * Fetch a filtered, cursor-paginated page of activity entries for an
 	 * OR object.
 	 *
-	 * @param string $objectUuid OR object UUID (marker target).
-	 * @param string|null $type Optional exact activity `type` filter.
-	 * @param string|null $actor Optional exact `affecteduser` filter.
-	 * @param int|null $after Optional lower-bound Unix timestamp (date range).
-	 * @param int $limit Page size (1..MAX_LIMIT, default DEFAULT_LIMIT).
-	 * @param int|null $cursor Optional cursor — only rows with `timestamp` strictly
-	 *                         less than this value are returned (DESC paging).
-	 * @param string|null $visibility Optional `internal` / `public` filter. Every row of this
-	 *                                source is internal, so a public-only read returns nothing.
+	 * @param ActivityFilter         $filter  The object, the optional type / actor / lower-bound filters and the
+	 *                                        optional cursor (only rows with `timestamp` strictly below it, DESC paging).
+	 * @param ActivityEntriesOptions $options The page size and the optional `internal` / `public` visibility filter.
 	 *
 	 * @return array{results: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
-	public function getActivityEntries(
-		string $objectUuid,
-		?string $type = null,
-		?string $actor = null,
-		?int $after = null,
-		int $limit = self::DEFAULT_LIMIT,
-		?int $cursor = null,
-		?string $visibility = null,
-	): array {
-		if ($this->servesEntries(visibility: $visibility) === false) {
+	public function getActivityEntries(ActivityFilter $filter, ActivityEntriesOptions $options): array {
+		if ($this->servesEntries(visibility: $options->visibility) === false) {
 			return self::EMPTY_PAGE;
 		}
 
-		$filter = new ActivityFilter(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after);
-		return $this->entryPage(filter: $filter->withCursor(cursor: $cursor), limit: $this->clampLimit(limit: $limit));
+		return $this->entryPage(filter: $filter, limit: $this->clampLimit(limit: $options->limit));
 	}//end getActivityEntries()
 
 	/**
@@ -304,15 +286,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 */
 	private function queryRows(ActivityFilter $filter, int $limit): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('activity_id', 'subject', 'type', 'affecteduser', 'timestamp', 'object_id')
-				->from('activity');
-			$this->applyFilters(qb: $qb, filter: $filter);
-			$qb->orderBy('timestamp', 'DESC')
-				->addOrderBy('activity_id', 'DESC')
-				->setMaxResults($limit);
-
-			$result = $qb->executeQuery();
+			$result = $this->rowsQuery(filter: $filter, limit: $limit)->executeQuery();
 			$rows = $this->fetchRows(result: $result);
 			$result->closeCursor();
 
@@ -322,6 +296,26 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 			return [];
 		}//end try
 	}//end queryRows()
+
+	/**
+	 * The query for an object's activity rows, newest first, capped.
+	 *
+	 * @param ActivityFilter $filter The object and the filters.
+	 * @param int            $limit  The most rows to read.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function rowsQuery(ActivityFilter $filter, int $limit): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('activity_id', 'subject', 'type', 'affecteduser', 'timestamp', 'object_id')
+			->from('activity');
+		$this->applyFilters(qb: $qb, filter: $filter);
+		$qb->orderBy('timestamp', 'DESC')
+			->addOrderBy('activity_id', 'DESC')
+			->setMaxResults($limit);
+
+		return $qb;
+	}//end rowsQuery()
 
 	/**
 	 * Every remaining row of a query result.
@@ -379,22 +373,8 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 		}
 
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct($column)->from('activity');
-			$this->applyFilters(qb: $qb, filter: new ActivityFilter(objectUuid: $objectUuid, type: null, actor: null, after: null));
-			$qb->orderBy($column, 'ASC');
-
-			$result = $qb->executeQuery();
-			$values = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$value = (string)($row[$column] ?? '');
-				if ($value !== '') {
-					$values[] = $value;
-				}
-
-				$row = $result->fetch();
-			}
+			$result = $this->distinctQuery(objectUuid: $objectUuid, column: $column)->executeQuery();
+			$values = self::nonEmptyValues(result: $result, column: $column);
 
 			$result->closeCursor();
 			return array_values(array_unique($values));
@@ -403,6 +383,46 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 			return [];
 		}//end try
 	}//end distinctColumn()
+
+	/**
+	 * The query for the distinct values of one activity column on an object, in ascending order.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $column     The column.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function distinctQuery(string $objectUuid, string $column): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct($column)->from('activity');
+		$this->applyFilters(qb: $qb, filter: new ActivityFilter(objectUuid: $objectUuid, type: null, actor: null, after: null));
+		$qb->orderBy($column, 'ASC');
+
+		return $qb;
+	}//end distinctQuery()
+
+	/**
+	 * The non-empty values of one column of a result, in row order.
+	 *
+	 * @param IResult $result The query result.
+	 * @param string  $column The column.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function nonEmptyValues(IResult $result, string $column): array {
+		$values = [];
+		$row = $result->fetch();
+		while ($row !== false) {
+			$value = (string)($row[$column] ?? '');
+			if ($value !== '') {
+				$values[] = $value;
+			}
+
+			$row = $result->fetch();
+		}
+
+		return $values;
+	}//end nonEmptyValues()
 
 	/**
 	 * Normalise an upstream activity row into the registry leaf row shape.
@@ -444,7 +464,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 * @return void
 	 */
 	private function logFailure(string $context, Throwable $e): void {
-		$this->logger->debug(
+		$this->runtime->logger()->debug(
 			'[ActivityFilterService] ' . $context . ' failed: ' . $e->getMessage(),
 			['exception' => $e]
 		);

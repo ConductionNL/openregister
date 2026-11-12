@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -100,11 +101,11 @@ class MapNodeTest extends TestCase {
 			->method('executeMapping')
 			->willReturn(['b' => 'value']);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['a' => 'value'])],
-			['mapping' => '42'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['a' => 'value'])],
+			config: ['mapping' => '42'],
+			context: []
+		));
 
 		$this->assertCount(1, $out);
 		$this->assertSame(['b' => 'value'], $out[0][FlowItems::JSON], 'the item must carry the MAPPED shape');
@@ -123,15 +124,15 @@ class MapNodeTest extends TestCase {
 			->method('executeMapping')
 			->willReturn(['ok' => true]);
 
-		$out = $this->node->execute(
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [
 				FlowItems::item(json: ['n' => 1]),
 				FlowItems::item(json: ['n' => 2]),
 				FlowItems::item(json: ['n' => 3]),
 			],
-			['mapping' => '42'],
-			[]
-		);
+			config: ['mapping' => '42'],
+			context: []
+		));
 
 		$this->assertCount(3, $out);
 
@@ -153,11 +154,11 @@ class MapNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/999/');
 
-		$this->node->execute(
-			[FlowItems::item(json: ['a' => 1])],
-			['mapping' => '999'],
-			[]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['a' => 1])],
+			config: ['mapping' => '999'],
+			context: []
+		));
 
 	}//end testAnUnresolvableMappingFailsRatherThanPassingThrough()
 
@@ -175,11 +176,11 @@ class MapNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/item 0/');
 
-		$this->node->execute(
-			[FlowItems::item(json: ['a' => 1])],
-			['mapping' => '42'],
-			[]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['a' => 1])],
+			config: ['mapping' => '42'],
+			context: []
+		));
 
 	}//end testAFailingMappingNamesTheItemItFailedOn()
 
@@ -214,11 +215,11 @@ class MapNodeTest extends TestCase {
 
 		$this->mappings->method('executeMapping')->willReturn(['ok' => true]);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: [])],
-			['mapping' => 'person-to-contact'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: ['mapping' => 'person-to-contact'],
+			context: []
+		));
 
 		$this->assertCount(1, $out);
 
@@ -250,11 +251,11 @@ class MapNodeTest extends TestCase {
 
 		$this->mappings->method('executeMapping')->willReturn(['ok' => true]);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: [])],
-			['mapping' => $uuid],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: ['mapping' => $uuid],
+			context: []
+		));
 
 		$this->assertCount(1, $out);
 
@@ -282,11 +283,11 @@ class MapNodeTest extends TestCase {
 
 		$this->mappings->method('executeMapping')->willReturn(['ok' => true]);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: [])],
-			['mapping' => '018f2a1e-0c3d-7c2b-9f11-6f0c9a1b2c3d'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: ['mapping' => '018f2a1e-0c3d-7c2b-9f11-6f0c9a1b2c3d'],
+			context: []
+		));
 
 		$this->assertCount(1, $out);
 

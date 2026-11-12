@@ -44,15 +44,14 @@ interface InboundAuthRateLimitInterface {
 	/**
 	 * Record a failed inbound-API authentication attempt.
 	 *
-	 * @param string $identity  The authentication identity (username/token id) or '' if unknown
-	 * @param string $ipAddress The trusted client IP address of the failed attempt
-	 * @param string $reason    The reason for authentication failure
+	 * @param FailedAttempt $attempt The authentication identity (username/token id, '' if unknown), the trusted
+	 *                               client IP address and the reason for the failure (e.g. `inbound_auth_failed`).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason = 'inbound_auth_failed'): void;
+	public function recordFailedAuthAttempt(FailedAttempt $attempt): void;
 
 	/**
 	 * Clear the inbound-API auth rate-limit counters for an identity+IP.

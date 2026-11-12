@@ -50,19 +50,19 @@ class FlowSemanticVersionPublishBehaviourTest extends TestCase {
 	}//end graph()
 
 	public function testNothingPublishedIsTheFirstVersion(): void {
-		self::assertSame('1.0.0', $this->versions->forPublish(publishedGraph: null, candidateGraph: $this->graph(['a']), previousSemver: '4.2.0', requested: 'major'));
+		self::assertSame('1.0.0', $this->versions->versionFor(revision: new \OCA\OpenRegister\Service\Flow\FlowGraphRevision(published: null, candidate: $this->graph(['a']), previousSemver: '4.2.0'), requested: 'major'));
 	}//end testNothingPublishedIsTheFirstVersion()
 
 	public function testAnAdditionIsAMinorBumpOfThePreviousVersion(): void {
-		self::assertSame('1.3.0', $this->versions->forPublish(publishedGraph: $this->graph(['a']), candidateGraph: $this->graph(['a', 'b']), previousSemver: '1.2.0', requested: null));
+		self::assertSame('1.3.0', $this->versions->versionFor(revision: new \OCA\OpenRegister\Service\Flow\FlowGraphRevision(published: $this->graph(['a']), candidate: $this->graph(['a', 'b']), previousSemver: '1.2.0'), requested: null));
 	}//end testAnAdditionIsAMinorBumpOfThePreviousVersion()
 
 	public function testARemovalIsAMajorBumpAndCannotBeTalkedDown(): void {
-		self::assertSame('2.0.0', $this->versions->forPublish(publishedGraph: $this->graph(['a', 'b']), candidateGraph: $this->graph(['a']), previousSemver: '1.2.0', requested: null));
+		self::assertSame('2.0.0', $this->versions->versionFor(revision: new \OCA\OpenRegister\Service\Flow\FlowGraphRevision(published: $this->graph(['a', 'b']), candidate: $this->graph(['a']), previousSemver: '1.2.0'), requested: null));
 
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('This publish cannot be minor.');
-		$this->versions->forPublish(publishedGraph: $this->graph(['a', 'b']), candidateGraph: $this->graph(['a']), previousSemver: '1.2.0', requested: 'minor');
+		$this->versions->versionFor(revision: new \OCA\OpenRegister\Service\Flow\FlowGraphRevision(published: $this->graph(['a', 'b']), candidate: $this->graph(['a']), previousSemver: '1.2.0'), requested: 'minor');
 	}//end testARemovalIsAMajorBumpAndCannotBeTalkedDown()
 
 	public function testARefusalWithoutASummaryStillSaysWhy(): void {
@@ -73,6 +73,6 @@ class FlowSemanticVersionPublishBehaviourTest extends TestCase {
 	}//end testARefusalWithoutASummaryStillSaysWhy()
 	public function testAMinorRequestOnAMinorChangeStaysMinor(): void {
 		self::assertSame(FlowGraphDiff::MINOR, $this->versions->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MINOR), requested: 'minor'));
-		self::assertSame('1.5.0', $this->versions->forPublish(publishedGraph: $this->graph(['a']), candidateGraph: $this->graph(['a', 'c']), previousSemver: '1.4.0', requested: 'minor'));
+		self::assertSame('1.5.0', $this->versions->versionFor(revision: new \OCA\OpenRegister\Service\Flow\FlowGraphRevision(published: $this->graph(['a']), candidate: $this->graph(['a', 'c']), previousSemver: '1.4.0'), requested: 'minor'));
 	}//end testAMinorRequestOnAMinorChangeStaysMinor()
 }//end class

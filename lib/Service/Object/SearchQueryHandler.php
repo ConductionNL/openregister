@@ -33,11 +33,11 @@ use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
-use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -113,6 +113,18 @@ class SearchQueryHandler {
 	private const NO_PERSONAL_LENS_USER = '__no-personal-lens-user__';
 
 	/**
+	 * The id an owner filter falls back to when there is no caller.
+	 *
+	 * Without a session the owner is withheld from every answer, so filtering
+	 * or sorting on it would still tell which records a user owns through the
+	 * count and the order. An owner filter answers nothing and an owner sort
+	 * is dropped.
+	 *
+	 * @var string
+	 */
+	private const NO_OWNER_FOR_ANONYMOUS = '__no-owner-for-anonymous__';
+
+	/**
 	 * Memoized effective search-trail recording mode for this request.
 	 *
 	 * The recording mode is read from settings once per request instead of
@@ -152,7 +164,6 @@ class SearchQueryHandler {
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
 	 * @param SettingsServiceInterface $settingsService Service for settings operations.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param IRequest $request Request object.
 	 * @param SearchTrailService $searchTrailService Service for recording search trails.
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
@@ -168,7 +179,6 @@ class SearchQueryHandler {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly LoggerInterface $logger,
-		private readonly IRequest $request,
 		private readonly SearchTrailService $searchTrailService,
 		private readonly ?IUserSession $userSession = null,
 		// The branch-filter expander. Nullable with a null default so the many
@@ -534,8 +544,41 @@ class SearchQueryHandler {
 	 * @return array The query.
 	 */
 	private function applyLenses(array $query): array {
-		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+		$query = $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+
+		return $this->withoutOwnerLensForAnonymous(query: $query);
 	}//end applyLenses()
+
+	/**
+	 * Take the owner out of an anonymous caller's filter and sort.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function withoutOwnerLensForAnonymous(array $query): array {
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid !== null && $uid !== '') {
+			return $query;
+		}
+
+		if (is_array($query['@self'] ?? null) === true && array_key_exists('owner', $query['@self']) === true) {
+			unset($query['@self']['owner']);
+			$query['_ids'] = [self::NO_OWNER_FOR_ANONYMOUS];
+		}
+
+		if (is_array($query['_order'] ?? null) === true) {
+			$query['_order'] = array_filter(
+				$query['_order'],
+				static fn ($field): bool => in_array((string)$field, ['owner', '@self.owner', '_owner'], true) === false,
+				ARRAY_FILTER_USE_KEY
+			);
+		}
+
+		return $query;
+	}//end withoutOwnerLensForAnonymous()
 
 	/**
 	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
@@ -702,24 +745,6 @@ class SearchQueryHandler {
 	}//end applyViewsToQuery()
 
 	/**
-	 * Add pagination URLs to search results
-	 *
-	 * Adds the next and previous page URLs {@see PaginationLinks} builds from the request URI.
-	 *
-	 * @param array<string, mixed> $paginatedResults Search results array (passed by reference).
-	 * @param int $page Current page number.
-	 * @param int $pages Total number of pages.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void {
-		$links = new PaginationLinks(uri: $this->request->getRequestUri());
-		$paginatedResults = array_merge($paginatedResults, $links->around(page: $page, pages: $pages));
-	}//end addPaginationUrls()
-
-	/**
 	 * Buffer a search trail entry for deferred persistence
 	 *
 	 * Records a search trail entry if search trails are enabled in settings.
@@ -801,10 +826,12 @@ class SearchQueryHandler {
 				// the search_term column that the popular-terms stats aggregate.
 				$this->searchTrailService->createSearchTrail(
 					query: $entry['query'],
-					resultCount: $entry['resultCount'],
-					totalResults: $entry['totalResults'],
-					responseTime: $entry['responseTime'],
-					executionType: $entry['executionType']
+					measured: new SearchMeasurement(
+						resultCount: $entry['resultCount'],
+						totalResults: $entry['totalResults'],
+						responseTime: $entry['responseTime'],
+						executionType: $entry['executionType']
+					)
 				);
 				$persisted++;
 			} catch (\Throwable $e) {

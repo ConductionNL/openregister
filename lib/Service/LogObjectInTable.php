@@ -28,9 +28,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * The in-table half of LogService's object lookup, extracted unchanged.
@@ -62,9 +59,7 @@ final class LogObjectInTable {
 	 * only when the live rows alone are still ambiguous, or none is live, is the lookup
 	 * refused.
 	 *
-	 * @param string   $id       The object identifier (ID, UUID or slug).
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
+	 * @param TableObjectRef $object The identifier (ID, UUID or slug) and its register and schema.
 	 *
 	 * @return ObjectEntity The object.
 	 *
@@ -74,32 +69,13 @@ final class LogObjectInTable {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
-	public function find(string $id, Register $register, Schema $schema): ObjectEntity {
-		return $this->findIn(object: new TableObjectRef(id: $id, table: new RegisterSchema(register: $register, schema: $schema)));
-	}//end find()
-
-	/**
-	 * The object, deleted or not, in its register+schema table.
-	 *
-	 * The single live holder of a shared slug is the one meant; see find().
-	 *
-	 * @param TableObjectRef $object The identifier and its register and schema.
-	 *
-	 * @return ObjectEntity The object.
-	 *
-	 * @throws DoesNotExistException            When no such object exists in the register and schema.
-	 * @throws MultipleObjectsReturnedException When the slug is held by more than one live object,
-	 *                                          or only by deleted ones.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
-	 */
-	public function findIn(TableObjectRef $object): ObjectEntity {
+	public function find(TableObjectRef $object): ObjectEntity {
 		try {
 			return $this->inTable(object: $object, includeDeleted: true);
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->singleLiveHolder(object: $object, ambiguous: $e);
 		}
-	}//end findIn()
+	}//end find()
 
 	/**
 	 * The one live object holding an identifier that several objects share, deleted ones included.

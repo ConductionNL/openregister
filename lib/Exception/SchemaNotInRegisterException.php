@@ -103,27 +103,59 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 	 * @return string The composed message.
 	 */
 	private function composeMessage(): string {
-		$register = 'the named register';
-		if ($this->registerId !== null) {
-			$register = sprintf(
-				'register "%s" (id %d)',
-				($this->registerSlug ?? '?'),
-				$this->registerId
-			);
-		}
+		$register = $this->describeRegister();
 
 		if ($this->registerSchemaCount === 0) {
-			return sprintf(
-				'Schema slug "%s" cannot resolve because %s carries no schemas at all. '
-				. '%d schema(s) elsewhere on this instance carry this slug, and resolving to one of '
-				. 'them would bind data to a register its owner did not choose. '
-				. 'Run `occ openregister:registers:relink-schemas` to inspect and repair the linkage.',
-				$this->schemaSlug,
-				$register,
-				$this->candidatesElsewhere
-			);
+			return $this->emptyRegisterMessage(register: $register);
 		}
 
+		return $this->missingSlugMessage(register: $register);
+	}//end composeMessage()
+
+	/**
+	 * The register as the message names it: by slug and id when the id is known.
+	 *
+	 * @return string The register description.
+	 */
+	private function describeRegister(): string {
+		if ($this->registerId === null) {
+			return 'the named register';
+		}
+
+		return sprintf(
+			'register "%s" (id %d)',
+			($this->registerSlug ?? '?'),
+			$this->registerId
+		);
+	}//end describeRegister()
+
+	/**
+	 * The message for a register whose schemas list is empty.
+	 *
+	 * @param string $register The register description.
+	 *
+	 * @return string The message.
+	 */
+	private function emptyRegisterMessage(string $register): string {
+		return sprintf(
+			'Schema slug "%s" cannot resolve because %s carries no schemas at all. '
+			. '%d schema(s) elsewhere on this instance carry this slug, and resolving to one of '
+			. 'them would bind data to a register its owner did not choose. '
+			. 'Run `occ openregister:registers:relink-schemas` to inspect and repair the linkage.',
+			$this->schemaSlug,
+			$register,
+			$this->candidatesElsewhere
+		);
+	}//end emptyRegisterMessage()
+
+	/**
+	 * The message for a register that carries schemas, but not this slug.
+	 *
+	 * @param string $register The register description.
+	 *
+	 * @return string The message.
+	 */
+	private function missingSlugMessage(string $register): string {
 		return sprintf(
 			'Schema slug "%s" is not carried by %s, which carries %d schema(s). %d schema(s) elsewhere '
 			. 'on this instance carry this slug; none of them is served here, because naming a register '
@@ -134,7 +166,7 @@ class SchemaNotInRegisterException extends DoesNotExistException {
 			$this->registerSchemaCount,
 			$this->candidatesElsewhere
 		);
-	}//end composeMessage()
+	}//end missingSlugMessage()
 
 	/**
 	 * Get the named register's id.

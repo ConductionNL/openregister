@@ -33,16 +33,14 @@ interface SchemaRevalidatorInterface {
 	/**
 	 * Start a revalidation run.
 	 *
-	 * @param int                       $schemaId           Schema id.
-	 * @param int                       $registerId         Register id (for object scoping).
-	 * @param array<string, mixed>|null $proposedDefinition Optional proposed definition; null = current.
-	 * @param string|null               $startedBy          User id.
+	 * @param RevalidationRequest $request   The schema, its register and the optional proposed definition (null = current).
+	 * @param string|null         $startedBy User id.
 	 *
 	 * @return SchemaRun The created run.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun;
+	public function startRevalidation(RevalidationRequest $request, ?string $startedBy = null): SchemaRun;
 
 	/**
 	 * Process the next batch of a run.

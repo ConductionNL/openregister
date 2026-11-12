@@ -6,6 +6,9 @@ namespace Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -83,7 +86,7 @@ class TaskServiceTest extends TestCase {
 		$service->getTasksForObject('some-uuid');
 	}
 
-	// ── requireTaskOf ──
+	// ── requireTaskAt ──
 
 	/**
 	 * A service whose user has calendar 1, holding one task linked to `uuid-mine`.
@@ -101,23 +104,23 @@ class TaskServiceTest extends TestCase {
 	}
 
 	public function testRequireTaskOfAcceptsATaskLinkedToTheObject(): void {
-		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '1', 'task.ics');
+		$this->serviceWithOneLinkedTask()->requireTaskAt(objectUuid: 'uuid-mine', at: new TaskLocation(calendarId: '1', uri: 'task.ics'));
 		$this->addToAssertionCount(1);
 	}
 
 	public function testRequireTaskOfRefusesATaskOfAnotherObject(): void {
 		$this->expectExceptionCode(404);
-		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-other', '1', 'task.ics');
+		$this->serviceWithOneLinkedTask()->requireTaskAt(objectUuid: 'uuid-other', at: new TaskLocation(calendarId: '1', uri: 'task.ics'));
 	}
 
 	public function testRequireTaskOfRefusesACalendarThatIsNotTheCallers(): void {
 		$this->expectExceptionCode(404);
-		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '99', 'task.ics');
+		$this->serviceWithOneLinkedTask()->requireTaskAt(objectUuid: 'uuid-mine', at: new TaskLocation(calendarId: '99', uri: 'task.ics'));
 	}
 
 	public function testRequireTaskOfRefusesAnUnknownTask(): void {
 		$this->expectExceptionCode(404);
-		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '1', 'other.ics');
+		$this->serviceWithOneLinkedTask()->requireTaskAt(objectUuid: 'uuid-mine', at: new TaskLocation(calendarId: '1', uri: 'other.ics'));
 	}
 
 	public function testRequireTaskOfRefusesACallerWithoutACalendar(): void {
@@ -128,7 +131,7 @@ class TaskServiceTest extends TestCase {
 		$calDavBackend->method('getCalendarsForUser')->willReturn([]);
 
 		$this->expectExceptionCode(404);
-		$service->requireTaskOf('uuid-mine', '1', 'task.ics');
+		$service->requireTaskAt(objectUuid: 'uuid-mine', at: new TaskLocation(calendarId: '1', uri: 'task.ics'));
 	}
 
 	// ── getTasksForObject (no calendar) ──
@@ -187,7 +190,7 @@ class TaskServiceTest extends TestCase {
 		$this->assertSame(2, $result[0]['schemaId']);
 	}
 
-	// ── createTask ──
+	// ── createObjectTask ──
 
 	public function testCreateTaskCreatesCalendarObject(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
@@ -195,17 +198,14 @@ class TaskServiceTest extends TestCase {
 
 		$calDavBackend->expects($this->once())->method('createCalendarObject');
 
-		$result = $service->createTask(
-			1, 2, 'uuid-123', 'Object Title',
-			['summary' => 'My task', 'status' => 'NEEDS-ACTION']
-		);
+		$result = $service->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'uuid-123'), draft: new LinkedTaskDraft(objectTitle: 'Object Title', data: ['summary' => 'My task', 'status' => 'NEEDS-ACTION']));
 
 		$this->assertIsArray($result);
 		$this->assertSame('My task', $result['summary']);
 		$this->assertSame('uuid-123', $result['objectUuid']);
 	}
 
-	// ── updateTask ──
+	// ── changeTask ──
 
 	public function testUpdateTaskThrowsWhenNotFound(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
@@ -214,7 +214,7 @@ class TaskServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Task not found');
 
-		$service->updateTask('1', 'task.ics', ['summary' => 'Updated']);
+		$service->changeTask(at: new TaskLocation(calendarId: '1', uri: 'task.ics'), data: ['summary' => 'Updated']);
 	}
 
 	public function testUpdateTaskUpdatesFields(): void {
@@ -232,7 +232,7 @@ class TaskServiceTest extends TestCase {
 		]);
 		$calDavBackend->expects($this->once())->method('updateCalendarObject');
 
-		$result = $service->updateTask('1', 'task.ics', ['summary' => 'Updated']);
+		$result = $service->changeTask(at: new TaskLocation(calendarId: '1', uri: 'task.ics'), data: ['summary' => 'Updated']);
 
 		$this->assertSame('Updated', $result['summary']);
 	}
@@ -259,22 +259,25 @@ class TaskServiceTest extends TestCase {
 		$service->deleteTask('1', 'task.ics');
 	}
 
-	// ── createTask with due date ──
+	// ── createObjectTask with due date ──
 
 	public function testCreateTaskWithDueDate(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
 		$this->mockUserWithCalendar('testuser', $calDavBackend);
 		$calDavBackend->expects($this->once())->method('createCalendarObject');
 
-		$result = $service->createTask(
-			1, 2, 'uuid-123', 'My Object',
-			[
-				'summary' => 'Task with due',
-				'description' => 'Some description',
-				'due' => '2024-12-31 12:00:00',
-				'priority' => 5,
-				'status' => 'IN-PROCESS',
-			]
+		$result = $service->createObjectTask(
+			ref: new ObjectRef(register: 1, schema: 2, id: 'uuid-123'),
+			draft: new LinkedTaskDraft(
+				objectTitle: 'My Object',
+				data: [
+					'summary' => 'Task with due',
+					'description' => 'Some description',
+					'due' => '2024-12-31 12:00:00',
+					'priority' => 5,
+					'status' => 'IN-PROCESS',
+				]
+			)
 		);
 
 		$this->assertIsArray($result);
@@ -285,24 +288,21 @@ class TaskServiceTest extends TestCase {
 		$this->assertSame('in-process', $result['status']);
 	}
 
-	// ── createTask with special characters in summary ──
+	// ── createObjectTask with special characters in summary ──
 
 	public function testCreateTaskEscapesSpecialCharacters(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
 		$this->mockUserWithCalendar('testuser', $calDavBackend);
 		$calDavBackend->expects($this->once())->method('createCalendarObject');
 
-		$result = $service->createTask(
-			1, 2, 'uuid-456', 'Title, with; special\chars',
-			['summary' => 'Task, with; special\nchars']
-		);
+		$result = $service->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'uuid-456'), draft: new LinkedTaskDraft(objectTitle: 'Title, with; special\chars', data: ['summary' => 'Task, with; special\nchars']));
 
 		$this->assertIsArray($result);
 		// Summary should be returned (after ical round-trip).
 		$this->assertStringContainsString('Task', $result['summary']);
 	}
 
-	// ── updateTask sets COMPLETED timestamp ──
+	// ── changeTask sets COMPLETED timestamp ──
 
 	public function testUpdateTaskSetsCompletedTimestamp(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
@@ -319,13 +319,13 @@ class TaskServiceTest extends TestCase {
 		]);
 		$calDavBackend->expects($this->once())->method('updateCalendarObject');
 
-		$result = $service->updateTask('1', 'task.ics', ['status' => 'COMPLETED']);
+		$result = $service->changeTask(at: new TaskLocation(calendarId: '1', uri: 'task.ics'), data: ['status' => 'COMPLETED']);
 
 		$this->assertSame('completed', $result['status']);
 		$this->assertNotNull($result['completed']);
 	}
 
-	// ── updateTask with due date removal ──
+	// ── changeTask with due date removal ──
 
 	public function testUpdateTaskRemovesDueDate(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
@@ -343,14 +343,14 @@ class TaskServiceTest extends TestCase {
 		]);
 		$calDavBackend->expects($this->once())->method('updateCalendarObject');
 
-		$result = $service->updateTask('1', 'task.ics', ['due' => '']);
+		$result = $service->changeTask(at: new TaskLocation(calendarId: '1', uri: 'task.ics'), data: ['due' => '']);
 
 		$this->assertIsArray($result);
 		// Due should be removed.
 		$this->assertNull($result['due']);
 	}
 
-	// ── updateTask sets new due date ──
+	// ── changeTask sets new due date ──
 
 	public function testUpdateTaskSetsDueDate(): void {
 		[$service, $calDavBackend] = $this->createServiceWithBackend();
@@ -367,7 +367,7 @@ class TaskServiceTest extends TestCase {
 		]);
 		$calDavBackend->expects($this->once())->method('updateCalendarObject');
 
-		$result = $service->updateTask('1', 'task.ics', ['due' => '2025-06-15 10:00:00']);
+		$result = $service->changeTask(at: new TaskLocation(calendarId: '1', uri: 'task.ics'), data: ['due' => '2025-06-15 10:00:00']);
 
 		$this->assertNotNull($result['due']);
 	}

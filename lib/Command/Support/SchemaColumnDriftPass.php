@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -100,13 +101,27 @@ final class SchemaColumnDriftPass {
 		$counts['columns'] = count($drift['missing']) + count($drift['narrow']);
 		$this->report(drift: $drift);
 		if ($this->apply === true) {
-			$repaired = $this->repair(drift: $drift);
-			$counts['repaired'] = (int)$repaired;
-			$counts['failed'] = (int)($repaired === false);
+			$counts = $this->repairAndCount(drift: $drift, counts: $counts);
 		}
 
 		return $counts;
 	}//end reconcile()
+
+	/**
+	 * Repair one table's drift and record whether it was repaired or failed.
+	 *
+	 * @param array              $drift  The drift.
+	 * @param array<string, int> $counts The table's counts so far.
+	 *
+	 * @return array<string, int> The counts with `repaired` and `failed` set.
+	 */
+	private function repairAndCount(array $drift, array $counts): array {
+		$repaired = $this->repair(drift: $drift);
+		$counts['repaired'] = (int)$repaired;
+		$counts['failed'] = (int)($repaired === false);
+
+		return $counts;
+	}//end repairAndCount()
 
 	/**
 	 * Print the closing line of the command and pick its exit code.
@@ -122,13 +137,7 @@ final class SchemaColumnDriftPass {
 		}
 
 		if ($this->apply === false) {
-			$this->output->writeln(
-				sprintf(
-					'<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
-					$counts['tables'],
-					$counts['columns']
-				)
-			);
+			$this->output->writeln(self::wouldRepairLine(counts: $counts));
 			return 0;
 		}
 
@@ -138,6 +147,21 @@ final class SchemaColumnDriftPass {
 
 		return (int)($counts['failed'] !== 0);
 	}//end summarise()
+
+	/**
+	 * The dry-run line: how many tables and columns a run with --apply repairs.
+	 *
+	 * @param array<string, int> $counts The pass's counts.
+	 *
+	 * @return string The line.
+	 */
+	private static function wouldRepairLine(array $counts): string {
+		return sprintf(
+			'<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
+			$counts['tables'],
+			$counts['columns']
+		);
+	}//end wouldRepairLine()
 
 	/**
 	 * The drift of one schema's table, or null after printing why it was skipped.
@@ -220,8 +244,7 @@ final class SchemaColumnDriftPass {
 			$this->magicMapper->ensureTableForRegisterSchema(register: $drift['register'], schema: $drift['schema']);
 			$this->magicMapper->widenDecimalColumns(
 				tableName: $drift['table'],
-				currentColumns: $drift['current'],
-				requiredColumns: $drift['required']
+				columns: new MagicColumnDrift(current: $drift['current'], required: $drift['required'])
 			);
 			return true;
 		} catch (\Throwable $e) {

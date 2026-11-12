@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -44,6 +45,17 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
  */
 final class MagicSearchHandlerDeletedLensTest extends TestCase {
 
@@ -149,9 +161,9 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 	public function testTheUnionPathCarriesTheLens(): void {
 		$handler = $this->handlerWithDb();
 
-		$working = $handler->buildWhereConditionsSql(query: [], schema: new Schema());
-		$only = $handler->buildWhereConditionsSql(query: ['_deleted' => 'true'], schema: new Schema());
-		$both = $handler->buildWhereConditionsSql(query: ['_deleted' => 'any'], schema: new Schema());
+		$working = $handler->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: new Schema())));
+		$only = $handler->buildWhereClause(request: new WhereClauseRequest(query: ['_deleted' => 'true'], table: new MagicReadTable(schema: new Schema())));
+		$both = $handler->buildWhereClause(request: new WhereClauseRequest(query: ['_deleted' => 'any'], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains('_deleted IS NULL', $working);
 		$this->assertContains('_deleted IS NOT NULL', $only);

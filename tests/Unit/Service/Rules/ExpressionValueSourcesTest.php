@@ -136,12 +136,7 @@ class ExpressionValueSourcesTest extends TestCase {
 	 * @return LifecycleConditionEvaluator
 	 */
 	private function lifecycle(ConditionDialect $dialect): LifecycleConditionEvaluator {
-		return new LifecycleConditionEvaluator(
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
-			$dialect
-		);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))));
 	}//end lifecycle()
 
 	/**

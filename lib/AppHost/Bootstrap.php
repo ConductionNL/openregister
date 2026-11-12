@@ -5,7 +5,7 @@
  *
  * One-call registration for an AppHost-adopting leaf app. From the leaf's
  * `Application::register(IRegistrationContext $context)`, a single
- * `\OCA\OpenRegister\AppHost\Bootstrap::register($context, self::APP_ID)`
+ * `\OCA\OpenRegister\AppHost\Bootstrap::register($context, new LeafAdoption(appId: self::APP_ID))`
  * wires every standard plumbing class: the generic controllers, the settings
  * + action-auth services, the install repair steps, the admin settings panel,
  * the deep-link listener, optional dashboard widgets and MCP provider, and the
@@ -135,9 +135,8 @@ class Bootstrap {
 	/**
 	 * Register all standard AppHost plumbing for a leaf app.
 	 *
-	 * @param IRegistrationContext $context The leaf app's registration context.
-	 * @param string $appId The leaf app id (e.g. 'petstore').
-	 * @param array<string, mixed> $options Optional overrides:
+	 * @param IRegistrationContext $context  The leaf app's registration context.
+	 * @param LeafAdoption         $adoption The leaf app id (e.g. 'petstore') and its optional overrides:
 	 *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
 	 *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
 	 *                                      namespaces are not derivable from the app id (petstore →
@@ -164,9 +163,8 @@ class Bootstrap {
 	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
 	 */
-	public static function register(IRegistrationContext $context, string $appId, array $options = []): void {
-		$adoption = new LeafAdoption(appId: $appId, options: $options);
-		self::registerPlanes(leaf: new LeafRegistration(context: $context, appId: $appId), adoption: $adoption);
+	public static function register(IRegistrationContext $context, LeafAdoption $adoption): void {
+		self::registerPlanes(leaf: new LeafRegistration(context: $context, appId: $adoption->appId), adoption: $adoption);
 		self::registerExtras(context: $context, adoption: $adoption);
 	}//end register()
 
@@ -234,15 +232,19 @@ class Bootstrap {
 	 * that reason. It stays a no-op when the leaf ships its own
 	 * `Controller\StoreController`, so calling it is always safe.
 	 *
-	 * @param IRegistrationContext $context      Leaf registration context.
-	 * @param string               $appId        Leaf app id.
-	 * @param string               $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`).
+	 * The controller namespace is the adoption's `controllerNamespace`
+	 * override, else its `namespace` plus `\Controller`.
+	 *
+	 * @param IRegistrationContext $context  Leaf registration context.
+	 * @param LeafAdoption         $adoption Leaf app id and namespace (e.g. `['namespace' => 'OCA\Decidiq']`).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
 	 */
-	public static function aliasStoreController(IRegistrationContext $context, string $appId, string $controllerNs): void {
-		(new LeafRegistration(context: $context, appId: $appId))->aliasStoreController(controllerNs: $controllerNs);
+	public static function aliasStoreController(IRegistrationContext $context, LeafAdoption $adoption): void {
+		(new LeafRegistration(context: $context, appId: $adoption->appId))->aliasStoreController(
+			controllerNs: $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller')
+		);
 	}//end aliasStoreController()
 }//end class

@@ -328,6 +328,6 @@ class OrganisationServiceBranchCoverageTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('Invalid UUID format');
-		$this->service->createOrganisation('Test Org', '', true, 'not-a-valid-uuid');
+		$this->service->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Test Org', uuid: 'not-a-valid-uuid'), true);
 	}
 }

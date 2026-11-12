@@ -229,18 +229,18 @@ class ComputedFieldHandler {
 	 * A field that sits in a dependency cycle is not evaluated: it is set to null
 	 * and the cycle is logged.
 	 *
-	 * @param array $data The object data (used as Twig context).
-	 * @param Schema $schema The schema containing property definitions.
-	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 * @param array        $data The object data (used as Twig context).
+	 * @param ComputedPass $pass The schema containing the property definitions and the mode: 'save' or 'read'.
 	 *
 	 * @return array The object data with computed field values added/updated.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
-	public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn = 'save'): array {
+	public function evaluateComputedFields(array $data, ComputedPass $pass): array {
+		$schema = $pass->schema;
 		$cyclic = $this->cyclicFields(schema: $schema);
 
-		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $evaluateOn) as $propertyName => $expression) {
+		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $pass->evaluateOn) as $propertyName => $expression) {
 			// A field in a cycle is not evaluated.
 			$value = null;
 			if (isset($cyclic[$propertyName]) === false) {
@@ -286,7 +286,7 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
 	private function cyclicFields(Schema $schema): array {
-		$key = $schema->getId() . ':' . md5((string)json_encode($schema->getProperties()));
+		$key = $schema->getId() . ':' . hash(algo: 'xxh128', data: (string)json_encode($schema->getProperties()));
 		if (isset($this->cyclicBySchema[$key]) === false) {
 			$this->cyclicBySchema[$key] = $this->findCyclicFields(schema: $schema);
 		}

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\TypedFieldsJsonTrait;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -68,6 +69,9 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDepublished(?\DateTime $depublished)
  */
 class File extends Entity {
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
+
 
 	/**
 	 * Nextcloud filecache file_id this row mirrors.
@@ -184,29 +188,16 @@ class File extends Entity {
 	}//end __construct()
 
 	/**
-	 * Serialise to a flat array suitable for JSON responses or
-	 * inclusion in `FileFormattingHandler::formatFile()` output.
+	 * The serialised labels as a list even when unset, and whether the file is published now (served last).
 	 *
-	 * @return array<string, mixed>
+	 * @return array{labels: array, isPublished: bool}
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'fileId' => $this->fileId,
-			'description' => $this->description,
-			'category' => $this->category,
 			'labels' => ($this->labels ?? []),
-			'lockedBy' => $this->lockedBy,
-			'lockedAt' => $this->lockedAt?->format('c'),
-			'lockExpires' => $this->lockExpires?->format('c'),
-			'downloadCount' => $this->downloadCount,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-			'published' => $this->published?->format('c'),
-			'depublished' => $this->depublished?->format('c'),
 			'isPublished' => $this->isPublishedAt(),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 
 	/**
 	 * Whether this file is public at a given moment.

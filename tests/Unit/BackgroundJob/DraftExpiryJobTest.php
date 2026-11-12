@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +38,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Decision 216: declared, daily, counted, and a failure surfaces.
@@ -50,6 +53,23 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryBatch
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryPair
+ * @uses \OCA\OpenRegister\Service\Object\DraftRemovalFrame
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftExpiryJobTest extends TestCase {
 
@@ -164,18 +184,19 @@ class DraftExpiryJobTest extends TestCase {
 			static fn (string|int $id): ?ObjectEntity => (array_values(array_filter([$expired, $fresh], static fn (ObjectEntity $entity): bool => $entity->getUuid() === (string)$id))[0] ?? null)
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$deleted, &$actors): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted, &$actors): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-				$audit->method('createAuditTrailEntry')->willReturnCallback(
+				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					static function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$actors): \OCA\OpenRegister\Db\AuditTrail {
 						$actors[] = $actorId;
 
 						return new \OCA\OpenRegister\Db\AuditTrail();
 					}
-				);
-				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				));
+				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				return true;
 			}

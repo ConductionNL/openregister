@@ -552,6 +552,77 @@ import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 
+/**
+ * Register the live target's object type with the store, once.
+ *
+ * @param {object} target The live target: its type and its register and schema
+ * @return {void}
+ */
+function registerLiveType(target) {
+	if (!objectStore.objectTypes.includes(target.type)) {
+		objectStore.registerObjectType(
+			target.type,
+			target.ctx.schema,
+			target.ctx.register,
+		)
+	}
+}
+
+/**
+ * The live-updates state the view starts from.
+ *
+ * Live-updates handle for the or-object-{uuid} subscription of the
+ * currently opened object (adopt-live-updates-ui). Managed by
+ * syncLiveSubscription(); liveKey is `${type}::${uuid}` so a re-render for
+ * the same object is a no-op. livePendingKey marks an in-flight subscribe so
+ * a concurrent same-key call doesn't double-subscribe; liveEpoch invalidates
+ * in-flight resolutions after a release (object switch / destroy).
+ *
+ * @return {object} The state.
+ */
+function liveState() {
+	return {
+		liveHandle: null,
+		liveKey: '',
+		livePendingKey: '',
+		liveEpoch: 0,
+		liveUnwatch: null,
+	}
+}
+
+/**
+ * The pages the files, audit trail and relations tabs start on.
+ *
+ * Guard against the race where deep-link navigation primes
+ * objectStore.objectItem before its sub-resource plugins (filesPlugin /
+ * auditTrailsPlugin / relationsPlugin) have populated their backing state.
+ * Under the original click-through nav flow these are always set by the time
+ * the user opens an object's detail; the deep-link route
+ * (/objects/:register/:schema/:id) skips that warm-up.
+ *
+ * @return {object} The pagination per tab.
+ */
+function initialPagination() {
+	return {
+		files: tabPage(objectStore.files?.page),
+		auditTrails: tabPage(objectStore.auditTrails?.page),
+		relations: tabPage(objectStore.used?.page),
+	}
+}
+
+/**
+ * A tab's pagination: 200 per page, from the stored page or the first.
+ *
+ * @param {number|undefined} page The page the store holds
+ * @return {{limit: number, currentPage: number}} The pagination
+ */
+function tabPage(page) {
+	return {
+		limit: 200,
+		currentPage: page || 1,
+	}
+}
+
 export default {
 	name: 'ObjectDetails',
 	components: {
@@ -626,46 +697,13 @@ export default {
 	data() {
 		return {
 			currentActiveObject: undefined,
-			// Live-updates handle for the or-object-{uuid} subscription of the
-			// currently opened object (adopt-live-updates-ui). Managed by
-			// syncLiveSubscription(); liveKey is `${type}::${uuid}` so a
-			// re-render for the same object is a no-op. livePendingKey marks
-			// an in-flight subscribe so a concurrent same-key call doesn't
-			// double-subscribe; liveEpoch invalidates in-flight resolutions
-			// after a release (object switch / destroy).
-			liveHandle: null,
-			liveKey: '',
-			livePendingKey: '',
-			liveEpoch: 0,
-			liveUnwatch: null,
+			...liveState(),
 			auditTrailLoading: false,
 			auditTrails: [],
 			relationsLoading: false,
 			activeAttachment: null,
 			fileLoading: false,
-			// Guard against the race where deep-link navigation primes
-			// objectStore.objectItem before its sub-resource plugins
-			// (filesPlugin / auditTrailsPlugin / relationsPlugin) have
-			// populated their backing state. Under the original
-			// click-through nav flow these are always set by the time
-			// the user opens an object's detail; the deep-link route
-			// (/objects/:register/:schema/:id) skips that warm-up.
-			pagination: {
-				files: {
-					limit: 200,
-					currentPage: objectStore.files?.page || 1,
-				},
-
-				auditTrails: {
-					limit: 200,
-					currentPage: objectStore.auditTrails?.page || 1,
-				},
-
-				relations: {
-					limit: 200,
-					currentPage: objectStore.used?.page || 1,
-				},
-			},
+			pagination: initialPagination(),
 		}
 	},
 
@@ -848,6 +886,17 @@ export default {
 			if (this.isLiveFor(target.key)) {
 				return
 			}
+			await this.resubscribeLive(target)
+		},
+
+		/**
+		 * Drop the current subscription and subscribe to the target; a failed
+		 * subscribe is reported.
+		 *
+		 * @param {object} target The live target
+		 * @return {Promise<void>}
+		 */
+		async resubscribeLive(target) {
 			this.releaseLiveSubscription()
 			try {
 				await this.subscribeLive(target)
@@ -900,13 +949,7 @@ export default {
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 */
 		async subscribeLive(target) {
-			if (!objectStore.objectTypes.includes(target.type)) {
-				objectStore.registerObjectType(
-					target.type,
-					target.ctx.schema,
-					target.ctx.register,
-				)
-			}
+			registerLiveType(target)
 			const epoch = this.liveEpoch
 			this.livePendingKey = target.key
 			this.liveKey = target.key
@@ -1035,11 +1078,7 @@ export default {
 			}
 			this.auditTrailLoading = true
 
-			objectStore
-				.getAuditTrails(objectStore.objectItem.id, {
-					limit: this.pagination.auditTrails.limit,
-					page: this.pagination.auditTrails.currentPage,
-				})
+			this.fetchAuditTrailPage()
 				.then(({ data }) => {
 					this.auditTrails = data
 					this.auditTrailLoading = false
@@ -1048,6 +1087,19 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+
+		/**
+		 * Fetch the current audit trail page of the object.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 */
+		fetchAuditTrailPage() {
+			return objectStore.getAuditTrails(objectStore.objectItem.id, {
+				limit: this.pagination.auditTrails.limit,
+				page: this.pagination.auditTrails.currentPage,
+			})
+		},
+
 
 		/**
 		 * Fetch the object's relations for display (race-safe).
@@ -1065,29 +1117,47 @@ export default {
 				return
 			}
 
+			this.relationsLoading = true
+			this.fetchRelations(objectId).finally(() => {
+				this.relationsLoading = false
+			})
+		},
+
+		/**
+		 * Fetch the relations page in both directions: the objects that use
+		 * this one, and the ones it uses where the store can fetch those.
+		 *
+		 * `_limit` / `_offset`, not `limit` / `page`: RelationHandler reads the
+		 * underscored names and silently paginates at its own defaults for
+		 * anything else.
+		 *
+		 * @param {string} objectId The object id
+		 * @return {Promise<Array>} Settles when both have loaded
+		 */
+		fetchRelations(objectId) {
 			const type = objectStore.currentType
 			const limit = this.pagination.relations.limit
 			const offset = (this.pagination.relations.currentPage - 1) * limit
-
-			// `_limit` / `_offset`, not `limit` / `page`: RelationHandler reads
-			// the underscored names and silently paginates at its own defaults
-			// for anything else.
-			this.relationsLoading = true
-
 			const incoming = objectStore.fetchUsed(type, objectId, {
 				_limit: limit,
 				_offset: offset,
 			})
+			const outgoing = this.fetchOutgoingRelations(objectId)
+			return Promise.all([incoming, outgoing])
+		},
 
-			let outgoing = Promise.resolve([])
-			if (typeof objectStore.fetchUses === 'function') {
-				outgoing = objectStore.fetchUses(type, objectId, {
-					_limit: limit,
-				})
+		/**
+		 * Fetch the objects this one uses, or nothing when the store cannot.
+		 *
+		 * @param {string} objectId The object id
+		 * @return {Promise<Array>} The request
+		 */
+		fetchOutgoingRelations(objectId) {
+			if (typeof objectStore.fetchUses !== 'function') {
+				return Promise.resolve([])
 			}
-
-			Promise.all([incoming, outgoing]).finally(() => {
-				this.relationsLoading = false
+			return objectStore.fetchUses(objectStore.currentType, objectId, {
+				_limit: this.pagination.relations.limit,
 			})
 		},
 

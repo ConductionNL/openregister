@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\Db\FlowDefinition;
 use OCA\OpenRegister\Db\FlowDefinitionMapper;
 use OCA\OpenRegister\Db\FlowMapper;
@@ -173,7 +174,7 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 		$flow = $this->flow(old: $this->oneStep(), head: $this->twoSteps());
 		$this->flows->expects($this->once())->method('update')->with($flow)->willReturnArgument(0);
 
-		$version = $this->service()->publish($flow, 'alice');
+		$version = $this->service()->publish($flow, new FlowPublishOptions(publishedBy: 'alice'));
 
 		$this->assertSame(['begin', 'commit'], $this->tx);
 		$this->assertSame(FlowVersion::STATUS_DEPRECATED, $this->rows[1]->getStatus());
@@ -195,7 +196,7 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 		$flow = $this->flow(old: $this->twoSteps(), head: $this->oneStep());
 		$this->flows->method('update')->willReturnArgument(0);
 
-		$this->assertSame('2.0.0', $this->service()->publish($flow, null)->getSemver());
+		$this->assertSame('2.0.0', $this->service()->publish($flow, new FlowPublishOptions(publishedBy: null))->getSemver());
 	}
 
 	public function testAMinorBumpOverARemovalIsRefusedAndRolledBack(): void {
@@ -203,7 +204,7 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 		$this->logger->expects($this->once())->method('error');
 
 		try {
-			$this->service()->publish($flow, 'alice', 'minor');
+			$this->service()->publish($flow, new FlowPublishOptions(publishedBy: 'alice', bump: 'minor'));
 			$this->fail('A minor bump over a removal must be refused.');
 		} catch (UnexpectedValueException $refused) {
 			$this->assertSame(['begin', 'rollBack'], $this->tx);
@@ -220,7 +221,7 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 			->with($this->stringContains('Publish failed for flow "flow-1": disk full'));
 
 		try {
-			$this->service()->publish($flow, 'alice');
+			$this->service()->publish($flow, new FlowPublishOptions(publishedBy: 'alice'));
 			$this->fail('The write failure must be rethrown.');
 		} catch (RuntimeException $failure) {
 			$this->assertSame('disk full', $failure->getMessage());
@@ -239,7 +240,7 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 		$this->definitions->method('store')->willThrowException(new RuntimeException('no table'));
 
 		try {
-			$this->service()->publish($flow, 'alice');
+			$this->service()->publish($flow, new FlowPublishOptions(publishedBy: 'alice'));
 			$this->fail('An unstorable definition must be refused.');
 		} catch (FlowLifecycleRefused $refused) {
 			$this->assertSame(FlowLifecycleRefused::REASON_IMMUTABLE, $refused->getReason());

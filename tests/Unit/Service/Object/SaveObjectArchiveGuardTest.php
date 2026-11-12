@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -42,6 +43,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write guard for the archived and frozen states.
@@ -101,10 +104,8 @@ class SaveObjectArchiveGuardTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->mapper,
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->mapper),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -210,9 +211,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} finally {
 			// The object is unchanged: the guard fires before anything is
@@ -251,10 +250,9 @@ class SaveObjectArchiveGuardTest extends TestCase {
 	 */
 	public function testWriteToAFrozenObjectIsRefusedAndNamesTheState(): void {
 		$object = $this->storedObject();
-		$object->freeze(
+		$object->freezeWith(
 			userSession: $this->sessionFor(uid: 'bert'),
-			reason: 'fase afgesloten',
-			state: 'in_bezwaar'
+			terms: new FreezeTerms(reason: 'fase afgesloten', state: 'in_bezwaar')
 		);
 
 		[$schema, $register] = $this->context();
@@ -264,9 +262,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 
 		$this->handler(existing: $object)->saveObject(
 			data: ['title' => 'gewijzigd'],
-			schema: $schema,
-			register: $register,
-			uuid: self::UUID
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 		);
 	}//end testWriteToAFrozenObjectIsRefusedAndNamesTheState()
 
@@ -286,9 +282,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} catch (ObjectStateWriteException $e) {
 			$refused = true;

@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -36,8 +38,6 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -93,8 +93,6 @@ class RuleReplayServiceTest extends TestCase {
 
 		return new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 	}//end inventory()
@@ -172,14 +170,12 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testARunawaySelectionIsRefusedBeforeAnythingIsCreated(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		try {
-			$this->service()->preview(
-				schema: $this->schema(),
-				ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-				selection: ['query' => ['status' => 'open']],
-				actorUid: 'admin'
+			$this->service()->previewReplay(
+				request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+				selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: ['query' => ['status' => 'open']])
 			);
 			$this->fail('A selection of 4,000 under a ceiling of 100 was not refused.');
 		} catch (RuleCeilingException $refusal) {
@@ -205,14 +201,12 @@ class RuleReplayServiceTest extends TestCase {
 		$this->objects->expects($this->once())
 			->method('countSearchObjects')
 			->willReturn(4000);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$this->expectException(RuleCeilingException::class);
-		$this->service()->preview(
-			schema: $this->schema(),
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			selection: ['query' => []],
-			actorUid: 'admin'
+		$this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: ['query' => []])
 		);
 	}//end testTheCountComesFromACountQuery()
 
@@ -228,14 +222,11 @@ class RuleReplayServiceTest extends TestCase {
 
 		$job = new BulkJob();
 		$job->setId(3);
-		$this->jobs->expects($this->once())->method('create')->willReturn($job);
+		$this->jobs->expects($this->once())->method('createFromRequest')->willReturn($job);
 
-		$result = $this->service()->preview(
-			schema: $this->schema(),
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			selection: ['query' => []],
-			actorUid: 'admin',
-			justification: 'The termijn changed.'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin', justification: 'The termijn changed.'),
+			selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: ['query' => []])
 		);
 
 		$this->assertTrue($result['ok']);
@@ -257,13 +248,11 @@ class RuleReplayServiceTest extends TestCase {
 
 		$job = new BulkJob();
 		$job->setId(4);
-		$this->jobs->expects($this->once())->method('create')->willReturn($job);
+		$this->jobs->expects($this->once())->method('createFromRequest')->willReturn($job);
 
-		$result = $this->service()->preview(
-			schema: $this->schema(maxObjects: null),
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			selection: ['query' => []],
-			actorUid: 'admin'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(maxObjects: null), registerId: null, criteria: ['query' => []])
 		);
 
 		$this->assertTrue($result['ok']);
@@ -279,14 +268,12 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testAnIdsSelectionIsCountedByItsDistinctIds(): void {
 		$this->objects->expects($this->never())->method('countSearchObjects');
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		try {
-			$this->service()->preview(
-				schema: $this->schema(maxObjects: 2),
-				ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-				selection: ['ids' => ['a', 'b', 'c', 'c']],
-				actorUid: 'admin'
+			$this->service()->previewReplay(
+				request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+				selection: new RuleReplaySelection(schema: $this->schema(maxObjects: 2), registerId: null, criteria: ['ids' => ['a', 'b', 'c', 'c']])
 			);
 			$this->fail('Three distinct ids under a ceiling of two were not refused.');
 		} catch (RuleCeilingException $refusal) {
@@ -302,13 +289,11 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnknownRuleIsRefused(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
-		$result = $this->service()->preview(
-			schema: $this->schema(),
-			ruleId: 'calculation:bezwaar:nietBestaand',
-			selection: ['ids' => ['a']],
-			actorUid: 'admin'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:nietBestaand', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: ['ids' => ['a']])
 		);
 
 		$this->assertFalse($result['ok']);
@@ -326,13 +311,11 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAConditionCannotBeReplayed(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
-		$result = $this->service()->preview(
-			schema: $this->schema(asCalculation: false),
-			ruleId: 'lifecycleCondition:bezwaar:beslissen',
-			selection: ['ids' => ['a']],
-			actorUid: 'admin'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'lifecycleCondition:bezwaar:beslissen', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(asCalculation: false), registerId: null, criteria: ['ids' => ['a']])
 		);
 
 		$this->assertFalse($result['ok']);
@@ -347,13 +330,11 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnEmptySelectionIsRefused(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
-		$result = $this->service()->preview(
-			schema: $this->schema(),
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			selection: [],
-			actorUid: 'admin'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: [])
 		);
 
 		$this->assertFalse($result['ok']);
@@ -370,13 +351,11 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testACountThatFailsRefusesRatherThanRuns(): void {
 		$this->objects->method('countSearchObjects')->willThrowException(new \RuntimeException('no'));
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
-		$result = $this->service()->preview(
-			schema: $this->schema(),
-			ruleId: 'calculation:bezwaar:uiterlijkeDatum',
-			selection: ['query' => []],
-			actorUid: 'admin'
+		$result = $this->service()->previewReplay(
+			request: new RuleReplayRequest(ruleId: 'calculation:bezwaar:uiterlijkeDatum', actorUid: 'admin'),
+			selection: new RuleReplaySelection(schema: $this->schema(), registerId: null, criteria: ['query' => []])
 		);
 
 		$this->assertFalse($result['ok']);

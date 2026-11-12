@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Pins when the registry asks the apps for their deep links, how often, through
@@ -92,8 +93,8 @@ class DeepLinkRegistryRequestGoldenTest extends TestCase {
 	 */
 	public function testResolve(int $registerId, int $schemaId, ?string $expectedApp): void {
 		$registry = new DeepLinkRegistryService($this->container('container'), $this->logger());
-		$registry->register('app-a', 'reg', 'sch', '/a/{uuid}');
-		$registry->register('app-b', 'reg-other', 'sch', '/b/{uuid}');
+		$registry->add(new DeepLinkRegistration('app-a', 'reg', 'sch', '/a/{uuid}'));
+		$registry->add(new DeepLinkRegistration('app-b', 'reg-other', 'sch', '/b/{uuid}'));
 
 		$this->assertSame($expectedApp, $registry->resolve($registerId, $schemaId)?->appId);
 	}//end testResolve()

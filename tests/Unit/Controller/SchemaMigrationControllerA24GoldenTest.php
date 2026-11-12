@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Schema\MigrationRequest;
+use OCA\OpenRegister\Service\Schema\RevalidationRequest;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\SchemaRunJob;
 use OCA\OpenRegister\Controller\SchemaMigrationController;
@@ -30,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -229,8 +232,8 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 	public function testChangelogAndRunsPassNumericPagingOnly(): void {
 		$controller = $this->controller();
 		$this->params = ['_limit' => '5', '_offset' => 'x'];
-		$this->changelog->expects($this->once())->method('findBySchema')->with(3, 5, null)->willReturn([]);
-		$this->runs->expects($this->once())->method('findBySchema')->with(3, 5, null)->willReturn([$this->aRun(1, 3)]);
+		$this->changelog->expects($this->once())->method('findBySchema')->with(3, new ListQuery(limit: 5))->willReturn([]);
+		$this->runs->expects($this->once())->method('findBySchema')->with(3, new ListQuery(limit: 5))->willReturn([$this->aRun(1, 3)]);
 
 		$this->assertSame([200, ['results' => []]], $this->pair($controller->changelog(3)));
 		$this->assertSame([200, ['results' => [$this->aRun(1, 3)->jsonSerialize()]]], $this->pair($controller->runs(3)));
@@ -242,7 +245,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->missing(), new Schema(), new Schema(), new Schema());
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9, 9);
 		$this->params = ['proposedDefinition' => 'bad'];
-		$this->revalidation->method('start')->with(3, 9, null, 'alice')->willReturnOnConsecutiveCalls(
+		$this->revalidation->method('startRevalidation')->with(new RevalidationRequest(3, 9, null), 'alice')->willReturnOnConsecutiveCalls(
 			$this->throwException(new SchemaRunConcurrencyException('busy')),
 			$this->aRun(11, 3)
 		);
@@ -285,7 +288,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9);
 		$this->assertSame([422, ['error' => 'No register contains this schema']], $this->pair($controller->previewMigration(3)));
 
-		$this->migration->method('preview')->with(3, 9, [['op' => 'x']], 4)->willReturn([['before' => 1]]);
+		$this->migration->method('previewSample')->with(new MigrationRequest(3, 9, [['op' => 'x']]), 4)->willReturn([['before' => 1]]);
 		$this->assertSame([200, ['results' => [['before' => 1]]]], $this->pair($controller->previewMigration(3)));
 	}
 
@@ -299,7 +302,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9, 9, 9);
 		$this->assertSame([422, ['error' => 'No register contains this schema']], $this->pair($controller->migrate(3)));
 
-		$this->migration->method('start')->with(3, 9, ['p'], [], null)->willReturnOnConsecutiveCalls(
+		$this->migration->method('startMigration')->with(new MigrationRequest(3, 9, ['p'], []), null)->willReturnOnConsecutiveCalls(
 			$this->throwException(new InvalidArgumentException('bad')),
 			$this->throwException(new SchemaRunConcurrencyException('busy')),
 			$this->aRun(12, 3)

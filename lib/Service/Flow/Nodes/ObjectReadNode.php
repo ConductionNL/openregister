@@ -69,7 +69,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -213,16 +215,17 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 	 * their own answers. It is the same contract every other item-driven node
 	 * follows.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata (carries the triggering user).
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each with the read's results added.
 	 *
 	 * @throws RuntimeException When the run has no resolvable owner.
 	 * @throws UnexpectedValueException When the register or schema does not resolve.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->readEach(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 
@@ -307,7 +310,10 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			// not an error: "nothing to reap" is the ordinary case.
 			return array_values(
 				array_map(
-					static fn (array $record): array => FlowItems::item(json: array_merge($json, $record), binary: $binary, fromItemIndex: (int)$index),
+					static fn (array $record): array => FlowItems::item(
+						json: array_merge($json, $record),
+						options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index)
+					),
 					$records
 				)
 			);
@@ -315,7 +321,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 
 		$json[$this->outputKey(config: $run->step->config)] = $records;
 
-		return [FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index)];
+		return [FlowItems::item(json: $json, options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index))];
 	}//end itemsFor()
 
 	/**

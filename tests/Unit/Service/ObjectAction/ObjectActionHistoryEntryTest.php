@@ -41,9 +41,9 @@ class ObjectActionHistoryEntryTest extends TestCase {
 	 */
 	private function entries(array $rows): array {
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('findAll')->willReturn($rows);
+		$audit->method('findTrail')->willReturn($rows);
 		$gate = $this->createMock(ObjectActionGate::class);
-		$gate->method('may')->willReturn(true);
+		$gate->method('holds')->willReturn(true);
 		$object = new ObjectEntity();
 		$object->setUuid('o-1');
 

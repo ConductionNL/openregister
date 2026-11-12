@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -48,25 +49,23 @@ class ImportPreviewRowMapper extends QBMapper implements ImportPreviewRowMapperI
 	/**
 	 * One page of a preview's rows, in file order.
 	 *
-	 * @param int $previewId The preview id.
-	 * @param string|null $decision Optional decision filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param int       $previewId The preview id.
+	 * @param ListQuery $query     The page (unbounded for every row) and an optional `decision` filter.
 	 *
 	 * @return ImportPreviewRow[] The rows.
 	 */
-	public function findByPreview(int $previewId, ?string $decision = null, ?int $limit = null, ?int $offset = null): array {
+	public function findByPreview(int $previewId, ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('preview_id', $qb->createNamedParameter($previewId, IQueryBuilder::PARAM_INT)))
 			->orderBy('source_row', 'ASC');
 
-		if ($decision !== null) {
-			$qb->andWhere($qb->expr()->eq('decision', $qb->createNamedParameter($decision)));
+		if (($query->filters['decision'] ?? null) !== null) {
+			$qb->andWhere($qb->expr()->eq('decision', $qb->createNamedParameter($query->filters['decision'])));
 		}
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByPreview()

@@ -60,6 +60,24 @@ use OCA\OpenRegister\Command\Support\PurgeSwitches;
 class PurgeObjectCommand extends Command {
 
 	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'import-job' => [
+			InputOption::VALUE_REQUIRED,
+			'Also purge every object this import job created, such as an app\'s example set',
+		],
+		'force' => [
+			InputOption::VALUE_NONE,
+			'Also purge records on archival schemas, and records that are still live',
+		],
+		'apply' => [
+			InputOption::VALUE_NONE,
+			'Actually destroy the rows. Without it the command reports what it would do',
+		],
+	];
+
+	/**
 	 * Magic-table object lookup and delete.
 	 *
 	 * @var MagicMapperInterface
@@ -106,25 +124,10 @@ class PurgeObjectCommand extends Command {
 				name: 'uuid',
 				mode: InputArgument::IS_ARRAY,
 				description: 'One or more object UUIDs to purge (optional with --import-job)'
-			)
-			->addOption(
-				name: 'import-job',
-				shortcut: null,
-				mode: InputOption::VALUE_REQUIRED,
-				description: 'Also purge every object this import job created, such as an app\'s example set'
-			)
-			->addOption(
-				name: 'force',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Also purge records on archival schemas, and records that are still live'
-			)
-			->addOption(
-				name: 'apply',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Actually destroy the rows. Without it the command reports what it would do'
 			);
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 	}//end configure()
 
 	/**
@@ -151,28 +154,87 @@ class PurgeObjectCommand extends Command {
 		}
 
 		$run = new PurgeRun(switches: $switches, output: $output);
-		$failures = 0;
-		foreach ($uuids as $uuid) {
-			$failures += $this->purgeNamed(run: $run, uuid: $uuid);
-		}
+		$failures = $this->purgeEachNamed(run: $run, uuids: $uuids);
 
 		// In job mode a missing object was removed already, so a re-run after
 		// a partial purge reports it rather than failing on it.
-		foreach (array_diff(($fromJob ?? []), $uuids) as $uuid) {
-			$failures += $this->purgeFromJob(run: $run, uuid: $uuid);
-		}
+		$failures += $this->purgeEachFromJob(run: $run, uuids: array_diff(($fromJob ?? []), $uuids));
 
-		if ($switches->apply === false) {
-			$output->writeln('');
-			$output->writeln('<comment>Dry run. Re-run with --apply to destroy these rows.</comment>');
-		}
+		self::noteDryRun(run: $run);
 
+		return self::exitCode(failures: $failures);
+	}//end execute()
+
+	/**
+	 * 1 when any named object was refused or failed, 0 otherwise.
+	 *
+	 * @param int $failures How many were refused or failed.
+	 *
+	 * @return int The exit code.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private static function exitCode(int $failures): int {
 		if ($failures > 0) {
 			return 1;
 		}
 
 		return 0;
-	}//end execute()
+	}//end exitCode()
+
+	/**
+	 * Purge each object named on the command line.
+	 *
+	 * @param PurgeRun           $run   The run.
+	 * @param array<int, string> $uuids The named UUIDs.
+	 *
+	 * @return int How many were refused or failed.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function purgeEachNamed(PurgeRun $run, array $uuids): int {
+		$failures = 0;
+		foreach ($uuids as $uuid) {
+			$failures += $this->purgeNamed(run: $run, uuid: $uuid);
+		}
+
+		return $failures;
+	}//end purgeEachNamed()
+
+	/**
+	 * Purge each object of the import job that was not also named.
+	 *
+	 * @param PurgeRun           $run   The run.
+	 * @param array<int, string> $uuids The job's remaining UUIDs.
+	 *
+	 * @return int How many were refused or failed.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function purgeEachFromJob(PurgeRun $run, array $uuids): int {
+		$failures = 0;
+		foreach ($uuids as $uuid) {
+			$failures += $this->purgeFromJob(run: $run, uuid: $uuid);
+		}
+
+		return $failures;
+	}//end purgeEachFromJob()
+
+	/**
+	 * Close a dry run with the note that nothing was destroyed.
+	 *
+	 * @param PurgeRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private static function noteDryRun(PurgeRun $run): void {
+		if ($run->switches->apply === false) {
+			$run->output->writeln('');
+			$run->output->writeln('<comment>Dry run. Re-run with --apply to destroy these rows.</comment>');
+		}
+	}//end noteDryRun()
 
 	/**
 	 * The objects an import job created, or null when no job was named.
@@ -281,16 +343,26 @@ class PurgeObjectCommand extends Command {
 			return 1;
 		}
 
-		$note = '';
-		if ($candidate->isArchival() === true) {
-			$note = ' <comment>(ARCHIVAL RECORD)</comment>';
-		}
-
 		if ($run->switches->apply === false) {
+			$note = self::archivalNote(candidate: $candidate);
 			$run->output->writeln(sprintf('would purge %s from "%s"%s', $candidate->uuid, $candidate->label(), $note));
 			return 0;
 		}
 
+		return $this->destroy(run: $run, candidate: $candidate);
+	}//end purgeCandidate()
+
+	/**
+	 * Destroy a candidate that passed the refusal check, and print the outcome.
+	 *
+	 * @param PurgeRun       $run       The run.
+	 * @param PurgeCandidate $candidate The object, cleared for purging.
+	 *
+	 * @return int 1 when the delete failed, 0 otherwise.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private function destroy(PurgeRun $run, PurgeCandidate $candidate): int {
 		try {
 			$this->objectMapper->delete($candidate->object);
 		} catch (\Throwable $e) {
@@ -298,9 +370,27 @@ class PurgeObjectCommand extends Command {
 			return 1;
 		}
 
+		$note = self::archivalNote(candidate: $candidate);
 		$run->output->writeln(sprintf('<info>purged</info> %s from "%s"%s', $candidate->uuid, $candidate->label(), $note));
 		return 0;
-	}//end purgeCandidate()
+	}//end destroy()
+
+	/**
+	 * The note that marks an archival record in a purge line, or nothing.
+	 *
+	 * @param PurgeCandidate $candidate The object.
+	 *
+	 * @return string The note, with its leading space.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 */
+	private static function archivalNote(PurgeCandidate $candidate): string {
+		if ($candidate->isArchival() === true) {
+			return ' <comment>(ARCHIVAL RECORD)</comment>';
+		}
+
+		return '';
+	}//end archivalNote()
 
 	/**
 	 * Why this object may not be purged, or null when it may.

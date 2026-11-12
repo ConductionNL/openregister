@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -119,7 +121,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 		try {
 			$register = (string)($subject['register'] ?? '');
 			$schema = (string)($subject['schema'] ?? '');
-			$flowIds = $this->resolvers->flowsForTrigger($event, $register, $schema);
+			$flowIds = $this->resolvers->flowsForEvent(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
 			if ($flowIds === []) {
 				return 0;
 			}
@@ -134,12 +136,14 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 				// flow wired to the same event. Log it against the flow and
 				// keep queuing the rest.
 				try {
-					$run = $this->runner->queue(
+					$run = $this->runner->queueRun(
 						flowId: $flowId,
-						subject: $subject,
-						trigger: $event,
-						context: $trigger->context,
-						user: $trigger->user
+						options: new FlowRunQueueOptions(
+							subject: $subject,
+							trigger: $event,
+							context: $trigger->context,
+							user: $trigger->user
+						)
 					);
 				} catch (Throwable $one) {
 					$this->logger->error(
@@ -219,20 +223,31 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 			return;
 		}
 
-		// Mirrors the worker's seeding rule: a run with a subject carries the
+		// Mirrors the worker's seeding rule ({@see FlowRunAdvancer::advance()},
+		// which this must not drift from): a run with a subject carries the
 		// object, a subjectless one (a file, a user) is seeded from the payload
-		// its trigger recorded on the context.
+		// its trigger recorded on the context. A deleted subject with a
+		// snapshot under `payload` takes the same seeded path rather than
+		// falling through to the worker — `object.deleted` can never re-resolve
+		// by design, so returning here for that case would silently turn a
+		// `sync` flow's one guarantee (it runs inside the triggering call) into
+		// an async one, for this trigger only. Scoped to `object.deleted`
+		// specifically: every other trigger's unresolved subject is a genuine
+		// resolution failure and must still fall through to the worker's
+		// ordinary handling, not run inline on stale data.
 		$seed = null;
 		$object = null;
 		$uuid = trim((string)($subject['uuid'] ?? ''));
 		if ($uuid !== '') {
-			$object = $this->resolvers->resolveSubject(
-				$uuid,
-				(string)($subject['register'] ?? ''),
-				(string)($subject['schema'] ?? '')
+			$object = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)($subject['register'] ?? ''),
+					schema: (string)($subject['schema'] ?? ''),
+					id: $uuid
+				)
 			);
 
-			if ($object === null) {
+			if ($object === null && $run->hasDeletedSubjectSnapshot() === false) {
 				return;
 			}
 		}
@@ -245,7 +260,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 			}
 		}
 
-		$this->runner->execute(run: $run, flow: $flow, subject: $object, seedItems: $seed);
+		$this->runner->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: $object), origin: new FlowRunOrigin(items: $seed));
 
 	}//end runInline()
 }//end class

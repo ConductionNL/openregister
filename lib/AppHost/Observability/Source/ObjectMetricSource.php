@@ -92,10 +92,28 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 */
 	public function collect(string $appId, MetricDescriptor $descriptor): array {
 		$source = $descriptor->source;
-		$help = $descriptor->help ?? sprintf('%s for %s', $descriptor->kind, $source['schema'] ?? 'objects');
+		$help   = $descriptor->help ?? sprintf('%s for %s', $descriptor->kind, $source['schema'] ?? 'objects');
 
+		$baseQuery = $this->resolvedBaseQuery(appId: $appId, descriptor: $descriptor);
+		if ($baseQuery === null) {
+			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [])];
+		}
+
+		$samples = $this->samplesFor(descriptor: $descriptor, baseQuery: $baseQuery);
+		return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
+	}//end collect()
+
+	/**
+	 * The base query of a descriptor; null, logged, when its register or schema does not resolve.
+	 *
+	 * @param string           $appId      Calling app id.
+	 * @param MetricDescriptor $descriptor The metric descriptor.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function resolvedBaseQuery(string $appId, MetricDescriptor $descriptor): ?array {
 		try {
-			$baseQuery = $this->buildBaseQuery(source: $source);
+			return $this->buildBaseQuery(source: $descriptor->source);
 		} catch (Throwable $e) {
 			$logMessage = sprintf(
 				'[AppHost\\Metrics] objectCount "%s" (app %s) could not resolve register/schema: %s',
@@ -103,28 +121,47 @@ class ObjectMetricSource implements MetricSourceInterface {
 				$appId,
 				$e->getMessage()
 			);
-			$this->lookups->logger->warning(
-				message: $logMessage,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [])];
+			$this->warn(message: $logMessage);
+			return null;
 		}
+	}//end resolvedBaseQuery()
 
-		$groupBy = $source['groupBy'] ?? [];
-		$field = null;
+	/**
+	 * Log a collection failure as a warning.
+	 *
+	 * @param string $message What failed.
+	 *
+	 * @return void
+	 */
+	private function warn(string $message): void {
+		$this->lookups->logger->warning(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warn()
+
+	/**
+	 * The samples of a descriptor: one aggregate, or one per group.
+	 *
+	 * @param MetricDescriptor     $descriptor The metric descriptor.
+	 * @param array<string, mixed> $baseQuery  The resolved base query.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function samplesFor(MetricDescriptor $descriptor, array $baseQuery): array {
+		$groupBy = $descriptor->source['groupBy'] ?? [];
+		$field   = null;
 		if ($descriptor->kind === 'objectSum') {
-			$field = (string)$source['field'];
+			$field = (string)$descriptor->source['field'];
 		}
 
 		if (is_array($groupBy) === true && $groupBy !== []) {
 			$buckets = $this->bucketsFor(baseQuery: $baseQuery, groupBy: array_values($groupBy));
-			$samples = $this->groupedSamples(buckets: $buckets, field: $field);
-		} else {
-			$samples = [['labels' => [], 'value' => $this->aggregate(query: $baseQuery, field: $field)]];
+			return $this->groupedSamples(buckets: $buckets, field: $field);
 		}
 
-		return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
-	}//end collect()
+		return [['labels' => [], 'value' => $this->aggregate(query: $baseQuery, field: $field)]];
+	}//end samplesFor()
 
 	/**
 	 * Build the base search query (register/schema numeric ids + filters).

@@ -97,34 +97,63 @@ class ObjectCleanupJob extends ActorForwardedJob {
 				continue;
 			}
 
-			// Re-create guard: a live object under this UUID means the id came
-			// back between the delete and this job. Its relations belong to
-			// the NEW object; wiping them would be data loss.
-			if ($this->resolver->resolve(entry: $entry) !== null) {
-				$this->logger->info(
-					message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
-				continue;
-			}
-
-			try {
-				$this->cleanup->cleanup(objectUuid: $uuid);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ObjectCleanupJob] Cleanup failed for entry',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
+			$this->cleanUpEntry(entry: $entry, uuid: $uuid);
+		}
 	}//end runDeferred()
+
+	/**
+	 * Clean up after one deleted object, unless its UUID is live again.
+	 *
+	 * @param array<string, mixed> $entry The deferred entry.
+	 * @param string               $uuid  The deleted object's UUID.
+	 *
+	 * @return void
+	 */
+	private function cleanUpEntry(array $entry, string $uuid): void {
+		if ($this->isLiveAgain(entry: $entry, uuid: $uuid) === true) {
+			return;
+		}
+
+		try {
+			$this->cleanup->cleanup(objectUuid: $uuid);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ObjectCleanupJob] Cleanup failed for entry',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $uuid,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end cleanUpEntry()
+
+	/**
+	 * Whether a live object holds this UUID again, logged when it does.
+	 *
+	 * Re-create guard: a live object under this UUID means the id came back
+	 * between the delete and this job. Its relations belong to the NEW object;
+	 * wiping them would be data loss.
+	 *
+	 * @param array<string, mixed> $entry The deferred entry.
+	 * @param string               $uuid  The deleted object's UUID.
+	 *
+	 * @return bool
+	 */
+	private function isLiveAgain(array $entry, string $uuid): bool {
+		if ($this->resolver->resolve(entry: $entry) === null) {
+			return false;
+		}
+
+		$this->logger->info(
+			message: '[ObjectCleanupJob] UUID resolves to a live object again — skipping deferred cleanup',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+		return true;
+	}//end isLiveAgain()
 }//end class

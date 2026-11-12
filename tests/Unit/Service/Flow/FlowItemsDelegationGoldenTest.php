@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\LiveSubject;
+use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -90,9 +93,9 @@ final class FlowItemsDelegationGoldenTest extends TestCase {
 		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: []));
 		$this->assertSame(
 			['json' => ['x' => 1], 'binary' => ['b' => 1], 'pairedItem' => ['item' => 0], 'output' => 'o'],
-			FlowItems::item(json: ['x' => 1], binary: ['b' => 1], fromItemIndex: 0, output: 'o')
+			FlowItems::item(json: ['x' => 1], options: new FlowItemOptions(binary: ['b' => 1], fromItemIndex: 0, output: 'o'))
 		);
-		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: [], binary: [], fromItemIndex: null, output: ''));
+		$this->assertSame(['json' => [], 'binary' => [], 'pairedItem' => null], FlowItems::item(json: [], options: new FlowItemOptions(binary: [], fromItemIndex: null, output: '')));
 		$this->assertNull(FlowItems::outputOf(member: ['output' => 5]));
 		$this->assertSame('a', FlowItems::outputOf(member: ['output' => 'a']));
 	}//end testItemAndOutput()
@@ -178,10 +181,10 @@ final class FlowItemsDelegationGoldenTest extends TestCase {
 				'k7' => ['json' => ['@self' => ['id' => 'other'], 'id' => 'u1', 'status' => 'old']],
 				'k8' => ['json' => ['id' => 'other', 'uuid' => 'u1', 'status' => 'old']],
 			],
-			FlowItems::refreshSubjectProjection(items: $items, subject: $subject, subjectUuid: ' u1 ')
+			FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: $subject, uuid: ' u1 '))
 		);
-		$this->assertSame($items, FlowItems::refreshSubjectProjection(items: $items, subject: $subject, subjectUuid: '  '));
-		$this->assertSame([], FlowItems::refreshSubjectProjection(items: [], subject: $subject, subjectUuid: 'u1'));
-		$this->assertSame($items, FlowItems::refreshSubjectProjection(items: $items, subject: new stdClass(), subjectUuid: 'u1'));
+		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: $subject, uuid: '  ')));
+		$this->assertSame([], FlowSubjectItems::refreshSubjectProjection(items: [], subject: new LiveSubject(subject: $subject, uuid: 'u1')));
+		$this->assertSame($items, FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: new stdClass(), uuid: 'u1')));
 	}//end testRefreshMatchesEveryIdentitySpelling()
 }//end class

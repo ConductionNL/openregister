@@ -28,6 +28,7 @@ use OCA\OpenRegister\Controller\DsarController;
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\DsarServiceInterface;
+use OCA\OpenRegister\Service\DsarSubjectQuery;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -106,14 +107,14 @@ class DsarControllerBehaviourTest extends TestCase {
 
 	public function testAccessDefaultsToExactModeWithoutAType(): void {
 		$rows = [['object' => ['id' => 1]], ['object' => ['id' => 2]]];
-		$this->dsar->expects($this->once())->method('findObjectsForSubject')->with('alice', null, 'exact')->willReturn($rows);
+		$this->dsar->expects($this->once())->method('findObjectsFor')->with(new DsarSubjectQuery(subject: 'alice', type: null, mode: 'exact'))->willReturn($rows);
 
 		$response = $this->controller(['subject' => 'alice', 'type' => ''])->access();
 		$this->assertSame(['subject' => 'alice', 'type' => '', 'count' => 2, 'results' => $rows], $response->getData());
 	}
 
 	public function testAccessPassesTheTypeAndMode(): void {
-		$this->dsar->expects($this->once())->method('findObjectsForSubject')->with('alice', 'email', 'fuzzy')->willReturn([]);
+		$this->dsar->expects($this->once())->method('findObjectsFor')->with(new DsarSubjectQuery(subject: 'alice', type: 'email', mode: 'fuzzy'))->willReturn([]);
 		$data = $this->controller(['subject' => 'alice', 'type' => 'email', 'mode' => 'fuzzy'])->access()->getData();
 		$this->assertSame(0, $data['count']);
 		$this->assertSame('email', $data['type']);
@@ -121,7 +122,7 @@ class DsarControllerBehaviourTest extends TestCase {
 
 	public function testPortabilityExportsOnlyTheObjects(): void {
 		$rows = [['object' => ['id' => 1], 'schema' => 's'], ['object' => ['id' => 2], 'schema' => 's']];
-		$this->dsar->expects($this->once())->method('findObjectsForSubject')->with('alice', 'bsn', 'exact')->willReturn($rows);
+		$this->dsar->expects($this->once())->method('findObjectsFor')->with(new DsarSubjectQuery(subject: 'alice', type: 'bsn', mode: 'exact'))->willReturn($rows);
 
 		$data = $this->controller(['subject' => 'alice', 'type' => 'bsn'])->portability()->getData();
 		$this->assertSame([['id' => 1], ['id' => 2]], $data['objects']);
@@ -131,13 +132,13 @@ class DsarControllerBehaviourTest extends TestCase {
 	}
 
 	public function testPortabilityWithoutATypeSearchesAllTypes(): void {
-		$this->dsar->expects($this->once())->method('findObjectsForSubject')->with('alice', null, 'exact')->willReturn([]);
+		$this->dsar->expects($this->once())->method('findObjectsFor')->with(new DsarSubjectQuery(subject: 'alice', type: null, mode: 'exact'))->willReturn([]);
 		$this->assertSame([], $this->controller(['subject' => 'alice'])->portability()->getData()['objects']);
 	}
 
 	public function testErasureIsADryRunOnlyWhenAsked(): void {
-		$this->dsar->expects($this->exactly(2))->method('eraseObjectsForSubject')
-			->willReturnCallback(static fn (string $s, ?string $t, bool $dry): array => ['type' => $t, 'dryRun' => $dry]);
+		$this->dsar->expects($this->exactly(2))->method('eraseObjectsFor')
+			->willReturnCallback(static fn (DsarSubjectQuery $q, bool $dry): array => ['type' => $q->type, 'dryRun' => $dry]);
 
 		$dry = $this->controller(['subject' => 'alice', 'type' => 'email', 'dryRun' => 'true'])->erasure();
 		$this->assertSame(['type' => 'email', 'dryRun' => true], $dry->getData());

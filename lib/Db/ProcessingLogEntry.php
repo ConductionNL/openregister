@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ProcessingLogEntry\ProcessingLogEntryFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -77,6 +78,8 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields) One field per column of the append-only processing-log row.
  */
 class ProcessingLogEntry extends Entity implements JsonSerializable {
+	// Serialises as the canonical VNG verwerkingsactie JSON shape: every registered field, in registration order.
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * VNG resource identity.
@@ -201,52 +204,8 @@ class ProcessingLogEntry extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'activityId', type: 'string');
-		$this->addType(fieldName: 'action', type: 'string');
-		$this->addType(fieldName: 'actor', type: 'string');
-		$this->addType(fieldName: 'channel', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'string');
-		$this->addType(fieldName: 'schemaId', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'subjectIdType', type: 'string');
-		$this->addType(fieldName: 'subjectIdValue', type: 'string');
-		$this->addType(fieldName: 'objectCount', type: 'integer');
-		$this->addType(fieldName: 'objectUuids', type: 'json');
-		$this->addType(fieldName: 'subjectIds', type: 'json');
-		$this->addType(fieldName: 'queryParams', type: 'json');
-		$this->addType(fieldName: 'confidential', type: 'boolean');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-
+		foreach (ProcessingLogEntryFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
-
-	/**
-	 * Render the entry as the canonical VNG verwerkingsactie JSON shape.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'activityId' => $this->activityId,
-			'action' => $this->action,
-			'actor' => $this->actor,
-			'channel' => $this->channel,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'objectUuid' => $this->objectUuid,
-			'subjectIdType' => $this->subjectIdType,
-			'subjectIdValue' => $this->subjectIdValue,
-			'objectCount' => $this->objectCount,
-			'objectUuids' => $this->objectUuids,
-			'subjectIds' => $this->subjectIds,
-			'queryParams' => $this->queryParams,
-			'confidential' => $this->confidential,
-			'organisationId' => $this->organisationId,
-			'created' => $this->created?->format('c'),
-		];
-
-	}//end jsonSerialize()
 }//end class

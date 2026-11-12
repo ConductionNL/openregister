@@ -32,6 +32,58 @@ use DateTime;
  */
 class HtmlReportWriter {
 	/**
+	 * The report's inline stylesheet — print-friendly + WCAG-AA contrast.
+	 *
+	 * @var string
+	 */
+	private const STYLESHEET = <<<CSS
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 24px;
+    color: #1f1f1f;
+    background: #fff;
+}
+.report-header h1 { margin: 0 0 8px; font-size: 24px; }
+.report-description { color: #555; margin: 0 0 4px; }
+.report-meta { color: #888; font-size: 12px; margin: 0 0 24px; }
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+.widget {
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 16px;
+    page-break-inside: avoid;
+}
+.widget-header h2 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.widget-subtitle { margin: 0 0 12px; font-size: 12px; color: #888; }
+.widget-headline { font-size: 32px; font-weight: 700; line-height: 1; }
+.widget-error { color: #b30000; font-size: 13px; }
+.widget-empty { color: #888; font-size: 13px; }
+.widget-table { width: 100%; border-collapse: collapse; }
+.widget-table th, .widget-table td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+.widget-table th { color: #555; font-size: 12px; }
+.widget-table td.num, .widget-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.widget-stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; }
+.widget-stats dt { color: #555; font-size: 12px; text-transform: capitalize; }
+.widget-stats dd { margin: 0; font-weight: 600; font-family: monospace; text-align: right; }
+@media print {
+    body { margin: 12px; }
+    .widget { break-inside: avoid; }
+}
+CSS;
+
+	/**
 	 * Render the HTML.
 	 *
 	 * @param array<string, mixed> $dashboard Dashboard payload.
@@ -208,53 +260,7 @@ HTML;
 	 * @return string CSS source.
 	 */
 	private function css(): string {
-		return <<<CSS
-* { box-sizing: border-box; }
-body {
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 24px;
-    color: #1f1f1f;
-    background: #fff;
-}
-.report-header h1 { margin: 0 0 8px; font-size: 24px; }
-.report-description { color: #555; margin: 0 0 4px; }
-.report-meta { color: #888; font-size: 12px; margin: 0 0 24px; }
-.report-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-}
-.widget {
-    background: #fff;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    padding: 16px;
-    page-break-inside: avoid;
-}
-.widget-header h2 {
-    margin: 0 0 4px;
-    font-size: 13px;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.widget-subtitle { margin: 0 0 12px; font-size: 12px; color: #888; }
-.widget-headline { font-size: 32px; font-weight: 700; line-height: 1; }
-.widget-error { color: #b30000; font-size: 13px; }
-.widget-empty { color: #888; font-size: 13px; }
-.widget-table { width: 100%; border-collapse: collapse; }
-.widget-table th, .widget-table td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
-.widget-table th { color: #555; font-size: 12px; }
-.widget-table td.num, .widget-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
-.widget-stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; }
-.widget-stats dt { color: #555; font-size: 12px; text-transform: capitalize; }
-.widget-stats dd { margin: 0; font-weight: 600; font-family: monospace; text-align: right; }
-@media print {
-    body { margin: 12px; }
-    .widget { break-inside: avoid; }
-}
-CSS;
-
+		return self::STYLESHEET;
 	}//end css()
 
 	/**

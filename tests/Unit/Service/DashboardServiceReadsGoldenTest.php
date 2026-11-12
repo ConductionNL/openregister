@@ -25,6 +25,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -97,18 +99,19 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$objects->method($m)->willThrowException($boom);
 			}
 
-			foreach (['getStatistics', 'getActionChartData', 'getDetailedStatistics', 'getActionDistribution', 'getMostActiveObjects'] as $m) {
+			foreach (['statisticsTotals', 'actionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
 				$audit->method($m)->willThrowException($boom);
 			}
 		} else {
-			$objects->method('getStatistics')->willReturnCallback(function (...$args): array {
+			$objects->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope): array {
+				$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 				$this->logged[] = 'objects.getStatistics ' . json_encode($args);
 				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
 			});
-			$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+			$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 				$this->logged[] = 'audit.getStatistics ' . json_encode($args);
 				return ['total' => 21, 'size' => 22];
-			});
+			}));
 			$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 		}
 

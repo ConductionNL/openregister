@@ -4,7 +4,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<SelectedObjectsDialogFrame
 		:name="
 			n(
 				'openregister',
@@ -14,85 +14,52 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				{ count: selectedObjects.length },
 			)
 		"
-		noClose
-		size="normal">
-		<!-- Object Selection Review -->
-		<div v-if="success === null" class="validate-step">
-			<h3 class="step-title">
-				{{ t('openregister', 'Confirm validation') }}
-			</h3>
-
-			<NcNoteCard type="info">
-				{{
-					t(
-						'openregister',
-						'Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.',
-					)
-				}}<br /><br />
-				{{
-					t(
-						'openregister',
-						'We save each object unchanged, which checks it against the current schema.',
-					)
-				}}
-			</NcNoteCard>
-
-			<SelectedObjectsList
-				:objects="selectedObjects"
-				:emptyDescription="
-					t('openregister', 'Select objects in the list to validate them.')
-				"
-				@remove="removeObject" />
-		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>
-				{{
-					n(
-						'openregister',
-						'{count} object validated',
-						'{count} objects validated',
-						validatedCount,
-						{ count: validatedCount },
-					)
-				}}
-			</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || selectedObjects.length === 0"
-				variant="primary"
-				@click="validateObjects()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<CheckCircle v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Validate') }}
-			</NcButton>
+		stepClass="validate-step"
+		:title="t('openregister', 'Confirm validation')"
+		:objects="selectedObjects"
+		:emptyDescription="
+			t('openregister', 'Select objects in the list to validate them.')
+		"
+		:success="success"
+		:successText="
+			n(
+				'openregister',
+				'{count} object validated',
+				'{count} objects validated',
+				validatedCount,
+				{ count: validatedCount },
+			)
+		"
+		:error="error"
+		:loading="loading"
+		:actionLabel="t('openregister', 'Validate')"
+		actionVariant="primary"
+		@close="closeDialog"
+		@remove="removeObject"
+		@submit="validateObjects()">
+		<template #intro>
+			{{
+				t(
+					'openregister',
+					'Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.',
+				)
+			}}<br /><br />
+			{{
+				t(
+					'openregister',
+					'We save each object unchanged, which checks it against the current schema.',
+				)
+			}}
 		</template>
-	</NcDialog>
+		<template #actionIcon>
+			<CheckCircle :size="20" />
+		</template>
+	</SelectedObjectsDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import SelectedObjectsDialogFrame from './SelectedObjectsDialogFrame.vue'
 import selectedObjectsDialog, {
 	refreshObjectLists,
 } from './selectedObjectsDialog.js'
@@ -100,14 +67,9 @@ import selectedObjectsDialog, {
 export default {
 	name: 'MassValidateObjects',
 	components: {
-		SelectedObjectsList,
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
+		SelectedObjectsDialogFrame,
 		// Icons
 		CheckCircle,
-		Cancel,
 	},
 
 	mixins: [selectedObjectsDialog],
@@ -176,16 +138,26 @@ export default {
 				refreshObjectLists()
 			}
 			if (failed > 0) {
-				this.error = n(
-					'openregister',
-					'{count} object could not be validated',
-					'{count} objects could not be validated',
-					failed,
-					{ count: failed },
-				)
+				this.error = this.notValidatedText(failed)
 				return
 			}
 			this.closeModalTimeout = setTimeout(() => this.closeDialog(), 2000)
+		},
+
+		/**
+		 * Why some objects are not validated: how many failed.
+		 *
+		 * @param {number} failed The objects that could not be validated
+		 * @return {string} The message
+		 */
+		notValidatedText(failed) {
+			return n(
+				'openregister',
+				'{count} object could not be validated',
+				'{count} objects could not be validated',
+				failed,
+				{ count: failed },
+			)
 		},
 
 		/**
@@ -203,13 +175,3 @@ export default {
 	},
 }
 </script>
-
-<style scoped lang="scss">
-@use '../../styles/modals.scss' as *;
-
-.validate-step {
-	padding: 0;
-}
-
-@include step-title;
-</style>

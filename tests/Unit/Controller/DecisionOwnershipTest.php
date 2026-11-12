@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\EntityRelationsController;
@@ -76,6 +77,20 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
+ * @uses \OCA\OpenRegister\Controller\Support\AuthDenialWarning
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationPatch
+ * @uses \OCA\OpenRegister\Db\DecisionMetadataEdit
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform
+ * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
+ * @uses \OCA\OpenRegister\Service\Decision\RelationDecisionStores
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners
  */
 class DecisionOwnershipTest extends TestCase {
 
@@ -149,7 +164,8 @@ class DecisionOwnershipTest extends TestCase {
 		$relations = $this->createMock(EntityRelationMapper::class);
 		$relations->method('find')->willReturnCallback(fn (): EntityRelation => $this->relation);
 		$relations->method('updateDecisionMetadata')->willReturnCallback(
-			static function (EntityRelation $relation, array $fields): EntityRelation {
+			static function (DecisionMetadataEdit $edit): EntityRelation {
+				[$relation, $fields] = [$edit->relation, $edit->fields];
 				if (array_key_exists('bases', $fields) === true) {
 					$relation->setBases($fields['bases']);
 				}
@@ -232,7 +248,8 @@ class DecisionOwnershipTest extends TestCase {
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
 				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
-			)
+			),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end controllerAs()
 

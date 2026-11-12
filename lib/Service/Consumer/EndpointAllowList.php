@@ -48,23 +48,6 @@ class EndpointAllowList {
 	}//end __construct()
 
 	/**
-	 * Refuse a user outside an endpoint's allow-list (empty lists allow everyone).
-	 *
-	 * @param IUser $user   The authenticated user.
-	 * @param array $users  Allowed uids or e-mail addresses.
-	 * @param array $groups Allowed group ids.
-	 *
-	 * @return void
-	 *
-	 * @throws AuthenticationException When the user is in neither list.
-	 *
-	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
-	 */
-	public function assertAllowed(IUser $user, array $users, array $groups): void {
-		$this->assertAdmits(user: $user, audience: new EndpointAudience(users: $users, groups: $groups));
-	}//end assertAllowed()
-
-	/**
 	 * Refuse a user the audience does not admit (an open audience admits everyone).
 	 *
 	 * @param IUser            $user     The authenticated user.

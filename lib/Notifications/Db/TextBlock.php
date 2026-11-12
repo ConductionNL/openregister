@@ -27,8 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use JsonSerializable;
-use OCP\AppFramework\Db\Entity;
 
 /**
  * TextBlock.
@@ -56,28 +54,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
-class TextBlock extends Entity implements JsonSerializable {
-
-	/**
-	 * The stable id of the block.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $uuid = null;
-
-	/**
-	 * The name the block is administered under.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $slug = null;
-
-	/**
-	 * The label a handler picks from a list.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $title = null;
+class TextBlock extends AdministeredDeclaration {
 
 	/**
 	 * The text, with `{{ placeholders }}` the substitution fills in.
@@ -87,20 +64,6 @@ class TextBlock extends Entity implements JsonSerializable {
 	protected ?string $body = null;
 
 	/**
-	 * The register the block is scoped to, or null for every register.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $register = null;
-
-	/**
-	 * The schema the block is scoped to, or null for every schema.
-	 *
-	 * @var string|null
-	 */
-	protected ?string $schema = null;
-
-	/**
 	 * The group the block is scoped to, or null for everybody.
 	 *
 	 * @var string|null
@@ -108,32 +71,14 @@ class TextBlock extends Entity implements JsonSerializable {
 	protected ?string $groupId = null;
 
 	/**
-	 * When the block was administered.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $created = null;
-
-	/**
-	 * When it last changed.
-	 *
-	 * @var DateTime|null
-	 */
-	protected ?DateTime $updated = null;
-
-	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
+		$this->addNameTypes();
 		$this->addType(fieldName: 'body', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
+		$this->addScopeTypes();
 		$this->addType(fieldName: 'groupId', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addTimestampTypes();
 
 	}//end __construct()
 
@@ -145,17 +90,17 @@ class TextBlock extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->uuid,
-			'slug' => $this->slug,
-			'title' => $this->title,
-			'body' => $this->body,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'groupId' => $this->groupId,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		return array_merge(
+			$this->nameFields(),
+			[
+				'body' => $this->body,
+			],
+			$this->scopeFields(),
+			[
+				'groupId' => $this->groupId,
+			],
+			$this->timestampFields()
+		);
 
 	}//end jsonSerialize()
 }//end class

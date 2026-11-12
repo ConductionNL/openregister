@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
@@ -117,11 +118,9 @@ final class NotificationRecipientResolverExpressionTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function resolve(NotificationRecipientResolver $resolver, string $tag, ?ObjectEntity $object): array {
-		return $resolver->resolveWithDiagnostics(
+		return $resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'expression', 'resolver' => $tag]],
-			data: [],
-			object: $object,
-			context: ['trigger' => 'created']
+			source: new RecipientSource(data: [], object: $object, context: ['trigger' => 'created'], roleGroups: [])
 		);
 	}//end resolve()
 

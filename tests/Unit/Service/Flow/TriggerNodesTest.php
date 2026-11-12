@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -372,9 +373,9 @@ class TriggerNodesTest extends TestCase {
 	public function testEveryTriggerPassesItemsThrough(): void {
 		$items = [['id' => 'a'], ['id' => 'b']];
 
-		$this->assertSame($items, $this->object->execute($items, [], []));
-		$this->assertSame($items, $this->schedule->execute($items, [], []));
-		$this->assertSame($items, $this->manual->execute($items, [], []));
+		$this->assertSame($items, $this->object->execute(new FlowNodeCall(items: $items, config: [], context: [])));
+		$this->assertSame($items, $this->schedule->execute(new FlowNodeCall(items: $items, config: [], context: [])));
+		$this->assertSame($items, $this->manual->execute(new FlowNodeCall(items: $items, config: [], context: [])));
 
 	}//end testEveryTriggerPassesItemsThrough()
 

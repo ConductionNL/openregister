@@ -173,6 +173,26 @@ import CircleIcon from 'vue-material-design-icons/Circle.vue'
 import SaveButton from '../../components/shared/SaveButton.vue'
 import { schemaStore } from '../../store/store.js'
 
+/**
+ * The calendar provider configuration of a schema that has none: off, with
+ * the default colour and no fields mapped.
+ *
+ * @return {object} A fresh configuration
+ */
+function emptyCalendarProvider() {
+	return {
+		enabled: false,
+		displayName: '',
+		color: '#0082C9',
+		dtstart: null,
+		dtend: null,
+		titleTemplate: '',
+		descriptionTemplate: '',
+		locationField: null,
+		allDay: null,
+	}
+}
+
 export default {
 	name: 'CalendarProviderTab',
 	components: {
@@ -195,17 +215,7 @@ export default {
 	data() {
 		return {
 			saving: false,
-			localConfig: {
-				enabled: false,
-				displayName: '',
-				color: '#0082C9',
-				dtstart: null,
-				dtend: null,
-				titleTemplate: '',
-				descriptionTemplate: '',
-				locationField: null,
-				allDay: null,
-			},
+			localConfig: emptyCalendarProvider(),
 		}
 	},
 
@@ -325,18 +335,28 @@ export default {
 		async save() {
 			this.saving = true
 			try {
-				const updatedSchema = {
-					...this.schema,
-					configuration: {
-						...(this.schema.configuration || {}),
-						calendarProvider: { ...this.localConfig },
-					},
-				}
-				await schemaStore.saveSchema(updatedSchema)
+				await schemaStore.saveSchema(this.schemaWithProvider())
 			} catch (error) {
 				console.error('Failed to save calendar provider config:', error)
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * The schema with the edited calendar provider configuration merged
+		 * into its configuration.
+		 *
+		 * @spec exclude UI plumbing — calendar provider save payload
+		 * @return {object} The schema to save
+		 */
+		schemaWithProvider() {
+			return {
+				...this.schema,
+				configuration: {
+					...(this.schema.configuration || {}),
+					calendarProvider: { ...this.localConfig },
+				},
 			}
 		},
 	},

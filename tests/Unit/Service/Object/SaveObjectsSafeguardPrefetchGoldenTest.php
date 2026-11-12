@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -143,11 +143,7 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 
 		$user    = ($case['user'] ?? 'bob');
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(
-				objectEntityMapper: $this->objectMapper(failingRegister: ($case['failingRegister'] ?? null)),
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				registerMapper: $this->registerMapper(),
-				saveHandler: $this->createMock(SaveObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->createMock(SchemaMapper::class), tables: $this->objectMapper(failingRegister: ($case['failingRegister'] ?? null))), saveHandler: $this->createMock(SaveObject::class)
 			),
 			session: new BulkSaveSession(
 				userSession: $this->userSession(user: $user),

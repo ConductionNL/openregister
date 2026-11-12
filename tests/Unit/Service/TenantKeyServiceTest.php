@@ -177,6 +177,18 @@ class TenantKeyServiceTest extends TestCase {
 	 * key material) and getCurrentTenantKey() afterwards returns a fresh
 	 * 64-char hex key that differs from the pre-rotation key.
 	 */
+	public function testAFailedRotationRollsBackTheRetirement(): void {
+		$db = $this->createMock(IDBConnection::class);
+		$db->expects($this->once())->method('beginTransaction');
+		$db->method('getQueryBuilder')->willThrowException(new \RuntimeException('database gone'));
+		$db->expects($this->once())->method('rollBack');
+		$db->expects($this->never())->method('commit');
+		$svc = new TenantKeyService(db: $db, crypto: $this->createMock(ICrypto::class), logger: $this->createMock(LoggerInterface::class));
+
+		$this->expectException(\RuntimeException::class);
+		$svc->rotateTenantKey('tenant-abc');
+	}//end testAFailedRotationRollsBackTheRetirement()
+
 	public function testRotationReturnsMetadataOnlyAndNewKeyDiffers(): void {
 		$svc = $this->makeService();
 		$original = $svc->getCurrentTenantKey('tenant-rot');

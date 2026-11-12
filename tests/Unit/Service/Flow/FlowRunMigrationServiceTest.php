@@ -38,6 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -395,8 +397,8 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		$timerService = $this->createMock(FlowTimerService::class);
 		$superseded = [];
 		$timerService->method('supersede')->willReturnCallback(
-			function (string $uuid, $anchorEventAt, string $reason, ?string $actor) use (&$superseded) {
-				$superseded[] = [$uuid, $reason];
+			function (TimerAnchorMove $move, TimerChange $change) use (&$superseded) {
+				$superseded[] = [$move->uuid, $change->reason];
 				return new FlowTimer();
 			}
 		);

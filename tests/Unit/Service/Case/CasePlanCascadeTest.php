@@ -33,7 +33,6 @@ use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
@@ -158,12 +157,10 @@ class CasePlanCascadeTest extends TestCase {
 	private function cascade(): CasePlanCascade {
 		$machine = new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->createMock(CaseBusinessStateWriter::class))
 		);
 
 		return new CasePlanCascade(
-			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			machine: $machine,
 			readers: new CaseCascadeReaders(
 				sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),

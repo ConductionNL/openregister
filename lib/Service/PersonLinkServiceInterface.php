@@ -48,9 +48,7 @@ interface PersonLinkServiceInterface {
 	 *
 	 * The same person in the same role updates the row; in another role adds one.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
+	 * @param PersonLinkTarget     $target  The object: its uuid, register and schema (for the vocabulary).
 	 * @param array<string, mixed> $payload `userId` or `addressbookId`+`contactUri`, with `role`, `validFrom`, `validUntil`, `note`.
 	 *
 	 * @return ContactLink The link as stored.
@@ -59,16 +57,14 @@ interface PersonLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function link(string $objectUuid, int $registerId, ?int $schemaId, array $payload): ContactLink;
+	public function linkPerson(PersonLinkTarget $target, array $payload): ContactLink;
 
 	/**
 	 * Change the role, validity or note of a person's link on an object.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
-	 * @param array<string, mixed> $changes `role`, `validFrom`, `validUntil`, `note`; a key absent is left alone, null clears.
-	 * @param string|null $currentRole Which of the person's links, when they hold several.
+	 * @param PersonLinkChange $change The link (object, person, and which role when they hold several), the schema
+	 *                                 for the vocabulary, and the changes: `role`, `validFrom`, `validUntil`, `note`;
+	 *                                 a key absent is left alone, null clears.
 	 *
 	 * @return ContactLink The link as stored.
 	 *
@@ -76,14 +72,12 @@ interface PersonLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
 	 */
-	public function update(string $objectUuid, string $contactUid, ?int $schemaId, array $changes, ?string $currentRole = null): ContactLink;
+	public function changeLink(PersonLinkChange $change): ContactLink;
 
 	/**
 	 * Remove a person from an object: every role, or the one named.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param string|null $role Only this role, or null for all.
+	 * @param PersonLinkRef $ref The object, the person, and only this role or null for all.
 	 *
 	 * @return int How many links went.
 	 *
@@ -91,5 +85,5 @@ interface PersonLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
 	 */
-	public function unlink(string $objectUuid, string $contactUid, ?string $role = null): int;
+	public function removeLinks(PersonLinkRef $ref): int;
 }//end interface

@@ -28,9 +28,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
+use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -139,9 +145,10 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 * half-applied split leaves a register pointing at an entity whose table holds
 	 * no rows, which is worse than the shared state it started from.
 	 *
+	 * Unmapped columns are moved without them; {@see self::applySplitStrictly()} refuses instead.
+	 *
 	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
 	 * @param int                  $target The non-canonical register id to split off.
-	 * @param bool                 $strict Whether unmapped columns must refuse the move.
 	 *
 	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
 	 *
@@ -149,9 +156,25 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function applySplit(array $entry, int $target, bool $strict): array {
-		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: $strict);
+	public function applySplit(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: false);
 	}//end applySplit()
+
+	/**
+	 * Execute one planned split, refused when any source column has no destination.
+	 *
+	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
+	 * @param int                  $target The non-canonical register id to split off.
+	 *
+	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
+	 *
+	 * @throws RuntimeException When the split is refused or fails; nothing is committed.
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
+	 */
+	public function applySplitStrictly(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: true);
+	}//end applySplitStrictly()
 
 	/**
 	 * Check one split run, then execute it in a single transaction.
@@ -243,7 +266,7 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$run->newId = (int)$schema->getId();
 		$this->relink(run: $run);
 
-		$moved = $this->store->migrator->migrate(register: $run->register, schema: $schema, oldId: $run->oldId());
+		$moved = $this->store->migrator->migrate(table: new RegisterSchema(register: $run->register, schema: $schema), oldId: $run->oldId());
 		$this->logSplit(run: $run, rows: $moved['rows']);
 
 		return [
@@ -265,8 +288,7 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$run->register->setSchemas(
 			schemas: $this->ownership->attribution->replaceSchemaId(
 				schemas: $run->register->getSchemas(),
-				oldId: $run->oldId(),
-				newId: $run->newId
+				swap: new SchemaIdSwap(oldId: $run->oldId(), newId: $run->newId)
 			)
 		);
 		$this->store->registerMapper->update($run->register);
@@ -322,13 +344,17 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 */
 	private function importConfigured(Register $register, array $definition): Schema {
 		return $this->ownership->importHandler->importSchema(
-			data: $definition,
-			slugsAndIdsMap: $this->store->schemaMapper->getSlugToIdMap(),
-			owner: $register->getOwner(),
-			appId: $register->getApplication(),
-			version: (string)($definition['version'] ?? '0.0.1'),
-			force: true,
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: $definition,
+				registerSchemaIds: [],
+				options: new SchemaImportOptions(
+					owner: $register->getOwner(),
+					appId: $register->getApplication(),
+					version: (string)($definition['version'] ?? '0.0.1'),
+					force: true
+				)
+			),
+			slugsAndIdsMap: $this->store->schemaMapper->getSlugToIdMap()
 		);
 	}//end importConfigured()
 
@@ -409,7 +435,10 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$schemaId = $scope['schemaId'];
 		$rules    = $this->ownership->attribution;
 		$verdict  = $rules->classify(candidates: $scope['candidates'], entity: $scope['content']);
-		$owner    = $rules->resolveOwner(verdict: $verdict, schemaId: $schemaId, registerIds: $scope['registerIds'], keep: $scope['keep']);
+		$owner    = $rules->resolveOwner(
+			verdict: $verdict,
+			candidates: new OwnerCandidates(schemaId: $schemaId, registerIds: $scope['registerIds'], keep: $scope['keep'])
+		);
 
 		$shared = ['schemaId' => $schemaId, 'owner' => $owner['owner'], 'candidates' => $scope['candidates'], 'content' => $scope['content']];
 
@@ -488,7 +517,9 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 			'definition'   => $definition,
 			'table'        => $bare,
 			'rows'         => $this->store->migrator->countRows(table: $bare),
-			'unmapped'     => $this->store->migrator->planUnmapped(table: $bare, definition: $definition, content: $shared['content']),
+			'unmapped'     => $this->store->migrator->planUnmapped(
+				split: new SplitTableColumns(table: $bare, definition: $definition, content: $shared['content'])
+			),
 		];
 	}//end planSplit()
 

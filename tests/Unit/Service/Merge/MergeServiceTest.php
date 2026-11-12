@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
@@ -41,11 +42,13 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeServiceTest extends TestCase {
 
@@ -148,12 +151,12 @@ class MergeServiceTest extends TestCase {
 	public function testPreviewHasNoSideEffects(): void {
 		[$from, $into] = $this->buildPair();
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
-		$this->objectService->method('find')->willReturnMap(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 		$this->objectService->method('findAll')->willReturn([]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
@@ -174,12 +177,12 @@ class MergeServiceTest extends TestCase {
 	public function testExecuteMergeRelinksRecomputesLogsAndDispatches(): void {
 		[$from, $into] = $this->buildPair();
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
-		$this->objectService->method('find')->willReturnMap(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 		$this->objectService->method('findAll')->willReturn([]);
 
 		$savedFrom = new ObjectEntity();
@@ -192,7 +195,7 @@ class MergeServiceTest extends TestCase {
 
 		$saveCalls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ...$rest) use (&$saveCalls, $savedFrom, $savedInto, $savedOperation) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saveCalls, $savedFrom, $savedInto, $savedOperation) {
 				$saveCalls[] = $object;
 				if ($object instanceof ObjectEntity && $object->getUuid() === 'from-uuid') {
 					return $savedFrom;
@@ -216,7 +219,7 @@ class MergeServiceTest extends TestCase {
 				return true;
 			}));
 
-		$operation = $this->service->executeMerge('from-uuid', 'into-uuid', 'data-stewardship-review', 'alice');
+		$operation = $this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'data-stewardship-review', mergedBy: 'alice'));
 
 		$this->assertSame('into-uuid', $operation['mergedIntoUuid']);
 		$this->assertSame(['from-uuid'], $operation['mergedFromUuids']);
@@ -228,7 +231,7 @@ class MergeServiceTest extends TestCase {
 
 	public function testExecuteMergeRejectsSelfMerge(): void {
 		$this->expectException(RuntimeException::class);
-		$this->service->executeMerge('same-uuid', 'same-uuid', 'reason', 'alice');
+		$this->service->merge(instruction: new MergeInstruction(from: 'same-uuid', into: 'same-uuid', reason: 'reason', mergedBy: 'alice'));
 	}//end testExecuteMergeRejectsSelfMerge()
 
 	public function testExecuteMergeRejectsAlreadyMergedSource(): void {
@@ -236,18 +239,18 @@ class MergeServiceTest extends TestCase {
 		$from->setObject(['status' => 'merged-into-other', 'sources' => []]);
 
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
-		$this->objectService->method('find')->willReturnMap(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('already been merged');
-		$this->service->executeMerge('from-uuid', 'into-uuid', 'reason', 'alice');
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'reason', mergedBy: 'alice'));
 	}//end testExecuteMergeRejectsAlreadyMergedSource()
 
 	public function testExecuteMergeRejectsInactiveSurvivor(): void {
@@ -255,16 +258,16 @@ class MergeServiceTest extends TestCase {
 		$into->setObject(['status' => 'merged-into-other', 'sources' => []]);
 
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithConfig());
-		$this->objectService->method('find')->willReturnMap(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('not active');
-		$this->service->executeMerge('from-uuid', 'into-uuid', 'reason', 'alice');
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'reason', mergedBy: 'alice'));
 	}//end testExecuteMergeRejectsInactiveSurvivor()
 
 	public function testReverseMergeRestoresSnapshotWithinWindow(): void {
@@ -301,13 +304,13 @@ class MergeServiceTest extends TestCase {
 		$intoEntity->setRegister('organisations');
 		$intoEntity->setObject(['status' => 'active']);
 
-		$this->objectService->method('find')->willReturnMap(
+		$this->objectService->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['op-uuid', [], false, null, MergeService::MERGE_SCHEMA, true, true, true, true, $operationEntity],
 				['from-uuid', [], false, null, null, true, true, true, true, $fromEntity],
 				['into-uuid', [], false, null, null, true, true, true, true, $intoEntity],
 			]
-		);
+		));
 
 		$savedOperation = new ObjectEntity();
 		$savedOperation->setUuid('op-uuid');

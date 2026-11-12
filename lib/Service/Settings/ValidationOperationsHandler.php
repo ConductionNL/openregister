@@ -97,12 +97,6 @@ class ValidationOperationsHandler {
 	 *
 	 * @return array Validation report with total_objects, valid/invalid counts, errors, and summary.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *     Validation loop with error handling requires multiple branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *     Try-catch and conditional result handling creates multiple paths
-	 *     Circular dependency workaround and validation result handling require else branch
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function validateAllObjects(): array {
@@ -110,68 +104,141 @@ class ValidationOperationsHandler {
 		$objectService = $this->getObjectService();
 		if ($objectService === null) {
 			// Return empty result when ObjectService is unavailable (circular dependency workaround).
-			return [
-				'total_objects' => 0,
-				'valid_objects' => 0,
-				'invalid_objects' => 0,
-				'validation_errors' => [],
-				'summary' => [
-					'validation_success_rate' => 100,
-					'has_errors' => false,
-					'error_count' => 0,
-				],
-			];
+			return $this->emptyReport();
 		}
 
 		$allObjects = $objectService->findAll(config: []);
 
-		$validationResults = [
-			'total_objects' => count($allObjects),
+		$validationResults = $this->openReport(totalObjects: count($allObjects));
+
+		foreach ($allObjects as $object) {
+			$this->tallyObject(validationResults: $validationResults, object: $object);
+		}
+
+		$validationResults['summary'] = $this->summarise(validationResults: $validationResults);
+
+		return $validationResults;
+	}//end validateAllObjects()
+
+	/**
+	 * The report returned when no ObjectService is available.
+	 *
+	 * @return array The empty validation report.
+	 */
+	private function emptyReport(): array {
+		return [
+			'total_objects' => 0,
+			'valid_objects' => 0,
+			'invalid_objects' => 0,
+			'validation_errors' => [],
+			'summary' => [
+				'validation_success_rate' => 100,
+				'has_errors' => false,
+				'error_count' => 0,
+			],
+		];
+	}//end emptyReport()
+
+	/**
+	 * Start a report with zeroed counters for the given number of objects.
+	 *
+	 * @param int $totalObjects The number of objects that will be validated
+	 *
+	 * @return array The report, without a summary yet.
+	 */
+	private function openReport(int $totalObjects): array {
+		return [
+			'total_objects' => $totalObjects,
 			'valid_objects' => 0,
 			'invalid_objects' => 0,
 			'validation_errors' => [],
 			'summary' => [],
 		];
+	}//end openReport()
 
-		// Validate each object.
-		foreach ($allObjects as $object) {
-			try {
-				// Get the schema for this object.
-				$schema = $this->schemaMapper->find(id: $object->getSchema());
+	/**
+	 * Validate one object against its schema and count the outcome into the report.
+	 *
+	 * @param array $validationResults The report being built (by reference)
+	 * @param mixed $object            The object entity to validate
+	 *
+	 * @return void
+	 */
+	private function tallyObject(array &$validationResults, $object): void {
+		try {
+			$validationResult = $this->validateAgainstSchema(object: $object);
 
-				// Validate the object against its schema using the ValidateObject handler.
-				$validationResult = $this->getValidateHandler()->validateObject(
-					$object->getObject(),
-					schema: $schema
-				);
+			if ($validationResult->isValid() === true) {
+				$validationResults['valid_objects']++;
+			}
 
-				if ($validationResult->isValid() === true) {
-					$validationResults['valid_objects']++;
-				}
+			if ($validationResult->isValid() !== true) {
+				$entry = $this->errorEntry(object: $object, errors: $validationResult->error());
+				$this->recordInvalid(validationResults: $validationResults, errorEntry: $entry);
+			}
+		} catch (Exception $e) {
+			$entry = $this->errorEntry(object: $object, errors: ['Validation failed: ' . $e->getMessage()]);
+			$this->recordInvalid(validationResults: $validationResults, errorEntry: $entry);
+		}//end try
+	}//end tallyObject()
 
-				if ($validationResult->isValid() !== true) {
-					$validationResults['invalid_objects']++;
-					$validationResults['validation_errors'][] = [
-						'object_id' => $object->getUuid(),
-						'object_name' => $object->getName() ?? $object->getUuid(),
-						'register' => $object->getRegister(),
-						'schema' => $object->getSchema(),
-						'errors' => $validationResult->error(),
-					];
-				}
-			} catch (Exception $e) {
-				$validationResults['invalid_objects']++;
-				$validationResults['validation_errors'][] = [
-					'object_id' => $object->getUuid(),
-					'object_name' => $object->getName() ?? $object->getUuid(),
-					'register' => $object->getRegister(),
-					'schema' => $object->getSchema(),
-					'errors' => ['Validation failed: ' . $e->getMessage()],
-				];
-			}//end try
-		}//end foreach
+	/**
+	 * Validate an object against its own schema.
+	 *
+	 * @param mixed $object The object entity to validate
+	 *
+	 * @return mixed The validation result.
+	 */
+	private function validateAgainstSchema($object) {
+		// Get the schema for this object.
+		$schema = $this->schemaMapper->find(id: $object->getSchema());
 
-		// Create summary with validation statistics.
+		// Validate the object against its schema using the ValidateObject handler.
+		return $this->getValidateHandler()->validateObject(
+			$object->getObject(),
+			schema: $schema
+		);
+	}//end validateAgainstSchema()
+
+	/**
+	 * Count one invalid object and add its entry to the report.
+	 *
+	 * @param array $validationResults The report being built (by reference)
+	 * @param array $errorEntry        The entry describing the invalid object
+	 *
+	 * @return void
+	 */
+	private function recordInvalid(array &$validationResults, array $errorEntry): void {
+		$validationResults['invalid_objects']++;
+		$validationResults['validation_errors'][] = $errorEntry;
+	}//end recordInvalid()
+
+	/**
+	 * Describe one invalid object for the report's validation_errors list.
+	 *
+	 * @param mixed $object The object entity that failed validation
+	 * @param mixed $errors The validation errors for the object
+	 *
+	 * @return array The error entry.
+	 */
+	private function errorEntry($object, $errors): array {
+		return [
+			'object_id' => $object->getUuid(),
+			'object_name' => $object->getName() ?? $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'errors' => $errors,
+		];
+	}//end errorEntry()
+
+	/**
+	 * Build the summary block with the validation statistics.
+	 *
+	 * @param array $validationResults The counted report
+	 *
+	 * @return array The summary.
+	 */
+	private function summarise(array $validationResults): array {
 		$validSuccessRate = 100;
 		if ($validationResults['total_objects'] > 0) {
 			$validSuccessRate = round(
@@ -180,12 +247,10 @@ class ValidationOperationsHandler {
 			);
 		}
 
-		$validationResults['summary'] = [
+		return [
 			'validation_success_rate' => $validSuccessRate,
 			'has_errors' => $validationResults['invalid_objects'] > 0,
 			'error_count' => count($validationResults['validation_errors']),
 		];
-
-		return $validationResults;
-	}//end validateAllObjects()
+	}//end summarise()
 }//end class

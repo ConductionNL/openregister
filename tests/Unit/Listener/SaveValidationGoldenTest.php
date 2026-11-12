@@ -44,17 +44,18 @@ use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\Support\BulkEditActions;
+use OCA\OpenRegister\Listener\Support\BulkSetActions;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Listener\Support\BulkEditActions;
-use OCA\OpenRegister\Listener\Support\BulkSetActions;
 
 /**
  * Golden outcomes of the save validation listeners.
@@ -132,8 +133,8 @@ class SaveValidationGoldenTest extends TestCase {
 		);
 		$guard = $this->createMock(CodedValueGuard::class);
 		$guard->method('enforce')->willReturnCallback(
-			function (array $object) use ($enforce, &$calls): void {
-				$calls[] = 'enforce:'.json_encode($object);
+			function (CodedValueWrite $write) use ($enforce, &$calls): void {
+				$calls[] = 'enforce:'.json_encode($write->object);
 				if ($enforce !== null) {
 					throw $enforce;
 				}

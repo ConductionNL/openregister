@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DerivedLineage;
@@ -47,12 +48,15 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\AffectedSets;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -65,6 +69,8 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * ObjectRelationsController.
@@ -566,7 +572,9 @@ class ObjectRelationsController extends Controller {
 	private function deriveFrom(ObjectDerivation $derivation, array $data): JSONResponse {
 		$source = $derivation->source;
 		$link = $this->declaredLink(source: $source);
-		$applied = $this->relations->applyInheritance(parent: $source, childData: $data, inherits: $link['inherits']);
+		$applied = $this->relations->inherit(
+			inheritance: new ParentInheritance(parent: $source, childData: $data, inherits: $link['inherits'])
+		);
 		$created = $this->saveDerived(data: $applied['data'], derivation: $derivation);
 		if ($created instanceof JSONResponse) {
 			return $created;
@@ -656,8 +664,9 @@ class ObjectRelationsController extends Controller {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: $derivation->register,
-				schema: $derivation->schema
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $derivation->register, schema: $derivation->schema)
+				)
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
@@ -672,7 +681,7 @@ class ObjectRelationsController extends Controller {
 	 * derivation and a split are the same act seen twice and a sub-case
 	 * started from a timeline entry is both. Writing the split row and then
 	 * mutating it into a derivation was two writes for one act, and left
-	 * recordDerivation() with no caller at all: a write capability nobody
+	 * recordDerived() with no caller at all: a write capability nobody
 	 * reaches is a capability nobody can exercise, which is the shape
 	 * gate-orphaned-write-capability exists to catch.
 	 *
@@ -686,11 +695,8 @@ class ObjectRelationsController extends Controller {
 	private function recordProvenance(DerivedLineage $lineage, array $link): ObjectRelation {
 		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
 		if ($lineage->inherited !== []) {
-			return $this->relations->recordDerivation(
-				parent: $lineage->source,
-				child: $lineage->created,
-				link: $provenance,
-				inherited: $lineage->inherited
+			return $this->relations->recordDerived(
+				derivation: new Derivation(parent: $lineage->source, child: $lineage->created, link: $provenance, inherited: $lineage->inherited)
 			);
 		}
 
@@ -837,8 +843,7 @@ class ObjectRelationsController extends Controller {
 		return $this->purposeScope->narrow(
 			graph: $this->graphs->graph(
 				rootUuid: (string)$object->getUuid(),
-				depth: $this->params->depth(),
-				language: $this->params->language()
+				options: new GraphExportOptions(depth: $this->params->depth(), language: $this->params->language())
 			)
 		);
 	}//end graphWithinPurpose()
@@ -901,8 +906,8 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function treeOf(ObjectEntity $object, string $direction): array {
 		return $this->trees->tree(
-			root: $object,
 			query: new ObjectTreeQuery(
+				root: $object,
 				direction: $direction,
 				depth: $this->params->optionalDepth(),
 				fields: $this->params->csvParam(name: 'fields')
@@ -984,7 +989,7 @@ class ObjectRelationsController extends Controller {
 	private function csvOf(iterable $rows): string {
 		$handle = fopen('php://temp', 'r+');
 		foreach ($rows as $row) {
-			fputcsv($handle, $row, escape: '');
+			fputcsv($handle, SpreadsheetCell::csvRow(row: $row), escape: '');
 		}
 
 		rewind($handle);

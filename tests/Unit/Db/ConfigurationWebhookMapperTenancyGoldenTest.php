@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\WebhookMapper;
@@ -134,6 +135,8 @@ final class ConfigurationWebhookMapperTenancyGoldenTest extends TestCase {
 		try {
 			if ($mapper === 'configuration-off') {
 				$outcome['result'] = count($instance->findAll(null, null, [], [], [], false));
+			} elseif ($mapper === 'webhook') {
+				$outcome['result'] = count($instance->findAll(ListQuery::unbounded()));
 			} else {
 				$outcome['result'] = count($instance->findAll());
 			}

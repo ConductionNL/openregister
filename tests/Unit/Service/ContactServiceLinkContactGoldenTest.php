@@ -18,6 +18,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 /**
  * Records the CardDAV calls, mapper writes and the returned link of linkContact(), per scenario,
@@ -129,7 +131,7 @@ class ContactServiceLinkContactGoldenTest extends TestCase {
 	public function testLinkContactGolden(array $s): void {
 		$service = $this->service($s);
 		try {
-			$link = $service->linkContact('obj-1', 5, 3, 'jan.vcf', $s['role'], $s['schema']);
+			$link = $service->linkCard(new ContactCardRef(3, 'jan.vcf'), new ContactPlacement('obj-1', 5, $s['schema'], $s['role']));
 			$this->calls[] = ['result', $this->row($link)];
 		} catch (Throwable $e) {
 			$this->calls[] = ['thrown', get_class($e), $e->getMessage(), $e->getCode()];

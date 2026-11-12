@@ -31,8 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -189,17 +191,15 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * sync. Used by the cache-invalidation hook (design.md D4) to invalidate
 	 * every URL shape a cached preview of this object might be keyed under.
 	 *
-	 * @param int $registerId The register database ID
-	 * @param int $schemaId The schema database ID
-	 * @param string $uuid The object UUID
+	 * @param ObjectRef $ref The register and schema database ids and the object UUID.
 	 *
 	 * @return string[] Every canonical URL for this object, one per pattern
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d4
 	 */
-	public function buildCanonicalUrls(int $registerId, int $schemaId, string $uuid): array {
+	public function buildCanonicalUrls(ObjectRef $ref): array {
 		return $this->canonicalUrls(
-			placeholders: ['{registerId}' => (string)$registerId, '{schemaId}' => (string)$schemaId, '{uuid}' => $uuid]
+			placeholders: ['{registerId}' => (string)$ref->register, '{schemaId}' => (string)$ref->schema, '{uuid}' => $ref->id]
 		);
 	}//end buildCanonicalUrls()
 
@@ -271,8 +271,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			// Fetch the object using ObjectService.
 			$object = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $parsed['uuid'],
-				register: $parsed['registerId'],
-				schema: $parsed['schemaId']
+				options: new ObjectFindOptions(register: $parsed['registerId'], schema: $parsed['schemaId'])
 			));
 
 			if ($object === null) {
@@ -400,6 +399,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema name not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Schema');
@@ -423,6 +429,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Register name not resolved',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Register');
@@ -449,6 +462,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to null.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema icon not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

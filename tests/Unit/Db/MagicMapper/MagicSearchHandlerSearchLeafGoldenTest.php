@@ -23,6 +23,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -57,6 +58,23 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermNode
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\SearchLeafRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\SearchTermRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Service\Search\SearchTermLiteral
+ * @uses \OCA\OpenRegister\Service\Search\SearchTokenStream
+ * @uses \OCA\OpenRegister\Service\Search\TokenizeRun
  */
 class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 
@@ -140,11 +158,7 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 			$query['_fuzzy'] = 'true';
 		}
 
-		return $this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy)->buildWhereConditionsSql(
-			query: $query,
-			schema: $this->schema(),
-			existingColumns: $columns
-		);
+		return $this->handler(isPostgres: $isPostgres, fuzzy: $fuzzy)->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $this->schema()), existingColumns: $columns));
 	}//end unionSql()
 
 	/**

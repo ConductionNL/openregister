@@ -186,30 +186,57 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const filters = {}
-				if (this.verdict?.id) {
-					filters.verdict = this.verdict.id
-				}
-				if (this.since) {
-					filters.since = this.since
-				}
-				if (this.until) {
-					filters.until = this.until
-				}
-
-				const data = await fetchRuns(this.ruleId, filters)
-				this.runs = data.runs ?? []
-				this.total = data.total ?? this.runs.length
+				this.showRuns(await fetchRuns(this.ruleId, this.runFilters()))
 			} catch (failure) {
-				this.error = messageFor(
-					failure,
-					t('openregister', 'The run log could not be read.'),
-				)
-				this.runs = []
-				this.total = 0
+				this.showLoadFailure(failure)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The filters the operator set: verdict and date window, only the ones given.
+		 *
+		 * @return {object} The run log filters
+		 */
+		runFilters() {
+			const filters = {}
+			if (this.verdict?.id) {
+				filters.verdict = this.verdict.id
+			}
+			if (this.since) {
+				filters.since = this.since
+			}
+			if (this.until) {
+				filters.until = this.until
+			}
+			return filters
+		},
+
+		/**
+		 * Show a page of the run log.
+		 *
+		 * @param {object} data The runs and their total
+		 * @return {void}
+		 */
+		showRuns(data) {
+			this.runs = data.runs ?? []
+			this.total = data.total ?? this.runs.length
+		},
+
+		/**
+		 * Say why the run log could not be read, and empty it.
+		 *
+		 * @param {Error} failure What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(failure) {
+			this.error = messageFor(
+				failure,
+				t('openregister', 'The run log could not be read.'),
+			)
+			this.runs = []
+			this.total = 0
 		},
 	},
 }

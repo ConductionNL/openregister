@@ -91,28 +91,35 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
-		foreach ($context->getEntries() as $entry) {
-			$object = $this->resolver->resolve(entry: $entry);
-			if ($object === null) {
-				continue;
-			}
-
-			try {
-				$this->dispatchEntry(entry: $entry, object: $object);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => ($entry['uuid'] ?? null),
-						'trigger' => ($entry['trigger'] ?? null),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
+		foreach ($this->liveEntries(context: $context, resolver: $this->resolver) as $entry => $object) {
+			$this->dispatchSafely(entry: $entry, object: $object);
+		}
 	}//end runDeferred()
+
+	/**
+	 * Dispatch one entry, logging a failure without aborting the chunk.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchSafely(array $entry, ObjectEntity $object): void {
+		try {
+			$this->dispatchEntry(entry: $entry, object: $object);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[AnnotationNotificationDispatchJob] Dispatch failed for entry',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => ($entry['uuid'] ?? null),
+					'trigger' => ($entry['trigger'] ?? null),
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end dispatchSafely()
 
 	/**
 	 * Mirror the inline AnnotationNotificationListener dispatch semantics.
@@ -137,41 +144,66 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 		}
 
 		if ($trigger === 'transition') {
-			$this->dispatcher->dispatch(
-				object: $object,
-				trigger: 'transition',
-				context: [
-					'action' => (string)($entry['action'] ?? ''),
-					'from' => (string)($entry['from'] ?? ''),
-					'to' => (string)($entry['to'] ?? ''),
-				]
-			);
+			$this->dispatchTransition(entry: $entry, object: $object);
 			return;
 		}
 
 		if ($trigger === 'updated') {
-			$oldData = ($entry['oldData'] ?? null);
-
-			$updatedContext = [];
-			if (is_array($oldData) === true) {
-				$updatedContext = [
-					'_newData' => ($object->getObject() ?? []),
-					'_oldData' => $oldData,
-				];
-			}
-
-			$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: $updatedContext);
-
-			if (is_array($oldData) === true) {
-				$this->dispatcher->dispatch(
-					object: $object,
-					trigger: 'calculatedChange',
-					context: [
-						'_newData' => ($object->getObject() ?? []),
-						'_oldData' => $oldData,
-					]
-				);
-			}
-		}//end if
+			$this->dispatchUpdated(entry: $entry, object: $object);
+		}
 	}//end dispatchEntry()
+
+	/**
+	 * Dispatch a lifecycle transition with the action and the states it moved between.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchTransition(array $entry, ObjectEntity $object): void {
+		$this->dispatcher->dispatch(
+			object: $object,
+			trigger: 'transition',
+			context: [
+				'action' => (string)($entry['action'] ?? ''),
+				'from' => (string)($entry['from'] ?? ''),
+				'to' => (string)($entry['to'] ?? ''),
+			]
+		);
+	}//end dispatchTransition()
+
+	/**
+	 * Dispatch an update, and a calculated change when the entry carries the old data.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchUpdated(array $entry, ObjectEntity $object): void {
+		$oldData = ($entry['oldData'] ?? null);
+		if (is_array($oldData) === false) {
+			$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: []);
+			return;
+		}
+
+		$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: self::changeOf(object: $object, oldData: $oldData));
+		$this->dispatcher->dispatch(object: $object, trigger: 'calculatedChange', context: self::changeOf(object: $object, oldData: $oldData));
+	}//end dispatchUpdated()
+
+	/**
+	 * The old/new context of an update, the new data read from the object now.
+	 *
+	 * @param ObjectEntity         $object  The live object.
+	 * @param array<string, mixed> $oldData The data before the update.
+	 *
+	 * @return array{_newData: array, _oldData: array}
+	 */
+	private static function changeOf(ObjectEntity $object, array $oldData): array {
+		return [
+			'_newData' => ($object->getObject() ?? []),
+			'_oldData' => $oldData,
+		];
+	}//end changeOf()
 }//end class

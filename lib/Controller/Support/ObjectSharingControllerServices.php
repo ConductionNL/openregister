@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The services of the object sharing API.
@@ -36,18 +36,18 @@ final class ObjectSharingControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface $objectService  Resolves an object through the RBAC boundary.
-	 * @param RegisterMapperInterface   $registerMapper Resolves the register entity.
-	 * @param SchemaMapperInterface     $schemaMapper   Resolves the schema entity.
-	 * @param ObjectSharingServiceInterface      $sharing        Performs the owner-checked writes.
+	 * @param ObjectOperationsInterface       $objectService Resolves an object through the RBAC boundary.
+	 * @param SchemaCatalogInterface          $catalog       Resolves the register and schema entities.
+	 * @param ObjectSharingServiceInterface   $sharing       Performs the checked writes.
+	 * @param LoggerInterface                 $logger        Records unexpected failures.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly ObjectSharingServiceInterface $sharing,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

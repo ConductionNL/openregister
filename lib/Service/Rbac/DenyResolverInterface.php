@@ -130,40 +130,36 @@ interface DenyResolverInterface {
 	/**
 	 * The first denial that removes the verb outright, whatever the object.
 	 *
-	 * @param array|null $authorization The resolved authorization block.
-	 * @param string     $action        The verb being decided.
-	 * @param string[]   $principals    The caller's principal names.
+	 * @param array|null   $authorization The resolved authorization block.
+	 * @param DenyQuestion $question      The verb being decided and the caller's principal names.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function unconditionalDenial(?array $authorization, string $action, array $principals): ?array;
+	public function unconditionalDenial(?array $authorization, DenyQuestion $question): ?array;
 
 	/**
 	 * The denials that only bite on the rows their `match` clause selects.
 	 *
-	 * @param array|null $authorization The resolved authorization block.
-	 * @param string     $action        The verb being decided.
-	 * @param string[]   $principals    The caller's principal names.
+	 * @param array|null   $authorization The resolved authorization block.
+	 * @param DenyQuestion $question      The verb being decided and the caller's principal names.
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The conditional denials.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function conditionalDenials(?array $authorization, string $action, array $principals): array;
+	public function conditionalDenials(?array $authorization, DenyQuestion $question): array;
 
 	/**
 	 * One platform-appropriate predicate for "this row is NOT denied to this caller".
 	 *
-	 * @param string   $columnName The `_authorization` column, qualified by the caller.
-	 * @param string   $action     The verb being filtered.
-	 * @param bool     $isPostgres Whether the connected platform is PostgreSQL.
-	 * @param string[] $principals The caller's principal names.
+	 * @param DenyRowTest $test       The `_authorization` column (qualified by the caller), the verb and the platform.
+	 * @param string[]    $principals The caller's principal names.
 	 *
 	 * @return string A SQL predicate true for rows this caller is not denied.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function notDeniedRowSql(string $columnName, string $action, bool $isPostgres, array $principals): string;
+	public function notDeniedRowSql(DenyRowTest $test, array $principals): string;
 }//end interface

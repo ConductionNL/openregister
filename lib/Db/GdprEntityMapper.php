@@ -111,6 +111,27 @@ class GdprEntityMapper extends QBMapper implements GdprEntityMapperInterface {
 	 * @return GdprEntity|null The matching entity, or null when no row matches.
 	 */
 	public function findOneByValueAndType(string $value, string $type): ?GdprEntity {
+		$matches = $this->findEntities(query: $this->selectByValueAndType(value: $value, type: $type));
+		if (empty($matches) === true) {
+			return null;
+		}
+
+		if (count($matches) > 1 && $this->logger !== null) {
+			$this->warnCatalogueCollision(type: $type, matches: $matches);
+		}
+
+		return $matches[0];
+	}//end findOneByValueAndType()
+
+	/**
+	 * The catalogue rows for one value and type, lowest id first, at most two.
+	 *
+	 * @param string $value The entity value.
+	 * @param string $type  The entity type.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function selectByValueAndType(string $value, string $type): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -128,28 +149,30 @@ class GdprEntityMapper extends QBMapper implements GdprEntityMapperInterface {
 			->orderBy('id', 'ASC')
 			->setMaxResults(2);
 
-		$matches = $this->findEntities(query: $qb);
-		if (empty($matches) === true) {
-			return null;
-		}
+		return $qb;
+	}//end selectByValueAndType()
 
-		if (count($matches) > 1 && $this->logger !== null) {
-			// Catalogue dedup invariant violated — log structurally so
-			// operators can audit it. PII-safe: we log the type + the
-			// colliding ids (not the value, per ADR-005). Value can be
-			// re-derived from the row in the catalogue audit log if a
-			// forensic step is needed.
-			$this->logger->warning(
-				'[GdprEntityMapper] findOneByValueAndType: multiple catalogue rows match the same (value, type) — dedup invariant violated.',
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'type' => $type,
-					'collidingIds' => array_map(static fn (GdprEntity $e): int => (int)$e->getId(), $matches),
-				]
-			);
-		}
-
-		return $matches[0];
-	}//end findOneByValueAndType()
+	/**
+	 * Log a catalogue dedup invariant violation.
+	 *
+	 * Logged structurally so operators can audit it. PII-safe: we log the type + the
+	 * colliding ids (not the value, per ADR-005). Value can be re-derived from the row
+	 * in the catalogue audit log if a forensic step is needed.
+	 *
+	 * @param string       $type    The entity type.
+	 * @param GdprEntity[] $matches The colliding rows.
+	 *
+	 * @return void
+	 */
+	private function warnCatalogueCollision(string $type, array $matches): void {
+		$this->logger?->warning(
+			'[GdprEntityMapper] findOneByValueAndType: multiple catalogue rows match the same (value, type) — dedup invariant violated.',
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'type' => $type,
+				'collidingIds' => array_map(static fn (GdprEntity $e): int => (int)$e->getId(), $matches),
+			]
+		);
+	}//end warnCatalogueCollision()
 }//end class

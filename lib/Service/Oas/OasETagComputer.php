@@ -88,19 +88,28 @@ class OasETagComputer implements OasETagComputerInterface {
 		}
 
 		foreach (explode(',', $needle) as $candidate) {
-			$candidate = trim($candidate);
-			// Strip the optional weak prefix per RFC 7232.
-			if (str_starts_with($candidate, 'W/') === true) {
-				$candidate = substr($candidate, 2);
-			}
-
-			if ($candidate === $currentETag) {
+			if (self::withoutWeakPrefix(candidate: trim($candidate)) === $currentETag) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end matches()
+
+	/**
+	 * An entity tag without its optional weak prefix, per RFC 7232.
+	 *
+	 * @param string $candidate One trimmed tag from the header.
+	 *
+	 * @return string The tag.
+	 */
+	private static function withoutWeakPrefix(string $candidate): string {
+		if (str_starts_with($candidate, 'W/') === true) {
+			return substr($candidate, 2);
+		}
+
+		return $candidate;
+	}//end withoutWeakPrefix()
 
 	/**
 	 * Recursively sort object keys to produce a deterministic JSON shape.
@@ -116,23 +125,45 @@ class OasETagComputer implements OasETagComputerInterface {
 
 		// Numerically-indexed arrays (lists) keep their order;
 		// associative arrays (objects) get sorted by key.
-		$isList = (array_is_list($value) === true);
-
-		$out = [];
-		if ($isList === true) {
-			foreach ($value as $item) {
-				$out[] = $this->canonicalise(value: $item);
-			}
-
-			return $out;
+		if (array_is_list($value) === true) {
+			return $this->canonicalList(list: $value);
 		}
 
-		$keys = array_keys($value);
-		sort($keys);
-		foreach ($keys as $key) {
-			$out[$key] = $this->canonicalise(value: $value[$key]);
+		return $this->canonicalObject(object: $value);
+	}//end canonicalise()
+
+	/**
+	 * A list with each item canonicalised, in its own order.
+	 *
+	 * @param array<int, mixed> $list The list.
+	 *
+	 * @return array<int, mixed> The canonical list.
+	 */
+	private function canonicalList(array $list): array {
+		$out = [];
+		foreach ($list as $item) {
+			$out[] = $this->canonicalise(value: $item);
 		}
 
 		return $out;
-	}//end canonicalise()
+	}//end canonicalList()
+
+	/**
+	 * An object with its keys sorted and each value canonicalised.
+	 *
+	 * @param array<int|string, mixed> $object The object.
+	 *
+	 * @return array<int|string, mixed> The canonical object.
+	 */
+	private function canonicalObject(array $object): array {
+		$keys = array_keys($object);
+		sort($keys);
+
+		$out = [];
+		foreach ($keys as $key) {
+			$out[$key] = $this->canonicalise(value: $object[$key]);
+		}
+
+		return $out;
+	}//end canonicalObject()
 }//end class

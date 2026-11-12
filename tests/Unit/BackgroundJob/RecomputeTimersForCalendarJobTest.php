@@ -22,7 +22,10 @@ use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -34,6 +37,13 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
+ * @uses \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarBatch
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
  */
 final class RecomputeTimersForCalendarJobTest extends TestCase {
 
@@ -126,13 +136,11 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		$armed->setUuid('t-armed');
 		$armed->setAnchorAt(new DateTime('2026-01-05T09:00:00+00:00'));
 		$this->timers->method('findByStatePaged')->willReturnCallback(
-			static fn (string $state, int $afterId, int $limit): array => ($state === FlowTimer::STATE_ARMED && $afterId === 0 && $limit === 500) ? [$armed] : []
+			static fn (string $state, IdCursor $cursor): array => ($state === FlowTimer::STATE_ARMED && $cursor->afterId === 0 && $cursor->limit === 500) ? [$armed] : []
 		);
 		$this->service->expects($this->once())->method('supersede')->with(
-			't-armed',
-			$armed->getAnchorAt(),
-			'calendar-changed',
-			'calendar-recompute'
+			new TimerAnchorMove(uuid: 't-armed', anchorEventAt: $armed->getAnchorAt()),
+			new TimerChange(reason: 'calendar-changed', actor: 'calendar-recompute')
 		);
 		$this->recompute->expects($this->once())->method('recompute')->willReturnCallback(
 			function (CalendarBatch $batch): array {

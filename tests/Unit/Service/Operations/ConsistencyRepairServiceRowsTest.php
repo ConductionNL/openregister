@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Operations;
 
+use OCA\OpenRegister\Service\Operations\OperatorAct;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
@@ -55,10 +56,7 @@ class ConsistencyRepairServiceRowsTest extends TestCase {
 		$recorder->expects($this->once())
 			->method('recordAct')
 			->with(
-				$this->anything(),
-				'noor',
-				$this->callback(static fn (array $details): bool => $details['objects'] === $objects),
-				$this->anything()
+				$this->callback(static fn (OperatorAct $act): bool => $act->actor === 'noor' && $act->details['objects'] === $objects)
 			);
 
 		return new ConsistencyRepairService($db, $check, $recorder);

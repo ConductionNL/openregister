@@ -249,14 +249,7 @@ final class SearchTermParser implements SearchTermParserInterface {
 	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
 	 */
 	private function readPhrase(TokenizeRun $run, int $index): array {
-		$closing = mb_strpos($run->term, '"', ($index + 1));
-		if ($closing === false) {
-			throw new SearchTermSyntaxException(
-				reason: 'Unterminated quoted phrase opened',
-				position: ($index + 1),
-				term: $run->term
-			);
-		}
+		$closing = self::closingQuote(run: $run, index: $index);
 
 		$value = mb_substr($run->term, ($index + 1), ($closing - $index - 1));
 		if (trim($value) === '') {
@@ -269,6 +262,29 @@ final class SearchTermParser implements SearchTermParserInterface {
 
 		return $this->termToken(value: $value, position: ($index + 1));
 	}//end readPhrase()
+
+	/**
+	 * The offset of the quote that closes the phrase opened at $index.
+	 *
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the opening quote.
+	 *
+	 * @throws SearchTermSyntaxException When the phrase is unterminated.
+	 *
+	 * @return int The closing quote's offset.
+	 */
+	private static function closingQuote(TokenizeRun $run, int $index): int {
+		$closing = mb_strpos($run->term, '"', ($index + 1));
+		if ($closing === false) {
+			throw new SearchTermSyntaxException(
+				reason: 'Unterminated quoted phrase opened',
+				position: ($index + 1),
+				term: $run->term
+			);
+		}
+
+		return $closing;
+	}//end closingQuote()
 
 	/**
 	 * The offset just past the word starting at $index.

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Service\Chat;
 
 use Exception;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
@@ -17,6 +18,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Golden test for ContextRetrievalHandler::retrieveContext().
@@ -170,8 +172,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 
 		$vectors = $this->createMock(VectorEmbeddings::class);
 		$vectors->method('semanticSearch')->willReturnCallback(
-			function (string $query, int $limit, array $filters) use ($case): array {
-				$this->calls[] = ['semantic', $query, $limit, $filters];
+			function (SemanticSearchRequest $request) use ($case): array {
+				$this->calls[] = ['semantic', $request->query, $request->limit, $request->filters];
 				if (($case['semanticThrows'] ?? false) === true) {
 					throw new Exception('vector store down');
 				}
@@ -180,8 +182,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		);
 		$vectors->method('hybridSearch')->willReturnCallback(
-			function (string $query, array $keywordResults, int $limit) use ($case): array {
-				$this->calls[] = ['hybrid', $query, $keywordResults, $limit];
+			function (HybridSearchRequest $request) use ($case): array {
+				$this->calls[] = ['hybrid', $request->query, $request->keywordResults, $request->limit];
 				return ($case['hybrid'] ?? []);
 			}
 		);

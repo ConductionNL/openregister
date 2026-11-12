@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCP\AppFramework\Db\Entity;
@@ -114,7 +115,7 @@ class NotificationBroadcastMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('created', 'DESC');
-		$this->page(qb: $qb, limit: $limit, offset: $offset);
+		$this->page(qb: $qb, query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset));
 
 		return $this->findEntities(query: $qb);
 	}//end findAllBroadcasts()

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Service\Flow\FlowRunRow;
 use PHPUnit\Framework\TestCase;
 
@@ -28,12 +29,7 @@ final class FlowRunRowTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRowCarriesTheDispatchTheAttributionAndThePin(): void {
-		$run = (new FlowRunRow(attribution: ['user' => 'alice', 'organisation' => 'org-1', 'declaredBy' => 'bob'], version: 3))->build(
-			flowId: 'flow-1',
-			subject: ['uuid' => 'obj-1', 'register' => 'reg', 'schema' => 'sch'],
-			trigger: 'object.created',
-			context: ['nodeId' => 'n1']
-		);
+		$run = (new FlowRunRow(attribution: ['user' => 'alice', 'organisation' => 'org-1', 'declaredBy' => 'bob'], version: 3))->build(flowId: 'flow-1', options: new FlowRunQueueOptions(subject: ['uuid' => 'obj-1', 'register' => 'reg', 'schema' => 'sch'], trigger: 'object.created', context: ['nodeId' => 'n1']));
 
 		$this->assertSame(1, preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', (string) $run->getUuid()));
 		$this->assertSame('flow-1', $run->getFlowId());
@@ -58,12 +54,7 @@ final class FlowRunRowTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentSubjectOrganisationAndPinStayNull(): void {
-		$run = (new FlowRunRow(attribution: ['user' => 'carol', 'organisation' => null], version: null))->build(
-			flowId: 'flow-2',
-			subject: [],
-			trigger: 'manual',
-			context: []
-		);
+		$run = (new FlowRunRow(attribution: ['user' => 'carol', 'organisation' => null], version: null))->build(flowId: 'flow-2', options: new FlowRunQueueOptions(subject: [], trigger: 'manual', context: []));
 
 		$this->assertNull($run->getSubjectUuid());
 		$this->assertNull($run->getSubjectRegister());
@@ -81,8 +72,8 @@ final class FlowRunRowTest extends TestCase {
 	 */
 	public function testEachRowGetsItsOwnUuid(): void {
 		$row = new FlowRunRow(attribution: ['user' => 'u', 'organisation' => null], version: null);
-		$a = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: []);
-		$b = $row->build(flowId: 'f', subject: [], trigger: 'manual', context: []);
+		$a = $row->build(flowId: 'f', options: new FlowRunQueueOptions(subject: [], trigger: 'manual', context: []));
+		$b = $row->build(flowId: 'f', options: new FlowRunQueueOptions(subject: [], trigger: 'manual', context: []));
 
 		$this->assertNotSame($a->getUuid(), $b->getUuid());
 	}//end testEachRowGetsItsOwnUuid()

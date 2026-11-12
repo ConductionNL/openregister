@@ -172,36 +172,57 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 		}
 
 		foreach ($declared as $name => $descriptor) {
-			if (is_string($name) === false || $name === '') {
-				continue;
+			$resource = $this->declaredSubResource(name: $name, descriptor: $descriptor);
+			if ($resource !== null) {
+				$resources[$name] = $resource;
 			}
-
-			if (is_array($descriptor) === false) {
-				continue;
-			}
-
-			$kind = (string)($descriptor['kind'] ?? 'property');
-			if ($kind === self::FILES) {
-				$resources[$name] = ['kind' => self::FILES];
-				continue;
-			}
-
-			// A property sub-resource must name the property it counts and the
-			// date field on each entry. Without both there is nothing to
-			// compare against the seen moment, and a badge that cannot be
-			// computed must be absent rather than zero.
-			$property = (string)($descriptor['property'] ?? $name);
-			$dateField = (string)($descriptor['dateField'] ?? '');
-			if ($property === '' || $dateField === '') {
-				continue;
-			}
-
-			$resources[$name] = ['kind' => 'property', 'property' => $property, 'dateField' => $dateField];
-		}//end foreach
+		}
 
 		return $resources;
 
 	}//end subResources()
+
+	/**
+	 * One declared sub-resource, or null when its declaration cannot be counted.
+	 *
+	 * @param mixed $name       The declared name.
+	 * @param mixed $descriptor The declared descriptor.
+	 *
+	 * @return array<string, string>|null The sub-resource, or null to leave it out.
+	 */
+	private function declaredSubResource(mixed $name, mixed $descriptor): ?array {
+		if (is_string($name) === false || $name === '' || is_array($descriptor) === false) {
+			return null;
+		}
+
+		if ((string)($descriptor['kind'] ?? 'property') === self::FILES) {
+			return ['kind' => self::FILES];
+		}
+
+		return $this->propertySubResource(name: $name, descriptor: $descriptor);
+	}//end declaredSubResource()
+
+	/**
+	 * A property sub-resource, or null when it does not name both its property and its date field.
+	 *
+	 * @param string $name       The declared name, which is also the default property.
+	 * @param array  $descriptor The declared descriptor.
+	 *
+	 * @return array<string, string>|null The sub-resource, or null to leave it out.
+	 */
+	private function propertySubResource(string $name, array $descriptor): ?array {
+		// A property sub-resource must name the property it counts and the
+		// date field on each entry. Without both there is nothing to
+		// compare against the seen moment, and a badge that cannot be
+		// computed must be absent rather than zero.
+		$property = (string)($descriptor['property'] ?? $name);
+		$dateField = (string)($descriptor['dateField'] ?? '');
+		if ($property === '' || $dateField === '') {
+			return null;
+		}
+
+		return ['kind' => 'property', 'property' => $property, 'dateField' => $dateField];
+	}//end propertySubResource()
 
 	/**
 	 * The property names whose values differ between two versions.

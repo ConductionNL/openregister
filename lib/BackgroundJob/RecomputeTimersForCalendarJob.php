@@ -33,9 +33,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
 use OCP\BackgroundJob\QueuedJob;
@@ -130,10 +133,8 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 					// itself has NOT moved, so it is handed back unchanged —
 					// what moved is the calendar under it.
 					$this->service->supersede(
-						uuid: (string)$timer->getUuid(),
-						anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince()),
-						reason: CalendarRecomputeInterface::REASON,
-						actor: CalendarRecomputeInterface::ACTOR
+						move: new TimerAnchorMove(uuid: (string)$timer->getUuid(), anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince())),
+						change: new TimerChange(reason: CalendarRecomputeInterface::REASON, actor: CalendarRecomputeInterface::ACTOR)
 					);
 				}
 			));
@@ -184,8 +185,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 				try {
 					$page = $this->timers->findByStatePaged(
 						state: $state,
-						afterId: $afterId,
-						limit: CalendarRecomputeInterface::BATCH
+						cursor: new IdCursor(afterId: $afterId, limit: CalendarRecomputeInterface::BATCH)
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(

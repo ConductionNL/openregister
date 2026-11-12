@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OC\DB\Exceptions\DbalException;
@@ -263,7 +265,7 @@ class OrganisationSlugConflictTest extends TestCase {
 
 		$thrown = null;
 		try {
-			$provider->insert(register: new Register(), schema: new Schema(), data: ['name' => 'Gemeente-A', 'description' => 'Taken over']);
+			$provider->insert(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), data: ['name' => 'Gemeente-A', 'description' => 'Taken over']);
 		} catch (\Throwable $e) {
 			$thrown = $e;
 		}
@@ -288,7 +290,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		$this->actAs(userId: 'mallory');
 
 		$this->expectException(DbalException::class);
-		$this->service()->createOrganisation(name: 'Gemeente A', uuid: self::SECOND_UUID);
+		$this->service()->createOrganisation(details: new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Gemeente A', uuid: self::SECOND_UUID));
 	}//end testTheServiceDoesNotAdoptTheOrganisationHoldingTheSlug()
 
 	/**
@@ -316,7 +318,7 @@ class OrganisationSlugConflictTest extends TestCase {
 	 */
 	private function existingOrganisation(): Organisation {
 		$this->actAs(userId: 'alice');
-		$organisation = $this->service()->createOrganisation(name: 'Gemeente A', uuid: self::FIRST_UUID);
+		$organisation = $this->service()->createOrganisation(details: new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Gemeente A', uuid: self::FIRST_UUID));
 		$organisation->addUser('bob');
 
 		return $this->mapper->save($organisation);

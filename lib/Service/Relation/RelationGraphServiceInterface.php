@@ -37,9 +37,8 @@ interface RelationGraphServiceInterface {
 	 * of wrongness this whole method exists to avoid. The answer always says
 	 * what it is.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag to resolve labels in.
+	 * @param string             $rootUuid The object to walk out from.
+	 * @param GraphExportOptions $options  The depth (1 by default) and the language of the labels (Dutch by default).
 	 *
 	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
 	 *     nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>,
@@ -48,7 +47,7 @@ interface RelationGraphServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function graph(string $rootUuid, int $depth = 1, string $language = 'nl'): array;
+	public function graph(string $rootUuid, GraphExportOptions $options = new GraphExportOptions()): array;
 
 	/**
 	 * The export rows of a graph, header first.

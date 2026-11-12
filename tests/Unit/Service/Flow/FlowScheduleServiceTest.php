@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 class FlowScheduleServiceTest extends TestCase {
 
@@ -88,7 +89,7 @@ class FlowScheduleServiceTest extends TestCase {
 			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-11-02T21:02:39+00:00')]
 		);
 
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-11-02T21:08:54+00:00')));
 	}//end testANewFlowPlannedForALaterDateWaitsForThatDate()
@@ -103,7 +104,7 @@ class FlowScheduleServiceTest extends TestCase {
 			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-11-02T21:02:39+00:00')]
 		);
 
-		$this->runs->expects($this->once())->method('queue')->with('planned', $this->anything(), 'schedule', $this->anything());
+		$this->runs->expects($this->once())->method('queueRun')->with('planned', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == 'schedule'));
 
 		$this->assertSame(['planned'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
 	}//end testANewFlowFiresOnItsDate()
@@ -118,7 +119,7 @@ class FlowScheduleServiceTest extends TestCase {
 			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-12-02T05:58:00+00:00')]
 		);
 
-		$this->runs->expects($this->once())->method('queue');
+		$this->runs->expects($this->once())->method('queueRun');
 
 		$this->assertSame(['planned'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
 	}//end testAnOccurrenceBetweenTheSaveAndTheFirstTickFires()
@@ -134,7 +135,7 @@ class FlowScheduleServiceTest extends TestCase {
 	public function testAFlowWithoutASaveTimeStartsItsClockOnFirstSight(): void {
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '0 6 2 12 *', 'pieter', '')]);
 
-		$this->runs->expects($this->once())->method('queue');
+		$this->runs->expects($this->once())->method('queueRun');
 
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-11-02T21:08:54+00:00')));
 		$this->assertSame('2026-11-02T21:08:54+00:00', $this->store['flow_sched_last_f1']);
@@ -153,7 +154,7 @@ class FlowScheduleServiceTest extends TestCase {
 			[$this->schedule('f1', '*/5 * * * *', null, '2026-07-25T08:00:00+00:00')]
 		);
 
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:02:00')));
 	}//end testTheLastFireWinsOverTheSaveTime()
@@ -173,7 +174,7 @@ class FlowScheduleServiceTest extends TestCase {
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 		$this->runs->method('hasActiveRun')->with('f1')->willReturn(true);
 
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 
 		$fired = $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
 
@@ -205,8 +206,8 @@ class FlowScheduleServiceTest extends TestCase {
 		// Never fired; saved at 09:00, so the */5 occurrences since then are due.
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 
-		$this->runs->expects($this->once())->method('queue')
-			->with('f1', $this->anything(), 'schedule', $this->anything());
+		$this->runs->expects($this->once())->method('queueRun')
+			->with('f1', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == 'schedule'));
 
 		$fired = $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
 
@@ -239,8 +240,8 @@ class FlowScheduleServiceTest extends TestCase {
 
 		// Four arguments, not five: the scheduler no longer hands an identity
 		// down. See testAScheduledRunIsNotAttributedToTheFlowsOwner().
-		$this->runs->expects($this->once())->method('queue')
-			->with('agentflow-uuid', $this->anything(), 'schedule', $this->anything());
+		$this->runs->expects($this->once())->method('queueRun')
+			->with('agentflow-uuid', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->trigger == 'schedule'));
 
 		$this->assertSame(
 			['agentflow-uuid'],
@@ -276,13 +277,13 @@ class FlowScheduleServiceTest extends TestCase {
 	public function testAScheduledRunIsNotAttributedToTheFlowsOwner(): void {
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *', 'alice')]);
 
-		$this->runs->expects($this->once())->method('queue')
+		$this->runs->expects($this->once())->method('queueRun')
 			->willReturnCallback(
-				function (string $flowId, array $subject, string $trigger, array $context, ?string $user = null) {
+				function (string $flowId, FlowRunQueueOptions $options) {
 					$this->assertSame('f1', $flowId);
-					$this->assertSame('schedule', $trigger);
+					$this->assertSame('schedule', $options->trigger);
 					$this->assertNull(
-						$user,
+						$options->user,
 						"the scheduler must not name an identity — the trigger node's runAs does"
 					);
 
@@ -299,7 +300,7 @@ class FlowScheduleServiceTest extends TestCase {
 		$this->store['flow_sched_last_f1'] = '2026-07-25T10:00:00+00:00';
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:02:00')));
 	}//end testAFlowThatFiredRecentlyIsNotDueAgain()
@@ -322,7 +323,7 @@ class FlowScheduleServiceTest extends TestCase {
 				$this->candidate('f1', ['enabled' => false, 'trigger' => 'schedule', 'cron' => '*/5 * * * *']),
 			]
 		);
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
 	}//end testADisabledScheduleDoesNotFire()
 
@@ -332,7 +333,7 @@ class FlowScheduleServiceTest extends TestCase {
 				$this->candidate('f1', ['enabled' => true, 'trigger' => 'object.created', 'cron' => '*/5 * * * *']),
 			]
 		);
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
 	}//end testANonScheduleTriggerDoesNotFire()
 
@@ -343,7 +344,7 @@ class FlowScheduleServiceTest extends TestCase {
 				$this->candidate('none', ['enabled' => true, 'trigger' => 'schedule']),
 			]
 		);
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
 	}//end testAnInvalidOrMissingCronIsSkipped()
 
@@ -379,7 +380,7 @@ class FlowScheduleServiceTest extends TestCase {
 			]
 		);
 
-		$this->runs->method('queue')->willReturnCallback(
+		$this->runs->method('queueRun')->willReturnCallback(
 			function (string $flowId) {
 				if ($flowId === 'unattributed') {
 					throw new FlowUnattributed(flowId: $flowId, trigger: 'schedule');
@@ -410,7 +411,7 @@ class FlowScheduleServiceTest extends TestCase {
 	public function testARefusedFlowDoesNotRecordAFire(): void {
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('unattributed', '*/5 * * * *')]);
 
-		$this->runs->method('queue')->willReturnCallback(
+		$this->runs->method('queueRun')->willReturnCallback(
 			static function (string $flowId) {
 				throw new FlowUnattributed(flowId: $flowId, trigger: 'schedule');
 			}

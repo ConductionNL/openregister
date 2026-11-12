@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * Caller `alice` deletes one object in a given state.
@@ -40,6 +41,9 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Exception\LockedException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
  */
 class ObjectStateDeleteGuardListenerTest extends TestCase {
 
@@ -101,7 +105,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 
 	public function testTheRunHoldingALockMayDelete(): void {
 		$this->object->setLocked(['kind' => ObjectEntity::LOCK_KIND_RUN, 'runUuid' => self::RUN, 'user' => 'bob']);
-		$this->flow->push(runUuid: self::RUN, nodeId: 'write', sequence: 1);
+		$this->flow->push(frame: new FlowRunFrame(runUuid: self::RUN, nodeId: 'write', sequence: 1));
 
 		$this->assertFalse($this->delete()->isPropagationStopped());
 	}//end testTheRunHoldingALockMayDelete()

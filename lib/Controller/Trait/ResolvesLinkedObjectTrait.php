@@ -29,22 +29,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 trait ResolvesLinkedObjectTrait
 {
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists; the caller answers 404.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		return $this->resolveLinkedObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-	}//end validateObject()
 
 	/**
 	 * Resolve an OR object from one object reference.

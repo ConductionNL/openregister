@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItemPlacement;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\Definition;
@@ -71,7 +72,7 @@ final class FlowItemPlacementTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyFiringDoesNotEraseAnotherBranchesItems(): void {
-		$item = FlowItems::item(json: ['issue' => 1549], output: 'build-blocked');
+		$item = FlowItems::item(json: ['issue' => 1549], options: new FlowItemOptions(output: 'build-blocked'));
 
 		// The routing node fires with work and tags the item for one exit.
 		$placeItems = $this->placement->advance(
@@ -135,7 +136,7 @@ final class FlowItemPlacementTest extends TestCase {
 	 */
 	public function testAProductiveFiringStillClearsTheBranchesItDidNotTake(): void {
 		$old = FlowItems::item(json: ['from' => 'an earlier pass']);
-		$item = FlowItems::item(json: ['issue' => 1549], output: 'taken');
+		$item = FlowItems::item(json: ['issue' => 1549], options: new FlowItemOptions(output: 'taken'));
 
 		$placeItems = $this->placement->advance(
 			firing: new \OCA\OpenRegister\Service\Flow\ItemFiring(transition: new Transition('gate', ['gate'], ['taken', 'not-taken']), items: [$item], taken: ['taken']),

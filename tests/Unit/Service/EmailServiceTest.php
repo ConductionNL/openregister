@@ -15,6 +15,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 class EmailServiceTest extends TestCase {
 	private EmailLinkMapper&MockObject $emailLinkMapper;
@@ -69,7 +71,7 @@ class EmailServiceTest extends TestCase {
 		$this->emailLinkMapper->method('findByObjectUuid')->with('abc-123', 10, 0)->willReturn([$link]);
 		$this->emailLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
 
-		$result = $this->service->getEmailsForObject('abc-123', 10, 0);
+		$result = $this->service->getEmailsForObject('abc-123', new ListQuery(limit: 10, offset: 0));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertCount(1, $result['results']);
@@ -93,7 +95,7 @@ class EmailServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Email already linked to this object');
 
-		$this->service->linkEmail('abc-123', 5, 1, 42);
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 1, mailMessageId: 42));
 	}
 
 	/**
@@ -126,7 +128,7 @@ class EmailServiceTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
 
-		$link = $this->service->linkEmail('abc-123', 5, 4, 44);
+		$link = $this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
 
 		$this->assertSame(expected: 'sanne.devries@zuiddrecht.example', actual: $link->getSender());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getSenderName());
@@ -145,7 +147,7 @@ class EmailServiceTest extends TestCase {
 
 		$this->expectExceptionCode(404);
 
-		$this->service->linkEmail('abc-123', 5, 4, 44);
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
 	}
 
 	/**
@@ -161,7 +163,7 @@ class EmailServiceTest extends TestCase {
 
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkEmail('abc-123', 5, 4, 44);
+		$this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
 	}
 
 	/**
@@ -175,7 +177,7 @@ class EmailServiceTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($this->mailQuery(row: ['uid' => '44', 'subject' => 'S', 'sent_at' => 1760512500]));
 		$this->emailLinkMapper->method('insert')->willReturnArgument(0);
 
-		$link = $this->service->linkEmail('abc-123', 5, 4, 44);
+		$link = $this->service->linkEmail(new EmailLinkRequest(objectUuid: 'abc-123', registerId: 5, mailAccountId: 4, mailMessageId: 44));
 
 		$this->assertSame('abc-123', $link->getObjectUuid());
 		$this->assertSame(5, $link->getRegisterId());

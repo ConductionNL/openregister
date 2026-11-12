@@ -73,6 +73,26 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 		$maxFiles = (int)($options['max_files'] ?? 0);
 		$fileTypes = $options['file_types'] ?? [];
 
+		$this->logFetching(maxFiles: $maxFiles, fileTypes: $fileTypes);
+
+		/*
+		 * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance
+		 */
+
+		$allChunks = $this->chunkMapper->findEntitiesPublic($this->fileChunkQuery(maxFiles: $maxFiles));
+
+		return self::chunksOfFirstFiles(chunks: $allChunks, maxFiles: $maxFiles);
+	}//end fetchEntities()
+
+	/**
+	 * Log the start of a fetch.
+	 *
+	 * @param int   $maxFiles  The maximum number of files, 0 for all
+	 * @param mixed $fileTypes The file types asked for
+	 *
+	 * @return void
+	 */
+	private function logFetching(int $maxFiles, mixed $fileTypes): void {
 		$this->logger->debug(
 			message: '[FileVectorizationStrategy] Fetching file chunks',
 			context: [
@@ -82,7 +102,16 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 				'fileTypes' => $fileTypes,
 			]
 		);
+	}//end logFetching()
 
+	/**
+	 * The query for every file chunk, in file and chunk order.
+	 *
+	 * @param int $maxFiles The maximum number of files, 0 for all
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function fileChunkQuery(int $maxFiles): IQueryBuilder {
 		// Get all chunks for files (source_type = 'file').
 		// We'll need to query by source_type only.
 		$qb = $this->db->getQueryBuilder();
@@ -96,17 +125,23 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 			$qb->setMaxResults($maxFiles * 100);
 		}
 
-		/*
-		 * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance
-		 */
+		return $qb;
+	}//end fileChunkQuery()
 
-		$allChunks = $this->chunkMapper->findEntitiesPublic($qb);
-
+	/**
+	 * Keep the chunks of the first files, stopping at the first chunk of one file too many.
+	 *
+	 * @param array $chunks   The chunks, ordered by file
+	 * @param int   $maxFiles The maximum number of files, 0 for all
+	 *
+	 * @return array The chunks kept.
+	 */
+	private static function chunksOfFirstFiles(array $chunks, int $maxFiles): array {
 		// Group by source_id and apply max_files limit.
 		$uniqueFiles = [];
 		$fileChunks = [];
 
-		foreach ($allChunks as $chunk) {
+		foreach ($chunks as $chunk) {
 			$sourceId = $chunk->getSourceId();
 			if (isset($uniqueFiles[$sourceId]) === false) {
 				$uniqueFiles[$sourceId] = true;
@@ -119,7 +154,7 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 		}
 
 		return $fileChunks;
-	}//end fetchEntities()
+	}//end chunksOfFirstFiles()
 
 	/**
 	 * Extract chunks from file
@@ -179,13 +214,25 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 			'total_chunks' => $totalChunks,
 			'chunk_text' => substr($item['text'], 0, 500),
 			// Preview.
-			'additional_metadata' => [
-				'source_id' => $entity->getSourceId(),
-				'start_offset' => $item['start_offset'],
-				'end_offset' => $item['end_offset'],
-			],
+			'additional_metadata' => self::chunkPlacement(entity: $entity, item: $item),
 		];
 	}//end prepareVectorMetadata()
+
+	/**
+	 * Where the chunk sits: its source file and its offsets in that file.
+	 *
+	 * @param mixed $entity Chunk entity
+	 * @param array $item   Chunk item
+	 *
+	 * @return array The placement metadata.
+	 */
+	private static function chunkPlacement($entity, array $item): array {
+		return [
+			'source_id' => $entity->getSourceId(),
+			'start_offset' => $item['start_offset'],
+			'end_offset' => $item['end_offset'],
+		];
+	}//end chunkPlacement()
 
 	/**
 	 * Get file ID as identifier

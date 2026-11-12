@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
@@ -85,7 +86,7 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 	private array $queued = [];
 
 	/**
-	 * What flowUuidsFor() was asked for.
+	 * What flowUuidsSubscribedTo() was asked for.
 	 *
 	 * @var array<int, array{event: string, register: string, schema: string}>
 	 */
@@ -101,8 +102,10 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 	 */
 	private function listener(): FlowTriggerListener {
 		$triggerMapper = $this->createMock(FlowTriggerMapper::class);
-		$triggerMapper->method('flowUuidsFor')->willReturnCallback(
-			function (string $event, string $register, string $schema): array {
+		$triggerMapper->method('flowUuidsSubscribedTo')->willReturnCallback(
+			function (string $event, RegisterSchemaRef $table): array {
+				$register = (string)$table->register;
+				$schema   = (string)$table->schema;
 				$this->asked[] = ['event' => $event, 'register' => $register, 'schema' => $schema];
 				if ($event === 'object.created' && $register === 'dossiq' && $schema === 'case') {
 					return ['flow-imported'];
@@ -137,7 +140,7 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		);
 
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturnCallback(
+		$runner->method('queueRun')->willReturnCallback(
 			function (string $flowId): FlowRun {
 				$this->queued[] = $flowId;
 				$run = new FlowRun();

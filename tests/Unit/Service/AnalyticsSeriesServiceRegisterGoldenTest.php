@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
+use OCA\OpenRegister\Service\AnalyticsSeriesDraft;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\IGroupManager;
@@ -122,15 +123,11 @@ class AnalyticsSeriesServiceRegisterGoldenTest extends TestCase {
 	public function testANewSeriesIsInsertedWithItsCreatorAndDeclaresTheWidget(): void {
 		$service = $this->service(existing: null, uid: 'alice');
 
-		$row = $service->register(
-			seriesKey: 'sla-breaches',
-			labels: ['a' => 'Wk1', 'b' => 'Wk2'],
-			datasets: ['x' => ['label' => 'Breaches', 'data' => [3, 5]]],
-			title: 'SLA breaches',
-			chartType: 'bar',
-			visibility: 'group',
-			registerId: 2,
-			schemaId: 4
+		$row = $service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'sla-breaches', title: 'SLA breaches'))
+				->withData(labels: ['a' => 'Wk1', 'b' => 'Wk2'], datasets: ['x' => ['label' => 'Breaches', 'data' => [3, 5]]])
+				->shownAs(chartType: 'bar', visibility: 'group')
+				->inScope(registerId: 2, schemaId: 4)
 		);
 
 		$this->assertSame(['getUser', 'findByKey:sla-breaches', 'insert'], $this->calls);
@@ -180,7 +177,10 @@ class AnalyticsSeriesServiceRegisterGoldenTest extends TestCase {
 		$existing->setTitle('Old');
 
 		$service = $this->service(existing: $existing, uid: 'alice');
-		$row     = $service->register(seriesKey: 'k', labels: [], datasets: []);
+		$row     = $service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'k', title: null))
+				->withData(labels: [], datasets: [])
+		);
 
 		$this->assertSame(['getUser', 'findByKey:k', 'update'], $this->calls);
 		$this->assertNull($row['createdAt']);
@@ -235,12 +235,10 @@ class AnalyticsSeriesServiceRegisterGoldenTest extends TestCase {
 		$service = $this->service(existing: null, uid: $uid);
 
 		try {
-			$service->register(
-				seriesKey: $key,
-				labels: [],
-				datasets: [],
-				chartType: $chartType,
-				visibility: $visibility
+			$service->registerSeries(
+				draft: (new AnalyticsSeriesDraft(seriesKey: $key, title: null))
+					->withData(labels: [], datasets: [])
+					->shownAs(chartType: $chartType, visibility: $visibility)
 			);
 			$this->fail('expected a refusal');
 		} catch (InvalidArgumentException $e) {

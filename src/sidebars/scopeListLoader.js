@@ -10,6 +10,40 @@
 import { objectStore, registerStore, schemaStore } from '../store/store.js'
 
 /**
+ * Load the register list when it is still empty; the sidebar stops showing
+ * it loading once the list is there.
+ *
+ * @param {object} sidebar The sidebar, with `registerLoading`
+ * @return {void}
+ */
+function loadRegisterList(sidebar) {
+	if (!registerStore.registerList.length) {
+		registerStore
+			.refreshRegisterList()
+			.finally(() => (sidebar.registerLoading = false))
+	} else {
+		sidebar.registerLoading = false
+	}
+}
+
+/**
+ * Load the schema list when it is still empty; the sidebar stops showing it
+ * loading once the list is there.
+ *
+ * @param {object} sidebar The sidebar, with `schemaLoading`
+ * @return {void}
+ */
+function loadSchemaList(sidebar) {
+	if (!schemaStore.schemaList.length) {
+		schemaStore
+			.refreshSchemaList()
+			.finally(() => (sidebar.schemaLoading = false))
+	} else {
+		sidebar.schemaLoading = false
+	}
+}
+
+/**
  * A mixin for a sidebar with `registerLoading` and `schemaLoading` data.
  */
 export const scopeListLoader = {
@@ -37,21 +71,8 @@ export const scopeListLoader = {
 		 * @return {void}
 		 */
 		loadScopeLists() {
-			if (!registerStore.registerList.length) {
-				registerStore
-					.refreshRegisterList()
-					.finally(() => (this.registerLoading = false))
-			} else {
-				this.registerLoading = false
-			}
-
-			if (!schemaStore.schemaList.length) {
-				schemaStore
-					.refreshSchemaList()
-					.finally(() => (this.schemaLoading = false))
-			} else {
-				this.schemaLoading = false
-			}
+			loadRegisterList(this)
+			loadSchemaList(this)
 		},
 
 		/**

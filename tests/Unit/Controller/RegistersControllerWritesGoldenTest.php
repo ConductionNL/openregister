@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Golden test for RegistersController::create(), update() and patch().
@@ -70,6 +71,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
  * @uses \OCA\OpenRegister\Exception\DatabaseConstraintException
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\AuthorizationChange
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Exception\DatabaseConstraintMessages
  */
 class RegistersControllerWritesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-writes-golden.json';
@@ -338,9 +344,9 @@ class RegistersControllerWritesGoldenTest extends TestCase {
 	 */
 	private function auditService(array $case): AuthorizationAuditService {
 		$audit = $this->createMock(AuthorizationAuditService::class);
-		foreach (['logRegisterAuthorizationChange', 'logRoleDefinitionChange'] as $method) {
-			$audit->method($method)->willReturnCallback(function (...$args) use ($case, $method): void {
-				$this->calls[] = [$method, ...$args];
+		foreach (['recordRegisterChange' => 'logRegisterAuthorizationChange', 'recordRoleChange' => 'logRoleDefinitionChange'] as $recorded => $method) {
+			$audit->method($recorded)->willReturnCallback(function (AuthorizationChange $change) use ($case, $method): void {
+				$this->calls[] = [$method, $change->entityId, $change->entityTitle, $change->before, $change->after];
 				if (($case['auditFails'] ?? null) === $method) {
 					throw new \Error('audit failed');
 				}

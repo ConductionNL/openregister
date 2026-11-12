@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 
@@ -49,15 +50,15 @@ interface RecordTemplateMapperInterface {
 	/**
 	 * The templates a user might see for a register/schema pair.
 	 *
-	 * @param string      $userId   The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param string         $userId The caller.
+	 * @param ListQuery|null $query  The `register` and `schema` filters: only templates for this register id
+	 *                               and this schema id; null, or an absent or empty filter, narrows nothing.
 	 *
 	 * @return RecordTemplate[] The candidates, newest first.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function findCandidates(string $userId, ?string $register=null, ?string $schema=null): array;
+	public function findCandidates(string $userId, ?ListQuery $query=null): array;
 
 	/**
 	 * Insert a new template.

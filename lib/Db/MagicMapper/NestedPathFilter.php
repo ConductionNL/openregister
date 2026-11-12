@@ -91,57 +91,39 @@ class NestedPathFilter {
 	/**
 	 * The SQL expression reading the text at a path inside an object column, or null when a segment is not a plain name.
 	 *
-	 * @param string       $column     The quoted, qualified column.
-	 * @param list<string> $path       The segments below the column.
-	 * @param bool         $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $column The quoted, qualified column and its platform.
+	 * @param list<string>     $path   The segments below the column.
 	 *
 	 * @return string|null The expression.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	public function expression(string $column, array $path, bool $isPostgres): ?string {
+	public function expression(NestedPathTarget $column, array $path): ?string {
 		if (self::isPlainPath(path: $path) === false) {
 			return null;
 		}
 
-		if ($isPostgres === true) {
-			return "({$column} #>> '{" . implode(',', $path) . "}')";
+		if ($column->isPostgres === true) {
+			return "({$column->expression} #>> '{" . implode(',', $path) . "}')";
 		}
 
-		return "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$." . implode('.', $path) . "'))";
+		return "JSON_UNQUOTE(JSON_EXTRACT({$column->expression}, '$." . implode('.', $path) . "'))";
 	}//end expression()
-
-	/**
-	 * The SQL conditions of one path filter.
-	 *
-	 * `$bind` turns a value into its SQL form: a named parameter on the
-	 * QueryBuilder path, a quoted literal on the raw UNION path.
-	 *
-	 * @param string   $expression The expression from expression().
-	 * @param mixed    $value      The filter value: a scalar, a list, or an operator bag.
-	 * @param callable $bind       Value to SQL: fn(string $value): string.
-	 * @param bool     $isPostgres Whether the platform is PostgreSQL.
-	 *
-	 * @return list<string> The conditions, all of which must hold.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
-	 */
-	public function conditions(string $expression, mixed $value, callable $bind, bool $isPostgres): array {
-		return self::targetConditions(target: new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres), value: $value);
-
-	}//end conditions()
 
 	/**
 	 * The SQL conditions of one path filter on its target.
 	 *
-	 * @param NestedPathTarget $target The expression, its binder and the platform.
+	 * The target's binder turns a value into its SQL form: a named parameter
+	 * on the QueryBuilder path, a quoted literal on the raw UNION path.
+	 *
+	 * @param NestedPathTarget $target The expression from expression(), its binder and the platform.
 	 * @param mixed            $value  The filter value: a scalar, a list, or an operator bag.
 	 *
 	 * @return list<string> The conditions, all of which must hold.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	private static function targetConditions(NestedPathTarget $target, mixed $value): array {
+	public function conditions(NestedPathTarget $target, mixed $value): array {
 		if (is_array($value) === false) {
 			return [self::scalarCondition(target: $target, value: $value)];
 		}
@@ -156,7 +138,7 @@ class NestedPathFilter {
 			...self::presenceConditions(target: $target, value: $value),
 		];
 
-	}//end targetConditions()
+	}//end conditions()
 
 	/**
 	 * The condition of a value that is not a list or an operator bag.

@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
@@ -60,6 +61,7 @@ use OCP\Share\Exceptions\ShareNotFound;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The `accessLinks` and `grants` parts of an example set.
@@ -251,11 +253,13 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 		$outside = $this->services[AccessLinkService::class]->mint(
-			userId: 'esra.demir',
-			subjectType: 'object',
-			subjectId: $this->caseId(),
-			terms: new AccessLinkTerms(
-				expiresAt: '+10 years'
+			new LinkMintRequest(
+				minter: 'esra.demir',
+				subjectType: 'object',
+				subjectId: $this->caseId(),
+				terms: new AccessLinkTerms(
+					expiresAt: '+10 years'
+				)
 			)
 		);
 
@@ -783,7 +787,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 */
 	private function shareRow(): array {
 		$id = (string) $this->record->read(set: 'demo')['objects']['alpha/share-sanne']['id'];
-		return (array) $this->store->get(register: 'dossiq', schema: 'caseShare', id: $id);
+		return (array) $this->store->row(ref: new ObjectRef(register: 'dossiq', schema: 'caseShare', id: $id));
 	}//end shareRow()
 
 	/**

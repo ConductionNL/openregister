@@ -40,9 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
-use OCP\IGroupManager;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCP\IUser;
-use OCP\IUserSession;
 
 /**
  * The flow endpoints' authorisation questions, in one place.
@@ -51,16 +50,15 @@ class FlowAccess implements FlowAccessInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param IGroupManager $groupManager Answers whether that user is an administrator.
+	 * The action-rights matrix is an access guard and stays a direct parameter.
+	 *
+	 * @param CallerContext                 $caller     Resolves the calling user and whether they are an administrator.
 	 * @param OpenRegisterActionAuthService $actionAuth The flow action-rights matrix.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly OpenRegisterActionAuthService $actionAuth,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -76,7 +74,7 @@ class FlowAccess implements FlowAccessInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
 	 */
 	public function currentUser(): ?IUser {
-		return $this->userSession->getUser();
+		return $this->caller->userSession->getUser();
 	}//end currentUser()
 
 	/**
@@ -110,6 +108,6 @@ class FlowAccess implements FlowAccessInterface {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->caller->groupManager->isAdmin($user->getUID());
 	}//end callerIsAdmin()
 }//end class

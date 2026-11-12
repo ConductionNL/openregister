@@ -46,8 +46,11 @@ use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface;
+use OCA\OpenRegister\Service\Vocabulary\DeclarationLookup;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -184,7 +187,7 @@ class VocabularyController extends Controller {
 			return new JSONResponse(['message' => 'Either "schema" and "property", or "scheme", must be given.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$declaration = $this->declarationResolver->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
+		$declaration = $this->declarationResolver->resolveDeclaration(new DeclarationLookup(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri));
 		if ($declaration === null) {
 			return $this->notFound();
 		}
@@ -220,7 +223,7 @@ class VocabularyController extends Controller {
 		$asTree = filter_var($this->request->getParam('tree', false), FILTER_VALIDATE_BOOLEAN);
 
 		if ($asTree === true) {
-			$tree = $this->options->tree(declaration: $declaration, language: $read->language);
+			$tree = $this->options->tree(declaration: $declaration, scope: new CodedOptionScope(language: $read->language));
 
 			return new JSONResponse(array_merge($read->envelope(), ['tree' => $tree]));
 		}
@@ -241,7 +244,7 @@ class VocabularyController extends Controller {
 			$context = null;
 		}
 
-		$options = $this->options->options(declaration: $read->declaration, language: $read->language, context: $context);
+		$options = $this->options->options(declaration: $read->declaration, scope: new CodedOptionScope(language: $read->language, context: $context));
 
 		return new JSONResponse(
 			array_merge(
@@ -464,7 +467,10 @@ class VocabularyController extends Controller {
 	 */
 	private function schemeById(string $uuid): ?ObjectEntity {
 		try {
-			return WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_SCHEME));
+			return WriteCause::asLookup(fn () => $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SCHEME)
+			));
 		} catch (Throwable $e) {
 			return null;
 		}

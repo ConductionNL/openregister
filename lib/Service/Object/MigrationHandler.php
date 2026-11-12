@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -65,10 +66,8 @@ class MigrationHandler {
 	 * This method migrates multiple objects from one register/schema combination
 	 * to another register/schema combination with property mapping.
 	 *
-	 * @param array{0: string|int, 1: string|int} $source The source register and schema, each an ID or slug.
-	 * @param array{0: string|int, 1: string|int} $target The target register and schema, each an ID or slug.
-	 * @param array $objectIds Array of object IDs to migrate.
-	 * @param array $mapping Simple mapping where keys are target properties, values are source properties.
+	 * @param ObjectMigration $migration The source and target register and schema (each an ID or slug), the
+	 *                                   object IDs to migrate and the mapping (target property => source property).
 	 *
 	 * @return array Migration report with success status, statistics, details, warnings, and errors.
 	 *
@@ -77,16 +76,14 @@ class MigrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function migrateObjects(
-		array $source,
-		array $target,
-		array $objectIds,
-		array $mapping,
-	): array {
-		$run          = new MigrationRun(source: $source, target: $target);
-		$run->mapping = $mapping;
+	public function migrateObjects(ObjectMigration $migration): array {
+		$run          = new MigrationRun(
+			source: [$migration->source->register, $migration->source->schema],
+			target: [$migration->target->register, $migration->target->schema]
+		);
+		$run->mapping = $migration->mapping;
 
-		return $this->migrate(run: $run, objectIds: $objectIds);
+		return $this->migrate(run: $run, objectIds: $migration->objectIds);
 	}//end migrateObjects()
 
 	/**

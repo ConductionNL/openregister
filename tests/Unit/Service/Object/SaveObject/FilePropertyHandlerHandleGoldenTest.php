@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -133,14 +134,17 @@ class FilePropertyHandlerHandleGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 		$schema->setConfiguration($configuration);
 
-		$object    = ['other' => 'kept', $property => $value];
-		$exception = null;
+		$write         = new ObjectFileWrite();
+		$write->entity = $entity;
+		$write->data   = ['other' => 'kept', $property => $value];
+		$write->schema = $schema;
+		$exception     = null;
 		try {
-			$handler->handleFileProperty($entity, $object, $property, $schema);
+			$handler->handleFileProperty($write, $property);
 		} catch (Exception $e) {
 			$exception = $e->getMessage();
 		}
 
-		return ['object' => $object, 'calls' => $calls, 'exception' => $exception];
+		return ['object' => $write->data, 'calls' => $calls, 'exception' => $exception];
 	}//end scenario()
 }//end class

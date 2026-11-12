@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\MergeControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
@@ -84,7 +85,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the preview payload.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */
@@ -122,7 +122,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the persisted `mergeOperation`.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */
@@ -141,11 +140,8 @@ class MergeController extends Controller {
 		}
 
 		try {
-			$result = $this->mergeService->executeMerge(
-				from: $from,
-				into: $into,
-				reason: $reason,
-				mergedBy: $mergedBy,
+			$result = $this->mergeService->merge(
+				instruction: new MergeInstruction(from: $from, into: $into, reason: $reason, mergedBy: $mergedBy),
 				decisions: $decisions
 			);
 		} catch (MergeDecisionException $e) {
@@ -181,7 +177,6 @@ class MergeController extends Controller {
 	 * @return JSONResponse JSON response with the updated `mergeOperation`.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
 	 */

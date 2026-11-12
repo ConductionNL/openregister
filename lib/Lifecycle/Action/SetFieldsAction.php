@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Lifecycle\Action;
 
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use RuntimeException;
 
@@ -57,10 +58,8 @@ final class SetFieldsAction implements LifecycleActionInterface {
 	 *  - `set-field`: the field map lives under a `set` key
 	 *    (e.g. `{ "set": { "submittedAt": "@now" } }`).
 	 *
-	 * @param array<string, mixed> $objectData Object payload after the lifecycle move.
-	 * @param array<string, mixed> $previousData Object payload before the transition (unused).
-	 * @param array<string, mixed> $parameters The declared `actionParameters` block.
-	 * @param string $actionName The declared action name (`set-fields` or `set-field`).
+	 * @param LifecycleActionContext $context The payload after the lifecycle move, the declared
+	 *                                        `actionParameters` block and the action name.
 	 *
 	 * @return array<string, mixed> The payload with the declared fields stamped.
 	 *
@@ -68,10 +67,10 @@ final class SetFieldsAction implements LifecycleActionInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array {
-		$fields = $this->resolveFieldMap(parameters: $parameters);
-		$this->assertDeclaresFields(fields: $fields, actionName: $actionName);
-		return $this->stampFields(objectData: $objectData, fields: $fields);
+	public function execute(LifecycleActionContext $context): array {
+		$fields = $this->resolveFieldMap(parameters: $context->parameters);
+		$this->assertDeclaresFields(fields: $fields, actionName: $context->actionName);
+		return $this->stampFields(objectData: $context->objectData, fields: $fields);
 	}//end execute()
 
 	/**

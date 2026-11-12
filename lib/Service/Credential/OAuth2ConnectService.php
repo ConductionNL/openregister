@@ -125,9 +125,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * rule; it stays on this service's surface so the controller talks to one connect
 	 * seam rather than to every collaborator behind it.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array<string, mixed> $claims The claims assembled so far.
-	 * @param string $redirectUri The callback to register.
+	 * @param OAuth2ClientRegistration $registration The catalogue provider entry, the claims assembled so far and the
+	 *                                               callback to register.
 	 *
 	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef, and
 	 *                              OAuth2InstanceClient::MINTED_KEY when a new client was registered.
@@ -136,8 +135,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
-		return $this->instanceClients->ensure(registration: new OAuth2ClientRegistration(provider: $provider, claims: $claims, redirectUri: $redirectUri));
+	public function ensureInstanceClient(OAuth2ClientRegistration $registration): array {
+		return $this->instanceClients->ensure(registration: $registration);
 	}//end ensureInstanceClient()
 
 	/**
@@ -213,9 +212,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * Exchange an authorization code and mint or overwrite the credential.
 	 *
 	 * @param array<string, mixed> $claims The verified state claims.
-	 * @param string $code The authorization code the provider returned.
-	 * @param string $verifier The PKCE code verifier held since the start.
-	 * @param string $redirectUri The callback the code was issued against.
+	 * @param OAuth2CodeGrant      $grant  The authorization code the provider returned, the PKCE code verifier held
+	 *                                     since the start, and the callback the code was issued against.
 	 *
 	 * @return string The credential UUID, which is the credentialRef apps hold.
 	 *
@@ -224,9 +222,7 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
-	public function complete(array $claims, string $code, string $verifier, string $redirectUri): string {
-		$grant = new OAuth2CodeGrant(code: $code, verifier: $verifier, redirectUri: $redirectUri);
-
+	public function complete(array $claims, OAuth2CodeGrant $grant): string {
 		return $this->connect(flow: new OAuth2FlowClaims(claims: $claims), grant: $grant);
 	}//end complete()
 
@@ -253,7 +249,7 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 			redemption: new OAuth2CodeRedemption(provider: $provider, grant: $grant, client: $client, instanceBaseUrl: $instanceBaseUrl)
 		);
 
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $flow->scopes(provider: $provider));
+		$tokenSet = OAuth2TokenSet::fromResponse(response: $response, options: new TokenResponseOptions(requestedScopes: $flow->scopes(provider: $provider)));
 
 		return $this->writer->store(
 			connection: new RedeemedConnection(provider: $provider, flow: $flow, existing: $existing, tokenSet: $tokenSet)
@@ -266,19 +262,15 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * Best effort by contract: the local disable must happen whether or not the
 	 * provider is reachable, so a network failure here is reported, not fatal.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array<string, mixed> $credential The credential object's serialised data.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope.
+	 * @param OAuth2Revocation $revocation The catalogue provider entry, the credential's serialised data, and its UUID
+	 *                                     and scope.
 	 *
 	 * @return string An empty string on success, or a secret-free reason the revoke failed.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
-	public function revokeUpstream(array $provider, array $credential, string $credentialId, string $scope): string {
-		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
-
-		return $this->revoker->revoke(revocation: new OAuth2Revocation(provider: $provider, credential: $credential, address: $address));
+	public function revokeUpstream(OAuth2Revocation $revocation): string {
+		return $this->revoker->revoke(revocation: $revocation);
 	}//end revokeUpstream()
 
 	/**

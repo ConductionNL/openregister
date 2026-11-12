@@ -74,41 +74,89 @@ class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterf
 			return [];
 		}
 
+		return $this->typesFor(schemas: $schemas, registers: $registers);
+	}//end scan()
+
+	/**
+	 * The shareable types of every marked schema, schema by schema.
+	 *
+	 * @param array<int, object> $schemas   Every schema.
+	 * @param array<int, object> $registers Every register.
+	 *
+	 * @return array<int, GenericObjectShareableConfigType> The generated types.
+	 */
+	private function typesFor(array $schemas, array $registers): array {
 		$types = [];
 		foreach ($schemas as $schema) {
-			$marker = $this->markerOf(configuration: (array)($schema->getConfiguration() ?? []));
-			if ($marker === null) {
-				continue;
-			}
-
-			$schemaSlug = (string)$schema->getSlug();
-			$schemaTitle = (string)$schema->getTitle();
-
-			// A schema may sit in several registers; each register+schema pair is
-			// its own shareable set.
-			foreach ($registers as $register) {
-				if ($this->registerHasSchema(register: $register, schemaId: (int)$schema->getId()) === false) {
-					continue;
-				}
-
-				$registerSlug = (string)$register->getSlug();
-				$registerTitle = (string)$register->getTitle();
-
-				$id = (string)($marker['id'] ?? ($registerSlug . '.' . $schemaSlug));
-				$topic = (string)($marker['topic'] ?? ($registerSlug . '-' . $schemaSlug));
-				$name = (string)($marker['name'] ?? sprintf('%s (%s)', $schemaTitle, $registerTitle));
-
-				$types[] = new GenericObjectShareableConfigType(
-					objectService: $this->objectService,
-					identity: new ShareableTypeIdentity(id: $id, name: $name, topic: $topic),
-					register: $registerSlug,
-					schema: $schemaSlug
-				);
-			}//end foreach
-		}//end foreach
+			$types = array_merge($types, $this->typesForSchema(schema: $schema, registers: $registers));
+		}
 
 		return $types;
-	}//end scan()
+	}//end typesFor()
+
+	/**
+	 * The shareable types of one schema: none when it is not marked, else one per
+	 * register holding it (each register+schema pair is its own shareable set).
+	 *
+	 * @param object             $schema    The schema.
+	 * @param array<int, object> $registers Every register.
+	 *
+	 * @return array<int, GenericObjectShareableConfigType> The generated types, in register order.
+	 */
+	private function typesForSchema(object $schema, array $registers): array {
+		if ($this->markerOf(configuration: (array)($schema->getConfiguration() ?? [])) === null) {
+			return [];
+		}
+
+		$types = [];
+		foreach ($registers as $register) {
+			if ($this->registerHasSchema(register: $register, schemaId: (int)$schema->getId()) === true) {
+				$types[] = $this->typeFor(schema: $schema, register: $register);
+			}
+		}
+
+		return $types;
+	}//end typesForSchema()
+
+	/**
+	 * The shareable type of one marked schema in one register holding it.
+	 *
+	 * @param object $schema   The marked schema.
+	 * @param object $register A register holding it.
+	 *
+	 * @return GenericObjectShareableConfigType The generated type.
+	 */
+	private function typeFor(object $schema, object $register): GenericObjectShareableConfigType {
+		return new GenericObjectShareableConfigType(
+			objectService: $this->objectService,
+			identity: $this->identityFor(schema: $schema, register: $register),
+			register: (string)$register->getSlug(),
+			schema: (string)$schema->getSlug()
+		);
+	}//end typeFor()
+
+	/**
+	 * The identity of a register+schema shareable set: the marker's `id` / `topic` /
+	 * `name` where it refines them, else derived from the slugs and titles.
+	 *
+	 * @param object $schema   The marked schema.
+	 * @param object $register A register holding it.
+	 *
+	 * @return ShareableTypeIdentity The identity.
+	 */
+	private function identityFor(object $schema, object $register): ShareableTypeIdentity {
+		$marker        = $this->markerOf(configuration: (array)($schema->getConfiguration() ?? []));
+		$schemaSlug    = (string)$schema->getSlug();
+		$schemaTitle   = (string)$schema->getTitle();
+		$registerSlug  = (string)$register->getSlug();
+		$registerTitle = (string)$register->getTitle();
+
+		$id    = (string)($marker['id'] ?? ($registerSlug . '.' . $schemaSlug));
+		$topic = (string)($marker['topic'] ?? ($registerSlug . '-' . $schemaSlug));
+		$name  = (string)($marker['name'] ?? sprintf('%s (%s)', $schemaTitle, $registerTitle));
+
+		return new ShareableTypeIdentity(id: $id, name: $name, topic: $topic);
+	}//end identityFor()
 
 	/**
 	 * The shareable annotation key on a schema's configuration.

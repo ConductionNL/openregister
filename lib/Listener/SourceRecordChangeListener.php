@@ -49,15 +49,12 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
-use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\ICache;
@@ -129,25 +126,11 @@ class SourceRecordChangeListener implements IEventListener {
 	private ?ICache $indexCache = null;
 
 	/**
-	 * Schema registry (to build the reverse index).
+	 * Whether the distributed cache has been asked for yet.
 	 *
-	 * @var SchemaMapperInterface
+	 * @var boolean
 	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Actor-forwarding deferral service (ADR-078).
-	 *
-	 * @var ListenerDeferralInterface
-	 */
-	private readonly ListenerDeferralInterface $deferral;
-
-	/**
-	 * Golden-record recompute, used on the inline fallback only.
-	 *
-	 * @var MasterRecomputeInterface
-	 */
-	private readonly MasterRecomputeInterface $recompute;
+	private bool $indexCacheResolved = false;
 
 	/**
 	 * Wire collaborators.
@@ -161,19 +144,29 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
-		SourceRecordChangeServices $services,
+		private readonly SourceRecordChangeServices $services,
 		private readonly LoggerInterface $logger,
-		ICacheFactory $cacheFactory,
+		private readonly ICacheFactory $cacheFactory,
 	) {
-		$this->schemaMapper = $services->schemaMapper;
-		$this->deferral = $services->deferral;
-		$this->recompute = $services->recompute;
-		try {
-			$this->indexCache = $cacheFactory->createDistributed('openregister_reverse_fk');
-		} catch (Throwable $e) {
-			$this->indexCache = null;
-		}
 	}//end __construct()
+
+	/**
+	 * The distributed cache for the reverse index, created on first use; null when there is none.
+	 *
+	 * @return ICache|null The cache.
+	 */
+	private function indexCache(): ?ICache {
+		if ($this->indexCacheResolved === false) {
+			$this->indexCacheResolved = true;
+			try {
+				$this->indexCache = $this->cacheFactory->createDistributed('openregister_reverse_fk');
+			} catch (Throwable $e) {
+				$this->indexCache = null;
+			}
+		}
+
+		return $this->indexCache;
+	}//end indexCache()
 
 	/**
 	 * Dispatch: recompute the referenced master(s) after a source object is
@@ -208,7 +201,7 @@ class SourceRecordChangeListener implements IEventListener {
 			// A schema change can add/remove reverse-FK sourceLink
 			// declarations — drop the cached index so it is rebuilt.
 			$this->reverseIndex = null;
-			$this->indexCache?->remove(self::REVERSE_INDEX_CACHE_KEY);
+			$this->indexCache()?->remove(self::REVERSE_INDEX_CACHE_KEY);
 			return;
 		}
 
@@ -262,7 +255,7 @@ class SourceRecordChangeListener implements IEventListener {
 
 		$payloads = [($object->getObject() ?? []), ($oldObject?->getObject() ?? [])];
 		$masterUuids = self::masterUuidsOf(referenceFields: $referenceFields, payloads: $payloads);
-		$deferralEnabled = $this->deferral->isDeferralEnabled();
+		$deferralEnabled = $this->services->deferral->isDeferralEnabled();
 		foreach ($masterUuids as $masterUuid) {
 			$this->queueRecompute(masterUuid: $masterUuid, deferralEnabled: $deferralEnabled);
 		}
@@ -302,11 +295,11 @@ class SourceRecordChangeListener implements IEventListener {
 	 */
 	private function queueRecompute(string $masterUuid, bool $deferralEnabled): void {
 		if ($deferralEnabled === false) {
-			$this->recompute->recompute(masterUuid: $masterUuid);
+			$this->services->recompute->recompute(masterUuid: $masterUuid);
 			return;
 		}
 
-		$this->deferral->defer(
+		$this->services->deferral->defer(
 			jobClass: JobHandles::SOURCE_RECORD_RECOMPUTE,
 			entry: ['masterUuid' => $masterUuid],
 			chunkSize: self::CHUNK_SIZE,
@@ -357,7 +350,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 */
 	private function reverseIndex(): array {
 		if ($this->reverseIndex === null) {
-			$cached = $this->indexCache?->get(self::REVERSE_INDEX_CACHE_KEY);
+			$cached = $this->indexCache()?->get(self::REVERSE_INDEX_CACHE_KEY);
 			if (is_array($cached) === true) {
 				$this->reverseIndex = $cached;
 				return $this->reverseIndex;
@@ -380,14 +373,14 @@ class SourceRecordChangeListener implements IEventListener {
 	 */
 	private function buildReverseIndex(): array {
 		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->services->schemaMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning('Source-record change: could not load schemas for reverse index: ' . $e->getMessage());
 			return [];
 		}
 
 		$index = $this->indexOf(schemas: $schemas);
-		$this->indexCache?->set(self::REVERSE_INDEX_CACHE_KEY, $index, self::REVERSE_INDEX_CACHE_TTL);
+		$this->indexCache()?->set(self::REVERSE_INDEX_CACHE_KEY, $index, self::REVERSE_INDEX_CACHE_TTL);
 
 		return $index;
 	}//end buildReverseIndex()
@@ -489,7 +482,7 @@ class SourceRecordChangeListener implements IEventListener {
 		$schema = null;
 		if ($ref !== '') {
 			try {
-				$schema = $this->schemaMapper->find($ref, _multitenancy: false);
+				$schema = $this->services->schemaMapper->find($ref, _multitenancy: false);
 			} catch (Throwable) {
 				$schema = null;
 			}

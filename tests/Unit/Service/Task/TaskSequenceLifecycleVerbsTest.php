@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskSeparationOfDutiesException;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -126,7 +128,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 	public function testEnableMovesAnAvailablePositionToEnabled(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_AVAILABLE));
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 'task-sequence:seq-1', reason: 'position 1 approved');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 'task-sequence:seq-1', reason: 'position 1 approved'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 		self::assertSame('enable', $enabled->getLastAction());
@@ -136,7 +138,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 		$this->tasks->expects(self::never())->method('updateIfOpen');
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 's', reason: 'again');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'again'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 	}//end testEnableIsIdempotentOnAnEnabledTask()
@@ -146,7 +148,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'terminated'");
-		$this->service()->enable(uuid: 't-7', source: 's', reason: 'r');
+		$this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r'));
 	}//end testEnableRefusesATerminalTaskNamingItsState()
 
 	public function testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState(): void {
@@ -155,7 +157,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'completed'");
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'bob');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 	}//end testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState()
 
 	public function testTheRequesterIsRefusedBeforeThePerformerCheck(): void {
@@ -167,14 +169,14 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->authorization->expects(self::never())->method('assertMay');
 
 		$this->expectException(TaskSeparationOfDutiesException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 	}//end testTheRequesterIsRefusedBeforeThePerformerCheck()
 
 	public function testANonRequesterPassesTheGuardAndCompletes(): void {
 		$this->sequenceRequestedBy(requester: 'alice');
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'bob');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 
 		self::assertSame(Task::STATE_COMPLETED, $completed->getState());
 		self::assertSame('approved', $completed->getOutcome());
@@ -185,7 +187,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
 		try {
-			$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: '  ', actor: 'bob');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: '  '), actor: 'bob');
 			self::fail('a comment-less rejection must be refused');
 		} catch (\OCA\OpenRegister\Exception\TaskValidationException $refusal) {
 			self::assertStringContainsString('comment is mandatory', $refusal->getMessage());
@@ -195,7 +197,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 	public function testConsumeRecordsTheConsumptionOnce(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_COMPLETED, 'approved'));
 
-		$consumed = $this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'batch 42 relied on it');
+		$consumed = $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'batch 42 relied on it'));
 
 		self::assertSame('sync-run:s-1', $consumed->getMetadata()['consumedBy']);
 		self::assertNotSame('', (string)$consumed->getMetadata()['consumedAt']);
@@ -208,7 +210,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage('authorizes exactly once');
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-2', reason: 'a later run');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-2', reason: 'a later run'));
 	}//end testAConsumedApprovalCannotAuthorizeTwice()
 
 	public function testConsumeRefusesARejectedDecision(): void {
@@ -216,14 +218,14 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage('not an approving decision');
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 	}//end testConsumeRefusesARejectedDecision()
 
 	public function testConsumeRefusesAnOpenTask(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
 		$this->expectException(TaskConflictException::class);
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 	}//end testConsumeRefusesAnOpenTask()
 
 	public function testConsumeRefusesAnOpenTaskThatStillCarriesAnApprovingOutcome(): void {
@@ -231,7 +233,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("is not an approving decision (state 'enabled'");
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 	}//end testConsumeRefusesAnOpenTaskThatStillCarriesAnApprovingOutcome()
 
 	/**
@@ -258,13 +260,13 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage('is undecided');
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 	}//end testConsumeRefusesAnUndecidedCompletion()
 
 	public function testConsumeAcceptsDoneUnderTheDefaultSet(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_COMPLETED, ' Done '));
 
-		$consumed = $this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$consumed = $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 
 		self::assertSame('sync-run:s-1', $consumed->getMetadata()['consumedBy']);
 	}//end testConsumeAcceptsDoneUnderTheDefaultSet()
@@ -276,7 +278,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage('is undecided');
-		$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 	}//end testADeclaredSetOnTheTaskReplacesTheDefault()
 
 	public function testADeclaredSetOnTheTaskApprovesItsOwnOutcome(): void {
@@ -284,7 +286,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$task->setTemplateSnapshot(['approvingOutcomes' => [' signed ']]);
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$consumed = $this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+		$consumed = $this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 
 		self::assertSame('sync-run:s-1', $consumed->getMetadata()['consumedBy']);
 	}//end testADeclaredSetOnTheTaskApprovesItsOwnOutcome()
@@ -295,7 +297,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 
 		try {
-			$this->service()->consume(uuid: 't-7', source: 'sync-run:s-1', reason: 'r');
+			$this->service()->consume(uuid: 't-7', trigger: new TaskTrigger(source: 'sync-run:s-1', reason: 'r'));
 			self::fail('a rejection must not be consumed');
 		} catch (TaskConflictException $refused) {
 			self::assertStringContainsString('not an approving decision', $refused->getMessage());

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\BulkAction\BulkObjectAccess;
@@ -18,6 +19,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCall;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
@@ -38,9 +41,6 @@ class RunActionActionTest extends TestCase {
 		parent::setUp();
 
 		$this->runner = $this->createMock(ObjectActionRunner::class);
-		$this->runner->method('target')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
-		);
 		$this->objects = $this->createMock(ObjectService::class);
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn(new Schema());
@@ -61,21 +61,21 @@ class RunActionActionTest extends TestCase {
 	}//end object()
 
 	public function testThePreviewAsksTheRunsChecksAndRunsNothing(): void {
-		$this->runner->expects($this->once())->method('check')->with($this->anything(), $this->anything(), 'assign-to-me', [])
+		$this->runner->expects($this->once())->method('rehearse')->with($this->callback(static fn (ObjectActionCall $call): bool => $call->key === 'assign-to-me'), [])
 			->willReturn(['refusal' => null, 'definition' => null, 'inputs' => []]);
 		$this->runner->expects($this->never())->method('run');
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me'], false);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me'], commit: false, actor: null));
 
 		$this->assertTrue($result->isApplied());
 	}//end testThePreviewAsksTheRunsChecksAndRunsNothing()
 
 	public function testAPreviewRefusalIsReportedPerMember(): void {
-		$this->runner->method('check')->willReturn(
+		$this->runner->method('rehearse')->willReturn(
 			['refusal' => ['status' => Http::STATUS_CONFLICT, 'body' => ['message' => 'Already assigned.']], 'definition' => null, 'inputs' => []]
 		);
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me'], false);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me'], commit: false, actor: null));
 
 		$this->assertSame('skipped', $result->getOutcome());
 		$this->assertSame('Already assigned.', $result->getReason());
@@ -85,10 +85,10 @@ class RunActionActionTest extends TestCase {
 		$actor = $this->createMock(IUser::class);
 		$this->objects->expects($this->once())->method('runAs')->with($actor)->willReturnCallback(static fn (IUser $user, callable $run) => $run());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 't-1', 'register' => 'tickets', 'schema' => 'ticket']), 'assign-to-me', ['note' => 'x'])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 't-1', 'register' => 'tickets', 'schema' => 'ticket']), new ObjectActionRequest('assign-to-me', ['note' => 'x']))
 			->willReturn(['status' => Http::STATUS_OK, 'body' => []]);
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me', 'inputs' => ['note' => 'x'], 'register' => 'tickets', 'schema' => 'ticket'], true, $actor);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me', 'inputs' => ['note' => 'x'], 'register' => 'tickets', 'schema' => 'ticket'], commit: true, actor: $actor));
 
 		$this->assertTrue($result->isApplied());
 	}//end testTheCommitRunsAsThePersonWhoStartedTheJob()
@@ -96,7 +96,7 @@ class RunActionActionTest extends TestCase {
 	public function testAFailedRunIsAFailedMember(): void {
 		$this->runner->method('run')->willReturn(['status' => Http::STATUS_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'not-available']]);
 
-		$result = $this->action->apply($this->object(), ['action' => 'hand-over'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'hand-over'], commit: true, actor: null));
 
 		$this->assertSame('failed', $result->getOutcome());
 	}//end testAFailedRunIsAFailedMember()

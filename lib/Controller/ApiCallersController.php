@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\AppInfo\Application;
@@ -180,6 +181,31 @@ class ApiCallersController extends Controller {
 			return $refusal;
 		}
 
+		$period = $this->requestedPeriod();
+
+		try {
+			$rows = $this->records->findInPeriod(period: $period);
+		} catch (Throwable $e) {
+			$this->logger->error('OpenRegister: could not read the API caller record.', ['exception' => $e]);
+
+			return new JSONResponse(
+				data: ['error' => 'The caller record could not be read.'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR,
+			);
+		}
+
+		return $this->callerRecord(period: $period, rows: $rows);
+
+	}//end index()
+
+	/**
+	 * The period, contract version and row cap the request asks for.
+	 *
+	 * Defaults to the last DEFAULT_PERIOD_DAYS days; a blank `version` is no narrowing.
+	 *
+	 * @return ApiCallPeriod The period to read
+	 */
+	private function requestedPeriod(): ApiCallPeriod {
 		$to = $this->dateParam(name: 'to', fallback: new DateTime());
 		$from = $this->dateParam(
 			name: 'from',
@@ -192,26 +218,22 @@ class ApiCallersController extends Controller {
 			$narrowTo = $version;
 		}
 
-		try {
-			$rows = $this->records->findInPeriod(
-				from: $from,
-				to: $to,
-				apiVersion: $narrowTo,
-				limit: self::MAX_ROWS,
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('OpenRegister: could not read the API caller record.', ['exception' => $e]);
+		return new ApiCallPeriod(from: $from, to: $to, apiVersion: $narrowTo, limit: self::MAX_ROWS);
+	}//end requestedPeriod()
 
-			return new JSONResponse(
-				data: ['error' => 'The caller record could not be read.'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR,
-			);
-		}
-
+	/**
+	 * The caller record answer: the period, the count and the callers.
+	 *
+	 * @param ApiCallPeriod                $period The period read
+	 * @param array<int, JsonSerializable> $rows   The callers found
+	 *
+	 * @return JSONResponse The record, flagged truncated when the row cap was reached
+	 */
+	private function callerRecord(ApiCallPeriod $period, array $rows): JSONResponse {
 		return new JSONResponse(
 			data: [
-				'from' => $from->format('c'),
-				'to' => $to->format('c'),
+				'from' => $period->from->format('c'),
+				'to' => $period->to->format('c'),
 				'total' => count($rows),
 				'truncated' => (count($rows) === self::MAX_ROWS),
 				'callers' => array_map(
@@ -220,8 +242,7 @@ class ApiCallersController extends Controller {
 				),
 			]
 		);
-
-	}//end index()
+	}//end callerRecord()
 
 	/**
 	 * The version declaration as it stands.
@@ -290,17 +311,45 @@ class ApiCallersController extends Controller {
 			);
 		}
 
-		$errors = $this->declarationErrors(declared: $declared);
-		if ($errors !== []) {
-			return new JSONResponse(
-				data: [
-					'error' => 'This declaration cannot be served, so it was not stored.',
-					'rejections' => $errors,
-				],
-				statusCode: Http::STATUS_BAD_REQUEST,
-			);
+		$refusal = $this->declarationRefusal(declared: $declared);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
+		return $this->storeDeclaration(declared: $declared);
+
+	}//end writeDeclaration()
+
+	/**
+	 * Refuse a declaration that could not be served, naming why.
+	 *
+	 * @param array<int, mixed> $declared The candidate declarations
+	 *
+	 * @return JSONResponse|null The 400 with the rejections, or null when it can be served
+	 */
+	private function declarationRefusal(array $declared): ?JSONResponse {
+		$errors = $this->declarationErrors(declared: $declared);
+		if ($errors === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'This declaration cannot be served, so it was not stored.',
+				'rejections' => $errors,
+			],
+			statusCode: Http::STATUS_BAD_REQUEST,
+		);
+	}//end declarationRefusal()
+
+	/**
+	 * Store a declaration that can be served, and answer it as stored.
+	 *
+	 * @param array<int, mixed> $declared The validated declarations
+	 *
+	 * @return JSONResponse The stored list, or a 500 when storing failed
+	 */
+	private function storeDeclaration(array $declared): JSONResponse {
 		try {
 			$this->appConfig->setValueString(
 				'openregister',
@@ -317,8 +366,7 @@ class ApiCallersController extends Controller {
 		}
 
 		return new JSONResponse(data: ['versions' => array_values($declared), 'stored' => true]);
-
-	}//end writeDeclaration()
+	}//end storeDeclaration()
 
 	/**
 	 * Why a declaration could not be served, if it could not.

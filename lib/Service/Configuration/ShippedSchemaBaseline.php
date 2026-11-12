@@ -23,7 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -108,11 +111,9 @@ final class ShippedSchemaBaseline
 			return;
 		}
 
-		$this->guard?->recordShipped(
+		$this->guard?->recordShippedSchema(
 			slug: $pending->slug,
-			definition: $pending->baseline,
-			app: (string) $options->appId,
-			appVersion: ($options->version ?? '')
+			shipped: new ShippedDefinition(definition: $pending->baseline, app: (string) $options->appId, appVersion: ($options->version ?? ''))
 		);
 	}//end recordPending()
 
@@ -167,13 +168,13 @@ final class ShippedSchemaBaseline
 			return null;
 		}
 
-		return $this->guard?->guardSchemaUpdate(
-			slug: $slug,
-			live: $this->liveParts(schema: $update->existing),
-			incoming: $this->shippedParts(data: $update->data),
-			app: $options->appId,
-			appVersion: ($options->version ?? ''),
-			record: false
+		return $this->guard?->guardUpgrade(
+			upgrade: new SchemaUpgrade(
+				slug: $slug,
+				live: $this->liveParts(schema: $update->existing),
+				incoming: new ShippedDefinition(definition: $this->shippedParts(data: $update->data), app: $options->appId, appVersion: ($options->version ?? ''))
+			),
+			options: new SchemaUpgradeOptions(record: false)
 		);
 	}//end answer()
 

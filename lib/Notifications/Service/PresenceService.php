@@ -88,16 +88,14 @@ class PresenceService implements PresenceServiceInterface {
 	/**
 	 * Say that a reader is still looking at an object.
 	 *
-	 * @param string                 $userId     The reader.
-	 * @param string                 $objectUuid The object.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceBeat $beat The reader, the object and the moment.
 	 *
 	 * @return array{arrived: bool, presence: ObjectPresence|null} Whether this was an ARRIVAL.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function heartbeat(string $userId, string $objectUuid, ?DateTimeInterface $now = null): array {
-		$beat = new PresenceBeat(userId: trim($userId), objectUuid: trim($objectUuid), now: ($now ?? new DateTimeImmutable()));
+	public function heartbeat(PresenceBeat $beat): array {
+		$beat = $beat->trimmed();
 		if ($beat->userId === '' || $beat->objectUuid === '') {
 			return ['arrived' => false, 'presence' => null];
 		}
@@ -229,18 +227,16 @@ class PresenceService implements PresenceServiceInterface {
 	/**
 	 * Who is present on an object right now.
 	 *
-	 * @param string                 $objectUuid The object.
-	 * @param string                 $exceptUser A reader to leave out, usually the caller.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceLookup $lookup The object, a reader to leave out, and the clock for tests.
 	 *
 	 * @return array<int, array<string, mixed>> The readers, oldest arrival first.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function present(string $objectUuid, string $exceptUser = '', ?DateTimeInterface $now = null): array {
-		$rows = $this->presentRows(objectUuid: $objectUuid, now: ($now ?? new DateTimeImmutable()));
+	public function present(PresenceLookup $lookup): array {
+		$rows = $this->presentRows(objectUuid: $lookup->objectUuid, now: ($lookup->now ?? new DateTimeImmutable()));
 
-		return $this->readersOtherThan(rows: $rows, exceptUser: $exceptUser);
+		return $this->readersOtherThan(rows: $rows, exceptUser: $lookup->exceptUser);
 	}//end present()
 
 	/**
@@ -321,13 +317,24 @@ class PresenceService implements PresenceServiceInterface {
 			return [];
 		}
 
+		return $this->departures(stale: $stale);
+	}//end expire()
+
+	/**
+	 * Who went from where, one entry per expired presence row.
+	 *
+	 * @param array<int, mixed> $stale The expired presence rows.
+	 *
+	 * @return array<int, array{user: string, object: string}>
+	 */
+	private function departures(array $stale): array {
 		$gone = [];
 		foreach ($stale as $row) {
 			$gone[] = ['user' => (string)$row->getUserId(), 'object' => (string)$row->getObjectUuid()];
 		}
 
 		return $gone;
-	}//end expire()
+	}//end departures()
 
 	/**
 	 * The oldest heartbeat still believed.

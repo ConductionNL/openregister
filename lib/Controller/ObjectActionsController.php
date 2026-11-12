@@ -52,7 +52,9 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -241,7 +243,6 @@ class ObjectActionsController extends Controller {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
 		return $this->invokeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
 	}//end invoke()
@@ -262,7 +263,6 @@ class ObjectActionsController extends Controller {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function invokeOnSelection(string $register, string $schema, string $action): JSONResponse {
 		return $this->selectionInvoked(table: new RegisterSchemaRef(register: $register, schema: $schema), action: $action);
 	}//end invokeOnSelection()
@@ -549,14 +549,14 @@ class ObjectActionsController extends Controller {
 	 * @return array<string, mixed> The run's status and body.
 	 */
 	private function runOn(array $subject, ObjectActionsSelection $run): array {
-		$target = $this->runner->target(
+		$target = new ObjectActionTarget(
 			object: $subject['object'],
 			schema: $subject['schema'],
 			register: $run->route['register'],
 			schemaRef: $run->route['schema']
 		);
 
-		return $this->runner->run(target: $target, key: $run->action, given: $run->inputs);
+		return $this->runner->run(target: $target, request: new ObjectActionRequest(key: $run->action, given: $run->inputs));
 	}//end runOn()
 
 	/**
@@ -605,7 +605,7 @@ class ObjectActionsController extends Controller {
 	private function findDefinition(Schema $schema, ObjectActionsSelection $selection): ?ObjectActionDefinition {
 		$action = $selection->action;
 		try {
-			return $this->definitions->find(schema: $schema, key: $action, register: $selection->route['register']);
+			return ($this->definitions->forSchema(schema: $schema, register: $selection->route['register'])[$action] ?? null);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'Object action "{action}" of schema {schema} could not be read: {message}',

@@ -96,26 +96,50 @@ class ExampleSetRemoveCommand extends Command {
 			$output->writeln('Removed '.$kind.': '.$count);
 		}
 
-		foreach ($report['left'] as $left) {
-			if ($this->isNote(left: $left) === true) {
-				$output->writeln('Left in place: '.$left.'.');
+		$this->printLeft(left: $report['left'], output: $output);
+
+		return $this->reportFailed(failed: $report['failed'], output: $output);
+	}//end execute()
+
+	/**
+	 * Print what was left in place: a note of its own, or an account the set adopted.
+	 *
+	 * @param array<int, string> $left   The remover's `left` lines.
+	 * @param OutputInterface    $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printLeft(array $left, OutputInterface $output): void {
+		foreach ($left as $line) {
+			if ($this->isNote(left: $line) === true) {
+				$output->writeln('Left in place: '.$line.'.');
 				continue;
 			}
 
-			$output->writeln('Left in place: account '.$left.', which the set adopted and did not create.');
+			$output->writeln('Left in place: account '.$line.', which the set adopted and did not create.');
 		}
+	}//end printLeft()
 
-		foreach ($report['failed'] as $line) {
+	/**
+	 * Print what could not be removed, and pick the exit code.
+	 *
+	 * @param array<int, string> $failed The remover's `failed` lines.
+	 * @param OutputInterface    $output The command output.
+	 *
+	 * @return int INCOMPLETE when something stays, SUCCESS otherwise.
+	 */
+	private function reportFailed(array $failed, OutputInterface $output): int {
+		foreach ($failed as $line) {
 			$output->writeln('<error>Not removed: '.$line.'</error>');
 		}
 
-		if ($report['failed'] !== []) {
+		if ($failed !== []) {
 			$output->writeln('<error>Some of the set is still here and stays in its record; run remove again once the cause is fixed.</error>');
 			return ExampleSetInstallCommand::INCOMPLETE;
 		}
 
 		return self::SUCCESS;
-	}//end execute()
+	}//end reportFailed()
 
 	/**
 	 * Whether a `left` line is a sentence of its own and not an adopted account's id.

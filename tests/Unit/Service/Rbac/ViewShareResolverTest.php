@@ -84,7 +84,7 @@ class ViewShareResolverTest extends TestCase {
 	public function testTheOwnerHoldsOwnerAccess(): void {
 		$this->assertSame(
 			ViewShareResolver::ACCESS_OWNER,
-			$this->resolver->accessFor($this->view(), 'alice', [])
+			$this->resolver->accessOf($this->view(), new ViewerReach('alice', [], false))
 		);
 	}//end testTheOwnerHoldsOwnerAccess()
 
@@ -99,13 +99,13 @@ class ViewShareResolverTest extends TestCase {
 		$view = $this->view(['sharedWith' => [['group' => 'vth', 'mode' => 'read']]]);
 		$this->assertSame(
 			ViewShareResolver::ACCESS_READ,
-			$this->resolver->accessFor($view, 'bob', ['vth'])
+			$this->resolver->accessOf($view, new ViewerReach('bob', ['vth'], false))
 		);
 
 		$view = $this->view(['sharedWith' => [['group' => 'vth', 'mode' => 'write']]]);
 		$this->assertSame(
 			ViewShareResolver::ACCESS_WRITE,
-			$this->resolver->accessFor($view, 'bob', ['vth'])
+			$this->resolver->accessOf($view, new ViewerReach('bob', ['vth'], false))
 		);
 	}//end testAMemberHoldsTheSharesMode()
 
@@ -128,7 +128,7 @@ class ViewShareResolverTest extends TestCase {
 
 		$this->assertSame(
 			ViewShareResolver::ACCESS_WRITE,
-			$this->resolver->accessFor($view, 'bob', ['readers', 'writers'])
+			$this->resolver->accessOf($view, new ViewerReach('bob', ['readers', 'writers'], false))
 		);
 	}//end testTheWidestShareWins()
 
@@ -145,8 +145,8 @@ class ViewShareResolverTest extends TestCase {
 	public function testAStrangerHoldsNothing(): void {
 		$view = $this->view(['sharedWith' => [['group' => 'vth', 'mode' => 'write']]]);
 
-		$this->assertNull($this->resolver->accessFor($view, 'mallory', ['another-group']));
-		$this->assertNull($this->resolver->accessFor($view, 'mallory', []));
+		$this->assertNull($this->resolver->accessOf($view, new ViewerReach('mallory', ['another-group'], false)));
+		$this->assertNull($this->resolver->accessOf($view, new ViewerReach('mallory', [], false)));
 	}//end testAStrangerHoldsNothing()
 
 	/**
@@ -161,7 +161,7 @@ class ViewShareResolverTest extends TestCase {
 
 		$this->assertSame(
 			ViewShareResolver::ACCESS_READ,
-			$this->resolver->accessFor($view, 'mallory', [])
+			$this->resolver->accessOf($view, new ViewerReach('mallory', [], false))
 		);
 	}//end testAPublicViewIsReadableAndNoMore()
 
@@ -187,7 +187,7 @@ class ViewShareResolverTest extends TestCase {
 			]
 		);
 
-		$this->assertNull($this->resolver->accessFor($view, 'bob', ['vth', 'other']));
+		$this->assertNull($this->resolver->accessOf($view, new ViewerReach('bob', ['vth', 'other'], false)));
 	}//end testAnUnreadableShareGrantsNothing()
 
 	/**
@@ -205,7 +205,7 @@ class ViewShareResolverTest extends TestCase {
 
 		$this->assertSame(
 			ViewShareResolver::ACCESS_WRITE,
-			$this->resolver->accessFor($view, 'bob', ['vth'])
+			$this->resolver->accessOf($view, new ViewerReach('bob', ['vth'], false))
 		);
 	}//end testAJsonEncodedShareListIsRead()
 
@@ -259,11 +259,11 @@ class ViewShareResolverTest extends TestCase {
 	public function testTheOwnerAndAnAdministratorMayChangeEverything(): void {
 		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], true)));
 
-		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'alice', false));
-		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'mallory', true));
-		$this->assertFalse($this->resolver->mayAdminister($this->view(), 'mallory', false));
+		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('alice', [], false)));
+		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], true)));
+		$this->assertFalse($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], false)));
 		$this->assertFalse(
-			$this->resolver->mayAdminister($this->view(), '', false),
+			$this->resolver->mayAdministerAs($this->view(), new ViewerReach('', [], false)),
 			'an unauthenticated caller never administers a view'
 		);
 	}//end testTheOwnerAndAnAdministratorMayChangeEverything()
@@ -369,11 +369,11 @@ class ViewShareResolverTest extends TestCase {
 	public function testAUserShareGrantsItsModeToThatUserOnly(): void {
 		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['user' => 'joris', 'mode' => 'write']]]);
 
-		$this->assertSame('read', $this->resolver->accessFor($view, 'fatma', []));
-		$this->assertSame('write', $this->resolver->accessFor($view, 'joris', []));
-		$this->assertNull($this->resolver->accessFor($view, 'bob', []));
-		$this->assertNull($this->resolver->accessFor($view, '', ['fatma']));
-		$this->assertSame('owner', $this->resolver->accessFor($view, 'alice', []));
+		$this->assertSame('read', $this->resolver->accessOf($view, new ViewerReach('fatma', [], false)));
+		$this->assertSame('write', $this->resolver->accessOf($view, new ViewerReach('joris', [], false)));
+		$this->assertNull($this->resolver->accessOf($view, new ViewerReach('bob', [], false)));
+		$this->assertNull($this->resolver->accessOf($view, new ViewerReach('', ['fatma'], false)));
+		$this->assertSame('owner', $this->resolver->accessOf($view, new ViewerReach('alice', [], false)));
 	}//end testAUserShareGrantsItsModeToThatUserOnly()
 
 	/**
@@ -386,8 +386,8 @@ class ViewShareResolverTest extends TestCase {
 	public function testTheWidestOfAUserAndAGroupShareWins(): void {
 		$view = $this->view(['sharedWith' => [['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']]]);
 
-		$this->assertSame('write', $this->resolver->accessFor($view, 'fatma', ['vth']));
-		$this->assertSame('read', $this->resolver->accessFor($view, 'fatma', []));
+		$this->assertSame('write', $this->resolver->accessOf($view, new ViewerReach('fatma', ['vth'], false)));
+		$this->assertSame('read', $this->resolver->accessOf($view, new ViewerReach('fatma', [], false)));
 	}//end testTheWidestOfAUserAndAGroupShareWins()
 
 	/**

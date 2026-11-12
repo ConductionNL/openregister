@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -41,6 +42,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 
 /**
  * Characterisation of BulkController::save() path selection and arguments.
@@ -82,8 +84,8 @@ class BulkSavePathsCharacterisationTest extends TestCase {
 		$objects->method('getRegister')->willReturn(1);
 		$objects->method('getSchema')->willReturn($schemaId);
 		$objects->method('saveObjectsStreaming')->willReturnCallback(
-			function (...$args): BatchOperationStatus {
-				$this->calls[] = ['stream', array_slice($args, 0, 3)];
+			function (StreamingSave $save): BatchOperationStatus {
+				$this->calls[] = ['stream', [$save->rows, $save->register, $save->schema]];
 				$status = new BatchOperationStatus();
 				$status->start();
 				$status->recordCreated('11111111-1111-1111-1111-111111111111');
@@ -92,7 +94,8 @@ class BulkSavePathsCharacterisationTest extends TestCase {
 			}
 		);
 		$objects->method('saveObjects')->willReturnCallback(
-			function (...$args) use ($checkedFail): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($checkedFail): array {
+				$args = [$objects, $options->defaults->register, $options->defaults->schema, $_rbac, $_multitenancy, $options->validation, $options->events, true, true, $options->audit];
 				$this->calls[] = ['checked', array_slice($args, 0, 7)];
 				if ($checkedFail === true) {
 					return [

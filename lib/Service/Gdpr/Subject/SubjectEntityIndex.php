@@ -79,11 +79,7 @@ class SubjectEntityIndex {
 				continue;
 			}
 
-			$grouped[$key] ??= [
-				'object_id' => (int)($hit['object_id'] ?? 0),
-				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
-				'gdprEntities' => [],
-			];
+			$grouped[$key] ??= self::groupFor(hit: $hit);
 
 			$grouped[$key]['gdprEntities'][] = $this->entityOf(hit: $hit);
 		}
@@ -91,6 +87,21 @@ class SubjectEntityIndex {
 		return $grouped;
 
 	}//end discover()
+
+	/**
+	 * An empty group for the object a hit belongs to.
+	 *
+	 * @param array<string, mixed> $hit The index hit.
+	 *
+	 * @return array{object_id: int, object_uuid: string, gdprEntities: array} The group.
+	 */
+	private static function groupFor(array $hit): array {
+		return [
+			'object_id' => (int)($hit['object_id'] ?? 0),
+			'object_uuid' => (string)($hit['object_uuid'] ?? ''),
+			'gdprEntities' => [],
+		];
+	}//end groupFor()
 
 	/**
 	 * The grouping key of a row: its object uuid, else its object id, else none.

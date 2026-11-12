@@ -95,15 +95,33 @@ final class CalendarDefinition {
 			return null;
 		}
 
-		foreach (($this->schema->getProperties() ?? []) as $propName => $propDef) {
+		foreach ($this->propertiesDescribing(field: $field) as $propDef) {
 			$format = $this->dateFormatOf(propDef: $propDef);
-			if ($format !== null && ($propName === $field || ($propDef['title'] ?? null) === $field)) {
+			if ($format !== null) {
 				return $format;
 			}
 		}
 
 		return null;
 	}//end dtstartFormat()
+
+	/**
+	 * The schema property definitions that describe a field, by name or by title, in schema order.
+	 *
+	 * @param string $field The field name.
+	 *
+	 * @return array<int, mixed> The property definitions.
+	 */
+	private function propertiesDescribing(string $field): array {
+		$described = [];
+		foreach (($this->schema->getProperties() ?? []) as $propName => $propDef) {
+			if ($propName === $field || ($propDef['title'] ?? null) === $field) {
+				$described[] = $propDef;
+			}
+		}
+
+		return $described;
+	}//end propertiesDescribing()
 
 	/**
 	 * The `date` / `date-time` format of a property definition, null for anything else.

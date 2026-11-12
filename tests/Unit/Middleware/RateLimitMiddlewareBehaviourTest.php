@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Middleware;
 use OCA\OpenRegister\Middleware\AuthRateLimitExceededException;
 use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\RateLimitMiddleware;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
@@ -35,7 +36,9 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Middleware\RateLimitMiddleware
  * @uses   \OCA\OpenRegister\Middleware\AuthRateLimitExceededException
- * @uses   \OCA\OpenRegister\Middleware\Support\RateLimitPlatform
+ * @uses \OCA\OpenRegister\Middleware\DispatchedMethod
+ * @uses \OCA\OpenRegister\Middleware\InboundCall
+ * @uses \OCA\OpenRegister\Service\FailedAttempt
  */
 class RateLimitMiddlewareBehaviourTest extends TestCase {
 
@@ -212,7 +215,7 @@ class RateLimitMiddlewareBehaviourTest extends TestCase {
 	public function testANotLoggedInExceptionIsCountedAndRethrown(): void {
 		$this->session->method('getUser')->willReturn(null);
 		$this->security->expects($this->once())->method('recordFailedAuthAttempt')
-			->with('dave', '10.0.0.1', 'inbound_auth_failed');
+			->with(new FailedAttempt('dave', '10.0.0.1', 'inbound_auth_failed'));
 		$exception = new NotLoggedInException('not logged in');
 
 		try {

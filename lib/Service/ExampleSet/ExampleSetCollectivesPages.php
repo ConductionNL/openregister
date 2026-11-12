@@ -100,8 +100,8 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a collectives page'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a collectives page'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: [(string) $data['owner']], users: $users),
 				fn (): string => $this->shareRefusal(shareWith: ($data['shareWith'] ?? [])),
 			]
@@ -161,12 +161,14 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 */
 	private function writePage(ExampleSetCollectivesStore $store, array $data): array {
 		$owner      = (string) $data['owner'];
-		$collective = $store->collective(
-			owner: $owner,
-			name: (string) $data['collective'],
-			groups: array_map('strval', (array) ($data['shareWith'] ?? []))
+		$collective = $store->collectiveOf(
+			team: new CollectiveTeam(owner: $owner, groups: array_map('strval', (array) ($data['shareWith'] ?? []))),
+			name: (string) $data['collective']
 		);
-		$page       = $store->page(collective: $collective['id'], owner: $owner, title: (string) $data['title'], content: (string) $data['content']);
+		$page       = $store->page(
+			seat: new CollectiveSeat(collective: $collective['id'], owner: $owner),
+			text: new CollectivePageText(title: (string) $data['title'], content: (string) $data['content'])
+		);
 
 		return [
 			'collective' => $collective['id'], 'createdCollective' => $collective['created'],
@@ -185,7 +187,8 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 	 */
 	public function lost(array $entry): bool {
 		try {
-			return $this->store()->pageExists(collective: (int) $entry['collective'], page: (int) $entry['page'], owner: (string) $entry['owner']) === false;
+			$seat = new CollectiveSeat(collective: (int) $entry['collective'], owner: (string) $entry['owner']);
+			return $this->store()->pageFound(seat: $seat, page: (int) $entry['page']) === false;
 		} catch (Throwable) {
 			return true;
 		}
@@ -227,7 +230,7 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 		}
 
 		if (($entry['createdPage'] ?? false) === true) {
-			$store->deletePage(collective: (int) $entry['collective'], page: (int) $entry['page'], owner: $owner);
+			$store->deletePage(seat: new CollectiveSeat(collective: (int) $entry['collective'], owner: $owner), page: (int) $entry['page']);
 		}
 	}//end deleteWritten()
 

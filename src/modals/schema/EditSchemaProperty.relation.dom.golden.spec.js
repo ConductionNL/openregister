@@ -49,9 +49,9 @@ jest.mock('../../store/store.js', () => ({
 		refreshSchemaList: () => Promise.resolve(),
 	},
 }))
-jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }), { virtual: true })
-jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }), { virtual: true })
-jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }), { virtual: true })
+jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }))
+jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }))
+jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }))
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({ __esModule: true, default: mockStub('CloseCancelButton') }))
 
 /**
@@ -70,6 +70,8 @@ function mockStub(name) {
 				const plain = Object.fromEntries(
 					Object.entries(attrs)
 						.filter(([key]) => !/^on[A-Z]/.test(key))
+						// Function source differs when coverage instruments it.
+						.map(([key, value]) => [key, typeof value === 'function' ? '[function]' : value])
 						.map(([key, value]) => [key, typeof value === 'object' && value !== null ? JSON.stringify(value) : value]),
 				)
 				return render(

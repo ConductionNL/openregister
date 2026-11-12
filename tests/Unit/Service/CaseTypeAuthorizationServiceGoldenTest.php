@@ -4,7 +4,7 @@
  * Golden tests for the ZGW autorisatie mapping and the permission matrix.
  *
  * Pins, on the code as it stood before those methods were split, the exact
- * authorization block mapZgwAutorisatie() builds for a mixed scope list
+ * authorization block mapGrant() builds for a mixed scope list
  * (repeated verbs, scopes without a dot, empty, non-string and unknown
  * scopes) with and without a clearance, and the exact matrix
  * extractPermissionMatrix() derives from a block holding every entry shape
@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\CaseTypeAuthorizationService;
+use OCA\OpenRegister\Service\ZgwAutorisatieGrant;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -64,7 +65,7 @@ class CaseTypeAuthorizationServiceGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['read' => ['g', 'g'], 'create' => ['g'], 'delete' => ['g']],
-			$service->mapZgwAutorisatie(self::SCOPES, 'g')
+			$service->mapGrant(grant: new ZgwAutorisatieGrant(scopes: self::SCOPES, group: 'g'))
 		);
 	}//end testMappingWithoutClearance()
 
@@ -79,7 +80,14 @@ class CaseTypeAuthorizationServiceGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['read' => [$rule, $rule], 'create' => [$rule], 'delete' => [$rule]],
-			$service->mapZgwAutorisatie(self::SCOPES, 'g', 'intern', 'vt')
+			$service->mapGrant(
+				grant: new ZgwAutorisatieGrant(
+					scopes: self::SCOPES,
+					group: 'g',
+					maxLevel: 'intern',
+					property: 'vt'
+				)
+			)
 		);
 	}//end testMappingWithClearance()
 
@@ -93,10 +101,10 @@ class CaseTypeAuthorizationServiceGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['read' => [['group' => 'g', 'match' => ['vertrouwelijkheidaanduiding' => ['$in' => []]]]]],
-			$service->mapZgwAutorisatie(['zaken.lezen'], 'g', 'bogus')
+			$service->mapGrant(grant: new ZgwAutorisatieGrant(scopes: ['zaken.lezen'], group: 'g', maxLevel: 'bogus'))
 		);
-		$this->assertSame([], $service->mapZgwAutorisatie([], 'g', 'intern'));
-		$this->assertSame([], $service->mapZgwAutorisatie(['', 'x.y'], 'g'));
+		$this->assertSame([], $service->mapGrant(grant: new ZgwAutorisatieGrant(scopes: [], group: 'g', maxLevel: 'intern')));
+		$this->assertSame([], $service->mapGrant(grant: new ZgwAutorisatieGrant(scopes: ['', 'x.y'], group: 'g')));
 	}//end testMappingWithUnknownClearanceFailsClosed()
 
 	/**

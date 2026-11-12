@@ -104,24 +104,23 @@ class DocumentContentReader {
 	}//end paragraph()
 
 	/**
-	 * The rows of a table, each a list of cell texts, as written; a cell's lines are joined by a newline.
+	 * A table's rows, each a list of cell texts, as written (a cell's lines are joined by a newline),
+	 * and the pictures found in its cells.
 	 *
 	 * @param DOMElement $table A `w:tbl` element.
 	 * @param Relationships $relationships The document part's relationships.
 	 * @param int $depth How deeply the table is nested.
-	 * @param list<DocumentImage> $images Pictures found in the cells, extended in place.
 	 *
-	 * @return list<list<string>>
+	 * @return TableContent The rows and the pictures.
 	 *
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
 	 */
-	public function tableRows(DOMElement $table, array $relationships, int $depth, array &$images): array {
+	public function table(DOMElement $table, array $relationships, int $depth): TableContent {
 		$run = new BlockReadRun(relationships: $relationships, depth: $depth);
 		$rows = $this->rowsOf(run: $run, table: $table);
-		array_push($images, ...$run->images);
 
-		return $rows;
-	}//end tableRows()
+		return new TableContent(rows: $rows, images: $run->images);
+	}//end table()
 
 	/**
 	 * The text of each cell of a table, row by row, at the run's depth.

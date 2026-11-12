@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Throwable;
 
 /**
@@ -74,7 +75,11 @@ class ObjectSlugStore {
 			return null;
 		}
 
-		$holders = $this->magicMapper->findSlugHolders(register: $scope->register, schema: $scope->schema, slug: $slug, excludeUuid: $want->objectUuid);
+		$holders = $this->magicMapper->findSlugHolders(
+			table: new RegisterSchema(register: $scope->register, schema: $scope->schema),
+			slug: $slug,
+			excludeUuid: $want->objectUuid
+		);
 
 		return ($holders[0] ?? null);
 	}//end holderOf()
@@ -94,7 +99,8 @@ class ObjectSlugStore {
 			return ['holders' => [], 'stored' => []];
 		}
 
-		return $this->magicMapper->findSlugState(register: $scope->register, schema: $scope->schema, slugs: $claims->slugs, uuids: $claims->uuids);
+		$table = new RegisterSchema(register: $scope->register, schema: $scope->schema);
+		return $this->magicMapper->findSlugState(table: $table, slugs: $claims->slugs, uuids: $claims->uuids);
 	}//end state()
 
 	/**

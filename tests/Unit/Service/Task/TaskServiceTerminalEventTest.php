@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
@@ -32,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Terminality is announced AFTER the transaction commits, once per
@@ -133,7 +135,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 				return true;
 			}));
 
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(['commit', 'transition', 'terminal'], $this->sequence);
 	}//end testACompletionIsAnnouncedOnceAfterTheCommit()
@@ -148,7 +150,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 				return true;
 			}));
 
-		$this->service()->cancel(uuid: 't-7', reason: 'moot', actor: 'rita');
+		$this->service()->cancel(ref: new TaskActorRef(uuid: 't-7', actor: 'rita'), reason: 'moot');
 
 		$this->assertSame([TaskTransitionedEvent::class, TaskTerminalEvent::class], $seen);
 	}//end testACancellationIsAnnounced()
@@ -162,7 +164,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 
-		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: '', actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: ''), actor: 'alice');
 	}//end testARefusedCompletionAnnouncesNothing()
 
 	/**
@@ -174,7 +176,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 		$this->db->expects($this->never())->method('rollBack');
 		$this->dispatcher->method('dispatchTyped')->willThrowException(new RuntimeException('listener blew up'));
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
 		$this->assertTrue($completed->getIsTerminal());

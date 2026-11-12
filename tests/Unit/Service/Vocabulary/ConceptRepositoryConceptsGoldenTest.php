@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueRules;
@@ -141,7 +142,7 @@ final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), $objects);
 	}//end repository()
 
 	/**

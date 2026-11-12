@@ -114,6 +114,37 @@ describe('useAttachmentDrag edges', () => {
 		expect(dt.effectAllowed).toBe('none')
 	})
 
+	it('falls back to the Vue 2 props when the Vue 3 props are incomplete', () => {
+		const el = attachment({
+			__vueParentComponent: { props: { id: 'v3' } },
+			__vue__: {
+				$props: { id: 'v2', fileName: 'two.pdf', mime: 'application/pdf', size: 9 },
+			},
+		})
+		document.body.appendChild(el)
+		host()
+		const dt = drag(el)
+		expect(JSON.parse(dt.data[ATTACHMENT_MIME])).toEqual({
+			messageId: 77,
+			attachmentId: 'v2',
+			fileName: 'two.pdf',
+			mime: 'application/pdf',
+			size: 9,
+			downloadUrl: '/apps/mail/api/messages/77/attachment/v2',
+		})
+		expect(dt.data['text/uri-list']).toBe('/apps/mail/api/messages/77/attachment/v2')
+	})
+
+	it('prefers complete Vue 3 props over the Vue 2 ones', () => {
+		const el = attachment({
+			__vueParentComponent: { props: { id: 'v3', fileName: 'three.txt' } },
+			__vue__: { $props: { id: 'v2', fileName: 'two.pdf' } },
+		})
+		document.body.appendChild(el)
+		host()
+		expect(JSON.parse(drag(el).data[ATTACHMENT_MIME]).attachmentId).toBe('v3')
+	})
+
 	it('offers nothing outside a thread', () => {
 		window.history.replaceState(null, '', '/apps/mail/box/2')
 		const el = attachment({ __vue__: { $props: { id: 'a', fileName: 'f' } } })

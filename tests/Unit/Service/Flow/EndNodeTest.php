@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCP\IL10N;
@@ -79,7 +80,7 @@ final class EndNodeTest extends TestCase {
 		$this->expectException(FlowStop::class);
 		$this->expectExceptionMessage('the tip moved');
 
-		$this->node->execute([['json' => ['a' => 1]]], ['error' => true, 'message' => 'the tip moved'], []);
+		$this->node->execute(new FlowNodeCall(items: [['json' => ['a' => 1]]], config: ['error' => true, 'message' => 'the tip moved'], context: []));
 
 	}//end testAnEndWithItemsEndsTheRun()
 
@@ -96,7 +97,7 @@ final class EndNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEndOnAnUntakenBranchDoesNotEndTheRun(): void {
-		$out = $this->node->execute([], ['error' => true, 'message' => 'the tip moved'], []);
+		$out = $this->node->execute(new FlowNodeCall(items: [], config: ['error' => true, 'message' => 'the tip moved'], context: []));
 
 		$this->assertSame([], $out);
 
@@ -111,7 +112,7 @@ final class EndNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testACleanEndOnAnUntakenBranchAlsoPassesThrough(): void {
-		$out = $this->node->execute([], ['error' => false, 'message' => 'nothing to do'], []);
+		$out = $this->node->execute(new FlowNodeCall(items: [], config: ['error' => false, 'message' => 'nothing to do'], context: []));
 
 		$this->assertSame([], $out);
 

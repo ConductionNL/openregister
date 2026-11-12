@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 
 /**
  * ContextRetrievalHandler
@@ -283,9 +285,10 @@ class ContextRetrievalHandler {
 
 		if ($settings['searchMode'] === 'semantic') {
 			$filters = $this->entityTypeFilter(settings: $settings);
-			$results = $this->vectorService->semanticSearch(query: $query, limit: $fetchLimit, filters: $filters);
+			$results = $this->vectorService->semanticSearch(request: new SemanticSearchRequest(query: $query, limit: $fetchLimit, filters: $filters));
 		} elseif ($settings['searchMode'] === 'hybrid') {
-			$hybrid = $this->vectorService->hybridSearch(query: $query, keywordResults: $results, limit: $fetchLimit);
+			$request = new HybridSearchRequest(query: $query, keywordResults: $results, limit: $fetchLimit);
+			$hybrid  = $this->vectorService->hybridSearch(request: $request);
 			$results = $hybrid['results'] ?? [];
 		}
 

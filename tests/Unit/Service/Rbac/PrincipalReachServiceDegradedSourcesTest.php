@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
@@ -164,10 +166,10 @@ class PrincipalReachServiceDegradedSourcesTest extends TestCase {
 		$granting->setTitle('Cases');
 		$this->schemas->method('findAll')->willReturn([$none, $granting]);
 		$this->permissions->method('permittedActionsFor')->willReturnCallback(
-			static fn (Schema $schema): array => $schema->getId() === 2 ? ['read', 'update'] : []
+			static fn (VerbListing $listing): array => $listing->schema->getId() === 2 ? ['read', 'update'] : []
 		);
 		$this->permissions->expects($this->once())->method('provenanceFor')
-			->with($granting, ['read', 'update'], 'ghost')
+			->with(new ProvenanceRequest($granting, ['read', 'update'], 'ghost', null))
 			->willThrowException(new RuntimeException('resolver'));
 		$this->derived->method('grantsFor')->willReturn([]);
 		$this->delegations->method('findHeldBy')->willReturn([]);

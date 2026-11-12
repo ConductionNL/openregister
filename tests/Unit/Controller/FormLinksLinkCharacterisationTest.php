@@ -32,8 +32,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\FormLinksController;
 use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\FormLinkScope;
 use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\NewForm;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FormLinksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -109,7 +112,7 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 
 	public function testALinkWithoutAPositiveFormIdIs400(): void {
 		$this->resolvesTo(5);
-		$this->service->expects($this->never())->method('linkForm');
+		$this->service->expects($this->never())->method('linkFormTo');
 
 		foreach ([[], ['formId' => '0'], ['formId' => '-2', 'submissionId' => '4'], ['formId' => 'abc']] as $params) {
 			$this->params = $params;
@@ -120,9 +123,9 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 	public function testALinkWithASubmissionLinksTheSubmission(): void {
 		$this->resolvesTo(5);
 		$this->params = ['formId' => '7', 'submissionId' => '11'];
-		$this->service->expects($this->never())->method('linkForm');
-		$this->service->expects($this->once())->method('linkFormSubmission')
-			->with('obj-1', 3, 7, 11, 5)
+		$this->service->expects($this->never())->method('linkFormTo');
+		$this->service->expects($this->once())->method('linkSubmissionTo')
+			->with($this->equalTo((new FormLinkScope('obj-1', 3))->inSchema(5)), $this->equalTo(new FormSubmissionRef(7, 11)))
 			->willReturn($link = new FormLink());
 
 		$this->assertSame([201, $link], $this->answer($this->controller->link('r', 's', 'o')));
@@ -131,9 +134,9 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 	public function testALinkWithoutASubmissionLinksTheFormWithoutASchemaForSchemaZero(): void {
 		$this->resolvesTo(0);
 		$this->params = ['formId' => 7, 'submissionId' => '0'];
-		$this->service->expects($this->never())->method('linkFormSubmission');
-		$this->service->expects($this->once())->method('linkForm')
-			->with('obj-1', 3, 7, null)
+		$this->service->expects($this->never())->method('linkSubmissionTo');
+		$this->service->expects($this->once())->method('linkFormTo')
+			->with($this->equalTo((new FormLinkScope('obj-1', 3))->inSchema(null)), 7)
 			->willReturn($link = new FormLink());
 
 		$this->assertSame([201, $link], $this->answer($this->controller->link('r', 's', 'o')));
@@ -142,7 +145,7 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 	public function testALinkFailureAnswersWithItsCodeOr400(): void {
 		$this->resolvesTo(5);
 		$this->params = ['formId' => '7'];
-		$this->service->method('linkForm')->willReturnOnConsecutiveCalls(
+		$this->service->method('linkFormTo')->willReturnOnConsecutiveCalls(
 			$this->throwException(new Exception('dup', 409)),
 			$this->throwException(new Exception('bad'))
 		);
@@ -163,7 +166,7 @@ class FormLinksLinkCharacterisationTest extends TestCase {
 		$this->resolvesTo('-1');
 		$this->params = ['title' => ' Intake ', 'description' => 12];
 		$this->service->expects($this->once())->method('createAndLinkForm')
-			->with('obj-1', 3, 'Intake', '12', null)
+			->with($this->equalTo((new FormLinkScope('obj-1', 3))->inSchema(null)), $this->equalTo(new NewForm('Intake', '12')))
 			->willReturn($link = new FormLink());
 
 		$this->assertSame([201, $link], $this->answer($this->controller->create('r', 's', 'o')));

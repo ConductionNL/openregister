@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -23,9 +24,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\IUserSession;
@@ -46,10 +50,16 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\CaseItemTransitionedEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Event\ObjectLockedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUnlockedEvent
  * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
  * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionActor
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class FlowTriggerListenerTest extends TestCase {
 	private FlowTriggerService $triggers;
@@ -147,7 +157,7 @@ class FlowTriggerListenerTest extends TestCase {
 			->willReturn(1);
 
 		$this->listener->handle(
-			new ObjectTransitionedEvent($this->object(), 'approve', 'draft', 'published', null, 'reg', 'sch')
+			new ObjectTransitionedEvent(object: $this->object(), move: new TransitionMove(action: 'approve', from: 'draft', to: 'published'), scope: new RegisterSchemaRef(register: 'reg', schema: 'sch'))
 		);
 	}
 
@@ -165,14 +175,10 @@ class FlowTriggerListenerTest extends TestCase {
 
 		$this->listener->handle(
 			new ObjectTransitionedEvent(
-				$this->object(),
-				'beslissen',
-				'open',
-				'besloten',
-				null,
-				'reg',
-				'sch',
-				true
+				object: $this->object(),
+				move: new TransitionMove(action: 'beslissen', from: 'open', to: 'besloten'),
+				scope: new RegisterSchemaRef(register: 'reg', schema: 'sch'),
+				actor: new TransitionActor(userId: null, automatic: true),
 			)
 		);
 	}
@@ -188,6 +194,28 @@ class FlowTriggerListenerTest extends TestCase {
 			->willReturn(1);
 
 		$this->listener->handle(new ObjectCreatedEvent($this->object()));
+	}
+
+	/**
+	 * A deletion is the one lifecycle event whose subject can never be
+	 * re-resolved — the object is already gone by the time any run reaches it.
+	 * The object's last-known state rides along as `payload` so
+	 * `FlowRunAdvancer` can seed the run from it instead of failing every
+	 * `object.deleted` run unconditionally.
+	 */
+	public function testDeleteCarriesTheObjectsLastKnownStateAsPayload(): void {
+		$object = $this->object();
+
+		$this->triggers->expects($this->once())->method('fire')
+			->with(
+				'object.deleted',
+				$this->anything(),
+				null,
+				['payload' => $object->jsonSerialize()]
+			)
+			->willReturn(1);
+
+		$this->listener->handle(new ObjectDeletedEvent($object));
 	}
 
 	/**

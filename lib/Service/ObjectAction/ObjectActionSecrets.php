@@ -146,17 +146,29 @@ final class ObjectActionSecrets {
 				continue;
 			}
 
-			foreach ($names as $name) {
-				if (array_key_exists($name, $item['json']['inputs']) === true) {
-					$item['json']['inputs'][$name] = self::REDACTED;
-				}
-			}
-
-			$items[$index] = $item;
+			$items[$index] = self::redactedInputs(item: $item, names: $names);
 		}
 
 		return $items;
 	}//end redactItems()
+
+	/**
+	 * The item with each named secret input replaced by the redaction marker.
+	 *
+	 * @param array<string, mixed> $item  The item, carrying `json.inputs`.
+	 * @param array<int, string>   $names The secret input names.
+	 *
+	 * @return array<string, mixed> The redacted item.
+	 */
+	private static function redactedInputs(array $item, array $names): array {
+		foreach ($names as $name) {
+			if (array_key_exists($name, $item['json']['inputs']) === true) {
+				$item['json']['inputs'][$name] = self::REDACTED;
+			}
+		}
+
+		return $item;
+	}//end redactedInputs()
 
 	/**
 	 * Log entries with the item samples of each step (`input`, `output`) redacted.
@@ -266,11 +278,7 @@ final class ObjectActionSecrets {
 	 * @return mixed The data.
 	 */
 	private static function replaceCopies(mixed $data, SecretCopies $copies): mixed {
-		if (is_string($data) === true && in_array($data, $copies->secrets, true) === true) {
-			return self::REDACTED;
-		}
-
-		if ((is_int($data) === true || is_float($data) === true) && in_array((string)$data, $copies->numbers, true) === true) {
+		if (self::isSecretCopy(data: $data, copies: $copies) === true) {
 			return self::REDACTED;
 		}
 
@@ -289,6 +297,22 @@ final class ObjectActionSecrets {
 
 		return $data;
 	}//end replaceCopies()
+
+	/**
+	 * Whether a scalar is a copy of a secret: the secret text, or a number written as one.
+	 *
+	 * @param mixed        $data   The value.
+	 * @param SecretCopies $copies The secrets and their numeric spellings.
+	 *
+	 * @return boolean Whether it must be redacted.
+	 */
+	private static function isSecretCopy(mixed $data, SecretCopies $copies): bool {
+		if (is_string($data) === true && in_array($data, $copies->secrets, true) === true) {
+			return true;
+		}
+
+		return (is_int($data) === true || is_float($data) === true) && in_array((string)$data, $copies->numbers, true) === true;
+	}//end isSecretCopy()
 
 	/**
 	 * The held values long enough to be looked for outside their own key.

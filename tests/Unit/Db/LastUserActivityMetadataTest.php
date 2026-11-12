@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -40,7 +41,6 @@ use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
-use OCA\OpenRegister\Db\RegisterSchema;
 
 class LastUserActivityMetadataTest extends TestCase {
 
@@ -175,10 +175,9 @@ class LastUserActivityMetadataTest extends TestCase {
 		$register = new Register();
 		$register->setId(1);
 
-		$entity = $statistics->convertRowToObjectEntity(
+		$entity = $statistics->toObjectEntity(
 			['_uuid' => 'u-1', '_id' => 1, '_last_user_activity' => '2026-09-01 10:00:00'],
-			$register,
-			$this->makeSchema()
+			new RegisterSchema($register, $this->makeSchema())
 		);
 
 		$this->assertSame('2026-09-01 10:00:00', $entity->getLastUserActivity()->format('Y-m-d H:i:s'));

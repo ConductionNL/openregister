@@ -70,27 +70,14 @@ class GrantManageGuard {
 	/**
 	 * As what a caller may manage a record's grants, or null when it may not.
 	 *
-	 * @param string|null $userId The caller, or null when anonymous.
-	 * @param string[] $userGroups The caller's group ids.
+	 * @param GrantCaller  $caller The caller, null when anonymous, and its group ids.
 	 * @param ObjectEntity $object The record.
 	 *
 	 * @return string|null AS_OWNER, AS_HOLDER, or null for a caller who is refused.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function admittedAs(?string $userId, array $userGroups, ObjectEntity $object): ?string {
-		return $this->admittedCaller(caller: new GrantCaller(userId: $userId, userGroups: $userGroups), object: $object);
-	}//end admittedAs()
-
-	/**
-	 * As what one caller may manage a record's grants, or null when it may not.
-	 *
-	 * @param GrantCaller  $caller The caller and its group ids.
-	 * @param ObjectEntity $object The record.
-	 *
-	 * @return string|null AS_OWNER, AS_HOLDER, or null for a caller who is refused.
-	 */
-	private function admittedCaller(GrantCaller $caller, ObjectEntity $object): ?string {
+	public function admittedAs(GrantCaller $caller, ObjectEntity $object): ?string {
 		if ($this->scopeResolver->admitsUnconditionally(
 			userId: $caller->userId,
 			userGroups: $caller->userGroups,
@@ -112,7 +99,7 @@ class GrantManageGuard {
 		}
 
 		return null;
-	}//end admittedCaller()
+	}//end admittedAs()
 
 	/**
 	 * Whether a holder of the special right is trying to let itself in.
@@ -123,17 +110,16 @@ class GrantManageGuard {
 	 * right a read by one extra call.
 	 *
 	 * @param string|null $admittedAs What {@see admittedAs()} answered.
-	 * @param string|null $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
+	 * @param GrantCaller $caller The caller and its group ids.
 	 * @param GrantedPrincipal $principal The user, group or remote principal being let in.
 	 *
 	 * @return bool True when the request must be refused.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, GrantedPrincipal $principal): bool {
+	public function letsItselfIn(?string $admittedAs, GrantCaller $caller, GrantedPrincipal $principal): bool {
 		return $admittedAs === self::AS_HOLDER
-			&& $this->namesCaller(caller: new GrantCaller(userId: $userId, userGroups: $userGroups), principal: $principal) === true;
+			&& $this->namesCaller(caller: $caller, principal: $principal) === true;
 	}//end letsItselfIn()
 
 	/**

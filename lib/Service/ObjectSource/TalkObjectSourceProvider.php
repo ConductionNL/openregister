@@ -272,12 +272,15 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 	 */
 	private function lastActivity(object $room): ?string {
 		try {
-			$activity = $room->getLastActivity();
-			if ($activity instanceof \DateTimeInterface) {
-				return $activity->format(\DateTime::ATOM);
-			}
+			return AtomMoment::of(value: $room->getLastActivity());
 		} catch (Throwable $e) {
 			// Getter missing on this Talk version — leave null.
+			$this->logger->debug(
+				message: '[TalkObjectSourceProvider] Room last activity not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

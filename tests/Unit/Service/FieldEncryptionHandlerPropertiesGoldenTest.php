@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\FieldDecryptionScope;
 use OCA\OpenRegister\Exception\FieldDecryptionException;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCP\Security\ICrypto;
@@ -131,7 +132,7 @@ class FieldEncryptionHandlerPropertiesGoldenTest extends TestCase {
 			'name' => self::P . 'C(Ann)',
 		];
 
-		$out = $this->handler()->decryptProperties($data, $this->schema());
+		$out = $this->handler()->decryptInScope($data, new FieldDecryptionScope(schema: $this->schema(), throwOnFailure: false));
 
 		self::assertSame(
 			[
@@ -160,7 +161,7 @@ class FieldEncryptionHandlerPropertiesGoldenTest extends TestCase {
 		$data = ['bsn' => self::P . 'C(123)', 'iban' => self::P . 'garbage', 'empty' => self::P . 'C(never)'];
 
 		try {
-			$this->handler()->decryptProperties($data, $this->schema(), true);
+			$this->handler()->decryptInScope($data, new FieldDecryptionScope(schema: $this->schema(), throwOnFailure: true));
 			self::fail('Expected a FieldDecryptionException.');
 		} catch (FieldDecryptionException $e) {
 			self::assertSame('Failed to decrypt field value: bad ciphertext', $e->getMessage());
@@ -176,6 +177,6 @@ class FieldEncryptionHandlerPropertiesGoldenTest extends TestCase {
 		$schema->setProperties(['bsn' => ['type' => 'string']]);
 		$data = ['bsn' => self::P . 'C(123)'];
 
-		self::assertSame($data, $this->handler()->decryptProperties($data, $schema));
+		self::assertSame($data, $this->handler()->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: false)));
 	}//end testDecryptPropertiesIsANoOpWithoutFlaggedProperties()
 }//end class

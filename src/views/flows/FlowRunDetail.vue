@@ -467,6 +467,40 @@ import {
 import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
 import { flowPageMethods } from './flowPageMethods.js'
 
+/**
+ * The failure alert's title for the step a run stopped at: with its position
+ * when the flow still has the step.
+ *
+ * @param {{position: number|null, label: string}} step The failed step
+ * @return {string} The title
+ */
+function stoppedAtTitle(step) {
+	if (step.position === null) {
+		return t('openregister', 'Stopped at {step}', { step: step.label })
+	}
+	return t('openregister', 'Stopped at step {position}, {step}', {
+		position: step.position,
+		step: step.label,
+	})
+}
+
+/**
+ * The failure alert for a run whose log names no failed step: shown when the
+ * run failed or carries an error.
+ *
+ * @param {object} run The run
+ * @return {{title: string, error: string}|null} The alert, or null
+ */
+function failedRunAlert(run) {
+	if (!RUN_FAILED_STATUSES.includes(run.status) && !run.error) {
+		return null
+	}
+	return {
+		title: t('openregister', 'This run failed'),
+		error: run.error || '',
+	}
+}
+
 export default {
 	name: 'FlowRunDetail',
 
@@ -586,27 +620,11 @@ export default {
 			if (!this.run) {
 				return null
 			}
-			const failed = RUN_FAILED_STATUSES.includes(this.run.status)
 			const step = failedStep(this.run, this.ordered, this.names)
 			if (step) {
-				const title =
-					step.position !== null
-						? t('openregister', 'Stopped at step {position}, {step}', {
-								position: step.position,
-								step: step.label,
-							})
-						: t('openregister', 'Stopped at {step}', {
-								step: step.label,
-							})
-				return { title, error: step.error }
+				return { title: stoppedAtTitle(step), error: step.error }
 			}
-			if (failed || this.run.error) {
-				return {
-					title: t('openregister', 'This run failed'),
-					error: this.run.error || '',
-				}
-			}
-			return null
+			return failedRunAlert(this.run)
 		},
 
 		/**
@@ -693,38 +711,82 @@ export default {
 			this.loading = true
 			this.actionError = ''
 			this.activeTab = 'steps'
+			if (!(await this.readRun())) {
+				return
+			}
+			this.showRunPanels(await this.fetchRunPanels(this.run?.flowId))
+			this.loading = false
+		},
+
+		/**
+		 * Read the run itself; a run that cannot be read leaves none and ends
+		 * the loading.
+		 *
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Promise<boolean>} Whether the run answered
+		 */
+		async readRun() {
 			try {
 				const response = await axios.get(
 					generateUrl(`/apps/openregister/api/flow-runs/${this.uuid}`),
 				)
 				this.run = response?.data || null
+				return true
 			} catch {
 				// 404 for a run that is gone, 401 without a session; both mean
 				// the same thing to the person holding the link.
 				this.run = null
 				this.loading = false
-				return
+				return false
 			}
+		},
 
-			const flowId = this.run?.flowId
-			const [flow, versions, catalog, objects, tasks] = await Promise.all([
-				flowId
-					? this.quietGet(`/apps/openregister/api/flows/${flowId}`)
-					: null,
-				flowId
-					? this.quietGet(
-							`/apps/openregister/api/flows/${flowId}/versions`,
-						)
-					: null,
+		/**
+		 * Ask for the run's panels at once: its flow and versions (only with a
+		 * flow), the node catalog, the objects it changed and its tasks.
+		 *
+		 * @param {string|undefined} flowId The run's flow, if any
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Promise<Array>} flow, versions, catalog, objects and tasks; null where unreadable
+		 */
+		fetchRunPanels(flowId) {
+			return Promise.all([
+				...this.fetchFlowPanels(flowId),
 				this.quietGet('/apps/openregister/api/flow/node-catalog'),
-				this.quietGet(
-					`/apps/openregister/api/flow-runs/${this.uuid}/objects`,
-				),
+				this.quietGet(`/apps/openregister/api/flow-runs/${this.uuid}/objects`),
 				this.quietGet('/apps/openregister/api/flow-tasks', {
 					runUuid: this.uuid,
 					scope: 'all',
 				}),
 			])
+		},
+
+		/**
+		 * Ask for the run's flow and its versions; nothing to ask without a flow.
+		 *
+		 * @param {string|undefined} flowId The run's flow, if any
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Array} The flow and versions requests, or two nulls
+		 */
+		fetchFlowPanels(flowId) {
+			if (!flowId) {
+				return [null, null]
+			}
+			return [
+				this.quietGet(`/apps/openregister/api/flows/${flowId}`),
+				this.quietGet(`/apps/openregister/api/flows/${flowId}/versions`),
+			]
+		},
+
+		/**
+		 * Fill the panels from what the run's requests answered; the task list
+		 * keeps only this run's tasks.
+		 *
+		 * @param {Array} panels flow, versions, catalog, objects and tasks
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {void}
+		 */
+		showRunPanels([flow, versions, catalog, objects, tasks]) {
 			this.flow = flow
 			this.versions = versions?.results || []
 			this.names = catalogNames(catalog?.results)
@@ -732,7 +794,6 @@ export default {
 			this.tasks = (tasks?.results || []).filter(
 				(task) => String(task?.runUuid || '') === String(this.uuid),
 			)
-			this.loading = false
 		},
 
 		/**

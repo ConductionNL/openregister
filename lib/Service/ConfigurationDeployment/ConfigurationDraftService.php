@@ -110,12 +110,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	public function openSet(string $name, ?string $description = null): ConfigurationDraftSet {
 		$name = trim($name);
 		if ($name === '') {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_INVALID,
-				message: 'a draft set needs a name',
-				refusals: [],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			throw $this->unnamedSet();
 		}
 
 		return $this->sets->createFromArray(
@@ -128,6 +123,21 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 		);
 
 	}//end openSet()
+
+	/**
+	 * The refusal of a draft set without a name.
+	 *
+	 * @return DeploymentRefusedException The refusal.
+	 */
+	private function unnamedSet(): DeploymentRefusedException {
+		return new DeploymentRefusedException(
+			reason: DeploymentRefusedException::REASON_INVALID,
+			message: 'a draft set needs a name',
+			refusals: [],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+
+	}//end unnamedSet()
 
 	/**
 	 * Read a set back, or refuse by name.
@@ -161,11 +171,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * adding a second one: D-1 is one pending value against one live value,
 	 * and two rows for one address would make the deployment order-dependent.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
+	 * @param mixed                    $value  The pending value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -173,15 +180,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			change: new ConfigurationDraftChange(
-				address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-				value: $value,
-				removes: false
-			)
-		);
+	public function draftValue(ConfigurationDraftTarget $target, mixed $value): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: $value, removes: false));
 
 	}//end draftValue()
 
@@ -194,10 +194,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * restore the difference. A caller that has to pass `null, true` to say
 	 * "unset" is a caller that will one day pass `null, false` by mistake.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
 	 *
 	 * @return ConfigurationDraft The pending removal.
 	 *
@@ -205,15 +202,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			change: new ConfigurationDraftChange(
-				address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-				value: null,
-				removes: true
-			)
-		);
+	public function draftRemoval(ConfigurationDraftTarget $target): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: null, removes: true));
 
 	}//end draftRemoval()
 
@@ -230,46 +220,86 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function stage(string $setUuid, ConfigurationDraftChange $change): ConfigurationDraft {
-		$address = $change->address;
-		$value = $change->value;
-		$removes = $change->removes;
-
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
 		$this->requireDraftableAddress(change: $change);
 
-		$live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
-		$existing = $this->drafts->findAtAddress(
-			setUuid: $setUuid,
+		$run     = new DraftStageRun(setUuid: $setUuid, change: $change);
+		$address = $change->address;
+
+		$run->live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
+		$existing  = $this->draftAt(run: $run);
+
+		if ($existing !== null) {
+			return $this->restage(run: $run, draft: $existing);
+		}
+
+		return $this->createDraft(run: $run);
+
+	}//end stage()
+
+	/**
+	 * The pending value already drafted at the run's address in its set, if any.
+	 *
+	 * @param DraftStageRun $run The stage.
+	 *
+	 * @return ConfigurationDraft|null The pending value, or null.
+	 */
+	private function draftAt(DraftStageRun $run): ?ConfigurationDraft {
+		$address = $run->change->address;
+
+		return $this->drafts->findAtAddress(
+			setUuid: $run->setUuid,
 			layer: $address->layer,
 			layerRef: $address->layerRef,
 			configKey: $address->configKey
 		);
 
-		if ($existing !== null) {
-			$existing->setDraftValue(['value' => $value]);
-			$existing->setBaseValue(['value' => $live->value]);
-			$existing->setBasePresent($live->present);
-			$existing->setRemoves($removes);
+	}//end draftAt()
 
-			return $this->drafts->save($existing);
-		}
+	/**
+	 * Replace a pending value at the address and rebase it on the live value.
+	 *
+	 * @param DraftStageRun      $run   The stage.
+	 * @param ConfigurationDraft $draft The pending value already at the address.
+	 *
+	 * @return ConfigurationDraft The saved pending value.
+	 */
+	private function restage(DraftStageRun $run, ConfigurationDraft $draft): ConfigurationDraft {
+		$draft->setDraftValue(['value' => $run->change->value]);
+		$draft->setBaseValue(['value' => $run->live->value]);
+		$draft->setBasePresent($run->live->present);
+		$draft->setRemoves($run->change->removes);
+
+		return $this->drafts->save($draft);
+
+	}//end restage()
+
+	/**
+	 * Write a first pending value at the address, against the live value.
+	 *
+	 * @param DraftStageRun $run The stage.
+	 *
+	 * @return ConfigurationDraft The created pending value.
+	 */
+	private function createDraft(DraftStageRun $run): ConfigurationDraft {
+		$address = $run->change->address;
 
 		return $this->drafts->createFromArray(
 			[
-				'setUuid' => $setUuid,
+				'setUuid' => $run->setUuid,
 				'layer' => $address->layer,
 				'layerRef' => $address->layerRef,
 				'configKey' => $address->configKey,
-				'baseValue' => ['value' => $live->value],
-				'basePresent' => $live->present,
-				'draftValue' => ['value' => $value],
-				'removes' => $removes,
+				'baseValue' => ['value' => $run->live->value],
+				'basePresent' => $run->live->present,
+				'draftValue' => ['value' => $run->change->value],
+				'removes' => $run->change->removes,
 				'createdBy' => $this->actor(),
 			]
 		);
 
-	}//end stage()
+	}//end createDraft()
 
 	/**
 	 * The pending values in a set.
@@ -304,7 +334,30 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	public function approveSet(string $setUuid): ConfigurationDraftSet {
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
+		$this->requirePendingValues(set: $set, setUuid: $setUuid);
 
+		$approver = $this->actor();
+		$this->requireSecondPair(set: $set, approver: $approver);
+
+		$set->setState(ConfigurationDraftSet::STATE_APPROVED);
+		$set->setApprovedBy($approver);
+		$set->setApprovedAt(new DateTime());
+
+		return $this->sets->save($set);
+
+	}//end approveSet()
+
+	/**
+	 * Refuse to approve a set that holds no pending value.
+	 *
+	 * @param ConfigurationDraftSet $set     The set.
+	 * @param string                $setUuid The set uuid.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When the set is empty.
+	 */
+	private function requirePendingValues(ConfigurationDraftSet $set, string $setUuid): void {
 		if ($this->draftsIn(setUuid: $setUuid) === []) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_EMPTY,
@@ -312,7 +365,19 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			);
 		}
 
-		$approver = $this->actor();
+	}//end requirePendingValues()
+
+	/**
+	 * Under four eyes, refuse an approval by the set's own author.
+	 *
+	 * @param ConfigurationDraftSet $set      The set.
+	 * @param string|null           $approver The approving principal.
+	 *
+	 * @return void
+	 *
+	 * @throws DeploymentRefusedException When the author approves their own set under four eyes.
+	 */
+	private function requireSecondPair(ConfigurationDraftSet $set, ?string $approver): void {
 		if ($this->requiresFourEyes() === true && $approver === $set->getCreatedBy()) {
 			throw new DeploymentRefusedException(
 				reason: DeploymentRefusedException::REASON_FOUR_EYES,
@@ -325,13 +390,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			);
 		}
 
-		$set->setState(ConfigurationDraftSet::STATE_APPROVED);
-		$set->setApprovedBy($approver);
-		$set->setApprovedAt(new DateTime());
-
-		return $this->sets->save($set);
-
-	}//end approveSet()
+	}//end requireSecondPair()
 
 	/**
 	 * Abandon a set without deploying it.
@@ -422,8 +481,20 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			return;
 		}
 
-		$address = $change->address;
-		throw new DeploymentRefusedException(
+		throw $this->invalidAddress(address: $change->address, refusal: $refusal);
+
+	}//end requireDraftableAddress()
+
+	/**
+	 * The refusal of an address that cannot be drafted, naming the address.
+	 *
+	 * @param ConfigurationAddress $address The address.
+	 * @param string               $refusal Why it cannot be drafted.
+	 *
+	 * @return DeploymentRefusedException The refusal.
+	 */
+	private function invalidAddress(ConfigurationAddress $address, string $refusal): DeploymentRefusedException {
+		return new DeploymentRefusedException(
 			reason: DeploymentRefusedException::REASON_INVALID,
 			message: $refusal,
 			refusals: [
@@ -437,7 +508,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 			statusCode: Http::STATUS_BAD_REQUEST
 		);
 
-	}//end requireDraftableAddress()
+	}//end invalidAddress()
 
 	/**
 	 * Why a change may not be drafted, or null when it may.

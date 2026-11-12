@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
@@ -75,10 +76,12 @@ class RegisterStatisticsSchemaCountsTest extends TestCase {
 		return new RegisterStatistics(
 			new RegistersControllerServices(
 				mappers: new RegisterMappers(
-					registerMapper: $this->createMock(RegisterMapper::class),
-					schemaMapper: $this->schemas,
+					catalog: new SchemaCatalog(
+						registers: $this->createMock(RegisterMapper::class),
+						schemas: $this->schemas,
+						tables: $this->createMock(MagicMapper::class),
+					),
 					auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-					objectEntityMapper: $this->createMock(MagicMapper::class),
 				),
 				registers: new RegisterServices(
 					registerService: $this->registerService,

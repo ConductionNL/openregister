@@ -34,7 +34,6 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
-use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Calendar\ObjectDateEventBuilder;
 use OCA\OpenRegister\Service\Calendar\ObjectDateOccurrence;
@@ -60,7 +59,6 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->amsterdam = new DateTimeZone('Europe/Amsterdam');
 
 		$this->builder = new ObjectDateEventBuilder(
-			writer: new IcalendarWriter(),
 			deadlines: $this->deadlines,
 			attendees: $this->attendees
 		);
@@ -266,7 +264,6 @@ class ObjectDateEventBuilderTest extends TestCase {
 		);
 
 		$builder = new ObjectDateEventBuilder(
-			writer: new IcalendarWriter(),
 			deadlines: $this->deadlines,
 			attendees: $attendees
 		);

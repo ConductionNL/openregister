@@ -55,6 +55,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Repair\Support\ColumnMove;
 use OCP\DB\Exception;
+use OCP\DB\IPreparedStatement;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -154,12 +155,7 @@ class RenameDutchColumns implements IRepairStep {
 			return;
 		}
 
-		$tally = ['renamed' => 0, 'copied' => 0, 'refused' => 0];
-		foreach ($tables as $table) {
-			foreach ($this->migrateTable(table: $table) as $outcome) {
-				$tally[$outcome]++;
-			}
-		}
+		$tally = $this->migrateAll(tables: $tables);
 
 		$output->info(
 			'RenameDutchColumns: ' . $tally['renamed'] . ' renamed, ' . $tally['copied'] . ' back-filled, '
@@ -167,6 +163,26 @@ class RenameDutchColumns implements IRepairStep {
 		);
 
 	}//end run()
+
+	/**
+	 * Migrate every shard table and count the outcomes.
+	 *
+	 * @param array<int, string> $tables The shard tables.
+	 *
+	 * @return array{renamed: int, copied: int, refused: int} The counts.
+	 *
+	 * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
+	 */
+	private function migrateAll(array $tables): array {
+		$tally = ['renamed' => 0, 'copied' => 0, 'refused' => 0];
+		foreach ($tables as $table) {
+			foreach ($this->migrateTable(table: $table) as $outcome) {
+				$tally[$outcome]++;
+			}
+		}
+
+		return $tally;
+	}//end migrateAll()
 
 	/**
 	 * Migrate every mapped column one shard table carries.
@@ -207,10 +223,7 @@ class RenameDutchColumns implements IRepairStep {
 		}
 
 		if ($this->hasCollision(columns: $columns, target: $move->new) === true) {
-			$this->logger->warning(
-				'RenameDutchColumns: two sources target one destination; migrating neither.',
-				['table' => $move->table, 'source' => $move->old, 'destination' => $move->new]
-			);
+			$this->logCollision(move: $move);
 			return 'refused';
 		}
 
@@ -220,6 +233,22 @@ class RenameDutchColumns implements IRepairStep {
 
 		return $this->backfillColumn(move: $move);
 	}//end migrateColumn()
+
+	/**
+	 * Log a column move refused because two sources target one destination.
+	 *
+	 * @param ColumnMove $move The refused move.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude No canonical spec covers the Dutch-to-English vocabulary
+	 */
+	private function logCollision(ColumnMove $move): void {
+		$this->logger->warning(
+			'RenameDutchColumns: two sources target one destination; migrating neither.',
+			['table' => $move->table, 'source' => $move->old, 'destination' => $move->new]
+		);
+	}//end logCollision()
 
 	/**
 	 * Rename the Dutch column to the English one.
@@ -348,11 +377,7 @@ class RenameDutchColumns implements IRepairStep {
 		try {
 			$ids = [];
 			foreach (self::REGISTER_SLUG_PREFIXES as $prefix) {
-				$rows = $this->db->executeQuery(
-					'SELECT id FROM `*PREFIX*openregister_registers` WHERE slug LIKE ?',
-					[$prefix . '%']
-				)->fetchAll(\PDO::FETCH_COLUMN);
-				$ids = array_merge($ids, (array)$rows);
+				$ids = array_merge($ids, $this->registerIdsWithPrefix(prefix: $prefix));
 			}
 
 			return array_values(array_unique($ids));
@@ -366,17 +391,34 @@ class RenameDutchColumns implements IRepairStep {
 	}
 
 	/**
+	 * The ids of the registers whose slug starts with a prefix.
+	 *
+	 * @param string $prefix The slug prefix.
+	 *
+	 * @return array<int, mixed> The ids.
+	 *
+	 * @throws Exception When the query fails.
+	 */
+	private function registerIdsWithPrefix(string $prefix): array {
+		$rows = $this->db->executeQuery(
+			'SELECT id FROM `*PREFIX*openregister_registers` WHERE slug LIKE ?',
+			[$prefix . '%']
+		)->fetchAll(\PDO::FETCH_COLUMN);
+
+		return (array)$rows;
+	}//end registerIdsWithPrefix()
+
+	/**
 	 * Every table name containing the openregister shard marker.
 	 *
 	 * @return array<int, string>
 	 */
 	private function openRegisterTableNames(): array {
 		try {
-			$stmt = $this->db->prepare(
-				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern'
+			$stmt = $this->executed(
+				sql: 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern',
+				bindings: ['pattern' => '%openregister\_table\_%']
 			);
-			$stmt->bindValue('pattern', '%openregister\_table\_%');
-			$stmt->execute();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'RenameDutchColumns: could not list tables; skipping.',
@@ -385,15 +427,7 @@ class RenameDutchColumns implements IRepairStep {
 			return [];
 		}
 
-		$names = [];
-		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-			$name = (string)($row['table_name'] ?? '');
-			if ($name !== '') {
-				$names[] = $name;
-			}
-		}
-
-		return $names;
+		return self::namesIn(stmt: $stmt, column: 'table_name');
 	}//end shardTables()
 
 	/**
@@ -405,11 +439,10 @@ class RenameDutchColumns implements IRepairStep {
 	 */
 	private function columnsOf(string $table): array {
 		try {
-			$stmt = $this->db->prepare(
-				'SELECT column_name FROM information_schema.columns WHERE table_name = :table'
+			$stmt = $this->executed(
+				sql: 'SELECT column_name FROM information_schema.columns WHERE table_name = :table',
+				bindings: ['table' => $table]
 			);
-			$stmt->bindValue('table', $table);
-			$stmt->execute();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'RenameDutchColumns: could not read columns; skipping table.',
@@ -418,16 +451,49 @@ class RenameDutchColumns implements IRepairStep {
 			return [];
 		}
 
-		$columns = [];
+		return self::namesIn(stmt: $stmt, column: 'column_name');
+	}//end columnsOf()
+
+	/**
+	 * Prepare a statement, bind its named values in order and execute it.
+	 *
+	 * @param string                $sql      The query.
+	 * @param array<string, string> $bindings The named values.
+	 *
+	 * @return IPreparedStatement The executed statement.
+	 *
+	 * @throws \Throwable When the statement cannot be prepared or executed.
+	 */
+	private function executed(string $sql, array $bindings): IPreparedStatement {
+		$stmt = $this->db->prepare($sql);
+		foreach ($bindings as $name => $value) {
+			$stmt->bindValue($name, $value);
+		}
+
+		$stmt->execute();
+
+		return $stmt;
+	}//end executed()
+
+	/**
+	 * The non-empty values of one column of an executed statement, in row order.
+	 *
+	 * @param IPreparedStatement $stmt   The executed statement.
+	 * @param string             $column The column holding the name.
+	 *
+	 * @return array<int, string> The names.
+	 */
+	private static function namesIn(IPreparedStatement $stmt, string $column): array {
+		$names = [];
 		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-			$name = (string)($row['column_name'] ?? '');
+			$name = (string)($row[$column] ?? '');
 			if ($name !== '') {
-				$columns[] = $name;
+				$names[] = $name;
 			}
 		}
 
-		return $columns;
-	}//end columnsOf()
+		return $names;
+	}//end namesIn()
 
 	/**
 	 * Execute one statement, logging and swallowing failure.

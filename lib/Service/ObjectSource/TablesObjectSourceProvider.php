@@ -41,9 +41,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -131,17 +129,15 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * bounded, logged scan of the bound table). Returns null when the row is
 	 * absent OR the acting user may not read it (denied == absent).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The rowId or derived UUID.
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findTargeted(target: $this->target(table: $source->table, config: $source->config), id: $id);
 	}//end find()
 
 	/**
@@ -167,17 +163,15 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 * or a sort is applied in PHP over a bounded scan, and paged after that. A
 	 * `config.viewId` binds a Tables View instead of the raw `config.tableId`.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/sort/limit/offset).
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listTargeted(target: $this->target(table: $source->table, config: $source->config), query: $query);
 	}//end findAll()
 
 	/**
@@ -207,17 +201,15 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return $this->countTargeted(target: $this->target(table: new RegisterSchema(register: $register, schema: $schema), config: $config), query: $query);
+	public function count(SourcedTable $source, array $query = []): int {
+		return $this->countTargeted(target: $this->target(table: $source->table, config: $source->config), query: $query);
 	}//end count()
 
 	/**
@@ -233,13 +225,24 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 			return 0;
 		}
 
-		$objectQuery = new TablesObjectQuery(query: $query);
-		if ($objectQuery->isNarrowing() === true && $target->scope->tableId !== 0) {
-			return count($this->matching(target: $target, query: $objectQuery));
+		return $this->countIn(target: $target, query: new TablesObjectQuery(query: $query));
+	}//end countTargeted()
+
+	/**
+	 * Count a table's or view's objects: by matching when a narrowing query hits a table, else by row count.
+	 *
+	 * @param TablesObjectTarget $target The target, naming a table or a view.
+	 * @param TablesObjectQuery  $query  The parsed query.
+	 *
+	 * @return int The count.
+	 */
+	private function countIn(TablesObjectTarget $target, TablesObjectQuery $query): int {
+		if ($query->isNarrowing() === true && $target->scope->tableId !== 0) {
+			return count($this->matching(target: $target, query: $query));
 		}
 
 		return $this->parts->reader->countRows(scope: $target->scope);
-	}//end countTargeted()
+	}//end countIn()
 
 	/**
 	 * Resolve a virtual object by a numeric row id or a derived UUID.

@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -137,9 +138,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 * nonsense) also passes through: that beats suspending forever on a time
 	 * that will never arrive.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, unchanged, once the wait is over.
 	 *
@@ -150,7 +149,10 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *                        nothing to wait for, and pausing on it would pause
 	 *                        every other branch of the run with it.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		if ($items === [] || $this->waitIsOver(context: $context) === true) {
 			return $items;
 		}

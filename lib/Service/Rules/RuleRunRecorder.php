@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -165,11 +166,8 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	private function recordSummary(RuleRun $run, RuleTrace $trace): void {
 		try {
 			$this->stores->summaries->record(
-				ruleId: $run->getRuleId(),
-				schemaSlug: $run->getSchemaSlug(),
-				verdict: $trace->getVerdict(),
-				moment: $run->getCreated(),
-				error: $this->errorOf(trace: $trace)
+				run: $run,
+				evaluation: new RuleEvaluation(verdict: $trace->getVerdict(), moment: $run->getCreated(), error: $this->errorOf(trace: $trace))
 			);
 		} catch (Throwable $e) {
 			$this->warn(what: 'update the summary for rule ' . $run->getRuleId(), failure: $e);

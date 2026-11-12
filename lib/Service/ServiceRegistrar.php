@@ -325,7 +325,6 @@ final class ServiceRegistrar {
 	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
 			return new TaskInboxService(
 				tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-				temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				objects: $container->get(MagicMapperInterface::class),
 				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
@@ -379,7 +378,10 @@ final class ServiceRegistrar {
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
 				folderRecorder: $container->get(\OCA\OpenRegister\Files\Db\RegisterFolderRecorder::class),
-				fileService: null
+				fileService: null,
+				// Not FileService itself (that would be the cycle this
+				// factory breaks), only the means to resolve it on first use.
+				container: $container
 			);
 	}//end buildFolderManagementHandler()
 

@@ -30,8 +30,10 @@ use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -205,7 +207,7 @@ class ExampleSetPartiesBehaviourTest extends TestCase {
 	public function testALinkIsLostOnlyWhenTheMapperFindsNone(): void {
 		$entry = ['objectUuid' => 'obj-1', 'partyUuid' => 'party-1', 'role' => 'gemachtigde'];
 		$this->links->expects($this->exactly(2))->method('findByObjectContactAndRole')
-			->with('obj-1', ContactLink::partyUid(partyUuid: 'party-1'), 'gemachtigde')
+			->with(new PersonLinkRef('obj-1', ContactLink::partyUid(partyUuid: 'party-1'), 'gemachtigde'))
 			->willReturnOnConsecutiveCalls(new ContactLink(), null);
 
 		$this->assertFalse($this->subject->lost(entry: $entry));
@@ -241,7 +243,7 @@ class ExampleSetPartiesBehaviourTest extends TestCase {
 	 */
 	public function testARevertUnlinksTheHeldLink(): void {
 		$this->links->method('findByObjectContactAndRole')->willReturn(new ContactLink());
-		$this->roles->expects($this->once())->method('removeParty')->with('obj-1', 'party-1', 'gemachtigde')->willReturn(1);
+		$this->roles->expects($this->once())->method('removeParty')->with('obj-1', new PartyHolding('party-1', 'gemachtigde'))->willReturn(1);
 
 		$this->assertSame(
 			'removed',

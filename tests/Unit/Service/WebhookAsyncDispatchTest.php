@@ -87,7 +87,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->jobList->expects($this->never())->method('add');
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
 	}
 
 	/**
@@ -103,7 +103,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 
 		$this->jobList->expects($this->never())->method('add');
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 
 	/**
@@ -135,7 +135,6 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectUpdatedEvent',
 			['test' => 'data']
 		);
@@ -166,7 +165,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 				$enqueuedWebhookIds[] = $arg['webhook_id'];
 			});
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['k' => 'v']);
+		$this->service->dispatchEvent('SomeEvent', ['k' => 'v']);
 
 		$this->assertSame([1, 2, 3], $enqueuedWebhookIds);
 	}
@@ -198,6 +197,6 @@ class WebhookAsyncDispatchTest extends TestCase {
 
 		$partialService->expects($this->never())->method('deliverWebhook');
 
-		$partialService->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$partialService->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 }

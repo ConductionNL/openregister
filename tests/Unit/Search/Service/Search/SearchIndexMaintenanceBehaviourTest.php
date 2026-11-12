@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Registers and schemas are real entities: getId() is a magic Entity method a double cannot answer.
@@ -49,6 +50,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Search\Service\Search\SearchIndexPass
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 class SearchIndexMaintenanceBehaviourTest extends TestCase
 {
@@ -293,7 +295,7 @@ class SearchIndexMaintenanceBehaviourTest extends TestCase
         $this->db->method('prepare')->willReturn($statement);
         $this->db->expects($this->never())->method('executeStatement');
 
-        $report = $this->service()->rebuild(apply: true);
+        $report = $this->service()->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
         $this->assertSame('failed', $report['state']);
         $this->assertSame(0, $report['rebuilt']);

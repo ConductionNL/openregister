@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -50,6 +51,16 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
@@ -119,7 +130,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 	private function sqlFor(MagicSearchHandler $handler, array $query = []): string {
 		return implode(
 			' AND ',
-			$handler->buildWhereConditionsSql(query: $query, schema: new Schema())
+			$handler->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: new Schema())))
 		);
 	}//end sqlFor()
 
@@ -392,7 +403,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
 		foreach (['_related', '_referenced'] as $key) {
 			try {
-				$handler->buildWhereConditionsSql(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], schema: new Schema());
+				$handler->buildWhereClause(request: new WhereClauseRequest(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], table: new MagicReadTable(schema: new Schema())));
 				$this->fail('Expected a refusal for ' . $key);
 			} catch (\OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException $e) {
 				$this->assertStringContainsString("'" . $key . "'", $e->getMessage());
@@ -400,7 +411,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		}
 
 		// The control: without the keys the same builder answers.
-		$this->assertIsArray($handler->buildWhereConditionsSql(query: [], schema: new Schema()));
+		$this->assertIsArray($handler->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: new Schema()))));
 	}//end testTheUnionBuilderRefusesRelatedRowFilters()
 
 	/**

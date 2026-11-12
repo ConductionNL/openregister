@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 
 /**
  * Pins what each caller (anonymous, member, admin) is told it may do, and every fallback.
@@ -157,8 +158,8 @@ class ScopesControllerA24GoldenTest extends TestCase {
 			}
 		);
 		$this->permissions->method('provenanceFor')->willReturnCallback(
-			static function (Schema $schema): array {
-				if ($schema->getSlug() === 'besluit') {
+			static function (ProvenanceRequest $request): array {
+				if ($request->schema->getSlug() === 'besluit') {
 					throw new RuntimeException('no provenance');
 				}
 				return ['read' => ['granted' => true, 'source' => 'role']];

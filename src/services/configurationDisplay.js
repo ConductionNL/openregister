@@ -87,18 +87,34 @@ function reportVersion(data) {
  */
 export async function checkConfigurationVersion(configuration) {
 	try {
-		const response = await axios.post(
-			generateUrl(
-				`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-			),
-		)
+		const response = await requestVersionCheck(configuration.id)
 		reportVersion(response.data)
 		await configurationStore.refreshConfigurationList()
 	} catch (error) {
-		showError(
-			t('openregister', 'Failed to check version: {error}', {
-				error: error.response?.data?.error || error.message,
-			}),
-		)
+		showError(versionCheckFailedText(error))
 	}
+}
+
+/**
+ * Ask the server to check a configuration's remote version.
+ *
+ * @param {number|string} id The configuration id
+ * @return {Promise<object>} The axios response
+ */
+function requestVersionCheck(id) {
+	return axios.post(
+		generateUrl(`/apps/openregister/api/configurations/${id}/check-version`),
+	)
+}
+
+/**
+ * What a failed version check says: the server's error, else the failure's.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function versionCheckFailedText(error) {
+	return t('openregister', 'Failed to check version: {error}', {
+		error: error.response?.data?.error || error.message,
+	})
 }

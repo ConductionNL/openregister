@@ -150,14 +150,8 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
 	 */
 	public function isHidden(EntityRelation $relation, string $userId): bool {
-		$decisionUuid = (string)($relation->getDecisionUuid() ?? '');
-		if ($decisionUuid === '') {
-			return false;
-		}
-
-		$resolved = $this->resolver->forRelation(relation: $relation);
-		$policy = $resolved['policy'];
-		if ($policy->hidesOthers() === false) {
+		$resolved = $this->hidingResolution(relation: $relation);
+		if ($resolved === null) {
 			return false;
 		}
 
@@ -165,20 +159,54 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 			return true;
 		}
 
-		$decision = $this->decisions->find(uuid: $decisionUuid);
-		if ($decision !== null && $decision->getDecidedBy() === $userId) {
-			return false;
-		}
-
-		if ($this->supervises(userId: $userId, policy: $policy) === true) {
-			return false;
-		}
-
-		return $this->shownByEvent(
-			decision: $decision,
-			question: new DecisionQuestion(actorId: $userId, policy: $policy, subject: $resolved['subject'])
-		) === false;
+		return $this->hiddenFromReader(
+			decisionUuid: (string)$relation->getDecisionUuid(),
+			question: new DecisionQuestion(actorId: $userId, policy: $resolved['policy'], subject: $resolved['subject'])
+		);
 	}//end isHidden()
+
+	/**
+	 * The resolved policy of a relation's decision when that policy hides it from others; null otherwise.
+	 *
+	 * @param EntityRelation $relation The relation.
+	 *
+	 * @return array{policy: ReviewPolicy, subject: array<string, mixed>}|null Null for no decision, or a policy that does not hide.
+	 */
+	private function hidingResolution(EntityRelation $relation): ?array {
+		$decisionUuid = (string)($relation->getDecisionUuid() ?? '');
+		if ($decisionUuid === '') {
+			return null;
+		}
+
+		$resolved = $this->resolver->forRelation(relation: $relation);
+		if ($resolved['policy']->hidesOthers() === false) {
+			return null;
+		}
+
+		return $resolved;
+	}//end hidingResolution()
+
+	/**
+	 * Whether a hidden decision stays hidden from one reader: not from its decider, a supervisor, or
+	 * a reader the owning app shows it to.
+	 *
+	 * @param string           $decisionUuid The decision.
+	 * @param DecisionQuestion $question     The reader, the policy and the subject.
+	 *
+	 * @return bool True when the decision is hidden from the reader.
+	 */
+	private function hiddenFromReader(string $decisionUuid, DecisionQuestion $question): bool {
+		$decision = $this->decisions->find(uuid: $decisionUuid);
+		if ($decision !== null && $decision->getDecidedBy() === $question->actorId) {
+			return false;
+		}
+
+		if ($this->supervises(userId: $question->actorId, policy: $question->policy) === true) {
+			return false;
+		}
+
+		return $this->shownByEvent(decision: $decision, question: $question) === false;
+	}//end hiddenFromReader()
 
 	/**
 	 * Whether the app that owns the subject shows the decision to the caller.

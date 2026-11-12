@@ -175,6 +175,18 @@ class GeoJsonGeometryValidator {
 			return ['geometry MUST be a GeoJSON object'];
 		}
 
+		return $this->validateGeoJson(type: $type, value: $value);
+	}//end validate()
+
+	/**
+	 * Validate a GeoJSON object against a geometry property type.
+	 *
+	 * @param string       $type  The lower-cased property type.
+	 * @param array<mixed> $value The GeoJSON object.
+	 *
+	 * @return array<int, string> Validation errors (empty when valid).
+	 */
+	private function validateGeoJson(string $type, array $value): array {
 		if ($type === 'geo:geometry') {
 			return $this->validateAny(geometryType: ($value['type'] ?? null), value: $value);
 		}
@@ -184,7 +196,7 @@ class GeoJsonGeometryValidator {
 		}
 
 		return $this->validateShape(geometryType: self::GEOMETRY_BY_TYPE[$type], value: $value);
-	}//end validate()
+	}//end validateGeoJson()
 
 	/**
 	 * Validate any supported GeoJSON geometry (geo:geometry).

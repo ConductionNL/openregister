@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ContactPlacement;
 use DateTime;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
@@ -78,11 +79,11 @@ class ContactServiceListingGoldenTest extends TestCase {
 			'list all' => ['getContactsForObject', ['obj-1'], ['links' => $all]],
 			'list update fails' => ['getContactsForObject', ['obj-1'], ['links' => [$stale, $uncached], 'updateThrows' => true]],
 			'list addressbook throws' => ['getContactsForObject', ['obj-1'], ['links' => [$fresh], 'abThrows' => true]],
-			'create no user' => ['createAndLinkContact', ['obj-1', 3, $contact, 7], ['uid' => null]],
-			'create no addressbook' => ['createAndLinkContact', ['obj-1', 3, $contact, 7], ['userBooks' => []]],
-			'create full' => ['createAndLinkContact', ['obj-1', 3, $contact, 7], []],
-			'create minimal' => ['createAndLinkContact', ['obj-1', 3, [], null], []],
-			'create full name fallback' => ['createAndLinkContact', ['obj-1', 3, ['fullName' => 'Klaas', 'email' => '', 'phone' => '0', 'org' => null], null], []],
+			'create no user' => ['createAndLinkContact', [new ContactPlacement('obj-1', 3, 7, 'owner'), $contact], ['uid' => null]],
+			'create no addressbook' => ['createAndLinkContact', [new ContactPlacement('obj-1', 3, 7, 'owner'), $contact], ['userBooks' => []]],
+			'create full' => ['createAndLinkContact', [new ContactPlacement('obj-1', 3, 7, 'owner'), $contact], []],
+			'create minimal' => ['createAndLinkContact', [new ContactPlacement('obj-1', 3, null, null), []], []],
+			'create full name fallback' => ['createAndLinkContact', [new ContactPlacement('obj-1', 3, null, null), ['fullName' => 'Klaas', 'email' => '', 'phone' => '0', 'org' => null]], []],
 		];
 	}//end cases()
 

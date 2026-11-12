@@ -33,7 +33,7 @@ final class KindPreference {
 	/**
 	 * Hold the preference.
 	 *
-	 * @param array<string,mixed> $resolved    What `NotificationPreferenceService::resolveEffective()` returned.
+	 * @param array<string,mixed> $resolved    What `NotificationPreferenceService::resolve()` returned.
 	 * @param array<string,mixed> $declaration The notification's own declaration from the schema.
 	 */
 	public function __construct(

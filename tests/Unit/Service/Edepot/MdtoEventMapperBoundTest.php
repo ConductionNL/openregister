@@ -70,7 +70,7 @@ class MdtoEventMapperBoundTest extends TestCase {
 	 */
 	private function events(array $recent, array $creation, array &$logged): array {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willReturnOnConsecutiveCalls($recent, $creation);
+		$mapper->method('findTrail')->willReturnOnConsecutiveCalls($recent, $creation);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('info')->willReturnCallback(
 			function (string $message, array $context) use (&$logged): void {

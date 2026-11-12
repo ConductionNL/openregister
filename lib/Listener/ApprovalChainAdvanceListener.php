@@ -32,7 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\EventDispatcher\Event;
@@ -73,41 +75,94 @@ class ApprovalChainAdvanceListener implements IEventListener {
 			return;
 		}
 
-		$sequence = $event->getSequence();
-		$schemaId = $sequence->getSchemaId();
-		if ($schemaId === null) {
-			return;
-		}
-
-		try {
-			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return;
-		}
-
-		// No instanceof re-check: the lookup above is declared to return Schema
-		// and throws otherwise, which the catch already handles.
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config['x-openregister-approval-chains'] ?? null);
-		if (is_array($chains) === false) {
-			return;
-		}
-
-		$entry = ($chains[(string)$sequence->getChainKey()] ?? null);
-		if (is_array($entry) === false) {
-			return;
-		}
-
-		if (($entry['onApprove'] ?? null) !== 'advanceTransition') {
+		$entry = $this->advanceEntry(sequence: $event->getSequence());
+		if ($entry === null) {
 			return;
 		}
 
 		$action = (string)($entry['transition'] ?? '');
-		$objectUuid = (string)$sequence->getAnchorObjectUuid();
+		$objectUuid = (string)$event->getSequence()->getAnchorObjectUuid();
 		if ($action === '' || $objectUuid === '') {
 			return;
 		}
 
+		$this->advance(objectUuid: $objectUuid, action: $action);
+	}//end handle()
+
+	/**
+	 * The approval-chain entry for the sequence's chain key when it declares `onApprove: advanceTransition`; else null.
+	 *
+	 * @param TaskSequence $sequence The completed sequence.
+	 *
+	 * @return array|null
+	 */
+	private function advanceEntry(TaskSequence $sequence): ?array {
+		$chains = $this->declaredChains(sequence: $sequence);
+		if ($chains === null) {
+			return null;
+		}
+
+		$entry = ($chains[(string)$sequence->getChainKey()] ?? null);
+		if (is_array($entry) === false || ($entry['onApprove'] ?? null) !== 'advanceTransition') {
+			return null;
+		}
+
+		return $entry;
+	}//end advanceEntry()
+
+	/**
+	 * The approval chains the sequence's schema declares; null when it declares none.
+	 *
+	 * @param TaskSequence $sequence The completed sequence.
+	 *
+	 * @return array|null
+	 */
+	private function declaredChains(TaskSequence $sequence): ?array {
+		$schema = $this->sequenceSchema(sequence: $sequence);
+		if ($schema === null) {
+			return null;
+		}
+
+		// No instanceof re-check: the lookup is declared to return Schema
+		// and throws otherwise, which sequenceSchema() already handles.
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config['x-openregister-approval-chains'] ?? null);
+		if (is_array($chains) === false) {
+			return null;
+		}
+
+		return $chains;
+	}//end declaredChains()
+
+	/**
+	 * The sequence's schema, looked up across tenants; null when it has none or the lookup fails.
+	 *
+	 * @param TaskSequence $sequence The completed sequence.
+	 *
+	 * @return Schema|null
+	 */
+	private function sequenceSchema(TaskSequence $sequence): ?Schema {
+		$schemaId = $sequence->getSchemaId();
+		if ($schemaId === null) {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find($schemaId, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end sequenceSchema()
+
+	/**
+	 * Apply the declared transition; a failure is logged and swallowed.
+	 *
+	 * @param string $objectUuid The anchored object.
+	 * @param string $action     The declared transition.
+	 *
+	 * @return void
+	 */
+	private function advance(string $objectUuid, string $action): void {
 		try {
 			$this->transitionEngine->transition(objectId: $objectUuid, action: $action);
 		} catch (\Throwable $e) {
@@ -124,5 +179,5 @@ class ApprovalChainAdvanceListener implements IEventListener {
 				)
 			);
 		}
-	}//end handle()
+	}//end advance()
 }//end class

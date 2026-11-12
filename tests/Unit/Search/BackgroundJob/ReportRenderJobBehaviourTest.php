@@ -20,10 +20,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob;
@@ -193,7 +195,8 @@ class ReportRenderJobBehaviourTest extends TestCase {
 		$dashboard = $this->dashboard($this->due(['channel' => 'email']));
 		$this->objectMapper->expects($this->exactly(2))->method('findAllInRegisterSchemaTable')
 			->willReturnCallback(
-				static function (Register $r, Schema $schema, ?int $limit, ?int $offset, ?array $filters) use ($dashboard): array {
+				static function (RegisterSchema $table, ListQuery $listing) use ($dashboard): array {
+					[$r, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 					if ($schema->getId() === 1) {
 						throw new RuntimeException('table missing');
 					}
@@ -218,7 +221,7 @@ class ReportRenderJobBehaviourTest extends TestCase {
 		$schema->setId(213);
 		$this->schemaMapper->method('findMultiple')->willReturn([$schema]);
 		$this->objectMapper->expects($this->once())->method('findAllInRegisterSchemaTable')
-			->with($register, $schema, 200, 0, ['_rbac' => false, '_multitenancy' => false])
+			->with(new RegisterSchema($register, $schema), new ListQuery(200, 0, ['_rbac' => false, '_multitenancy' => false]))
 			->willReturn([]);
 
 		$this->runJob();

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -57,7 +58,7 @@ class SeedFlowTimerRegisterInvalidDescriptorTest extends TestCase {
 			->with('Flow-timers register descriptor is not valid JSON: ' . $this->root . SeedFlowTimerRegister::REGISTER_PATH);
 		$output->expects($this->never())->method('info');
 
-		(new SeedFlowTimerRegister($importer, $apps, $this->createMock(LoggerInterface::class)))->run($output);
+		(new SeedFlowTimerRegister(new RegisterDescriptorImport($importer, $apps, $this->createMock(LoggerInterface::class))))->run($output);
 	}
 
 	public function testAValidDescriptorIsImportedWithoutForce(): void {
@@ -70,6 +71,6 @@ class SeedFlowTimerRegisterInvalidDescriptorTest extends TestCase {
 		$output = $this->createMock(IOutput::class);
 		$output->expects($this->never())->method('warning');
 
-		(new SeedFlowTimerRegister($importer, $apps, $this->createMock(LoggerInterface::class)))->run($output);
+		(new SeedFlowTimerRegister(new RegisterDescriptorImport($importer, $apps, $this->createMock(LoggerInterface::class))))->run($output);
 	}
 }

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 final class DeletionWindowBranchesGoldenTest extends TestCase {
 
@@ -54,7 +55,7 @@ final class DeletionWindowBranchesGoldenTest extends TestCase {
 		$object->setUuid('o-1');
 		$object->setDeleted($metadata);
 
-		return $this->service()->windowFor($object, $schema, new DateTimeImmutable(self::NOW));
+		return $this->service()->windowOf(new DeletionWindowQuery($object, $schema, new DateTimeImmutable(self::NOW)));
 	}//end window()
 
 	public function testAFullyRecordedWindowIsReadAsStored(): void {

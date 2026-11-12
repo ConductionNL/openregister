@@ -229,27 +229,38 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	public function beforeUnbind(string $path): void {
-		if ($this->isCalendarPath(path: $path) === false || $this->server === null) {
-			return;
-		}
-
-		try {
-			$node = $this->server->tree->getNodeForPath($path);
-		} catch (Throwable) {
-			return;
-		}
-
-		if (method_exists($node, 'get') === false) {
-			return;
-		}
-
-		$body = $this->bodyOf(data: $node->get());
+		$body = $this->storedBodyAt(path: $path);
 		if ($body === null || $this->gate->isProjected(calendarData: $body) === false) {
 			return;
 		}
 
 		throw new Forbidden('This entry is an OpenRegister task. Complete or cancel the task instead of deleting its calendar entry.');
 	}//end beforeUnbind()
+
+	/**
+	 * The stored body of the calendar object at a path, or null when there is none to read.
+	 *
+	 * @param string $path The DAV path.
+	 *
+	 * @return string|null The body.
+	 */
+	private function storedBodyAt(string $path): ?string {
+		if ($this->isCalendarPath(path: $path) === false || $this->server === null) {
+			return null;
+		}
+
+		try {
+			$node = $this->server->tree->getNodeForPath($path);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if (method_exists($node, 'get') === false) {
+			return null;
+		}
+
+		return $this->bodyOf(data: $node->get());
+	}//end storedBodyAt()
 
 	/**
 	 * Run the gate, translating every refusal into a DAV 403 that names the reason.
@@ -286,22 +297,8 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
 	private function actor(): ?string {
-		if ($this->server === null) {
-			return null;
-		}
-
-		try {
-			$auth = $this->server->getPlugin('auth');
-			if ($auth === null || method_exists($auth, 'getCurrentPrincipal') === false) {
-				return null;
-			}
-
-			$principal = (string)$auth->getCurrentPrincipal();
-		} catch (Throwable) {
-			return null;
-		}
-
-		if (str_starts_with($principal, self::PRINCIPAL_PREFIX) === false) {
+		$principal = $this->currentPrincipal();
+		if ($principal === null || str_starts_with($principal, self::PRINCIPAL_PREFIX) === false) {
 			return null;
 		}
 
@@ -312,6 +309,28 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 
 		return $uid;
 	}//end actor()
+
+	/**
+	 * The principal the DAV auth plugin reports, or null without a server, an auth plugin or a session.
+	 *
+	 * @return string|null The principal.
+	 */
+	private function currentPrincipal(): ?string {
+		if ($this->server === null) {
+			return null;
+		}
+
+		try {
+			$auth = $this->server->getPlugin('auth');
+			if ($auth === null || method_exists($auth, 'getCurrentPrincipal') === false) {
+				return null;
+			}
+
+			return (string)$auth->getCurrentPrincipal();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end currentPrincipal()
 
 	/**
 	 * The body as a string, whatever Sabre handed over.

@@ -31,6 +31,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Pins message, keys, key order and values of every entry the three log
@@ -122,8 +123,8 @@ class AuthorizationAuditServiceEntryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemaEntry(): void {
-		$this->service($this->user())->logSchemaAuthorizationChange(7, 'Zaken', ['read' => ['a']], null);
-		$this->service(null)->logSchemaAuthorizationChange(8, '', null, []);
+		$this->service($this->user())->recordSchemaChange(new AuthorizationChange(7, 'Zaken', ['read' => ['a']], null));
+		$this->service(null)->recordSchemaChange(new AuthorizationChange(8, '', null, []));
 
 		$this->assertSame(
 			[
@@ -141,10 +142,10 @@ class AuthorizationAuditServiceEntryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegisterEntry(): void {
-		$this->service($this->user(), [1, 2, 3])->logRegisterAuthorizationChange(5, 'Reg', null, ['x' => 1]);
-		$this->service(null, null)->logRegisterAuthorizationChange(6, 'Leeg', [], []);
-		$this->service(null, new RuntimeException('gone'))->logRegisterAuthorizationChange(9, 'Weg', null, null);
-		$this->service(null, new \Error('broken'))->logRegisterAuthorizationChange(10, 'Kapot', null, null);
+		$this->service($this->user(), [1, 2, 3])->recordRegisterChange(change: new AuthorizationChange(entityId: 5, entityTitle: 'Reg', before: null, after: ['x' => 1]));
+		$this->service(null, null)->recordRegisterChange(change: new AuthorizationChange(entityId: 6, entityTitle: 'Leeg', before: [], after: []));
+		$this->service(null, new RuntimeException('gone'))->recordRegisterChange(change: new AuthorizationChange(entityId: 9, entityTitle: 'Weg', before: null, after: null));
+		$this->service(null, new \Error('broken'))->recordRegisterChange(change: new AuthorizationChange(entityId: 10, entityTitle: 'Kapot', before: null, after: null));
 
 		$expected = [];
 		foreach ([[5, 'Reg', 'admin', 'Ad Min', 'null', '{"x":1}', 3], [6, 'Leeg', 'system', 'System', '[]', '[]', 0], [9, 'Weg', 'system', 'System', 'null', 'null', 0], [10, 'Kapot', 'system', 'System', 'null', 'null', 0]] as [$id, $title, $uid, $name, $old, $new, $count]) {
@@ -164,8 +165,8 @@ class AuthorizationAuditServiceEntryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRoleEntry(): void {
-		$this->service($this->user())->logRoleDefinitionChange(3, 'Reg', ['r' => []], null);
-		$this->service(null)->logRoleDefinitionChange(4, 'Reg2', null, ['w']);
+		$this->service($this->user())->recordRoleChange(change: new AuthorizationChange(entityId: 3, entityTitle: 'Reg', before: ['r' => []], after: null));
+		$this->service(null)->recordRoleChange(change: new AuthorizationChange(entityId: 4, entityTitle: 'Reg2', before: null, after: ['w']));
 
 		$this->assertSame(
 			[

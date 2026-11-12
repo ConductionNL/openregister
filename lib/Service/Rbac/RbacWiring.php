@@ -43,6 +43,21 @@ final class RbacWiring {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		self::registerTokenGrants(context: $context);
+		self::registerHierarchyDescender(context: $context);
+		self::registerHierarchyGrantExpander(context: $context);
+		self::registerObjectGrantResolver(context: $context);
+		self::registerReveals(context: $context);
+	}//end register()
+
+	/**
+	 * Register the shared token-grant source and its narrower.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerTokenGrants(IRegistrationContext $context): void {
 		// 🔴 THE TOKEN GRANT SOURCE MUST BE SHARED, and this is not a
 		// performance argument. It is BOUND in the authentication path, where a
 		// Consumer is resolved, and READ in the permission handler, where the
@@ -63,7 +78,16 @@ final class RbacWiring {
 				return new TokenGrantNarrower();
 			}
 		);
+	}//end registerTokenGrants()
 
+	/**
+	 * Register the shared object-hierarchy descent.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerHierarchyDescender(IRegistrationContext $context): void {
 		// The object-hierarchy descent MUST be shared, for the reason the three
 		// registrations below it give and one that is sharper here: both of
 		// these memoise FOR THE LIFETIME OF ONE REQUEST, and a container that
@@ -89,7 +113,16 @@ final class RbacWiring {
 				);
 			}
 		);
+	}//end registerHierarchyDescender()
 
+	/**
+	 * Register the shared hierarchy-grant expander.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerHierarchyGrantExpander(IRegistrationContext $context): void {
 		$context->registerService(
 			HierarchyGrantExpander::class,
 			static function ($c) {
@@ -99,7 +132,16 @@ final class RbacWiring {
 				);
 			}
 		);
+	}//end registerHierarchyGrantExpander()
 
+	/**
+	 * Register the object-grant resolver with the hierarchy expander.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerObjectGrantResolver(IRegistrationContext $context): void {
 		$context->registerService(
 			ObjectGrantResolver::class,
 			static function ($c) {
@@ -110,7 +152,16 @@ final class RbacWiring {
 				);
 			}
 		);
+	}//end registerObjectGrantResolver()
 
+	/**
+	 * Register the shared reveal collector and explicit-reveal grant.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerReveals(IRegistrationContext $context): void {
 		// The reveal collector MUST be shared, and for the sharpest reason on
 		// this list: it collects during rendering and is flushed ONCE at the
 		// end of the request (ledger row 5.6, D-2). A container that built an
@@ -133,5 +184,5 @@ final class RbacWiring {
 				return new ExplicitReveal();
 			}
 		);
-	}//end register()
+	}//end registerReveals()
 }//end class

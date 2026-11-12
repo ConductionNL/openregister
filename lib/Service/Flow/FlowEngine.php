@@ -171,9 +171,11 @@ class FlowEngine {
 	private function enterHop(FlowWalkHop|FlowStreamHop $hop): void {
 		$context = $hop->pass->context;
 		$this->services->runContext?->push(
-			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-			nodeId: $hop->name(),
-			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			frame: new FlowRunFrame(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $hop->name(),
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			)
 		);
 	}//end enterHop()
 
@@ -260,17 +262,17 @@ class FlowEngine {
 	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
 	 * in-memory stream exactly as before — a flow with one stream IS the run.
 	 *
-	 * @param FlowRunStart $start   The flow, its collaborators, the context and the streams.
-	 * @param array|null   $items   Seed items; defaults to one item from the subject.
-	 * @param string|null  $startAt Node to start from; defaults to the flow's own start.
+	 * @param FlowRunStart       $start  The flow, its collaborators, the context and the streams.
+	 * @param FlowRunOrigin|null $origin Seed items (default: one item from the subject) and the node to start
+	 *                                   from (default: the flow's own start).
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(FlowRunStart $start, ?array $items = null, ?string $startAt = null): array {
-		$begun = $start->startingAt(node: $startAt);
-		$begun->items = ($items ?? FlowItems::fromSubject(subject: $start->subject));
+	public function run(FlowRunStart $start, ?FlowRunOrigin $origin=null): array {
+		$begun = $start->startingAt(node: $origin?->startAt);
+		$begun->items = ($origin->items ?? FlowItems::fromSubject(subject: $start->subject));
 
 		return $this->startRun(start: $begun);
 	}//end run()
@@ -606,8 +608,7 @@ class FlowEngine {
 		}
 
 		// THE CLAIM, on every place this firing touches, before anything runs.
-		$places = array_map('strval', array_merge($transition->getFroms(), $transition->getTos()));
-		$claimed = $pass->streams->claim(id: $streamId, transition: $transition->getName(), places: $places);
+		$claimed = $pass->streams->claim(id: $streamId, transition: $transition);
 		if ($claimed === null) {
 			return null;
 		}
@@ -881,6 +882,9 @@ class FlowEngine {
 	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
 		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
 
-		return FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $pass->context);
+		return FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $pass->context)
+		);
 	}//end conditionData()
 }//end class

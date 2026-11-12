@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -137,7 +138,6 @@ class OpenProjectLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -156,8 +156,7 @@ class OpenProjectLinksController extends Controller {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'workPackageId',
 					link: fn (ObjectEntity $object, int $workPackageId) => $this->linkService->linkWorkPackage($this->linkTargetOf(object: $object), $workPackageId)
 				)
@@ -177,7 +176,6 @@ class OpenProjectLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -196,8 +194,7 @@ class OpenProjectLinksController extends Controller {
 		return $this->whenOpenConnectorInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkByTexts(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkByTexts(
 					params: ['projectId', 'subject'],
 					link: $this->createWorkPackage(...)
 				)
@@ -216,7 +213,6 @@ class OpenProjectLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -274,7 +270,7 @@ class OpenProjectLinksController extends Controller {
 	private function createWorkPackage(ObjectEntity $object, string $projectId, string $subject): OpenProjectLink {
 		$type = (string)$this->request->getParam('type', '');
 
-		return $this->linkService->createAndLinkWorkPackage($this->linkTargetOf(object: $object), $projectId, $subject, $type);
+		return $this->linkService->createAndLinkDraft($this->linkTargetOf(object: $object), new WorkPackageDraft($projectId, $subject, $type));
 	}//end createWorkPackage()
 
 	/**

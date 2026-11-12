@@ -22,10 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 
 /**
  * What the bulk API asks of ObjectService: the operations on
@@ -42,17 +41,11 @@ interface ObjectStreamingSaveInterface extends ObjectOperationsInterface {
 	 * A row that throws is recorded on the returned status and the batch
 	 * continues, rather than failing the call.
 	 *
-	 * @param array                    $objects  Rows in the shape saveObject() accepts.
-	 * @param Register|string|int|null $register Optional register context.
-	 * @param Schema|string|int|null   $schema   Optional schema context.
+	 * @param StreamingSave $save The rows, in the shape saveObject() accepts, and the optional register and schema context.
 	 *
 	 * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function saveObjectsStreaming(
-		array $objects,
-		Register | string | int | null $register=null,
-		Schema | string | int | null $schema=null
-	): BatchOperationStatus;
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
 }//end interface

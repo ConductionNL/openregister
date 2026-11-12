@@ -141,6 +141,6 @@ final class FlowHopRouting {
 			return;
 		}
 
-		$this->mootness?->placesPruned(context: $pass->context, places: $pruned, byTransition: $transition->getName());
+		$this->mootness?->placesPruned(context: $pass->context, pruning: new PlacesPruning(places: $pruned, byTransition: $transition->getName()));
 	}//end pruneUntakenExits()
 }//end class

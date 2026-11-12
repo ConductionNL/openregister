@@ -106,6 +106,13 @@ class DocxSanitizer implements SanitizerInterface {
 	];
 
 	/**
+	 * The shared package-part steps, built with this sanitiser's sentinel.
+	 *
+	 * @var OfficePartSurgery
+	 */
+	private readonly OfficePartSurgery $surgery;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $sentinel The sentinel string applied to scrubbed metadata.
@@ -115,6 +122,7 @@ class DocxSanitizer implements SanitizerInterface {
 	public function __construct(
 		private readonly string $sentinel = 'DocuDesk Anonymisation',
 	) {
+		$this->surgery = new OfficePartSurgery(sentinel: $sentinel);
 	}//end __construct()
 
 	/**
@@ -197,7 +205,7 @@ class DocxSanitizer implements SanitizerInterface {
 	 * @throws SanitizationException When the copy fails or the package cannot be opened.
 	 */
 	private function openPackage(string $sourcePath, string $destPath): ZipArchive {
-		$this->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
+		$this->surgery->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
 
 		$zip = new ZipArchive();
 		$code = $zip->open($destPath);
@@ -216,28 +224,6 @@ class DocxSanitizer implements SanitizerInterface {
 		return $zip;
 	}//end openPackage()
 
-	/**
-	 * Copy the source document to the destination when the paths differ.
-	 *
-	 * @param string $sourcePath Path to the source DOCX.
-	 * @param string $destPath Path the sanitized DOCX is written to.
-	 *
-	 * @return void
-	 *
-	 * @throws SanitizationException When the copy fails.
-	 */
-	private function copyToDestination(string $sourcePath, string $destPath): void {
-		if ($sourcePath === $destPath) {
-			return;
-		}
-
-		if (copy($sourcePath, $destPath) === false) {
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_INTERNAL,
-				message: 'Could not copy source document to destination'
-			);
-		}
-	}//end copyToDestination()
 
 	/**
 	 * Run the inline passes over every body part.
@@ -408,7 +394,7 @@ class DocxSanitizer implements SanitizerInterface {
 	private function resolveTrackedChanges(DOMXPath $xpath, DocxSanitizationRun $run): void {
 		// Unwrap <w:ins> (accept insert).
 		foreach (iterator_to_array($xpath->query('//w:ins')) as $ins) {
-			$this->unwrap(node: $ins);
+			$this->surgery->unwrap(node: $ins);
 			$run->count(category: 'trackedChangesAccepted');
 		}
 
@@ -552,7 +538,7 @@ class DocxSanitizer implements SanitizerInterface {
 			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'contentStatus'],
 		];
 
-		$count = $this->scrubElements(dom: $dom, fields: $fields);
+		$count = $this->surgery->scrubElements(dom: $dom, fields: $fields);
 		$zip->addFromString('docProps/core.xml', $dom->saveXML());
 		return $count;
 	}//end scrubCorePart()
@@ -575,14 +561,7 @@ class DocxSanitizer implements SanitizerInterface {
 		$dom = $this->loadXml(xml: $xml);
 		$count = 0;
 		foreach (['Company', 'Manager'] as $tag) {
-			$nodes = $dom->getElementsByTagName($tag);
-			foreach (iterator_to_array($nodes) as $node) {
-				assert($node instanceof DOMNode);
-				if (trim($node->textContent) !== '') {
-					$node->textContent = $this->sentinel;
-					$count++;
-				}
-			}
+			$count += $this->surgery->scrubNodes(nodes: $dom->getElementsByTagName($tag));
 		}
 
 		$zip->addFromString('docProps/app.xml', $dom->saveXML());
@@ -607,49 +586,17 @@ class DocxSanitizer implements SanitizerInterface {
 		$dom = $this->loadXml(xml: $xml);
 		$xpath = new DOMXPath($dom);
 		$xpath->registerNamespace('vt', 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes');
-		$count = 0;
 		$values = $xpath->query('//vt:lpwstr | //vt:lpstr');
 		if ($values === false) {
 			$values = [];
 		}
 
-		foreach (iterator_to_array($values) as $value) {
-			assert($value instanceof DOMNode);
-			if (trim($value->textContent) !== '') {
-				$value->textContent = $this->sentinel;
-				$count++;
-			}
-		}
+		$count = $this->surgery->scrubNodes(nodes: $values);
 
 		$zip->addFromString('docProps/custom.xml', $dom->saveXML());
 		return $count;
 	}//end scrubCustomPart()
 
-	/**
-	 * Replace each present, non-empty namespaced element's text with the sentinel.
-	 *
-	 * @param DOMDocument $dom The document.
-	 * @param array<int, array{0:string,1:string}> $fields Namespace-URI / local-name pairs.
-	 *
-	 * @return int The number of elements scrubbed.
-	 *
-	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 */
-	private function scrubElements(DOMDocument $dom, array $fields): int {
-		$count = 0;
-		foreach ($fields as [$namespace, $local]) {
-			$nodes = $dom->getElementsByTagNameNS($namespace, $local);
-			foreach (iterator_to_array($nodes) as $node) {
-				assert($node instanceof DOMNode);
-				if (trim($node->textContent) !== '') {
-					$node->textContent = $this->sentinel;
-					$count++;
-				}
-			}
-		}
-
-		return $count;
-	}//end scrubElements()
 
 	/**
 	 * Strip simple-form <w:fldSimple> person-identity fields.
@@ -846,7 +793,7 @@ class DocxSanitizer implements SanitizerInterface {
 				}
 			}
 
-			$this->unwrap(node: $link);
+			$this->surgery->unwrap(node: $link);
 			$run->count(category: 'hyperlinksFlattened');
 		}
 
@@ -914,27 +861,6 @@ class DocxSanitizer implements SanitizerInterface {
 		}
 	}//end reconcileRels()
 
-	/**
-	 * Replace a node with its own child nodes (unwrap).
-	 *
-	 * @param DOMNode $node The node to unwrap.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 */
-	private function unwrap(DOMNode $node): void {
-		$parent = $node->parentNode;
-		if ($parent === null) {
-			return;
-		}
-
-		while ($node->firstChild !== null) {
-			$parent->insertBefore($node->firstChild, $node);
-		}
-
-		$parent->removeChild($node);
-	}//end unwrap()
 
 	/**
 	 * Replace a node with the child nodes of a designated source element.
@@ -971,20 +897,7 @@ class DocxSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	private function loadXml(string $xml): DOMDocument {
-		$dom = new DOMDocument();
-		$dom->preserveWhiteSpace = true;
-		$dom->formatOutput = false;
-		// LIBXML_NONET blocks network access; PHP 8 + libxml >= 2.9 disables
-		// external entity loading by default, keeping this XXE-safe.
-		$loaded = $dom->loadXML($xml, (LIBXML_NONET | LIBXML_COMPACT));
-		if ($loaded === false) {
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_CORRUPT_ZIP,
-				message: 'A document part was not well-formed XML'
-			);
-		}
-
-		return $dom;
+		return $this->surgery->loadXml(xml: $xml, failureMessage: 'A document part was not well-formed XML');
 	}//end loadXml()
 
 	/**

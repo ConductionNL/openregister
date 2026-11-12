@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
+
 /**
  * The VTODO document a task has in its calendar, and where it is stored.
  *

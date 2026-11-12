@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+
 /**
  * The methods of SchemaChangelogMapper that callers outside the Db component use.
  *
@@ -43,10 +45,9 @@ interface SchemaChangelogMapperInterface {
 	 * Find changelog entries for a schema, newest first.
 	 *
 	 * @param int $schemaId The schema id.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param ListQuery $query The page: its size and offset, unbounded for every row.
 	 *
 	 * @return SchemaChangelog[] The entries.
 	 */
-	public function findBySchema(int $schemaId, ?int $limit = null, ?int $offset = null): array;
+	public function findBySchema(int $schemaId, ListQuery $query): array;
 }//end interface

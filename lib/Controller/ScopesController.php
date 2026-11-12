@@ -44,6 +44,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 
 /**
  * Discovery endpoint for the current user's effective RBAC scopes.
@@ -350,7 +351,9 @@ class ScopesController extends Controller {
 		}
 
 		try {
-			return $this->permissionHandler->provenanceFor(schema: $schema, actions: self::ACTIONS, userId: $caller->userId);
+			return $this->permissionHandler->provenanceFor(
+				request: new ProvenanceRequest(schema: $schema, actions: self::ACTIONS, userId: $caller->userId, object: null)
+			);
 		} catch (\Throwable $e) {
 			// The verdict above already answered. A provenance that throws must
 			// not take the scope list with it: a client that cannot read WHY is

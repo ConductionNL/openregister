@@ -189,7 +189,7 @@ class AvgRetentionServiceLegalHoldTest extends TestCase {
 
 	/**
 	 * A RELEASED HOLD IS NOT A HOLD. `active: false` is the shape
-	 * `RetentionService::releaseLegalHold()` writes, and it must not keep a
+	 * `RetentionService::releaseHold()` writes, and it must not keep a
 	 * record alive forever.
 	 *
 	 * @return void

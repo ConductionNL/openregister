@@ -118,23 +118,47 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 			return ['count' => 0, 'holders' => []];
 		}
 
-		$total = 0;
+		return self::tally(holders: $this->holdersAcross(schemas: $all, holding: $holding));
+	}//end usage()
+
+	/**
+	 * Every holding property of every schema, in schema order.
+	 *
+	 * @param iterable<mixed>  $schemas The schemas on the instance.
+	 * @param ConceptHolding   $holding The concept, as the values that would hold it.
+	 *
+	 * @return array<int,array{schema:string,property:string,count:int}> The non-empty holders.
+	 */
+	private function holdersAcross(iterable $schemas, ConceptHolding $holding): array {
 		$holders = [];
-		foreach ($all as $schema) {
+		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema === false) {
 				continue;
 			}
 
 			foreach ($this->holdersInSchema(schema: $schema, holding: $holding) as $holder) {
-				$total += $holder['count'];
-				if (count($holders) < self::BLOCKER_SAMPLE) {
-					$holders[] = $holder;
-				}
+				$holders[] = $holder;
 			}
-		}//end foreach
+		}
 
-		return ['count' => $total, 'holders' => $holders];
-	}//end usage()
+		return $holders;
+	}//end holdersAcross()
+
+	/**
+	 * The total count over the holders, and the first BLOCKER_SAMPLE of them.
+	 *
+	 * @param array<int,array{schema:string,property:string,count:int}> $holders The holders.
+	 *
+	 * @return array{count:int,holders:array<int,array{schema:string,property:string,count:int}>}
+	 */
+	private static function tally(array $holders): array {
+		$total = 0;
+		foreach ($holders as $holder) {
+			$total += $holder['count'];
+		}
+
+		return ['count' => $total, 'holders' => array_slice($holders, 0, self::BLOCKER_SAMPLE)];
+	}//end tally()
 
 	/**
 	 * The holding properties of one schema, each with its object count.

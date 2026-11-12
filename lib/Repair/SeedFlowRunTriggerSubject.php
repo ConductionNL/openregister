@@ -99,41 +99,76 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return;
 		}
 
-		$seeded = 0;
-		$skipped = 0;
-
-		foreach ($this->everyRun(runs: $runs) as $run) {
-			try {
-				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $this->subjects);
-			} catch (Throwable $e) {
-				$skipped++;
-				$this->logger->warning(
-					message: '[SeedFlowRunTriggerSubject] Could not seed run "'
-						. (string)$run->getUuid() . '": ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
+		$tally = $this->seedAll(runs: $runs);
 
 		$output->info(
-			sprintf('Recorded a trigger subject on %d run(s); %d could not be read.', $seeded, $skipped)
+			sprintf('Recorded a trigger subject on %d run(s); %d could not be read.', $tally['seeded'], $tally['skipped'])
 		);
 
 	}//end run()
 
 	/**
+	 * Seed every run, counting the runs seeded and the runs that could not be read.
+	 *
+	 * @param FlowRunMapperInterface $runs The mapper.
+	 *
+	 * @return array{seeded: int, skipped: int} The counts.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	private function seedAll(FlowRunMapperInterface $runs): array {
+		$tally = ['seeded' => 0, 'skipped' => 0];
+
+		foreach ($this->everyRun(runs: $runs) as $run) {
+			$outcome = $this->trySeed(run: $run, runs: $runs);
+			if ($outcome === null) {
+				$tally['skipped']++;
+				continue;
+			}
+
+			$tally['seeded'] += $outcome;
+		}
+
+		return $tally;
+
+	}//end seedAll()
+
+	/**
+	 * Seed one run, or log why it could not be read.
+	 *
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
+	 *
+	 * @return int|null 1 when it was seeded, 0 when it needed nothing, null when it failed.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	private function trySeed(FlowRun $run, FlowRunMapperInterface $runs): ?int {
+		try {
+			return $this->seedOne(run: $run, runs: $runs);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SeedFlowRunTriggerSubject] Could not seed run "'
+					. (string)$run->getUuid() . '": ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+	}//end trySeed()
+
+	/**
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
-	 * @param FlowRun                  $run      The run.
-	 * @param FlowRunMapperInterface   $runs     The mapper.
-	 * @param FlowRunSubjectsInterface $subjects The subject rules.
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjectsInterface $subjects): int {
-		if ($subjects->all(run: $run) !== []) {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs): int {
+		if ($this->subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
 			return 0;
@@ -144,7 +179,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return 0;
 		}
 
-		$subjects->recordTrigger(run: $run);
+		$this->subjects->recordTrigger(run: $run);
 		$runs->update($run);
 
 		return 1;

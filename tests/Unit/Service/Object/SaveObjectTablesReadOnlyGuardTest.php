@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit test for the read-only-projection write-guard on a tables-bound schema.
@@ -58,10 +60,8 @@ class SaveObjectTablesReadOnlyGuardTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -129,8 +129,7 @@ class SaveObjectTablesReadOnlyGuardTest extends TestCase {
 
 		$this->handler()->saveObject(
 			data: ['name' => 'should never persist'],
-			schema: $schema,
-			register: $register
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 	}//end testSaveIntoTablesBoundSchemaIsRejected()
 }//end class

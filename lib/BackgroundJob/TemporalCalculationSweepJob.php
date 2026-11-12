@@ -129,7 +129,28 @@ class TemporalCalculationSweepJob extends TimedJob {
 	 *   (Scenario: Untouched case crosses the reminder tier)
 	 */
 	protected function run($argument): void {
-		$enabled = filter_var(
+		if ($this->isSweepEnabled() === false) {
+			$this->logDisabled();
+			return;
+		}
+
+		try {
+			$this->sweep();
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[TemporalCalculationSweepJob] sweep failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end run()
+
+	/**
+	 * Whether the sweep is switched on (it is unless configured off).
+	 *
+	 * @return bool
+	 */
+	private function isSweepEnabled(): bool {
+		return filter_var(
 			$this->appConfig->getValueString(
 				app: self::APP_ID,
 				key: self::CONFIG_KEY_ENABLED,
@@ -137,29 +158,32 @@ class TemporalCalculationSweepJob extends TimedJob {
 			),
 			FILTER_VALIDATE_BOOLEAN
 		);
+	}//end isSweepEnabled()
 
-		if ($enabled === false) {
+	/**
+	 * Log that a run was skipped because the sweep is switched off.
+	 *
+	 * @return void
+	 */
+	private function logDisabled(): void {
+		$this->logger->info(
+			message: '[TemporalCalculationSweepJob] sweep disabled (temporal_calculation_sweep_enabled=false), skipping',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logDisabled()
+
+	/**
+	 * Run one sweep and log it when it rewrote something or hit errors.
+	 *
+	 * @return void
+	 */
+	private function sweep(): void {
+		$summary = $this->sweepService->runSweep();
+		if ($summary['objectsRewritten'] > 0 || $summary['errors'] > 0) {
 			$this->logger->info(
-				message: '[TemporalCalculationSweepJob] sweep disabled (temporal_calculation_sweep_enabled=false), skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		try {
-			$summary = $this->sweepService->runSweep();
-			if ($summary['objectsRewritten'] > 0 || $summary['errors'] > 0) {
-				$this->logger->info(
-					message: '[TemporalCalculationSweepJob] sweep complete',
-					context: array_merge(['file' => __FILE__, 'line' => __LINE__], $summary)
-				);
-			}
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[TemporalCalculationSweepJob] sweep failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
+				message: '[TemporalCalculationSweepJob] sweep complete',
+				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $summary)
 			);
 		}
-
-	}//end run()
+	}//end sweep()
 }//end class

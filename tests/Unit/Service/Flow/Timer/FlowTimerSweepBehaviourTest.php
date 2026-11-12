@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -173,7 +175,10 @@ class FlowTimerSweepBehaviourTest extends TestCase {
 		$taskService = $this->createMock(TaskServiceInterface::class);
 		$calls = [];
 		$taskService->expects($this->exactly(2))->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$calls): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$calls): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$calls[] = [$uuid, $outcome, $source, $reason];
 				if ($uuid === 't2') {
 					throw new RuntimeException('conflict');

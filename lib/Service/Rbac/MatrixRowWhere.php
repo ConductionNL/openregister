@@ -57,17 +57,43 @@ class MatrixRowWhere implements MatrixRowKeys {
 	 */
 	public function conditionsOf(array $row, string $field): ?array {
 		$where = ($row['where'] ?? []);
-		if (is_array($where) === false) {
+		if (is_array($where) === false || self::namesNoOtherField(where: $where, field: $field) === false) {
 			return null;
 		}
 
-		$conditions = [];
-		foreach ($where as $key => $value) {
+		return $this->readableConditions(row: $row);
+	}//end conditionsOf()
+
+	/**
+	 * Whether every key of a `where` names a field, and none of them the matrix field.
+	 *
+	 * @param array<int|string, mixed> $where The row's `where`.
+	 * @param string                   $field The matrix field.
+	 *
+	 * @return bool False when a key is blank or repeats the matrix field.
+	 */
+	private static function namesNoOtherField(array $where, string $field): bool {
+		foreach (array_keys($where) as $key) {
 			$key = trim((string)$key);
 			if ($key === '' || $key === $field) {
-				return null;
+				return false;
 			}
+		}
 
+		return true;
+	}//end namesNoOtherField()
+
+	/**
+	 * The row's `where` as conditions sorted by key, or null when a value cannot be read or crosses without intent.
+	 *
+	 * @param array<string, mixed> $row The row, its `where` absent or an object with readable keys.
+	 *
+	 * @return array<string, mixed>|null The conditions, or null to drop the row.
+	 */
+	private function readableConditions(array $row): ?array {
+		$conditions = [];
+		foreach (($row['where'] ?? []) as $key => $value) {
+			$key = trim((string)$key);
 			$condition = $this->condition(value: $value);
 			if ($condition === null
 				|| ($this->declaresCrossing(row: $row) === false && $this->bindsToOrganisation(key: $key, value: $value) === true)
@@ -80,7 +106,7 @@ class MatrixRowWhere implements MatrixRowKeys {
 
 		ksort($conditions);
 		return $conditions;
-	}//end conditionsOf()
+	}//end readableConditions()
 
 	/**
 	 * Findings for the conditions of a row that read across organisations

@@ -103,6 +103,16 @@ final class RelatedRowExistsClause {
 	private const NUMERIC_PATTERN = '^-?[0-9]+(\\.[0-9]+)?$';
 
 	/**
+	 * The guarded numeric comparison per engine: field expression (1), placeholder (2), number pattern (3), operator (4).
+	 *
+	 * @var array<string, string>
+	 */
+	private const NUMERIC_COMPARISONS = [
+		self::ENGINE_POSTGRES => '(CASE WHEN %1$s ~ \'%3$s\' THEN (%1$s)::numeric %4$s :%2$s ELSE FALSE END)',
+		self::ENGINE_MARIADB  => '(CASE WHEN %1$s REGEXP \'%3$s\' THEN CAST(%1$s AS DECIMAL(65,30)) %4$s :%2$s ELSE FALSE END)',
+	];
+
+	/**
 	 * The SQL operator for each of the parser's operators.
 	 *
 	 * `in` is absent on purpose: it renders as `IN (...)` with one placeholder
@@ -301,20 +311,8 @@ final class RelatedRowExistsClause {
 		$sql        = [];
 		$parameters = [];
 
-		foreach (array_values($batch->filters) as $position => $filter) {
-			$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
-			$clause = $this->render(
-				filter: $filter,
-				subquery: new RelatedRowSubquery(
-					target: $batch->target,
-					inner: new RelatedRowInnerRow(
-						alias: $alias,
-						accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
-						parameterPrefix: $alias
-					)
-				)
-			);
-
+		foreach (array_keys(array_values($batch->filters)) as $position) {
+			$clause     = $this->clauseAt(batch: $batch, position: $position);
 			$sql[]      = $clause['sql'];
 			$parameters = array_merge($parameters, $clause['parameters']);
 		}
@@ -324,6 +322,31 @@ final class RelatedRowExistsClause {
 			'parameters' => $parameters,
 		];
 	}//end renderAll()
+
+	/**
+	 * The clause for the block at one position, its alias and parameter prefix taken from that position.
+	 *
+	 * @param RelatedRowClauseBatch $batch    The filters, the target, the access predicate per inner row and the placeholder prefix.
+	 * @param int                   $position The block's position in the batch.
+	 *
+	 * @return array{sql: string, parameters: array<string, mixed>} The clause and its bindings.
+	 */
+	private function clauseAt(RelatedRowClauseBatch $batch, int $position): array {
+		$filter = array_values($batch->filters)[$position];
+		$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
+
+		return $this->render(
+			filter: $filter,
+			subquery: new RelatedRowSubquery(
+				target: $batch->target,
+				inner: new RelatedRowInnerRow(
+					alias: $alias,
+					accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
+					parameterPrefix: $alias
+				)
+			)
+		);
+	}//end clauseAt()
 
 	/**
 	 * One comparison: numeric when the caller asked for a number, text otherwise.
@@ -423,32 +446,14 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the engine is unknown.
 	 */
 	private function numericComparison(string $engine, RelatedRowBoundCondition $bound): string {
-		$left        = $bound->left;
-		$placeholder = $bound->placeholder;
-		$operator    = self::SQL_OPERATORS[$bound->operator];
-		if ($engine === self::ENGINE_POSTGRES) {
-			return sprintf(
-				'(CASE WHEN %1$s ~ \'%3$s\' THEN (%1$s)::numeric %4$s :%2$s ELSE FALSE END)',
-				$left,
-				$placeholder,
-				self::NUMERIC_PATTERN,
-				$operator
+		$operator = self::SQL_OPERATORS[$bound->operator];
+		if (isset(self::NUMERIC_COMPARISONS[$engine]) === false) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for engine \'%s\'.', $engine)
 			);
 		}
 
-		if ($engine === self::ENGINE_MARIADB) {
-			return sprintf(
-				'(CASE WHEN %1$s REGEXP \'%3$s\' THEN CAST(%1$s AS DECIMAL(65,30)) %4$s :%2$s ELSE FALSE END)',
-				$left,
-				$placeholder,
-				self::NUMERIC_PATTERN,
-				$operator
-			);
-		}
-
-		throw new InvalidArgumentException(
-			sprintf('No related-row SQL for engine \'%s\'.', $engine)
-		);
+		return sprintf(self::NUMERIC_COMPARISONS[$engine], $bound->left, $bound->placeholder, self::NUMERIC_PATTERN, $operator);
 	}//end numericComparison()
 
 	/**

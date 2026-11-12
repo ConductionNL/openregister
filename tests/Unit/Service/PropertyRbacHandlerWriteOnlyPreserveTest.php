@@ -16,6 +16,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -102,8 +103,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 
 		return $this->handler->restoreWriteOnlyValues(
 			prepared: $incoming,
-			stored: $stored,
-			omittedPaths: $omitted
+			omitted: new OmittedWriteOnly(stored: $stored, paths: $omitted)
 		);
 	}
 
@@ -353,8 +353,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 		);
 		$handler->restoreWriteOnlyValues(
 			prepared: ['name' => 'prod'],
-			stored: ['apiToken' => 's3cr3t'],
-			omittedPaths: $omitted
+			omitted: new OmittedWriteOnly(stored: ['apiToken' => 's3cr3t'], paths: $omitted)
 		);
 	}
 

@@ -33,9 +33,11 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\DeckLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -139,7 +141,6 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -189,7 +190,6 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Composed of independent
 	 *     guard clauses (Deck-availability, object resolve, three required-
@@ -252,8 +252,7 @@ class DeckLinksController extends Controller {
 				// AD-1: persist sticky schema-level default after each successful create.
 				$this->settingsService->setDeckDefault(
 					schemaSlug: (string)$ref->schema,
-					boardId: $boardId,
-					stackId: $stackId,
+					placement: new DeckPlacement(boardId: $boardId, stackId: $stackId),
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);
@@ -272,7 +271,6 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -384,7 +382,6 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Operates on schema-level Deck configuration (the
 	 *   sticky default board+stack for a schema), not on a user-owned object.
@@ -403,8 +400,7 @@ class DeckLinksController extends Controller {
 
 		$this->settingsService->setDeckDefault(
 			schemaSlug: $schema,
-			boardId: $boardId,
-			stackId: $stackId,
+			placement: new DeckPlacement(boardId: $boardId, stackId: $stackId),
 		);
 
 		return new JSONResponse(['boardId' => $boardId, 'stackId' => $stackId]);
@@ -424,20 +420,7 @@ class DeckLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [404, 409, 503]);
 	}//end mapException()
 
 	/**

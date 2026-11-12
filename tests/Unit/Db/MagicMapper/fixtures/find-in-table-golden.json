@@ -1041,7 +1041,7 @@
         ]
     },
     "exists / 7 / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -1097,7 +1097,7 @@
         ]
     },
     "exists / 7 / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -1153,7 +1153,7 @@
         ]
     },
     "exists / 7 / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -1200,7 +1200,7 @@
         ]
     },
     "exists / 7 / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -1256,7 +1256,7 @@
         ]
     },
     "exists / 7 / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -2351,7 +2351,7 @@
         ]
     },
     "exists / '7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -2407,7 +2407,7 @@
         ]
     },
     "exists / '7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -2463,7 +2463,7 @@
         ]
     },
     "exists / '7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -2510,7 +2510,7 @@
         ]
     },
     "exists / '7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -2566,7 +2566,7 @@
         ]
     },
     "exists / '7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -3661,7 +3661,7 @@
         ]
     },
     "exists / 'uuid-7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -3717,7 +3717,7 @@
         ]
     },
     "exists / 'uuid-7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -3773,7 +3773,7 @@
         ]
     },
     "exists / 'uuid-7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -3820,7 +3820,7 @@
         ]
     },
     "exists / 'uuid-7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -3876,7 +3876,7 @@
         ]
     },
     "exists / 'uuid-7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -5011,7 +5011,7 @@
         ]
     },
     "exists / 'seven' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -5067,7 +5067,7 @@
         ]
     },
     "exists / 'seven' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -5123,7 +5123,7 @@
         ]
     },
     "exists / 'seven' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -5170,7 +5170,7 @@
         ]
     },
     "exists / 'seven' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -5226,7 +5226,7 @@
         ]
     },
     "exists / 'seven' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -6361,7 +6361,7 @@
         ]
     },
     "exists / '007' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -6417,7 +6417,7 @@
         ]
     },
     "exists / '007' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -6473,7 +6473,7 @@
         ]
     },
     "exists / '007' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -6520,7 +6520,7 @@
         ]
     },
     "exists / '007' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -6576,7 +6576,7 @@
         ]
     },
     "exists / '007' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "exists"
@@ -7971,7 +7971,7 @@
         ]
     },
     "missing magic / 7 / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -8042,7 +8042,7 @@
         ]
     },
     "missing magic / 7 / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -8113,7 +8113,7 @@
         ]
     },
     "missing magic / 7 / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -8175,7 +8175,7 @@
         ]
     },
     "missing magic / 7 / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -8246,7 +8246,7 @@
         ]
     },
     "missing magic / 7 / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -9656,7 +9656,7 @@
         ]
     },
     "missing magic / '7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -9727,7 +9727,7 @@
         ]
     },
     "missing magic / '7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -9798,7 +9798,7 @@
         ]
     },
     "missing magic / '7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -9860,7 +9860,7 @@
         ]
     },
     "missing magic / '7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -9931,7 +9931,7 @@
         ]
     },
     "missing magic / '7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -11341,7 +11341,7 @@
         ]
     },
     "missing magic / 'uuid-7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -11412,7 +11412,7 @@
         ]
     },
     "missing magic / 'uuid-7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -11483,7 +11483,7 @@
         ]
     },
     "missing magic / 'uuid-7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -11545,7 +11545,7 @@
         ]
     },
     "missing magic / 'uuid-7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -11616,7 +11616,7 @@
         ]
     },
     "missing magic / 'uuid-7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -13066,7 +13066,7 @@
         ]
     },
     "missing magic / 'seven' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -13137,7 +13137,7 @@
         ]
     },
     "missing magic / 'seven' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -13208,7 +13208,7 @@
         ]
     },
     "missing magic / 'seven' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -13270,7 +13270,7 @@
         ]
     },
     "missing magic / 'seven' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -13341,7 +13341,7 @@
         ]
     },
     "missing magic / 'seven' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -14791,7 +14791,7 @@
         ]
     },
     "missing magic / '007' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -14862,7 +14862,7 @@
         ]
     },
     "missing magic / '007' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -14933,7 +14933,7 @@
         ]
     },
     "missing magic / '007' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -14995,7 +14995,7 @@
         ]
     },
     "missing magic / '007' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -15066,7 +15066,7 @@
         ]
     },
     "missing magic / '007' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing magic"
@@ -16176,7 +16176,7 @@
         ]
     },
     "missing plain / 7 / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -16232,7 +16232,7 @@
         ]
     },
     "missing plain / 7 / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -16288,7 +16288,7 @@
         ]
     },
     "missing plain / 7 / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -16335,7 +16335,7 @@
         ]
     },
     "missing plain / 7 / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -16391,7 +16391,7 @@
         ]
     },
     "missing plain / 7 / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -17486,7 +17486,7 @@
         ]
     },
     "missing plain / '7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -17542,7 +17542,7 @@
         ]
     },
     "missing plain / '7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -17598,7 +17598,7 @@
         ]
     },
     "missing plain / '7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -17645,7 +17645,7 @@
         ]
     },
     "missing plain / '7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -17701,7 +17701,7 @@
         ]
     },
     "missing plain / '7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -18796,7 +18796,7 @@
         ]
     },
     "missing plain / 'uuid-7' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -18852,7 +18852,7 @@
         ]
     },
     "missing plain / 'uuid-7' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -18908,7 +18908,7 @@
         ]
     },
     "missing plain / 'uuid-7' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -18955,7 +18955,7 @@
         ]
     },
     "missing plain / 'uuid-7' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -19011,7 +19011,7 @@
         ]
     },
     "missing plain / 'uuid-7' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -20146,7 +20146,7 @@
         ]
     },
     "missing plain / 'seven' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -20202,7 +20202,7 @@
         ]
     },
     "missing plain / 'seven' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -20258,7 +20258,7 @@
         ]
     },
     "missing plain / 'seven' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -20305,7 +20305,7 @@
         ]
     },
     "missing plain / 'seven' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -20361,7 +20361,7 @@
         ]
     },
     "missing plain / 'seven' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -21496,7 +21496,7 @@
         ]
     },
     "missing plain / '007' / query fails / defaults": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -21552,7 +21552,7 @@
         ]
     },
     "missing plain / '007' / query fails / no rbac": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -21608,7 +21608,7 @@
         ]
     },
     "missing plain / '007' / query fails / bypass": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -21655,7 +21655,7 @@
         ]
     },
     "missing plain / '007' / query fails / bypass in org context": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"
@@ -21711,7 +21711,7 @@
         ]
     },
     "missing plain / '007' / query fails / with deleted": {
-        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: database refused",
+        "thrown": "OCA\\OpenRegister\\Exception\\ObjectLookupFailedException: database refused",
         "events": [
             {
                 "tableExists": "missing plain"

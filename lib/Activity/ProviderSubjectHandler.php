@@ -87,25 +87,12 @@ class ProviderSubjectHandler {
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function applySubjectText(IEvent $event, string $language): void {
-		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $language);
-		$params = $event->getSubjectParameters();
-		$title = $this->subjectTitle(event: $event);
-		$richParams = $this->buildRichParams(
-			event: $event,
-			title: $title
-		);
-
+		$l       = $this->l10nFactory->get(AppIdentity::APP_ID, $language);
 		$subject = $event->getSubject();
-		$schema = $params['schema'] ?? '';
+		$schema  = $event->getSubjectParameters()['schema'] ?? '';
 
 		if (isset(self::SCHEMA_SUBJECTS[$subject]) === true && is_string($schema) === true && $schema !== '') {
-			$richParams['schema'] = [
-				'type' => 'highlight',
-				'id' => $schema,
-				'name' => $schema,
-			];
-			$event->setParsedSubject($l->t(self::SCHEMA_SUBJECTS[$subject][0], [$schema, $title]));
-			$event->setRichSubject($l->t(self::SCHEMA_SUBJECTS[$subject][1]), $richParams);
+			$this->applySchemaSubject(event: $event, l: $l);
 			return;
 		}
 
@@ -113,6 +100,29 @@ class ProviderSubjectHandler {
 			$this->applySimpleSubject(event: $event, l: $l);
 		}
 	}//end applySubjectText()
+
+	/**
+	 * Set the parsed and rich subject of an event that names its schema.
+	 *
+	 * @param IEvent $event The activity event; its subject is a schema subject and it names a schema.
+	 * @param object $l     The localisation for the viewer's language (IL10N).
+	 *
+	 * @return void
+	 */
+	private function applySchemaSubject(IEvent $event, object $l): void {
+		$subject    = $event->getSubject();
+		$schema     = (string)$event->getSubjectParameters()['schema'];
+		$title      = $this->subjectTitle(event: $event);
+		$richParams = $this->buildRichParams(event: $event, title: $title);
+
+		$richParams['schema'] = [
+			'type' => 'highlight',
+			'id' => $schema,
+			'name' => $schema,
+		];
+		$event->setParsedSubject($l->t(self::SCHEMA_SUBJECTS[$subject][0], [$schema, $title]));
+		$event->setRichSubject($l->t(self::SCHEMA_SUBJECTS[$subject][1]), $richParams);
+	}//end applySchemaSubject()
 
 	/**
 	 * Build rich parameters for an event.

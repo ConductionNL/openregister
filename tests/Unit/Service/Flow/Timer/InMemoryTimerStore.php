@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\FlowTimerEventMapper;
 use OCA\OpenRegister\Db\FlowTimerFire;
 use OCA\OpenRegister\Db\FlowTimerFireMapper;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -133,11 +135,11 @@ final class InMemoryTimerStore {
 				return array_slice(array_values($due), 0, $limit);
 			}
 
-			public function findBySubject(string $subjectType, string $subjectUuid, array $states = []): array {
+			public function findBySubject(TimerSubject $subject, array $states = []): array {
 				return array_values(array_filter(
 					$this->store->timers,
-					static fn (FlowTimer $t): bool => $t->getSubjectType() === $subjectType
-						&& $t->getSubjectUuid() === $subjectUuid
+					static fn (FlowTimer $t): bool => $t->getSubjectType() === $subject->type
+						&& $t->getSubjectUuid() === $subject->uuid
 						&& ($states === [] || in_array($t->getState(), $states, true))
 				));
 			}
@@ -150,8 +152,10 @@ final class InMemoryTimerStore {
 				));
 			}
 
-			public function findByStatePaged(string $state, int $afterId, int $limit): array {
-				$rows = array_filter($this->store->timers, static fn (FlowTimer $t): bool => $t->getState() === $state && (int)$t->getId() > $afterId);
+			public function findByStatePaged(string $state, IdCursor $cursor): array {
+				$afterId = $cursor->afterId;
+				$limit   = $cursor->limit;
+				$rows    = array_filter($this->store->timers, static fn (FlowTimer $t): bool => $t->getState() === $state && (int)$t->getId() > $afterId);
 				usort($rows, static fn (FlowTimer $a, FlowTimer $b): int => (int)$a->getId() <=> (int)$b->getId());
 
 				return array_slice(array_values($rows), 0, $limit);

@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -147,17 +148,15 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * user. Events written to a different calendar are not discovered.
 	 * Multi-calendar awareness is tracked as a fleet-wide follow-up.
 	 *
-	 * @param string $register Register slug or numeric id (unused — CalDAV scope is per-user).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional filters (currently ignored).
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->linkedEventsOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedEventsOf(ref: $ref);
 	}//end list()
 
 	/**
@@ -194,17 +193,15 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * CalendarEventsController emits in its responses); both segments
 	 * are required for CalDAV addressing.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite `"calendarId/eventUri"`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->unlinkEventOf(objectId: $objectId, entityId: $entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->unlinkEventOf(objectId: $ref->id, entityId: $entityId);
 	}//end delete()
 
 	/**
@@ -223,7 +220,8 @@ class CalendarProvider extends AbstractIntegrationProvider {
 		$parts = explode('/', $entityId, 2);
 		if (count($parts) === 2) {
 			[$calendarId, $eventUri] = $parts;
-			$this->calendar->calendarEventService->requireEventOf(objectUuid: $objectId, calendarId: $calendarId, eventUri: $eventUri);
+			$event = new CalendarObjectAddress(calendarId: $calendarId, uri: $eventUri);
+			$this->calendar->calendarEventService->requireEventOf(objectUuid: $objectId, event: $event);
 			$this->calendar->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
 			return;
 		}

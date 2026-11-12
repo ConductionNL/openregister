@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use DateTime;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -60,13 +61,38 @@ class TalkProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'spreed';
 
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface           $container      Resolves Talk's room manager lazily.
+	 * @param AppProviderDescription       $description    The app manager (isEnabled check) and localisation.
+	 * @param IUserSession                 $userSession    The signed-in user.
+	 * @param TalkLinkMapperInterface|null $talkLinkMapper Local link table, when wired.
+	 *
+	 * @return void
+	 */
 	public function __construct(
 		private ContainerInterface $container,
-		private IAppManager $appManager,
+		AppProviderDescription $description,
 		private IUserSession $userSession,
-		private IL10N $l10n,
 		private ?TalkLinkMapperInterface $talkLinkMapper = null,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n       = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -109,9 +135,7 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 *   * `lastActivity`     — unix timestamp from `Room::getLastActivity()`. `null` if unset.
 	 *   * `url`              — deep-link `/index.php/call/{token}`.
 	 *
-	 * @param string              $register Register slug or numeric id (unused).
-	 * @param string              $schema   Schema slug or numeric id (unused).
-	 * @param string              $objectId Object uuid.
+	 * @param ObjectRef              $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters  Optional filters (unused).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -120,8 +144,8 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->rowsForSignedIn(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->rowsForSignedIn(objectId: $ref->id);
 	}//end list()
 
 	/**

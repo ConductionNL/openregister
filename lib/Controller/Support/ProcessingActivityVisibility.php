@@ -116,18 +116,4 @@ final class ProcessingActivityVisibility {
 		return array_values(array_filter($activities, static fn (Verwerkingsactiviteit $activity): bool => $viewer->sees(activity: $activity)));
 	}//end visibleTo()
 
-	/**
-	 * Reduce a list of activities to the ones the caller may see.
-	 *
-	 * @param array<int, Verwerkingsactiviteit> $activities     Candidates.
-	 * @param array<int, string>                $accessibleOrgs Accessible org UUIDs.
-	 * @param bool                              $isAdmin        Whether caller is admin.
-	 *
-	 * @return array<int, Verwerkingsactiviteit> Visible activities.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function filter(array $activities, array $accessibleOrgs, bool $isAdmin): array {
-		return $this->visibleTo(activities: $activities, viewer: new ProcessingActivityViewer(isAdmin: $isAdmin, accessibleOrgs: $accessibleOrgs));
-	}//end filter()
 }//end class

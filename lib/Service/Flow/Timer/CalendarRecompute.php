@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use OCA\OpenRegister\Db\FlowTimer;
+use DateTimeImmutable;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -286,10 +287,12 @@ class CalendarRecompute implements CalendarRecomputeInterface {
 			$remaining = ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue());
 
 			return $this->sources->calculator->add(
-				from: $runningSince,
-				value: max(0.0, $remaining),
-				unit: (string)$timer->getBudgetUnit(),
-				calendar: $calendar
+				addition: new SlaAddition(
+					start: DateTimeImmutable::createFromInterface($runningSince),
+					value: max(0.0, $remaining),
+					unit: (string)$timer->getBudgetUnit(),
+					calendar: $calendar
+				)
 			)->getTimestamp();
 		} catch (Throwable $e) {
 			$this->logger->warning(

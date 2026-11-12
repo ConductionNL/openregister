@@ -41,8 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -68,18 +67,15 @@ class ObjectOwnerWriter {
 	/**
 	 * Write the owner of one object.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string $objectUuid The object UUID.
-	 * @param string $owner The new owner's uid.
+	 * @param RegisterSchema  $table      The register and schema the object is stored under.
+	 * @param OwnerAssignment $assignment The object UUID and the new owner's uid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function writeOwner(Register $register, Schema $schema, string $objectUuid, string $owner): void {
-		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
-		$this->writeOwnerTo(table: $table, assignment: new OwnerAssignment(objectUuid: $objectUuid, owner: $owner));
+	public function writeOwner(RegisterSchema $table, OwnerAssignment $assignment): void {
+		$this->writeOwnerTo(table: $this->mapper->getTableNameForRegisterSchema($table->register, $table->schema), assignment: $assignment);
 	}//end writeOwner()
 
 	/**

@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Exception\FlowRunExpired;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -56,13 +58,15 @@ class TaggingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item['json'] ?? []);
 			$json['taggedBy'] = $this->id;
 			$json['label'] = (string)($config['label'] ?? '');
-			$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;
@@ -95,7 +99,8 @@ class SlowNode extends TaggingNode {
 		parent::__construct('test.slow');
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$deadline = (hrtime(true) + 1_200_000_000);
 		while (hrtime(true) < $deadline) {
 			$remaining = (int)(($deadline - hrtime(true)) / 1_000);
@@ -275,7 +280,8 @@ class FlowNodeRegistryTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -304,7 +310,8 @@ class FlowNodeRegistryTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};

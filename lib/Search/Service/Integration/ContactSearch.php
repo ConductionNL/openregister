@@ -93,6 +93,17 @@ class ContactSearch {
 			return [];
 		}
 
+		return $this->distinctRows(found: $found);
+	}//end search()
+
+	/**
+	 * One row per contact uid, in the order found, capped at LIMIT; contacts without a uid are skipped.
+	 *
+	 * @param array<int, array<string, mixed>> $found The contacts manager's matches.
+	 *
+	 * @return array<int, array{uid: string, fullName: string, email: string, organisation: string, addressbook: string}> The rows.
+	 */
+	private function distinctRows(array $found): array {
 		$rows = [];
 		foreach ($found as $contact) {
 			$uid = (string)($contact['UID'] ?? '');
@@ -100,17 +111,29 @@ class ContactSearch {
 				continue;
 			}
 
-			$rows[$uid] = [
-				'uid' => $uid,
-				'fullName' => (string)($contact['FN'] ?? ''),
-				'email' => self::first(value: ($contact['EMAIL'] ?? '')),
-				'organisation' => self::first(value: ($contact['ORG'] ?? '')),
-				'addressbook' => (string)($contact['addressbook-key'] ?? ''),
-			];
+			$rows[$uid] = self::row(uid: $uid, contact: $contact);
 		}
 
 		return array_slice(array_values($rows), 0, self::LIMIT);
-	}//end search()
+	}//end distinctRows()
+
+	/**
+	 * The row for one contact.
+	 *
+	 * @param string               $uid     The contact's uid.
+	 * @param array<string, mixed> $contact The contact as the contacts manager returns it.
+	 *
+	 * @return array{uid: string, fullName: string, email: string, organisation: string, addressbook: string}
+	 */
+	private static function row(string $uid, array $contact): array {
+		return [
+			'uid' => $uid,
+			'fullName' => (string)($contact['FN'] ?? ''),
+			'email' => self::first(value: ($contact['EMAIL'] ?? '')),
+			'organisation' => self::first(value: ($contact['ORG'] ?? '')),
+			'addressbook' => (string)($contact['addressbook-key'] ?? ''),
+		];
+	}//end row()
 
 	/**
 	 * The first value of a vCard property that may hold a list.

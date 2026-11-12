@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Notification\TemplateCatalogue;
 use OCP\IConfig;
@@ -92,7 +93,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 		);
 
 		$this->assertSame(['other_thing_happened'], $registry->gaps());
-		$this->assertNull($registry->render(event: 'other_thing_happened', locale: 'en'));
+		$this->assertNull($registry->renderFor(rendering: new TemplateRendering(event: 'other_thing_happened', locale: 'en')));
 	}
 
 	/**
@@ -132,11 +133,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 			template: ['en' => ['subject' => 'Review {{pendingCount}} records', 'body' => 'On {{schemaSlug}}.']]
 		);
 
-		$rendered = $registry->render(
-			event: 'destruction_review_pending',
-			locale: 'en',
-			variables: ['pendingCount' => 4, 'schemaSlug' => 'zaak']
-		);
+		$rendered = $registry->renderFor(rendering: new TemplateRendering(event: 'destruction_review_pending', locale: 'en', variables: ['pendingCount' => 4, 'schemaSlug' => 'zaak']));
 
 		$this->assertSame('Review 4 records', $rendered['subject']);
 		$this->assertSame('On zaak.', $rendered['body']);
@@ -148,7 +145,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 	 */
 	public function testClearingAnEditRestoresTheShippedText(): void {
 		$registry = $this->shipped();
-		$before = $registry->render(event: 'scheduled_report_failed', locale: 'en', variables: ['report' => 'Q3']);
+		$before = $registry->renderFor(rendering: new TemplateRendering(event: 'scheduled_report_failed', locale: 'en', variables: ['report' => 'Q3']));
 
 		$registry->edit(
 			event: 'scheduled_report_failed',
@@ -156,7 +153,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 		);
 		$registry->edit(event: 'scheduled_report_failed', template: null);
 
-		$after = $registry->render(event: 'scheduled_report_failed', locale: 'en', variables: ['report' => 'Q3']);
+		$after = $registry->renderFor(rendering: new TemplateRendering(event: 'scheduled_report_failed', locale: 'en', variables: ['report' => 'Q3']));
 
 		$this->assertSame($before, $after);
 		$this->assertFalse($registry->hasEdit(event: 'scheduled_report_failed'));
@@ -179,11 +176,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 	 * rather than answering "no template" for text that plainly exists.
 	 */
 	public function testAnUnknownLocaleFallsBackRatherThanReportingAGap(): void {
-		$rendered = $this->shipped()->render(
-			event: 'credential_relink_needed',
-			locale: 'de',
-			variables: ['connection' => 'Zaaksysteem']
-		);
+		$rendered = $this->shipped()->renderFor(rendering: new TemplateRendering(event: 'credential_relink_needed', locale: 'de', variables: ['connection' => 'Zaaksysteem']));
 
 		$this->assertNotNull($rendered);
 		$this->assertStringContainsString('Zaaksysteem', $rendered['subject']);
@@ -194,7 +187,7 @@ class NotificationTemplateRegistryTest extends TestCase {
 	 * missing something says which thing rather than leaving a hole.
 	 */
 	public function testAMissingVariableLeavesItsPlaceholderVisible(): void {
-		$rendered = $this->shipped()->render(event: 'handoff_drain_failed', locale: 'en', variables: []);
+		$rendered = $this->shipped()->renderFor(rendering: new TemplateRendering(event: 'handoff_drain_failed', locale: 'en', variables: []));
 
 		$this->assertStringContainsString('{{target}}', $rendered['subject']);
 	}

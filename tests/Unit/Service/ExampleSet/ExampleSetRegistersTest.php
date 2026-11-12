@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\RegisterDescriptorService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
@@ -58,7 +59,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 */
 	public function testTheImportClaimsExactlyTheJobItReports(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
-		$descriptors->expects($this->once())->method('reimport')->willReturn(
+		$descriptors->expects($this->once())->method('reimportShipped')->willReturn(
 			['outcome' => 'imported', 'importJobId' => 'job-mine', 'importAppId' => 'openregister.vocabulary']
 		);
 		$recorder = $this->createMock(AppImportJobRecorder::class);
@@ -76,7 +77,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 */
 	public function testAnImportWithoutAJobClaimsNothingAndAFailureIsNamed(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
-		$descriptors->method('reimport')->willReturnOnConsecutiveCalls(
+		$descriptors->method('reimportShipped')->willReturnOnConsecutiveCalls(
 			['outcome' => 'imported'],
 			['outcome' => 'failed', 'reason' => 'no descriptor']
 		);
@@ -96,7 +97,8 @@ class ExampleSetRegistersTest extends TestCase {
 		$audit->method('objectUuidsByImportJobId')->willReturn(['u1', 'u2']);
 		$refuse  = true;
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid) use (&$refuse): bool {
+		$objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$refuse): bool {
+			$uuid = $deletion->uuid;
 			if ($uuid === 'u2' && $refuse === true) {
 				throw new RuntimeException('refused');
 			}

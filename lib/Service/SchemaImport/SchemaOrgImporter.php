@@ -127,10 +127,7 @@ class SchemaOrgImporter implements SchemaDialectImporter {
 		$version = $this->snapshot->version();
 		$results = [];
 		foreach ($this->snapshot->searchClasses($query) as $class) {
-			$parent = null;
-			if (is_string($class['parent']) === true && $class['parent'] !== '') {
-				$parent = $this->snapshot->bareName($class['parent']);
-			}
+			$parent = $this->parentNameOf(class: $class);
 
 			$results[] = [
 				'id' => $class['iri'],
@@ -143,6 +140,21 @@ class SchemaOrgImporter implements SchemaDialectImporter {
 
 		return $results;
 	}//end discover()
+
+	/**
+	 * The bare name of a class's parent, or null when it has none.
+	 *
+	 * @param array<string, mixed> $class The snapshot class.
+	 *
+	 * @return string|null The parent's bare name.
+	 */
+	private function parentNameOf(array $class): ?string {
+		if (is_string($class['parent']) === true && $class['parent'] !== '') {
+			return $this->snapshot->bareName($class['parent']);
+		}
+
+		return null;
+	}//end parentNameOf()
 
 	/**
 	 * {@inheritDoc}
@@ -162,18 +174,48 @@ class SchemaOrgImporter implements SchemaDialectImporter {
 			throw SchemaImportException::unknownReference($reference, $this->dialect());
 		}
 
+		[$sourceProperties, $unknownRequested] = $this->requestedProperties(class: $class, options: $options);
+		[$properties, $termMap] = $this->mapProperties(sourceProperties: $sourceProperties);
+
+		return new ImportedSchema(
+			heading: new ImportedSchemaHeading(title: $class['label'], description: $class['comment']),
+			definition: new ImportedSchemaDefinition(properties: $properties, jsonld: self::jsonLd(class: $class, termMap: $termMap)),
+			importSource: $this->importSource(class: $class, properties: $properties),
+			unknownRequested: $unknownRequested
+		);
+	}//end import()
+
+	/**
+	 * The class's properties the import asked for, and the requested names the class lacks.
+	 *
+	 * @param array<string, mixed> $class   The snapshot class.
+	 * @param ImportOptions        $options Import options: ancestors and an optional property subset.
+	 *
+	 * @return array{0: array<string, array<string, mixed>>, 1: array<int, string>} The properties and the unknown names.
+	 */
+	private function requestedProperties(array $class, ImportOptions $options): array {
 		$sourceProperties = $this->sourcePropertiesOf(
 			className: $this->snapshot->bareName($class['iri']),
 			includeAncestors: $options->includeAncestors
 		);
 
 		// Apply an explicit property subset, tracking unknown requests.
-		$unknownRequested = [];
-		if ($options->hasSubset() === true) {
-			$unknownRequested = $this->unknownNames(sourceProperties: $sourceProperties, subset: $options->propertySubset);
-			$sourceProperties = $this->selectSubset(sourceProperties: $sourceProperties, subset: $options->propertySubset);
+		if ($options->hasSubset() === false) {
+			return [$sourceProperties, []];
 		}
 
+		$unknownRequested = $this->unknownNames(sourceProperties: $sourceProperties, subset: $options->propertySubset);
+		return [$this->selectSubset(sourceProperties: $sourceProperties, subset: $options->propertySubset), $unknownRequested];
+	}//end requestedProperties()
+
+	/**
+	 * Map the source properties to JSON Schema properties, and record each one's IRI.
+	 *
+	 * @param array<string, array<string, mixed>> $sourceProperties The source properties by name.
+	 *
+	 * @return array{0: array<string, array<string, mixed>>, 1: array<string, string>} The properties and the term map.
+	 */
+	private function mapProperties(array $sourceProperties): array {
 		$properties = [];
 		$termMap = [];
 		foreach ($sourceProperties as $name => $property) {
@@ -181,27 +223,42 @@ class SchemaOrgImporter implements SchemaDialectImporter {
 			$termMap[$name] = $property['iri'];
 		}
 
-		$jsonld = [
+		return [$properties, $termMap];
+	}//end mapProperties()
+
+	/**
+	 * The JSON-LD context of the imported schema.
+	 *
+	 * @param array<string, mixed>  $class   The snapshot class.
+	 * @param array<string, string> $termMap Property name to IRI.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private static function jsonLd(array $class, array $termMap): array {
+		return [
 			'@vocab' => self::VOCAB,
 			'type' => $class['iri'],
 			'properties' => $termMap,
 		];
+	}//end jsonLd()
 
-		$importSource = [
+	/**
+	 * Where the imported schema came from, with the mapped properties as the merge baseline.
+	 *
+	 * @param array<string, mixed>                $class      The snapshot class.
+	 * @param array<string, array<string, mixed>> $properties The mapped properties.
+	 *
+	 * @return array<string, mixed> The import source.
+	 */
+	private function importSource(array $class, array $properties): array {
+		return [
 			'dialect' => $this->dialect(),
 			'reference' => $class['iri'],
 			'snapshotVersion' => $this->snapshot->version(),
 			'importedAt' => gmdate('c'),
 			'baseline' => $properties,
 		];
-
-		return new ImportedSchema(
-			heading: new ImportedSchemaHeading(title: $class['label'], description: $class['comment']),
-			definition: new ImportedSchemaDefinition(properties: $properties, jsonld: $jsonld),
-			importSource: $importSource,
-			unknownRequested: $unknownRequested
-		);
-	}//end import()
+	}//end importSource()
 
 	/**
 	 * The source properties of a class: direct only, or with its ancestors'.

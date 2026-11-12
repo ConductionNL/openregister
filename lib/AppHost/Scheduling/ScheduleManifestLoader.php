@@ -83,18 +83,12 @@ class ScheduleManifestLoader implements ScheduleManifestLoaderInterface {
 	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function loadAllOnDisk(): array {
-		$manifests = [];
-
-		try {
-			$appIds = $this->appManager->getInstalledApps();
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[AppHost\\Scheduling] Failed to enumerate installed apps: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$appIds = $this->installedAppIds();
+		if ($appIds === null) {
 			return [];
 		}
 
+		$manifests = [];
 		foreach ($appIds as $appId) {
 			$manifest = $this->loadForApp(appId: (string)$appId);
 			if ($manifest === null || $manifest->schedules === []) {
@@ -106,6 +100,23 @@ class ScheduleManifestLoader implements ScheduleManifestLoaderInterface {
 
 		return $manifests;
 	}//end loadAllOnDisk()
+
+	/**
+	 * The installed app ids; null, logged, when they cannot be listed.
+	 *
+	 * @return array|null
+	 */
+	private function installedAppIds(): ?array {
+		try {
+			return $this->appManager->getInstalledApps();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[AppHost\\Scheduling] Failed to enumerate installed apps: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end installedAppIds()
 
 	/**
 	 * Load + JSON-decode an app's bundled `src/manifest.json`.

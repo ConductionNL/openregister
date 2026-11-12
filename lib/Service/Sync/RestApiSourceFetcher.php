@@ -105,36 +105,34 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 			throw new RuntimeException('Source has no endpoint URL configured.');
 		}
 
-		$headers = $this->buildHeaders(source: $source, since: $since);
+		$run = new ListingGather(headers: $this->buildHeaders(source: $source, since: $since));
 
-		$ids = [];
 		$url = $baseUrl;
 		$page = 0;
 
 		while ($url !== null && $page < self::MAX_PAGES) {
 			$page++;
-			$url = $this->gatherPage(url: $url, headers: $headers, ids: $ids);
+			$url = $this->gatherPage(run: $run, url: $url);
 		}
 
-		return array_values(array_unique($ids));
+		return array_values(array_unique($run->ids));
 	}//end gather()
 
 	/**
 	 * Request one listing page, collect its ids and return the next page's URL.
 	 *
-	 * @param string               $url     The page URL.
-	 * @param array<string, mixed> $headers The request headers.
-	 * @param array<int, string>   $ids     The ids gathered so far, appended to.
+	 * @param ListingGather $run The listing: its headers, and the ids gathered so far, appended to.
+	 * @param string        $url The page URL.
 	 *
 	 * @return string|null The next page URL, or null when this was the last (or 304 / non-JSON).
 	 */
-	private function gatherPage(string $url, array $headers, array &$ids): ?string {
+	private function gatherPage(ListingGather $run, string $url): ?string {
 		// Bound each request so a hung upstream cannot stall the harvest job
 		// indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
 		$response = $this->httpClient->request(
 			'GET',
 			$url,
-			['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
+			['headers' => $run->headers, 'timeout' => 30, 'connect_timeout' => 5]
 		);
 
 		// 304 Not Modified: nothing changed since the checkpoint.
@@ -147,7 +145,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 			return null;
 		}
 
-		$this->collectIds(items: $this->extractItems(body: $body), ids: $ids);
+		$this->collectIds(run: $run, items: $this->extractItems(body: $body));
 
 		return $this->nextPageUrl(body: $body, response: $response);
 	}//end gatherPage()
@@ -155,15 +153,15 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	/**
 	 * Append the id of every array item that has one.
 	 *
-	 * @param array<int, mixed>  $items The listed items.
-	 * @param array<int, string> $ids   The ids gathered so far, appended to.
+	 * @param ListingGather     $run   The listing whose ids are appended to.
+	 * @param array<int, mixed> $items The listed items.
 	 *
 	 * @return void
 	 */
-	private function collectIds(array $items, array &$ids): void {
+	private function collectIds(ListingGather $run, array $items): void {
 		foreach ($items as $item) {
 			if (is_array($item) === true && isset($item[self::ID_FIELD]) === true) {
-				$ids[] = (string)$item[self::ID_FIELD];
+				$run->ids[] = (string)$item[self::ID_FIELD];
 			}
 		}
 	}//end collectIds()

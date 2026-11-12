@@ -1,0 +1,460 @@
+{
+    "erase every outcome": {
+        "result": {
+            "erased": 2,
+            "withheld": [
+                {
+                    "uuid": "archived",
+                    "ground": "ARCHIVAL"
+                },
+                {
+                    "uuid": "clocks",
+                    "schema": "42",
+                    "ground": "SELECTIELIJST",
+                    "message": "keep"
+                }
+            ]
+        },
+        "log": [
+            [
+                "find",
+                "gone",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "find",
+                "broken",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "debug",
+                "[AVG retention] Failed to load candidate",
+                {
+                    "candidate": {
+                        "object": 12,
+                        "object_uuid": "broken"
+                    },
+                    "error": "db down"
+                }
+            ],
+            [
+                "find",
+                "archived",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "find",
+                "clocks",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "find",
+                "readonly",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "update",
+                "readonly",
+                {
+                    "deletedBy": "system",
+                    "deletedAt": "<time>",
+                    "reason": "avg-bewaartermijn",
+                    "activityUuid": "act-1",
+                    "retentionPeriod": "P1Y"
+                },
+                "act-1"
+            ],
+            [
+                "warning",
+                "[AVG retention] Soft-delete failed during retention pass",
+                {
+                    "candidate": {
+                        "object": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ],
+            [
+                "find",
+                "ok",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "update",
+                "ok",
+                {
+                    "deletedBy": "system",
+                    "deletedAt": "<time>",
+                    "reason": "avg-bewaartermijn",
+                    "activityUuid": "act-1",
+                    "retentionPeriod": "P1Y"
+                },
+                "act-1"
+            ],
+            [
+                "find",
+                17,
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "update",
+                "by-id-17",
+                {
+                    "deletedBy": "system",
+                    "deletedAt": "<time>",
+                    "reason": "avg-bewaartermijn",
+                    "activityUuid": "act-1",
+                    "retentionPeriod": "P1Y"
+                },
+                "act-1"
+            ]
+        ]
+    },
+    "erase nothing": {
+        "result": {
+            "erased": 0,
+            "withheld": []
+        },
+        "log": []
+    },
+    "erase without clock service": {
+        "result": {
+            "erased": 2,
+            "withheld": []
+        },
+        "log": [
+            [
+                "find",
+                "clocks",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "update",
+                "clocks",
+                {
+                    "deletedBy": "system",
+                    "deletedAt": "<time>",
+                    "reason": "avg-bewaartermijn",
+                    "activityUuid": "act-1",
+                    "retentionPeriod": "P1Y"
+                },
+                "act-1"
+            ],
+            [
+                "find",
+                "ok",
+                [
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            [
+                "update",
+                "ok",
+                {
+                    "deletedBy": "system",
+                    "deletedAt": "<time>",
+                    "reason": "avg-bewaartermijn",
+                    "activityUuid": "act-1",
+                    "retentionPeriod": "P1Y"
+                },
+                "act-1"
+            ]
+        ]
+    },
+    "overdue none": {
+        "result": [],
+        "log": [
+            [
+                "qb.select",
+                [
+                    [
+                        "object",
+                        "object_uuid",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            ],
+            [
+                "func.max",
+                [
+                    "created"
+                ]
+            ],
+            [
+                "qb.selectAlias",
+                [
+                    "IQueryFunction",
+                    "last_seen"
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_audit_trails",
+                    null
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "act-1",
+                2
+            ],
+            [
+                "qb.where",
+                [
+                    "eq(processing_activity_id,:p)"
+                ]
+            ],
+            [
+                "qb.groupBy",
+                [
+                    "object",
+                    "object_uuid",
+                    "register",
+                    "schema"
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "<time>",
+                "datetime"
+            ],
+            [
+                "qb.having",
+                [
+                    "MAX(created) < :p"
+                ]
+            ],
+            [
+                "executeQuery"
+            ],
+            [
+                "closeCursor"
+            ]
+        ]
+    },
+    "overdue query fails": {
+        "result": [],
+        "log": [
+            [
+                "qb.select",
+                [
+                    [
+                        "object",
+                        "object_uuid",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            ],
+            [
+                "func.max",
+                [
+                    "created"
+                ]
+            ],
+            [
+                "qb.selectAlias",
+                [
+                    "IQueryFunction",
+                    "last_seen"
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_audit_trails",
+                    null
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "act-1",
+                2
+            ],
+            [
+                "qb.where",
+                [
+                    "eq(processing_activity_id,:p)"
+                ]
+            ],
+            [
+                "qb.groupBy",
+                [
+                    "object",
+                    "object_uuid",
+                    "register",
+                    "schema"
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "<time>",
+                "datetime"
+            ],
+            [
+                "qb.having",
+                [
+                    "MAX(created) < :p"
+                ]
+            ],
+            [
+                "executeQuery"
+            ],
+            [
+                "warning",
+                "[AVG retention] Failed to enumerate overdue objects for activity",
+                {
+                    "activity": "act-1",
+                    "error": "no table"
+                }
+            ]
+        ]
+    },
+    "overdue rows": {
+        "result": [
+            {
+                "object": 7,
+                "object_uuid": "u-7",
+                "register": 1,
+                "schema": 42
+            },
+            {
+                "object": 0,
+                "object_uuid": null,
+                "register": null,
+                "schema": null
+            },
+            {
+                "object": 9,
+                "object_uuid": null,
+                "register": null,
+                "schema": null
+            }
+        ],
+        "log": [
+            [
+                "qb.select",
+                [
+                    [
+                        "object",
+                        "object_uuid",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            ],
+            [
+                "func.max",
+                [
+                    "created"
+                ]
+            ],
+            [
+                "qb.selectAlias",
+                [
+                    "IQueryFunction",
+                    "last_seen"
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_audit_trails",
+                    null
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "act-1",
+                2
+            ],
+            [
+                "qb.where",
+                [
+                    "eq(processing_activity_id,:p)"
+                ]
+            ],
+            [
+                "qb.groupBy",
+                [
+                    "object",
+                    "object_uuid",
+                    "register",
+                    "schema"
+                ]
+            ],
+            [
+                "qb.createNamedParameter",
+                "<time>",
+                "datetime"
+            ],
+            [
+                "qb.having",
+                [
+                    "MAX(created) < :p"
+                ]
+            ],
+            [
+                "executeQuery"
+            ],
+            [
+                "closeCursor"
+            ]
+        ]
+    }
+}

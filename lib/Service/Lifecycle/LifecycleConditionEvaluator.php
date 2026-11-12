@@ -26,8 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 
 /**
  * Evaluates a transition `condition` and produces the refusal, if any.
@@ -73,19 +71,15 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession $userSession Current user session, for the `user` key.
-	 * @param IGroupManager $groupManager Resolves the caller's group ids.
 	 * @param LifecycleConditionReporting $reporting The refusal message's translations and the diagnostic log.
-	 * @param ConditionDialect $dialect Decides which dialect a condition is written in.
+	 * @param LifecycleRuleCheck          $check     Builds the document a rule reads and evaluates the rule in its dialect.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
 		private readonly LifecycleConditionReporting $reporting,
-		private readonly ConditionDialect $dialect,
+		private readonly LifecycleRuleCheck $check,
 	) {
 	}//end __construct()
 
@@ -127,12 +121,16 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	/**
 	 * The refusal for a transition attempt, or null when its condition lets it through.
 	 *
+	 * A transition declaring no condition always yields null.
+	 *
 	 * @param array<string, mixed> $spec    The matched transition's spec.
 	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
 	 *
 	 * @return array{code: string, field: string, action: string, message: string}|null
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function refusalOf(array $spec, TransitionAttempt $attempt): ?array {
+	public function refusalOf(array $spec, TransitionAttempt $attempt): ?array {
 		$condition = $this->activeCondition(spec: $spec);
 		if ($condition === null || $this->holds(rule: $condition, attempt: $attempt) === true) {
 			return null;
@@ -230,10 +228,7 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 			return false;
 		}
 
-		return $this->dialect->holds(
-			node: $rule,
-			document: $this->documentOf(attempt: $attempt)
-		);
+		return $this->check->holds(rule: $rule, attempt: $attempt);
 	}//end holds()
 
 	/**
@@ -296,26 +291,17 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	/**
 	 * Build the document a condition is evaluated against, for one attempt.
 	 *
+	 * PUBLIC for the same reason as {@see document()}: the rule run log traces
+	 * a refusal against the document the refusal was decided on.
+	 *
 	 * @param TransitionAttempt $attempt The write (object after and before) and the move.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function documentOf(TransitionAttempt $attempt): array {
-		$move = $attempt->move;
-		$user = $this->userSession->getUser();
-		$uid = '';
-		$groups = [];
-		if ($user !== null) {
-			$uid = $user->getUID();
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		return [
-			'object' => $attempt->write->newData,
-			'previous' => $attempt->write->oldData,
-			'user' => ['uid' => $uid, 'groups' => $groups],
-			'transition' => ['action' => $move->action, 'from' => $move->from, 'to' => $move->to],
-		];
+	public function documentOf(TransitionAttempt $attempt): array {
+		return $this->check->document(attempt: $attempt);
 	}//end documentOf()
 
 	/**

@@ -59,13 +59,7 @@ class PreviewHandler {
 		'registers' => [],
 		'schemas' => [],
 		'objects' => [],
-		'endpoints' => [],
-		'sources' => [],
-		'mappings' => [],
-		'jobs' => [],
-		'synchronizations' => [],
-		'rules' => [],
-	];
+	] + ConfigurationComponentSections::CONNECTOR_SECTIONS;
 
 	/**
 	 * Constructor for PreviewHandler.
@@ -117,11 +111,7 @@ class PreviewHandler {
 		$preview['registers'] = $this->definitionRows(remoteData: $remoteData, kind: 'registers');
 		$preview['schemas'] = $this->definitionRows(remoteData: $remoteData, kind: 'schemas');
 
-		// An empty object list still reads the local registers and schemas.
-		$remoteObjects = ($remoteData['components']['objects'] ?? null);
-		if (is_array($remoteObjects) === true) {
-			$preview['objects'] = $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
-		}
+		$preview['objects'] = $this->objectRows(remoteData: $remoteData, preview: $preview);
 
 		$remoteVersion = ($remoteData['version'] ?? $remoteData['info']['version'] ?? null);
 		$preview['metadata'] = self::previewMetadata(configuration: $configuration, remoteVersion: $remoteVersion);
@@ -129,6 +119,23 @@ class PreviewHandler {
 
 		return $preview;
 	}//end previewConfigurationChanges()
+
+	/**
+	 * The object rows of the preview; an empty object list still reads the local registers and schemas.
+	 *
+	 * @param array<string, mixed> $remoteData The fetched remote configuration.
+	 * @param array<string, mixed> $preview    The preview so far, with its register and schema rows.
+	 *
+	 * @return array<int, array<string, mixed>> The object rows, or the preview's empty default without a remote object list.
+	 */
+	private function objectRows(array $remoteData, array $preview): array {
+		$remoteObjects = ($remoteData['components']['objects'] ?? null);
+		if (is_array($remoteObjects) === false) {
+			return $preview['objects'];
+		}
+
+		return $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
+	}//end objectRows()
 
 	/**
 	 * The metadata block of a preview: which configuration, which versions and when; the caller adds the change count.

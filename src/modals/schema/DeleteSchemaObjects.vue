@@ -145,7 +145,26 @@ import { NcCheckboxRadioSwitch, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { bulkResultOf, postJson } from './schemaBulkRequest.js'
 import { schemaObjectCount } from './schemaObjectCount.js'
+
+/**
+ * The register that holds a schema, from a freshly loaded register list.
+ *
+ * @param {number|string} schemaId The schema
+ * @return {Promise<object>} The register
+ */
+async function registerHoldingSchema(schemaId) {
+	await registerStore.refreshRegisterList()
+	const register = registerStore.registerList.find((reg) =>
+		reg.schemas.some((regSchema) => regSchema.id === schemaId),
+	)
+
+	if (!register) {
+		throw new Error('Could not find register containing this schema')
+	}
+	return register
+}
 
 export default {
 	name: 'DeleteSchemaObjects',
@@ -197,43 +216,8 @@ export default {
 			this.error = false
 
 			try {
-				// Find the register that contains this schema
-				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find((reg) =>
-					reg.schemas.some(
-						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
-					),
-				)
-
-				if (!register) {
-					throw new Error('Could not find register containing this schema')
-				}
-
-				// Call the deletion API
-				const response = await fetch(
-					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							hardDelete: this.hardDelete.includes('hardDelete'),
-						}),
-					},
-				)
-
-				if (!response.ok) {
-					throw new Error(`Deletion failed: ${response.statusText}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
-				this.deletionResult = data
+				const register = await registerHoldingSchema(schemaStore.schemaItem.id)
+				this.deletionResult = await this.deleteObjectsIn(register)
 				this.success = true
 
 				// Refresh schema stats after successful deletion
@@ -244,6 +228,22 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Delete the current schema's objects in a register, soft unless hard
+		 * delete is ticked.
+		 *
+		 * @spec exclude modal submit plumbing — the bulk delete request.
+		 * @param {object} register The register holding the schema
+		 * @return {Promise<object>} The deletion result
+		 */
+		async deleteObjectsIn(register) {
+			const response = await postJson(
+				`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
+				{ hardDelete: this.hardDelete.includes('hardDelete') },
+			)
+			return bulkResultOf(response, 'Deletion')
 		},
 
 		/**

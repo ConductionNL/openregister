@@ -864,12 +864,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->where($this->hasActiveStatus(qb: $qb))
 			->orderBy('id', 'DESC')
 			->setMaxResults($limit);
 
@@ -919,12 +914,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb->select('id')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
-			->andWhere(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->hasActiveStatus(qb: $qb))
 			->setMaxResults(1);
 
 		$result = $qb->executeQuery();
@@ -992,12 +982,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*) AS `total`'))
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+			->where($this->hasActiveStatus(qb: $qb));
 
 		$this->narrowToOrganisation(qb: $qb, organisation: $organisation);
 		$this->narrowToSubject(qb: $qb, subject: $subject);
@@ -1209,12 +1194,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_RUNNING)))
-			->andWhere(
-				$qb->expr()->lt(
-					'updated',
-					$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
-				)
-			)
+			->andWhere($this->untouchedSince(qb: $qb, before: $before))
 			->orderBy('updated', 'ASC')
 			->setMaxResults($limit);
 
@@ -1256,12 +1236,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_SUSPENDED)))
 			->andWhere($qb->expr()->isNull('resume_at'))
-			->andWhere(
-				$qb->expr()->lt(
-					'updated',
-					$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
-				)
-			)
+			->andWhere($this->untouchedSince(qb: $qb, before: $before))
 			->orderBy('updated', 'ASC')
 			->setMaxResults($limit);
 
@@ -1549,12 +1524,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
 			->where($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)))
-			->andWhere(
-				$qb->expr()->lt(
-					'updated',
-					$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
-				)
-			);
+			->andWhere($this->untouchedSince(qb: $qb, before: $before));
 
 		return (int)$qb->executeStatement();
 	}//end pruneBefore()
@@ -1580,8 +1550,37 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->set('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT))
 			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
 			->andWhere($qb->expr()->isNull('flow_version'))
-			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
+			->andWhere($this->hasActiveStatus(qb: $qb));
 
 		return (int)$qb->executeStatement();
 	}//end pinUnversionedActive()
+
+	/**
+	 * The condition that a run has one of the active statuses.
+	 *
+	 * @param IQueryBuilder $qb The query the condition is for.
+	 *
+	 * @return string The condition.
+	 */
+	private function hasActiveStatus(IQueryBuilder $qb): string {
+		return $qb->expr()->in(
+			'status',
+			$qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end hasActiveStatus()
+
+	/**
+	 * The condition that a run was last touched before a moment.
+	 *
+	 * @param IQueryBuilder $qb     The query the condition is for.
+	 * @param DateTime      $before The moment.
+	 *
+	 * @return string The condition.
+	 */
+	private function untouchedSince(IQueryBuilder $qb, DateTime $before): string {
+		return $qb->expr()->lt(
+			'updated',
+			$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+		);
+	}//end untouchedSince()
 }//end class

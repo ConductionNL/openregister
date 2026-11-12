@@ -70,16 +70,30 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolve(array $transitions, StateMove $move): ?array {
+	public function resolve(array $transitions, StateMove $move): array|null {
 		foreach ($this->candidates(transitions: $transitions, uuid: $move->uuid) as $candidate) {
 			$spec = $candidate[1];
-			if (is_array($spec) === true && ($spec['to'] ?? null) === $move->to && self::leaves(spec: $spec, state: $move->from) === true) {
+			if (self::allows(spec: $spec, move: $move) === true) {
 				return [(string)$candidate[0], $spec];
 			}
 		}
 
 		return null;
 	}//end resolve()
+
+	/**
+	 * Whether a transition spec allows this change: it enters the target and leaves the current state.
+	 *
+	 * @param mixed     $spec The candidate's transition spec.
+	 * @param StateMove $move The object, the state it leaves and the state it enters.
+	 *
+	 * @return bool True when the spec allows the move.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function allows(mixed $spec, StateMove $move): bool {
+		return is_array($spec) === true && ($spec['to'] ?? null) === $move->to && self::leaves(spec: $spec, state: $move->from) === true;
+	}//end allows()
 
 	/**
 	 * The (action, spec) pairs to try, in order: the declared action first, then every transition.

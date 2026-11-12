@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RegistryUpdatesControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
@@ -100,10 +102,11 @@ class RegistryUpdatesController extends Controller {
 		try {
 			$data = $this->request->getParams();
 			$result = $this->subscriptions->applyInboundUpdate(
-				registry: $registry,
-				identityValue: $this->requiredIdentity(data: $data),
-				properties: $this->requiredProperties(data: $data),
-				eventReference: (string)($data['eventReference'] ?? ''),
+				update: new InboundUpdate(
+					identity: new RegistryIdentity(registry: $registry, identityValue: $this->requiredIdentity(data: $data)),
+					properties: $this->requiredProperties(data: $data),
+					eventReference: (string)($data['eventReference'] ?? '')
+				)
 			);
 			$this->assertNotAllRejected(result: $result);
 

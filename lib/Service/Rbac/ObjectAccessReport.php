@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -70,18 +72,17 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	/**
 	 * Who holds which right on one object, and which rule put them there.
 	 *
-	 * @param ObjectEntity $object      The object.
-	 * @param mixed        $registerRef The register it belongs to, as the request named it.
-	 * @param mixed        $schemaRef   The schema it belongs to, as the request named it.
+	 * @param ObjectEntity      $object The object.
+	 * @param RegisterSchemaRef $table  The register and schema it belongs to, as the request named them.
 	 *
 	 * @return array<string, mixed> The access set.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array {
+	public function setFor(ObjectEntity $object, RegisterSchemaRef $table): array {
 		return $this->setIn(
 			object: $object,
-			place: new ReportedPlace(register: $this->register(reference: $registerRef), schema: $this->schema(reference: $schemaRef))
+			place: new ReportedPlace(register: $this->register(reference: $table->register), schema: $this->schema(reference: $table->schema))
 		);
 	}//end setFor()
 
@@ -127,10 +128,9 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function historyFor(ObjectEntity $object, ?string $moment): array {
-		$entries = $this->sources->auditTrailMapper->findForObjectByAction(
+		$entries = $this->sources->auditTrailMapper->findObjectActions(
 			objectUuid: (string)$object->getUuid(),
-			actions: [],
-			limit: self::HISTORY_LIMIT
+			options: new ActionLookupOptions(actions: [], limit: self::HISTORY_LIMIT)
 		);
 
 		$history = $this->history->forEntries(entries: $entries, moment: $moment);

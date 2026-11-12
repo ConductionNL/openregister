@@ -67,33 +67,16 @@ class GrantRuleFit {
 	 * part that reads who is asking cannot be answered for everybody, so the
 	 * entry is kept and reported as relative.
 	 *
-	 * @param mixed                $entry    The entry as written (a role grant carries its holder list).
-	 * @param mixed                $role     The role it came through, or null.
+	 * @param HeldRule             $rule     The entry as written and the role it came through.
 	 * @param array<string, mixed> $envelope The record as the matcher reads it.
 	 *
 	 * @return array{matchedOn: string[], relative: bool}|null The fit.
 	 *
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
-	public function fitOf(mixed $entry, mixed $role, array $envelope): ?array {
-		return $this->fitOfMatch(match: $this->matchClauseOf(entry: $entry, role: $role), envelope: $envelope);
+	public function fitOf(HeldRule $rule, array $envelope): ?array {
+		return $this->fitOfMatch(match: $rule->matchClause(), envelope: $envelope);
 	}//end fitOf()
-
-	/**
-	 * The `match` clause of a direct entry; a role grant carries none of its own.
-	 *
-	 * @param mixed $entry The entry as written.
-	 * @param mixed $role  The role it came through, or null.
-	 *
-	 * @return mixed The clause, or null.
-	 */
-	private function matchClauseOf(mixed $entry, mixed $role): mixed {
-		if ($role === null && is_array($entry) === true) {
-			return ($entry['match'] ?? null);
-		}
-
-		return null;
-	}//end matchClauseOf()
 
 	/**
 	 * How one `match` clause fits this record, or null when its static part does not.
@@ -143,17 +126,7 @@ class GrantRuleFit {
 	 */
 	private function readsTheCaller(mixed $value): bool {
 		if (is_string($value) === true) {
-			if (in_array($value, self::CALLER_TOKENS, true) === true) {
-				return true;
-			}
-
-			foreach (self::CALLER_TOKENS as $token) {
-				if (str_starts_with($value, $token . '.') === true) {
-					return true;
-				}
-			}
-
-			return false;
+			return self::isCallerToken(value: $value);
 		}
 
 		if (is_array($value) === false) {
@@ -164,14 +137,46 @@ class GrantRuleFit {
 			return true;
 		}
 
-		foreach ($value as $operand) {
+		return $this->anyOperandReadsTheCaller(operands: $value);
+	}//end readsTheCaller()
+
+	/**
+	 * Whether a string is a caller token, or a path into one (`$organisation.uuid`).
+	 *
+	 * @param string $value The value as written.
+	 *
+	 * @return bool True when it names the caller, the caller's groups or organisation.
+	 */
+	private static function isCallerToken(string $value): bool {
+		if (in_array($value, self::CALLER_TOKENS, true) === true) {
+			return true;
+		}
+
+		foreach (self::CALLER_TOKENS as $token) {
+			if (str_starts_with($value, $token . '.') === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isCallerToken()
+
+	/**
+	 * Whether any operand of an operator object reads who is asking.
+	 *
+	 * @param array<mixed> $operands The operator object's values.
+	 *
+	 * @return bool True when one of them does.
+	 */
+	private function anyOperandReadsTheCaller(array $operands): bool {
+		foreach ($operands as $operand) {
 			if ($this->readsTheCaller(value: $operand) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end readsTheCaller()
+	}//end anyOperandReadsTheCaller()
 
 	/**
 	 * The type and id of the principal a rule names.

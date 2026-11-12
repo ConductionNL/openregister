@@ -123,24 +123,6 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 *
 	 * The same person in the same role updates the row; in another role adds one.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
-	 * @param array<string, mixed> $payload `userId` or `addressbookId`+`contactUri`, with `role`, `validFrom`, `validUntil`, `note`.
-	 *
-	 * @return ContactLink The link as stored.
-	 *
-	 * @throws Exception 400 for a role outside the vocabulary or a payload naming no person, 404 for an unknown user or contact.
-	 *
-	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
-	 */
-	public function link(string $objectUuid, int $registerId, ?int $schemaId, array $payload): ContactLink {
-		return $this->linkPerson(target: new PersonLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId), payload: $payload);
-	}//end link()
-
-	/**
-	 * Link a person to an object (see link()).
-	 *
 	 * @param PersonLinkTarget     $target  The object: its uuid, register and schema.
 	 * @param array<string, mixed> $payload `userId` or `addressbookId`+`contactUri`, with `role`, `validFrom`, `validUntil`, `note`.
 	 *
@@ -164,26 +146,6 @@ class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
 	 * Change the role, validity or note of a person's link on an object.
-	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param int|null $schemaId The schema id, for the vocabulary.
-	 * @param array<string, mixed> $changes `role`, `validFrom`, `validUntil`, `note`; a key absent is left alone, null clears.
-	 * @param string|null $currentRole Which of the person's links, when they hold several.
-	 *
-	 * @return ContactLink The link as stored.
-	 *
-	 * @throws Exception 404 when the person has no such link, 400 for a role outside the vocabulary.
-	 *
-	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
-	 */
-	public function update(string $objectUuid, string $contactUid, ?int $schemaId, array $changes, ?string $currentRole = null): ContactLink {
-		$ref = new PersonLinkRef(objectUuid: $objectUuid, contactUid: $contactUid, role: $currentRole);
-		return $this->changeLink(change: new PersonLinkChange(ref: $ref, schemaId: $schemaId, changes: $changes));
-	}//end update()
-
-	/**
-	 * Change the role, validity or note of a person's link on an object (see update()).
 	 *
 	 * @param PersonLinkChange $change The link (object, person, current role), the schema and the changes.
 	 *
@@ -209,23 +171,6 @@ class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
 	 * Remove a person from an object: every role, or the one named.
-	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $contactUid The person: the vCard uid, or `user:<uid>`.
-	 * @param string|null $role Only this role, or null for all.
-	 *
-	 * @return int How many links went.
-	 *
-	 * @throws Exception 404 when the person has no such link.
-	 *
-	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-can-be-updated-and-removed-per-role
-	 */
-	public function unlink(string $objectUuid, string $contactUid, ?string $role = null): int {
-		return $this->removeLinks(ref: new PersonLinkRef(objectUuid: $objectUuid, contactUid: $contactUid, role: $role));
-	}//end unlink()
-
-	/**
-	 * Remove a person from an object: every role, or the one named (see unlink()).
 	 *
 	 * @param PersonLinkRef $ref The object, the person, and only this role or null for all.
 	 *
@@ -290,10 +235,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$userId = trim((string)($payload['userId'] ?? ''));
 		if ($userId !== '') {
 			return $this->targets->userLinks->write(
-				objectUuid: $target->objectUuid,
-				registerId: $target->registerId,
-				schemaId: $target->schemaId,
-				userId: $userId,
+				request: new UserLinkRequest(objectUuid: $target->objectUuid, registerId: $target->registerId, schemaId: $target->schemaId, userId: $userId),
 				role: $role
 			);
 		}
@@ -318,12 +260,31 @@ class PersonLinkService implements PersonLinkServiceInterface {
 			throw new Exception('Either userId or addressbookId+contactUri is required', 400);
 		}
 
-		$target = $placement->target;
-
 		$contacts = $this->targets->contacts;
 
-		return $contacts->linkContact($target->objectUuid, $target->registerId, $contact[0], $contact[1], $placement->role, $target->schemaId);
+		return $contacts->linkCard(
+			card: new ContactCardRef(addressbookId: $contact[0], contactUri: $contact[1]),
+			placement: $this->contactPlacement(placement: $placement)
+		);
 	}//end linkAddressbookContact()
+
+	/**
+	 * Where an addressbook contact is linked: the person link's object and role.
+	 *
+	 * @param PersonLinkPlacement $placement The object and the role.
+	 *
+	 * @return ContactPlacement
+	 */
+	private function contactPlacement(PersonLinkPlacement $placement): ContactPlacement {
+		$target = $placement->target;
+
+		return new ContactPlacement(
+			objectUuid: $target->objectUuid,
+			registerId: $target->registerId,
+			schemaId: $target->schemaId,
+			role: $placement->role
+		);
+	}//end contactPlacement()
 
 	/**
 	 * Set validity and note from a payload; a key absent is left alone, null or '' clears.
@@ -418,7 +379,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$role       = $ref->role;
 		$link       = null;
 		if ($role !== null) {
-			$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
+			$link = $this->links->findByObjectContactAndRole(ref: $ref);
 		}
 
 		if ($role === null) {

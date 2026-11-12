@@ -313,7 +313,7 @@ class ContactLink extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function isActiveOn(?DateTime $today = null): bool {
+	public function isActiveOn(DateTime|null $today = null): bool {
 		$day = ($today ?? new DateTime('today'))->format('Y-m-d');
 		if ($this->validFrom !== null && $this->validFrom->format('Y-m-d') > $day) {
 			return false;

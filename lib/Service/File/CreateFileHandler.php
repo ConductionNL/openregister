@@ -130,9 +130,8 @@ class CreateFileHandler {
 	 * This method automatically adds an 'object:' tag containing the object's UUID
 	 * in addition to any user-provided tags.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
+	 * @param FileTarget $target The object entity to add the file to, and its register when the object does not name it.
 	 * @param FileUpload $upload The file name, content, share toggle and tags.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
 	 *
 	 * @return File The created file.
 	 *
@@ -141,14 +140,10 @@ class CreateFileHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function addFile(
-		ObjectEntity|string $objectEntity,
-		FileUpload $upload,
-		int|string|null $registerId = null,
-	): File {
+	public function addFile(FileTarget $target, FileUpload $upload): File {
 		$run = new FileUploadRun(action: 'create', upload: $upload);
-		$run->object = $objectEntity;
-		return $this->createFile(run: $run, registerId: $registerId);
+		$run->object = $target->object;
+		return $this->createFile(run: $run, registerId: $target->registerId);
 	}//end addFile()
 
 	/**
@@ -207,11 +202,13 @@ class CreateFileHandler {
 			$existingFile = $this->fileService->getFile(object: $objectEntity, file: $upload->fileName);
 			$this->logUpsert(run: $run, exists: $existingFile !== null);
 			if ($existingFile === null) {
-				return $this->addFile(objectEntity: $objectEntity, upload: $upload);
+				return $this->addFile(target: new FileTarget(object: $objectEntity), upload: $upload);
 			}
 
 			// Update the existing file - pass the object so updateFile can find it in the object folder.
-			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity);
+			return $this->fileService->overwriteFile(
+				overwrite: new FileOverwrite(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity)
+			);
 		} catch (Exception $e) {
 			throw $this->failure(error: $e, run: $run);
 		}
@@ -361,7 +358,7 @@ class CreateFileHandler {
 	 */
 	private function shareIfRequested(File $file, bool $share): void {
 		if ($share === true) {
-			$this->fileService->createShareLink(path: $file->getPath());
+			$this->fileService->createShareLink(request: new ShareLinkRequest(path: $file->getPath()));
 		}
 	}//end shareIfRequested()
 

@@ -25,6 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\ExampleSet\RewrittenObject;
+use OCA\OpenRegister\Service\ExampleSet\RewriteTally;
+use OCA\OpenRegister\Service\ExampleSet\KeptObjectRewrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use PHPUnit\Framework\TestCase;
@@ -53,20 +57,20 @@ class ExampleSetRewriterGoldenTest extends TestCase {
 			$this->calls[] = 'writeRules '.$register.' '.$schema;
 			return $answers['rules'];
 		});
-		$store->method('update')->willReturnCallback(function (string $register, string $schema, string $id, array $data) use ($answers): string {
-			$this->calls[] = 'update '.$register.' '.$schema.' '.$id.' '.json_encode($data);
+		$store->method('update')->willReturnCallback(function (ObjectRef $ref, array $data) use ($answers): string {
+			$this->calls[] = 'update '.$ref->register.' '.$ref->schema.' '.$ref->id.' '.json_encode($data);
 			return ($answers['update'] ?? '');
 		});
-		$store->method('ownerOf')->willReturnCallback(function (string $register, string $schema, string $id) use ($answers): ?string {
-			$this->calls[] = 'ownerOf '.$id;
+		$store->method('ownerOf')->willReturnCallback(function (ObjectRef $ref) use ($answers): ?string {
+			$this->calls[] = 'ownerOf '.$ref->id;
 			return ($answers['ownerOf'] ?? null);
 		});
 		$store->method('assignOwner')->willReturnCallback(function (string $id, string $owner) use ($answers): string {
 			$this->calls[] = 'assignOwner '.$id.' '.$owner;
 			return ($answers['assignOwner'] ?? '');
 		});
-		$store->method('get')->willReturnCallback(function (string $register, string $schema, string $id) use ($answers): ?array {
-			$this->calls[] = 'get '.$id;
+		$store->method('row')->willReturnCallback(function (ObjectRef $ref) use ($answers): ?array {
+			$this->calls[] = 'get '.$ref->id;
 			return ($answers['get'] ?? null);
 		});
 		return $store;
@@ -94,7 +98,10 @@ class ExampleSetRewriterGoldenTest extends TestCase {
 		// Without a refresh the installer refreshes only the references; with one it rewrites.
 		$kept = ['references' => true];
 		if ($refresh === true) {
-			$kept = (new ExampleSetRewriter())->rewrite(run: $run, resolved: $resolved, report: $report, written: $written);
+			$kept = (new ExampleSetRewriter())->rewrite(
+				rewrite: new KeptObjectRewrite(kept: $run, resolved: $resolved),
+				tally: new RewriteTally(report: $report, written: $written)
+			);
 		}
 
 		return [$kept, $report, $written];
@@ -227,18 +234,20 @@ class ExampleSetRewriterGoldenTest extends TestCase {
 			'objects' => ['demo/o1' => ['refs' => ['owner' => 'old', 'same' => 'x', 'other' => 'y']]],
 			'changes' => ['demo/o1#references' => ['set' => [['path' => 'owner', 'new' => 'old', 'had' => 'h'], ['path' => 'missing', 'new' => 'z']]]],
 		];
-		$saved  = [];
-		$save   = function (array $kept) use (&$saved): void {
-			$saved[] = $kept;
-		};
+		$saved    = [];
 		$rewriter = new ExampleSetRewriter();
-		$rewriter->follow(record: $record, name: 'demo/o1', written: ['demo/o1' => ['owner' => 'new', 'same' => 'x']], save: $save);
+		$follow   = function (string $name, array $written) use ($rewriter, &$record, &$saved): void {
+			if (isset($written[$name]) === true && $rewriter->follow(record: $record, object: new RewrittenObject(name: $name, data: $written[$name])) === true) {
+				$saved[] = $record;
+			}
+		};
+		$follow('demo/o1', ['demo/o1' => ['owner' => 'new', 'same' => 'x']]);
 		$this->assertSame(['owner' => 'new', 'same' => 'x', 'other' => 'y'], $record['objects']['demo/o1']['refs']);
 		$this->assertSame([['path' => 'owner', 'new' => 'new', 'had' => 'h'], ['path' => 'missing', 'new' => 'z']], $record['changes']['demo/o1#references']['set']);
 		$this->assertSame([$record], $saved);
 
-		$rewriter->follow(record: $record, name: 'demo/o1', written: ['demo/o1' => ['owner' => 'new']], save: $save);
-		$rewriter->follow(record: $record, name: 'demo/other', written: ['demo/o1' => ['owner' => 'newer']], save: $save);
+		$follow('demo/o1', ['demo/o1' => ['owner' => 'new']]);
+		$follow('demo/other', ['demo/o1' => ['owner' => 'newer']]);
 		$this->assertCount(1, $saved);
 	}//end testFollow()
 }//end class

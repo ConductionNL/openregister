@@ -17,12 +17,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillRequest;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -166,7 +169,8 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 	 */
 	private function writes(array $untouched=[]): void {
 		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (Register $r, Schema $s, string $uuid, string $slug) use ($untouched): int {
+			function (RegisterSchema $table, string $uuid, string $slug) use ($untouched): int {
+				[$r, $s] = [$table->register, $table->schema];
 				$this->events[] = 'update:' . $uuid . '=' . $slug;
 				return (in_array($uuid, $untouched, true) === true) ? 0 : 1;
 			}
@@ -177,7 +181,7 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->schema->setConfiguration([]);
 
 		try {
-			$this->service->run($this->register, $this->schema);
+			$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: false));
 			$this->fail('expected a refusal');
 		} catch (InvalidArgumentException $e) {
 			$this->assertSame('Schema conv has no objectSlugField; there is nothing to backfill', $e->getMessage());
@@ -190,14 +194,15 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['fresh' => ['u-other']]]);
 		$this->rows([$this->row(1, 'Fresh'), $this->row(2, 'Taken'), $this->row(3, ''), $this->row(4, 'Moved'), $this->row(5, 'Kept')]);
 		$this->writes(untouched: ['u-4']);
-		$this->auditTrail->method('createSlugBackfillEntry')->willReturnCallback(
-			function (...$args): AuditTrail {
+		$this->auditTrail->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$args = [$backfill->changes, $backfill->summary, $backfill->target->register, $backfill->target->schema];
 				$this->events[] = 'audit:' . json_encode($args);
 				return new AuditTrail();
 			}
 		);
 
-		$result = $this->service->run($this->register, $this->schema);
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: false));
 
 		$this->assertSame(['dup' => ['u-8', 'u-9']], $result['duplicates']);
 		$this->assertSame(
@@ -242,10 +247,10 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['taken' => ['u-9']]);
 		$this->magicMapper->expects($this->never())->method('updateSlugColumn');
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 		$this->rows([$this->row(1, 'Taken'), $this->row(2, 'Free')]);
 
-		$result = $this->service->run($this->register, $this->schema, true);
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: true));
 
 		$this->assertSame([['uuid' => 'u-2', 'old' => null, 'new' => 'free']], $result['plan']);
 		$this->assertSame(['scanned' => 2, 'assigned' => 1, 'collisions' => 1, 'unchanged' => 0, 'duplicates' => 0, 'skipped' => 0], $result['summary']);
@@ -259,12 +264,12 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => []]);
 		$this->rows([$this->row(1, 'One')]);
 		$this->writes();
-		$this->auditTrail->method('createSlugBackfillEntry')->willThrowException(new RuntimeException('db down'));
+		$this->auditTrail->method('recordSlugBackfill')->willThrowException(new RuntimeException('db down'));
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->cacheHandler->method('invalidateForObjectChange')->willThrowException(new RuntimeException('cache down'));
 		$this->rebuildWithCache();
 
-		$result = $this->service->run($this->register, $this->schema);
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: false));
 
 		$this->assertSame(0, $result['summary']['skipped']);
 		$this->assertSame(
@@ -282,10 +287,10 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 		$this->magicMapper->method('findSlugState')->willReturn(['holders' => []]);
 		$this->rows([$this->row(1, 'One')]);
 		$this->magicMapper->method('updateSlugColumn')->willThrowException(new RuntimeException('write failed'));
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 
 		try {
-			$this->service->run($this->register, $this->schema);
+			$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: false));
 			$this->fail('expected the write failure');
 		} catch (SlugBackfillWriteException $e) {
 			$this->assertSame('write failed', $e->getPrevious()?->getMessage());
@@ -309,9 +314,9 @@ class ObjectSlugBackfillCharacterisationTest extends TestCase {
 			['rows' => array_slice($rows, 1000), 'fetched' => 1, 'lastId' => 1001]
 		);
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
-		$this->auditTrail->method('createSlugBackfillEntry')->willReturn(new AuditTrail());
+		$this->auditTrail->method('recordSlugBackfill')->willReturn(new AuditTrail());
 
-		$this->service->run($this->register, $this->schema);
+		$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema, dryRun: false));
 
 		$parts = array_values(array_filter($this->logs, static fn (array $log): bool => str_contains($log[1], 'Slug backfill changes')));
 		$this->assertCount(2, $parts);

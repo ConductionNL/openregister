@@ -33,6 +33,8 @@ use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
 use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -108,7 +110,6 @@ class TalkLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -130,7 +131,6 @@ class TalkLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -151,7 +151,6 @@ class TalkLinksController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
@@ -197,9 +196,7 @@ class TalkLinksController extends Controller {
 		}
 
 		$link = $this->talkLinkService->linkRoom(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			(int)$object->getSchema(),
+			new LinkedObject(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister(), schemaId: (int)$object->getSchema()),
 			$roomToken
 		);
 
@@ -222,12 +219,12 @@ class TalkLinksController extends Controller {
 		}
 
 		$link = $this->talkLinkService->createAndLinkRoom(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			(int)$object->getSchema(),
-			$name,
-			LinkedSourceActions::optionalString(request: $this->request, param: 'description'),
-			$this->roomType()
+			new RoomCreation(
+				object: new LinkedObject(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister(), schemaId: (int)$object->getSchema()),
+				roomName: $name,
+				description: LinkedSourceActions::optionalString(request: $this->request, param: 'description'),
+				roomType: $this->roomType()
+			)
 		);
 
 		return LinkedSourceResponses::created(link: $link);

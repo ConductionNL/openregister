@@ -38,15 +38,13 @@ final class ObjectSharingControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices(
 				objectService: $objectService,
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
+				catalog: new MapperBackedSchemaCatalog(registers: $registerMapper, schemas: $schemaMapper),
 				sharing: $sharing,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

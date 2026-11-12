@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Files\Service\ProvidedTextRequest;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
@@ -166,7 +167,7 @@ class TextExtractionServiceProvidedTextGoldenTest extends TestCase {
 	public function testExtractFromProvidedTextGolden(array $s): void {
 		$service = $this->service($s);
 		try {
-			$service->extractFromProvidedText(42, $s['text'], $s['types'], 'ocr');
+			$service->extractFromProvidedText(new ProvidedTextRequest(fileId: 42, text: $s['text'], entityTypes: $s['types'], method: 'ocr'));
 			$this->calls[] = ['returned'];
 		} catch (Exception $e) {
 			$this->calls[] = ['thrown', get_class($e), $e->getMessage()];

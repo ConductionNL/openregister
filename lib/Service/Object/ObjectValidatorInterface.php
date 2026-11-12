@@ -40,18 +40,14 @@ interface ObjectValidatorInterface {
 	 * example set's check. Every other account id is still asked of the user
 	 * manager, and the ids are accepted for this one call only.
 	 *
-	 * @param array                     $object       The object to validate.
-	 * @param Schema|int|null           $schema       The schema or schema ID to validate against.
-	 * @param object                    $schemaObject A custom schema object for validation.
-	 * @param array<int, string>        $plannedUsers Account ids to accept although they do not exist yet.
+	 * @param array                $object The object to validate.
+	 * @param PlannedAccountsCheck $check  The schema to validate against and the account ids to accept.
 	 *
 	 * @return ValidationResult The result of the validation.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	public function validateObjectWithPlannedUsers(
-		array $object, Schema|int|null $schema = null, object $schemaObject = new stdClass(), array $plannedUsers = []
-	): ValidationResult;
+	public function validateWithPlannedAccounts(array $object, PlannedAccountsCheck $check): ValidationResult;
 
 	/**
 	 * Validates an object against a schema.
@@ -59,7 +55,6 @@ interface ObjectValidatorInterface {
 	 * @param array $object The object to validate.
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
-	 * @param int $_depth The depth level for validation (unused).
 	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
@@ -68,7 +63,7 @@ interface ObjectValidatorInterface {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function validateObject(
-		array $object, Schema|int|string|null $schema = null, object $schemaObject = new stdClass(), int $_depth = 0,
+		array $object, Schema|int|string|null $schema = null, object $schemaObject = new stdClass(),
 		array $notSupplied = []
 	): ValidationResult;
 

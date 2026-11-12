@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -113,13 +114,15 @@ class ActionDateFollower {
 		unset($retention['archiefactiedatum']);
 		$object->setRetention($retention);
 
-		$this->auditMapper->createAuditTrailEntry(
-			object: $object,
-			action: self::AUDIT_DATE_REMOVED,
-			context: [
-				'archiefactiedatum' => ['old' => $oldDate, 'new' => null],
-				'reason' => 'The source date of the destruction date was cleared.',
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: self::AUDIT_DATE_REMOVED,
+				context: [
+					'archiefactiedatum' => ['old' => $oldDate, 'new' => null],
+					'reason' => 'The source date of the destruction date was cleared.',
+				]
+			)
 		);
 		$this->logger->info(
 			sprintf('[ActionDateFollower] Cleared archiefactiedatum for object %s (was %s)', $object->getUuid(), $oldDate)

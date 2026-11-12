@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -118,9 +119,9 @@ class MigrateNotificationSubscriptionsToUserConfigGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($qb);
 
 		$prefs = $this->createMock(NotificationPreferencesInterface::class);
-		$prefs->method('setOverride')->willReturnCallback(
-			function (string $userId, string $schemaSlug, string $notificationKey, ?array $override): void {
-				$this->calls[] = 'override '.$userId.' '.$schemaSlug.' '.$notificationKey.' '.json_encode($override);
+		$prefs->method('storeOverride')->willReturnCallback(
+			function (PreferenceWrite $write): void {
+				$this->calls[] = 'override '.$write->party.' '.$write->address->schemaSlug.' '.$write->address->notificationKey.' '.json_encode($write->value);
 			}
 		);
 

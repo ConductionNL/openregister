@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 class DestructionListCreatorTest extends TestCase {
 
@@ -66,7 +67,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['find', 'findAll'])
+			->onlyMethods(['find', 'findAllListed'])
 			->getMock();
 		$objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier): ObjectEntity {
@@ -77,7 +78,7 @@ class DestructionListCreatorTest extends TestCase {
 				return $this->objects[(string)$identifier];
 			}
 		);
-		$objectMapper->method('findAll')->willReturnCallback(fn (): array => $this->storedLists);
+		$objectMapper->method('findAllListed')->willReturnCallback(fn (): array => $this->storedLists);
 
 		$settings = $this->createMock(ObjectRetentionHandler::class);
 		$settings->method('getArchivalSettingsOnly')->willReturnCallback(fn (): array => $this->settings);
@@ -107,13 +108,13 @@ class DestructionListCreatorTest extends TestCase {
 		/** @var SaveObject&MockObject $saveObject */
 		$saveObject = $this->createMock(SaveObject::class);
 		$saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				$this->saved[] = ['register' => $register, 'schema' => $schema, 'data' => $data];
 				$list = new ObjectEntity();
 				$list->setUuid('list-' . count($this->saved));
 				$list->setObject($data);
 				return $list;
-			}
+			})
 		);
 
 		$this->creator = new DestructionListCreator(

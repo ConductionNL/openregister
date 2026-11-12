@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * What each path through the metadata hydration decides.
@@ -151,8 +152,8 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 		);
 		$handler = $this->handler();
 
-		$this->assertSame(self::UUID, $handler->processTwigLikeTemplate(['owner' => self::UUID], '{{ owner }}', $properties));
-		$this->assertSame(self::UUID, $handler->processFieldWithFallbacks(['owner' => self::UUID], 'owner', $properties));
+		$this->assertSame(self::UUID, $handler->renderTemplate(template: '{{ owner }}', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $properties)));
+		$this->assertSame(self::UUID, $handler->fallbackValue(fieldChain: 'owner', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $properties)));
 	}//end testAnUnresolvedRelationKeepsItsUuid()
 
 	/**
@@ -163,9 +164,9 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 	public function testTemplatesRenderOnlyWhenSomethingIsFilled(): void {
 		$handler = $this->handler();
 
-		$this->assertNull($handler->processTwigLikeTemplate(['a' => 'x'], 'no placeholders'));
-		$this->assertNull($handler->processTwigLikeTemplate(['a' => ''], '{{ a }} {{ b }}'));
-		$this->assertSame('x - y', $handler->processTwigLikeTemplate(['a' => ' x ', 'b' => 'y'], "{{ a }}   -\n {{ b }}"));
+		$this->assertNull($handler->renderTemplate(template: 'no placeholders', source: new TemplateSource(data: ['a' => 'x'], schemaProperties: [])));
+		$this->assertNull($handler->renderTemplate(template: '{{ a }} {{ b }}', source: new TemplateSource(data: ['a' => ''], schemaProperties: [])));
+		$this->assertSame('x - y', $handler->renderTemplate(template: "{{ a }}   -\n {{ b }}", source: new TemplateSource(data: ['a' => ' x ', 'b' => 'y'], schemaProperties: [])));
 	}//end testTemplatesRenderOnlyWhenSomethingIsFilled()
 
 	/**
@@ -177,13 +178,13 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 		$handler = $this->handler();
 		$data = ['vip' => 'yes', 'none' => '', 'list' => [], 'code' => 'nl', 'other' => 'de', 'b' => 'Bee'];
 
-		$this->assertSame('Gold', $handler->processTwigLikeTemplate($data, '{{ vip | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Basic', $handler->processTwigLikeTemplate($data, '{{ none | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Basic', $handler->processTwigLikeTemplate($data, '{{ list | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Nederlands', $handler->processTwigLikeTemplate($data, '{{ code | map: nl=Nederlands, en=English }}'));
-		$this->assertSame('de', $handler->processTwigLikeTemplate($data, '{{ other | map: nl=Nederlands }}'));
-		$this->assertSame('Nederlands', $handler->processTwigLikeTemplate($data, '{{ none | map: nl=Nederlands, en=English }}'));
-		$this->assertSame('Bee', $handler->processTwigLikeTemplate($data, '{{ a | b }}'));
+		$this->assertSame('Gold', $handler->renderTemplate(template: '{{ vip | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Basic', $handler->renderTemplate(template: '{{ none | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Basic', $handler->renderTemplate(template: '{{ list | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Nederlands', $handler->renderTemplate(template: '{{ code | map: nl=Nederlands, en=English }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('de', $handler->renderTemplate(template: '{{ other | map: nl=Nederlands }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Nederlands', $handler->renderTemplate(template: '{{ none | map: nl=Nederlands, en=English }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Bee', $handler->renderTemplate(template: '{{ a | b }}', source: new TemplateSource(data: $data, schemaProperties: [])));
 	}//end testTemplateFilters()
 
 	/**
@@ -194,11 +195,11 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 	public function testThePublicFilterEntryPoints(): void {
 		$handler = $this->handler();
 
-		$this->assertSame('Only', $handler->processIfFilledFilter(['x' => 'v'], 'x', 'Only'));
-		$this->assertSame('Yes', $handler->processIfFilledFilter(['x' => 0], 'x', 'Yes, No'));
-		$this->assertSame('No', $handler->processIfFilledFilter([], 'x', 'Yes, No'));
-		$this->assertNull($handler->processMapFilter([], 'x', 'garbage'));
-		$this->assertSame('One', $handler->processMapFilter(['x' => ' 1 '], 'x', '1=One'));
+		$this->assertSame('Only', $handler->ifFilledValue(fieldValue: $handler->getValueFromPath(data: ['x' => 'v'], path: 'x'), definition: 'Only'));
+		$this->assertSame('Yes', $handler->ifFilledValue(fieldValue: $handler->getValueFromPath(data: ['x' => 0], path: 'x'), definition: 'Yes, No'));
+		$this->assertSame('No', $handler->ifFilledValue(fieldValue: $handler->getValueFromPath(data: [], path: 'x'), definition: 'Yes, No'));
+		$this->assertNull($handler->mapFilterValue(fieldValue: $handler->getValueFromPath(data: [], path: 'x'), mapDefinition: 'garbage'));
+		$this->assertSame('One', $handler->mapFilterValue(fieldValue: $handler->getValueFromPath(data: ['x' => ' 1 '], path: 'x'), mapDefinition: '1=One'));
 	}//end testThePublicFilterEntryPoints()
 
 	/**
@@ -210,9 +211,9 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 		$handler = $this->handler();
 		$data = ['a' => '', 'b' => '  ', 'c' => ' third ', 'n' => 0];
 
-		$this->assertSame('third', $handler->extractMetadataValue($data, 'a | b || c'));
-		$this->assertSame('0', $handler->processFieldWithFallbacks($data, 'missing | n'));
-		$this->assertNull($handler->processFieldWithFallbacks($data, 'a | b'));
+		$this->assertSame('third', $handler->metadataText(fieldPath: 'a | b || c', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('0', $handler->fallbackValue(fieldChain: 'missing | n', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertNull($handler->fallbackValue(fieldChain: 'a | b', source: new TemplateSource(data: $data, schemaProperties: [])));
 	}//end testAFallbackChain()
 
 	/**
@@ -230,12 +231,12 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 			'scalar' => 'x',
 		];
 
-		$this->assertSame('42', $handler->extractMetadataValue($data, 'deep.er.est'));
-		$this->assertNull($handler->extractMetadataValue($data, 'scalar.below'));
-		$this->assertNull($handler->extractMetadataValue($data, 'deep.nope'));
-		$this->assertSame('Hello', $handler->extractMetadataValue($data, 'title'));
-		$this->assertSame('{"nl":"","en":""}', $handler->extractMetadataValue($data, 'blank'));
-		$this->assertSame('[1,2]', $handler->extractMetadataValue($data, 'list'));
+		$this->assertSame('42', $handler->metadataText(fieldPath: 'deep.er.est', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertNull($handler->metadataText(fieldPath: 'scalar.below', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertNull($handler->metadataText(fieldPath: 'deep.nope', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Hello', $handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('{"nl":"","en":""}', $handler->metadataText(fieldPath: 'blank', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('[1,2]', $handler->metadataText(fieldPath: 'list', source: new TemplateSource(data: $data, schemaProperties: [])));
 		$this->assertSame(['nl' => '', 'en' => 'Hello'], $handler->getValueFromPath($data, 'title'));
 	}//end testPlainPathValues()
 	/**

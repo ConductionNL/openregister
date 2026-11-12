@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Doctrine\DBAL\DriverManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -173,7 +175,7 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 	 * @return callable
 	 */
 	private function inserting(DbalObjectSourceProvider $provider, array $data, array $config): callable {
-		return fn () => $provider->insert(register: $this->register(), schema: $this->schema(), data: $data, config: $config);
+		return fn () => $provider->insert(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), data: $data);
 	}//end inserting()
 
 	/**
@@ -187,11 +189,9 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 	 */
 	private function updating(DbalObjectSourceProvider $provider, array $change, array $config): callable {
 		return fn () => $provider->update(
-			register: $this->register(),
-			schema: $this->schema(),
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config),
 			id: $change[0],
-			data: $change[1],
-			config: $config
+			data: $change[1]
 		);
 	}//end updating()
 
@@ -205,7 +205,7 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 	 * @return callable
 	 */
 	private function removing(DbalObjectSourceProvider $provider, string $id, array $config): callable {
-		return fn () => $provider->remove(register: $this->register(), schema: $this->schema(), id: $id, config: $config);
+		return fn () => $provider->remove(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), id: $id);
 	}//end removing()
 
 	/**
@@ -219,7 +219,7 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 	 */
 	private function counted(DbalObjectSourceProvider $provider, array $query, array $config): array {
 		return self::outcome(
-			call: fn () => $provider->count(register: $this->register(), schema: $this->schema(), query: $query, config: $config)
+			call: fn () => $provider->count(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), query: $query)
 		);
 	}//end counted()
 
@@ -394,12 +394,12 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 		$provider = $this->provider(authConfig: []);
 		$config   = $this->config();
 
-		$found = $provider->find(register: $this->register(), schema: $this->schema(), id: '2', config: $config);
+		$found = $provider->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), id: '2');
 		$this->assertSame(
 			['uuid' => '2', 'register' => '1', 'schema' => '21', 'object' => ['id' => '2', 'name' => 'Thing 2', 'kind' => 'even']],
 			self::shape(result: $found)
 		);
-		$this->assertNull($provider->find(register: $this->register(), schema: $this->schema(), id: '77', config: $config));
+		$this->assertNull($provider->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), id: '77'));
 
 		$ignored = ['filters' => ['tags' => 'a', 'name' => ['nested' => 1], 0 => 'x']];
 		$this->assertSame(['ok', null, '2'], $this->counted(provider: $provider, query: ['filters' => ['kind' => 'even']], config: $config));
@@ -417,21 +417,19 @@ class DbalObjectSourceProviderWriteGateGoldenTest extends TestCase {
 		);
 
 		$page = $provider->findAll(
-			register: $this->register(),
-			schema: $this->schema(),
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config),
 			query: [
 				'filters' => ['name' => ['like' => 'thing']],
 				'sort' => ['kind' => 'desc', 'id' => 'up', 'tags' => 'desc'],
 				'limit' => 3,
 				'offset' => 1,
-			],
-			config: $config
+			]
 		);
 		$this->assertSame(['3', '5', '2'], array_map(static fn ($o) => $o->getUuid(), $page));
 
 		$driverless = $this->provider(authConfig: ['driver' => 'oci8']);
 		$this->assertSame(['ok', null, '0'], $this->counted(provider: $driverless, query: [], config: $config));
-		$this->assertSame([], $driverless->findAll(register: $this->register(), schema: $this->schema(), query: [], config: $config));
-		$this->assertNull($driverless->find(register: $this->register(), schema: $this->schema(), id: '1', config: $config));
+		$this->assertSame([], $driverless->findAll(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), query: []));
+		$this->assertNull($driverless->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->schema()), $config), id: '1'));
 	}//end testReadsAnswerTheSameRows()
 }//end class

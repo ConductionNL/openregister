@@ -47,6 +47,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -107,12 +108,8 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	/**
 	 * Mint a public token-link for an object.
 	 *
-	 * @param string $objectUuid Object uuid to bind the token to.
-	 * @param int|null $registerId Register id of the object.
-	 * @param int|null $schemaId Schema id of the object.
-	 * @param string|null $label Optional human label.
-	 * @param int|null $ttlSeconds Optional time-to-live in seconds;
-	 *                             null = never expires.
+	 * @param CaseTokenTarget $target     The object the token is bound to, and its label.
+	 * @param int|null        $ttlSeconds Optional time-to-live in seconds; null = never expires.
 	 *
 	 * @return array<string,mixed> Minted token metadata + the public URL.
 	 *
@@ -121,30 +118,8 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function mint(
-		string $objectUuid,
-		?int $registerId = null,
-		?int $schemaId = null,
-		?string $label = null,
-		?int $ttlSeconds = null,
-	): array {
-		$target = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId, 'label' => $label];
-		return $this->mintFor(target: $target, ttlSeconds: $ttlSeconds);
-	}//end mint()
-
-	/**
-	 * Mint a token for the object a target names.
-	 *
-	 * @param array{objectUuid: string, registerId: int|null, schemaId: int|null, label: string|null} $target The object and label.
-	 * @param int|null $ttlSeconds Time-to-live in seconds; null = never expires.
-	 *
-	 * @return array<string,mixed> Minted token metadata + the public URL.
-	 *
-	 * @throws InvalidArgumentException When objectUuid is empty or the
-	 *                                  minter is anonymous.
-	 */
-	private function mintFor(array $target, ?int $ttlSeconds): array {
-		if (trim($target['objectUuid']) === '') {
+	public function mintFor(CaseTokenTarget $target, ?int $ttlSeconds = null): array {
+		if (trim($target->objectUuid) === '') {
 			throw new InvalidArgumentException('objectUuid is required to mint a case token');
 		}
 
@@ -195,18 +170,18 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	/**
 	 * A new, unsaved token row bound to the target object.
 	 *
-	 * @param string $token The opaque token.
-	 * @param array{objectUuid: string, registerId: int|null, schemaId: int|null, label: string|null} $target The object and label.
+	 * @param string          $token  The opaque token.
+	 * @param CaseTokenTarget $target The object and label.
 	 *
 	 * @return CaseToken
 	 */
-	private function newToken(string $token, array $target): CaseToken {
+	private function newToken(string $token, CaseTokenTarget $target): CaseToken {
 		$entity = new CaseToken();
 		$entity->setToken($token);
-		$entity->setObjectUuid($target['objectUuid']);
-		$entity->setRegisterId($target['registerId']);
-		$entity->setSchemaId($target['schemaId']);
-		$entity->setLabel($target['label']);
+		$entity->setObjectUuid($target->objectUuid);
+		$entity->setRegisterId($target->registerId);
+		$entity->setSchemaId($target->schemaId);
+		$entity->setLabel($target->label);
 
 		return $entity;
 	}//end newToken()
@@ -255,10 +230,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 			// read predicate. We do NOT pass an admin bypass.
 			$entity = $objectService->find(
 				id: $row->getObjectUuid(),
-				_extend: [],
-				files: false,
-				register: $row->getRegisterId(),
-				schema: $row->getSchemaId(),
+				options: new ObjectFindOptions(register: $row->getRegisterId(), schema: $row->getSchemaId()),
 				_rbac: true,
 				_multitenancy: true
 			);
@@ -313,16 +285,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 			return null;
 		}
 
-		$rendered = $read['objectService']->renderEntity(
-			entity: $entity,
-			_extend: [],
-			depth: 0,
-			filter: [],
-			fields: [],
-			unset: [],
-			_rbac: true,
-			_multitenancy: true
-		);
+		$rendered = $read['objectService']->renderEntity(entity: $entity, _rbac: true, _multitenancy: true);
 
 		return [
 			'token' => $row->getToken(),

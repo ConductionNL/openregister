@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -47,6 +48,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The permission check of the nested create records the RBAC mode it is asked in and then
@@ -98,7 +101,7 @@ class SaveObjectCascadeScopeTest extends TestCase {
 	private function saveIncident(bool $rbac, ?string $uuid = null): array {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
 				$this->checks[] = $_rbac;
 				throw new NotAuthorizedException(message: "no {$action} in {$schema->getSlug()}");
 			}
@@ -118,10 +121,8 @@ class SaveObjectCascadeScopeTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $mapper,
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -174,7 +175,7 @@ class SaveObjectCascadeScopeTest extends TestCase {
 		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note, '1' => $incident]);
 
 		try {
-			$handler->saveObject(register: $register, schema: $incident, data: ['note' => ['text' => 'nested']], uuid: $uuid, _rbac: $rbac);
+			$handler->saveObject(data: ['note' => ['text' => 'nested']], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $incident), uuid: $uuid), _rbac: $rbac);
 			$this->fail('The refused nested create was saved.');
 		} catch (NotAuthorizedException $e) {
 			$this->assertSame(expected: 'no create in note', actual: $e->getMessage());

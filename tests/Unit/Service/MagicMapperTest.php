@@ -1059,9 +1059,9 @@ class MagicMapperTest extends TestCase {
 	public function testTheBulkWritePathEncryptsBeforeTheHandlerSeesARow(): void {
 		$seen = [];
 		$bulk = $this->createMock(MagicMapper\MagicBulkHandler::class);
-		$bulk->method('bulkUpsert')->willReturnCallback(
-			static function (array $objects) use (&$seen): array {
-				$seen = $objects;
+		$bulk->method('upsert')->willReturnCallback(
+			static function (MagicMapper\BulkUpsertCommand $command) use (&$seen): array {
+				$seen = $command->objects;
 				return [];
 			}
 		);
@@ -1070,14 +1070,15 @@ class MagicMapperTest extends TestCase {
 		$property->setValue($this->magicMapper, $bulk);
 
 		$this->magicMapper->bulkUpsert(
-			objects: [
-				['@self' => ['uuid' => 'p-1'], 'personalNumber' => '123456782'],
-				['@self' => ['uuid' => 'p-2'], 'object' => ['personalNumber' => '999999990']],
-				['@self' => ['uuid' => 'p-3'], 'displayName' => 'No number'],
-			],
-			register: $this->mockRegister,
-			schema: $this->encryptedLearnerProfile(),
-			tableName: 'openregister_table_1_43'
+			command: new MagicMapper\BulkUpsertCommand(
+				objects: [
+					['@self' => ['uuid' => 'p-1'], 'personalNumber' => '123456782'],
+					['@self' => ['uuid' => 'p-2'], 'object' => ['personalNumber' => '999999990']],
+					['@self' => ['uuid' => 'p-3'], 'displayName' => 'No number'],
+				],
+				table: new \OCA\OpenRegister\Db\RegisterSchema(register: $this->mockRegister, schema: $this->encryptedLearnerProfile()),
+				tableName: 'openregister_table_1_43'
+			)
 		);
 
 		$this->assertSame('openregister:enc:v1:CIPHER(287654321)', $seen[0]['personalNumber']);

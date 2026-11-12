@@ -73,10 +73,10 @@ class ObjectFilePropertiesStoreTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->files = $this->createMock(FilePropertyHandler::class);
-		$this->files->method('isFileProperty')->willReturnCallback(fn ($value, ?Schema $schema = null, ?string $name = null): bool => $name === 'photo');
+		$this->files->method('isFileInSchema')->willReturnCallback(fn (?Schema $schema, ?string $name): bool => $name === 'photo');
 		$this->files->method('handleFileProperty')->willReturnCallback(
-			function (ObjectEntity $entity, array &$object, string $name): void {
-				$object[$name] = 42;
+			function (ObjectFileWrite $write, string $name): void {
+				$write->data[$name] = 42;
 			}
 		);
 		$this->objects = $this->createMock(MagicMapperInterface::class);
@@ -152,7 +152,7 @@ class ObjectFilePropertiesStoreTest extends TestCase {
 	 */
 	public function testAFailedCreateIsRolledBack(): void {
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturn(true);
+		$files->method('isFileInSchema')->willReturn(true);
 		$files->method('handleFileProperty')->willThrowException(new RuntimeException('quota'));
 		$this->files = $files;
 		$write = $this->write(data: ['photo' => 'x']);

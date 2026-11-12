@@ -196,31 +196,20 @@ class UpdateFileHandler {
 	 * This method updates the content and/or tags of an existing file. When updating tags,
 	 * it preserves any existing 'object:' tags while replacing other user-defined tags.
 	 *
-	 * @param string|int $filePath The path or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, a readable
-	 *                                      stream resource (streamed straight to storage), or null
-	 *                                      to update only metadata/tags.
-	 * @param array $tags Optional array of tags.
-	 * @param ObjectEntity|null $object Optional object entity.
+	 * @param FileOverwrite $overwrite The path or file ID; the content (a byte string, a readable stream resource
+	 *                                 streamed straight to storage, or null to update only the tags); the tags;
+	 *                                 and the object whose folder is searched first.
 	 *
 	 * @return File The updated file.
 	 *
 	 * @throws Exception If the file doesn't exist or if file operations fail.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFile(
-		string|int $filePath,
-		mixed $content = null,
-		array $tags = [],
-		?ObjectEntity $object = null,
-	): File {
-		$this->note(level: 'debug', message: "Original file path received: '$filePath'");
-		$file = $this->findFile(filePath: $filePath, object: $object);
-		return $this->applyChange(file: $file, change: new FileContentChange(content: $content, tags: $tags));
+	public function updateFile(FileOverwrite $overwrite): File {
+		$this->note(level: 'debug', message: "Original file path received: '$overwrite->filePath'");
+		$file = $this->findFile(filePath: $overwrite->filePath, object: $overwrite->object);
+		return $this->applyChange(file: $file, change: new FileContentChange(content: $overwrite->content, tags: $overwrite->tags));
 	}//end updateFile()
 
 	/**
@@ -263,33 +252,39 @@ class UpdateFileHandler {
 	}//end findFile()
 
 	/**
-	 * Find a file by its ID, first in the object's folder, then in the user folder.
+	 * Find a file by its ID: in the object's folder when an object is given, else in the user folder.
 	 *
 	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object whose folder is searched first
+	 * @param ObjectEntity|null $object The object whose folder holds the file
 	 *
 	 * @return Node The file
 	 *
-	 * @throws Exception When no file has this ID
+	 * @throws Exception When no file has this ID, or the object's folder does not hold it
 	 */
 	private function findFileById(int $fileId, ?ObjectEntity $object): Node {
 		$this->note(level: 'debug', message: "File ID provided: $fileId");
-		return ($this->findInObjectById(fileId: $fileId, object: $object) ?? $this->findInUserFolderById(fileId: $fileId));
+		if ($object === null) {
+			return $this->findInUserFolderById(fileId: $fileId);
+		}
+
+		$file = $this->findInObjectById(fileId: $fileId, object: $object);
+		if ($file === null) {
+			$this->note(level: 'error', message: "No file with ID $fileId in the object's folder");
+			throw new Exception("File with ID $fileId does not exist in the object's folder");
+		}
+
+		return $file;
 	}//end findFileById()
 
 	/**
 	 * Find a file by its ID through the read handler, in the object's folder.
 	 *
-	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object, or null to skip this lookup
+	 * @param int          $fileId The file ID
+	 * @param ObjectEntity $object The object
 	 *
-	 * @return Node|null The file, or null when there is no object or it has no such file
+	 * @return Node|null The file, or null when the object has no such file
 	 */
-	private function findInObjectById(int $fileId, ?ObjectEntity $object): ?Node {
-		if ($object === null) {
-			return null;
-		}
-
+	private function findInObjectById(int $fileId, ObjectEntity $object): ?Node {
 		$file = $this->locator->readFileHandler->getFile(object: $object, file: $fileId);
 		if ($file !== null) {
 			$this->noteFound(where: 'Found file by ID in object folder', file: $file);
@@ -629,6 +624,7 @@ class UpdateFileHandler {
 	 */
 	private function contentMd5(mixed $content): string {
 		if (is_resource($content) === false) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- Md5 is the checksum Nextcloud stores for the file, compared to skip an unchanged write.
 			return md5(string: $content);
 		}
 

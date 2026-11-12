@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -43,6 +44,32 @@ class GetObjectFindLogsTest extends TestCase {
 	}//end testHistoryWithoutFiltersIsStillThisObjectsOnly()
 
 	/**
+	 * The whole history is read, newest first, with no search term.
+	 *
+	 * @return void
+	 */
+	public function testHistoryIsTheWholePageNewestFirst(): void {
+		$seen = null;
+		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
+			static function (?int $limit, ?int $offset, ?array $filters, ?array $sort, ?string $search) use (&$seen): array {
+				$seen = [$limit, $offset, $sort, $search];
+				return [];
+			}
+		));
+
+		$handler = (new ReflectionClass(GetObject::class))->newInstanceWithoutConstructor();
+		$property = (new ReflectionClass(GetObject::class))->getProperty('auditTrailMapper');
+		$property->setValue($handler, $audit);
+
+		$object = new ObjectEntity();
+		$object->setUuid('u-1');
+		$handler->findLogs(object: $object, filters: ['action' => 'update']);
+
+		$this->assertSame([null, null, ['created' => 'DESC'], null], $seen);
+	}//end testHistoryIsTheWholePageNewestFirst()
+
+	/**
 	 * The filters the mapper is asked with.
 	 *
 	 * @param array<string, mixed> $filters The filters of the request.
@@ -52,12 +79,12 @@ class GetObjectFindLogsTest extends TestCase {
 	private function filtersFor(array $filters): array {
 		$seen = null;
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('findAll')->willReturnCallback(
+		$audit->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit, ?int $offset, array $asked) use (&$seen): array {
 				$seen = $asked;
 				return [];
 			}
-		);
+		));
 
 		$handler = (new ReflectionClass(GetObject::class))->newInstanceWithoutConstructor();
 		$property = (new ReflectionClass(GetObject::class))->getProperty('auditTrailMapper');

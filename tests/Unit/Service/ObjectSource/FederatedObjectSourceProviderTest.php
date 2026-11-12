@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
@@ -98,8 +100,8 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 			->with('[ObjectSource:federated] missing remoteUrl/shareToken in source config');
 		$provider = $this->provider();
 
-		$this->assertNull($provider->find($this->register, $this->schema, 'x', $config));
-		$this->assertSame([], $provider->findAll($this->register, $this->schema, [], $config));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), $config), 'x'));
+		$this->assertSame([], $provider->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema), $config), []));
 	}
 
 	public function testFindAsksThePeerForTheEncodedIdAndMapsTheRecord(): void {
@@ -107,7 +109,7 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 			->with(self::BASE . '/objects/a%20b', ['timeout' => 15])
 			->willReturn($this->respond(json_encode(['@self' => ['id' => 'uuid-1', 'uri' => 'https://peer.example/o/1'], 'name' => 'Eén'])));
 
-		$entity = $this->provider()->find($this->register, $this->schema, 'a b', self::CONFIG);
+		$entity = $this->provider()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), 'a b');
 
 		$this->assertSame('uuid-1', $entity->getUuid());
 		$this->assertSame('https://peer.example/o/1', $entity->getUri());
@@ -125,11 +127,11 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 		);
 		$provider = $this->provider();
 
-		$byId = $provider->find($this->register, $this->schema, '1', self::CONFIG);
+		$byId = $provider->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), '1');
 		$this->assertSame('by-id', $byId->getUuid());
 		$this->assertNull($byId->getUri());
-		$this->assertSame('by-uuid', $provider->find($this->register, $this->schema, '2', self::CONFIG)->getUuid());
-		$this->assertSame('', $provider->find($this->register, $this->schema, '3', self::CONFIG)->getUuid());
+		$this->assertSame('by-uuid', $provider->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), '2')->getUuid());
+		$this->assertSame('', $provider->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), '3')->getUuid());
 	}
 
 	public static function unusableBodies(): array {
@@ -144,14 +146,14 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 	public function testAnUnusableFindBodyFindsNothing(string $body): void {
 		$this->client->method('get')->willReturn($this->respond($body));
 
-		$this->assertNull($this->provider()->find($this->register, $this->schema, '1', self::CONFIG));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), '1'));
 	}
 
 	public function testAFailingFindIsLoggedAndFindsNothing(): void {
 		$this->client->method('get')->willThrowException(new RuntimeException('peer down'));
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:federated] find failed: peer down');
 
-		$this->assertNull($this->provider()->find($this->register, $this->schema, '1', self::CONFIG));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), '1'));
 	}
 
 	public function testFindAllSendsPagingAndTheSearchTermAndKeepsOnlyArrayRows(): void {
@@ -159,7 +161,7 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 			->with(self::BASE . '/objects', ['timeout' => 15, 'query' => ['_limit' => '10', '_offset' => '20', '_search' => 'water']])
 			->willReturn($this->respond(json_encode(['results' => [['id' => 'a', 'n' => 1], 'junk', ['@self' => ['id' => 'b']]]])));
 
-		$rows = $this->provider()->findAll($this->register, $this->schema, ['limit' => 10, 'offset' => 20, 'filters' => ['search' => 'water']], self::CONFIG);
+		$rows = $this->provider()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), ['limit' => 10, 'offset' => 20, 'filters' => ['search' => 'water']]);
 
 		$this->assertSame(['a', 'b'], array_map(static fn ($e) => $e->getUuid(), $rows));
 		$this->assertSame(1, $rows[0]->getObject()['n']);
@@ -180,7 +182,7 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 			->with(self::BASE . '/objects', ['timeout' => 15, 'query' => ['_limit' => '50', '_offset' => '0', '_search' => $expected]])
 			->willReturn($this->respond('{"results":[]}'));
 
-		$this->assertSame([], $this->provider()->findAll($this->register, $this->schema, $query, self::CONFIG));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), $query));
 	}
 
 	public function testAnEmptySearchTermIsNotSent(): void {
@@ -188,19 +190,19 @@ final class FederatedObjectSourceProviderTest extends TestCase {
 			->with(self::BASE . '/objects', ['timeout' => 15, 'query' => ['_limit' => '50', '_offset' => '0']])
 			->willReturn($this->respond('{}'));
 
-		$this->assertSame([], $this->provider()->findAll($this->register, $this->schema, ['_search' => ''], self::CONFIG));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), ['_search' => '']));
 	}
 
 	public function testAFailingFindAllIsLoggedAndListsNothing(): void {
 		$this->client->method('get')->willThrowException(new RuntimeException('timeout'));
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:federated] findAll failed: timeout');
 
-		$this->assertSame([], $this->provider()->findAll($this->register, $this->schema, [], self::CONFIG));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), []));
 	}
 
 	public function testCountIsTheNumberOfRowsTheListReturns(): void {
 		$this->client->method('get')->willReturn($this->respond(json_encode(['results' => [['id' => 'a'], ['id' => 'b'], 'x']])));
 
-		$this->assertSame(2, $this->provider()->count($this->register, $this->schema, [], self::CONFIG));
+		$this->assertSame(2, $this->provider()->count(new SourcedTable(new RegisterSchema($this->register, $this->schema), self::CONFIG), []));
 	}
 }

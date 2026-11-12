@@ -111,7 +111,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 
 		// The empty instance, so each test states only what it is about.
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 		$this->jobList->method('getJobsIterator')->willReturn([]);
 		$this->dispatches->method('countByStatus')->willReturn([]);
 		$this->queue->method('findAll')->willReturn([]);
@@ -179,7 +179,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 				'quarantined' => 1,
 			]
 		);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 
 		$pane = $this->pane($this->service()->panes(), 'jobs');
 
@@ -283,7 +283,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 	public function testEachJobRowCarriesTheVerbsItsStateAllows(): void {
 		$this->bulkJobs = $this->createMock(BulkJobMapper::class);
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn(
+		$this->bulkJobs->method('findJobs')->willReturn(
 			[$this->bulkJob(BulkJob::STATE_RUNNING), $this->bulkJob(BulkJob::STATE_PAUSED), $this->bulkJob(BulkJob::STATE_FAILED)]
 		);
 

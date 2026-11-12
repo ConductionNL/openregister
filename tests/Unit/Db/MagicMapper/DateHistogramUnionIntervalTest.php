@@ -33,6 +33,9 @@ use OCP\IConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use Psr\Container\ContainerInterface;
+use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\DateHistogramUnion
@@ -84,12 +87,16 @@ class DateHistogramUnionIntervalTest extends TestCase {
 		);
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->willReturn('oc_');
+		$services  = [ObjectNameCacheInterface::class => $this->createMock(CacheHandler::class), IConfig::class => $config];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
 		$handler = new MagicFacetHandler(
 			db: $db,
 			logger: $this->createMock(LoggerInterface::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			searchHandler: null,
-			config: $config
+			container: $container
 		);
 		$schema = new Schema();
 		$schema->setId(2);

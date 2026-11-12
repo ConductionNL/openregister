@@ -331,33 +331,37 @@ class DepartmentMatrixValidator {
 	 */
 	private function rowFindings(mixed $row, string|int $index): array {
 		if (is_array($row) === false) {
-			return [
-				[
-					'code' => 'matrix.bad-row',
-					'message' => 'Row ' . (string)$index . ' is not an object.',
-				],
-			];
+			return [self::rowFinding(code: 'matrix.bad-row', message: 'Row ' . (string)$index . ' is not an object.')];
 		}
 
 		$findings = [];
 		if (trim((string)($row['group'] ?? '')) === '') {
-			$findings[] = [
-				'code' => 'matrix.no-group',
-				'message' => 'Row ' . (string)$index . ' names no role group.',
-			];
+			$findings[] = self::rowFinding(code: 'matrix.no-group', message: 'Row ' . (string)$index . ' names no role group.');
 		}
 
 		$actions = ($row['actions'] ?? null);
 		if (is_array($actions) === false || count($actions) === 0) {
-			$findings[] = [
-				'code' => 'matrix.no-actions',
-				'message' => 'Row ' . (string)$index . ' grants no action.',
-			];
+			$findings[] = self::rowFinding(code: 'matrix.no-actions', message: 'Row ' . (string)$index . ' grants no action.');
 			return $findings;
 		}
 
 		return array_merge($findings, $this->actionFindings(actions: $actions, index: $index));
 	}//end rowFindings()
+
+	/**
+	 * One finding about a row.
+	 *
+	 * @param string $code    The finding's code.
+	 * @param string $message The sentence naming the row.
+	 *
+	 * @return array{code: string, message: string} The finding.
+	 */
+	private static function rowFinding(string $code, string $message): array {
+		return [
+			'code' => $code,
+			'message' => $message,
+		];
+	}//end rowFinding()
 
 	/**
 	 * A finding for every action of a row this engine does not resolve.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Registry;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
@@ -19,6 +20,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * Orchestration tests for RegistrySubscriptionService. The event/audit
@@ -159,7 +161,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([]);
 		$this->updateTargetGuard->expects($this->never())->method('evaluate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 
 		$this->assertSame(0, $result['matched']);
 		$this->assertSame([], $result['applied']);
@@ -195,7 +197,11 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->objectService->expects($this->once())
 			->method('patchObject')
-			->willReturnCallback(function ($objectId, $data, $register = null, $schema = null) use ($saved) {
+			->willReturnCallback(function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use ($saved) {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
+				$register = $patch->target->register;
+				$schema = $patch->target->schema;
 				$this->assertSame('obj-uuid-1', $objectId);
 				$this->assertSame(['address' => 'Dam 1'], $data);
 				$this->assertSame('dossiq', $register);
@@ -212,7 +218,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 				$this->assertSame(['address'], $update->propertyNames());
 			});
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 
 		$this->assertSame(['obj-uuid-1'], $result['applied']);
 		$this->assertSame([], $result['rejected']);
@@ -233,7 +239,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['notes' => 'secret'], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['notes' => 'secret'], 'evt-1'));
 
 		$this->assertSame([], $result['applied']);
 		$this->assertCount(1, $result['rejected']);
@@ -257,7 +263,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('patchObject');
 		$this->notifier->expects($this->never())->method('auditInboundUpdate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', [], 'evt-1');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), [], 'evt-1'));
 
 		// matched=1 (a subscription DOES exist) but nothing to apply — the
 		// controller's 404-vs-200-noop distinction depends on telling this

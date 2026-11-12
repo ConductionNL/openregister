@@ -90,7 +90,7 @@ final class MagicTableAlterer {
 
 	/**
 	 * The steps, in order: add, de-require, re-require, drop duplicates, tidy
-	 * obsolete columns, retype, widen.
+	 * obsolete columns, retype, widen strings to TEXT, widen numbers.
 	 *
 	 * @param TableStructureSync $sync The table sync.
 	 *
@@ -110,7 +110,11 @@ final class MagicTableAlterer {
 			'columnsDeRequired' => array_merge($deRequired, $obsolete->release(sync: $sync)),
 			'columnsReRequired' => $reRequired,
 			'columnsDropped' => $dropped,
-			'columnsRetyped' => array_merge($this->retyper()->orderedJson(sync: $sync), $this->widener()->widen(sync: $sync)),
+			'columnsRetyped' => array_merge(
+				$this->retyper()->orderedJson(sync: $sync),
+				$this->retyper()->text(sync: $sync),
+				$this->widener()->widen(sync: $sync)
+			),
 		];
 	}//end applySteps()
 

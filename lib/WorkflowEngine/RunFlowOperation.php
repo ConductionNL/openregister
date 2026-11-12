@@ -36,16 +36,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\EventDispatcher\Event;
 use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Runs a named OpenRegister flow when a matching Nextcloud Flow rule fires.
@@ -139,7 +138,7 @@ class RunFlowOperation implements RunFlowOperationInterface {
 	 * @return void
 	 */
 	public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void {
-		$object = $this->objectFromEvent(event: $event);
+		$object = (new LifecycleEventObject())->of(event: $event);
 		if ($object !== null) {
 			$this->runMatchedFlows(ruleMatcher: $ruleMatcher, object: $object);
 		}
@@ -192,7 +191,7 @@ class RunFlowOperation implements RunFlowOperationInterface {
 		try {
 			$matches = array_values(
 				array_filter(
-					$this->flowRuns->flows->findAllFlows(limit: 500),
+					$this->flowRuns->flows->findAllFlows(query: new ListQuery(limit: 500)),
 					static fn ($f): bool => $f->getName() === $name
 				)
 			);
@@ -218,37 +217,21 @@ class RunFlowOperation implements RunFlowOperationInterface {
 		}
 
 		try {
-			$this->flowRuns->runner->queue(
+			$this->flowRuns->runner->queueRun(
 				flowId: (string)$flow->getUuid(),
-				subject: [
-					'uuid' => $object->getUuid(),
-					'register' => (string)$object->getRegister(),
-					'schema' => (string)$object->getSchema(),
-				],
-				trigger: 'nextcloud-flow',
-				user: $flow->getOwner()
+				options: new FlowRunQueueOptions(
+					subject: [
+						'uuid' => $object->getUuid(),
+						'register' => (string)$object->getRegister(),
+						'schema' => (string)$object->getSchema(),
+					],
+					trigger: 'nextcloud-flow',
+					user: $flow->getOwner()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning('RunFlowOperation: could not queue flow "' . $name . '": ' . $e->getMessage());
 		}
 
 	}//end runFlowNamed()
-
-	/**
-	 * Resolve the OpenRegister object from a lifecycle event.
-	 *
-	 * @param Event $event The dispatched event.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private function objectFromEvent(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectCreatedEvent
-			|| $event instanceof ObjectUpdatedEvent
-			|| $event instanceof ObjectDeletedEvent
-		) {
-			return $event->getObject();
-		}
-
-		return null;
-	}//end objectFromEvent()
 }//end class

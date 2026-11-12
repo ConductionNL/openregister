@@ -95,20 +95,7 @@ class DraftExpiryJob extends TimedJob {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	protected function run(mixed $argument): void {
-		try {
-			// Under the job's own name, so the audit-trail entry of each removed
-			// draft says which job removed it (decision 226).
-			$counts = $this->frame->asJob(
-				job: self::JOB_NAME,
-				operation: fn (): array => $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()))
-			);
-		} catch (Throwable $exception) {
-			$this->logger->error(
-				message: '[DraftExpiryJob] The sweep failed',
-				context: ['exception' => $exception->getMessage()]
-			);
-			throw $exception;
-		}
+		$counts = $this->sweptCounts();
 
 		// One line per schema that held an expired draft, so an administrator
 		// reads from the log which schema lost how many (decision 228), and
@@ -126,6 +113,30 @@ class DraftExpiryJob extends TimedJob {
 		unset($counts['perSchema']);
 		$this->report(message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime', counts: $counts);
 	}//end run()
+
+	/**
+	 * Sweep the expired drafts, logging and re-raising a failure.
+	 *
+	 * @return array The sweep's counts, with `perSchema` rows.
+	 *
+	 * @throws Throwable When the sweep fails.
+	 */
+	private function sweptCounts(): array {
+		try {
+			// Under the job's own name, so the audit-trail entry of each removed
+			// draft says which job removed it (decision 226).
+			return $this->frame->asJob(
+				job: self::JOB_NAME,
+				operation: fn (): array => $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()))
+			);
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				message: '[DraftExpiryJob] The sweep failed',
+				context: ['exception' => $exception->getMessage()]
+			);
+			throw $exception;
+		}
+	}//end sweptCounts()
 
 	/**
 	 * Log one line of counts: at warning when drafts were removed or refused, at info for a counted zero.

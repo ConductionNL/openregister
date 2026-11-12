@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
@@ -134,7 +135,7 @@ class FlowLocatorTest extends TestCase {
 			]
 		);
 
-		$ids = $this->locator($mapper)->flowsForTrigger('object.created', 'r', 's');
+		$ids = $this->locator($mapper)->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's'));
 
 		$this->assertSame(['owned'], $ids, 'the ownerless flow must not be dispatched');
 	}//end testAnOwnerlessFlowIsNotDispatchedByATrigger()
@@ -147,19 +148,19 @@ class FlowLocatorTest extends TestCase {
 			]
 		);
 
-		$this->assertSame([], $this->locator($mapper)->flowsForTrigger('object.created', 'r', 's'));
+		$this->assertSame([], $this->locator($mapper)->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 	}//end testADisabledFlowIsNotDispatchedByATrigger()
 
 	/**
 	 * Positive control for the two refusal tests above: with the same call shape
 	 * and a flow that IS dispatchable, the id comes back. Without this, a
-	 * flowsForTrigger() that returned [] for every input would pass both.
+	 * flowsForEvent() that returned [] for every input would pass both.
 	 */
 	public function testADispatchableFlowIsReturned(): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findByTrigger')->willReturn([$this->flow(['uuid' => 'good'])]);
 
-		$this->assertSame(['good'], $this->locator($mapper)->flowsForTrigger('object.created', 'r', 's'));
+		$this->assertSame(['good'], $this->locator($mapper)->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 	}//end testADispatchableFlowIsReturned()
 
 	public function testScheduledFlowsCarryTheirCronAndOwner(): void {
@@ -239,7 +240,7 @@ class FlowLocatorTest extends TestCase {
 			new \Psr\Log\NullLogger()
 		);
 
-		$this->assertSame(['published-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
+		$this->assertSame(['published-1'], $locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 	}//end testTheColumnFallbackRefusesAnUnpublishedFlow()
 
 	/**
@@ -259,7 +260,7 @@ class FlowLocatorTest extends TestCase {
 			new \Psr\Log\NullLogger()
 		);
 
-		$this->assertSame(['legacy-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
+		$this->assertSame(['legacy-1'], $locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 	}//end testAnUnreadableVersionTableKeepsTheFlowMatched()
 
 	/**
@@ -269,6 +270,6 @@ class FlowLocatorTest extends TestCase {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findByTrigger')->willThrowException(new \RuntimeException('db down'));
 
-		$this->assertSame([], $this->locator($mapper)->flowsForTrigger('object.created', 'r', 's'));
+		$this->assertSame([], $this->locator($mapper)->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 	}//end testAStoreFailureYieldsNoFlowsRatherThanThrowing()
 }//end class

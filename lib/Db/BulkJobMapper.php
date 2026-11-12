@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -35,6 +36,8 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<BulkJob>
  */
 class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -55,12 +58,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function find(int $id): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -73,12 +71,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function findByUuid(string $uuid): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 	}//end findByUuid()
 
 	/**
@@ -157,24 +150,11 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	/**
 	 * List every job, newest first. For the administrator's console.
 	 *
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
-	 *
-	 * @return BulkJob[] The jobs.
-	 */
-	public function findAllJobs(?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		return $this->findJobs(query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset, filters: ['state' => $state]));
-	}//end findAllJobs()
-
-	/**
-	 * List every job, newest first. For the administrator's console.
-	 *
 	 * @param ListQuery $query The page (unbounded for every job) and an optional `state` filter.
 	 *
 	 * @return BulkJob[] The jobs.
 	 *
-	 * @spec exclude ADR-011 ListQuery variant of findAllJobs(), no capability of its own
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function findJobs(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();

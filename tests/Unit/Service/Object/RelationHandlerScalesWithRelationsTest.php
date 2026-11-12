@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -123,7 +124,7 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$magic->method('find')->willReturn($lead);
 		$magic->expects($this->once())->method('findMultipleAcrossAllMagicTables')->willReturn([$client, $contact]);
 		$magic->expects($this->exactly(2))->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			static fn (Register $register, Schema $schema, ?int $limit = null, ?int $offset = null, ?array $filters = null): array => match ($schema->getId()) {
+			static fn (RegisterSchema $table): array => match ($table->schema->getId()) {
 				28 => [$client],
 				29 => [$contact],
 			}

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -158,9 +160,9 @@ class LogServiceAccessGoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function historyEchoesFilters(): void {
-		$this->auditTrailMapper->method('findAll')->willReturnCallback(
+		$this->auditTrailMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			fn (...$args): array => [['limit' => $args[0], 'offset' => $args[1], 'filters' => $args[2], 'sort' => $args[3], 'search' => $args[4]]]
-		);
+		));
 	}//end historyEchoesFilters()
 
 	/**
@@ -197,7 +199,7 @@ class LogServiceAccessGoldenTest extends TestCase {
 	public function testObjectOutsideScopeIsRefusedBeforeAnyHistoryRead(): void {
 		$this->scopeResolves();
 		$this->tableAnswers(new DoesNotExistException('none'), new RuntimeException('not asked'));
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 		$this->objectMapper->expects($this->never())->method('findAcrossAllSources');
 
 		$this->expectException(DoesNotExistException::class);
@@ -232,7 +234,7 @@ class LogServiceAccessGoldenTest extends TestCase {
 		$this->scopeResolves();
 		$original = new MultipleObjectsReturnedException('ambiguous-original');
 		$this->tableAnswers($original, new DoesNotExistException('no live'));
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		try {
 			$this->service->getLogs('reg', 'sch', 'shared');
@@ -251,7 +253,7 @@ class LogServiceAccessGoldenTest extends TestCase {
 		$this->scopeResolves();
 		$live = new MultipleObjectsReturnedException('live-ambiguous');
 		$this->tableAnswers(new MultipleObjectsReturnedException('with-deleted'), $live);
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		try {
 			$this->service->count('reg', 'sch', 'shared');
@@ -305,7 +307,7 @@ class LogServiceAccessGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willThrowException(new RuntimeException('db down'));
 		$this->objectMapper->expects($this->never())->method('findAcrossAllSources');
 		$this->objectMapper->expects($this->never())->method('findInRegisterSchemaTable');
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('db down');
@@ -413,8 +415,8 @@ class LogServiceAccessGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testExportLogsQueriesWithFiltersAndSearch(): void {
-		$this->auditTrailMapper->expects($this->once())->method('findAll')
-			->with(null, null, ['action' => 'delete'], ['created' => 'DESC'], 'needle')
+		$this->auditTrailMapper->expects($this->once())->method('findTrail')
+			->with(new ListQuery(ListQuery::UNBOUNDED, null, ['action' => 'delete'], ['created' => 'DESC'], 'needle'))
 			->willReturn([]);
 
 		$file = $this->service->exportLogs('json', ['filters' => ['action' => 'delete'], 'search' => 'needle']);

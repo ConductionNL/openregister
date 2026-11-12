@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -67,6 +68,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Deep coverage tests for ObjectService
@@ -159,7 +161,7 @@ class ObjectServiceDeepTest extends TestCase {
 		);
 		$this->container = $this->createMock(IAppContainer::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$dataManipHandler,
 			$this->deleteHandler,
 			$this->getHandler,
@@ -198,7 +200,7 @@ class ObjectServiceDeepTest extends TestCase {
 			$dateTimeNormalizer,
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 
@@ -515,7 +517,6 @@ class ObjectServiceDeepTest extends TestCase {
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
 				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			);
 
@@ -545,8 +546,7 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->anything(),
 				$this->equalTo('update'),
-				$this->anything(),
-				$this->equalTo('admin'),
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->objectOwner === 'admin'),
 				$this->anything()
 			);
 
@@ -573,7 +573,6 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
-				$this->anything(),
 				$this->anything(),
 				$this->anything()
 			);

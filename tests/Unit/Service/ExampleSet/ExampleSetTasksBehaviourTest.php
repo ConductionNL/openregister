@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -210,7 +211,7 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	 */
 	public function testHeldKeyIsNotWrittenAgain(): void {
 		$this->mapper->expects($this->once())->method('findByKey')->with('example-set:app/k1')->willReturn([$this->task('held-uuid')]);
-		$this->service->expects($this->never())->method('import');
+		$this->service->expects($this->never())->method('importTask');
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['uuid' => 'held-uuid']],
@@ -226,12 +227,10 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	public function testFreshRowIsImported(): void {
 		$this->mapper->method('findByKey')->willReturn([]);
 		$this->mapper->expects($this->never())->method('update');
-		$this->service->expects($this->once())->method('import')
+		$this->service->expects($this->once())->method('importTask')
 			->with(
-				['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'key' => 'custom-key', 'appId' => 'app'],
-				'alice',
-				null,
-				$this->callback(static fn ($d) => $d !== null && $d->format('Y-m-d') === '2020-01-01')
+				$this->callback(static fn (TaskImport $i) => $i->data === ['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'key' => 'custom-key', 'appId' => 'app']
+					&& $i->actor === 'alice' && $i->mayReadBlocker === null && $i->createdAt?->format('Y-m-d') === '2020-01-01')
 			)
 			->willReturn($this->task('new-uuid'));
 
@@ -248,8 +247,8 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	 */
 	public function testKeyLookupFailureStillImportsAsApp(): void {
 		$this->mapper->method('findByKey')->willThrowException(new RuntimeException('db'));
-		$this->service->expects($this->once())->method('import')
-			->with($this->anything(), 'app', null, null)
+		$this->service->expects($this->once())->method('importTask')
+			->with($this->callback(static fn (TaskImport $i) => $i->actor === 'app' && $i->mayReadBlocker === null && $i->createdAt === null))
 			->willReturn($this->task('u'));
 
 		$this->assertSame('u', $this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o']))['entry']['uuid']);
@@ -262,12 +261,12 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	 */
 	public function testExternalTaskIsImportedAsAppWithUploadMetadata(): void {
 		$this->mapper->method('findByKey')->willReturn([]);
-		$this->service->expects($this->once())->method('import')
+		$this->service->expects($this->once())->method('importTask')
 			->with(
-				$this->callback(static fn ($f) => $f['metadata'] === ['upload' => ['required' => true]] && isset($f['uploadRules']) === false),
-				'app',
-				null,
-				null
+				$this->callback(
+					static fn (TaskImport $i) => $i->data['metadata'] === ['upload' => ['required' => true]] && isset($i->data['uploadRules']) === false
+						&& $i->actor === 'app' && $i->mayReadBlocker === null && $i->createdAt === null
+				)
 			)
 			->willReturn($this->task('u'));
 
@@ -281,7 +280,7 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	 */
 	public function testImportFailureIsReported(): void {
 		$this->mapper->method('findByKey')->willReturn([]);
-		$this->service->method('import')->willThrowException(new RuntimeException('refused'));
+		$this->service->method('importTask')->willThrowException(new RuntimeException('refused'));
 
 		$this->assertSame(
 			['error' => 'refused', 'entry' => null],
@@ -297,7 +296,7 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	public function testTerminalTaskCompletionIsWrittenBack(): void {
 		$task = $this->task('u', true);
 		$this->mapper->method('findByKey')->willReturn([]);
-		$this->service->method('import')->willReturn($task);
+		$this->service->method('importTask')->willReturn($task);
 		$this->mapper->expects($this->once())->method('update')->with($task)->willReturn($task);
 
 		$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o', 'assignee' => 'alice', 'completedAt' => '2020-01-02']));
@@ -313,7 +312,7 @@ class ExampleSetTasksBehaviourTest extends TestCase {
 	 */
 	public function testOpenTaskIsNotCompleted(): void {
 		$this->mapper->method('findByKey')->willReturn([]);
-		$this->service->method('import')->willReturn($this->task('u', false));
+		$this->service->method('importTask')->willReturn($this->task('u', false));
 		$this->mapper->expects($this->never())->method('update');
 
 		$this->tasks->write(new ExampleSetRow('app', 'k', ['title' => 't', 'objectUuid' => 'o', 'completedAt' => '2020-01-02']));

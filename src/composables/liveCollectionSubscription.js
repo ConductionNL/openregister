@@ -52,6 +52,17 @@ export function liveCollectionMethods({ tag, currentType, onRelease }) {
 			if (this.isLiveFor(type)) {
 				return
 			}
+			await this.resubscribeLiveCollection(type)
+		},
+
+		/**
+		 * Drop the current subscription and subscribe to the type; a failed
+		 * subscribe is reported.
+		 *
+		 * @param {string} type The object type
+		 * @return {Promise<void>}
+		 */
+		async resubscribeLiveCollection(type) {
 			this.releaseLiveSubscription()
 			try {
 				await this.subscribeLive(type)

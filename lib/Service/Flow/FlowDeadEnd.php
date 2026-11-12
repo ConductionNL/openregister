@@ -67,27 +67,45 @@ class FlowDeadEnd extends RuntimeException implements FlowDeadEndInterface {
 	public function __construct(
 		private readonly array $nodeIds = [],
 	) {
-		$subject = sprintf('nodes "%s" have', implode(separator: '", "', array: $nodeIds));
-		$pronoun = 'them';
-
-		if (count($nodeIds) === 1) {
-			$subject = sprintf('node "%s" has', $nodeIds[0]);
-			$pronoun = 'it';
-		}
-
-		parent::__construct(
-			message: sprintf(
-				'This flow is not runnable: %s no outgoing edge and does not end the flow, so a run '
-				. 'would stop there and still be reported as completed. Connect %s, give %s a terminal '
-				. 'step type, or mark %s "exit": true if stopping there is deliberate.',
-				$subject,
-				$pronoun,
-				$pronoun,
-				$pronoun
-			)
-		);
+		parent::__construct(message: self::messageFor(nodeIds: $nodeIds));
 
 	}//end __construct()
+
+	/**
+	 * Why a flow with these dead-end nodes is not runnable, and how to fix it.
+	 *
+	 * @param array<int, string> $nodeIds The dead-end node ids.
+	 *
+	 * @return string The message.
+	 */
+	private static function messageFor(array $nodeIds): string {
+		[$subject, $pronoun] = self::subjectAndPronoun(nodeIds: $nodeIds);
+
+		return sprintf(
+			'This flow is not runnable: %s no outgoing edge and does not end the flow, so a run '
+			. 'would stop there and still be reported as completed. Connect %s, give %s a terminal '
+			. 'step type, or mark %s "exit": true if stopping there is deliberate.',
+			$subject,
+			$pronoun,
+			$pronoun,
+			$pronoun
+		);
+	}//end messageFor()
+
+	/**
+	 * How the message names the nodes, and the pronoun that refers back to them.
+	 *
+	 * @param array<int, string> $nodeIds The dead-end node ids.
+	 *
+	 * @return array{0: string, 1: string} The subject and the pronoun.
+	 */
+	private static function subjectAndPronoun(array $nodeIds): array {
+		if (count($nodeIds) === 1) {
+			return [sprintf('node "%s" has', $nodeIds[0]), 'it'];
+		}
+
+		return [sprintf('nodes "%s" have', implode(separator: '", "', array: $nodeIds)), 'them'];
+	}//end subjectAndPronoun()
 
 	/**
 	 * The nodes that caused the refusal.

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Controller\OpenProjectLinksController;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
@@ -154,7 +155,7 @@ class OpenProjectLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 		$this->service->method('isOpenConnectorAvailable')->willReturn(true);
 		$this->givenObject();
 		$this->params = $params;
-		$this->service->expects($this->never())->method('createAndLinkWorkPackage');
+		$this->service->expects($this->never())->method('createAndLinkDraft');
 
 		$this->assertResponse(400, ['error' => $error], $this->controller->createAndLink('r', 's', 'o'));
 	}
@@ -164,7 +165,7 @@ class OpenProjectLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 		$this->givenObject();
 		$this->params = ['projectId' => 'p1', 'subject' => 'Fix it'];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('createAndLinkWorkPackage')->with($this->equalTo($this->target()), 'p1', 'Fix it', '')
+		$this->service->expects($this->once())->method('createAndLinkDraft')->with($this->equalTo($this->target()), new WorkPackageDraft('p1', 'Fix it', ''))
 			->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->createAndLink('r', 's', 'o'));
@@ -175,7 +176,7 @@ class OpenProjectLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 		$this->givenObject();
 		$this->params = ['projectId' => 'p1', 'subject' => 'Fix it', 'type' => 'Bug'];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('createAndLinkWorkPackage')->with($this->equalTo($this->target()), 'p1', 'Fix it', 'Bug')
+		$this->service->expects($this->once())->method('createAndLinkDraft')->with($this->equalTo($this->target()), new WorkPackageDraft('p1', 'Fix it', 'Bug'))
 			->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->createAndLink('r', 's', 'o'));

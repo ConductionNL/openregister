@@ -52,23 +52,9 @@ class ShippedSeedContent {
 	public function hash(array $shipped): string {
 		unset($shipped['@self']);
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1((string) json_encode($this->sorted(value: $shipped), (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)));
 	}//end hash()
-
-	/**
-	 * The object to write over a stored seed, or null when the stored seed stays.
-	 *
-	 * @param array<string, mixed> $stored     The stored object, with `@self`.
-	 * @param array<string, mixed> $shipped    The seed as listed, with `@self`.
-	 * @param string|null          $remembered The hash of the content last shipped; null when none was kept.
-	 *
-	 * @return array<string, mixed>|null
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	public function update(array $stored, array $shipped, ?string $remembered): ?array {
-		return $this->updateFrom(stored: $stored, shipped: new ShippedSeed(content: $shipped, remembered: $remembered));
-	}//end update()
 
 	/**
 	 * The object to write over a stored seed, or null when the stored seed stays.

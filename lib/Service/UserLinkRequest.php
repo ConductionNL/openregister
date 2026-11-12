@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service;
  * A request to link a Nextcloud user to an object: the object (uuid, register
  * and schema) and the account to link. The role travels beside it.
  *
- * ADR-011 Rule 2 operation object for {@see UserLinkWriter::writeLink()}.
+ * ADR-011 Rule 2 operation object for {@see UserLinkWriter::write()}.
  *
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
  */

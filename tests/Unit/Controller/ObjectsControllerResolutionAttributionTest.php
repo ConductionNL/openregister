@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * `resolveRegisterSchemaIds()` must name the thing that actually failed.
+ * `resolveRegisterSchemaRef()` must name the thing that actually failed.
  *
  * openregister#2820. `GET /api/objects/{register}/{schema}` answered
  * `404 Register not found: '19'` for a register whose row was intact, whose
@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -60,9 +61,9 @@ class ObjectsControllerResolutionAttributionTest extends TestCase {
 	 */
 	private function resolve(ObjectService $service): array {
 		$controller = (new \ReflectionClass(ObjectsController::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(ObjectsController::class, 'resolveRegisterSchemaIds');
+		$method = new ReflectionMethod(ObjectsController::class, 'resolveRegisterSchemaRef');
 		$method->setAccessible(true);
-		return $method->invoke($controller, '19', '9476', $service);
+		return $method->invoke($controller, new RegisterSchemaRef(register: '19', schema: '9476'), $service);
 	}
 
 	/**

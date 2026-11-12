@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealRecording;
@@ -284,6 +285,32 @@ class ExplicitRevealTest extends TestCase {
 	}//end testFilterAndSortOnItAreRefused()
 
 	/**
+	 * A key spelling its column another way is refused too: a cross-schema search orders on the column.
+	 *
+	 * @return void
+	 */
+	public function testFilterAndSortOnItsColumnSpellingAreRefused(): void {
+		$reveal = new ExplicitReveal();
+		$queries = [
+			['citizen_service_number' => self::BSN],
+			['_order' => ['citizen_service_number' => 'asc']],
+			['_order' => 'citizen_service_number:desc'],
+			['_order' => ['CitizenServiceNumber' => 'asc']],
+		];
+		foreach ($queries as $query) {
+			try {
+				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
+				$this->fail('refused: ' . json_encode($query));
+			} catch (ExplicitRevealQueryException $refused) {
+				$this->assertStringContainsString('citizenServiceNumber', $refused->getMessage());
+			}
+		}
+
+		$reveal->refuseOracleQuery(query: ['display_name' => 'Sanne', '_order' => ['citizen' => 'asc']], schema: $this->schema());
+		$this->addToAssertionCount(1);
+	}//end testFilterAndSortOnItsColumnSpellingAreRefused()
+
+	/**
 	 * It takes no part in free-text search.
 	 *
 	 * @return void
@@ -357,7 +384,7 @@ class ExplicitRevealTest extends TestCase {
 	public function testAWriteSendingTheMaskKeepsTheValue(): void {
 		$stored = ['citizenServiceNumber' => self::BSN];
 
-		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored)['citizenServiceNumber']);
-		$this->assertSame('999990000', ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored)['citizenServiceNumber']);
+		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored))['citizenServiceNumber']);
+		$this->assertSame('999990000', ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored))['citizenServiceNumber']);
 	}//end testAWriteSendingTheMaskKeepsTheValue()
 }//end class

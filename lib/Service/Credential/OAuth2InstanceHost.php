@@ -119,6 +119,28 @@ final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private static function assertOriginShape(array $parts): void {
+		self::assertHttpsWithoutExtras(parts: $parts);
+
+		if (trim((string)($parts['path'] ?? ''), '/') !== '') {
+			throw new InvalidArgumentException(message: 'instance base URL must be an origin, with no path');
+		}
+
+		$port = ($parts['port'] ?? null);
+		if ($port !== null && (int)$port !== 443) {
+			throw new InvalidArgumentException(message: 'instance base URL must use the default https port');
+		}
+	}//end assertOriginShape()
+
+	/**
+	 * Refuse a URL that is not https, or carries userinfo, a query or a fragment.
+	 *
+	 * @param array<string, mixed> $parts The parse_url() parts.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the URL is not plain https.
+	 */
+	private static function assertHttpsWithoutExtras(array $parts): void {
 		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
 			throw new InvalidArgumentException(message: 'instance base URL must use https');
 		}
@@ -130,16 +152,7 @@ final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 		if (isset($parts['query']) === true || isset($parts['fragment']) === true) {
 			throw new InvalidArgumentException(message: 'instance base URL must carry no query or fragment');
 		}
-
-		if (trim((string)($parts['path'] ?? ''), '/') !== '') {
-			throw new InvalidArgumentException(message: 'instance base URL must be an origin, with no path');
-		}
-
-		$port = ($parts['port'] ?? null);
-		if ($port !== null && (int)$port !== 443) {
-			throw new InvalidArgumentException(message: 'instance base URL must use the default https port');
-		}
-	}//end assertOriginShape()
+	}//end assertHttpsWithoutExtras()
 
 	/**
 	 * Reject a host that is not a public, registrable domain name.
@@ -158,6 +171,24 @@ final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private static function assertPublicHost(string $host): void {
+		self::assertNamesAnotherHost(host: $host);
+		self::assertRegistrableDomain(host: $host);
+
+		if (str_ends_with($host, '.local') === true || str_ends_with($host, '.internal') === true) {
+			throw new InvalidArgumentException(message: 'instance base URL may not name a private-network domain');
+		}
+	}//end assertPublicHost()
+
+	/**
+	 * Refuse a host that is missing or names the instance itself.
+	 *
+	 * @param string $host The lower-cased host.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the host is empty or a loopback name.
+	 */
+	private static function assertNamesAnotherHost(string $host): void {
 		if ($host === '') {
 			throw new InvalidArgumentException(message: 'instance base URL carries no host');
 		}
@@ -165,7 +196,18 @@ final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 		if (in_array($host, self::LOOPBACK_NAMES, true) === true) {
 			throw new InvalidArgumentException(message: 'instance base URL may not name the instance itself');
 		}
+	}//end assertNamesAnotherHost()
 
+	/**
+	 * Refuse a host that is an address, a bare label, or not a valid domain name.
+	 *
+	 * @param string $host The lower-cased host.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the host is not a registrable domain name.
+	 */
+	private static function assertRegistrableDomain(string $host): void {
 		if (filter_var($host, FILTER_VALIDATE_IP) !== false || str_contains($host, ':') === true) {
 			throw new InvalidArgumentException(message: 'instance base URL must name a domain, not an address');
 		}
@@ -177,9 +219,5 @@ final class OAuth2InstanceHost implements OAuth2InstanceHostInterface {
 		if (preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/', $host) !== 1) {
 			throw new InvalidArgumentException(message: 'instance base URL host is not a valid domain name');
 		}
-
-		if (str_ends_with($host, '.local') === true || str_ends_with($host, '.internal') === true) {
-			throw new InvalidArgumentException(message: 'instance base URL may not name a private-network domain');
-		}
-	}//end assertPublicHost()
+	}//end assertRegistrableDomain()
 }//end class

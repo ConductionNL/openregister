@@ -73,7 +73,7 @@ final class HardeningControl implements JsonSerializable {
 			return false;
 		}
 
-		return self::satisfies(comparator: $this->reading->comparator, value: $this->reading->value, floor: $this->reading->floor);
+		return (new FloorRule(comparator: $this->reading->comparator, floor: $this->reading->floor))->admits(value: $this->reading->value);
 
 	}//end meetsFloor()
 
@@ -102,29 +102,6 @@ final class HardeningControl implements JsonSerializable {
 	}//end state()
 
 	/**
-	 * Compare a value with a floor the way the comparator says to.
-	 *
-	 * The one place the direction of "stronger" is decided. Every caller that
-	 * decides it again is a caller that can decide it the other way round.
-	 *
-	 * @param string $comparator `atLeast` or `atMost`.
-	 * @param int $value The value to judge.
-	 * @param int $floor The floor to judge it against.
-	 *
-	 * @return bool True when the value is at or above the floor's strength.
-	 *
-	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
-	 */
-	public static function satisfies(string $comparator, int $value, int $floor): bool {
-		if ($comparator === 'atMost') {
-			return $value <= $floor;
-		}
-
-		return $value >= $floor;
-
-	}//end satisfies()
-
-	/**
 	 * The row as the API publishes it.
 	 *
 	 * @return array<string, mixed> The serialised control.
@@ -132,18 +109,11 @@ final class HardeningControl implements JsonSerializable {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function jsonSerialize(): array {
-		$row = [
-			'id' => $this->label->id,
-			'title' => $this->label->title,
-			'category' => $this->label->category,
-			'source' => $this->label->source,
-			'unit' => $this->reading->unit,
-			'value' => $this->reading->value,
-			'floor' => $this->reading->floor,
-			'comparator' => $this->reading->comparator,
-			'state' => $this->state(),
-			'meetsFloor' => $this->meetsFloor(),
-		];
+		$row = array_merge(
+			$this->labelFields(),
+			$this->readingFields(),
+			['state' => $this->state(), 'meetsFloor' => $this->meetsFloor()]
+		);
 
 		if ($this->note !== '') {
 			$row['note'] = $this->note;
@@ -152,4 +122,32 @@ final class HardeningControl implements JsonSerializable {
 		return $row;
 
 	}//end jsonSerialize()
+
+	/**
+	 * What the control is: its id, title, category and source.
+	 *
+	 * @return array<string, string> The label fields.
+	 */
+	private function labelFields(): array {
+		return [
+			'id' => $this->label->id,
+			'title' => $this->label->title,
+			'category' => $this->label->category,
+			'source' => $this->label->source,
+		];
+	}//end labelFields()
+
+	/**
+	 * What the control reads: its unit, value, floor and comparator.
+	 *
+	 * @return array<string, mixed> The reading fields.
+	 */
+	private function readingFields(): array {
+		return [
+			'unit' => $this->reading->unit,
+			'value' => $this->reading->value,
+			'floor' => $this->reading->floor,
+			'comparator' => $this->reading->comparator,
+		];
+	}//end readingFields()
 }//end class

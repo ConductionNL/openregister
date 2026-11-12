@@ -50,6 +50,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Allowed and refused outcomes of the two run entry points of FlowService.
@@ -100,9 +101,9 @@ final class FlowServiceRunAccessGoldenTest extends TestCase {
 		$mapper->method('findByUuid')->willReturn($this->flow(organisation: $organisation));
 
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturnCallback(
-			function (string $flowId, array $subject = [], string $trigger = 'manual', array $context = [], ?string $user = null): FlowRun {
-				$this->queued[] = ['flowId' => $flowId, 'subject' => $subject, 'trigger' => $trigger, 'context' => $context, 'user' => $user];
+		$runner->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options): FlowRun {
+				$this->queued[] = ['flowId' => $flowId, 'subject' => $options->subject, 'trigger' => $options->trigger, 'context' => $options->context, 'user' => $options->user];
 				$run = new FlowRun();
 				$run->setUuid('run-' . count($this->queued));
 				$run->setStatus(FlowRun::STATUS_QUEUED);
@@ -246,7 +247,7 @@ final class FlowServiceRunAccessGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeclaredActionRunsAsTheActingUserWithoutTheOwnerCheck(): void {
-		$run = $this->service(uid: 'bram')->runForAction('flow-1', ['uuid' => 'o-2'], ['a' => 1], false);
+		$run = $this->service(uid: 'bram')->runForAction('flow-1', new \OCA\OpenRegister\Service\Flow\FlowRunOptions(subject: ['uuid' => 'o-2'], context: ['a' => 1], sync: false, trigger: Flow::TRIGGER_MANUAL));
 
 		$this->assertSame('run-1', $run->getUuid());
 		$this->assertSame(
@@ -255,7 +256,7 @@ final class FlowServiceRunAccessGoldenTest extends TestCase {
 		);
 		$this->assertSame([], $this->advanced);
 
-		$this->service(uid: 'bram')->runForAction('flow-1', [], [], true);
+		$this->service(uid: 'bram')->runForAction('flow-1', new \OCA\OpenRegister\Service\Flow\FlowRunOptions(subject: [], context: [], sync: true, trigger: Flow::TRIGGER_MANUAL));
 		$this->assertCount(1, $this->advanced);
 		$this->assertTrue($this->advanced[0]['rethrow']);
 	}//end testADeclaredActionRunsAsTheActingUserWithoutTheOwnerCheck()

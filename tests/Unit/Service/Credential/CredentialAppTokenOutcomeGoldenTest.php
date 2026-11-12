@@ -33,6 +33,7 @@ use OCP\Security\ICredentialsManager;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialAppTokenService
@@ -99,11 +100,11 @@ class CredentialAppTokenOutcomeGoldenTest extends TestCase {
 		);
 		$this->assertSame(
 			self::forge(['appId' => 'pipelinq', 'credentialId' => 'c-1', 'iat' => 1000, 'exp' => 1300, 'req' => hash('sha256', 'GET /v1/x')]),
-			$service->issueToken('pipelinq', 'c-1', 'get', 'v1/x')
+			$service->issueToken('pipelinq', 'c-1', new BrokerTokenBinding('get', 'v1/x'))
 		);
 		$this->assertSame(
 			self::forge(['appId' => 'pipelinq', 'credentialId' => 'c-1', 'iat' => 1000, 'exp' => 1300]),
-			$service->issueToken('pipelinq', 'c-1', 'GET', null),
+			$service->issueToken('pipelinq', 'c-1', new BrokerTokenBinding('GET', null)),
 			'A method without a path leaves the token unbound.'
 		);
 	}
@@ -164,7 +165,7 @@ class CredentialAppTokenOutcomeGoldenTest extends TestCase {
 	#[DataProvider('verifyCases')]
 	public function testVerifyOutcome(string $token, ?string $method, ?string $path, array|string $expected): void {
 		try {
-			$claims = $this->service()->verify($token, $method, $path);
+			$claims = $this->service()->verify($token, new BrokerTokenBinding($method, $path));
 		} catch (CredentialAccessDeniedException $refused) {
 			$this->assertSame($expected, $refused->getMessage());
 			return;
@@ -180,13 +181,13 @@ class CredentialAppTokenOutcomeGoldenTest extends TestCase {
 	 */
 	public function testIssuedTokenExpiresAtTheTtl(): void {
 		$service = $this->service();
-		$token   = $service->issueToken('pipelinq', 'c-9', 'POST', '/send');
+		$token   = $service->issueToken('pipelinq', 'c-9', new BrokerTokenBinding('POST', '/send'));
 
 		$this->now = 1299;
-		$this->assertSame(['appId' => 'pipelinq', 'credentialId' => 'c-9'], $service->verify($token, 'POST', 'send'));
+		$this->assertSame(['appId' => 'pipelinq', 'credentialId' => 'c-9'], $service->verify($token, new BrokerTokenBinding('POST', 'send')));
 
 		$this->now = 1300;
 		$this->expectExceptionMessage('Expired broker token');
-		$service->verify($token, 'POST', 'send');
+		$service->verify($token, new BrokerTokenBinding('POST', 'send'));
 	}
 }

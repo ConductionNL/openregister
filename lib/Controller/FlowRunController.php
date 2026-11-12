@@ -33,6 +33,7 @@ use DateTimeZone;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunFilter;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignals;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -200,10 +202,10 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
-		$flowId = $this->request->getParam('flowId');
-		$status = $this->request->getParam('status');
-		$limit = min(200, max(1, (int)$this->request->getParam('limit', 50)));
-		$offset = max(0, (int)$this->request->getParam('offset', 0));
+		$window = new FlowRunListing(
+			limit: min(200, max(1, (int)$this->request->getParam('limit', 50))),
+			offset: max(0, (int)$this->request->getParam('offset', 0))
+		);
 
 		// Scope the history. Until this landed the endpoint returned EVERY run on
 		// the instance to any authenticated caller — including each run's log,
@@ -212,13 +214,7 @@ class FlowRunController extends Controller {
 		// triggered by the owner or by other recipients stay invisible.
 		$scope = $this->historyScope();
 		if ($scope === null) {
-			return new JSONResponse(
-				[
-					'results' => [],
-					'limit' => $limit,
-					'offset' => $offset,
-				]
-			);
+			return $this->historyPage(runs: [], window: $window);
 		}
 
 		$since = $this->sinceParam();
@@ -226,25 +222,49 @@ class FlowRunController extends Controller {
 			return $this->badSince();
 		}
 
-		$filter = new FlowRunFilter(
-			flowId: $this->stringOrNull(value: $flowId),
-			status: $this->stringOrNull(value: $status),
-			since: $since,
-			flowIds: $this->flowIdsParam()
-		);
 		$runs = $this->mapper->findAllRuns(
-			listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset),
+			listing: $this->historyListing(since: $since, window: $window),
 			viewer: $scope
 		);
 
+		return $this->historyPage(runs: $runs, window: $window);
+	}//end index()
+
+	/**
+	 * The history listing the request asks for, within the paging window.
+	 *
+	 * @param DateTime|null  $since  The lower bound on the run's start, already parsed
+	 * @param FlowRunListing $window The clamped limit and offset
+	 *
+	 * @return FlowRunListing The filters (flowId, status, since, flowIds) with the window
+	 */
+	private function historyListing(?DateTime $since, FlowRunListing $window): FlowRunListing {
+		$filter = new FlowRunFilter(
+			flowId: $this->stringOrNull(value: $this->request->getParam('flowId')),
+			status: $this->stringOrNull(value: $this->request->getParam('status')),
+			since: $since,
+			flowIds: $this->flowIdsParam()
+		);
+
+		return new FlowRunListing(filter: $filter, limit: $window->limit, offset: $window->offset);
+	}//end historyListing()
+
+	/**
+	 * One page of run history with its paging window.
+	 *
+	 * @param array<int, FlowRun> $runs   The runs on the page
+	 * @param FlowRunListing      $window The clamped limit and offset
+	 *
+	 * @return JSONResponse The runs plus the paging window
+	 */
+	private function historyPage(array $runs, FlowRunListing $window): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(static fn (FlowRun $r): array => $r->jsonSerialize(), $runs),
-				'limit' => $limit,
-				'offset' => $offset,
+				'limit' => $window->limit,
+				'offset' => $window->offset,
 			]
 		);
-
 	}//end index()
 
 	/**
@@ -755,7 +775,7 @@ class FlowRunController extends Controller {
 		// caller the contents of anyone's run.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		return new JSONResponse($run->jsonSerialize());
@@ -785,44 +805,12 @@ class FlowRunController extends Controller {
 		// access without anything looking like an access change.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		if ($this->auditTrails === null) {
 			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
-
-		$rows = $this->auditTrails->findByRun(runUuid: $uuid);
-
-		$byNode = [];
-		foreach ($rows as $row) {
-			$node = (string)$row->getFlowNode();
-
-			if (isset($byNode[$node]) === false) {
-				$byNode[$node] = [
-					'node' => $node,
-					'step' => $row->getFlowStep(),
-					'objects' => [],
-				];
-			}
-
-			$byNode[$node]['objects'][] = [
-				'objectUuid' => $row->getObjectUuid(),
-				'register' => $row->getRegister(),
-				'schema' => $row->getSchema(),
-				'action' => $row->getAction(),
-				'step' => $row->getFlowStep(),
-				'created' => $row->getCreated()?->format('c'),
-				'auditUuid' => $row->getUuid(),
-			];
-		}
-
-		// Step order, so a reader follows the run in the order it happened
-		// rather than in whatever order the rows came back.
-		usort(
-			$byNode,
-			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
-		);
 
 		return new JSONResponse(
 			[
@@ -832,12 +820,61 @@ class FlowRunController extends Controller {
 				// nothing, and for a suspended run that has not written
 				// anything YET. Neither is an error, and neither is withheld
 				// until the run finishes.
-				// usort() re-indexed $byNode into a list, so no array_values()
-				// here: it would be a no-op that reads as a safeguard.
-				'nodes' => $byNode,
+				'nodes' => $this->touchedObjectsByNode(audits: $this->auditTrails, runUuid: $uuid),
 			]
 		);
 	}//end objects()
+
+	/**
+	 * The objects a run wrote, grouped per flow node, in step order.
+	 *
+	 * Step order, so a reader follows the run in the order it happened rather
+	 * than in whatever order the rows came back. A node's step is the step of
+	 * its first row.
+	 *
+	 * @param AuditFlowAttributionInterface $audits  The audit trail
+	 * @param string                        $runUuid The run uuid
+	 *
+	 * @return array<int, array<string, mixed>> One group per node: node, step and objects
+	 */
+	private function touchedObjectsByNode(AuditFlowAttributionInterface $audits, string $runUuid): array {
+		$byNode = [];
+		foreach ($audits->findByRun(runUuid: $runUuid) as $row) {
+			$node = (string)$row->getFlowNode();
+			if (isset($byNode[$node]) === false) {
+				$byNode[$node] = ['node' => $node, 'step' => $row->getFlowStep(), 'objects' => []];
+			}
+
+			$byNode[$node]['objects'][] = $this->touchedObject(row: $row);
+		}
+
+		// Sorting with usort() re-indexes $byNode into a list, so no array_values() is needed.
+		usort(
+			$byNode,
+			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
+		);
+
+		return $byNode;
+	}//end touchedObjectsByNode()
+
+	/**
+	 * One object a run wrote, as the touched-objects answer lists it.
+	 *
+	 * @param AuditTrail $row The audit row
+	 *
+	 * @return array<string, mixed> The object, the act and when it happened
+	 */
+	private function touchedObject(AuditTrail $row): array {
+		return [
+			'objectUuid' => $row->getObjectUuid(),
+			'register' => $row->getRegister(),
+			'schema' => $row->getSchema(),
+			'action' => $row->getAction(),
+			'step' => $row->getFlowStep(),
+			'created' => $row->getCreated()?->format('c'),
+			'auditUuid' => $row->getUuid(),
+		];
+	}//end touchedObject()
 
 	/**
 	 * Resolve a run by uuid, or null when this caller may not see it.
@@ -881,22 +918,14 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The new run, or a 4xx when the source cannot be retried.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$new = $this->runner->retry($run);
@@ -932,22 +961,14 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The parked run, or a 4xx when it cannot be signalled.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function resume(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$payload = $this->request->getParams();
@@ -957,7 +978,7 @@ class FlowRunController extends Controller {
 		// The guard and the delivery are ONE seam — the same one a PHP consumer
 		// calls — so who may answer is decided in exactly one place.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
 		}
@@ -990,14 +1011,12 @@ class FlowRunController extends Controller {
 	 *                      ambiguous or not suspended.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/integration/openregister-integrations.postman_collection.json
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function signalByKey(string $key): JSONResponse {
 		$run = $this->soleSuspendedRun(key: $key);
 		if ($run instanceof JSONResponse) {
@@ -1015,7 +1034,7 @@ class FlowRunController extends Controller {
 
 		// Same seam as resume() and as every PHP consumer: one guard.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
 		}
@@ -1053,6 +1072,32 @@ class FlowRunController extends Controller {
 
 		return $matches[0];
 	}//end soleSuspendedRun()
+
+	/**
+	 * Resolve a run the caller may run, or the answer that refuses it.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|JSONResponse The run, a 404 when there is no such run, or the guard's refusal.
+	 */
+	private function runnableRun(string $uuid): FlowRun|JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return $this->noSuchRun();
+		}
+
+		return $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId()) ?? $run;
+	}//end runnableRun()
+
+	/**
+	 * The 404 for a run that does not exist or that the caller cannot see.
+	 *
+	 * @return JSONResponse
+	 */
+	private function noSuchRun(): JSONResponse {
+		return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+	}//end noSuchRun()
 
 	/**
 	 * Translate the seam's typed refusal into this endpoint's HTTP contract.

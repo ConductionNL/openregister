@@ -31,9 +31,11 @@ use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -138,13 +140,11 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 
 		$out[] = $service->recordSplit(source: $parent, created: $child)->jsonSerialize();
 		$out[] = $service->recordSplit(source: $parent, created: $child, link: new ProvenanceLink(entry: 'e1', relationType: 'cites'))->jsonSerialize();
-		$out[] = $service->applyInheritance(
-			parent: $parent,
-			childData: ['own' => 'C', 'cls' => ''],
-			inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls']
+		$out[] = $service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: ['own' => 'C', 'cls' => ''], inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls'])
 		);
-		$out[] = $service->recordDerivation(parent: $parent, child: $child)->jsonSerialize();
-		$out[] = $service->recordDerivation(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1])->jsonSerialize();
+		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child))->jsonSerialize();
+		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1]))->jsonSerialize();
 		$out[] = $service->addExternalLink(source: new RelationEndpoint(uuid: 's'), link: new ExternalLink(url: ' https://example.org/a '))->jsonSerialize();
 		$out[] = $service->addExternalLink(
 			source: new RelationEndpoint(uuid: 's', register: 5, schema: 6),

@@ -112,6 +112,26 @@ class TenantPurgeJob extends TimedJob {
 	protected function run(mixed $argument): void {
 		$this->logger->info('[TenantPurgeJob] Starting purge check');
 
+		$cutoffDate = $this->retentionCutoff();
+
+		$organisations = $this->archivedTenants();
+		if ($organisations === null) {
+			return;
+		}
+
+		$purgedCount = $this->purgeDue(organisations: $organisations, cutoffDate: $cutoffDate);
+
+		$this->logger->info(
+			'[TenantPurgeJob] Completed, purged ' . $purgedCount . ' organisations'
+		);
+	}//end run()
+
+	/**
+	 * The moment before which an archived tenant is due for purging.
+	 *
+	 * @return DateTime Now minus the configured tenant retention period.
+	 */
+	private function retentionCutoff(): DateTime {
 		$retentionDays = (int)$this->appConfig->getValueString(
 			'openregister',
 			'tenantRetentionDays',
@@ -120,12 +140,18 @@ class TenantPurgeJob extends TimedJob {
 
 		$cutoffDate = new DateTime();
 		$cutoffDate->sub(new DateInterval("P{$retentionDays}D"));
+		return $cutoffDate;
+	}//end retentionCutoff()
 
-		$organisations = $this->archivedTenants();
-		if ($organisations === null) {
-			return;
-		}
-
+	/**
+	 * Purge every archived tenant whose retention has run out.
+	 *
+	 * @param Organisation[] $organisations The archived tenants.
+	 * @param DateTime       $cutoffDate    The retention cutoff.
+	 *
+	 * @return int How many were purged.
+	 */
+	private function purgeDue(array $organisations, DateTime $cutoffDate): int {
 		$purgedCount = 0;
 		foreach ($organisations as $organisation) {
 			if ($this->purgeIfDue(organisation: $organisation, cutoffDate: $cutoffDate) === true) {
@@ -133,10 +159,8 @@ class TenantPurgeJob extends TimedJob {
 			}
 		}
 
-		$this->logger->info(
-			'[TenantPurgeJob] Completed, purged ' . $purgedCount . ' organisations'
-		);
-	}//end run()
+		return $purgedCount;
+	}//end purgeDue()
 
 	/**
 	 * The archived organisations of this installation, or null when the read failed.
@@ -239,10 +263,7 @@ class TenantPurgeJob extends TimedJob {
 			// Delete the organisation entity.
 			$this->organisationMapper->delete($organisation);
 
-			$this->logger->info(
-				'[TenantPurgeJob] Permanently deleted archived organisation',
-				['uuid' => $orgUuid, 'deprovisionedAt' => $deprovisionedAt->format('c')]
-			);
+			$this->logPurged(orgUuid: $orgUuid, deprovisionedAt: $deprovisionedAt);
 
 			return true;
 		} catch (\Exception $e) {
@@ -253,4 +274,19 @@ class TenantPurgeJob extends TimedJob {
 			return false;
 		}//end try
 	}//end purge()
+
+	/**
+	 * Log a permanently deleted tenant.
+	 *
+	 * @param string   $orgUuid         The tenant's UUID.
+	 * @param DateTime $deprovisionedAt When it was deprovisioned.
+	 *
+	 * @return void
+	 */
+	private function logPurged(string $orgUuid, DateTime $deprovisionedAt): void {
+		$this->logger->info(
+			'[TenantPurgeJob] Permanently deleted archived organisation',
+			['uuid' => $orgUuid, 'deprovisionedAt' => $deprovisionedAt->format('c')]
+		);
+	}//end logPurged()
 }//end class

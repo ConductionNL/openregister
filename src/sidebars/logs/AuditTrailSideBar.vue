@@ -144,6 +144,7 @@ import {
 	addScopeIds,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
+import { auditActionOptions } from './trailOptions.js'
 
 /**
  * The user options a comma-separated route parameter names.
@@ -164,6 +165,15 @@ const STATISTIC_FIELDS = [
 	['updateCount', 'update'],
 	['deleteCount', 'delete'],
 ]
+
+/**
+ * Every shown statistic at 0, before the statistics load.
+ *
+ * @return {object} The statistics by field
+ */
+function zeroStatistics() {
+	return Object.fromEntries(STATISTIC_FIELDS.map(([field]) => [field, 0]))
+}
 
 /**
  * The known option for an action value, or a new one for an unknown action.
@@ -196,34 +206,13 @@ export default {
 
 	data() {
 		return {
-			actionOptions: [
-				{
-					label: t('openregister', 'Create'),
-					value: 'create',
-				},
-				{
-					label: t('openregister', 'Read'),
-					value: 'read',
-				},
-				{
-					label: t('openregister', 'Update'),
-					value: 'update',
-				},
-				{
-					label: t('openregister', 'Delete'),
-					value: 'delete',
-				},
-			],
-
+			actionOptions: auditActionOptions(),
 			activeTab: 'filters-tab',
 			selectedActions: [],
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			filteredCount: 0,
-			totalAuditTrails: 0,
-			createCount: 0,
-			updateCount: 0,
-			deleteCount: 0,
+			...zeroStatistics(),
 			actionDistribution: [],
 			topObjects: [],
 			filterTimeout: null,

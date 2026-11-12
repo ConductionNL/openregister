@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Error;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,8 +53,8 @@ class ComputedFieldReferencesGoldenTest extends TestCase {
 			$schema->setProperties($properties);
 			$handler = $this->handler(calls: $calls, logs: $logs, scores: $scores);
 			$actual[$name] = [
-				'save' => $handler->evaluateComputedFields($data, $schema),
-				'read' => $handler->evaluateComputedFields($data, $schema, 'read'),
+				'save' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema)),
+				'read' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema, evaluateOn: 'read')),
 				'calls' => $calls,
 				'logs' => $logs,
 			];

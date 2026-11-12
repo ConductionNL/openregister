@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\PollLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCP\App\IAppManager;
@@ -140,7 +141,7 @@ class PollsProviderTest extends TestCase {
 			pollLinkMapper: $this->buildMapper([]),
 		);
 		self::assertFalse($provider->isEnabled());
-		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+		self::assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'uuid')));
 	}//end testIsEnabledFalseWhenPollsMissing()
 
 	public function testListEmptyWhenNoLinks(): void {
@@ -153,7 +154,7 @@ class PollsProviderTest extends TestCase {
 			pollLinkMapper: $this->buildMapper([]),
 		);
 
-		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+		self::assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'uuid')));
 	}//end testListEmptyWhenNoLinks()
 
 	public function testListHappyPath(): void {
@@ -210,7 +211,7 @@ class PollsProviderTest extends TestCase {
 			pollLinkMapper: $this->buildMapper([$link]),
 		);
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: $uuid);
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: $uuid));
 		self::assertCount(1, $rows);
 
 		$row = $rows[0];

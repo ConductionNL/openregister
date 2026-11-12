@@ -99,20 +99,14 @@ final class ConfigurationSnapshot implements JsonSerializable {
 	/**
 	 * An address holding nothing.
 	 *
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationAddress $address The layer, layer reference and key read.
 	 *
 	 * @return self The empty snapshot.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public static function absent(string $layer, ?string $layerRef, string $configKey): self {
-		return new self(
-			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-			value: null,
-			present: false
-		);
+	public static function absent(ConfigurationAddress $address): self {
+		return new self(address: $address, value: null, present: false);
 
 	}//end absent()
 

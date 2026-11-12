@@ -42,7 +42,13 @@
             "delete": "title|nl"
         },
         {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
             "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
         }
     ],
     "empty string skipped": [],
@@ -158,7 +164,13 @@
             "delete": "title|nl"
         },
         {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
+        },
+        {
             "delete": "body|en"
+        },
+        {
+            "warning": "[TranslationProjection] Stale translation row not deleted"
         }
     ],
     "no uuid": [],

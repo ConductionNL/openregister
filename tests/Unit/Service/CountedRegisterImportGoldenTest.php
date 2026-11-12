@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for CountedRegisterImport::run().
+ * Golden test for CountedRegisterImport::runCall().
  *
  * Pins, on the code as it was before the run() refactor, the full result of
  * an import that created, updated and left registers and schemas unchanged,
@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\CountedRegisterImport;
+use OCA\OpenRegister\Service\RegisterImportCall;
+use OCA\OpenRegister\Service\RegisterImportDocument;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 
@@ -136,17 +138,16 @@ class CountedRegisterImportGoldenTest extends TestCase {
 		];
 
 		$import = $this->import();
-		$result = $import->run(
-			slug: 'ZAKEN',
-			slugs: ['zaken', 'kept', 'new'],
-			version: '1.1',
-			fragments: 2,
-			via: 'admin',
-			import: function (): array {
-				$this->calls[] = 'import:' . $this->decision->via();
-				$this->decision->noteReplaced(slug: 'case', roots: ['read', 'write']);
-				return ['success' => true, 'path' => 'base', 'via' => 'occ', 'message' => ''];
-			}
+		$result = $import->runCall(
+			document: (new RegisterImportDocument(slug: 'ZAKEN', slugs: ['zaken', 'kept', 'new']))->release(version: '1.1', fragments: 2),
+			call: new RegisterImportCall(
+				via: 'admin',
+				operation: function (): array {
+					$this->calls[] = 'import:' . $this->decision->via();
+					$this->decision->noteReplaced(slug: 'case', roots: ['read', 'write']);
+					return ['success' => true, 'path' => 'base', 'via' => 'occ', 'message' => ''];
+				}
+			)
 		);
 
 		$this->assertSame(
@@ -180,15 +181,14 @@ class CountedRegisterImportGoldenTest extends TestCase {
 
 	public function testARecordedImportJobIsReported(): void {
 		$this->registerReads = [[], [$this->register('r', '1')]];
-		$result = $this->import()->run(
-			slug: 'r',
-			slugs: ['r'],
-			version: '1',
-			fragments: 0,
-			via: 'ui',
-			import: static fn (): array => [
-				'success' => true, 'path' => 'p', 'via' => 'v', 'message' => '', 'importJobId' => 'job-1', 'importAppId' => null,
-			]
+		$result = $this->import()->runCall(
+			document: (new RegisterImportDocument(slug: 'r', slugs: ['r']))->release(version: '1', fragments: 0),
+			call: new RegisterImportCall(
+				via: 'ui',
+				operation: static fn (): array => [
+					'success' => true, 'path' => 'p', 'via' => 'v', 'message' => '', 'importJobId' => 'job-1', 'importAppId' => null,
+				]
+			)
 		);
 
 		$this->assertSame(['registers', 'registers'], $this->calls);
@@ -205,13 +205,12 @@ class CountedRegisterImportGoldenTest extends TestCase {
 
 	public function testANonStringJobIdIsNotReported(): void {
 		$this->registerReads = [[], [$this->register('r', '1')]];
-		$result = $this->import()->run(
-			slug: 'r',
-			slugs: ['r'],
-			version: '1',
-			fragments: 0,
-			via: 'ui',
-			import: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => '', 'importJobId' => 5, 'importAppId' => 'a']
+		$result = $this->import()->runCall(
+			document: (new RegisterImportDocument(slug: 'r', slugs: ['r']))->release(version: '1', fragments: 0),
+			call: new RegisterImportCall(
+				via: 'ui',
+				operation: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => '', 'importJobId' => 5, 'importAppId' => 'a']
+			)
 		);
 
 		$this->assertArrayNotHasKey('importJobId', $result);
@@ -220,15 +219,14 @@ class CountedRegisterImportGoldenTest extends TestCase {
 
 	public function testAFailedImportIsReportedWithItsMessageEvenWhenTheRegisterIsMissing(): void {
 		$this->registerReads = [[], []];
-		$result = $this->import()->run(
-			slug: 'r',
-			slugs: ['r'],
-			version: '2',
-			fragments: 1,
-			via: 'ui',
-			import: static fn (): array => [
-				'success' => false, 'path' => 'file', 'via' => 'descriptor', 'message' => 'bad json', 'importJobId' => 'j', 'importAppId' => 'app',
-			]
+		$result = $this->import()->runCall(
+			document: (new RegisterImportDocument(slug: 'r', slugs: ['r']))->release(version: '2', fragments: 1),
+			call: new RegisterImportCall(
+				via: 'ui',
+				operation: static fn (): array => [
+					'success' => false, 'path' => 'file', 'via' => 'descriptor', 'message' => 'bad json', 'importJobId' => 'j', 'importAppId' => 'app',
+				]
+			)
 		);
 
 		$this->assertSame(
@@ -254,13 +252,12 @@ class CountedRegisterImportGoldenTest extends TestCase {
 
 	public function testASuccessThatDidNotCreateTheRegisterIsAFailure(): void {
 		$this->registerReads = [[], [$this->register('other', '1')]];
-		$result = $this->import()->run(
-			slug: 'Wanted',
-			slugs: ['wanted', 'other'],
-			version: '1',
-			fragments: 0,
-			via: 'ui',
-			import: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => 'ignored']
+		$result = $this->import()->runCall(
+			document: (new RegisterImportDocument(slug: 'Wanted', slugs: ['wanted', 'other']))->release(version: '1', fragments: 0),
+			call: new RegisterImportCall(
+				via: 'ui',
+				operation: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => 'ignored']
+			)
 		);
 
 		$this->assertSame('failed', $result['outcome']);
@@ -270,13 +267,12 @@ class CountedRegisterImportGoldenTest extends TestCase {
 
 	public function testALaterRegistersSchemaIdReplacesAnEarlierOneInPlace(): void {
 		$this->registerReads = [[$this->register('a', '1', [5, 6]), $this->register('b', '1', ['5', 7])], []];
-		$this->import()->run(
-			slug: 'a',
-			slugs: ['a', 'b'],
-			version: '1',
-			fragments: 0,
-			via: 'ui',
-			import: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => '']
+		$this->import()->runCall(
+			document: (new RegisterImportDocument(slug: 'a', slugs: ['a', 'b']))->release(version: '1', fragments: 0),
+			call: new RegisterImportCall(
+				via: 'ui',
+				operation: static fn (): array => ['success' => true, 'path' => 'p', 'via' => 'v', 'message' => '']
+			)
 		);
 
 		$this->assertSame(['registers', 'schemas:["5",6,7]:false:false', 'registers'], $this->calls);

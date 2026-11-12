@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -109,7 +110,7 @@ class AuditTrailActionPrefixTest extends TestCase {
 	 * The list filter `action=portaliq.*` answers every row of the prefix.
 	 */
 	public function testFindAllFiltersOnAnActionPrefix(): void {
-		$rows = $this->mapper->findAll(filters: ['action' => 'portaliq.*'], sort: ['id' => 'ASC']);
+		$rows = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'portaliq.*'], ['id' => 'ASC']));
 
 		$this->assertSame([1, 2, 3, 4], array_map(fn (AuditTrail $row): int => (int) $row->getId(), $rows));
 	}//end testFindAllFiltersOnAnActionPrefix()
@@ -118,7 +119,7 @@ class AuditTrailActionPrefixTest extends TestCase {
 	 * An exact action still filters exactly.
 	 */
 	public function testAnExactActionStillFiltersExactly(): void {
-		$rows = $this->mapper->findAll(filters: ['action' => 'portaliq.login'], sort: ['id' => 'ASC']);
+		$rows = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'portaliq.login'], ['id' => 'ASC']));
 
 		$this->assertSame([1, 2], array_map(fn (AuditTrail $row): int => (int) $row->getId(), $rows));
 	}//end testAnExactActionStillFiltersExactly()

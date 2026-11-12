@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRun;
@@ -60,6 +61,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * Records every event a mapper dispatches, with its payload, for insert, update and delete.
@@ -183,17 +185,16 @@ final class MapperEntityEventsTest extends TestCase {
 		$objects->method('getStatistics')->willReturn(['total' => 0]);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($objects);
-		[$session, $groups, $organisations] = $this->caller();
 		$mapper = new RegisterMapper(
-			$this->connection(),
-			$this->createMock(SchemaMapperInterface::class),
-			$this->dispatcher(),
-			$container,
-			$organisations,
-			$session,
-			$groups,
-			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			db: $this->connection(),
+			tenancy: $this->tenancy(),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapperInterface::class),
+				container: $container,
+				eventDispatcher: $this->dispatcher(),
+				logger: new NullLogger()
+			)
 		);
 
 		$mapper->insert($this->given(new Register(), ['uuid' => 'r-1', 'organisation' => 'org-1']));
@@ -222,8 +223,8 @@ final class MapperEntityEventsTest extends TestCase {
 		);
 
 		$relation = $this->given(new EntityRelation(), ['id' => 11, 'skipAnonymization' => false]);
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user);
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user));
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user));
 
 		$this->assertSame(
 			[

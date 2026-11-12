@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -83,35 +84,31 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 * 3. Objects belonging to parent organizations are accessible
 	 * 4. Objects with null organization are accessible to all (legacy/global data)
 	 *
-	 * @param IQueryBuilder          $qb                 Query builder to modify
-	 * @param OrganisationScopeTable $table              The register and schema this table belongs to, for shared master data
-	 * @param bool                   $adminBypassEnabled Whether admin users can bypass org filtering
-	 * @param bool                   $withOrgless        Whether the caller's RBAC grant also admits org-less rows
+	 * The admin bypass is this instance's setting ({@see isAdminOverrideEnabled()}).
+	 *
+	 * @param IQueryBuilder        $qb       Query builder to modify
+	 * @param OrganisationBoundary $boundary The register and schema this table belongs to (for shared master data),
+	 *                                       whether the caller's RBAC grant also admits org-less rows, and the
+	 *                                       cross-organisation branch OR-ed in, if any
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function applyOrganizationFilter(
-		IQueryBuilder $qb,
-		OrganisationScopeTable $table,
-		bool $adminBypassEnabled = false,
-		bool $withOrgless = false,
-	): void {
+	public function applyOrganizationFilter(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
 		$scope = $this->resolveOrganizationScope(
-			adminBypassEnabled: $adminBypassEnabled,
-			registerId: $table->registerId,
-			schemaId: $table->schemaId
+			adminBypassEnabled: $this->isAdminOverrideEnabled(),
+			registerId: $boundary->registerId,
+			schemaId: $boundary->schemaId
 		);
-		if ($withOrgless === true) {
+		if ($boundary->withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
 
-		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope);
+		(new OrganisationScopeCondition())->apply(qb: $qb, scope: $scope, orAlso: $boundary->crossBranch);
 
 	}//end applyOrganizationFilter()
 
@@ -405,8 +402,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 		}
 
 		return $resolver->holdersForResource(
-			registerId: $table->registerId,
-			schemaId: $table->schemaId,
+			pair: new DeclaredPair(registerId: $table->registerId, schemaId: $table->schemaId),
 			consumerOrgUuids: $consumerOrgUuids
 		);
 

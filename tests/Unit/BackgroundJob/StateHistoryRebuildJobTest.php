@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuildInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -135,7 +136,7 @@ class StateHistoryRebuildJobTest extends TestCase {
 		$schema->setConfiguration(['x-openregister-lifecycle' => ['field' => 'status']]);
 
 		$this->audit->method('findObjectUuidsAfter')->with('c-0', StateHistoryRebuildJob::BATCH)->willReturn(['o-1', 'o-2']);
-		$this->audit->method('findForObjectByAction')->willReturnCallback(
+		$this->audit->method('findObjectActions')->willReturnCallback(
 			function (string $objectUuid) use ($entry): array {
 				if ($objectUuid === 'o-1') {
 					return [$entry];
@@ -145,8 +146,8 @@ class StateHistoryRebuildJobTest extends TestCase {
 			}
 		);
 		$this->schemas->method('find')->willReturn($schema);
-		$this->rebuild->expects($this->once())->method('rebuildObject')
-			->with('o-1', 'status', 'reg-1', 'cases')->willReturn(2);
+		$this->rebuild->expects($this->once())->method('rebuild')
+			->with(new ObjectRef(register: 'reg-1', schema: 'cases', id: 'o-1'), 'status')->willReturn(2);
 		$this->appConfig->expects($this->once())->method('setValueString')
 			->with('openregister', StateHistoryRebuildJob::CURSOR, 'o-2');
 		$this->runJob();

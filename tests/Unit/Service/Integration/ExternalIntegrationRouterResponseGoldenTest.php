@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -149,8 +151,8 @@ final class ExternalIntegrationRouterResponseGoldenTest extends TestCase {
 		$provider = new GoldenExternalProvider(storage: 'external');
 
 		return [
-			'call'     => $this->answer(run: static fn () => $router->call($provider, 'POST', 'items', ['query' => ['q' => 1]])),
-			'withMeta' => $this->answer(run: static fn () => $router->callWithMeta($provider, 'GET', 'items')),
+			'call'     => $this->answer(run: static fn () => $router->call($provider, new UpstreamRequest(method: 'POST', path: 'items', options: ['query' => ['q' => 1]]))),
+			'withMeta' => $this->answer(run: static fn () => $router->callWithMeta($provider, new UpstreamRequest(method: 'GET', path: 'items', options: []))),
 			'logs'     => $logger->lines,
 		];
 	}//end both()
@@ -347,7 +349,7 @@ final class GoldenExternalProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int, mixed>
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}
 }

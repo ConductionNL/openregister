@@ -101,45 +101,19 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerControllers(string $controllerNs): void {
-		$appId = $this->appId;
 		$this->aliasControllerUnlessLeafDefinesIt(
 			leafClass: $controllerNs . '\\DashboardController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_DASHBOARD_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					// The leaf's OWN initial state, so the public flag lands
-					// under the leaf app id the SPA reads it with.
-					publicPages: $c->get(self::PUBLIC_PAGE_RESOLVER),
-					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState')
-				);
-			}
+			factory: self::dashboardControllerFactory(appId: $this->appId)
 		);
 
 		$this->aliasControllerUnlessLeafDefinesIt(
 			leafClass: $controllerNs . '\\PreferencesController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_PREFERENCES_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					config: $c->get('OCP\\IConfig'),
-					userSession: $c->get('OCP\\IUserSession')
-				);
-			}
+			factory: self::preferencesControllerFactory(appId: $this->appId)
 		);
 
 		$this->aliasControllerUnlessLeafDefinesIt(
 			leafClass: $controllerNs . '\\SettingsController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_SETTINGS_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE)
-				);
-			}
+			factory: self::settingsControllerFactory(appId: $this->appId)
 		);
 
 		// Store plane (ADR-080, ADR-114 Decision 4). `unlessLeafDefinesIt` is
@@ -159,31 +133,14 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerObservabilityControllers(string $controllerNs): void {
-		$appId = $this->appId;
 		$this->aliasControllerUnlessLeafDefinesIt(
 			leafClass: $controllerNs . '\\HealthController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_HEALTH_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-					executor: $c->get(self::OBSERVABILITY_EXECUTOR)
-				);
-			}
+			factory: self::healthControllerFactory(appId: $this->appId)
 		);
 
 		$this->aliasControllerUnlessLeafDefinesIt(
 			leafClass: $controllerNs . '\\MetricsController',
-			factory: static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_METRICS_CONTROLLER;
-				return new $class(
-					appName: $appId,
-					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-					engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE)
-				);
-			}
+			factory: self::metricsControllerFactory(appId: $this->appId)
 		);
 	}//end registerControllers()
 
@@ -261,33 +218,11 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerServices(string $serviceNs): void {
-		$appId = $this->appId;
-		$settingsFactory = static function (ContainerInterface $c) use ($appId) {
-			$class = self::GENERIC_SETTINGS_SERVICE;
-			$services = self::GENERIC_SETTINGS_SERVICES;
-			return new $class(
-				appId: $appId,
-				services: new $services(
-					appConfig: $c->get('OCP\\IAppConfig'),
-					appManager: $c->get('OCP\\App\\IAppManager'),
-					container: $c,
-					logger: $c->get('Psr\\Log\\LoggerInterface')
-				),
-				groupManager: $c->get('OCP\\IGroupManager'),
-				userSession: $c->get('OCP\\IUserSession')
-			);
-		};
+		$settingsFactory = self::settingsServiceFactory(class: self::GENERIC_SETTINGS_SERVICE, appId: $this->appId);
 		$this->context->registerService(self::GENERIC_SETTINGS_SERVICE, $settingsFactory);
 		$this->context->registerService($serviceNs . '\\SettingsService', $settingsFactory);
 
-		$actionAuthFactory = static function (ContainerInterface $c) use ($appId) {
-			$class = self::GENERIC_ACTION_AUTH_SERVICE;
-			return new $class(
-				appId: $appId,
-				appConfig: $c->get('OCP\\IAppConfig'),
-				groupManager: $c->get('OCP\\IGroupManager')
-			);
-		};
+		$actionAuthFactory = self::actionAuthServiceFactory(appId: $this->appId);
 		$this->context->registerService(self::GENERIC_ACTION_AUTH_SERVICE, $actionAuthFactory);
 		$this->context->registerService($serviceNs . '\\ActionAuthService', $actionAuthFactory);
 
@@ -296,32 +231,12 @@ final class LeafRegistration {
 		// (listeners killed by a reorder) makes registration order here part of
 		// the contract: never reorder, only append. Both are lazy closures, so
 		// a disabled OpenRegister still never fatals NC bootstrap.
-		$settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
-			$class = self::GENERIC_SETTINGS_PLANE_SERVICE;
-			$services = self::GENERIC_SETTINGS_SERVICES;
-			return new $class(
-				appId: $appId,
-				services: new $services(
-					appConfig: $c->get('OCP\\IAppConfig'),
-					appManager: $c->get('OCP\\App\\IAppManager'),
-					container: $c,
-					logger: $c->get('Psr\\Log\\LoggerInterface')
-				),
-				groupManager: $c->get('OCP\\IGroupManager'),
-				userSession: $c->get('OCP\\IUserSession')
-			);
-		};
-		$this->context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
+		$this->context->registerService(
+			self::GENERIC_SETTINGS_PLANE_SERVICE,
+			self::settingsServiceFactory(class: self::GENERIC_SETTINGS_PLANE_SERVICE, appId: $this->appId)
+		);
 
-		$registerConfigResolverFactory = static function (ContainerInterface $c) use ($appId) {
-			$class = self::REGISTER_CONFIG_RESOLVER;
-			return new $class(
-				appId: $appId,
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				container: $c,
-				logger: $c->get('Psr\\Log\\LoggerInterface')
-			);
-		};
+		$registerConfigResolverFactory = self::registerConfigResolverFactory(appId: $this->appId);
 		$this->context->registerService(self::REGISTER_CONFIG_RESOLVER, $registerConfigResolverFactory);
 		$this->context->registerService($serviceNs . '\\RegisterConfigResolver', $registerConfigResolverFactory);
 	}//end registerServices()
@@ -335,33 +250,14 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerRepairSteps(string $repairNs): void {
-		$appId = $this->appId;
 		$this->context->registerService(
 			$repairNs . '\\InitializeSettings',
-			static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_INITIALIZE_SETTINGS;
-				return new $class(
-					appId: $appId,
-					settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
-					logger: $c->get('Psr\\Log\\LoggerInterface'),
-					appManager: $c->get('OCP\\App\\IAppManager'),
-					tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
-					applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
-				);
-			}
+			self::initializeSettingsFactory(appId: $this->appId)
 		);
 
 		$this->context->registerService(
 			$repairNs . '\\InitializeActions',
-			static function (ContainerInterface $c) use ($appId) {
-				$class = self::GENERIC_INITIALIZE_ACTIONS;
-				return new $class(
-					appId: $appId,
-					actionAuth: $c->get(self::GENERIC_ACTION_AUTH_SERVICE),
-					appManager: $c->get('OCP\\App\\IAppManager'),
-					logger: $c->get('Psr\\Log\\LoggerInterface')
-				);
-			}
+			self::initializeActionsFactory(appId: $this->appId)
 		);
 	}//end registerRepairSteps()
 
@@ -375,23 +271,9 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerAdminForm(string $settingsNs, array $section): void {
-		$appId = $this->appId;
-		$sectionId = $section['id'];
-		$adminPriority = $section['adminPriority'];
-
 		$this->context->registerService(
 			$settingsNs . '\\AdminSettings',
-			static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
-				$class = self::GENERIC_ADMIN_SETTINGS;
-				return new $class(
-					appId: $appId,
-					sectionId: $sectionId,
-					priority: $adminPriority,
-					appManager: $c->get('OCP\\App\\IAppManager'),
-					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
-					appConfig: $c->get('OCP\\IAppConfig')
-				);
-			}
+			self::adminSettingsFactory(appId: $this->appId, section: $section)
 		);
 	}//end registerAdminForm()
 
@@ -405,25 +287,9 @@ final class LeafRegistration {
 	 * @return void
 	 */
 	public function registerSettingsSection(string $sectionsNs, array $section): void {
-		$appId = $this->appId;
-		$sectionId = $section['id'];
-		$sectionName = $section['name'];
-		$sectionIcon = $section['icon'];
-		$sectionPriority = $section['priority'];
-
 		$this->context->registerService(
 			$sectionsNs . '\\SettingsSection',
-			static function (ContainerInterface $c) use ($appId, $sectionId, $sectionName, $sectionIcon, $sectionPriority) {
-				$class = self::GENERIC_SETTINGS_SECTION;
-				return new $class(
-					sectionId: $sectionId,
-					name: $sectionName,
-					appId: $appId,
-					iconFile: $sectionIcon,
-					priority: $sectionPriority,
-					urlGenerator: $c->get('OCP\\IURLGenerator')
-				);
-			}
+			self::settingsSectionFactory(appId: $this->appId, section: $section)
 		);
 	}//end registerSettingsSection()
 
@@ -452,4 +318,261 @@ final class LeafRegistration {
 
 		$this->context->registerEventListener(self::DEEPLINK_EVENT, $listenerNs . '\\DeepLinkRegistrationListener');
 	}//end registerDeepLinkListener()
+
+	/**
+	 * Factory for the generic dashboard controller of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function dashboardControllerFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_DASHBOARD_CONTROLLER;
+			return new $class(
+				appName: $appId,
+				request: $c->get('OCP\\IRequest'),
+				// The leaf's OWN initial state, so the public flag lands
+				// under the leaf app id the SPA reads it with.
+				publicPages: $c->get(self::PUBLIC_PAGE_RESOLVER),
+				initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState')
+			);
+		};
+	}//end dashboardControllerFactory()
+
+	/**
+	 * Factory for the generic preferences controller of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function preferencesControllerFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_PREFERENCES_CONTROLLER;
+			return new $class(
+				appName: $appId,
+				request: $c->get('OCP\\IRequest'),
+				config: $c->get('OCP\\IConfig'),
+				userSession: $c->get('OCP\\IUserSession')
+			);
+		};
+	}//end preferencesControllerFactory()
+
+	/**
+	 * Factory for the generic settings controller of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function settingsControllerFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_SETTINGS_CONTROLLER;
+			return new $class(
+				appName: $appId,
+				request: $c->get('OCP\\IRequest'),
+				settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE)
+			);
+		};
+	}//end settingsControllerFactory()
+
+	/**
+	 * Factory for the generic health controller of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function healthControllerFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_HEALTH_CONTROLLER;
+			return new $class(
+				appName: $appId,
+				request: $c->get('OCP\\IRequest'),
+				manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+				executor: $c->get(self::OBSERVABILITY_EXECUTOR)
+			);
+		};
+	}//end healthControllerFactory()
+
+	/**
+	 * Factory for the generic metrics controller of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function metricsControllerFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_METRICS_CONTROLLER;
+			return new $class(
+				appName: $appId,
+				request: $c->get('OCP\\IRequest'),
+				manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
+				engine: $c->get(self::OBSERVABILITY_METRICS_ENGINE)
+			);
+		};
+	}//end metricsControllerFactory()
+
+	/**
+	 * Factory for an app-scoped settings service: the AppHost settings service
+	 * and the ADR-066 settings-plane service take the same dependencies.
+	 *
+	 * @param string $class The settings service class to build.
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function settingsServiceFactory(string $class, string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($class, $appId) {
+			return new $class(
+				appId: $appId,
+				services: self::settingsServices(c: $c),
+				groupManager: $c->get('OCP\\IGroupManager'),
+				userSession: $c->get('OCP\\IUserSession')
+			);
+		};
+	}//end settingsServiceFactory()
+
+	/**
+	 * Build the services an app-scoped settings service runs on.
+	 *
+	 * @param ContainerInterface $c The DI container.
+	 *
+	 * @return object
+	 */
+	private static function settingsServices(ContainerInterface $c): object {
+		$services = self::GENERIC_SETTINGS_SERVICES;
+		return new $services(
+			appConfig: $c->get('OCP\\IAppConfig'),
+			appManager: $c->get('OCP\\App\\IAppManager'),
+			container: $c,
+			logger: $c->get('Psr\\Log\\LoggerInterface')
+		);
+	}//end settingsServices()
+
+	/**
+	 * Factory for the app-scoped action-auth service.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function actionAuthServiceFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_ACTION_AUTH_SERVICE;
+			return new $class(
+				appId: $appId,
+				appConfig: $c->get('OCP\\IAppConfig'),
+				groupManager: $c->get('OCP\\IGroupManager')
+			);
+		};
+	}//end actionAuthServiceFactory()
+
+	/**
+	 * Factory for the app-scoped register config resolver.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function registerConfigResolverFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::REGISTER_CONFIG_RESOLVER;
+			return new $class(
+				appId: $appId,
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				container: $c,
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+	}//end registerConfigResolverFactory()
+
+	/**
+	 * Factory for the generic InitializeSettings repair step of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function initializeSettingsFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_INITIALIZE_SETTINGS;
+			return new $class(
+				appId: $appId,
+				settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
+				logger: $c->get('Psr\\Log\\LoggerInterface'),
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
+				applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
+			);
+		};
+	}//end initializeSettingsFactory()
+
+	/**
+	 * Factory for the generic InitializeActions repair step of a leaf app.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return \Closure
+	 */
+	private static function initializeActionsFactory(string $appId): \Closure {
+		return static function (ContainerInterface $c) use ($appId) {
+			$class = self::GENERIC_INITIALIZE_ACTIONS;
+			return new $class(
+				appId: $appId,
+				actionAuth: $c->get(self::GENERIC_ACTION_AUTH_SERVICE),
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				logger: $c->get('Psr\\Log\\LoggerInterface')
+			);
+		};
+	}//end initializeActionsFactory()
+
+	/**
+	 * Factory for the generic admin settings form of a leaf app.
+	 *
+	 * @param string                                                                           $appId   The leaf app id.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
+	 *
+	 * @return \Closure
+	 */
+	private static function adminSettingsFactory(string $appId, array $section): \Closure {
+		$sectionId = $section['id'];
+		$adminPriority = $section['adminPriority'];
+
+		return static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
+			$class = self::GENERIC_ADMIN_SETTINGS;
+			return new $class(
+				appId: $appId,
+				sectionId: $sectionId,
+				priority: $adminPriority,
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
+				appConfig: $c->get('OCP\\IAppConfig')
+			);
+		};
+	}//end adminSettingsFactory()
+
+	/**
+	 * Factory for the generic settings section of a leaf app.
+	 *
+	 * @param string                                                                           $appId   The leaf app id.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
+	 *
+	 * @return \Closure
+	 */
+	private static function settingsSectionFactory(string $appId, array $section): \Closure {
+		return static function (ContainerInterface $c) use ($appId, $section) {
+			$class = self::GENERIC_SETTINGS_SECTION;
+			return new $class(
+				sectionId: $section['id'],
+				name: $section['name'],
+				appId: $appId,
+				iconFile: $section['icon'],
+				priority: $section['priority'],
+				urlGenerator: $c->get('OCP\\IURLGenerator')
+			);
+		};
+	}//end settingsSectionFactory()
 }//end class

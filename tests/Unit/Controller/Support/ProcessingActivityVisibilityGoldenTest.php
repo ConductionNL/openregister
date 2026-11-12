@@ -83,8 +83,14 @@ class ProcessingActivityVisibilityGoldenTest extends TestCase {
 		$n  = $this->activity(null);
 		$a2 = $this->activity('org-a');
 
-		$this->assertSame([$a1, $a2], $visibility->filter([$a1, $b, $n, $a2], ['org-a'], false));
-		$this->assertSame([$a1, $b, $n, $a2], $visibility->filter([$a1, $b, $n, $a2], [], true));
+		$this->assertSame([$a1, $a2], $visibility->visibleTo(
+			activities: [$a1, $b, $n, $a2],
+			viewer: new ProcessingActivityViewer(isAdmin: false, accessibleOrgs: ['org-a'])
+		));
+		$this->assertSame([$a1, $b, $n, $a2], $visibility->visibleTo(
+			activities: [$a1, $b, $n, $a2],
+			viewer: new ProcessingActivityViewer(isAdmin: true, accessibleOrgs: [])
+		));
 	}
 
 	public function testVisibleToKeepsWhatTheViewerSees(): void {

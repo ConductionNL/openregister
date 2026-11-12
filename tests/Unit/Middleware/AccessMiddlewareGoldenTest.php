@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -58,6 +59,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 
 /**
  * Allowed and refused outcomes of the access middlewares.
@@ -423,7 +425,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	public function testRateLimitCountsOnlyAuthFailures(string $class, int $code, bool $counts): void {
 		$security = $this->createMock(SecurityService::class);
 		if ($counts === true) {
-			$security->expects($this->once())->method('recordFailedAuthAttempt')->with('', '10.0.0.1', 'inbound_auth_failed');
+			$security->expects($this->once())->method('recordFailedAuthAttempt')->with(new FailedAttempt('', '10.0.0.1', 'inbound_auth_failed'));
 		} else {
 			$security->expects($this->never())->method('recordFailedAuthAttempt');
 		}
@@ -496,7 +498,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$policy = $this->createMock(CallerPolicy::class);
 		$policy->expects($this->never())->method('allowsAddress');
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->never())->method('record');
+		$recorder->expects($this->never())->method('recordCall');
 		$mw = $this->caller('/apps/openregister/', $policy, $this->createMock(CallerRateLimiter::class), $recorder);
 		$mw->beforeController(null, 'm');
 		$response = new Response();
@@ -569,7 +571,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$limiter = $this->createMock(CallerRateLimiter::class);
 		$limiter->method('consume')->willReturn($outcome);
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->once())->method('record')->with('/api/objects', 'GET', '1');
+		$recorder->expects($this->once())->method('recordCall')->with(new ApiCallObservation('/api/objects', 'GET', '1'));
 		$mw = $this->caller('/api/objects', $policy, $limiter, $recorder);
 		$mw->beforeController(null, 'm');
 		$response = new Response();
@@ -580,7 +582,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$policy = $this->createMock(CallerPolicy::class);
 		$policy->method('allowsAddress')->willReturn(true);
 		$recorder = $this->createMock(ApiCallRecorder::class);
-		$recorder->expects($this->never())->method('record');
+		$recorder->expects($this->never())->method('recordCall');
 		$mw = $this->caller('/api/objects', $policy, $this->createMock(CallerRateLimiter::class), $recorder, null);
 		$mw->beforeController(null, 'm');
 		$mw->afterController(null, 'm', new Response());

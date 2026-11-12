@@ -190,23 +190,6 @@ class DraftListLens {
 	}//end filtersOnStatus()
 
 	/**
-	 * The clause for a lens, or null when it puts no condition on the list.
-	 *
-	 * Kept for callers in other lanes' files; builds the DraftListing and delegates to clauseFor().
-	 *
-	 * @param string      $mode         One of EXCLUDE, ONLY, ANY and NONE.
-	 * @param string      $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
-	 * @param string|null $owner        The caller, already quoted or bound by the emitter; null for nobody.
-	 *
-	 * @return string|null The predicate, without a leading AND.
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
-	 */
-	public function sql(string $mode, string $columnPrefix, ?string $owner): ?string {
-		return $this->clauseFor(listing: new DraftListing(mode: $mode, owner: $owner), columnPrefix: $columnPrefix);
-	}//end sql()
-
-	/**
 	 * The clause for a draft listing, or null when it puts no condition on the list.
 	 *
 	 * @param DraftListing $listing      The lens mode and the caller.

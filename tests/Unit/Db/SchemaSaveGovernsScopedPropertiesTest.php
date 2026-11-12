@@ -41,6 +41,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * `SchemaMapper::assertScopedPropertiesAreGoverned()`.
@@ -53,6 +55,9 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedField
  */
 class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 
@@ -82,14 +87,18 @@ class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 		$appConfig->method('getValueInt')->willReturn($ceiling);
 
 		return new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			new PropertyValidatorHandler(),
-			$this->createMock(OrganisationMapper::class),
-			$session,
-			$groupManager,
-			$appConfig,
-			new NullLogger()
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $session,
+				groupManager: $groupManager
+			),
+			appConfig: $appConfig,
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: new PropertyValidatorHandler(),
+				logger: new NullLogger()
+			)
 		);
 	}//end mapperFor()
 

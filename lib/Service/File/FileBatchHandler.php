@@ -92,29 +92,6 @@ class FileBatchHandler {
 	/**
 	 * Execute a batch operation on multiple files.
 	 *
-	 * @param ObjectEntity $object The object entity owning the files.
-	 * @param string $action The batch action (publish|depublish|delete|label).
-	 * @param array<int> $fileIds Array of file IDs to operate on.
-	 * @param array $params Additional parameters (e.g., labels for label action).
-	 *
-	 * @return array{results: array, summary: array{total: int, succeeded: int, failed: int}} Batch results.
-	 *
-	 * @throws Exception If validation fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function executeBatch(
-		ObjectEntity $object,
-		string $action,
-		array $fileIds,
-		array $params = [],
-	): array {
-		return $this->runBatch(request: new FileBatchRequest(object: $object, action: $action, params: $params), fileIds: $fileIds);
-	}//end executeBatch()
-
-	/**
-	 * Validate the batch, then run the action on every file.
-	 *
 	 * @param FileBatchRequest $request The object, action and parameters.
 	 * @param array<int>       $fileIds The file IDs to operate on.
 	 *
@@ -124,7 +101,7 @@ class FileBatchHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function runBatch(FileBatchRequest $request, array $fileIds): array {
+	public function runBatch(FileBatchRequest $request, array $fileIds): array {
 		$this->assertValidBatch(action: $request->action, fileIds: $fileIds);
 
 		$results = [];
@@ -234,11 +211,8 @@ class FileBatchHandler {
 	 * @throws Exception If the FileService is missing or the update fails.
 	 */
 	private function label(FileBatchRequest $request, int $fileId): void {
-		$this->requireFileService()->updateFile(
-			filePath: $fileId,
-			content: null,
-			tags: ($request->params['labels'] ?? []),
-			object: $request->object
+		$this->requireFileService()->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $fileId, content: null, tags: ($request->params['labels'] ?? []), object: $request->object)
 		);
 	}//end label()
 

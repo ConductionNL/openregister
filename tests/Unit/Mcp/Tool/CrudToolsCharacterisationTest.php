@@ -37,12 +37,15 @@ use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pins what the agent, application, schema and register MCP tools write and return.
@@ -52,6 +55,31 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Mcp\Tool\SchemaTool
  * @covers \OCA\OpenRegister\Mcp\Tool\RegisterTool
  * @covers \OCA\OpenRegister\Mcp\Tool\ObjectsTool
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Tool\AbstractTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateAgentCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateObjectCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateRegisterCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\ListSchemasQuery
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCallTrail
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateRegisterCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand
+ * @uses \OCA\OpenRegister\Service\Schema\IncomingDefinition
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeRecord
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeSet
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateSchemaCommand
  */
 class CrudToolsCharacterisationTest extends TestCase
 {
@@ -336,15 +364,15 @@ class CrudToolsCharacterisationTest extends TestCase
 
             $versioning = $this->createMock(SchemaVersioningService::class);
             $versioning->method('classify')->willReturnCallback(
-                function (Schema $existing, array $newDefinition) use (&$log, $changeSet): SchemaChangeSet {
-                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($newDefinition);
+                function (Schema $existing, IncomingDefinition $incoming) use (&$log, $changeSet): SchemaChangeSet {
+                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($incoming->definition);
                     return $changeSet;
                 }
             );
             $versioning->method('nextVersion')->willReturn('2.0.0');
-            $versioning->method('recordChangelog')->willReturnCallback(
-                function (int $schemaId, ?string $version, SchemaChangeSet $set, bool $acknowledged, ?string $origin) use (&$log) {
-                    $log[] = 'changelog:' . $schemaId . ':' . $version . ':' . var_export($acknowledged, true) . ':' . $origin;
+            $versioning->method('recordChange')->willReturnCallback(
+                function (int $schemaId, SchemaChangeRecord $record) use (&$log) {
+                    $log[] = 'changelog:' . $schemaId . ':' . $record->version . ':' . var_export($record->acknowledged, true) . ':' . $record->origin;
                     return null;
                 }
             );
@@ -490,7 +518,8 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
         $service->method('saveObject')->willReturnCallback(
-            function (...$args) use (&$calls, $object): ObjectEntity {
+            function (array|ObjectEntity $payload, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls, $object): ObjectEntity {
+                $args = [$payload, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
                 $calls[] = ['saveObject', $args[0], $args[2], $args[3]];
                 return $object;
             }

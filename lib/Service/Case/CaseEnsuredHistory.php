@@ -84,7 +84,7 @@ final class CaseEnsuredHistory {
 	 */
 	public function auditsFor(CaseItem $item, string $actor): array {
 		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: 'ensure:' . $actor, actor: $actor, reason: null);
-		$creation = $why->auditFor(item: $item, fromState: '', toState: (string)$item->getState());
+		$creation = $why->auditFor(item: $item, change: new CaseStateChange(from: '', to: (string)$item->getState()));
 		$creation->setImported(false);
 		$audits = [$creation];
 		foreach (($this->byKey[(string)$item->getItemKey()] ?? []) as $entry) {
@@ -94,7 +94,7 @@ final class CaseEnsuredHistory {
 				actor: ($entry['actor'] ?? $actor),
 				reason: $entry['reason']
 			);
-			$audit = $why->auditFor(item: $item, fromState: $entry['from'], toState: $entry['to']);
+			$audit = $why->auditFor(item: $item, change: new CaseStateChange(from: $entry['from'], to: $entry['to']));
 			$audit->setImported(true);
 			$audit->setCreated($entry['at']);
 			$audits[] = $audit;

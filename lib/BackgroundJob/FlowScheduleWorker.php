@@ -76,19 +76,27 @@ class FlowScheduleWorker extends TimedJob {
 	 */
 	protected function run($argument): void {
 		try {
-			$fired = $this->schedule->fireDueFlows(now: $this->time->getDateTime());
-			if ($fired !== []) {
-				$this->logger->info(
-					message: '[FlowScheduleWorker] Queued ' . count($fired) . ' scheduled flow run(s)',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flows' => $fired]
-				);
-			}
+			$this->fireDue();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowScheduleWorker] Schedule tick failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}//end try
-
 	}//end run()
+
+	/**
+	 * Queue the flows whose schedule is due, and log how many.
+	 *
+	 * @return void
+	 */
+	private function fireDue(): void {
+		$fired = $this->schedule->fireDueFlows(now: $this->time->getDateTime());
+		if ($fired !== []) {
+			$this->logger->info(
+				message: '[FlowScheduleWorker] Queued ' . count($fired) . ' scheduled flow run(s)',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flows' => $fired]
+			);
+		}
+	}//end fireDue()
 }//end class

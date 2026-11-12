@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -89,27 +90,49 @@ class TaskNotificationListener implements IEventListener {
 		$task = $event->getTask();
 
 		try {
-			if ($task->isInTerminalState() === true || $event->assigneeChanged() === true) {
-				$this->withdraw(task: $task);
-			}
-
-			$this->notifier->notifyTransition(
-				task: $task,
-				extra: ['previousAssignee' => $event->getPreviousAssignee()],
-				context: [
-					'action' => $event->getAction(),
-					'from' => $event->getPreviousState(),
-					'to' => $task->getState(),
-					'actor' => $event->getActor(),
-				]
-			);
+			$this->deliver(event: $event);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[TaskNotificationListener] Task notification failed; the transition is unaffected: ' . $failure->getMessage(),
 				['task' => $task->getUuid(), 'action' => $event->getAction()]
 			);
-		}//end try
+		}
 	}//end handle()
+
+	/**
+	 * Withdraw what an answered or reassigned task no longer needs, then notify the transition.
+	 *
+	 * @param TaskTransitionedEvent $event The committed transition.
+	 *
+	 * @return void
+	 */
+	private function deliver(TaskTransitionedEvent $event): void {
+		$task = $event->getTask();
+		if ($task->isInTerminalState() === true || $event->assigneeChanged() === true) {
+			$this->withdraw(task: $task);
+		}
+
+		$this->notifier->notifyTransition(task: $task, notice: self::noticeOf(event: $event));
+	}//end deliver()
+
+	/**
+	 * The notice of a transition: the previous assignee, and the action, places and actor as context.
+	 *
+	 * @param TaskTransitionedEvent $event The committed transition.
+	 *
+	 * @return TransitionNotice
+	 */
+	private static function noticeOf(TaskTransitionedEvent $event): TransitionNotice {
+		return new TransitionNotice(
+			extra: ['previousAssignee' => $event->getPreviousAssignee()],
+			context: [
+				'action' => $event->getAction(),
+				'from' => $event->getPreviousState(),
+				'to' => $event->getTask()->getState(),
+				'actor' => $event->getActor(),
+			]
+		);
+	}//end noticeOf()
 
 	/**
 	 * Withdraw every outstanding notification about a task, for every recipient.

@@ -289,17 +289,33 @@ class QueryComplexityAnalyzer {
 			return max(1, (int)$value->value);
 		}
 
-		if ($value instanceof VariableNode === false || $variables === null) {
+		if ($value instanceof VariableNode === false) {
 			return null;
 		}
 
-		$variable = ($variables[$value->name->value] ?? null);
+		return $this->variableMultiplier(name: $value->name->value, variables: $variables);
+	}//end argumentMultiplier()
+
+	/**
+	 * The multiplier a `first: $name` variable gives: its numeric value, at least 1.
+	 *
+	 * @param string                    $name      The variable name
+	 * @param array<string, mixed>|null $variables Query variables
+	 *
+	 * @return int|null The multiplier, or null when there are no variables or the value is not numeric
+	 */
+	private function variableMultiplier(string $name, ?array $variables): ?int {
+		if ($variables === null) {
+			return null;
+		}
+
+		$variable = ($variables[$name] ?? null);
 		if (is_numeric(value: $variable) === true) {
 			return max(1, (int)$variable);
 		}
 
 		return null;
-	}//end argumentMultiplier()
+	}//end variableMultiplier()
 
 	/**
 	 * Get the resolver cost for a field name.

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -20,9 +21,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -122,12 +126,13 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		}
 
 		$updated = $handler->updateObject(
-			register: (($case['ids'] ?? false) === true) ? 3 : $register,
-			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
-			data: $case['data'],
-			existingObject: $existing,
-			silent: ($case['silent'] ?? false),
-			oldObject: $old
+			update: new StoredObjectUpdate(
+				register: (($case['ids'] ?? false) === true) ? 3 : $register,
+				schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
+				data: $case['data'],
+				existingObject: $existing
+			),
+			options: new ObjectUpdateOptions(silent: ($case['silent'] ?? false), oldObject: $old)
 		);
 
 		$lines = array_values(array_filter($logger->lines, static fn (string $l): bool => str_contains($l, 'updateInverseRelations') || str_contains($l, 'archive')));
@@ -182,15 +187,15 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			return $log;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
-			$object[$propertyName] = 42;
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
+			$write->data[$propertyName] = 42;
 		});
 		$retention = $this->createMock(RetentionService::class);
-		$retention->method('recalculateArchiveActionDate')->willReturnCallback(function (ObjectEntity $object, Schema $schema, array $oldObject): ObjectEntity {
-			$this->trace[] = ['retention', $oldObject];
-			return $object;
+		$retention->method('recalculateActionDate')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {
+			$this->trace[] = ['retention', $update->previousData];
+			return $update->object;
 		});
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
@@ -199,10 +204,8 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $mapper,
-						unifiedObjectMapper: $unified,
-						schemaMapper: $schemas,
-						registerMapper: $registers
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $mapper),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $audit,

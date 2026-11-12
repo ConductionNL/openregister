@@ -568,6 +568,14 @@
                 "statement.execute": []
             },
             {
+                "logger.debug": [
+                    "[DatabaseServerProfile] Could not read the MySQL server version",
+                    {
+                        "exception": "denied"
+                    }
+                ]
+            },
+            {
                 "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {

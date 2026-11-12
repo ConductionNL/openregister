@@ -30,6 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\IDBConnection;
@@ -110,6 +111,15 @@ final class SharedMasterDataGuardHost {
  * Golden outcomes of the shared master data write refusal.
  *
  * @covers \OCA\OpenRegister\Db\MultiTenancyTrait
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Service\DeclaredRow
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
+ * @uses \OCA\OpenRegister\Service\TenantLogRedactor
+ * @uses \OCA\OpenRegister\Exception\SharedMasterDataWriteException
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 
@@ -160,7 +170,7 @@ class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 	public function testAConsumerIsRefusedNamingTheHolder(): void {
 		$resolver = $this->createMock(SharedMasterDataServiceInterface::class);
 		$resolver->expects($this->once())->method('assertWritable')
-			->with(SharedMasterDataServiceInterface::SCHEMAS, 5, ['org-b'])
+			->with(new DeclaredRow(SharedMasterDataServiceInterface::SCHEMAS, 5), ['org-b'])
 			->willThrowException(new SharedMasterDataWriteException('org-a', 'Holder', 'schema'));
 		$resolver->expects($this->never())->method('clearCache');
 
@@ -193,7 +203,7 @@ class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 	public function testANonConsumerMeetsTheGenericRefusal(): void {
 		$resolver = $this->createMock(SharedMasterDataServiceInterface::class);
 		$resolver->expects($this->once())->method('assertWritable')
-			->with(SharedMasterDataServiceInterface::SCHEMAS, 7, ['org-b']);
+			->with(new DeclaredRow(SharedMasterDataServiceInterface::SCHEMAS, 7), ['org-b']);
 		$resolver->expects($this->once())->method('clearCache');
 
 		$host = new SharedMasterDataGuardHost('org-b', $resolver, $this->logger());

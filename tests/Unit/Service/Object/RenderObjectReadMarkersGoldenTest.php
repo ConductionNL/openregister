@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderPath;
 use OCA\OpenRegister\Service\Object\RenderPreloads;
 use OCA\OpenRegister\Service\Object\RenderRun;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use PHPUnit\Framework\TestCase;

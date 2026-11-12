@@ -123,9 +123,9 @@ class ObjectActionGateRightGoldenTest extends TestCase {
 		$schema = new Schema();
 		$object = self::object();
 
-		$this->assertTrue($this->gate(answer: true)->may(schema: $schema, right: 'read', object: $object));
-		$this->assertFalse($this->gate(answer: false)->may(schema: $schema, right: 'read', object: $object));
-		$this->assertFalse($this->gate(answer: false)->may(schema: $schema, right: 'read', object: null));
+		$this->assertTrue($this->gate(answer: true)->holds(new RightCheck($schema, 'read', $object)));
+		$this->assertFalse($this->gate(answer: false)->holds(new RightCheck($schema, 'read', $object)));
+		$this->assertFalse($this->gate(answer: false)->holds(new RightCheck($schema, 'read', null)));
 		$this->assertSame([$schema, 'read', 'anna', 'bob', true, $object], array_slice($this->asked[0], 0, 6));
 		$this->assertSame([$schema, 'read', 'anna', null, true, null], array_slice($this->asked[2], 0, 6));
 	}//end testMayAsksTheHandlerAndReturnsItsAnswer()

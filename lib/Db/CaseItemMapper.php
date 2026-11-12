@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -134,11 +135,29 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 		}
 
 		$item->setUpdated(new DateTime());
-		$properties = $item->getUpdatedFields();
-		unset($properties['id']);
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName());
+		$this->setChangedFields(qb: $qb, item: $item);
+
+		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
+
+		return $qb->executeStatement() === 1;
+	}//end updateIfState()
+
+	/**
+	 * Set every changed field of an item, except its id, on an update.
+	 *
+	 * @param IQueryBuilder $qb   The update.
+	 * @param CaseItem      $item The item.
+	 *
+	 * @return void
+	 */
+	private function setChangedFields(IQueryBuilder $qb, CaseItem $item): void {
+		$properties = $item->getUpdatedFields();
+		unset($properties['id']);
+
 		foreach (array_keys($properties) as $property) {
 			$getter = 'get' . ucfirst($property);
 			$qb->set(
@@ -146,12 +165,7 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 				$qb->createNamedParameter($item->$getter(), $this->getParameterTypeForProperty(entity: $item, property: $property))
 			);
 		}
-
-		$qb->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($expectedState)));
-
-		return $qb->executeStatement() === 1;
-	}//end updateIfState()
+	}//end setChangedFields()
 
 	/**
 	 * Find a plan item by its public uuid.
@@ -246,23 +260,22 @@ class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 	 * `(plan_item_type, state)` index. The total is {@see countByTypeAndState()}
 	 * over the same predicate, so page and total cannot disagree.
 	 *
-	 * @param string|null $type Restrict to one plan-item type, or null for all.
-	 * @param string|null $state Restrict to one state, or null for all.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery $query The page (limit, offset), and the `type` and `state` filters: each
+	 *                         restricts to one plan-item type or state, or is null for all.
 	 *
 	 * @return array<int, CaseItem> The page, oldest first.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array {
+	public function findByTypeAndState(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, filters: ['plan_item_type' => $type, 'state' => $state]);
+		$filters = ['plan_item_type' => ($query->filters['type'] ?? null), 'state' => ($query->filters['state'] ?? null)];
+		$this->applyTypeAndState(qb: $qb, filters: $filters);
 		$qb->orderBy('id', 'ASC')
-			->setMaxResults(max(1, $limit))
-			->setFirstResult(max(0, $offset));
+			->setMaxResults(max(1, $query->limit))
+			->setFirstResult(max(0, (int)$query->offset));
 
 		return $this->findEntities(query: $qb);
 	}//end findByTypeAndState()

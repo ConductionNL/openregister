@@ -60,6 +60,23 @@ final class DynamicAnchorScan {
 			return;
 		}
 
+		$this->recordNode(node: $node, pointer: $pointer);
+
+		foreach ($node as $key => $child) {
+			$segment = str_replace(['~', '/'], ['~0', '~1'], (string)$key);
+			$this->collect(node: $child, pointer: $pointer . '/' . $segment);
+		}
+	}//end collect()
+
+	/**
+	 * Count a nested `$id` and record a `$dynamicAnchor` on one node.
+	 *
+	 * @param array<int|string, mixed> $node    The schema node.
+	 * @param string                   $pointer The JSON pointer of that node ('' is the root).
+	 *
+	 * @return void
+	 */
+	private function recordNode(array $node, string $pointer): void {
 		if ($pointer !== '' && isset($node['$id']) === true) {
 			$this->nestedIds++;
 		}
@@ -67,10 +84,5 @@ final class DynamicAnchorScan {
 		if (isset($node['$dynamicAnchor']) === true && is_string($node['$dynamicAnchor']) === true) {
 			$this->anchors[$node['$dynamicAnchor']][] = $pointer;
 		}
-
-		foreach ($node as $key => $child) {
-			$segment = str_replace(['~', '/'], ['~0', '~1'], (string)$key);
-			$this->collect(node: $child, pointer: $pointer . '/' . $segment);
-		}
-	}//end collect()
+	}//end recordNode()
 }//end class

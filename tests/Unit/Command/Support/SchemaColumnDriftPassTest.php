@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command\Support;
 
 use OCA\OpenRegister\Command\Support\SchemaColumnDriftPass;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -130,7 +131,7 @@ class SchemaColumnDriftPassTest extends TestCase {
 	public function testApplyEnsuresTheTableAndWidensItsColumns(): void {
 		$this->drift(missing: ['title' => self::REQUIRED['title']], narrow: []);
 		$this->mapper->expects($this->once())->method('ensureTableForRegisterSchema')->with($this->register, $this->schema)->willReturn(true);
-		$this->mapper->expects($this->once())->method('widenDecimalColumns')->with('openregister_table_7_42', self::CURRENT, self::REQUIRED)->willReturn([]);
+		$this->mapper->expects($this->once())->method('widenDecimalColumns')->with('openregister_table_7_42', new MagicColumnDrift(self::CURRENT, self::REQUIRED))->willReturn([]);
 
 		$counts = $this->pass(apply: true)->reconcile(register: $this->register, schema: $this->schema);
 

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 
 /**
  * Golden outcomes of token-set decoding and identity recording.
@@ -44,17 +45,9 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 
 	public function testATokenResponseIsReadWithEveryFallback(): void {
 		$now = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
-		$previous = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'OLD', 'refresh_token' => 'OLDRT', 'scope' => 'a b'],
-			now: $now
-		)->withAccount(id: '1', handle: 'h', displayName: 'd');
+		$previous = OAuth2TokenSet::fromResponse(response: ['access_token' => 'OLD', 'refresh_token' => 'OLDRT', 'scope' => 'a b'], options: new TokenResponseOptions(now: $now))->withAccount(id: '1', handle: 'h', displayName: 'd');
 
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => ' NEW ', 'expires_in' => '60', 'token_type' => ' ', 'scope' => ''],
-			requestedScopes: [],
-			previous: $previous,
-			now: $now
-		);
+		$set = OAuth2TokenSet::fromResponse(response: ['access_token' => ' NEW ', 'expires_in' => '60', 'token_type' => ' ', 'scope' => ''], options: new TokenResponseOptions(requestedScopes: [], previous: $previous, now: $now));
 
 		$this->assertSame(
 			[
@@ -90,11 +83,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 	 * @param string|null $expiresAt The expected expiry.
 	 */
 	public function testTokenResponseScopesAndExpiry(array $extra, array $requested, array $scopes, ?string $expiresAt): void {
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: array_merge(['access_token' => 'AT'], $extra),
-			requestedScopes: $requested,
-			now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')
-		);
+		$set = OAuth2TokenSet::fromResponse(response: array_merge(['access_token' => 'AT'], $extra), options: new TokenResponseOptions(requestedScopes: $requested, now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
 
 		$this->assertSame($scopes, $set->getScopes());
 		$this->assertSame($expiresAt, $set->getExpiresAt()?->format(DATE_ATOM));
@@ -116,7 +105,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 	public function testATokenResponseWithoutAnAccessTokenIsRefused(mixed $token): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('token response carries no access token');
-		OAuth2TokenSet::fromTokenResponse(response: ['access_token' => $token]);
+		OAuth2TokenSet::fromResponse(response: ['access_token' => $token]);
 	}
 
 	public function testAStoredDocumentIsReadWithEveryFallback(): void {
@@ -220,7 +209,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 				provider: $provider,
 				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
 				existing: null,
-				tokenSet: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT'])
+				tokenSet: OAuth2TokenSet::fromResponse(response: ['access_token' => 'AT'])
 			),
 			address: new TokenSetAddress(credentialId: 'cred-1', scope: 'organisation')
 		);
@@ -255,7 +244,7 @@ class OAuth2TokenSetGoldenTest extends TestCase {
 				provider: ['identity' => ['method' => 'POST', 'path' => '/me', 'idField' => 'id']],
 				flow: new \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims(claims: ['u' => 'alice']),
 				existing: null,
-				tokenSet: OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'AT'])
+				tokenSet: OAuth2TokenSet::fromResponse(response: ['access_token' => 'AT'])
 			),
 			address: new TokenSetAddress(credentialId: 'c', scope: 'personal')
 		);

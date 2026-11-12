@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -40,6 +41,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * What a create through SaveObject::saveObject() does around the insert: the
@@ -146,17 +151,11 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: false,
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\RuntimeException $e) {
 			return ['trace' => $this->trace, 'thrown' => $e->getMessage()];
 		}
@@ -191,14 +190,14 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
 				throw new \RuntimeException('disk full');
 			}
 
-			$object[$propertyName] = 42;
+			$write->data[$propertyName] = 42;
 		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willThrowException(new DoesNotExistException('none'));
@@ -250,10 +249,8 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $mapper,
-						unifiedObjectMapper: $unified,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $audit,

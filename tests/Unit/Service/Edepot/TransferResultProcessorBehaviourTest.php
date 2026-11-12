@@ -57,7 +57,7 @@ class TransferResultProcessorBehaviourTest extends TestCase {
 	private function processor(): TransferResultProcessor {
 		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), $this->logger), new TransferSettings($this->createMock(IAppConfig::class), $this->logger), $this->createMock(INotificationManager::class));
 		$records  = $this->createMock(TransferRecordService::class);
-		$recorder = new TransferOutcomeRecorder($this->createMock(MagicMapperInterface::class), $records, $auditLog, $this->logger);
+		$recorder = new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->createMock(MagicMapperInterface::class), records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 		return new TransferResultProcessor($recorder, $auditLog);
 	}//end processor()
 

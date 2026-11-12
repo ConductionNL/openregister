@@ -94,29 +94,13 @@ class ExampleSetAccounts {
 	}//end newPassword()
 
 	/**
-	 * Create an account.
-	 *
-	 * @param string $uid         The account id.
-	 * @param string $displayName The name shown.
-	 * @param string $email       The e-mail address, or ''.
-	 * @param string $password    The password.
-	 *
-	 * @return string '' when created, otherwise why not.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
-	 */
-	public function createUser(string $uid, string $displayName, string $email, string $password): string {
-		return $this->createAccount(account: new ExampleSetNewAccount(uid: $uid, displayName: $displayName, email: $email, password: $password));
-	}//end createUser()
-
-	/**
 	 * Create an account and describe it.
 	 *
 	 * @param ExampleSetNewAccount $account The id, names and first password.
 	 *
 	 * @return string '' when created, ALREADY_EXISTS, or why it failed.
 	 */
-	private function createAccount(ExampleSetNewAccount $account): string {
+	public function createAccount(ExampleSetNewAccount $account): string {
 		$user = $this->newUser(uid: $account->uid, password: $account->password);
 		if (is_string($user) === true) {
 			return $user;

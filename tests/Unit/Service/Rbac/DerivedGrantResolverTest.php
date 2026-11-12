@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
-use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -116,8 +115,7 @@ class DerivedGrantResolverTest extends TestCase {
 				['groups' => ['lapsed'], 'until' => '2000-01-01T00:00:00+00:00'],
 				['groups' => ['elsewhere'], 'scopedTo' => ['registers' => ['other']]],
 			],
-			area: ['register' => 'zaken'],
-			constraints: new GrantConstraints()
+			area: ['register' => 'zaken']
 		);
 
 		$this->assertSame(['hr', 'staff', 'audit'], $groups);

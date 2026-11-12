@@ -132,13 +132,8 @@ class ProcessingLogRetentionJob extends TimedJob {
 		$retention = $this->retention();
 		$cutoff = $this->cutoff(retention: $retention);
 
-		try {
-			$deleted = $this->entries->deleteCreatedBefore(cutoff: $cutoff);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[ProcessingLogRetention] Prune failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$deleted = $this->prunedCount(cutoff: $cutoff);
+		if ($deleted === null) {
 			return;
 		}
 
@@ -152,6 +147,25 @@ class ProcessingLogRetentionJob extends TimedJob {
 		}
 
 	}//end run()
+
+	/**
+	 * Delete the entries created before the cutoff.
+	 *
+	 * @param DateTime $cutoff The retention cutoff.
+	 *
+	 * @return int|null How many were deleted; null, logged, when the prune failed.
+	 */
+	private function prunedCount(DateTime $cutoff): ?int {
+		try {
+			return $this->entries->deleteCreatedBefore(cutoff: $cutoff);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[ProcessingLogRetention] Prune failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end prunedCount()
 
 	/**
 	 * The configured retention, or the default when it is not a positive duration.
@@ -198,13 +212,7 @@ class ProcessingLogRetentionJob extends TimedJob {
 	 * @return void
 	 */
 	private function recordPurge(ProcessingLogPrune $prune): void {
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction(self::ACTION_PRUNED);
-		$row->setUser('system');
-		$row->setUserName('System');
-		$row->setChanged($prune->recorded());
-		$row->setCreated($this->time->getDateTime());
+		$row = $this->purgeRow(prune: $prune);
 
 		try {
 			$this->auditTrail->insertAuditTrails(entries: [$row]);
@@ -215,4 +223,22 @@ class ProcessingLogRetentionJob extends TimedJob {
 			);
 		}
 	}//end recordPurge()
+
+	/**
+	 * The audit-trail row that records a prune.
+	 *
+	 * @param ProcessingLogPrune $prune The prune.
+	 *
+	 * @return AuditTrail
+	 */
+	private function purgeRow(ProcessingLogPrune $prune): AuditTrail {
+		$row = new AuditTrail();
+		$row->setUuid(Uuid::v4()->toRfc4122());
+		$row->setAction(self::ACTION_PRUNED);
+		$row->setUser('system');
+		$row->setUserName('System');
+		$row->setChanged($prune->recorded());
+		$row->setCreated($this->time->getDateTime());
+		return $row;
+	}//end purgeRow()
 }//end class

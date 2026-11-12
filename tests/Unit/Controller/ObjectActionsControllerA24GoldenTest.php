@@ -34,6 +34,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
@@ -50,6 +51,38 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectActionsController
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectActionsCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectActionsExecution
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectActionsSelection
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionBody
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionExecution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionIdentity
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputSchema
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionOffer
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionPresentation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionRunPolicy
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionShape
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Exception\BulkJobRefusedException
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection
  */
 class ObjectActionsControllerA24GoldenTest extends TestCase {
 
@@ -111,9 +144,6 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
-		$this->runner->method('target')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
-		);
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 
@@ -243,8 +273,7 @@ class ObjectActionsControllerA24GoldenTest extends TestCase {
 		$this->runner->expects($this->once())->method('run')
 			->with(
 				$this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'uuid-a', 'register' => 'r', 'schema' => 's']),
-				'assign',
-				['x' => 1]
+				new ObjectActionRequest('assign', ['x' => 1])
 			)
 			->willReturn(['status' => 403, 'body' => ['error' => 'refused']]);
 

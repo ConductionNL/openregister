@@ -49,16 +49,54 @@ class RowsPdfSection {
 	public function build(RowsTable $table): string {
 		$columns = $table->labels();
 
+		return $this->sectionHead(table: $table)
+			. '<table><thead><tr>' . $this->headerCells(columns: $columns) . '</tr></thead><tbody>'
+			. $this->bodyRows(table: $table, columns: $columns)
+			. '</tbody></table></div>';
+	}//end build()
+
+	/**
+	 * The section's opening: its title and when it was exported with how many rows.
+	 *
+	 * @param RowsTable $table The table.
+	 *
+	 * @return string The HTML.
+	 */
+	private function sectionHead(RowsTable $table): string {
 		$html = '<div class="pdf-section">';
 		$html .= '<h1>' . htmlspecialchars($table->title, ENT_QUOTES, 'UTF-8') . '</h1>';
 		$html .= '<p class="meta">Exported: ' . htmlspecialchars((new DateTime())->format('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8')
 			. ' &middot; Rows: ' . count($table->rows) . '</p>';
-		$html .= '<table><thead><tr>';
+
+		return $html;
+	}//end sectionHead()
+
+	/**
+	 * One header cell per column label.
+	 *
+	 * @param array<int|string, mixed> $columns The column labels.
+	 *
+	 * @return string The HTML.
+	 */
+	private function headerCells(array $columns): string {
+		$html = '';
 		foreach ($columns as $label) {
 			$html .= '<th>' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</th>';
 		}
 
-		$html .= '</tr></thead><tbody>';
+		return $html;
+	}//end headerCells()
+
+	/**
+	 * One table row per data row, one truncated cell per column.
+	 *
+	 * @param RowsTable                $table   The table.
+	 * @param array<int|string, mixed> $columns The column labels, keyed as the rows are.
+	 *
+	 * @return string The HTML.
+	 */
+	private function bodyRows(RowsTable $table, array $columns): string {
+		$html = '';
 		foreach ($table->rows as $row) {
 			$html .= '<tr>';
 			foreach (array_keys($columns) as $key) {
@@ -69,8 +107,8 @@ class RowsPdfSection {
 			$html .= '</tr>';
 		}
 
-		return $html . '</tbody></table></div>';
-	}//end build()
+		return $html;
+	}//end bodyRows()
 
 	/**
 	 * The text of one caller-supplied cell

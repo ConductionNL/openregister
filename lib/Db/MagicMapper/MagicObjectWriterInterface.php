@@ -167,13 +167,9 @@ interface MagicObjectWriterInterface {
 	 * This method provides high-performance bulk insert/update operations for dynamic tables.
 	 * It delegates to MagicBulkHandler for the actual database operations.
 	 *
-	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
-	 * @param string $tableName Target table name
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
+	 * @param BulkUpsertCommand $command The rows, their register and schema, the target table
+	 *                                   name, and whether anything downstream reads the
+	 *                                   pre-update rows.
 	 *
 	 * @return array[] Array of complete objects with object_status field
 	 *
@@ -181,7 +177,7 @@ interface MagicObjectWriterInterface {
 	 *
 	 * @psalm-return list<array<string, mixed>>
 	 */
-	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array;
+	public function bulkUpsert(BulkUpsertCommand $command): array;
 
 	/**
 	 * Ultra-fast bulk save operation with automatic routing.

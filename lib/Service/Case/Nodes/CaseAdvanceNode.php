@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -210,15 +212,16 @@ class CaseAdvanceNode extends CaseNodeBase implements CaseAdvanceNodeInterface {
 	/**
 	 * Move the item on each distinct object.
 	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 * @param array $context The run context.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying `case` = {item, state}.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$work = fn (CaseStepCall $call): array => $this->advance(call: $call, move: self::moveOf(config: $config));
 
 		return $this->perTarget(run: new CaseStepRun(items: $items, config: $config, context: $context), work: $work);
@@ -242,7 +245,8 @@ class CaseAdvanceNode extends CaseNodeBase implements CaseAdvanceNodeInterface {
 		$plan = $this->steps->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
 		$row = $this->liveRealisation(items: (array)($plan['items'] ?? []), key: $move['key']);
 		if ($row !== null) {
-			$moved = $this->steps->plans->transition(itemUuid: (string)$row['uuid'], to: $move['to'], uid: $uid, reason: $move['reason']);
+			$transition = new CaseItemTransition(itemUuid: (string)$row['uuid'], to: $move['to'], actor: $uid, reason: $move['reason']);
+			$moved = $this->steps->plans->transition(transition: $transition);
 
 			return ['item' => $move['key'], 'state' => (string)$moved->getState()];
 		}

@@ -280,52 +280,89 @@ class FlowRunAttribution {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function declaredByTrigger(?object $flow, string $trigger): array {
-		$none = ['user' => null, 'declaredBy' => null];
+		foreach ($this->nodesDeclaringFor(flow: $flow, trigger: $trigger) as $node) {
+			$declared = $this->declaredByNode(node: $node);
+			if ($declared !== null) {
+				return $declared;
+			}
+		}
 
+		return ['user' => null, 'declaredBy' => null];
+	}//end declaredByTrigger()
+
+	/**
+	 * The flow's nodes when this trigger is one that declares its identity on a node, else none.
+	 *
+	 * @param object|null $flow    The flow entity, or null when unreadable.
+	 * @param string      $trigger What started the run.
+	 *
+	 * @return array The nodes to look for a declaration in.
+	 */
+	private function nodesDeclaringFor(?object $flow, string $trigger): array {
 		if ($flow === null || in_array($trigger, [self::TRIGGER_SCHEDULE, self::TRIGGER_CASE], true) === false) {
-			return $none;
+			return [];
 		}
 
 		$nodes = $flow->getNodes();
 		if (is_array($nodes) === false) {
-			return $none;
+			return [];
 		}
 
-		foreach ($nodes as $node) {
-			if (is_array($node) === false
-				|| ($node['type'] ?? null) !== self::NODE_TRIGGER_SCHEDULE
-			) {
-				continue;
-			}
+		return $nodes;
+	}//end nodesDeclaringFor()
 
-			// `config` is `[]` on a flow still mid-cutover from the trigger
-			// COLUMNS to trigger NODES — measured on 3 of this instance's flows,
-			// all of which keep their cron in the legacy column. Such a node
-			// declares no identity, so it yields null and the run is refused
-			// rather than fired ownerless.
-			$config = ($node['config'] ?? []);
-			if (is_array($config) === false) {
-				continue;
-			}
-
-			$declared = $this->orNull(value: ($config[self::CONFIG_RUN_AS] ?? null));
-			if ($declared !== null) {
-				return [
-					'user' => $declared,
-					// Server-written at save time by FlowTriggerValidator, and
-					// absent whenever the trigger names its own saver. Its
-					// presence is what tells the fire path there is a grant to
-					// re-resolve; its absence means the identity was nobody's to
-					// delegate.
-					'declaredBy' => $this->orNull(
-						value: ($config[FlowTriggerValidator::CONFIG_DECLARED_BY] ?? null)
-					),
-				];
-			}
+	/**
+	 * The identity one flow node declares, or null when it is no schedule trigger or declares none.
+	 *
+	 * @param mixed $node One entry of the flow's nodes.
+	 *
+	 * @return array{user: string, declaredBy: string|null}|null The declaration, or null.
+	 */
+	private function declaredByNode(mixed $node): ?array {
+		if (is_array($node) === false
+			|| ($node['type'] ?? null) !== self::NODE_TRIGGER_SCHEDULE
+		) {
+			return null;
 		}
 
-		return $none;
-	}//end declaredByTrigger()
+		// `config` is `[]` on a flow still mid-cutover from the trigger
+		// COLUMNS to trigger NODES — measured on 3 of this instance's flows,
+		// all of which keep their cron in the legacy column. Such a node
+		// declares no identity, so it yields null and the run is refused
+		// rather than fired ownerless.
+		$config = ($node['config'] ?? []);
+		if (is_array($config) === false) {
+			return null;
+		}
+
+		return $this->declaredByConfig(config: $config);
+	}//end declaredByNode()
+
+	/**
+	 * The identity a schedule trigger's config declares, and who asserted it.
+	 *
+	 * @param array $config The schedule trigger node's config.
+	 *
+	 * @return array{user: string, declaredBy: string|null}|null The declaration, or null when it names nobody.
+	 */
+	private function declaredByConfig(array $config): ?array {
+		$declared = $this->orNull(value: ($config[self::CONFIG_RUN_AS] ?? null));
+		if ($declared === null) {
+			return null;
+		}
+
+		return [
+			'user' => $declared,
+			// Server-written at save time by FlowTriggerValidator, and
+			// absent whenever the trigger names its own saver. Its
+			// presence is what tells the fire path there is a grant to
+			// re-resolve; its absence means the identity was nobody's to
+			// delegate.
+			'declaredBy' => $this->orNull(
+				value: ($config[FlowTriggerValidator::CONFIG_DECLARED_BY] ?? null)
+			),
+		];
+	}//end declaredByConfig()
 
 	/**
 	 * Load the flow, or null when it cannot be read.

@@ -1,0 +1,116 @@
+{
+    "no annotation": [],
+    "annotation not an array": [],
+    "skipped entries": [],
+    "plain write reversible": [],
+    "not reversible": [],
+    "reversible absent": [],
+    "irreversible kinds": [
+        {
+            "code": "reversibility-irreversible-kind",
+            "message": "The action \"a\" declares kind \"destroy\" and reversible true. A destroy leaves nothing to write back, so it cannot be undone."
+        },
+        {
+            "code": "reversibility-irreversible-kind",
+            "message": "The action \"b\" declares kind \"dispatch\" and reversible true. A dispatch leaves nothing to write back, so it cannot be undone."
+        },
+        {
+            "code": "reversibility-irreversible-kind",
+            "message": "The action \"c\" declares kind \"transfer\" and reversible true. A transfer leaves nothing to write back, so it cannot be undone."
+        }
+    ],
+    "undeclared kind reads irreversible": [
+        {
+            "code": "reversibility-undeclared-kind",
+            "message": "The action \"purgeOld\" declares reversible true and names no kind, and its key reads as an act that cannot be undone. Add \"kind\" naming what it really does."
+        },
+        {
+            "code": "reversibility-undeclared-kind",
+            "message": "The action \"SendMail\" declares reversible true and names no kind, and its key reads as an act that cannot be undone. Add \"kind\" naming what it really does."
+        },
+        {
+            "code": "reversibility-undeclared-kind",
+            "message": "The action \"archiveToEdepot\" declares reversible true and names no kind, and its key reads as an act that cannot be undone. Add \"kind\" naming what it really does."
+        }
+    ],
+    "undeclared kind reads harmless": [],
+    "explicit write on destructive key": [],
+    "unknown kind": [
+        {
+            "code": "reversibility-unknown-kind",
+            "message": "The action \"x\" names a kind the vocabulary does not hold. Use one of write, destroy, dispatch, transfer."
+        },
+        {
+            "code": "reversibility-unknown-kind",
+            "message": "The action \"y\" names a kind the vocabulary does not hold. Use one of write, destroy, dispatch, transfer."
+        }
+    ],
+    "not a boolean": [
+        {
+            "code": "reversibility-not-a-boolean",
+            "message": "The action \"x\" must declare reversible as true or false."
+        },
+        {
+            "code": "reversibility-not-a-boolean",
+            "message": "The action \"y\" must declare reversible as true or false."
+        }
+    ],
+    "window out of range": [
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"w0\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        },
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"w1\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        },
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"w2\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        },
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"w3\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        }
+    ],
+    "window without reversible": [
+        {
+            "code": "reversibility-window-without-reversible",
+            "message": "The action \"w\" names a reversalWindow but does not declare itself reversible, so the window bounds nothing."
+        },
+        {
+            "code": "reversibility-window-without-reversible",
+            "message": "The action \"v\" names a reversalWindow but does not declare itself reversible, so the window bounds nothing."
+        }
+    ],
+    "every shape refusal at once": [
+        {
+            "code": "reversibility-unknown-kind",
+            "message": "The action \"deleteAll\" names a kind the vocabulary does not hold. Use one of write, destroy, dispatch, transfer."
+        },
+        {
+            "code": "reversibility-not-a-boolean",
+            "message": "The action \"deleteAll\" must declare reversible as true or false."
+        },
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"deleteAll\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        }
+    ],
+    "shape refusals stop the reversibility checks": [
+        {
+            "code": "reversibility-window-out-of-range",
+            "message": "The action \"purge\" must declare reversalWindow as a whole number of seconds between 1 and 7776000."
+        }
+    ],
+    "unknown kind and window without reversible": [
+        {
+            "code": "reversibility-unknown-kind",
+            "message": "The action \"x\" names a kind the vocabulary does not hold. Use one of write, destroy, dispatch, transfer."
+        },
+        {
+            "code": "reversibility-window-without-reversible",
+            "message": "The action \"x\" names a reversalWindow but does not declare itself reversible, so the window bounds nothing."
+        }
+    ]
+}

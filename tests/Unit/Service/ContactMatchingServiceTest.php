@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Service\ContactMatchingMappers;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -331,7 +332,7 @@ class ContactMatchingServiceTest extends TestCase {
 				],
 			]);
 
-		$results = $this->service->matchContact('jan@example.nl', 'Jan de Vries');
+		$results = $this->service->matchContact(contact: new ContactDetails(email: 'jan@example.nl', name: 'Jan de Vries'));
 
 		// Should be deduplicated: only one result.
 		$this->assertCount(1, $results);
@@ -359,7 +360,7 @@ class ContactMatchingServiceTest extends TestCase {
 				],
 			]);
 
-		$results = $this->service->matchContact('', 'Jan de Vries');
+		$results = $this->service->matchContact(contact: new ContactDetails(email: '', name: 'Jan de Vries'));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('name', $results[0]['matchType']);
@@ -405,11 +406,7 @@ class ContactMatchingServiceTest extends TestCase {
 				];
 			});
 
-		$results = $this->service->matchContact(
-			'info@gemeente.nl',
-			'Info Account',
-			'Gemeente Tilburg'
-		);
+		$results = $this->service->matchContact(contact: new ContactDetails(email: 'info@gemeente.nl', name: 'Info Account', organization: 'Gemeente Tilburg'));
 
 		// Both email match and org match should appear.
 		$this->assertGreaterThanOrEqual(1, count($results));

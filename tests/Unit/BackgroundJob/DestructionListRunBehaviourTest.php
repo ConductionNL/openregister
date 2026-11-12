@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\DestructionListRun;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -28,10 +29,12 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -41,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Behaviour of DestructionListRun::execute().
@@ -208,24 +212,25 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$retention->method('hasActiveLegalHold')->willReturnCallback(
 			fn (ObjectEntity $object): bool => in_array($object->getUuid(), $this->held, true)
 		);
-		$retention->method('generateDestructionCertificate')->willReturnCallback(
-			fn (array $list, int $count, string $at): array => ['certificateFor' => $list['status'], 'count' => $count, 'at' => $at]
+		$retention->method('certify')->willReturnCallback(
+			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
 		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
 		$settingsReader->method('getArchivalSettingsOnly')->willReturn($settings);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->audits[] = [$object->getUuid(), $action, $context, ($object->getRetention()['archiefstatus'] ?? null)];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$delete = $this->createMock(DeleteObject::class);
 		$delete->method('deleteObject')->willReturnCallback(
-			function ($register, $schema, string $uuid, $original, bool $rbac, bool $multitenancy): bool {
+			function (DeletionRequest $request, bool $rbac, bool $multitenancy): bool {
+				[$register, $schema, $uuid, $original] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId];
 				if (in_array($uuid, $this->undeletable, true) === true) {
 					throw new RuntimeException('locked '.$uuid);
 				}
@@ -245,7 +250,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$saver = $this->createMock(SaveObjectWriterInterface::class);
 		$saver->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($certFails): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($certFails): ObjectEntity {
 				if ($certFails === true) {
 					throw new RuntimeException('cert store down');
 				}
@@ -254,7 +259,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 				$saved = new ObjectEntity();
 				$saved->setUuid('cert-uuid');
 				return $saved;
-			}
+			})
 		);
 
 		$notifications = $this->createMock(INotificationManager::class);

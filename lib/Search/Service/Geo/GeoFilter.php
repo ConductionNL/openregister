@@ -115,10 +115,10 @@ class GeoFilter {
 	/**
 	 * Build a point + radius filter.
 	 *
-	 * @param float|string $lon Center longitude.
-	 * @param float|string $lat Center latitude.
-	 * @param float|string $radius Radius in meters.
-	 * @param ?string $property Property hint.
+	 * @param array{lon: float|string, lat: float|string, radius: float|string} $circle   Center longitude and
+	 *                                                                               latitude, and the radius in
+	 *                                                                               meters, as given.
+	 * @param ?string                                                             $property Property hint.
 	 *
 	 * @return self
 	 *
@@ -126,12 +126,8 @@ class GeoFilter {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
-	public static function fromNearAndRadius(
-		float|string $lon,
-		float|string $lat,
-		float|string $radius,
-		?string $property = null,
-	): self {
+	public static function fromNearAndRadius(array $circle, ?string $property = null): self {
+		[$lon, $lat, $radius] = [($circle['lon'] ?? null), ($circle['lat'] ?? null), ($circle['radius'] ?? null)];
 		if (is_numeric($lon) === false || is_numeric($lat) === false || is_numeric($radius) === false) {
 			throw new InvalidArgumentException('near coordinates and radius MUST be numeric');
 		}

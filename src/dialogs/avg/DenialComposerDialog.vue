@@ -71,8 +71,9 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import AvgFormFooter from './AvgFormFooter.vue'
-import { resolveGroundOptions, resolveTemplateRef } from '../../store/modules/avg.js'
+import { resolveTemplateRef } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
+import { caseDialogProps, groundOptions } from './caseDialog.js'
 
 export default {
 	name: 'DenialComposerDialog',
@@ -83,17 +84,7 @@ export default {
 		NcSelect,
 	},
 
-	props: {
-		caseId: {
-			type: String,
-			required: true,
-		},
-
-		pack: {
-			type: Object,
-			default: null,
-		},
-	},
+	props: caseDialogProps,
 
 	emits: ['close', 'drafted'],
 
@@ -106,12 +97,7 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: maps the active pack's denial-grounds enum to NcSelect options; resolution owned by the store helper.
-		 */
-		groundOptions() {
-			return resolveGroundOptions(this.pack)
-		},
+		groundOptions,
 
 		/**
 		 * @spec exclude Presentation glue: looks up the selected option for the citation display.

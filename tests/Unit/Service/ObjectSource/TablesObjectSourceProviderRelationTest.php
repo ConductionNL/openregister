@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
@@ -72,7 +74,7 @@ class TablesObjectSourceProviderRelationTest extends TestCase {
 		$deriver = new TablesUuidDeriver();
 		$provider = new TablesObjectSourceProvider(parts: new TablesProviderParts(reader: $reader, columnMapper: new TablesColumnMapper(uuidDeriver: $deriver, logger: new NullLogger()), uuidDeriver: $deriver, syncService: $sync), session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: new NullLogger()));
 
-		$objects = $provider->findAll(register: new Register(), schema: new Schema(), query: [], config: ['tableId' => 5]);
+		$objects = $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['tableId' => 5]), query: []);
 
 		$data = $objects[0]->getObject();
 		$this->assertSame($deriver->deriveObjectUuid(tableId: 8, rowId: 7), $data['lead']);

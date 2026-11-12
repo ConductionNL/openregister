@@ -150,39 +150,79 @@ class DivergenceComparator {
 		$b = $this->parts->flatten(descriptor: $baseline);
 		$l = $this->parts->flatten(descriptor: $live);
 
-		$paths = array_unique(array_merge(array_keys($b), array_keys($l)));
-		sort($paths);
+		return $this->localDivergences(shipped: $b, live: $l);
+	}//end report()
 
+	/**
+	 * The flattened parts that differ, in path order, as report entries.
+	 *
+	 * @param array<string, mixed> $shipped The flattened baseline.
+	 * @param array<string, mixed> $live    The flattened live definition.
+	 *
+	 * @return array<int, array{path: string, state: string, shipped: mixed, live: mixed}> The divergences.
+	 */
+	private function localDivergences(array $shipped, array $live): array {
 		$divergences = [];
-		foreach ($paths as $path) {
-			$shipped = ($b[$path] ?? self::ABSENT);
-			$current = ($l[$path] ?? self::ABSENT);
-			if ($this->identical(a: $shipped, b: $current) === true) {
-				continue;
+		foreach (self::sortedPaths(shipped: $shipped, live: $live) as $path) {
+			$shippedPart = ($shipped[$path] ?? self::ABSENT);
+			$livePart = ($live[$path] ?? self::ABSENT);
+			if ($this->identical(a: $shippedPart, b: $livePart) === false) {
+				$divergences[] = array_merge(
+					['path' => $path, 'state' => self::LOCAL],
+					self::sides(shipped: $shippedPart, live: $livePart)
+				);
 			}
-
-			$shippedValue = null;
-			if ($shipped !== self::ABSENT) {
-				$shippedValue = $shipped;
-			}
-
-			$liveValue = null;
-			if ($current !== self::ABSENT) {
-				$liveValue = $current;
-			}
-
-			$divergences[] = [
-				'path' => $path,
-				'state' => self::LOCAL,
-				'shipped' => $shippedValue,
-				'live' => $liveValue,
-				'shippedPresent' => ($shipped !== self::ABSENT),
-				'livePresent' => ($current !== self::ABSENT),
-			];
 		}
 
 		return $divergences;
-	}//end report()
+	}//end localDivergences()
+
+	/**
+	 * Every path either side holds, sorted.
+	 *
+	 * @param array<string, mixed> $shipped The flattened baseline.
+	 * @param array<string, mixed> $live    The flattened live definition.
+	 *
+	 * @return array<int, string> The paths.
+	 */
+	private static function sortedPaths(array $shipped, array $live): array {
+		$paths = array_unique(array_merge(array_keys($shipped), array_keys($live)));
+		sort($paths);
+
+		return $paths;
+	}//end sortedPaths()
+
+	/**
+	 * What each side holds at one path, null for an absent part, and whether it is present.
+	 *
+	 * @param mixed $shipped The baseline part, or ABSENT.
+	 * @param mixed $live    The live part, or ABSENT.
+	 *
+	 * @return array{shipped: mixed, live: mixed, shippedPresent: bool, livePresent: bool}
+	 */
+	private static function sides(mixed $shipped, mixed $live): array {
+		return [
+			'shipped' => self::presentOrNull(part: $shipped),
+			'live' => self::presentOrNull(part: $live),
+			'shippedPresent' => ($shipped !== self::ABSENT),
+			'livePresent' => ($live !== self::ABSENT),
+		];
+	}//end sides()
+
+	/**
+	 * The part, or null when it is absent.
+	 *
+	 * @param mixed $part The part, or ABSENT.
+	 *
+	 * @return mixed
+	 */
+	private static function presentOrNull(mixed $part): mixed {
+		if ($part === self::ABSENT) {
+			return null;
+		}
+
+		return $part;
+	}//end presentOrNull()
 
 	/**
 	 * Whether a baseline was ever recorded for this subject.

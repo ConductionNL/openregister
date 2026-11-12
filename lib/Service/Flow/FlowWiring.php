@@ -43,6 +43,20 @@ final class FlowWiring {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		self::registerRunAuthorization(context: $context);
+		self::registerRunnableGuard(context: $context);
+		self::registerRunContext(context: $context);
+		self::registerStepDispatcher(context: $context);
+	}//end register()
+
+	/**
+	 * Register the run authorization explicitly, so a container that cannot build it fails loudly.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerRunAuthorization(IRegistrationContext $context): void {
 		// 🔴 THE RUN AUTHORIZATION IS REGISTERED EXPLICITLY, because its
 		// failure mode is total. `FlowService` takes it as a NULLABLE argument
 		// and an absent one is UNDECIDABLE, which refuses every run — correct
@@ -58,7 +72,16 @@ final class FlowWiring {
 				);
 			}
 		);
+	}//end registerRunAuthorization()
 
+	/**
+	 * Register the run and edit guard explicitly, so a container that cannot build it fails loudly.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerRunnableGuard(IRegistrationContext $context): void {
 		// 🔴 THE RUN AND EDIT GUARD IS REGISTERED EXPLICITLY, for the reason
 		// directly above. Both of its collaborators are nullable and both
 		// absences fail CLOSED, so a container that quietly declined to build
@@ -74,7 +97,16 @@ final class FlowWiring {
 				);
 			}
 		);
+	}//end registerRunnableGuard()
 
+	/**
+	 * Register the flow-attribution stack as one shared instance.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerRunContext(IRegistrationContext $context): void {
 		// The ambient flow-attribution stack MUST be shared. Nextcloud's
 		// container builds an auto-wired class fresh at every injection point,
 		// so without this registration the engine would push frames onto one
@@ -86,7 +118,16 @@ final class FlowWiring {
 				return new FlowRunContext();
 			}
 		);
+	}//end registerRunContext()
 
+	/**
+	 * Bind the loop node's step dispatcher to a factory.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerStepDispatcher(IRegistrationContext $context): void {
 		// The loop node's step dispatcher. `IterateNode` resolves the INTERFACE
 		// — correctly, it should not know which dispatcher runs its body — but
 		// nothing ever bound it, and an interface cannot be instantiated. So
@@ -120,5 +161,5 @@ final class FlowWiring {
 				);
 			}
 		);
-	}//end register()
+	}//end registerStepDispatcher()
 }//end class

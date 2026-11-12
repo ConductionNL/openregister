@@ -164,24 +164,39 @@ class ObjectPermissionsResolver {
 	private function verbGrantsIn(array $entries, RuleOrigin $origin): array {
 		$rules = [];
 		foreach ($entries as $entry) {
-			$principal = $this->principalOf(rule: $entry);
-			if ($principal === null) {
-				continue;
+			$rule = $this->verbRule(entry: $entry, origin: $origin);
+			if ($rule !== null) {
+				$rules[] = $rule;
 			}
-
-			$rules[] = [
-				'principal' => $principal,
-				'action' => $origin->action,
-				'level' => $origin->level,
-				'role' => null,
-				'rule' => $entry,
-				'conditional' => (is_array($entry) === true && isset($entry['match']) === true),
-				'declared' => $this->catalogue->isGrantable($origin->action),
-			];
 		}
 
 		return $rules;
 	}//end verbGrantsIn()
+
+	/**
+	 * One entry under a verb as a rule, or null when it names no principal.
+	 *
+	 * @param mixed      $entry  The entry as written.
+	 * @param RuleOrigin $origin Where the block is written and the verb the entry grants.
+	 *
+	 * @return array<string, mixed>|null The rule.
+	 */
+	private function verbRule(mixed $entry, RuleOrigin $origin): ?array {
+		$principal = $this->principalOf(rule: $entry);
+		if ($principal === null) {
+			return null;
+		}
+
+		return [
+			'principal' => $principal,
+			'action' => $origin->action,
+			'level' => $origin->level,
+			'role' => null,
+			'rule' => $entry,
+			'conditional' => (is_array($entry) === true && isset($entry['match']) === true),
+			'declared' => $this->catalogue->isGrantable($origin->action),
+		];
+	}//end verbRule()
 
 	/**
 	 * Every grant a block's role assignments write.

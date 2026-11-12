@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden test for POST /api/objects/{register}/{schema}: what reaches the save, and every refusal it can answer.
@@ -85,6 +86,13 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalWriteException
  * @uses   \OCA\OpenRegister\Service\Rules\ExpressionDefaultException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\UpsertOnKeyRequest
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerCreateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-create-golden.json';
@@ -219,7 +227,8 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			$this->calls[] = 'clearCreatedSubObjects';
 		});
 		$service->method('handleValidationException')->willReturnCallback(fn (...$args) => new JSONResponse(['validation' => ($args['exception'] ?? $args[0])->getMessage()], 400));
-		$service->method('saveObject')->willReturnCallback(function (...$args) use ($setup): ObjectEntity {
+		$service->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($setup): ObjectEntity {
+			$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 			$this->calls[] = ['saveObject' => $args];
 			if (isset($setup['fails']) === true) {
 				throw $this->failure($setup['fails']);
@@ -290,7 +299,8 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 
 		$handler = $this->createMock(UpsertOnKeyHandler::class);
 		$handler->method('upsert')->willReturnCallback(function (...$args) use ($setup): array {
-			$this->calls[] = ['upsert' => [$args['constraintName'] ?? $args[0], $args['object'] ?? $args[1]]];
+			$request = ($args['request'] ?? $args[0]);
+			$this->calls[] = ['upsert' => [$request->constraintName, $request->object]];
 			$object = new ObjectEntity();
 			$object->setUuid('kept-uuid');
 			return ['object' => $object, 'created' => $setup['upsert']];

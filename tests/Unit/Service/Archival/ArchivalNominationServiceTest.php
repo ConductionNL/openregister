@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Service\RetentionService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Tests for ArchivalNominationService.
@@ -174,8 +176,8 @@ class ArchivalNominationServiceTest extends TestCase {
 		$captured = null;
 		$this->retentionService->method('calculateArchiveActionDate')
 			->willReturnCallback(
-				static function ($object, $schema, string $retentionPeriod) use (&$captured): string {
-					$captured = $retentionPeriod;
+				static function (RetentionClock $clock) use (&$captured): string {
+					$captured = $clock->retentionPeriod;
 					return '2036-03-01';
 				}
 			);
@@ -290,10 +292,7 @@ class ArchivalNominationServiceTest extends TestCase {
 
 		$this->service->nominate(object: $object, schema: $schema);
 		$this->service->recompute(
-			object: $object,
-			schema: $schema,
-			actor: 'els',
-			reason: 'Selectielijst 2026 replaced the 2020 list'
+			new NominationRecompute(object: $object, schema: $schema, actor: 'els', reason: 'Selectielijst 2026 replaced the 2020 list')
 		);
 
 		$retention = $object->getRetention();
@@ -447,8 +446,8 @@ class ArchivalNominationServiceTest extends TestCase {
 		$captured = null;
 		$this->retentionService->method('calculateArchiveActionDate')
 			->willReturnCallback(
-				static function ($object, $schema, string $retentionPeriod) use (&$captured): string {
-					$captured = $retentionPeriod;
+				static function (RetentionClock $clock) use (&$captured): string {
+					$captured = $clock->retentionPeriod;
 					return '2046-03-01';
 				}
 			);

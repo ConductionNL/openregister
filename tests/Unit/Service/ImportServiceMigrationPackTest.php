@@ -44,6 +44,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 class ImportServiceMigrationPackTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -149,7 +153,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -183,7 +193,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -226,7 +242,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -258,7 +280,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->validateObjectHandler->method('validateObject')->willReturn($validResult);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -287,7 +315,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -341,7 +375,8 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object, ?array $extend, $register, $schema, $uuid) use (&$capturedUuid, &$capturedBody, $savedEntity) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUuid, &$capturedBody, $savedEntity) {
+					$uuid = $options->uuid;
 					$capturedUuid = $uuid;
 					$capturedBody = $object;
 					return $savedEntity;
@@ -349,7 +384,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -378,14 +419,21 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object, ?array $extend, $register, $schema, $uuid) use (&$capturedUuid, $savedEntity) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUuid, $savedEntity) {
+					$uuid = $options->uuid;
 					$capturedUuid = $uuid;
 					return $savedEntity;
 				}
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -412,7 +460,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}

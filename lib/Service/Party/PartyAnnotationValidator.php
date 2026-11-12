@@ -50,25 +50,42 @@ class PartyAnnotationValidator {
 		}
 
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'party.not-object',
-					'message' => 'x-openregister-party must be an object.',
-				],
-			];
+			return [self::notObjectError()];
 		}
 
-		$declared = [];
-		if (is_array(($schema['properties'] ?? null)) === true) {
-			$declared = array_map('strval', array_keys($schema['properties']));
-		}
-
-		$errors = $this->validateKind(annotation: $annotation);
-		$errors = array_merge($errors, (new PartyPropertyFields(declared: $declared))->errors(annotation: $annotation));
-		$errors = array_merge($errors, $this->validateMaxDepth(annotation: $annotation));
-
-		return $errors;
+		return array_merge(
+			$this->validateKind(annotation: $annotation),
+			(new PartyPropertyFields(declared: self::declaredProperties(schema: $schema)))->errors(annotation: $annotation),
+			$this->validateMaxDepth(annotation: $annotation)
+		);
 	}//end validate()
+
+	/**
+	 * The error for an annotation that is not an object.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private static function notObjectError(): array {
+		return [
+			'code' => 'party.not-object',
+			'message' => 'x-openregister-party must be an object.',
+		];
+	}//end notObjectError()
+
+	/**
+	 * The property names the schema declares.
+	 *
+	 * @param array<string, mixed> $schema Shape with `properties`.
+	 *
+	 * @return array<int, string> The names; empty when it declares none.
+	 */
+	private static function declaredProperties(array $schema): array {
+		if (is_array(($schema['properties'] ?? null)) === false) {
+			return [];
+		}
+
+		return array_map('strval', array_keys($schema['properties']));
+	}//end declaredProperties()
 
 	/**
 	 * The kind must be a non-empty string of at most 64 characters, the width

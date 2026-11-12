@@ -7,7 +7,7 @@ const storage = {
 	key: () => null,
 }
 
-// The builder chains in any order: @nextcloud/auth calls `getBuilder().persist().build()`.
+// The builder is fluent: clearOnLogout() and persist() chain in any order.
 const builder = {
 	clearOnLogout: () => builder,
 	persist: () => builder,

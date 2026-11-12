@@ -12,6 +12,19 @@ use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\Activity\IManager as IActivityManager;
@@ -92,32 +105,50 @@ class AnnotationNotificationDispatcherDeliveryWindowTest extends TestCase {
 
 	private function makeDispatcher(): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->logger,
-			$this->groupManager,
-			$this->userManager,
-			$this->mailer,
-			$this->activityManager,
-			$this->httpClient,
-			$this->serverContainer,
-			null,
-			null,
-			$this->historyMapper,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$this->windowService,
-			$this->queuedMapper,
-			$this->digestEvaluator,
-			$this->timeFactory
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $this->logger,
+					userManager: $this->userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->httpClient,
+					logger: $this->logger,
+					config: $this->serverContainer->get(IConfig::class)
+				),
+				activityManager: $this->activityManager
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(windowService: $this->windowService, digestEvaluator: $this->digestEvaluator, queue: $this->queuedMapper, timeFactory: $this->timeFactory)
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->httpClient,
+				serverContainer: $this->serverContainer
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger,
+				historyMapper: $this->historyMapper
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger,
+					serverContainer: $this->serverContainer
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->logger
+				)
+			)
 		);
 	}
 

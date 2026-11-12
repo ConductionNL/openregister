@@ -96,16 +96,16 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The stored archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function archive(string $register, string $schema, string $id): JSONResponse {
-		$verb = fn (?string $reason): array => $this->archiveHandler->archive(identifier: $id, reason: $reason, register: $register, schema: $schema);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-		return $this->asSignedInUser(verb: $verb);
+		return $this->asSignedInUser(
+			verb: fn (?string $reason): array => $this->archiveHandler->archiveWith(request: $this->stateRequest(ref: $ref, reason: $reason))
+		);
 	}//end archive()
 
 	/**
@@ -117,16 +117,16 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The cleared archive marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function unarchive(string $register, string $schema, string $id): JSONResponse {
-		$verb = fn (?string $reason): array => $this->archiveHandler->unarchive(identifier: $id, reason: $reason, register: $register, schema: $schema);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-		return $this->asSignedInUser(verb: $verb);
+		return $this->asSignedInUser(
+			verb: fn (?string $reason): array => $this->archiveHandler->unarchiveWith(request: $this->stateRequest(ref: $ref, reason: $reason))
+		);
 	}//end unarchive()
 
 	/**
@@ -137,8 +137,6 @@ class ObjectStateController extends Controller {
 	 * @param string $id The id or uuid of the object to freeze.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The stored freeze marker.
 	 *
@@ -157,10 +155,22 @@ class ObjectStateController extends Controller {
 	 */
 	private function freezing(ObjectRef $ref): Closure {
 		return fn (?string $reason): array => $this->archiveHandler->freeze(
-			request: new ObjectStateRequest(identifier: $ref->id, reason: $reason, register: (string)$ref->register, schema: (string)$ref->schema),
+			request: $this->stateRequest(ref: $ref, reason: $reason),
 			state: $this->textFromRequest(key: 'state')
 		);
 	}//end freezing()
+
+	/**
+	 * The state change a route asks for: the object it names, at the address it names, and why.
+	 *
+	 * @param ObjectRef   $ref    The object as the route names it.
+	 * @param string|null $reason Why the state changes, as the request gives it.
+	 *
+	 * @return ObjectStateRequest The request the archive handler takes.
+	 */
+	private function stateRequest(ObjectRef $ref, ?string $reason): ObjectStateRequest {
+		return new ObjectStateRequest(identifier: $ref->id, reason: $reason, register: (string)$ref->register, schema: (string)$ref->schema);
+	}//end stateRequest()
 
 	/**
 	 * Unfreeze an object.
@@ -171,16 +181,16 @@ class ObjectStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The cleared freeze marker.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function unfreeze(string $register, string $schema, string $id): JSONResponse {
-		$verb = fn (?string $reason): array => $this->archiveHandler->unfreeze(identifier: $id, reason: $reason, register: $register, schema: $schema);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-		return $this->asSignedInUser(verb: $verb);
+		return $this->asSignedInUser(
+			verb: fn (?string $reason): array => $this->archiveHandler->unfreezeWith(request: $this->stateRequest(ref: $ref, reason: $reason))
+		);
 	}//end unfreeze()
 
 	/**

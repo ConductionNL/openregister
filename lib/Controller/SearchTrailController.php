@@ -25,12 +25,15 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -159,16 +162,9 @@ class SearchTrailController extends Controller {
 	 * @return JSONResponse|null 401/403 response when blocked, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->failure(message: 'Authentication required', status: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return $this->failure(message: 'Forbidden: this search-trail operation is admin-only', status: 403);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this search-trail operation is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -571,9 +567,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function popularTermsPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getPopularSearchTerms(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 
 		return $this->withSearchMeta(
@@ -612,7 +607,7 @@ class SearchTrailController extends Controller {
 		$period = $this->period();
 		$interval = $this->request->getParam(key: 'interval', default: 'day');
 
-		return $this->searchTrailService->getSearchActivity(interval: $interval, from: $period['from'], to: $period['to']);
+		return $this->searchTrailService->getSearchActivity(period: new SearchPeriod(from: $period['from'], to: $period['to']), interval: $interval);
 	}//end activityResult()
 
 	/**
@@ -685,9 +680,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function userAgentPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getUserAgentStatistics(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 		if (($serviceResult['user_agents'] ?? null) !== null) {
 			return $this->structuredUserAgentPage(serviceResult: $serviceResult, query: $query);
@@ -744,8 +738,6 @@ class SearchTrailController extends Controller {
 	 * Clean up old search trail logs
 	 *
 	 * @return JSONResponse JSON response containing cleanup operation results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|400|500,
@@ -905,8 +897,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @param int $id The search trail ID to delete
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
@@ -942,8 +932,6 @@ class SearchTrailController extends Controller {
 	/**
 	 * Delete multiple search trail logs based on filters or specific IDs
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with multiple deletion result
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
@@ -978,9 +966,9 @@ class SearchTrailController extends Controller {
 
 		$output = fopen('php://temp', 'r+');
 		// Add headers, then the data rows.
-		fputcsv($output, array_keys($data[0]));
+		fputcsv($output, SpreadsheetCell::csvRow(row: array_keys($data[0])));
 		foreach ($data as $row) {
-			fputcsv($output, array_map(static fn ($cell) => self::csvCell(cell: $cell), $row));
+			fputcsv($output, SpreadsheetCell::csvRow(row: array_map(static fn ($cell) => self::csvCell(cell: $cell), $row)));
 		}
 
 		rewind($output);
@@ -1012,8 +1000,6 @@ class SearchTrailController extends Controller {
 	 * Clear all search trail logs
 	 *
 	 * @return JSONResponse A JSON response indicating success or failure
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
 	 */

@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -124,7 +125,7 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 
 		while (true) {
 			try {
-				$flows = $mapper->findAllFlows(limit: self::PAGE_SIZE, offset: $offset);
+				$flows = $mapper->findAllFlows(query: new ListQuery(limit: self::PAGE_SIZE, offset: $offset));
 			} catch (Throwable $e) {
 				$output->warning('OpenRegister: could not read flows to rewrite node types: ' . $e->getMessage());
 				$this->logger->warning('[MigrateRenamedFlowNodeTypes] read failed: ' . $e->getMessage());

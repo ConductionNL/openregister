@@ -109,11 +109,13 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 			return $data;
 		}
 
-		$outcome = $this->references->resolveAllWithOutcome(
-			payload: $data,
-			references: $references,
-			register: $run->object->getRegister(),
-			organisation: $run->object->getOrganisation()
+		$outcome = $this->references->resolveReferences(
+			referrer: new ReferringObject(
+				payload: $data,
+				register: $run->object->getRegister(),
+				organisation: $run->object->getOrganisation()
+			),
+			references: $references
 		);
 		$data['@ref'] = $outcome['refs'];
 		$data[self::UNRESOLVED_KEY] = $outcome['unresolved'];

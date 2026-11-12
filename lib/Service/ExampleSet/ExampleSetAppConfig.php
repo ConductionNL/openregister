@@ -76,20 +76,19 @@ class ExampleSetAppConfig {
 	/**
 	 * Why an entry cannot be written, or ''.
 	 *
-	 * @param string $app      The app.
-	 * @param string $key      The key.
-	 * @param bool   $generate Whether the set generates the value.
+	 * @param ExampleSetConfigKey $at       The app and the key.
+	 * @param bool                $generate Whether the set generates the value.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 */
-	public function refusal(string $app, string $key, bool $generate): string {
-		if ($generate === true || $this->sensitive(app: $app, key: $key) === false) {
+	public function refusal(ExampleSetConfigKey $at, bool $generate): string {
+		if ($generate === true || $this->sensitive(app: $at->app, key: $at->key) === false) {
 			return '';
 		}
 
-		return 'app config '.$app.' '.$key.' is kept as sensitive; a set may only generate such a value, never write one from a file';
+		return 'app config '.$at->app.' '.$at->key.' is kept as sensitive; a set may only generate such a value, never write one from a file';
 	}//end refusal()
 
 	/**

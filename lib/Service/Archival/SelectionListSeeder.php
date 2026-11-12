@@ -21,10 +21,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * An app's `components.selectionLists`, written as selectielijst register rows.
@@ -215,7 +219,8 @@ class SelectionListSeeder {
 	 */
 	private function saveRow(RegisterSchema $table, RowWrite $write): string {
 		try {
-			$this->storage->writer->saveObject($table->register, $table->schema, $write->data, $write->uuid);
+			$target = new ObjectFindTarget(register: $table->register, schema: $table->schema);
+			$this->storage->writer->saveObject(data: $write->data, options: new ObjectSaveOptions(target: $target, uuid: $write->uuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[SelectionListSeeder] Could not store category ' . $write->data['categorie'] . ': ' . $e->getMessage()
@@ -445,7 +450,8 @@ class SelectionListSeeder {
 	 */
 	private function storedRows(RegisterSchema $table): array {
 		try {
-			$objects = $this->storage->catalog->tables()->findAll(limit: self::MAX_ROWS, register: $table->register, schema: $table->schema);
+			$request = new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS));
+			$objects = $this->storage->catalog->tables()->findAllListed(request: $request);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] Could not read the selectielijst: ' . $e->getMessage());
 			return [];

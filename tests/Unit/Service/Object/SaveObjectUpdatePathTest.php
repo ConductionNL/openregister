@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -23,6 +24,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -43,6 +45,10 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Stringable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * What an update through SaveObject::saveObject() does before and around the
@@ -141,11 +147,10 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 		$handler = $this->handler(case: [], logger: new NullLogger());
 
-		$nested = $handler->saveObject(register: $register, schema: $schema, data: ['title' => 'nested']);
+		$nested = $handler->saveObject(data: ['title' => 'nested'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)));
 		$created = $handler->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertNotSame($nested->getUuid(), $created->getUuid());
@@ -159,9 +164,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertArrayNotHasKey(WriteCause::CLIENT_ATTEMPT_KEY, $created->getObject());
@@ -171,9 +175,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => 'true']]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => 'true']],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertFalse(WriteCause::clientAttemptedFor(objectUuid: (string)$created->getUuid()));
@@ -186,10 +189,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
-			uuid: self::UUID
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 		);
 
 		$this->assertSame([self::UUID => true], $this->auditedMarks);
@@ -237,17 +238,11 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: ($args['_rbac'] ?? true),
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\Exception $e) {
 			return ['trace' => $this->trace, 'thrown' => [$e->getMessage(), $e->getCode()]];
 		}
@@ -293,14 +288,14 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
 				throw new \RuntimeException('disk full');
 			}
 
-			$object[$propertyName] = 42;
+			$write->data[$propertyName] = 42;
 		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willReturn($stored);
@@ -335,9 +330,9 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
 		});
-		$retention->method('applyClassificationOnUpdate')->willReturnCallback(function (ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
-			$this->trace[] = ['classification', $previousData];
-			return $object;
+		$retention->method('applyClassification')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {
+			$this->trace[] = ['classification', $update->previousData];
+			return $update->object;
 		});
 		$retention->method('applyArchivalMetadata')->willReturnCallback(function (ObjectEntity $object): ObjectEntity {
 			$this->trace[] = ['archival'];
@@ -346,8 +341,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		});
 		$container = $this->createMock(ContainerInterface::class);
 		$hints = $this->createMock(\OCA\OpenRegister\Service\Quality\UniqueHintChecker::class);
-		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
-			$this->trace[] = ['hints', $scope->register, $scope->schema, $selfUuid];
+		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintCandidate $candidate): void {
+			$this->trace[] = ['hints', $candidate->scope->register, $candidate->scope->schema, $candidate->selfUuid];
 		});
 		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
@@ -367,10 +362,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $mapper,
-						unifiedObjectMapper: $unified,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $audit,

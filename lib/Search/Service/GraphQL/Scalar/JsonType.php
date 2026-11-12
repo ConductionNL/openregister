@@ -86,7 +86,45 @@ class JsonType extends ScalarType {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
 	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): mixed {
-		if ($valueNode instanceof StringValueNode) {
+		if ($valueNode instanceof ObjectValueNode) {
+			return $this->objectLiteral(node: $valueNode);
+		}
+
+		if ($valueNode instanceof ListValueNode) {
+			return array_map(
+				fn ($node) => $this->parseLiteral(valueNode: $node),
+				iterator_to_array($valueNode->values)
+			);
+		}
+
+		return $this->scalarLiteral(valueNode: $valueNode);
+	}//end parseLiteral()
+
+	/**
+	 * An object literal as a keyed array, each field parsed in turn.
+	 *
+	 * @param ObjectValueNode $node The object literal.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function objectLiteral(ObjectValueNode $node): array {
+		$result = [];
+		foreach ($node->fields as $field) {
+			$result[$field->name->value] = $this->parseLiteral(valueNode: $field->value);
+		}
+
+		return $result;
+	}//end objectLiteral()
+
+	/**
+	 * A string, int, float or boolean literal as its PHP value; any other literal as null.
+	 *
+	 * @param \GraphQL\Language\AST\Node $valueNode The literal.
+	 *
+	 * @return string|int|float|bool|null
+	 */
+	private function scalarLiteral(\GraphQL\Language\AST\Node $valueNode): string|int|float|bool|null {
+		if ($valueNode instanceof StringValueNode || $valueNode instanceof BooleanValueNode) {
 			return $valueNode->value;
 		}
 
@@ -98,26 +136,6 @@ class JsonType extends ScalarType {
 			return (float)$valueNode->value;
 		}
 
-		if ($valueNode instanceof BooleanValueNode) {
-			return $valueNode->value;
-		}
-
-		if ($valueNode instanceof ObjectValueNode) {
-			$result = [];
-			foreach ($valueNode->fields as $field) {
-				$result[$field->name->value] = $this->parseLiteral(valueNode: $field->value);
-			}
-
-			return $result;
-		}
-
-		if ($valueNode instanceof ListValueNode) {
-			return array_map(
-				fn ($node) => $this->parseLiteral(valueNode: $node),
-				iterator_to_array($valueNode->values)
-			);
-		}
-
 		return null;
-	}//end parseLiteral()
+	}//end scalarLiteral()
 }//end class

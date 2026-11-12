@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTime;
+use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
@@ -195,12 +197,7 @@ class CalendarRecomputeTest extends TestCase {
 		$timer->setConsumedValue(0.0);
 		$timer->setRunningSince(new DateTime($start));
 
-		$fireAt = (new SlaCalculator())->add(
-			from: new DateTime($start),
-			value: $budget,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$fireAt = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTime($start)), value: $budget, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $calendar));
 		$timer->setFireAt(new DateTime($fireAt->format(DATE_ATOM)));
 
 		return $timer;
@@ -463,12 +460,7 @@ class CalendarRecomputeTest extends TestCase {
 		$timer = $this->timer(uuid: 'a', start: '2027-05-03T09:00:00+02:00', budget: 5.0, calendar: $this->calendar);
 		$timer->setConsumedValue(2.0);
 
-		$expected = (new SlaCalculator())->add(
-			from: new DateTime('2027-05-03T09:00:00+02:00'),
-			value: 3.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $this->withClosure
-		)->getTimestamp();
+		$expected = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTime('2027-05-03T09:00:00+02:00')), value: 3.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $this->withClosure))->getTimestamp();
 
 		$this->assertSame(
 			$expected,

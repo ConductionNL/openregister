@@ -46,6 +46,16 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Task\InboxListing
+ * @uses \OCA\OpenRegister\Service\Task\TaskInboxPage
  */
 class TaskBlockedByTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -197,7 +207,7 @@ class TaskBlockedByTest extends TestCase {
 			->with(['task-visit', 'task-closed'])
 			->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertTrue($rows[0]['blocked']);
@@ -220,7 +230,7 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 
 		$this->assertTrue($inbox->enrich(task: $waiting)['blocked']);
 	}//end testASingleReadDerivesTheFlagToo()
@@ -253,7 +263,7 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willThrowException(new \RuntimeException('database went away'));
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertFalse($rows[0]['blocked']);

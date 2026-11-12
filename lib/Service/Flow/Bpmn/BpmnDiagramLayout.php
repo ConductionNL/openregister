@@ -48,12 +48,7 @@ class BpmnDiagramLayout {
 	 */
 	public function positions(DOMXPath $xpath): array {
 		$positions = [];
-		$shapes = $xpath->query('//bpmndi:BPMNShape');
-		if ($shapes === false) {
-			$shapes = [];
-		}
-
-		foreach ($shapes as $shape) {
+		foreach ($this->shapesIn(xpath: $xpath) as $shape) {
 			if (($shape instanceof DOMElement) === false) {
 				continue;
 			}
@@ -63,14 +58,41 @@ class BpmnDiagramLayout {
 				continue;
 			}
 
-			$positions[trim($shape->getAttribute('bpmnElement'))] = [
-				'x' => (int)$bound->getAttribute('x'),
-				'y' => (int)$bound->getAttribute('y'),
-			];
+			$positions[trim($shape->getAttribute('bpmnElement'))] = self::pointOf(bound: $bound);
 		}
 
 		return $positions;
 	}//end positions()
+
+	/**
+	 * The x and y a shape's bounds place it at.
+	 *
+	 * @param DOMElement $bound The shape's `dc:Bounds`.
+	 *
+	 * @return array{x: int, y: int} The position.
+	 */
+	private static function pointOf(DOMElement $bound): array {
+		return [
+			'x' => (int)$bound->getAttribute('x'),
+			'y' => (int)$bound->getAttribute('y'),
+		];
+	}//end pointOf()
+
+	/**
+	 * The document's BPMN shapes, or none when the query fails.
+	 *
+	 * @param DOMXPath $xpath The document's XPath.
+	 *
+	 * @return iterable The shapes.
+	 */
+	private function shapesIn(DOMXPath $xpath): iterable {
+		$shapes = $xpath->query('//bpmndi:BPMNShape');
+		if ($shapes === false) {
+			return [];
+		}
+
+		return $shapes;
+	}//end shapesIn()
 
 	/**
 	 * A shape's first `dc:Bounds` element, or null when it has none.

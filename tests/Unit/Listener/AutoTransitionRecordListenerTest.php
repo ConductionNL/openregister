@@ -99,12 +99,7 @@ class AutoTransitionRecordListenerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$selector = new AutoTransitionSelector(
-			new LifecycleConditionEvaluator(
-				$this->createMock(IUserSession::class),
-				$groupManager,
-				new LifecycleConditionReporting($l10n, $logger),
-				$this->realConditionDialect()
-			),
+			new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager))),
 			$logger
 		);
 

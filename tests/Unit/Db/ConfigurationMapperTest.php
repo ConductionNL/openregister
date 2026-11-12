@@ -46,10 +46,6 @@ class ConfigurationMapperTest extends TestCase {
 	// Construction
 	// -------------------------------------------------------------------------
 
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(ConfigurationMapper::class, $this->mapper);
-	}
-
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_configurations', $this->mapper->getTableName());
 	}

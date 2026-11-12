@@ -35,6 +35,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Consumer\DecodedJwt;
 
 /**
  * Times are relative to the real clock with margins far beyond the 60 s skew,
@@ -146,7 +147,7 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $token = self::hs256(['iss' => 'app-1']);
 
-        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned($token, $header, $configuration));
+        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt($token, $header), $configuration));
 
         $this->assertSame(['reason' => $reason], $e->getDetails());
     }//end testVerifyPinnedRefusesWithTheReason()
@@ -154,7 +155,7 @@ class JwtValidatorBehaviourTest extends TestCase
     public function testVerifyPinnedRefusesAnUnsupportedAlgorithmByName(): void
     {
         $e = $this->refusal(
-            static fn() => (new JwtValidator())->verifyPinned('a.b.c', ['alg' => 'ES256'], ['algorithm' => 'ES256', 'publicKey' => 'k'])
+            static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt('a.b.c', ['alg' => 'ES256']), ['algorithm' => 'ES256', 'publicKey' => 'k'])
         );
 
         $this->assertSame(['The token algorithm is not supported', ['algorithm' => 'ES256']], [$e->getMessage(), $e->getDetails()]);
@@ -164,8 +165,8 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $validator = new JwtValidator();
 
-        $validator->verifyPinned(self::hs256(['iss' => 'a']), ['alg' => 'HS256'], ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
-        $validator->verifyPinned(self::rs256(['iss' => 'a']), ['alg' => 'RS256'], ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
+        $validator->verifyPinned(new DecodedJwt(self::hs256(['iss' => 'a']), ['alg' => 'HS256']), ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
+        $validator->verifyPinned(new DecodedJwt(self::rs256(['iss' => 'a']), ['alg' => 'RS256']), ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
 
         $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), new JwsKey('RS256', base64_encode(self::$publicPem))));
     }//end testVerifyPinnedAcceptsMatchingHmacAndRsaSignatures()
@@ -227,23 +228,27 @@ class JwtValidatorBehaviourTest extends TestCase
     }//end testHmacKeyLengthIsOnlyCheckedForHmacAlgorithms()
 
     /**
-     * @return array<string, array{0: array, 1: string}>
+     * Claim times as offsets in seconds from the moment the test runs.
+     *
+     * @return array<string, array{0: array<string, int>, 1: string}>
      */
     public static function claimRefusalProvider(): array
     {
-        $now = time();
         return [
             'no iat'          => [[], 'The token has no time of creation'],
-            'iat in future'   => [['iat' => $now + 600], 'The token has an invalid issue time'],
-            'default expiry'  => [['iat' => $now - 7200], 'The token has expired'],
-            'explicit expiry' => [['iat' => $now - 600, 'exp' => $now - 300], 'The token has expired'],
-            'not yet valid'   => [['iat' => $now, 'nbf' => $now + 600], 'The token is not yet valid'],
+            'iat in future'   => [['iat' => 600], 'The token has an invalid issue time'],
+            'default expiry'  => [['iat' => -7200], 'The token has expired'],
+            'explicit expiry' => [['iat' => -600, 'exp' => -300], 'The token has expired'],
+            'not yet valid'   => [['iat' => 0, 'nbf' => 600], 'The token is not yet valid'],
         ];
     }//end claimRefusalProvider()
 
     #[DataProvider('claimRefusalProvider')]
-    public function testValidateClaimsRefusesWithTheMessage(array $payload, string $message): void
+    public function testValidateClaimsRefusesWithTheMessage(array $offsets, string $message): void
     {
+        $now     = time();
+        $payload = array_map(static fn(int $offset): int => $now + $offset, $offsets);
+
         $e = $this->refusal(static fn() => (new JwtValidator())->validateClaims($payload));
 
         $this->assertSame($message, $e->getMessage());

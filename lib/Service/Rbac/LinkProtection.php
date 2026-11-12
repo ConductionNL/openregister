@@ -59,11 +59,11 @@ final class LinkProtection {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function applyTo(IShare $share): void {
-		if ($this->password !== null && trim($this->password) !== '') {
+		if (self::isGiven(value: $this->password) === true) {
 			$share->setPassword($this->password);
 		}
 
-		if ($this->expiration === null || trim($this->expiration) === '') {
+		if (self::isGiven(value: $this->expiration) === false) {
 			return;
 		}
 
@@ -73,4 +73,15 @@ final class LinkProtection {
 			throw new InvalidArgumentException('Could not read that expiry date');
 		}
 	}//end applyTo()
+
+	/**
+	 * Whether a value was given: not null and not blank.
+	 *
+	 * @param string|null $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isGiven(?string $value): bool {
+		return ($value !== null && trim($value) !== '');
+	}//end isGiven()
 }//end class

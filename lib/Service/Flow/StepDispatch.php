@@ -94,4 +94,15 @@ final class StepDispatch {
 	public function withContext(array $context): self {
 		return new self(step: $this->step, items: $this->items, context: $context);
 	}//end withContext()
+
+	/**
+	 * What the step's node is called with.
+	 *
+	 * @return FlowNodeCall The items, the step configuration and the context.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	public function nodeCall(): FlowNodeCall {
+		return new FlowNodeCall(items: $this->items, config: $this->config(), context: $this->context);
+	}//end nodeCall()
 }//end class

@@ -113,42 +113,30 @@
 					v-if="fileSettings.textExtractor.id === 'dolphin'"
 					class="setting-item api-config">
 					<div class="api-fields">
-						<div class="field-group">
-							<label for="dolphin-endpoint"
-								>Dolphin API Endpoint</label
-							>
-							<NcTextField
-								id="dolphin-endpoint"
-								v-model="fileSettings.dolphinApiEndpoint"
-								placeholder="https://api.your-dolphin-instance.com"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your Dolphin API instance
-							</p>
-						</div>
+						<SettingsTextField
+							id="dolphin-endpoint"
+							v-model="fileSettings.dolphinApiEndpoint"
+							label="Dolphin API Endpoint"
+							hint="URL to your Dolphin API instance"
+							placeholder="https://api.your-dolphin-instance.com"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<InformationIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
-						<div class="field-group">
-							<label for="dolphin-key">Dolphin API Key</label>
-							<NcTextField
-								id="dolphin-key"
-								v-model="fileSettings.dolphinApiKey"
-								type="password"
-								:placeholder="
-									t('openregister', 'Enter your API key')
-								"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<KeyIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								Your Dolphin API authentication key
-							</p>
-						</div>
+						<SettingsTextField
+							id="dolphin-key"
+							v-model="fileSettings.dolphinApiKey"
+							label="Dolphin API Key"
+							hint="Your Dolphin API authentication key"
+							type="password"
+							:placeholder="t('openregister', 'Enter your API key')"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<KeyIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
 						<NcButton variant="secondary" @click="testDolphinConnection">
 							<template #icon>
@@ -453,23 +441,17 @@
 					"
 					class="setting-item api-config">
 					<div class="api-fields">
-						<div class="field-group">
-							<label for="presidio-endpoint"
-								>Presidio API Endpoint</label
-							>
-							<NcTextField
-								id="presidio-endpoint"
-								v-model="fileSettings.presidioApiEndpoint"
-								placeholder="http://openregister-presidio-analyzer:3000"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your Presidio Analyzer instance
-							</p>
-						</div>
+						<SettingsTextField
+							id="presidio-endpoint"
+							v-model="fileSettings.presidioApiEndpoint"
+							label="Presidio API Endpoint"
+							hint="URL to your Presidio Analyzer instance"
+							placeholder="http://openregister-presidio-analyzer:3000"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<InformationIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
 						<NcButton
 							variant="secondary"
@@ -558,82 +540,59 @@
 						<div
 							v-if="fileSettings.openAnonymiserSource === 'external'"
 							class="source-detail api-fields">
-							<div class="field-group">
-								<label for="openanonymiser-endpoint">{{
-									t('openregister', 'OpenAnonymiser API endpoint')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-endpoint"
-									v-model="fileSettings.openAnonymiserApiEndpoint"
-									placeholder="http://openregister-openanonymiser:8080"
-									@update:modelValue="saveSettings">
-									<template #trailing-button-icon>
-										<InformationIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'URL to an external OpenAnonymiser instance (Dutch-focused PII detection)',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-endpoint"
+								v-model="fileSettings.openAnonymiserApiEndpoint"
+								:label="t('openregister', 'OpenAnonymiser API endpoint')"
+								:hint="
+									t(
+										'openregister',
+										'URL to an external OpenAnonymiser instance (Dutch-focused PII detection)',
+									)
+								"
+								placeholder="http://openregister-openanonymiser:8080"
+								@update:modelValue="saveSettings">
+								<template #icon>
+									<InformationIcon :size="20" />
+								</template>
+							</SettingsTextField>
 
-							<div class="field-group">
-								<label for="openanonymiser-username">{{
-									t('openregister', 'OpenAnonymiser user name')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-username"
-									v-model="fileSettings.openAnonymiserUsername"
-									autocomplete="off"
-									@update:modelValue="saveSettings" />
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Leave empty when the endpoint does not ask for a login.',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-username"
+								v-model="fileSettings.openAnonymiserUsername"
+								:label="t('openregister', 'OpenAnonymiser user name')"
+								:hint="
+									t(
+										'openregister',
+										'Leave empty when the endpoint does not ask for a login.',
+									)
+								"
+								autocomplete="off"
+								@update:modelValue="saveSettings" />
 
-							<div class="field-group">
-								<label for="openanonymiser-password">{{
-									t('openregister', 'OpenAnonymiser password')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-password"
-									v-model="openAnonymiserPassword"
-									type="password"
-									autocomplete="new-password"
-									:placeholder="
-										fileSettings.openAnonymiserPasswordSet
-											? t(
-													'openregister',
-													'A password is stored',
-												)
-											: ''
-									"
-									@update:modelValue="
-										openAnonymiserPasswordChanged = true
-									"
-									@blur="saveOpenAnonymiserPassword">
-									<template #trailing-button-icon>
-										<KeyIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Stored as a secret and never shown again. Type a new one to replace it.',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-password"
+								v-model="openAnonymiserPassword"
+								:label="t('openregister', 'OpenAnonymiser password')"
+								:hint="
+									t(
+										'openregister',
+										'Stored as a secret and never shown again. Type a new one to replace it.',
+									)
+								"
+								type="password"
+								autocomplete="new-password"
+								:placeholder="
+									fileSettings.openAnonymiserPasswordSet
+										? t('openregister', 'A password is stored')
+										: ''
+								"
+								@update:modelValue="openAnonymiserPasswordChanged = true"
+								@blur="saveOpenAnonymiserPassword">
+								<template #icon>
+									<KeyIcon :size="20" />
+								</template>
+							</SettingsTextField>
 
 							<NcButton
 								variant="secondary"
@@ -791,7 +750,6 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
-	NcTextField,
 } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
 import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
@@ -807,6 +765,7 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
+import SettingsTextField from './SettingsTextField.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 import { saveMessageMethods } from './saveMessage.js'
@@ -1237,7 +1196,6 @@ export default {
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcButton,
-		NcTextField,
 		NcActions,
 		NcActionButton,
 		FileDocumentIcon,
@@ -1251,6 +1209,7 @@ export default {
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
+		SettingsTextField,
 	},
 
 	data() {
@@ -1692,42 +1651,20 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
-			try {
-				this.dolphinConnectionTested = null
-
-				if (
-					!this.fileSettings.dolphinApiEndpoint
-					|| !this.fileSettings.dolphinApiKey
-				) {
-					this.showSaveMessage(
-						'Please provide both API endpoint and API key',
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-					return
-				}
-
-				// Test connection via backend
-				const response = await this.settingsStore.testDolphinConnection({
-					apiEndpoint: this.fileSettings.dolphinApiEndpoint,
-					apiKey: this.fileSettings.dolphinApiKey,
-				})
-
-				if (response.success) {
-					this.showSaveMessage('Dolphin connection successful!', 'success')
-					this.dolphinConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Dolphin connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.dolphinConnectionTested = 'error'
-			}
+			this.dolphinConnectionTested = null
+			const { dolphinApiEndpoint, dolphinApiKey } = this.fileSettings
+			// Test connection via backend
+			this.dolphinConnectionTested =
+				dolphinApiEndpoint && dolphinApiKey
+					? await this.runConnectionTest('Dolphin', () =>
+							this.settingsStore.testDolphinConnection({
+								apiEndpoint: dolphinApiEndpoint,
+								apiKey: dolphinApiKey,
+							}),
+						)
+					: this.missingConnectionInput(
+							'Please provide both API endpoint and API key',
+						)
 		},
 
 		/**
@@ -1736,43 +1673,15 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
-			try {
-				this.presidioConnectionTested = null
-				this.testingPresidio = true
-
-				if (!this.fileSettings.presidioApiEndpoint) {
-					this.showSaveMessage(
-						'Please provide the Presidio API endpoint',
-						'error',
+			this.presidioConnectionTested = null
+			this.testingPresidio = true
+			const apiEndpoint = this.fileSettings.presidioApiEndpoint
+			this.presidioConnectionTested = apiEndpoint
+				? await this.runConnectionTest('Presidio', () =>
+						this.settingsStore.testPresidioConnection({ apiEndpoint }),
 					)
-					this.presidioConnectionTested = 'error'
-					return
-				}
-
-				const response = await this.settingsStore.testPresidioConnection({
-					apiEndpoint: this.fileSettings.presidioApiEndpoint,
-				})
-
-				if (response.success) {
-					this.showSaveMessage(
-						'Presidio connection successful!',
-						'success',
-					)
-					this.presidioConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.presidioConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Presidio connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.presidioConnectionTested = 'error'
-			} finally {
-				this.testingPresidio = false
-			}
+				: this.missingConnectionInput('Please provide the Presidio API endpoint')
+			this.testingPresidio = false
 		},
 
 		/**
@@ -1781,43 +1690,52 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
-			try {
-				this.openAnonymiserConnectionTested = null
-				this.testingOpenAnonymiser = true
-
-				if (!this.fileSettings.openAnonymiserApiEndpoint) {
-					this.showSaveMessage(
+			this.openAnonymiserConnectionTested = null
+			this.testingOpenAnonymiser = true
+			const apiEndpoint = this.fileSettings.openAnonymiserApiEndpoint
+			this.openAnonymiserConnectionTested = apiEndpoint
+				? await this.runConnectionTest('OpenAnonymiser', () =>
+						this.settingsStore.testOpenAnonymiserConnection({ apiEndpoint }),
+					)
+				: this.missingConnectionInput(
 						'Please provide the OpenAnonymiser API endpoint',
-						'error',
 					)
-					this.openAnonymiserConnectionTested = 'error'
-					return
-				}
+			this.testingOpenAnonymiser = false
+		},
 
-				const response =
-					await this.settingsStore.testOpenAnonymiserConnection({
-						apiEndpoint: this.fileSettings.openAnonymiserApiEndpoint,
-					})
+		/**
+		 * Say a connection test lacks input.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} message What is missing
+		 * @return {string} The test state: 'error'
+		 */
+		missingConnectionInput(message) {
+			this.showSaveMessage(message, 'error')
+			return 'error'
+		},
 
+		/**
+		 * Run one service's connection test and say how it went.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} service The service name shown in the messages
+		 * @param {() => Promise<object>} request The store call that tests it
+		 * @return {Promise<string>} The test state: 'success' or 'error'
+		 */
+		async runConnectionTest(service, request) {
+			try {
+				const response = await request()
 				if (response.success) {
-					this.showSaveMessage(
-						'OpenAnonymiser connection successful!',
-						'success',
-					)
-					this.openAnonymiserConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.openAnonymiserConnectionTested = 'error'
+					this.showSaveMessage(`${service} connection successful!`, 'success')
+					return 'success'
 				}
+				this.showSaveMessage(`Connection failed: ${response.error}`, 'error')
+				return 'error'
 			} catch (error) {
-				console.error('Failed to test OpenAnonymiser connection:', error)
+				console.error(`Failed to test ${service} connection:`, error)
 				this.showSaveMessage('Connection test failed', 'error')
-				this.openAnonymiserConnectionTested = 'error'
-			} finally {
-				this.testingOpenAnonymiser = false
+				return 'error'
 			}
 		},
 
@@ -2120,8 +2038,6 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 }
-
-@include field-group;
 
 .field-hint {
 	font-size: 12px;

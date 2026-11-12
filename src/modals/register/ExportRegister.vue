@@ -87,6 +87,44 @@ function exportSlugs(register, schema) {
 	return [register.slug || register.id, schema.slug || schema.id]
 }
 
+/**
+ * Download the objects of a register and schema in the given format.
+ *
+ * @param {Array<string>} slugs The register and schema slugs
+ * @param {string} format The export format
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(slugs, format) {
+	const url = generateUrl(
+		`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
+	)
+	const params = {
+		type: format,
+	}
+
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob',
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureMessage(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| t('openregister', 'Failed to export objects')
+	)
+}
+
 export default {
 	name: 'ExportRegister',
 	components: {
@@ -144,10 +182,7 @@ export default {
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */
 		async exportObjects() {
-			const register = registerStore.registerItem
-			const schema = schemaStore.schemaItem
-
-			if (!hasIds(register, schema)) {
+			if (!hasIds(registerStore.registerItem, schemaStore.schemaItem)) {
 				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
@@ -156,31 +191,28 @@ export default {
 			this.error = null
 
 			try {
-				const slugs = exportSlugs(register, schema)
-				const url = generateUrl(
-					`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
-				)
-				const params = {
-					type: this.exportFormat,
-				}
-
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob',
-				})
-
-				this.saveExport(response, slugs)
-				this.closeModal()
+				await this.downloadExport()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| t('openregister', 'Failed to export objects')
+				this.error = exportFailureMessage(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current register and schema, save it
+		 * and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadExport() {
+			const slugs = exportSlugs(
+				registerStore.registerItem,
+				schemaStore.schemaItem,
+			)
+			const response = await requestExport(slugs, this.exportFormat)
+			this.saveExport(response, slugs)
+			this.closeModal()
 		},
 
 		/**

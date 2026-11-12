@@ -67,6 +67,10 @@ class RelatedRowFilterParserMessagesTest extends TestCase {
 				['_related' => ['pd' => ['case' => ['x' => ['nope' => '1']]]]],
 				"The condition _related[pd][case][x] uses operator 'nope'. It must be one of: ",
 			],
+			'blank field' => [
+				['_related' => ['pd' => ['case' => [' ' => '1']]]],
+				'A condition in _related[pd][case] names no field.',
+			],
 		];
 	}//end refusals()
 

@@ -178,11 +178,19 @@ class MagicTableIndexerBranchesTest extends TestCase {
 	public function testAnExistingMysqlDeletedOwnerIndexIsIgnored(): void {
 		$run = new MagicTableIndexRun('t', 'oc_t');
 		$indexer = $this->indexer(new MySQLPlatform(), ['t_deleted_owner_idx']);
+		$debug = [];
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message, array $context) use (&$debug): void {
+				$debug[] = [$message, $context];
+			}
+		);
 		$this->logger->expects($this->never())->method('warning');
-		$this->logger->expects($this->once())->method('debug')->with('[MagicMapper] Created table indexes', $this->anything());
 
 		$indexer->create($run, $this->schema(['status' => ['type' => 'string', 'facetable' => true]]));
 
+		$this->assertSame('[MagicMapper] Skipped _deleted/_owner index', $debug[0][0]);
+		$this->assertSame(['tableName' => 't', 'error' => 'cannot create t_deleted_owner_idx'], $debug[0][1]);
+		$this->assertSame('[MagicMapper] Created table indexes', $debug[1][0]);
 		$this->assertSame(['status'], $run->facetIndexes);
 	}//end testAnExistingMysqlDeletedOwnerIndexIsIgnored()
 

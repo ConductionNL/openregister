@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\History;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuild;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -182,7 +183,7 @@ class StateHistoryRebuildTest extends TestCase {
 			}
 		);
 
-		$written = $this->rebuild->rebuildObject('uuid-1', 'status', 'zaken', 'zaak');
+		$written = $this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status');
 
 		$this->assertSame(3, $written);
 		$this->assertSame(['delete', 'insert:open', 'insert:bezwaar', 'insert:gesloten'], $order);
@@ -197,7 +198,7 @@ class StateHistoryRebuildTest extends TestCase {
 		$this->audit->method('findChangesForObject')->willThrowException(new \RuntimeException('gone'));
 		$this->intervals->expects($this->never())->method('insert');
 
-		$this->assertSame(0, $this->rebuild->rebuildObject('uuid-1', 'status', 'zaken', 'zaak'));
+		$this->assertSame(0, $this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status'));
 	}//end testAFailingRebuildWritesNothingAndDoesNotThrow()
 
 	/**
@@ -216,7 +217,7 @@ class StateHistoryRebuildTest extends TestCase {
 			}
 		);
 
-		$this->rebuild->rebuildObject('uuid-1', 'status', 'zaken', 'zaak');
+		$this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status');
 
 		$this->assertCount(3, $rows);
 		$this->assertNotSame($rows[0], $rows[1]);

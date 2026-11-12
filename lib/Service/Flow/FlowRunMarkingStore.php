@@ -119,19 +119,46 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 
 		foreach (array_unique(array_merge(array_keys($current), array_keys($next))) as $place) {
 			$diff = (($next[$place] ?? 0) - ($current[$place] ?? 0));
-			if (($diff < 0) === false && ($diff > 0) === false) {
+			if (self::isUnchanged(diff: $diff) === true) {
 				continue;
 			}
 
 			$this->lastDelta[$this->deltaSide(diff: $diff)][] = (string)$place;
 			$current[$place] = (($current[$place] ?? 0) + $diff);
-			if ($diff < 0 && $current[$place] <= 0) {
-				unset($current[$place]);
+			if ($diff < 0) {
+				$current = self::withoutDrained(marking: $current, place: $place);
 			}
 		}
 
 		return $current;
 	}//end applied()
+
+	/**
+	 * Whether a place's token count did not move.
+	 *
+	 * @param int|float $diff The change in tokens.
+	 *
+	 * @return bool
+	 */
+	private static function isUnchanged(int|float $diff): bool {
+		return ($diff < 0) === false && ($diff > 0) === false;
+	}//end isUnchanged()
+
+	/**
+	 * The marking without a place that consumption left with no tokens.
+	 *
+	 * @param array<string, int> $marking The marking.
+	 * @param int|string         $place   The place just consumed from.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function withoutDrained(array $marking, int|string $place): array {
+		if ($marking[$place] <= 0) {
+			unset($marking[$place]);
+		}
+
+		return $marking;
+	}//end withoutDrained()
 
 	/**
 	 * Which side of the delta a non-zero difference lands on.

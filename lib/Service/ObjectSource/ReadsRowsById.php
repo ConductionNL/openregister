@@ -25,8 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * find() and findAll() over the rows readRows() returns.
@@ -47,17 +45,15 @@ trait ReadsRowsById {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string               $id       The row id.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findSourcedRow(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findSourcedRow(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -81,17 +77,15 @@ trait ReadsRowsById {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query    Query (limit/offset).
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The virtual objects.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->pageSourcedRows(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->pageSourcedRows(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**

@@ -99,10 +99,8 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * One row of the view by uuid, or null when the view does not hold it.
 	 *
-	 * @param Register $register The view-backed type's register (unused: the view names its source).
-	 * @param Schema   $schema   The view-backed schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string   $id       The object uuid.
-	 * @param array    $config   The object-source config (`view`).
 	 *
 	 * @return ObjectEntity|null
 	 *
@@ -111,17 +109,15 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return ($this->findAll(register: $register, schema: $schema, query: ['_ids' => [$id], 'limit' => 1], config: $config)[0] ?? null);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return ($this->findAll(source: $source, query: ['_ids' => [$id], 'limit' => 1])[0] ?? null);
 	}//end find()
 
 	/**
 	 * The rows the view's query finds, narrowed by the caller's filters.
 	 *
-	 * @param Register $register The view-backed type's register (unused: the view names its source).
-	 * @param Schema   $schema   The view-backed schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array    $query    The caller's query (filters, limit, offset, sort).
-	 * @param array    $config   The object-source config (`view`).
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -129,17 +125,15 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->readRows(request: new ViewRowsRequest(schema: $schema, query: $query, config: $config));
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->readRows(request: new ViewRowsRequest(schema: $source->table->schema, query: $query, config: $source->config));
 	}//end findAll()
 
 	/**
 	 * How many rows the view's query finds, narrowed by the caller's filters.
 	 *
-	 * @param Register $register The view-backed type's register (unused).
-	 * @param Schema   $schema   The view-backed schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array    $query    The caller's query.
-	 * @param array    $config   The object-source config (`view`).
 	 *
 	 * @return int
 	 *
@@ -147,8 +141,8 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return $this->countRows(request: new ViewRowsRequest(schema: $schema, query: $query, config: $config));
+	public function count(SourcedTable $source, array $query = []): int {
+		return $this->countRows(request: new ViewRowsRequest(schema: $source->table->schema, query: $query, config: $source->config));
 	}//end count()
 
 	/**

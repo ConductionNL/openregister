@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 
 /**
  * Pins the warning's text, context and the counts it reads, before record() takes a value object.
@@ -74,7 +75,7 @@ final class AppImportJobRecorderWarningTest extends TestCase {
 			['app' => 'openregister', 'importJobId' => 'job-9']
 		);
 
-		self::assertFalse($this->recorder($logger)->record('learniq.demo', 'job-9', '1.0.0', 7));
+		self::assertFalse($this->recorder($logger)->recordFinished(new FinishedImportJob('learniq.demo', 'job-9', '1.0.0', 7)));
 		self::assertSame([['job-9', 'create'], ['job-9', null]], $this->counted);
 	}//end testWarningTextAndContext()
 
@@ -87,7 +88,7 @@ final class AppImportJobRecorderWarningTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('warning');
 
-		self::assertFalse($this->recorder($logger)->record('learniq.demo', 'job-9', '1.0.0', 0));
+		self::assertFalse($this->recorder($logger)->recordFinished(new FinishedImportJob('learniq.demo', 'job-9', '1.0.0', 0)));
 		self::assertSame([['job-9', 'create']], $this->counted);
 	}//end testNothingWrittenIsSilent()
 }//end class

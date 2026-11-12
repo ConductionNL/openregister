@@ -1,0 +1,224 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AvgIndex.archiveActivity archives when confirmed 1`] = `
+[
+  [
+    "confirm",
+    "Archive this processing activity? Audit-trail rows will keep referring to it.",
+  ],
+  [
+    "archiveActivity",
+    "pa-1",
+  ],
+  [
+    "refreshActivities",
+  ],
+]
+`;
+
+exports[`AvgIndex.archiveActivity archives when declined 1`] = `
+[
+  [
+    "confirm",
+    "Archive this processing activity? Audit-trail rows will keep referring to it.",
+  ],
+]
+`;
+
+exports[`AvgIndex.archiveActivity archives when refused by the store 1`] = `
+[
+  [
+    "confirm",
+    "Archive this processing activity? Audit-trail rows will keep referring to it.",
+  ],
+  [
+    "archiveActivity",
+    "pa-1",
+  ],
+]
+`;
+
+exports[`AvgIndex.confirmErasure erases when confirmed 1`] = `
+[
+  [
+    "confirm",
+    "Erase 3 object(s) for this subject? This action is logged in the audit trail.",
+  ],
+  [
+    "runErasure",
+    {
+      "dryRun": false,
+      "subject": "s-1",
+      "type": "bsn",
+    },
+  ],
+]
+`;
+
+exports[`AvgIndex.confirmErasure erases when confirmed without a type or count 1`] = `
+[
+  [
+    "confirm",
+    "Erase 0 object(s) for this subject? This action is logged in the audit trail.",
+  ],
+  [
+    "runErasure",
+    {
+      "dryRun": false,
+      "subject": "s-1",
+      "type": undefined,
+    },
+  ],
+]
+`;
+
+exports[`AvgIndex.confirmErasure erases when declined 1`] = `
+[
+  [
+    "confirm",
+    "Erase 3 object(s) for this subject? This action is logged in the audit trail.",
+  ],
+]
+`;
+
+exports[`AvgIndex.confirmErasure erases when refused by the store 1`] = `
+[
+  [
+    "confirm",
+    "Erase 1 object(s) for this subject? This action is logged in the audit trail.",
+  ],
+  [
+    "runErasure",
+    {
+      "dryRun": false,
+      "subject": "s-1",
+      "type": "bsn",
+    },
+  ],
+]
+`;
+
+exports[`AvgIndex.downloadPortability saves a refusal 1`] = `
+[
+  [
+    "runPortability",
+    {
+      "subject": "s",
+      "type": "bsn",
+    },
+  ],
+]
+`;
+
+exports[`AvgIndex.downloadPortability saves an export 1`] = `
+[
+  [
+    "runPortability",
+    {
+      "subject": "jan@example.nl",
+      "type": "email",
+    },
+  ],
+  [
+    "createObjectURL",
+    "Blob(application/json, 19)",
+  ],
+  [
+    "click",
+    "blob:avg",
+    "avg-portability-jan-example-nl.json",
+  ],
+  [
+    "revokeObjectURL",
+    "blob:avg",
+  ],
+]
+`;
+
+exports[`AvgIndex.downloadPortability saves no export 1`] = `
+[
+  [
+    "runPortability",
+    {
+      "subject": "s",
+      "type": undefined,
+    },
+  ],
+]
+`;
+
+exports[`AvgIndex.generateAndDownloadBundle downloads a bundle 1`] = `
+[
+  [
+    "generateBundle",
+    "c-9",
+  ],
+  [
+    "downloadBundle",
+    "c-9",
+    "tok",
+  ],
+  [
+    "createObjectURL",
+    "Blob(application/pdf, 4)",
+  ],
+  [
+    "click",
+    "blob:avg",
+    "dsar-case-c-9.pdf",
+  ],
+  [
+    "revokeObjectURL",
+    "blob:avg",
+  ],
+  [
+    "reloadSelectedCase",
+  ],
+]
+`;
+
+exports[`AvgIndex.generateAndDownloadBundle downloads a refused download 1`] = `
+[
+  [
+    "generateBundle",
+    "c-9",
+  ],
+  [
+    "downloadBundle",
+    "c-9",
+    "tok",
+  ],
+]
+`;
+
+exports[`AvgIndex.generateAndDownloadBundle downloads a refused generation 1`] = `
+[
+  [
+    "generateBundle",
+    "c-9",
+  ],
+]
+`;
+
+exports[`AvgIndex.generateAndDownloadBundle downloads no file 1`] = `
+[
+  [
+    "generateBundle",
+    "c-9",
+  ],
+  [
+    "downloadBundle",
+    "c-9",
+    "tok",
+  ],
+]
+`;
+
+exports[`AvgIndex.generateAndDownloadBundle downloads no token 1`] = `
+[
+  [
+    "generateBundle",
+    "c-9",
+  ],
+]
+`;

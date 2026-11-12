@@ -64,21 +64,6 @@ final class SearchTrailStatistics {
 	}//end withOutcomeRates()
 
 	/**
-	 * Add organisations, query complexity, the period and (for a period) the daily averages.
-	 *
-	 * @param array         $stats Statistics with total_searches and total_results
-	 * @param DateTime|null $from  Start date of the period
-	 * @param DateTime|null $to    End date of the period
-	 *
-	 * @return array The statistics with the derived metrics added
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function withDerivedMetrics(array $stats, ?DateTime $from, ?DateTime $to): array {
-		return $this->withPeriodMetrics(stats: $stats, period: new SearchPeriod(from: $from, to: $to));
-	}//end withDerivedMetrics()
-
-	/**
 	 * Add organisations, query complexity, the period and (for a bounded period) the daily averages.
 	 *
 	 * @param array        $stats  Statistics with total_searches and total_results
@@ -106,21 +91,6 @@ final class SearchTrailStatistics {
 	}//end withPeriodMetrics()
 
 	/**
-	 * Popular search terms with their share and effectiveness.
-	 *
-	 * @param array         $terms Terms with count and avg_results
-	 * @param DateTime|null $from  Start date filter
-	 * @param DateTime|null $to    End date filter
-	 *
-	 * @return array Popular search terms data
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function popularTerms(array $terms, ?DateTime $from, ?DateTime $to): array {
-		return $this->termsReport(terms: $terms, period: new SearchPeriod(from: $from, to: $to));
-	}//end popularTerms()
-
-	/**
 	 * Popular search terms with their share and effectiveness, over a period.
 	 *
 	 * @param array        $terms  Terms with count and avg_results
@@ -141,21 +111,6 @@ final class SearchTrailStatistics {
 			'period' => $period->bounds(),
 		];
 	}//end termsReport()
-
-	/**
-	 * Register/schema combinations with their share and performance rating, most used first.
-	 *
-	 * @param array         $stats Combinations with count, avg_results and avg_response_time
-	 * @param DateTime|null $from  Start date filter
-	 * @param DateTime|null $to    End date filter
-	 *
-	 * @return array Register/schema statistics data
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function registerSchemaUsage(array $stats, ?DateTime $from, ?DateTime $to): array {
-		return $this->combinationsReport(stats: $stats, period: new SearchPeriod(from: $from, to: $to));
-	}//end registerSchemaUsage()
 
 	/**
 	 * Register/schema combinations with their share and performance rating, most used first, over a period.
@@ -179,21 +134,6 @@ final class SearchTrailStatistics {
 			'period' => $period->bounds(),
 		];
 	}//end combinationsReport()
-
-	/**
-	 * User agents with their browser distribution.
-	 *
-	 * @param array         $userAgentStats User agent statistics, each with browser_info and count
-	 * @param DateTime|null $from           Start date filter
-	 * @param DateTime|null $to             End date filter
-	 *
-	 * @return array User agent statistics data
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function userAgentUsage(array $userAgentStats, ?DateTime $from, ?DateTime $to): array {
-		return $this->userAgentReport(userAgentStats: $userAgentStats, period: new SearchPeriod(from: $from, to: $to));
-	}//end userAgentUsage()
 
 	/**
 	 * User agents with their browser distribution, over a period.

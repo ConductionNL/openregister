@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\FragmentOrdering;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use PHPUnit\Framework\TestCase;
@@ -43,7 +44,7 @@ class ExampleSetOrderCycleTest extends TestCase {
 	 */
 	private function refusal(array $after): string {
 		try {
-			(new ExampleSetOrder())->order(after: $after, enabled: array_keys($after));
+			(new ExampleSetOrder())->order(new FragmentOrdering(after: $after, enabled: array_keys($after)));
 		} catch (ExampleSetException $e) {
 			return $e->getMessage();
 		}
@@ -84,7 +85,7 @@ class ExampleSetOrderCycleTest extends TestCase {
 		$this->assertSame('no refusal', $this->refusal(after: ['top' => ['left', 'right'], 'left' => [], 'right' => ['left']]));
 		$this->assertSame(
 			['left', 'right', 'top'],
-			(new ExampleSetOrder())->order(after: ['top' => ['left', 'right'], 'right' => ['left'], 'left' => []], enabled: [])['order']
+			(new ExampleSetOrder())->order(new FragmentOrdering(after: ['top' => ['left', 'right'], 'right' => ['left'], 'left' => []], enabled: []))['order']
 		);
 	}//end testWithoutACycleTheLowestReadyAppGoesFirst()
 }//end class

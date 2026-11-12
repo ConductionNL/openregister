@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\MessageDispatchController;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -102,7 +103,7 @@ class MessageDispatchControllerTest extends TestCase {
 
 		$this->provider->expects($this->once())
 			->method('dispatch')
-			->with('messagebird-sms', ['to' => '+31600000000', 'body' => 'hi'], '/messages', ['X-Trace' => 'abc'])
+			->with('messagebird-sms', new OutboundMessage(path: '/messages', body: ['to' => '+31600000000', 'body' => 'hi'], headers: ['X-Trace' => 'abc']))
 			->willReturn(['status' => 'sent', 'source' => 'messagebird-sms', 'response' => ['id' => 'm-1']]);
 
 		$response = $this->controller->smsSend();
@@ -144,7 +145,7 @@ class MessageDispatchControllerTest extends TestCase {
 
 		$this->provider->expects($this->once())
 			->method('dispatch')
-			->with('whatsapp-cloud-api', ['messaging_product' => 'whatsapp'], '/1234/messages', [])
+			->with('whatsapp-cloud-api', new OutboundMessage(path: '/1234/messages', body: ['messaging_product' => 'whatsapp'], headers: []))
 			->willReturn(['status' => 'sent', 'source' => 'whatsapp-cloud-api', 'response' => []]);
 
 		$response = $this->controller->whatsappSend();

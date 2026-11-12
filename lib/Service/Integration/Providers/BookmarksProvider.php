@@ -50,11 +50,32 @@ class BookmarksProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'bookmarks';
 
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param AppProviderDescription      $description        The app manager and localisation.
+	 * @param BookmarkLinkMapperInterface $bookmarkLinkMapper Bookmark-link mapper (Tier-2 link table).
+	 */
 	public function __construct(
+		AppProviderDescription $description,
 		private BookmarkLinkMapperInterface $bookmarkLinkMapper,
-		private IAppManager $appManager,
-		private IL10N $l10n,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {

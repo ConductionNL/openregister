@@ -197,7 +197,7 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphFor(?string $hash): ?array {
-		if ($hash === null || trim($hash) === '') {
+		if (self::isBlank(hash: $hash) === true) {
 			return null;
 		}
 
@@ -208,6 +208,19 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 
 		return $this->readable(pinned: $pinned, hash: $hash);
 	}//end graphFor()
+
+	/**
+	 * Whether no hash was given.
+	 *
+	 * @param string|null $hash The definition hash.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-false string $hash
+	 */
+	private static function isBlank(?string $hash): bool {
+		return ($hash === null || trim($hash) === '');
+	}//end isBlank()
 
 	/**
 	 * The stored definition row for a hash, logging when there is none.

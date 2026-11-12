@@ -13,10 +13,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillRequest;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -49,7 +52,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	/** @var list<array{string, ?string}> Slug writes as [uuid, slug]. */
 	private array $writes = [];
 
-	/** @var list<array> Audit entries as the arguments of createSlugBackfillEntry. */
+	/** @var list<array> Audit entries as the fields passed to recordSlugBackfill. */
 	private array $audits = [];
 
 	/** @var list<string> Logged warnings. */
@@ -66,7 +69,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (Register $r, Schema $s, string $uuid, ?string $slug): int {
+			function (RegisterSchema $table, string $uuid, ?string $slug): int {
+				[$r, $s] = [$table->register, $table->schema];
 				$this->writes[] = [$uuid, $slug];
 				return 1;
 			}
@@ -116,9 +120,10 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	 */
 	private function auditMapper(): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createSlugBackfillEntry')->willReturnCallback(
-			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['changes' => $changes, 'summary' => $summary, 'register' => $register, 'schema' => $schema];
+		$mapper->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$target = $backfill->target;
+				$this->audits[] = ['changes' => $backfill->changes, 'summary' => $backfill->summary, 'register' => $target->register, 'schema' => $target->schema];
 				return new AuditTrail();
 			}
 		);
@@ -177,7 +182,9 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	public function testASchemaWithoutSlugFieldIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->run($this->register, $this->schema(['objectNameField' => 'title']));
+		$this->service->run(
+			new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(['objectNameField' => 'title']), dryRun: false)
+		);
 	}
 
 	public function testEmptySlugsAreFilledOldestFirstAndATakenOneIsLogged(): void {
@@ -188,7 +195,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([[self::UUID_A, 'hello-world']], $this->writes);
 		$this->assertSame(1, $result['summary']['assigned']);
@@ -206,7 +213,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([], $this->writes);
 		$this->assertSame(0, $result['summary']['assigned']);
@@ -253,12 +260,12 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			}
 		);
 
-		$first = $this->service->run($this->register, $this->schema());
+		$first = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 		$this->assertSame(2, $first['summary']['assigned'], 'run 1 assigns hello-world and other');
 		$served = $this->applyPlan($rows, $first['plan']);
 		$taken = ['hello-world' => [self::UUID_A], 'other' => [self::UUID_C]];
 
-		$second = $this->service->run($this->register, $this->schema());
+		$second = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([], $second['plan']);
 		$this->assertSame(0, $second['summary']['assigned']);
@@ -276,7 +283,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$this->service->run($this->register, $this->schema());
+		$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertCount(1, $this->audits);
 		$this->assertSame(
@@ -298,7 +305,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$this->service->run($this->register, $this->schema(), dryRun: true);
+		$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: true));
 
 		$this->assertSame([], $this->audits);
 	}
@@ -313,7 +320,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([], $result['plan']);
 		$this->assertSame([], $this->audits);
@@ -328,7 +335,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 		$magicMapper->method('updateSlugColumn')->willReturnCallback(
-			static fn (Register $r, Schema $s, string $uuid): int => (($uuid === self::UUID_A) ? 1 : 0)
+			static fn (RegisterSchema $table, string $uuid): int => (($uuid === self::UUID_A) ? 1 : 0)
 		);
 		$logger = $this->createMock(LoggerInterface::class);
 		$registerMapper = $this->createMock(RegisterMapper::class);
@@ -352,7 +359,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			logger: $logger
 		);
 
-		$service->run($this->register, $this->schema());
+		$service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello']], $this->audits[0]['changes']);
 		// Review finding r2routes-f1: the entry carries the real skipped count, not the planning-time 0.
@@ -364,7 +371,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->magicMapper->method('findAllSlugs')->willReturn(['my-own' => [self::UUID_A, self::UUID_B]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturn($this->page([]));
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame(['my-own' => [self::UUID_A, self::UUID_B]], $result['duplicates']);
 		$this->assertSame([], $this->writes);
@@ -384,7 +391,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([[self::UUID_B, 'hello-world']], $this->writes, 'only the object without a slug is written');
 		$this->assertSame(['scanned' => 1, 'assigned' => 1, 'collisions' => 0, 'unchanged' => 0, 'duplicates' => 0, 'skipped' => 0], $result['summary']);
@@ -401,7 +408,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$this->service->run($this->register, $this->schema());
+		$this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		// B was created first (an imported historical object), so B gets the slug.
 		$this->assertSame([[self::UUID_B, 'same']], $this->writes);
@@ -441,7 +448,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			logger: $logger
 		);
 
-		$result = $service->run($this->register, $this->schema());
+		$result = $service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame(1, $result['summary']['skipped']);
 	}
@@ -454,7 +461,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 
-		$result = $this->service->run($this->register, $this->schema(), dryRun: true);
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: true));
 
 		$this->assertSame([], $this->writes);
 		$this->assertSame([], $this->warnings);
@@ -478,7 +485,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->run($this->register, $this->schema());
+		$result = $this->service->run(new ObjectSlugBackfillRequest(register: $this->register, schema: $this->schema(), dryRun: false));
 
 		$this->assertSame([0, 500], $afterIds, 'the cursor advances past the unconvertible row');
 		$this->assertSame([[self::UUID_A, 'first-row'], [self::UUID_B, 'second-page-row']], $this->writes);

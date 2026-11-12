@@ -17,10 +17,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
@@ -57,9 +61,7 @@ class ObjectServiceMapperAdapter {
 	public function find(int|string $identifier, ?array $extend = null): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $identifier,
-			_extend: $extend ?? [],
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema, extend: $extend ?? [])
 		);
 	}//end find()
 
@@ -73,23 +75,14 @@ class ObjectServiceMapperAdapter {
 	 * findAllPaginated().
 	 *
 	 * @param array $config Full config array (filters, limit, offset, sort, extend, search, ids).
-	 * @param array|null $filters Shorthand filter map; merged into $config['filters'].
-	 * @param array|null $ids Restrict results to these object IDs.
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Number of results to skip.
-	 * @param array|null $sort Sort specification.
-	 * @param array|null $extend Relations to expand inline.
-	 * @param string|null $search Full-text search term.
 	 *
 	 * @return array
 	 *
-	 * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to
-	 *              ObjectService::findAll; no standalone contract.
+	 * @spec exclude Facade plumbing: register/schema injection then delegate to ObjectService::findAll;
+	 *              no standalone contract. findAllFor() takes a ListQuery instead of config keys.
 	 */
-	public function findAll(array $config = [], ?array $filters = null, ?array $ids = null, ?int $limit = null,
-		?int $offset = null, ?array $sort = null, ?array $extend = null, ?string $search = null): array {
-		$overrides = compact('filters', 'ids', 'limit', 'offset', 'sort', 'extend', 'search');
-		return $this->findAllConfigured(config: $this->withOverrides(config: $config, overrides: $overrides));
+	public function findAll(array $config = []): array {
+		return $this->findAllConfigured(config: $config);
 	}//end findAll()
 
 	/**
@@ -176,44 +169,9 @@ class ObjectServiceMapperAdapter {
 	public function createFromArray(array $object): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema))
 		);
 	}//end createFromArray()
-
-	/**
-	 * Update an existing object from a plain data array.
-	 *
-	 * When $patch is true, only the supplied fields are changed (PATCH semantics):
-	 * the existing object is fetched, the incoming fields are merged on top, and
-	 * the result is saved. When false, the full object is replaced (PUT semantics).
-	 *
-	 * Both paths route through saveObject() with the adapter's register/schema
-	 * context so the correct dynamic table is targeted.
-	 *
-	 * Note: the $validate parameter is accepted for interface compatibility but
-	 * validation is always performed by the underlying ObjectService.
-	 *
-	 * @param int|string $id Object ID or UUID.
-	 * @param array $object New or partial object data.
-	 * @param bool $validate Accepted for interface compatibility; has no effect.
-	 * @param bool $patch When true, perform a partial update (PATCH).
-	 *
-	 * @return ObjectEntity
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $validate kept for interface compatibility.
-	 *
-	 * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
-	 *              contract beyond ObjectService's save path.
-	 */
-	public function updateFromArray(int|string $id, array $object, bool $validate = true, bool $patch = false): ObjectEntity {
-		if ($patch === true) {
-			return $this->patchFromArray(id: $id, object: $object);
-		}
-
-		return $this->replaceFromArray(id: $id, object: $object);
-	}//end updateFromArray()
 
 	/**
 	 * Replace an object with the given data (PUT).
@@ -223,13 +181,12 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @return ObjectEntity
 	 *
-	 * @spec exclude Facade plumbing: the PUT half of updateFromArray(); delegates to ObjectService::saveObject.
+	 * @spec exclude Facade plumbing: PUT; delegates to ObjectService::saveObject.
 	 */
 	public function replaceFromArray(int|string $id, array $object): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: array_merge($object, ['id' => (string)$id]),
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema))
 		);
 	}//end replaceFromArray()
 
@@ -246,7 +203,7 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @throws ValidationException When the scoped read finds nothing.
 	 *
-	 * @spec exclude Facade plumbing: the PATCH half of updateFromArray(); delegates to ObjectService::saveObject.
+	 * @spec exclude Facade plumbing: PATCH; delegates to ObjectService::saveObject.
 	 */
 	public function patchFromArray(int|string $id, array $object): ObjectEntity {
 		return $this->replaceFromArray(id: $id, object: array_merge($this->existingObject(id: $id)->getObject(), $object));
@@ -266,8 +223,7 @@ class ObjectServiceMapperAdapter {
 	private function existingObject(int|string $id): ObjectEntity {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema)
 		));
 		if ($existing === null) {
 			throw new ValidationException(
@@ -293,8 +249,7 @@ class ObjectServiceMapperAdapter {
 	public function update(ObjectEntity $object): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema))
 		);
 	}//end update()
 
@@ -327,9 +282,10 @@ class ObjectServiceMapperAdapter {
 		}
 
 		return $this->objectService->deleteObject(
-			uuid: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			deletion: new ObjectDeletion(
+				uuid: (string)$id,
+				target: new ObjectFindTarget(register: $this->register, schema: $this->schema)
+			)
 		);
 	}//end delete()
 

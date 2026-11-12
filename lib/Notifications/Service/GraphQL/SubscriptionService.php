@@ -120,21 +120,6 @@ class SubscriptionService {
 	}//end pushEvent()
 
 	/**
-	 * Get events since a given event ID, filtered by schema and RBAC.
-	 *
-	 * @param string|null $lastEventId The last event ID the client received
-	 * @param int|null $schemaId Optional schema ID filter
-	 * @param int|null $registerId Optional register ID filter
-	 *
-	 * @return array<array<string, mixed>> The events the user is allowed to see
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function getEventsSince(?string $lastEventId = null, ?int $schemaId = null, ?int $registerId = null): array {
-		return $this->eventsMatching(filter: new EventStreamFilter(lastEventId: $lastEventId, schemaId: $schemaId, registerId: $registerId));
-	}//end getEventsSince()
-
-	/**
 	 * The buffered events after the filter's last event, narrowed by it, that the user may see.
 	 *
 	 * @param EventStreamFilter $filter Where the client resumes, and the schema and register it narrows to.
@@ -144,6 +129,20 @@ class SubscriptionService {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
 	public function eventsMatching(EventStreamFilter $filter): array {
+		$buffer = $this->bufferedEvents();
+		if ($buffer === []) {
+			return [];
+		}
+
+		return $this->visibleEvents(events: $this->filterEventStream(buffer: $buffer, filter: $filter));
+	}//end eventsMatching()
+
+	/**
+	 * The buffered event stream, empty when APCu is unavailable or holds nothing.
+	 *
+	 * @return array<array<string, mixed>> The buffered events.
+	 */
+	private function bufferedEvents(): array {
 		if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
 			return [];
 		}
@@ -153,15 +152,26 @@ class SubscriptionService {
 			return [];
 		}
 
-		$events = [];
-		foreach ($this->filterEventStream(buffer: $buffer, filter: $filter) as $event) {
+		return $buffer;
+	}//end bufferedEvents()
+
+	/**
+	 * The events the user may see.
+	 *
+	 * @param array<array<string, mixed>> $events The events after the filter.
+	 *
+	 * @return array<array<string, mixed>> The visible events, in order.
+	 */
+	private function visibleEvents(array $events): array {
+		$visible = [];
+		foreach ($events as $event) {
 			if ($this->verifyEventRBAC(event: $event) === true) {
-				$events[] = $event;
+				$visible[] = $event;
 			}
 		}
 
-		return $events;
-	}//end eventsMatching()
+		return $visible;
+	}//end visibleEvents()
 
 	/**
 	 * Filter event buffer by last event ID and schema/register filters.

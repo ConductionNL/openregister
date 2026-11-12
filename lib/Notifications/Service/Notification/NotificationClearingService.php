@@ -89,20 +89,21 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * Narrower than `clearForObject()` on purpose: opening the documents tab
 	 * says nothing about the messages nobody has read.
 	 *
+	 * The notices cleared are the caller's own.
+	 *
 	 * @param string $objectUuid The object the sub-resource hangs off.
-	 * @param string $subjectId The sub-resource's own id.
-	 * @param string|null $userId The reader, or null for the caller.
+	 * @param string $subjectId  The sub-resource's own id.
 	 *
 	 * @return integer How many notices were cleared.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function clearForSubResource(string $objectUuid, string $subjectId, ?string $userId = null): int {
+	public function clearForSubResource(string $objectUuid, string $subjectId): int {
 		if ($subjectId === '') {
 			return 0;
 		}
 
-		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: $subjectId), userId: $userId);
+		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: $subjectId), userId: null);
 
 	}//end clearForSubResource()
 

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -41,6 +42,8 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
@@ -71,6 +74,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Regression: a PENDING schema ref left by a previous caller must not be
@@ -99,7 +103,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler:    $this->createMock(DataManipulationHandler::class),
 			deleteHandler:       $this->createMock(DeleteObject::class),
 			getHandler:          $this->createMock(GetObject::class),
@@ -138,7 +142,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 			dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
 			container:           $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 
@@ -203,18 +207,19 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$found = new ObjectEntity();
 		$this->getHandlerMock()->expects($this->once())
 			->method('find')
-			->with('c3dce9e3-86a8-44d7-98f6-51c4a06f4b31', $this->identicalTo($register), $this->identicalTo($synchronization))
+			->with(
+				$this->callback(static fn (ObjectFindRequest $request): bool => $request->id === 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31'),
+				$this->callback(static fn (ReadScope $scope): bool => $scope->register === $register && $scope->schema === $synchronization)
+			)
 			->willReturn($found);
 
 		// BEFORE THE FIX this throws SchemaNotInRegisterException naming
 		// "application" — a schema this call never mentioned.
 		$result = $this->service->find(
 			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
-			register: 'openconnector',
-			schema: 'synchronization',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'synchronization', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		$this->assertSame($found, $result);
@@ -283,7 +288,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 						(new \ReflectionMethod(GetObject::class, 'findAll'))->getParameters()
 					);
 					$named = array_combine(array_slice($names, 0, count($args)), $args);
-					$scope = [$named['register'] ?? null, $named['schema'] ?? null];
+					$scope = [$named['request']->scope->register, $named['request']->scope->schema];
 					return [];
 				}
 			);
@@ -318,11 +323,9 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 
 		$this->service->find(
 			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
-			register: 'openconnector',
-			schema: 'application',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'application', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 	}//end testACallNamingASchemaItsRegisterLacksIsStillRefused()
 

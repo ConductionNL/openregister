@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\ObjectMove;
+use OCA\OpenRegister\Service\Object\MoveAddress;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -19,6 +21,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
@@ -110,13 +113,13 @@ class MoveObjectMoveGoldenTest extends TestCase {
 		$object->setObject(array_key_exists('data', $setup) === true ? $setup['data'] : ['title' => 'x', 'number' => '2026-0042']);
 
 		$service  = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects(), $this->audit(), $this->logger(), $this->createStub(IEventDispatcher::class)), $this->validator());
-		$returned = $service->move(
-			object: $object,
-			sourceRegister: $this->register(id: 1),
-			sourceSchema: $this->schema(id: 10, properties: []),
-			targetRegister: $this->register(id: $this->setup['to'][0]),
-			targetSchema: $this->schema(id: $this->setup['to'][1], properties: ($setup['targetProps'] ?? [])),
-			actor: $this->setup['actor']
+		$returned = $service->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $this->register(id: 1), schema: $this->schema(id: 10, properties: [])),
+				target: new MoveAddress(register: $this->register(id: $this->setup['to'][0]), schema: $this->schema(id: $this->setup['to'][1], properties: ($setup['targetProps'] ?? []))),
+				actor: $this->setup['actor']
+			)
 		);
 
 		return ['returned' => $returned, 'after' => ['register' => $object->getRegister(), 'schema' => $object->getSchema(), 'uuid' => $object->getUuid()], 'calls' => $this->calls];
@@ -188,7 +191,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 	private function validator(): ValidateObject {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturnCallback(
-			function (array $object, $schema = null, $schemaObject = null, int $_depth = 0, array $notSupplied = []): ValidationResult {
+			function (array $object, $schema = null, $schemaObject = null, array $notSupplied = []): ValidationResult {
 				$this->calls[] = ['validate' => $object, 'schema' => $schema?->getId(), 'notSupplied' => $notSupplied];
 				$spec = $this->setup['validation'];
 				if ($spec === 'throw') {
@@ -241,7 +244,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null, ?string $ipAddress = null): AuditTrail {
 				$this->calls[] = ['audit' => $action, 'object' => [$object->getUuid(), $object->getRegister(), $object->getSchema()], 'context' => $context, 'actorId' => $actorId, 'actorName' => $actorName, 'ip' => $ipAddress];
 				if (($this->setup['auditFails'] ?? false) === true) {
@@ -250,7 +253,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 
 				return new AuditTrail();
 			}
-		);
+		));
 		return $audit;
 	}//end audit()
 

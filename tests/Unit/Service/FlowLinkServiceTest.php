@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -136,7 +137,7 @@ class FlowLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkOperation('abc-123', 1, 2, 99);
+		$this->service->linkOperation((new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2), 99);
 	}
 
 	public function testLinkOperationThrowsForNonAdmin(): void {
@@ -146,7 +147,7 @@ class FlowLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(403);
 		$this->expectExceptionMessage('Only administrators can link Flow operations');
 
-		$this->service->linkOperation('abc-123', 1, 2, 99);
+		$this->service->linkOperation((new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2), 99);
 	}
 
 	public function testLinkOperationThrowsWhenFlowUnavailable(): void {
@@ -156,7 +157,7 @@ class FlowLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkOperation('abc-123', 1, 2, 99);
+		$this->service->linkOperation((new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2), 99);
 	}
 
 	public function testLinkOperationThrowsOnDuplicate(): void {
@@ -168,7 +169,7 @@ class FlowLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Operation already linked to this object');
 
-		$this->service->linkOperation('abc-123', 1, 2, 99);
+		$this->service->linkOperation((new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2), 99);
 	}
 
 	public function testUnlinkOperationThrowsForNonAdmin(): void {

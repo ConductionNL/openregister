@@ -100,7 +100,10 @@ class GeoFilterParser implements GeoFilterParserInterface {
 			throw new InvalidArgumentException('geo.near MUST be `lon,lat` — exactly two values');
 		}
 
-		return GeoFilter::fromNearAndRadius(lon: $coords[0], lat: $coords[1], radius: (string)$params['geo.radius'], property: $property);
+		return GeoFilter::fromNearAndRadius(
+			circle: ['lon' => $coords[0], 'lat' => $coords[1], 'radius' => (string)$params['geo.radius']],
+			property: $property
+		);
 	}//end nearFilter()
 
 	/**

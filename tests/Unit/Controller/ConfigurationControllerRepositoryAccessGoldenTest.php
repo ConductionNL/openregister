@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
-use OCA\OpenRegister\Service\Configuration\RepositorySearchPage;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
@@ -40,6 +40,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * discover, getGitHub* and getGitLab* refuse anyone but an admin before
@@ -128,7 +129,7 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 	public function testDiscoverGithubSearchesBothAndReturnsGithub(): void {
 		$this->params(['source' => 'GitHub', '_search' => 'q', 'page' => '2']);
 		$this->gitlab->expects($this->once())->method('searchPage')->with('q', new RepositorySearchPage(2, 30))->willReturn(['results' => ['gl']]);
-		$this->github->expects($this->once())->method('searchConfigurations')->with('q', 2)->willReturn(['results' => ['gh']]);
+		$this->github->expects($this->once())->method('searchConfigurations')->with('q', new RepositorySearchPage(page: 2, perPage: 30))->willReturn(['results' => ['gh']]);
 
 		$response = $this->controller('admin', true)->discover();
 
@@ -180,7 +181,7 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 
 	public function testGitHubConfigurations(): void {
 		$this->params(['owner' => 'o', 'repo' => 'r']);
-		$this->github->expects($this->once())->method('listConfigurationFiles')->with('o', 'r', 'main')->willReturn(['f']);
+		$this->github->expects($this->once())->method('listConfigurationFiles')->with(new GitHubFileLocation(owner: 'o', repo: 'r', path: '', branch: 'main'))->willReturn(['f']);
 		$this->assertSame(['files' => ['f']], $this->controller('admin', true)->getGitHubConfigurations()->getData());
 	}
 
