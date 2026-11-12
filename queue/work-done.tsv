@@ -393,3 +393,4 @@ cover:buildiq:8ca317f6:js37c784b6	opened buildiq#1466 (7 vitest tests, useConnec
 fix:buildiq:1457:a61c2de3	no change: dockerimage RED is the known gate artifact on a tests-only PR; REVERIFY recorded	session-20261112T205850-5f960ec2	2026-11-12T21:11:29Z
 gap:opencatalogi:dompurify:1	already done: the top-level overrides dompurify=$dompurify already resolves dompurify 3.4.17 under @toast-ui/editor in package-lock.json and sbom.cdx.json	session-20261112T200014-a0c0c232	2026-11-12T21:11:51Z
 verify:buildiq:1440:dfb861a2	GREEN: 1440 (test-only; 5 new tests pass, 0 new failures; baseline 1264 errors inherited)	session-20261112T200018-e68ecbf8	2026-11-12T21:11:53Z
+cover:buildiq:8ca317f6:js0be8c659	PR #1467: 57 vitest tests, src/modals lines 67.0% -> 84.9%	session-20261112T184508-711de18c	2026-11-12T21:12:21Z
