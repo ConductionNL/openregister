@@ -4353,3 +4353,4 @@ hermiq	1620	deb2c82f4ba34fd4da7b3930d4c42e2c1ca1a136	GREEN	worker-32	tests only;
 hermiq	1621	84539ff87499ac90165c816a7d47df9dafeb5fed	GREEN	worker-32	tests only; 3628 PHP tests on tree (baseline 3567 with 169 inherited errors from missing sibling openregister; with sibling 0 failures), vitest 966 passed, 0 new failures
 hermiq	1622	ae43117f25a00c19eb87d36aa5088a9307933d2c	GREEN	worker-32	tests only; 3628 PHP tests on tree (baseline 3567 with 169 inherited errors from missing sibling openregister; with sibling 0 failures), vitest 966 passed, 0 new failures
 pipelinq	3575	0750f0fbe5917fb73de6d96c91bd7bbbd87d4099	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
+pipelinq	3580	a43e423a7b89f77ccd106b2d62632cdfde593851	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
