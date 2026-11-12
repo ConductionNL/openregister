@@ -272,5 +272,6 @@ cover:dossiq:6ca0231e:1e29cfe7	PR #6135 @d3c81d9d: existing test already exercis
 verify:buildiq:1440:b06ab2aa	8 GREEN (tests/docs only, 0 new failures); merge gate RED x8: dockerimage, branches behind development	session-20261112T184508-711de18c	2026-11-12T20:34:02Z
 cover:dossiq:6ca0231e:7ed71db5	PR #6136: FirstRunReadiness, 8 tests; suite 11976->11984, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:34:23Z
 verify:thematiq:1660:4d72d239	GREEN thematiq#1660	session-20261112T202437-4020bd95	2026-11-12T20:34:53Z
+cover:dossiq:6ca0231e:d0b3b142	PR #6139: 35 tests for SubstitutionValidator, SubstitutionAccessGuard, SubstitutedWorkResolver; suite 11976->12011, failures 19 inherited	session-20261112T202912-56c18a61	2026-11-12T20:35:17Z
 verify:shillinq:2796:1f5d6d5b	GREEN 2796, 2797, 2798; 8919 PHP + 1331 vitest, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:35:22Z
 fix:buildiq:1440:b7d26e4b	merged development in, dockerimage restored; new head b5d1297d23	session-20261112T184508-711de18c	2026-11-12T20:35:32Z
