@@ -415,3 +415,4 @@ cover:pipelinq:f67520ec:js00fe026a	PR #3546: 58 vitest tests over 9 src/services
 gap:pipelinq:opensourcehealth:0b09067b	failed: stars come from 488 mostly transitive npm deps (activity 2 stars, licence use, freshness), via Nextcloud libraries; no bounded app-level change lifts it to 4 stars (same profile as buildiq/dossiq/humaniq)	session-20261112T205847-2f6d1ca4	2026-11-12T21:18:20Z
 cover:stackiq:8cfacb29:jsac344279	PR stackiq#1768: 25 specs for 2 sidebars, stmts 0% -> 88.3%, vitest 1593 -> 1618 green	session-20261112T205855-bb08648d	2026-11-12T21:18:49Z
 cover:stackiq:8cfacb29:js00fe026a	PR #1769: getTheme spec (5 tests); src/services/* 81.25%->100%	session-20261112T200016-345024b4	2026-11-12T21:19:01Z
+merge:learniq:2195:4ca2b015	stale	feeder	2026-11-12T21:15:09Z
