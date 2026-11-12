@@ -83,3 +83,4 @@ keepiq	1652	64c470b7e15173d26e6a4b680a454f672e3abf64	MERGED	worker-19	GATE OK sb
 keepiq	1653	862ad966f451fa318fd04560869850c8dd3c1e55	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1654	a9bb8d9e7ffaf0b96d4441a4cce625acc9a2fa69	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1655	71d8add30707ab2defc1bfdf194ea523795d8fd3	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1272	2b92e8f73f46f45ce340b0d11d6b22a26b56d122	FAIL	worker-53	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
