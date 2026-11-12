@@ -239,6 +239,7 @@ Controller/CorrectionsController.php,56,Controller,Compliance,Compliance/Control
 Controller/CospendLinksController.php,106,Controller,Integrations,Integrations/Controller/CospendLinksController.php,0,,Integrations
 Controller/CredentialController.php,506,Controller,Integrations,Integrations/Controller/CredentialController.php,0,,Integrations
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
+Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations
