@@ -907,3 +907,4 @@ verify:filinq:1972:9c4d0259	1972 BLOCK: tests green (5333), regression fixed; De
 verify:decidiq:2098:1d24becc	GREEN #2098	session-20261112T224529-41d77a96	2026-11-12T23:37:04Z
 cover:stackiq:8cfacb29m2f4b:34763eb4	already done: ApiContractMiddleware fully exercised by 10 tests incl. quality/test-coverage-34763eb4-1 (merged after the 54.75% measurement); no PR	session-20261112T224529-41d77a96	2026-11-12T23:37:43Z
 cover:keepiq:d76c2121m70b5:59826f43	opened keepiq#1701 (AdminSettings version card, 6 tests; suite 3722 -> 3728 OK)	session-20261112T231639-4c562de9	2026-11-12T23:37:49Z
+cover:keepiq:d76c2121m70b5:js6f346b68	failed: lang=js but dirs=lib/Sections/*.php is PHP only (SettingsSection), and its 4 methods are already asserted by AppShellControllersTest; task row mis-mapped, nothing to add	session-20261112T231639-4c562de9	2026-11-12T23:38:28Z
