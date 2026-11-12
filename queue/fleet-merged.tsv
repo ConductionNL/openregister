@@ -343,3 +343,9 @@ shillinq	2746	fc08f52786b8dc5f5a02712302bb8f26d33d85a2	MERGED	worker-19	GATE OK 
 shillinq	2747	c6e47835c2a392fa22b4fe9f357aedc69e5e243c	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2378	8f5e068e98e7756281b639b6a0c0dcaae94966dc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 shillinq	2748	f599a5757b54524721f9451a4d57411aa2751862	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+shillinq	2797	c09a0358a7d0950427475f25d20b0e5d10e2465d	SKIP	worker-19	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+stackiq	1705	57be6eee692eff69350a992149f1341701d98f32	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1707	ad4e3ddeaf410ec8fe22e6da6f77b56376d1ca0b	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1708	0ba2f25fc399d5eedd39d5aedebdb695d65fdec0	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1726	8b4ce47c9b652d2a2fa008c31d7f7b1db6b93e37	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail
+stackiq	1731	ada62127141f9e0f21a45ed36707428b6127a647	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail
