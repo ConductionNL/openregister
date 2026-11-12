@@ -68,7 +68,7 @@ class EntryMentionService {
 	 *
 	 * @var string
 	 */
-	private const TOKEN = '/(?<![\p{L}\p{N}._@\'-])@(?:"([^"\r\n]{1,64})"|([\p{L}\p{N}][\p{L}\p{N}._\'-]{0,63}))/u';
+	private const MENTION_PATTERN = '/(?<![\p{L}\p{N}._@\'-])@(?:"([^"\r\n]{1,64})"|([\p{L}\p{N}][\p{L}\p{N}._\'-]{0,63}))/u';
 
 	/**
 	 * Constructor.
@@ -106,7 +106,7 @@ class EntryMentionService {
 		}
 
 		$matches = [];
-		if (preg_match_all(self::TOKEN, $text, $matches) === false) {
+		if (preg_match_all(self::MENTION_PATTERN, $text, $matches) === false) {
 			return [];
 		}
 
@@ -116,7 +116,7 @@ class EntryMentionService {
 	/**
 	 * The real uids the matched tokens name, each once, in the order written.
 	 *
-	 * @param array<int,array<int,string>> $matches The `preg_match_all` result for TOKEN.
+	 * @param array<int,array<int,string>> $matches The `preg_match_all` result for MENTION_PATTERN.
 	 *
 	 * @return array<int,string> The uids named.
 	 */

@@ -79,7 +79,7 @@ class FederationController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfacesInterface::FEDERATION_SHARE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::FEDERATION_SHARE_SURFACE;
 
 	/**
 	 * Confidentiality values treated as public (servable through a schema share).
