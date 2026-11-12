@@ -2,10 +2,8 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:83587c9d-fd1f-4129-aa1f-c54fc1c58797",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T17:34:52Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +80,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-main",
+      "bom-ref": "conductionnl/openregister-1.0.0.0",
       "type": "application",
       "name": "openregister",
-      "version": "dev-main",
+      "version": "1.0.0",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,16 +94,8 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-main",
+      "purl": "pkg:composer/conductionnl/openregister@1.0.0",
       "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
         {
           "name": "cdx:composer:package:type",
           "value": "library"
@@ -4733,8 +4723,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.175.0",
-      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.175.0",
+      "version": "2.180.0",
+      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0",
       "licenses": [
         {
           "license": {
@@ -4742,15 +4732,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.175.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.180.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.175.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.180.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "549ab1ac5d2783d5cbe2b93ea1932d219054a17a91280b809d8f3ba3c7ce2e31a799721689925390da5380394118f73c6b6f4b7d76e9b7f1a45f86f65bdd83f5"
+              "content": "6deed18686d29c1328f786009a99a14fab4cf52e8a8aa2ea6f0035c1d4eaa77f5d064ff23fe6142873a61e9201ac1ac40e28e56cfc9ae96ce536608df4ed7493"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -29055,7 +29045,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-main",
+      "ref": "conductionnl/openregister-1.0.0.0",
       "dependsOn": [
         "adbario/php-dot-notation-3.5.0.0",
         "ddn/sapp-dev-feat/chained-filter-text-replace",
