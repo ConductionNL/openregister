@@ -1,4 +1,4 @@
-# unified-search-file-content Delta: unified-search-file-content
+# unified-search-file-content Delta: unified-search-provider
 
 **Status**: proposed
 **Scope**: openregister
@@ -9,7 +9,7 @@ Text OpenRegister extracts from attached files becomes findable through the
 fleet's Nextcloud unified-search provider, attributed to the object that owns
 the file, under the provider's existing security contract.
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: The unified-search provider MUST search extracted file text
 
@@ -59,8 +59,6 @@ unchanged.
 - **THEN** the excerpt does not contain the redacted value
 - **NOTE** this is the one way this change could turn a widened search into a
   disclosure: the object stays correctly filtered while the excerpt leaks
-
-## ADDED Requirements
 
 ### Requirement: Content search MUST be bounded and measured
 
