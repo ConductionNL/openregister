@@ -4232,3 +4232,4 @@ pipelinq	3555	7829763dc12c9f590882af2937bfe50b78a3f85e	GREEN	worker-27	tests-onl
 pipelinq	3559	c40e9973ee4b4dbd8c252cda3662d3ebc04b6605	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure, 0 new
 pipelinq	3561	17991ca1514295f0569afcf2ed13a01aa10c815d	CONFLICT	worker-27	add/add conflict in tests/vitest/resourceRowEditors.spec.js against development
 pipelinq	3562	293d3fc246638b891566f47a1eabbf32bec7e0c5	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure, 0 new
+launchpad	1123	f3d6f08eef3f30587c9e9125732f1af752826f2e	GREEN	worker-26	3303 tests run on 4-PR tree (baseline 3256, all pass), 0 new failures; tests-only, 4 new test files
