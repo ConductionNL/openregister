@@ -121,3 +121,4 @@ gap:launchpad:2:2dcff4e3	PR #1108: deploy files rendered (filinq/keepiq render w
 cover:dossiq:6ca0231e:9ece5c6f	PR #6097: 4 controller caller gates, 10 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:37:15Z
 gap:larpinq:3:475d3f06	failed: no larpinq route answers on /api/v{major} (all /api/...), so a versioned servers URL would misdescribe it; same URI-versioning owner decision as openregister gap 3	session-20261112T175557-37d60f4f	2026-11-12T19:37:29Z
 verify:integriq:3387:59bd3db4	3387 GREEN, 3388 GREEN; merge gate RED (checker floor dockerimage pass->fail), not merged	session-20261112T192853-8e213d5f	2026-11-12T19:38:51Z
+merge:launchpad:1078:3e9f89f7	merged=6 red=0 fail=0 skip=0 (1078 already merged by previous task)	session-20261112T192858-53ba298b	2026-11-12T19:38:59Z
