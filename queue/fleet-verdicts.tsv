@@ -3418,3 +3418,4 @@ shillinq	2760	44b345028f2bf49bc24fa8695d26439698b45e9e	GREEN	vm2:s2	unit 8990 te
 shillinq	2761	ee1549033c948ac3522814d944ffbfd268e8f5b3	GREEN	vm2:s2	unit 8990 tests, only the 1 baseline failure; floor holds; diff review clean (guards moved with characterisation tests)
 shillinq	2762	6a95b50720ad3cffec9b5f5443fe048075dc4a38	GREEN	vm2:s2	unit 8990 tests, only the 1 baseline failure; floor holds; diff review clean (guards moved with characterisation tests)
 pipelinq	3448	84c6d868d67a9028678012fef0f41fce19feb5dd	GREEN	vm1:35888	tree of 1 green on f9ebace3ba; unit failures only inherited (11); floor held; vitest rerun failures (appVersionDefine, productCards hook timeout, simpleContactDashboard, structureProfile) are outside the PR's files and in the development baseline
+stackiq	1700	c3b349290da3a85eecf732d33ff002172a8145ac	CONFLICT	FV10-01:1	merge conflict with the verify tree (earlier PRs in tree 1); merges cleanly on development alone
