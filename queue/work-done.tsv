@@ -351,3 +351,4 @@ verify:larpinq:1005:bb7d2a24	stale	session-20261112T205847-2f6d1ca4	2026-11-12T2
 cover:buildiq:8ca317f6:jscf63f73b	PR #1464: 53 vitest tests, page-editor lines 79.4% -> 85.1%	session-20261112T184508-711de18c	2026-11-12T21:00:34Z
 cover:dossiq:6ca0231e:bedd4a8d	PR #6172: CaseDocumentDraftsTest @uses fix (4 risky tests counted) + 4 tests; CaseDocumentDrafts 7/111 -> 109/111 strict; suite 11976->11980, 19 inherited	session-20261112T200018-e68ecbf8	2026-11-12T21:01:34Z
 verify:buildiq:1437:9c828671	GREEN 1437, GREEN 1450; 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:01:43Z
+cover:dossiq:6ca0231e:a797d42e	PR #6174: 13 tests for CasePlanBlob/CasePlanMigrationService edge paths; suite 11976->11989, 19 inherited failures	session-20261112T202909-d1558483	2026-11-12T21:02:00Z
