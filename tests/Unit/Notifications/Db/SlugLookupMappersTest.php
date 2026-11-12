@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationQueryTrait
  * @uses   \OCA\OpenRegister\Notifications\Db\ReferencePattern
  * @uses   \OCA\OpenRegister\Notifications\Db\TimelineKind
+ * @uses \OCA\OpenRegister\Notifications\Db\AdministeredDeclaration
  */
 final class SlugLookupMappersTest extends TestCase {
 	use RecordingQueryBuilderTrait;

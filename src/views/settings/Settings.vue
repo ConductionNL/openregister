@@ -68,6 +68,8 @@
 		<!-- API Token Configuration Section -->
 		<ApiTokenConfiguration />
 
+		<EdepotHostKeyConfiguration />
+
 		<!-- Dialogs -->
 		<Dialogs />
 	</CnAdminSettingsShell>
@@ -81,6 +83,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
+import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import FlowConfiguration from './sections/FlowConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
@@ -123,6 +126,7 @@ export default {
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
+		EdepotHostKeyConfiguration,
 		Dialogs,
 	},
 

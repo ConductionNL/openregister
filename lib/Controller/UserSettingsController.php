@@ -130,8 +130,6 @@ class UserSettingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response containing result of token save operation
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -175,8 +173,6 @@ class UserSettingsController extends Controller {
 	 * Remove GitHub personal access token for the current user.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Success or error message
 	 *

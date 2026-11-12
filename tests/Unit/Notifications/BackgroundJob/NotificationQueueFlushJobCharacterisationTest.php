@@ -34,6 +34,15 @@ use RuntimeException;
  * Pins the flush job's failure handling, grouping and digest-lookup fallbacks.
  *
  * @covers \OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushDelivery
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\QueueFlushTiming
+ * @uses \OCA\OpenRegister\Notifications\Db\QueuedNotification
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\QueueWait
  */
 class NotificationQueueFlushJobCharacterisationTest extends TestCase
 {

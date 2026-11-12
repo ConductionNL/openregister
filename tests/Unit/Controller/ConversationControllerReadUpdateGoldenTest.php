@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
@@ -45,6 +46,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Notifications\Db\Message
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationChange
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope
  */
 class ConversationControllerReadUpdateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/conversation-read-update-golden.json';
@@ -108,8 +112,9 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 
 			return $conversation;
 		});
-		$conversations->method('canUserAccessConversation')->willReturnCallback(function (Conversation $c, string $userId, ?string $org = null) use ($fail) {
-			$this->calls[] = ['conversationMapper.canUserAccessConversation' => [$c->getId(), $userId, $org]];
+		$conversations->method('canUserAccessConversation')->willReturnCallback(function (Conversation $c, ConversationScope $scope) use ($fail) {
+			$userId = $scope->userId;
+			$this->calls[] = ['conversationMapper.canUserAccessConversation' => [$c->getId(), $userId, $scope->organisation]];
 			$this->failOn('access', $fail);
 			return $userId === $c->getUserId();
 		});

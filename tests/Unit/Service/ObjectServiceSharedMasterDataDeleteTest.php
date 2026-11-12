@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -105,6 +107,12 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 	/** @var MockObject&DeleteObject */
 	private MockObject $deleteHandler;
 
+	/** @var MockObject&UtilityHandler */
+	private MockObject $utility;
+
+	/** @var MockObject&MigrationHandler */
+	private MockObject $migrationHandler;
+
 	/**
 	 * The schema each delete right was asked of.
 	 *
@@ -132,6 +140,11 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 	 */
 	private function service(array $organisations, array $declarations): ObjectService {
 		$this->deleteHandler = $this->createMock(DeleteObject::class);
+		$this->utility = $this->createMock(UtilityHandler::class);
+		$this->utility->method('normalizeEntity')->willReturnCallback(
+			static fn (mixed $entity, string $type): Register|Schema => $type === 'register' ? self::register((int)$entity) : self::schema((int)$entity)
+		);
+		$this->migrationHandler = $this->createMock(MigrationHandler::class);
 		$shares = new SharedMasterDataService($this->createMock(IDBConnection::class));
 		(new ReflectionClass($shares))->getProperty('declarations')->setValue($shares, $declarations);
 		$container = $this->createMock(IAppContainer::class);
@@ -197,10 +210,10 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 			$this->createMock(PerformanceOptimizationHandler::class),
 			$this->createMock(QueryHandler::class),
 			$this->createMock(RevertHandler::class),
-			$this->createMock(UtilityHandler::class),
+			$this->utility,
 			$this->createMock(ValidationHandler::class),
 			$this->createMock(CascadingHandler::class),
-			$this->createMock(MigrationHandler::class),
+			$this->migrationHandler,
 			$registers,
 			$schemas,
 			$this->createMock(ViewMapper::class),
@@ -313,6 +326,49 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 		$schema->setSlug('note');
 		$service->deleteObject(deletion: new ObjectDeletion(uuid: 'holder-row', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: $flags, _multitenancy: $flags);
 	}//end delete()
+
+	/**
+	 * Move the row `holder-row` from one register and schema to another.
+	 *
+	 * @param ObjectService $service The service.
+	 * @param array{0: int, 1: int} $from The source register and schema.
+	 * @param array{0: int, 1: int} $to   The target register and schema.
+	 *
+	 * @return void
+	 */
+	private static function move(ObjectService $service, array $from, array $to): void {
+		$service->migrate(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: $from[0], schema: $from[1]),
+				target: new RegisterSchemaRef(register: $to[0], schema: $to[1]),
+				objectIds: ['holder-row'],
+				mapping: []
+			)
+		);
+	}//end move()
+
+	public function testAConsumerOfASharedSchemaMayNotMoveRowsOutOfIt(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->migrationHandler->expects($this->never())->method('migrateObjects');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		self::move($service, [10, 2], [11, 3]);
+	}
+
+	public function testAConsumerOfASharedRegisterMayNotMoveRowsIntoIt(): void {
+		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::REGISTERS, 10));
+		$this->migrationHandler->expects($this->never())->method('migrateObjects');
+
+		$this->expectException(SharedMasterDataWriteException::class);
+		self::move($service, [11, 3], [10, 2]);
+	}
+
+	public function testTheHolderMayMoveRows(): void {
+		$service = $this->service(['org-holder'], self::shared(SharedMasterDataService::SCHEMAS, 2));
+		$this->migrationHandler->expects($this->once())->method('migrateObjects')->willReturn(['success' => true, 'statistics' => [], 'details' => [], 'warnings' => [], 'errors' => []]);
+
+		self::move($service, [10, 2], [11, 3]);
+	}
 
 	public function testAConsumerOfASharedSchemaMayNotDelete(): void {
 		$service = $this->service(['org-consumer'], self::shared(SharedMasterDataService::SCHEMAS, 2));

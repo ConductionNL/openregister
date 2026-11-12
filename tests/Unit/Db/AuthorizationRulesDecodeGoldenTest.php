@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
  * Golden authorization decoding.
  *
  * @covers \OCA\OpenRegister\Db\AuthorizationRulesTrait
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\Organisation
  */
 final class AuthorizationRulesDecodeGoldenTest extends TestCase {
 

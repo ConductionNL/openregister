@@ -44,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * writing through setActiveOrganisationForUser() keeps the memo coherent.
  *
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
+ * @uses \OCA\OpenRegister\Db\Support\ConfigServices
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class OrganisationMapperMemoTest extends TestCase {
 
