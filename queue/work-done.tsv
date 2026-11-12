@@ -934,4 +934,5 @@ cover:stackiq:8cfacb29m2f4b:60c2c265	PR #1783: 56 tests (SettingsController endp
 verify:launchpad:1121:abb6d70f	4 GREEN, 1121 BLOCK (api v1 middleware behaviour change); 0 test failures	session-20261112T224530-d70ae278	2026-11-12T23:44:51Z
 cover:keepiq:d76c2121m70b5:d39f9857	PR keepiq#1703: 9 tests for Support adapters/trait (PublicKeyLoaderAdapter 5/7->7/7, direct tests for all); suite 3722->3731 OK	session-20261112T221237-836ed3f0	2026-11-12T23:45:00Z
 cover:dossiq:6ca0231e:b5212816	PR #6187: ReportAnswer, ReportRequest, StatusVisit +26 tests; suite 12964->12990, 19 inherited failures unchanged	session-20261112T231637-60fd49c4	2026-11-12T23:46:02Z
+cover:dossiq:6ca0231e:34763eb4	opened dossiq#6188 (MandateValidationMiddleware edges, 9 tests; suite 12964->12973, 19 inherited failures, 0 new)	session-20261112T231639-4c562de9	2026-11-12T23:46:54Z
 fix:filinq:1972:836eb87d	failed: remaining block is the PR's intended API change (Deprecation/Link headers, /api/v1 aliases); needs owner decision, no code fix possible	session-20261112T234653-57d11a5b	2026-11-12T23:47:28Z
