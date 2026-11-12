@@ -277,6 +277,26 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 	}//end testANonMemberGets404OnUpload()
 
+	public function testAnUpdateHolderCannotOverwriteAFileTheObjectDoesNotHold(): void {
+		$this->fileService->method('getFile')->willReturn(null);
+		$this->fileService->expects($this->never())->method('overwriteFile');
+		$this->fileService->expects($this->never())->method('changeFileMetadata');
+		$controller = $this->controllerAs('behandelaar', ['openformulieren-behandelaars']);
+
+		$this->assertSame(404, $controller->update(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+		$this->assertSame(404, $controller->updateLabels(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+		$this->assertSame(404, $controller->updateMetadata(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+	}//end testAnUpdateHolderCannotOverwriteAFileTheObjectDoesNotHold()
+
+	public function testAnUpdateHolderOverwritesAFileTheObjectHolds(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
+		$this->fileService->expects($this->exactly(2))->method('overwriteFile')->willReturn($this->createMock(File::class));
+		$controller = $this->controllerAs('behandelaar', ['openformulieren-behandelaars']);
+
+		$this->assertSame(200, $controller->update(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77)->getStatus());
+		$this->assertSame(200, $controller->updateLabels(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77)->getStatus());
+	}//end testAnUpdateHolderOverwritesAFileTheObjectHolds()
+
 	public function testANonMemberCannotFetchAManagedFileById(): void {
 		$file = $this->createMock(File::class);
 		$file->method('getId')->willReturn(901);
