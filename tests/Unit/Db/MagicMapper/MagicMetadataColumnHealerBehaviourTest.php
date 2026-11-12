@@ -38,6 +38,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicMetadataColumnHealerBehaviourTest extends TestCase {
 

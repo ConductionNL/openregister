@@ -42,6 +42,20 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicUpsertChunkRun
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  */
 class MagicBulkHandlerBulkUpsertGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/magic-bulk-upsert-golden.json';

@@ -55,6 +55,9 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedField
  */
 class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 

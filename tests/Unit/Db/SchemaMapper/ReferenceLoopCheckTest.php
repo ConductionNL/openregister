@@ -34,6 +34,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations
  */
 final class ReferenceLoopCheckTest extends TestCase {
 	/**

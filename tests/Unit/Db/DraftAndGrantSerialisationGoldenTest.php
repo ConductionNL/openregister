@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\ConfigurationDraft
  * @covers \OCA\OpenRegister\Db\DelegationGrant
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class DraftAndGrantSerialisationGoldenTest extends TestCase {
 

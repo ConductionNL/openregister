@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation for FederatedShare.
  *
  * @covers \OCA\OpenRegister\Db\FederatedShare
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FederatedShareSerialisationGoldenTest extends TestCase {
 

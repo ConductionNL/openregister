@@ -29,6 +29,14 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Schema\InversedByNormaliser
  * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationControlKeys
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationEntry
+ * @uses \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
  */
 class SchemaDocumentGoldenTest extends TestCase {
 

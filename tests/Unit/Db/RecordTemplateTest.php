@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @covers \OCA\OpenRegister\Db\RecordTemplateMapper
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class RecordTemplateTest extends TestCase {
 

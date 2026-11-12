@@ -54,6 +54,14 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Support\FilterParams
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableTermsFacet
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetColumnFilter
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetResults
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableTarget
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TermsFacetTable
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
  */
 class MagicFacetHandlerTableTermsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

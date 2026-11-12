@@ -39,6 +39,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
+ * @uses \OCA\OpenRegister\Db\FlowActivityWindow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunFilter
+ * @uses \OCA\OpenRegister\Db\FlowRunListing
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 final class FlowRunMapperListGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

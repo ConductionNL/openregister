@@ -34,6 +34,9 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
  */
 class MagicFacetHandlerFacetConfigGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/facet-config-golden.json';

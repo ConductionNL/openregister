@@ -42,6 +42,13 @@ use OCA\OpenRegister\Db\RegisterMapperServices;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\RegisterLookup
+ * @uses \OCA\OpenRegister\Db\RegisterMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class RegisterMapperFindGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

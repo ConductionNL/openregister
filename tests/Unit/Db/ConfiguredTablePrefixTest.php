@@ -71,6 +71,19 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\DateTimeNormalizer
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
+ * @uses \OCA\OpenRegister\Service\Object\MagicNameLoadRun
+ * @uses \OCA\OpenRegister\Service\Object\NameTableQuery
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class ConfiguredTablePrefixTest extends TestCase {
 	private const TABLE = 'nc_openregister_table_1_7';
