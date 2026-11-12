@@ -3993,3 +3993,4 @@ planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	GREEN	worker-33	PHP 869 O
 buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1440	b7d26e4b238d6db80c4397af549bb2e9f34c6de0	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+buildiq	1441	39c17463d3ff95c3f462e8825b7a3eb7ade5361d	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
