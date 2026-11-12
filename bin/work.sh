@@ -7,13 +7,15 @@
 # A task is OPEN while it has no done row. It is CLAIMED while a live lease task-<id> exists (120 min);
 # a worker that dies loses its lease and the task becomes claimable again.
 #   worker_slot                 take a free worker-01..58 slot (360 min); prints the slot name; 1 = none free
-#   task_claim <worker> [types] take the oldest claimable task (by type rank, then created); prints the row; 1 = none
+#   task_claim <worker> [app] [types]
+#                               take the oldest claimable task (by type rank, then created), of [app] first when
+#                               it has one (reuses that app's clone and vendor), else of any app; prints the row; 1 = none
 #   task_renew <id>             renew the task lease (0 = still yours)
 #   task_done <id> <result>     record the result and release the task lease
 #   task_lease <id>             print the lease name of a task
 #   task_open                   print every open task (claimed or not), oldest first
 # Type rank: fix, review, verify/merge, gap, cover. Type `integrate` (openregister main, behind the single
-# `integrator` lease) is reserved: never claimed unless named in [types].
+# `integrator` lease) is reserved: never claimed unless named in [types] (comma list).
 WQ=queue/work.tsv
 WD=queue/work-done.tsv
 WORKER_SLOTS=${WORKER_SLOTS:-58}
@@ -55,7 +57,7 @@ _task_rows() {
 task_open() { _task_rows open "$1" | cut -f3-; }
 
 task_claim() {
-	local worker=$1 types=${2:-} rows n pick id row tries=0
+	local worker=$1 app=${2:-} types=${3:-} rows prows n pick id row tries=0
 	st_sync || st_sync || return 2
 	[ -f "$ST/$WQ" ] || return 1
 	mkdir -p "$ST/leases"; touch "$ST/$WD"
@@ -64,6 +66,10 @@ task_claim() {
 		tries=$((tries + 1))
 		rows=$(_task_rows claimable "$types")
 		[ -n "$rows" ] || return 1
+		if [ -n "$app" ]; then
+			prows=$(printf '%s\n' "$rows" | awk -F'\t' -v a="$app" '$5 == a')
+			[ -n "$prows" ] && rows=$prows
+		fi
 		# Pick among the oldest few at random, so 58 claimers do not all race for the same row.
 		n=$(printf '%s\n' "$rows" | wc -l)
 		[ "$n" -gt 6 ] && n=6
