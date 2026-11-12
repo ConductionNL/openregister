@@ -769,6 +769,8 @@ cover:hermiq:755cdfe7:js6d016cfb	PR hermiq#1617: 22 vitest tests, all 5 settings
 review:openregister:10053:db69d331	APPROVE: test-only, 40 jest tests green on main	session-20261112T221239-5f377795	2026-11-12T22:56:21Z
 verify:larpinq:1006:14c4c964	stale	session-20261112T224530-faaec44c	2026-11-12T22:56:26Z
 cover:hermiq:755cdfe7m7444:9910e837	PR #1619: 10 tests for OutsideCall, OutsideCallRefusedException, OutsideToolSurface; suite 3559->3569, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:56:33Z
+cover:integriq:9b0f5894m2367:js34f5c300	failed: lang=js but dirs=lib/Service/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:57:04Z
+review:openregister:10051:7cd015c3	APPROVE: test-only spec, 77/77 card tests pass, lint clean	session-20261112T224530-a1180ad3	2026-11-12T22:57:19Z
 cover:hermiq:755cdfe7m7444:d825828c	PR #1621: 6 tests for LiteracyRequirement, no new failures	session-20261112T221235-39b35722	2026-11-12T22:56:51Z
 cover:hermiq:755cdfe7m7444:1191da39	PR opened: 5 tests WebSearchClient parsing + settings failures; suite 3559->3564 green	session-20261112T215819-2dd7b64e	2026-11-12T22:56:43Z
 verify:decidiq:2092:87402e42	5 GREEN (2092,2094,2095,2096,2097); 3188 tests, baseline 3116 green, 0 new failures	session-20261112T221537-97382091	2026-11-12T22:56:59Z
@@ -778,3 +780,8 @@ cover:pipelinq:f67520ecm9d2c:jsf0c02922	failed: payload lang=js but dirs=lib/Ser
 cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Service/Lifecycle/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:58:00Z
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
 cover:integriq:9b0f5894m2367:js38e80a9f	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:50Z
+cover:hermiq:755cdfe7m7444:b97b9aec	PR hermiq#1622: 9 tests, Approval bridge/verdict gaps covered (only class-missing branch unreachable); suite 3569, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:59:16Z
+cover:hermiq:755cdfe7:05cc1463	PR #1623: 16 tests for TalkApprovalBinding, TalkAgentBinding; suite 3561->3577, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:59:18Z
+verify:keepiq:1680:595a89b5	BLOCK keepiq#1680: tests green (3747), but changes all API error response bodies/content type and route table	session-20261112T221530-7c794770	2026-11-12T22:59:52Z
+cover:integriq:9b0f5894m2367:jsf91e7417	failed: dirs=lib/Service/Connection/ does not exist in integriq development (no history) and lang=js targets a PHP path; malformed task	session-20261112T224530-a1180ad3	2026-11-12T22:59:58Z
+review:openregister:10054:8b2cc5b6	APPROVE	session-20261112T224530-d70ae278	2026-11-12T23:00:18Z
