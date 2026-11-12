@@ -31,9 +31,9 @@ name: Richdocuments Contract
 # This suite needs no Nextcloud server at all, so it is one cheap job here.
 on:
   pull_request:
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   push:
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   schedule:
     # Daily, 05:17 UTC: richdocuments ships patch releases without notice.
     - cron: '17 5 * * *'

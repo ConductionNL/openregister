@@ -1,25 +1,34 @@
 name: Release
 
+# ADR-122: a push to main publishes an unstable X.Y.0-dev.<ts> GitHub
+# prerelease. beta, rc and stable are released by hand with workflow_dispatch:
+# beta from main or stableX.Y, rc and stable from stableX.Y only.
+#
+# This copy lives on stableX.Y. A push to a stable branch starts nothing (the
+# push trigger names main only); a release from here is always dispatched by
+# hand, with the stable branch selected as the ref.
+
 on:
   push:
-    branches: [main, beta, development]
-  # Lets a human force a release without pushing — the shared workflow already
-  # expects this: its skip guard is written `github.event_name != 'push' || …`
-  # precisely so a dispatch is "deliberately never skipped … including of a
-  # commit this guard would refuse". 18 of the 21 fleet apps already declare it;
-  # this repo was one of the three that did not, so the only way to trigger a
-  # release here was to push.
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      release-type:
+        description: "beta (main or stableX.Y), rc or stable (stableX.Y only)"
+        required: true
+        type: choice
+        options: [beta, rc, stable]
 
 jobs:
   unstable:
-    if: github.ref == 'refs/heads/development'
+    if: github.event_name == 'push'
     permissions:
       contents: write
       pull-requests: write
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable
+      branch-model: main
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
@@ -30,14 +39,15 @@ jobs:
       extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
 
-  beta:
-    if: github.ref == 'refs/heads/beta'
+  release:
+    if: github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
       pull-requests: write
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
-      release-type: beta
+      release-type: ${{ inputs.release-type }}
+      branch-model: main
       app-name: openregister
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
@@ -47,22 +57,3 @@ jobs:
       # ARCHITECTURE.md (contributor docs) are repository tooling.
       extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
     secrets: inherit
-
-  stable:
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-      pull-requests: write
-    uses: ConductionNL/.github/.github/workflows/release.yml@main
-    with:
-      release-type: stable
-      app-name: openregister
-      verify-vendor-deps: true
-      vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
-      # One line: the shared workflow splices this into its rsync command.
-      # .mailmap maps contributors to personal addresses; git needs it, an
-      # installed app does not. sigrid.yaml (analysis scope) and
-      # ARCHITECTURE.md (contributor docs) are repository tooling.
-      extra-rsync-excludes: "--exclude='/.mailmap' --exclude='/sigrid.yaml' --exclude='/ARCHITECTURE.md'"
-    secrets: inherit
-

@@ -39,10 +39,18 @@ on:
     # The default branches STAY: their push runs are not duplicates, they are
     # the only carrier of Coverage Baseline Check, SBOM and Features Extract,
     # none of which run on a pull_request event.
+    #
+    # `stable*` (ADR-122): the release branches stableX.Y. The ruleset on them
+    # requires the quality checks, so a pull request into one must run this
+    # workflow. A push to one starts a run in which only the shared workflow's
+    # "Run lane" job runs and every other job is skipped (that job gives a
+    # branch push the full lane only on main, master, beta or development), so
+    # the push-only jobs do not run on a stable branch.
     branches:
       - main
       - beta
       - development
+      - 'stable*'
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after
@@ -64,7 +72,7 @@ on:
     # hermiq's copy of this workflow omits `types:` entirely, which defaults to
     # [opened, synchronize, reopened]. This repo is the outlier.
     types: [opened, reopened, synchronize]
-    branches: [main, beta, development]
+    branches: [main, beta, development, 'stable*']
   workflow_dispatch:
 
 # Deduplicating a `push` run against the `pull_request` run for the SAME head
