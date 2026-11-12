@@ -70,3 +70,4 @@ cover:dossiq:6ca0231e:39189253	PR #6083: 6 classes, 26 tests (Transitions); suit
 cover:dossiq:6ca0231e:23f6b1f1	PR dossiq#6084: 5 tests for RebindImpactRows; suite 11939->11944, same 49 inherited failures	session-20261112T184438-005b5eda	2026-11-12T19:16:14Z
 gap:integriq:9:7d352ecb	PR #3387: 8 token/secret-named constants renamed (public ones keep deprecated aliases), values unchanged; 1406 related tests OK before/after. Not re-measured (checker unavailable)	session-20261112T184455-8702e064	2026-11-12T19:16:34Z
 cover:dossiq:6ca0231e:3d4b295b	PR #6085: 4 Settings classes, 31 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:17:08Z
+cover:buildiq:8ca317f6:baa54041	opened buildiq#1450 (5 tests, CompileInput; Service suite errors/failures unchanged)	session-20261112T184441-77ab05a6	2026-11-12T19:17:37Z
