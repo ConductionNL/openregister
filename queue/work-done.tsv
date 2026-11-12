@@ -561,3 +561,4 @@ fix:integriq:3410:5bfc4c80	fixed behaviour change, pushed 0559570, REVERIFY reco
 cover:launchpad:755175ff:a1252b57	PR #1123: 22 tests for Confluence parser/sanitizer/rewriter/renderer; suite 3256->3278 green	session-20261112T215819-2dd7b64e	2026-11-12T22:06:21Z
 cover:launchpad:755175ff:59826f43	PR #1124: 7 tests for admin settings form/section, 0/55 -> 55/55 lines; suite 3256->3263 green	session-20261112T215819-2dd7b64e	2026-11-12T22:08:57Z
 verify:integriq:3411:3393bdbb	4 GREEN (3411-3414), test-only, vitest 1496 green	session-20261112T220141-9622e2a0	2026-11-12T22:08:55Z
+review:openregister:10043:ddfa9503	APPROVE (test-only, jest 84 green)	session-20261112T220141-9622e2a0	2026-11-12T22:10:35Z
