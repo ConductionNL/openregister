@@ -297,8 +297,6 @@ class GdprEntitiesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md

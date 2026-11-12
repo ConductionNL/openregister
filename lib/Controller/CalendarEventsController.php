@@ -134,7 +134,6 @@ class CalendarEventsController extends Controller {
 	 * @return JSONResponse JSON response with the created event
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
@@ -159,7 +158,6 @@ class CalendarEventsController extends Controller {
 	 * @return JSONResponse JSON response with the linked event row
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
@@ -184,7 +182,6 @@ class CalendarEventsController extends Controller {
 	 * @return JSONResponse JSON response confirming unlink
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
@@ -211,7 +208,6 @@ class CalendarEventsController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */

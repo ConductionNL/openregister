@@ -194,7 +194,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse The persisted purpose, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -224,7 +223,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse The persisted purpose, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -252,7 +250,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse Empty, with 204.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */

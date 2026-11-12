@@ -126,7 +126,6 @@ class DeckController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-3
 	 */

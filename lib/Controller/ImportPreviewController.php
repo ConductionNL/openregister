@@ -239,7 +239,6 @@ class ImportPreviewController extends Controller {
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$uid = $this->currentUid();
 
@@ -377,7 +376,6 @@ class ImportPreviewController extends Controller {
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function commit(int $id): JSONResponse {
 		$preview = $this->ownedPreview(id: $id);
 

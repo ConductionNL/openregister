@@ -168,7 +168,6 @@ class HandoffController extends Controller {
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function execute(string $register, string $schema, string $id, string $handoffId): JSONResponse {
 		return $this->executeForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), handoffId: $handoffId);
 	}//end execute()

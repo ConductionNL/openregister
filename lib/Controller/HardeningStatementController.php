@@ -142,7 +142,6 @@ class HardeningStatementController extends Controller {
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function acceptStatement(): JSONResponse {
 		$uid = ($this->userSession->getUser()?->getUID() ?? '');
 		if ($uid === '') {
@@ -176,7 +175,6 @@ class HardeningStatementController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function publishStatement(): JSONResponse {
 		try {
 			$this->elevation->requireElevated();
@@ -229,7 +227,6 @@ class HardeningStatementController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function withdrawStatement(): JSONResponse {
 		try {
 			$this->elevation->requireElevated();

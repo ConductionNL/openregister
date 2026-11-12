@@ -99,7 +99,6 @@ class ErasurePreviewController extends Controller {
 	 * @return JSONResponse The recorded preview.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: ErasurePreviewService discovers through
 	 *   DataSubjectRequestService::findSubjectObjects, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever counts objects it may read.
@@ -160,7 +159,6 @@ class ErasurePreviewController extends Controller {
 	 * @return JSONResponse The approved preview, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded in-body: as show(), through ErasurePreviewStore::load.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
@@ -185,7 +183,6 @@ class ErasurePreviewController extends Controller {
 	 * @return JSONResponse What the run did, or the refusal that names the rule.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded in-body and downstream: ErasurePreviewStore::requireRunnable refuses a
 	 *   preview the caller did not create, and every destruction is re-checked per object by
 	 *   DestroyRightService::refusalFor and RetentionClockService::refusalFor.

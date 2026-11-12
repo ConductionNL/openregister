@@ -156,8 +156,6 @@ class SchemaImportController extends Controller {
 	 *
 	 * @return JSONResponse The created schema, or a structured error.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function import(string $dialect): JSONResponse {
@@ -210,8 +208,6 @@ class SchemaImportController extends Controller {
 	 * @param int $id The schema id.
 	 *
 	 * @return JSONResponse The classified diff (preview) or the updated schema.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 *

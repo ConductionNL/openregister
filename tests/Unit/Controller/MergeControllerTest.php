@@ -70,8 +70,8 @@ class MergeControllerTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * ADR-029 / ADR-005: every merge action must declare @NoAdminRequired +
-	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 * ADR-029 / ADR-005 / ADR-054: every merge action must declare
+	 * @NoAdminRequired, must require the request token and must NOT be @PublicPage.
 	 *
 	 * @return void
 	 */
@@ -82,7 +82,7 @@ class MergeControllerTest extends TestCase {
 			$doc = $reflection->getMethod($method)->getDocComment();
 			$this->assertNotFalse($doc, sprintf('%s must have a docblock.', $method));
 			$this->assertStringContainsString('@NoAdminRequired', $doc, sprintf('%s missing @NoAdminRequired', $method));
-			$this->assertStringContainsString('@NoCSRFRequired', $doc, sprintf('%s missing @NoCSRFRequired', $method));
+			$this->assertStringNotContainsString('@NoCSRFRequired', $doc, sprintf('%s must require the request token', $method));
 			$this->assertStringNotContainsString('@PublicPage', $doc, sprintf('%s must not be @PublicPage', $method));
 		}
 	}//end testAllActionsCarryAuthAnnotations()

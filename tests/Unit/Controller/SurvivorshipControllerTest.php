@@ -95,8 +95,8 @@ class SurvivorshipControllerTest extends TestCase {
 	}//end objectWithData()
 
 	/**
-	 * ADR-029 / ADR-005: the endpoint must declare @NoAdminRequired +
-	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 * ADR-029 / ADR-005 / ADR-054: the endpoint must declare @NoAdminRequired,
+	 * must require the request token and must NOT be @PublicPage.
 	 *
 	 * @return void
 	 */
@@ -106,7 +106,7 @@ class SurvivorshipControllerTest extends TestCase {
 
 		$this->assertNotFalse($doc, 'override() must have a docblock.');
 		$this->assertStringContainsString('@NoAdminRequired', $doc);
-		$this->assertStringContainsString('@NoCSRFRequired', $doc);
+		$this->assertStringNotContainsString('@NoCSRFRequired', $doc);
 		$this->assertStringNotContainsString('@PublicPage', $doc);
 	}//end testOverrideCarriesAuthAnnotations()
 

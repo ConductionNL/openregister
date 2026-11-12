@@ -92,8 +92,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * Update RBAC settings only
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated RBAC settings
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
@@ -128,8 +126,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update Organisation settings only
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated organisation settings
 	 *
@@ -166,8 +162,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * Update Multitenancy settings only
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated multitenancy settings
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -202,8 +196,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update Object Management settings
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated object settings
 	 *
@@ -250,8 +242,6 @@ class ConfigurationSettingsController extends Controller {
 	/**
 	 * PATCH Object settings (delegates to updateObjectSettings)
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched object settings
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -280,8 +270,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update Retention settings only
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated retention settings
 	 *
@@ -317,8 +305,6 @@ class ConfigurationSettingsController extends Controller {
 
 	/**
 	 * Update archival settings
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated archival settings
 	 *

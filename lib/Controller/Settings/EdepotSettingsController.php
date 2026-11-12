@@ -180,8 +180,6 @@ class EdepotSettingsController extends Controller {
 	/**
 	 * Update e-Depot settings.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The update result.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
@@ -278,8 +276,6 @@ class EdepotSettingsController extends Controller {
 
 	/**
 	 * Test e-Depot connection.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The connection test result.
 	 *

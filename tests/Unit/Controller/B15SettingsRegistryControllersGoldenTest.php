@@ -41,11 +41,11 @@ final class B15SettingsRegistryControllersGoldenTest extends TestCase {
 		$expected = [
 			CacheSettingsController::class => [
 				'getCacheStats' => ['@NoCSRFRequired'],
-				'clearCache' => ['@NoCSRFRequired'],
-				'warmupNamesCache' => ['@NoCSRFRequired'],
+				'clearCache' => [],
+				'warmupNamesCache' => [],
 				'getWarmupInterval' => ['@NoCSRFRequired'],
-				'setWarmupInterval' => ['@NoCSRFRequired'],
-				'clearAppStoreCache' => ['@NoCSRFRequired'],
+				'setWarmupInterval' => [],
+				'clearAppStoreCache' => [],
 			],
 			ApplicationsController::class => [
 				'page' => ['@NoAdminRequired', '@NoCSRFRequired'],

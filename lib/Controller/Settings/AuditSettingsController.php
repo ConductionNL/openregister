@@ -90,8 +90,6 @@ class AuditSettingsController extends Controller {
 	 * says what was stored, so a form never reports a window that is not the
 	 * one in force.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The window that was stored.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md

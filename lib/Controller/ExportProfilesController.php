@@ -161,12 +161,10 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The persisted profile.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -190,12 +188,10 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The persisted profile.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		return $this->withOwnedProfile(
 			id: $id,
@@ -219,12 +215,10 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The outcome.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		return $this->withOwnedProfile(
 			id: $id,

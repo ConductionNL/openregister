@@ -159,7 +159,8 @@ class CaseControllerTest extends TestCase {
 			$target = $reflection->getMethod($method);
 			$this->assertTrue($target->isPublic());
 			$this->assertNotEmpty($target->getAttributes(NoAdminRequired::class), "$method declares its posture");
-			$this->assertNotEmpty($target->getAttributes(NoCSRFRequired::class), "$method decides CSRF explicitly");
+			$isRead = strtoupper((string)($route['verb'] ?? 'GET')) === 'GET';
+			$this->assertSame($isRead, $target->getAttributes(NoCSRFRequired::class) !== [], "$method: only reads skip the request token");
 			$this->assertStringStartsWith('/api/cases', (string)$route['url']);
 		}
 
