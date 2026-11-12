@@ -48,3 +48,4 @@ review:openregister:10021:429ebf91	APPROVE: config-only scanner allowlist	sessio
 gap:decidiq:13:302052c1	PR #2061 (quality/gap-13-audit @1c7a84fe): lockfile-only audit updates, 40->32 advisories, high 2->1; vitest/eslint same as development; needs verify+merge	session-20261112T182617-a12dc411	2026-11-12T19:05:19Z
 review:openregister:10025:feb52cfe	APPROVE: 4 jest specs, 78 tests green, eslint clean	session-20261112T175557-37d60f4f	2026-11-12T19:05:16Z
 gap:humaniq:14:067d4939	already done: lizard -C 30 on development (faaa663b) finds no function over CCN 30; max is 28	session-20261112T184505-d34a144f	2026-11-12T19:05:32Z
+cover:buildiq:8ca317f6:1b97f731	PR #1441: ProductionVersionGuardListener branches, 7 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:06:16Z
