@@ -940,3 +940,4 @@ verify:hermiq:1625:3dbd936e	4 GREEN (1625-1628), 0 new failures, 3623 tests vs b
 cover:dossiq:6ca0231e:38e80a9f	PR #6191: 4 commands +20 tests; suite 12964->12984, 19 inherited failures unchanged	session-20261112T231637-60fd49c4	2026-11-12T23:49:10Z
 cover:dossiq:6ca0231e:f545d745	PR #6190: 38 tests for 8 untested repair steps (0% -> 96-100% each); suite 12964->13002, 19 inherited failures	session-20261112T231633-96ffe7b8	2026-11-12T23:49:10Z
 cover:dossiq:6ca0231e:d2a82d9f	PR dossiq: WorkingDayRoll/TermDefinitions/TermEndRoll +24 tests, suite 12964->12988, same 19 inherited failures	session-20261112T231640-f6dda86c	2026-11-12T23:49:49Z
+cover:dossiq:6ca0231e:60c2c265	PRs #6189 (5 controllers, 24 tests) and #6193 (4 controllers, 10 tests); no new failures (19 inherited)	session-20261112T224529-41d77a96	2026-11-12T23:50:07Z
