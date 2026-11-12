@@ -9122,6 +9122,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param RegisterSchema|null $table  The register and schema to route to, or null to resolve them from the object.
 	 *
 	 * @return ObjectEntity Updated entity.
+	 * @throws ObjectLookupFailedException If the stored object cannot be read first.
 	 * @throws Exception If update fails.
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -9147,16 +9148,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				);
 			} catch (\Exception $e) {
 				$this->logger->warning(
-					message: '[MagicMapper] Could not fetch old entity for update event',
+					message: '[MagicMapper] Could not read the stored object before an update; the update is refused',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
 						'entityId' => $entity->getId(),
 						'entityUuid' => $entity->getUuid(),
-						'error' => $e->getMessage(),
+						'exception' => get_class($e),
 					]
 				);
-				$oldEntity = $entity;
+				throw new ObjectLookupFailedException(message: 'The stored object could not be read, so it was not updated.', previous: $e);
 			}//end try
 		}//end if
 
