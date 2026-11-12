@@ -3923,5 +3923,6 @@ hermiq	1583	93898e2ba3db7ef512a5bad34e910861670baebe	GREEN	worker-44	3536 tests 
 hermiq	1585	172735f3cebd5595073f5518ff69b944955a4a7e	GREEN	worker-44	3536 tests run, baseline 168 inherited failures/errors, 0 new; constant renames, values unchanged
 buildiq	1456	b29d7e5d82e1348218c05e8f747d7025e533b8b8	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 hermiq	1584	d8e968c6a84e0c414a147894b5f87b3c8e3be1b6	GREEN	worker-44	3546 tests run (+10 new, passing), baseline 168 inherited failures/errors, 0 new; additive openapi route, v1 route copies, version header
+buildiq	1449	1778b288c6272018d3d751a49a07ffc7ca9ec099	REVERIFY	worker-33	not reproducible: dockerimage pass->pass, score 84->84 at same head; no push; new head 1778b288c6272018d3d751a49a07ffc7ca9ec099, verify it
 buildiq	1437	4938b7b7fc344d3d5049575edc93858951e13619	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1450	7acddd265e8ea3bae368b51611120772cfd6e146	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
