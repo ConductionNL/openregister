@@ -709,3 +709,4 @@ verify:buildiq:1482:3ec4425d	stale	session-20261112T221528-d486fac0	2026-11-12T2
 fix:learniq:2419:f3b7bef8	failed: behaviour change is the PR's purpose (API v1 contract feature), not a defect a worker can fix; needs human review	session-20261112T224530-d70ae278	2026-11-12T22:45:52Z
 verify:integriq:3415:229315d4	stale	session-20261112T224529-5928280e	2026-11-12T22:46:25Z
 merge:stackiq:1683:569f5768	stale	feeder	2026-11-12T22:45:25Z
+cover:integriq:9b0f5894m2367:js60c2c265	failed: payload mismatch, lang=js but dirs=lib/Controller/*.php (PHP); needs regeneration as lang=php	session-20261112T224529-5928280e	2026-11-12T22:47:11Z
