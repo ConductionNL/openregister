@@ -4200,3 +4200,4 @@ integriq	3409	1cc776f161384af18633fdc58b2a7d9887a2a5f1	GREEN	worker-48	php unit 
 integriq	3410	5bfc4c8031e8386f7dee7478424df5e52e0e469a	BLOCK	worker-48	php unit 7125 tests, baseline 7110 with 3 inherited failures, 0 new; vitest 1602 green; behaviour change: middleware now skips API-Version and problem-details on ~30 path patterns (health, metrics, proxied endpoints, webhooks; was 3 and only for error format), adds Deprecation/Link headers on every unversioned API route, and duplicates all API routes under /api/v1
 stackiq	1726	8b4ce47c9b652d2a2fa008c31d7f7b1db6b93e37	RED	worker-19:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
 stackiq	1731	ada62127141f9e0f21a45ed36707428b6127a647	RED	worker-19:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
+stackiq	1539	991a71df041b9af0ea4e654c8f46e77afa444a3e	RED	worker-19:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
