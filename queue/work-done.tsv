@@ -986,3 +986,4 @@ cover:filinq:8ecceb86:14722ee7	PR #1977: 7 Conversion classes, 14 tests; suite 5
 cover:integriq:9b0f5894m2367:js5df53342	failed: lang=js but lib/Broker/Transport/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:57:49Z
 cover:integriq:9b0f5894m2367:js63ce5d61	failed: lang=js but lib/PropertySource/Provider/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:11Z
 cover:integriq:9b0f5894m2367:js321a31a4	failed: lang=js but lib/Service/Oso/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:30Z
+cover:integriq:9b0f5894m2367:js85a502d9	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:58:39Z
