@@ -111,8 +111,6 @@ class ConfigurationBundleController extends Controller {
 	 *
 	 * @return JSONResponse The binding, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function bind(string $id): JSONResponse {
@@ -144,8 +142,6 @@ class ConfigurationBundleController extends Controller {
 	 *
 	 * @return JSONResponse Whether a binding was removed.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function unbind(string $id, string $subject): JSONResponse {
@@ -174,8 +170,6 @@ class ConfigurationBundleController extends Controller {
 	 * @param string $id The draft set the copy lands in.
 	 *
 	 * @return JSONResponse What was drafted, or the refusal.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
