@@ -4386,3 +4386,4 @@ pipelinq	3592	4042706a91247ddb8d7d35e29729899d6059da87	GREEN	worker-54	tests onl
 pipelinq	3593	aff1718cef58babe452c5272696d46cc8c1c2442	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
 pipelinq	3594	20cf4f34176749b27f146e0ddcdc4cdf9c28223b	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
 pipelinq	3595	f46936b62dfec2097a11e2afcc6f49b3d9b79173	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
+pipelinq	3596	58d4a62bb73347ddf475471cc5f5ae45118e5faa	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
