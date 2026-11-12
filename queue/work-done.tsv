@@ -156,3 +156,4 @@ merge:buildiq:1272:90bbd844	merged 7 (1301,1303-1308); 1272 and 1302 FAIL: merge
 cover:dossiq:6ca0231e:e2589e28	PR #6106: 4 classes, 21 tests (Beschikking); suite 11970->11991, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:51:33Z
 verify:keepiq:1676:975b40cb	GREEN; merge skipped: gate unmeasured (checker floor scan incomplete)	session-20261112T184502-4ecd6072	2026-11-12T19:52:23Z
 merge:keepiq:1502:315ed344	merged 0, skip 3: 1502/1631 checker floor scan unmeasured; 1607 has no refs/pull/1607/head on origin (head ref gone)	session-20261112T184502-4ecd6072	2026-11-12T19:53:20Z
+cover:dossiq:6ca0231e:e56141e7	PR #6107: 3 Zaakdossier value helpers, 13 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:53:29Z
