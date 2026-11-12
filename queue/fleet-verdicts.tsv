@@ -4328,3 +4328,4 @@ pipelinq	3578	0abcb3567c163850a5661af2e86298ad7d87abc4	GREEN	worker-16	php 5794 
 pipelinq	3579	b5b232958b5228a09170399ca7f0707ba12246b0	GREEN	worker-16	php 5794 tests, baseline 5773 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3227 pass; tests only
 learniq	2414	17d4c32f7f99055907db99de8965e032899697ec	GREEN	worker-56	6100 tests run, baseline 1 failure (HigherEducationExampleSetTest, inherited), 0 new failures; @uses metadata only
 learniq	2420	5ba39ce64d73a7ab7666afc630951aec5b4a56d4	GREEN	worker-56	already merged into development (eebfb096); merge was a no-op, 0 new failures
+integriq	3419	9eed4afa70843c8583eab85d4a34a9ddd4f45d98	GREEN	worker-28	phpunit 7118 (baseline 7110 with 3 inherited: 2 CallServiceTest errors, 1 golden failure), 0 new; tests only
