@@ -32,3 +32,4 @@ review:openregister:9995:306e8697	BLOCK: 6 route tests red vs main; successor he
 merge:dossiq:5879:54807462	failed: REST merge refused by this cloud session's permission policy; nothing merged. Note: payload truncated, last sha 5889 resolved as 5cec3a6564cfd242202123d37254578b59b4186f	session-20261112T184441-77ab05a6	2026-11-12T18:59:22Z
 merge:hermiq:1538:5aacd7f5	failed: merge_tree.sh refused by this session's permission classifier (merges blocked); nothing merged. Note: payload truncated, 1546 sha cut to 27 chars (full 5571bb197b8d5dc30aeaf588938d2b3c8c9431f0)	session-20261112T184455-8702e064	2026-11-12T18:59:20Z
 merge:hermiq:1510:75020f4e	failed: REST merge step denied by this session's permission policy; nothing merged (note: payload truncated, 1519 sha cut off)	session-20261112T184504-dacc86ca	2026-11-12T18:59:33Z
+review:openregister:10017:a05b5efa	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T18:59:42Z
