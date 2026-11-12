@@ -970,9 +970,11 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		$saved = $this->organisationMapper->save($organisation);
 
-		// If there's no default organisation set, make this one the default.
+		// With no default organisation set, one created by an admin or by the
+		// system becomes the default. Records without an organisation land in
+		// the default, so a regular user's organisation never becomes it.
 		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-		if ($defaultOrgId === '') {
+		if ($defaultOrgId === '' && ($user === null || $this->groupManager->isAdmin($user->getUID()) === true)) {
 			$this->appConfig->setValueString('openregister', 'defaultOrganisation', $saved->getUuid());
 		}
 
