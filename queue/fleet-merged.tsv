@@ -96,3 +96,4 @@ keepiq	1676	0ca2a382d50ac78a27a4d56f0398ecd75b0741ce	SKIP	worker-19	GATE UNMEASU
 buildiq	1316	1da8c3bb17d6f2e13f2e9f73b7ce07744a62267c	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1502	401b4b757a03be7eeea5267b246721b66a16b3de	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure complexity, secretscanning, sourcecode; this is not a pass
 buildiq	1317	87b0506380ab4cbf81be2970098e034d029c5532	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	worker-19	GATE UNMEASURED fetch failed
