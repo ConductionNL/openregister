@@ -4083,3 +4083,17 @@ stackiq	1752	02fcfa3c6f8ba080f9c37329de6abca3afc76b2c	GREEN	worker-22	phpunit 23
 stackiq	1753	24470d7d104315ab5081826a313a844601d4eda4	GREEN	worker-22	phpunit 2353 run (baseline 2334 OK), vitest 1593 pass, 0 new failures
 pipelinq	3545	5b1ec40301641e8104da0a648a7444ad272c9ae7	BLOCK	worker-30	unit 5798 run, baseline 5773 w/ 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; behaviour change: new middleware rewrites every API error body and Content-Type to problem+json and adds Deprecation/Link headers on all unversioned API routes, needs owner sign-off
 buildiq	1462	ef9670952a0430c589140306a3e17698a0ce54b2	GREEN	worker-25	tests-only JS specs; vitest 2976/2976 passed on tree; PHP unit unchanged (2234, 1269 inherited)
+dossiq	6167	1918f016c963583e7b6cbb3362938a4a890afe3a	GREEN	worker-01	phpunit 12001 on 5-PR tree (baseline 11976/19, 0 new); vitest 6270 (baseline 6204/1, 0 new); tests-only diff
+dossiq	6142	f40c2a9968dcba4cd3d4078448f5f66d6704ddff	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6143	b19992cb4fc9b5c4c4c211a0db7767b9523c194e	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6144	c46354a4f4b159f02e035743ac4f651f76062877	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6145	a70cb75f1ef341a63d6320231302ae03d64b50a6	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6146	ea773877cff9ad4a8ba7bf144d0366fc523770b1	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6147	b9937fce7c24eb33a23f0c65f0c33889fd8ce9e8	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6148	248ee763f62e25fd8b2901216a3bf7e1f7913388	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6149	bc0b06577f05ba0b4f79c9f24f3be0a0aca8f6a3	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6150	1783825fdcb143ad2c091b16613189b360b5bbcd	GREEN	worker-14	tree of 9: 12085 tests run, baseline 11976 with 19 inherited failures, 0 new failures; tests only
+dossiq	6168	f422d7d63dc275cfb396f6772f6271bc2a98a917	GREEN	worker-01	phpunit 12001 on 5-PR tree (baseline 11976/19, 0 new); vitest 6270 (baseline 6204/1, 0 new); tests-only diff
+dossiq	6169	3a01328914a86e0537c899fbfe5291f98ec60346	GREEN	worker-01	phpunit 12001 on 5-PR tree (baseline 11976/19, 0 new); vitest 6270 (baseline 6204/1, 0 new); tests-only diff
+dossiq	6170	fc64e30e07a6847516ff4f7fc4bd7f99872c3725	GREEN	worker-01	phpunit 12001 on 5-PR tree (baseline 11976/19, 0 new); vitest 6270 (baseline 6204/1, 0 new); tests-only diff
+dossiq	6171	7532e866bc7eebf84485c3bccb31dd02b0d65ae9	GREEN	worker-01	phpunit 12001 on 5-PR tree (baseline 11976/19, 0 new); vitest 6270 (baseline 6204/1, 0 new); tests-only diff
