@@ -36,6 +36,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicTableDdl
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicTableCreatorTest extends TestCase {
 

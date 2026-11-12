@@ -9,6 +9,7 @@ exports[`endpoint store save golden createEndpoint notOk withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -38,6 +39,7 @@ exports[`endpoint store save golden createEndpoint notOk withoutId 1`] = `
         "body": "{"name":"E"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -67,6 +69,7 @@ exports[`endpoint store save golden createEndpoint ok withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -105,6 +108,7 @@ exports[`endpoint store save golden createEndpoint ok withoutId 1`] = `
         "body": "{"name":"E"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -143,6 +147,7 @@ exports[`endpoint store save golden createEndpoint rejected withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -172,6 +177,7 @@ exports[`endpoint store save golden createEndpoint rejected withoutId 1`] = `
         "body": "{"name":"E"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -201,6 +207,7 @@ exports[`endpoint store save golden updateEndpoint notOk withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -243,6 +250,7 @@ exports[`endpoint store save golden updateEndpoint ok withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -294,6 +302,7 @@ exports[`endpoint store save golden updateEndpoint rejected withId 1`] = `
         "body": "{"id":4,"name":"E","path":"/x"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },

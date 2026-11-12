@@ -40,6 +40,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\AuditRecording;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionAttribution;
+use OCA\OpenRegister\Service\Object\DeletionIntegrity;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
@@ -148,12 +150,17 @@ class DeleteObjectSourceDelegateGoldenTest extends TestCase {
 		return new DeleteObject(
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			cacheHandler: $this->createMock(CacheHandler::class),
-			userSession: $this->createMock(IUserSession::class),
 			audit: new AuditRecording(trail: $this->audit, logger: $this->logger),
 			settingsService: $this->createMock(SettingsService::class),
-			integrityService: $this->createMock(ReferentialIntegrityService::class),
-			db: $this->createMock(IDBConnection::class),
-			organisationMapper: $this->createMock(OrganisationMapper::class),
+			integrity: new DeletionIntegrity(
+				integrity: $this->createMock(ReferentialIntegrityService::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			attribution: new DeletionAttribution(
+				userSession: $this->createMock(IUserSession::class),
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				logger: $this->logger
+			),
 			objectSourceRegistry: $registry,
 			registerMapper: $registers
 		);

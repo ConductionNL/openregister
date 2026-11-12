@@ -893,6 +893,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -903,6 +904,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"description":"d"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -913,6 +915,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"category":"c","labels":["a"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -923,6 +926,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"category":"","labels":[]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -933,6 +937,7 @@ exports[`branchy helpers golden updates file metadata 1`] = `
         "body": "{"description":"d","category":"c"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },

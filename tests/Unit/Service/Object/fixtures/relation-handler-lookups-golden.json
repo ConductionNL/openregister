@@ -185,7 +185,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -425,7 +425,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -491,7 +491,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -758,7 +758,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -824,7 +824,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -1078,7 +1078,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -1144,7 +1144,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -1363,7 +1363,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -1429,7 +1429,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -2219,7 +2219,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -2340,21 +2340,6 @@
                     }
                 },
                 {
-                    "id": "n1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:n"
-                        },
-                        "direction": "outgoing",
-                        "path": "n"
-                    },
-                    "@self": {
-                        "name": "n1",
-                        "owner": "bob",
-                        "schema": null
-                    }
-                },
-                {
                     "id": "x1",
                     "relation": {
                         "descriptor": {
@@ -2367,377 +2352,6 @@
                         "name": "x1",
                         "owner": "bob",
                         "schema": "3"
-                    }
-                }
-            ],
-            "total": 3,
-            "limit": 30,
-            "offset": 0
-        },
-        "calls": [
-            [
-                "find",
-                [
-                    "lead-id",
-                    null,
-                    null,
-                    false,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "findMultipleAcrossAllMagicTables",
-                [
-                    [
-                        "d1",
-                        "n1",
-                        "b1",
-                        "x1"
-                    ],
-                    false,
-                    null
-                ]
-            ],
-            [
-                "register.find",
-                [
-                    1,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "schema.find",
-                [
-                    3,
-                    [],
-                    true,
-                    true
-                ]
-            ],
-            [
-                "findAllInRegisterSchemaTable",
-                [
-                    "Register#1",
-                    "Schema#3",
-                    null,
-                    null,
-                    {
-                        "_ids": [
-                            "d1",
-                            "b1"
-                        ],
-                        "_limit": 200
-                    },
-                    []
-                ]
-            ],
-            [
-                "find",
-                [
-                    "d1",
-                    "Register#1",
-                    "Schema#3",
-                    false,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "register.find",
-                [
-                    1,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "schema.find",
-                [
-                    0,
-                    [],
-                    true,
-                    true
-                ]
-            ],
-            [
-                "find",
-                [
-                    "n1",
-                    "Register#1",
-                    "Schema#0",
-                    false,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "register.find",
-                [
-                    0,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "schema.find",
-                [
-                    3,
-                    [],
-                    true,
-                    true
-                ]
-            ],
-            [
-                "find",
-                [
-                    "x1",
-                    "Register#0",
-                    "Schema#3",
-                    false,
-                    true,
-                    true
-                ]
-            ],
-            [
-                "schema.find",
-                [
-                    3,
-                    [],
-                    false,
-                    false
-                ]
-            ],
-            [
-                "hasRowPermission",
-                [
-                    "Schema#3",
-                    "read",
-                    "alice",
-                    {
-                        "id": "b1",
-                        "title": "B1",
-                        "@self": {
-                            "id": "b1",
-                            "slug": null,
-                            "name": "b1",
-                            "description": null,
-                            "summary": null,
-                            "image": null,
-                            "uri": null,
-                            "version": null,
-                            "register": "1",
-                            "schema": "3",
-                            "schemaVersion": null,
-                            "files": [],
-                            "relations": [],
-                            "locked": null,
-                            "owner": "alice",
-                            "organisation": null,
-                            "groups": [],
-                            "authorization": [],
-                            "folder": null,
-                            "application": null,
-                            "validation": [],
-                            "quality": [],
-                            "geo": [],
-                            "retention": [],
-                            "tmlo": [],
-                            "size": null,
-                            "updated": null,
-                            "lastUserActivity": null,
-                            "created": null,
-                            "deleted": [],
-                            "archived": [],
-                            "frozen": [],
-                            "status": null,
-                            "source": null,
-                            "mail": null,
-                            "contacts": null,
-                            "notes": null,
-                            "todos": null,
-                            "calendar": null,
-                            "talk": null,
-                            "deck": null,
-                            "expires": null
-                        }
-                    },
-                    [],
-                    "b1"
-                ]
-            ],
-            [
-                "hasRowPermission",
-                [
-                    "Schema#3",
-                    "read",
-                    "bob",
-                    {
-                        "id": "x1",
-                        "@self": {
-                            "id": "x1",
-                            "slug": null,
-                            "name": "x1",
-                            "description": null,
-                            "summary": null,
-                            "image": null,
-                            "uri": null,
-                            "version": null,
-                            "register": "abc",
-                            "schema": "3",
-                            "schemaVersion": null,
-                            "files": [],
-                            "relations": [],
-                            "locked": null,
-                            "owner": "bob",
-                            "organisation": null,
-                            "groups": [],
-                            "authorization": [],
-                            "folder": null,
-                            "application": null,
-                            "validation": [],
-                            "quality": [],
-                            "geo": [],
-                            "retention": [],
-                            "tmlo": [],
-                            "size": null,
-                            "updated": null,
-                            "lastUserActivity": null,
-                            "created": null,
-                            "deleted": [],
-                            "archived": [],
-                            "frozen": [],
-                            "status": null,
-                            "source": null,
-                            "mail": null,
-                            "contacts": null,
-                            "notes": null,
-                            "todos": null,
-                            "calendar": null,
-                            "talk": null,
-                            "deck": null,
-                            "expires": null
-                        }
-                    },
-                    [],
-                    "x1"
-                ]
-            ],
-            [
-                "log.debug",
-                [
-                    "[RelationHandler::getUses] Found related objects",
-                    {
-                        "searchedIds": [
-                            "d1",
-                            "n1",
-                            "b1",
-                            "x1"
-                        ],
-                        "foundCount": 3
-                    }
-                ]
-            ],
-            [
-                "schema.find",
-                [
-                    2,
-                    [],
-                    false,
-                    false
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "b",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:b"
-                    },
-                    "outgoing",
-                    "b"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "n",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:n"
-                    },
-                    "outgoing",
-                    "n"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "x",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:x"
-                    },
-                    "outgoing",
-                    "x"
-                ]
-            ]
-        ]
-    },
-    "uses: drafts as their owner": {
-        "result": {
-            "results": [
-                {
-                    "title": "B1",
-                    "_owner": "mallory",
-                    "_organisation": "forged",
-                    "id": "b1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:b"
-                        },
-                        "direction": "outgoing",
-                        "path": "b"
-                    },
-                    "@self": {
-                        "name": "b1",
-                        "owner": "alice",
-                        "schema": "3"
-                    }
-                },
-                {
-                    "id": "n1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:n"
-                        },
-                        "direction": "outgoing",
-                        "path": "n"
-                    },
-                    "@self": {
-                        "name": "n1",
-                        "owner": "bob",
-                        "schema": null
                     }
                 }
             ],
@@ -2892,7 +2506,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -2945,68 +2559,11 @@
                     "read",
                     "bob",
                     {
-                        "id": "d1",
-                        "@self": {
-                            "id": "d1",
-                            "slug": null,
-                            "name": "d1",
-                            "description": null,
-                            "summary": null,
-                            "image": null,
-                            "uri": null,
-                            "version": null,
-                            "register": "1",
-                            "schema": "3",
-                            "schemaVersion": null,
-                            "files": [],
-                            "relations": [],
-                            "locked": null,
-                            "owner": "bob",
-                            "organisation": null,
-                            "groups": [],
-                            "authorization": [],
-                            "folder": null,
-                            "application": null,
-                            "validation": [],
-                            "quality": [],
-                            "geo": [],
-                            "retention": [],
-                            "tmlo": [],
-                            "size": null,
-                            "updated": null,
-                            "lastUserActivity": null,
-                            "created": null,
-                            "deleted": [],
-                            "archived": [],
-                            "frozen": [],
-                            "status": "draft",
-                            "source": null,
-                            "mail": null,
-                            "contacts": null,
-                            "notes": null,
-                            "todos": null,
-                            "calendar": null,
-                            "talk": null,
-                            "deck": null,
-                            "expires": null
-                        }
-                    },
-                    [],
-                    "d1"
-                ]
-            ],
-            [
-                "hasRowPermission",
-                [
-                    "Schema#3",
-                    "read",
-                    "bob",
-                    {
                         "id": "x1",
                         "@self": {
                             "id": "x1",
                             "slug": null,
-                            "name": "x1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -3098,7 +2655,7 @@
                 "descriptorFor",
                 [
                     "Schema#2",
-                    "n",
+                    "x",
                     "nl"
                 ]
             ],
@@ -3106,10 +2663,387 @@
                 "row",
                 [
                     {
-                        "label": "L:n"
+                        "label": "L:x"
                     },
                     "outgoing",
-                    "n"
+                    "x"
+                ]
+            ]
+        ]
+    },
+    "uses: drafts as their owner": {
+        "result": {
+            "results": [
+                {
+                    "title": "B1",
+                    "_owner": "mallory",
+                    "_organisation": "forged",
+                    "id": "b1",
+                    "relation": {
+                        "descriptor": {
+                            "label": "L:b"
+                        },
+                        "direction": "outgoing",
+                        "path": "b"
+                    },
+                    "@self": {
+                        "name": "b1",
+                        "owner": "alice",
+                        "schema": "3"
+                    }
+                }
+            ],
+            "total": 1,
+            "limit": 30,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "find",
+                [
+                    "lead-id",
+                    null,
+                    null,
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "findMultipleAcrossAllMagicTables",
+                [
+                    [
+                        "d1",
+                        "n1",
+                        "b1",
+                        "x1"
+                    ],
+                    false,
+                    null
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    1,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "findAllInRegisterSchemaTable",
+                [
+                    "Register#1",
+                    "Schema#3",
+                    null,
+                    null,
+                    {
+                        "_ids": [
+                            "d1",
+                            "b1"
+                        ],
+                        "_limit": 200
+                    },
+                    []
+                ]
+            ],
+            [
+                "find",
+                [
+                    "d1",
+                    "Register#1",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    1,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    0,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "n1",
+                    "Register#1",
+                    "Schema#0",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "register.find",
+                [
+                    0,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            ],
+            [
+                "find",
+                [
+                    "x1",
+                    "Register#0",
+                    "Schema#3",
+                    false,
+                    true,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    3,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            [
+                "hasRowPermission",
+                [
+                    "Schema#3",
+                    "read",
+                    "alice",
+                    {
+                        "id": "b1",
+                        "title": "B1",
+                        "@self": {
+                            "id": "b1",
+                            "slug": null,
+                            "name": null,
+                            "description": null,
+                            "summary": null,
+                            "image": null,
+                            "uri": null,
+                            "version": null,
+                            "register": "1",
+                            "schema": "3",
+                            "schemaVersion": null,
+                            "files": [],
+                            "relations": [],
+                            "locked": null,
+                            "owner": "alice",
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "folder": null,
+                            "application": null,
+                            "validation": [],
+                            "quality": [],
+                            "geo": [],
+                            "retention": [],
+                            "tmlo": [],
+                            "size": null,
+                            "updated": null,
+                            "lastUserActivity": null,
+                            "created": null,
+                            "deleted": [],
+                            "archived": [],
+                            "frozen": [],
+                            "status": null,
+                            "source": null,
+                            "mail": null,
+                            "contacts": null,
+                            "notes": null,
+                            "todos": null,
+                            "calendar": null,
+                            "talk": null,
+                            "deck": null,
+                            "expires": null
+                        }
+                    },
+                    [],
+                    "b1"
+                ]
+            ],
+            [
+                "hasRowPermission",
+                [
+                    "Schema#3",
+                    "read",
+                    "bob",
+                    {
+                        "id": "d1",
+                        "@self": {
+                            "id": "d1",
+                            "slug": null,
+                            "name": null,
+                            "description": null,
+                            "summary": null,
+                            "image": null,
+                            "uri": null,
+                            "version": null,
+                            "register": "1",
+                            "schema": "3",
+                            "schemaVersion": null,
+                            "files": [],
+                            "relations": [],
+                            "locked": null,
+                            "owner": "bob",
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "folder": null,
+                            "application": null,
+                            "validation": [],
+                            "quality": [],
+                            "geo": [],
+                            "retention": [],
+                            "tmlo": [],
+                            "size": null,
+                            "updated": null,
+                            "lastUserActivity": null,
+                            "created": null,
+                            "deleted": [],
+                            "archived": [],
+                            "frozen": [],
+                            "status": "draft",
+                            "source": null,
+                            "mail": null,
+                            "contacts": null,
+                            "notes": null,
+                            "todos": null,
+                            "calendar": null,
+                            "talk": null,
+                            "deck": null,
+                            "expires": null
+                        }
+                    },
+                    [],
+                    "d1"
+                ]
+            ],
+            [
+                "hasRowPermission",
+                [
+                    "Schema#3",
+                    "read",
+                    "bob",
+                    {
+                        "id": "x1",
+                        "@self": {
+                            "id": "x1",
+                            "slug": null,
+                            "name": null,
+                            "description": null,
+                            "summary": null,
+                            "image": null,
+                            "uri": null,
+                            "version": null,
+                            "register": "abc",
+                            "schema": "3",
+                            "schemaVersion": null,
+                            "files": [],
+                            "relations": [],
+                            "locked": null,
+                            "owner": "bob",
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "folder": null,
+                            "application": null,
+                            "validation": [],
+                            "quality": [],
+                            "geo": [],
+                            "retention": [],
+                            "tmlo": [],
+                            "size": null,
+                            "updated": null,
+                            "lastUserActivity": null,
+                            "created": null,
+                            "deleted": [],
+                            "archived": [],
+                            "frozen": [],
+                            "status": null,
+                            "source": null,
+                            "mail": null,
+                            "contacts": null,
+                            "notes": null,
+                            "todos": null,
+                            "calendar": null,
+                            "talk": null,
+                            "deck": null,
+                            "expires": null
+                        }
+                    },
+                    [],
+                    "x1"
+                ]
+            ],
+            [
+                "log.debug",
+                [
+                    "[RelationHandler::getUses] Found related objects",
+                    {
+                        "searchedIds": [
+                            "d1",
+                            "n1",
+                            "b1",
+                            "x1"
+                        ],
+                        "foundCount": 1
+                    }
+                ]
+            ],
+            [
+                "schema.find",
+                [
+                    2,
+                    [],
+                    false,
+                    false
+                ]
+            ],
+            [
+                "descriptorFor",
+                [
+                    "Schema#2",
+                    "b",
+                    "nl"
+                ]
+            ],
+            [
+                "row",
+                [
+                    {
+                        "label": "L:b"
+                    },
+                    "outgoing",
+                    "b"
                 ]
             ]
         ]
@@ -3237,7 +3171,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -3441,7 +3375,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -3695,7 +3629,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -3761,7 +3695,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4028,7 +3962,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4094,7 +4028,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4383,7 +4317,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4449,7 +4383,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4752,7 +4686,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4818,7 +4752,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -4883,7 +4817,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5206,7 +5140,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5272,7 +5206,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5489,7 +5423,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5555,7 +5489,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5756,7 +5690,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -5822,7 +5756,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6043,7 +5977,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6109,7 +6043,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6359,7 +6293,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6425,7 +6359,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6683,7 +6617,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -6749,7 +6683,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7016,7 +6950,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7082,7 +7016,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7323,7 +7257,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7600,7 +7534,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7666,7 +7600,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -7942,7 +7876,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -8008,7 +7942,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -8266,7 +8200,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -8332,7 +8266,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -11304,7 +11238,7 @@
                         "@self": {
                             "id": "b1",
                             "slug": null,
-                            "name": "b1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,
@@ -11370,7 +11304,7 @@
                         "@self": {
                             "id": "c1",
                             "slug": null,
-                            "name": "c1",
+                            "name": null,
                             "description": null,
                             "summary": null,
                             "image": null,

@@ -53,7 +53,7 @@ class ExampleSetCollectivesStoreBehaviourTest extends TestCase {
 	}//end setUp()
 
 	private function store(): ExampleSetCollectivesStore {
-		return new ExampleSetCollectivesStore($this->container, $this->appManager);
+		return new ExampleSetCollectivesStore(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->container, apps: $this->appManager, users: $this->createMock(\OCP\IUserManager::class)));
 	}//end store()
 
 	/**

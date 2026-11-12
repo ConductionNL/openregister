@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,18 +34,36 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class RelatedRetentionLookup {
 	/**
+	 * Reads and writes the records.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Resolves the source record's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Finds the registers a dependant schema lives in.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param MagicMapperInterface    $objectMapper   Reads and writes the records.
-	 * @param SchemaMapperInterface   $schemaMapper   Resolves the source record's schema.
-	 * @param RegisterMapperInterface $registerMapper Finds the registers a dependant schema lives in.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
-	public function __construct(
-		public readonly MagicMapperInterface $objectMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->objectMapper = $catalog->tables();
+		$this->schemaMapper = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class

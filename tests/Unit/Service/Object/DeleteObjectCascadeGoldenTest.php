@@ -37,6 +37,8 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Object\AuditRecording;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionAttribution;
+use OCA\OpenRegister\Service\Object\DeletionIntegrity;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -90,12 +92,14 @@ class DeleteObjectCascadeGoldenTest extends TestCase {
 		$this->handler = new DeleteObject(
 			$this->objectMapper,
 			$this->createMock(CacheHandler::class),
-			$userSession,
 			new AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$integrity,
-			$this->createMock(IDBConnection::class),
-			$this->createMock(OrganisationMapper::class)
+			new DeletionIntegrity(integrity: $integrity, db: $this->createMock(IDBConnection::class)),
+			new DeletionAttribution(
+				userSession: $userSession,
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				logger: $this->logger
+			)
 		);
 	}//end setUp()
 

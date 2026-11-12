@@ -37,6 +37,13 @@ use ReflectionMethod;
  * Pins verifyUnderV1(): the valid verdict, the broken verdict and the window paging.
  *
  * @covers \OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Repair\Support\RepairPlatform
+ * @uses \OCA\OpenRegister\Repair\V1ChainVerificationRun
+ * @uses \OCA\OpenRegister\Service\AuditCanonicalV1
  */
 class RechainAuditTrailV1VerifierGoldenTest extends TestCase {
 

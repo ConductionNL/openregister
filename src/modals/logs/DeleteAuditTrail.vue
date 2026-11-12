@@ -58,6 +58,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { withRequestToken } from '../../services/requestToken.js'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
 import { deletionAnswer } from './deletionAnswer.js'
 /**
@@ -74,9 +75,9 @@ import { deletionAnswer } from './deletionAnswer.js'
 async function requestDeletion(id) {
 	const response = await fetch(
 		`/index.php/apps/openregister/api/audit-trails/${id}`,
-		{
+		withRequestToken({
 			method: 'DELETE',
-		},
+		}),
 	)
 	await deletionAnswer(response)
 }
