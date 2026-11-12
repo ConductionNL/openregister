@@ -668,6 +668,7 @@ review:openregister:10048:1a1ae4d9	APPROVE: openspec docs only, capabilities.jso
 cover:hermiq:755cdfe7m7444:js06285390	PR #1610: 10 PHPUnit tests for NotesWriteService/TaskLists (task said js, dirs were PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:36:52Z
 cover:hermiq:755cdfe7m7444:js34a55f48	failed: lang=js but dirs=lib/Service/Workspace/*.php (PHP only, no JS there); PHP side covered in #1609	session-20261112T215819-2dd7b64e	2026-11-12T22:37:00Z
 cover:pipelinq:f67520ecm9d2c:js568ec52a	PR pipelinq#3573: 16 PHP tests (dirs were PHP despite lang=js), PosRefundManagerGuard+ObjectOwnerAccessPolicy to 100%; suite 5773->5789, no new failures	session-20261112T221235-9e827ed1	2026-11-12T22:37:10Z
+cover:hermiq:755cdfe7m7444:jsa42697be	failed: lang=js but dirs=lib/Service/Agent/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:37:22Z
 cover:pipelinq:f67520ecm9d2c:js81b1241f	failed: malformed payload (lang=js but dirs=lib/Portal/*.php); needs a php or src/ row	session-20261112T221520-70f29253	2026-11-12T22:37:42Z
 review:openregister:10046:04d5ae77	APPROVE: test-only, 228 jest tests green merged with main	session-20261112T221239-5f377795	2026-11-12T22:37:59Z
 review:openregister:10050:77f81a29	APPROVE: tests only, 496 object modal tests pass	session-20261112T221235-91821e68	2026-11-12T22:38:13Z
