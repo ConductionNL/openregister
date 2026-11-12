@@ -779,3 +779,4 @@ cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Ser
 cover:keepiq:d76c2121:e372e6ff	PR #1689: 7 tests for 4 Event classes, suite 3722->3729 OK	session-20261112T224529-41d77a96	2026-11-12T22:58:26Z
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
 cover:integriq:9b0f5894m2367:js38e80a9f	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:50Z
+cover:hermiq:755cdfe7:05cc1463	PR #1623: 16 tests for TalkApprovalBinding, TalkAgentBinding; suite 3561->3577, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:59:18Z
