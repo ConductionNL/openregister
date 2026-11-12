@@ -360,3 +360,4 @@ cover:dossiq:6ca0231e:a797d42e	PR #6174: 13 tests for CasePlanBlob/CasePlanMigra
 fix:buildiq:1441:39c17463	not reproducible: dockerimage passes locally, score 84 = floor; tests-only PR; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T21:02:21Z
 merge:portaliq:2281:7c13dbcf	2281 SKIP 2282 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T21:03:14Z
 cover:dossiq:6ca0231e:jsd48eb217	already done: src/store/modules lines 96.4% (705/731) on development, above the 80% target; no PR	session-20261112T184439-5c9a5b03	2026-11-12T21:03:36Z
+verify:humaniq:1094:32a0648b	GREEN humaniq#1094	session-20261112T205850-5f960ec2	2026-11-12T21:03:43Z
