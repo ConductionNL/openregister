@@ -2741,7 +2741,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/Schema.php:2104 getSchemaObject emits draft 2020-12 JSON Schema, used for validation (SaveObject.php:920); download route appinfo/routes.php:1620 called from src/views/schema/SchemaDetails.vue:69; OAS per register routes.php:1667",
-    "spec": "openspec/specs/openapi-generation"
+    "spec": "openspec/specs/openapi-generation",
+    "requirement": "openspec/changes/capability-rows-stated-requirements/specs/runtime-schema-api :: A schema can be downloaded as a standard JSON Schema document"
    },
    "reachedOn": "/schemas/:id (Download action)",
    "provider": "openregister",
@@ -2890,7 +2891,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/RelationHandler.php:985-988 resolves label/inverseLabel via RelationTypeResolver.php:192 on the uses/used rows (routes.php:1186-1187); shown as subname in ObjectDetails.vue:209 relationLabel; typed rows also via objectRelations routes.php:1211",
-    "change": "relation-types-with-inverses"
+    "change": "relation-types-with-inverses",
+    "requirement": "openspec/changes/relation-types-with-inverses/specs/referential-integrity :: A reference property declares how it reads from both sides"
    },
    "reachedOn": "/objects/:register/:schema/:id (Uses / Used by tabs)",
    "provider": "openregister",
@@ -2927,7 +2929,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Registers resource appinfo/routes.php:5 + registers#schemas :1665; register export/import as one unit routes.php:1655-1656 via src/modals/register/ImportRegister.vue and configurations export routes.php:1715",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "openspec/specs/data-import-export :: Configuration import/export MUST support full register portability @e2e exclude backend configuration import/export — covered by PHPUnit"
    },
    "reachedOn": "/registers, /registers/:id",
    "provider": "openregister",
@@ -2963,7 +2966,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "A schema holds one draft beside the published definition: PUT /api/schemas/{id}?draft=true saves it, POST /api/schemas/{id}/draft/publish applies it through the normal update (breaking-change gate, version bump, one changelog entry), DELETE /api/schemas/{id}/draft discards it (lib/Controller/SchemasController.php publishDraft/discardDraft, lib/Db/Schema.php draft column, migration Version1Date20260930110000). Schema page: Edit as draft and a draft bar (src/components/schema/SchemaDraftBar.vue). tests/Unit/Controller/SchemaDraftTest.php with the real versioning service and Opis. Change modelling-schema-draft archived 2026-09-30.",
-    "change": "modelling-schema-draft"
+    "change": "modelling-schema-draft",
+    "requirement": "openspec/specs/runtime-schema-api :: REQ-SDRAFT-001 A schema edit can be held as a draft until it is published"
    },
    "reachedOn": "API only: GET /api/schemas/{id}/changelog",
    "provider": "openregister",
@@ -3000,7 +3004,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Columns re-synced on schema version change (MagicTableHandler.php:93-121); revalidate from EditSchema.vue:402 -> ValidateSchema.vue:383 -> bulk#runSchemaValidation routes.php:1287; migration plans SchemaMigrationController.php:359 queue SchemaRunJob (routes.php:1639)",
-    "spec": "openspec/specs/schema-migration"
+    "spec": "openspec/specs/schema-migration",
+    "requirement": "openspec/specs/schema-migration :: Declarative migration runs MUST transform a population through the standard save pipeline"
    },
    "reachedOn": "/schemas/:id (Edit schema, Validate objects dialog); migration plans API only",
    "provider": "openregister",
@@ -3037,7 +3042,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/CalculationOnSaveListener.php:105 materialises declared calculations incl. @ref/@aggregate on save, registered lib/AppInfo/Application.php:3313-3314; events dispatched MagicMapper.php:7148/7303; shown in src/views/schema/SchemaRulesTab.vue:51",
-    "spec": "openspec/specs/computed-fields"
+    "spec": "openspec/specs/computed-fields",
+    "requirement": "openspec/specs/computed-fields :: Save-Time Materialisation of Declared Calculations"
    },
    "reachedOn": "/objects (computed field on the record); authored in schema JSON",
    "provider": "openregister",
@@ -3076,7 +3082,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/GeneratedIdentifierListener.php:144 renders mask (e.g. Z-{year}-{seq:5}, GeneratedIdentifierDeclaration.php:283) from SequenceService reserveNext, registered Application.php:3239-3240; freezes value on update",
-    "change": "generated-identifier"
+    "change": "generated-identifier",
+    "requirement": "openspec/changes/generated-identifier/specs/computed-fields :: A property declares a generated identifier from a sequence and a format"
    },
    "reachedOn": "/objects (on create); declared in schema JSON",
    "provider": "openregister",
@@ -3112,7 +3119,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/UniqueConstraintListener.php:100 enforces named (multi-field) uniqueness, refuse -> 422 or report, registered Application.php:3365-3366",
-    "spec": "openspec/specs/runtime-schema-api"
+    "spec": "openspec/specs/runtime-schema-api",
+    "requirement": "openspec/specs/runtime-schema-api :: Uniqueness over a named field combination (REQ-CLH-004)"
    },
    "reachedOn": "/objects (save refused); declared in schema JSON",
    "provider": "openregister",
@@ -3220,7 +3228,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/UploadSchema.vue:21 (file or URL) -> schemas#upload routes.php:1618; SchemasController.php:1691 applyDialect maps schema.org/GGM via SchemaImportService (:2347/:2370), JSON Schema/OpenAPI pass through",
-    "spec": "openspec/specs/schema-import"
+    "spec": "openspec/specs/schema-import",
+    "requirement": "openspec/specs/schema-import :: Schema.org types MUST be importable as register schemas"
    },
    "reachedOn": "/schemas/:id (Upload)",
    "provider": "openregister",
@@ -3253,7 +3262,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Array with items.type object (nested-object/nested-schema handling) in EditSchemaProperty.vue:841-866 and :1440; validated as JSON Schema on save; record form edits it in the JSON editor ViewObject.vue:559",
-    "change": "repeating-groups-and-recorded-corrections"
+    "change": "repeating-groups-and-recorded-corrections",
+    "requirement": "openspec/specs/runtime-schema-api :: A repeating group is a declared property kind (REQ-RGC-001)"
    },
    "reachedOn": "/schemas/:id; /objects (JSON editor)",
    "provider": "openregister",
@@ -3290,7 +3300,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); src/views/object/MapView.vue:61 states it has no route or importer; GeoJsonGeometryValidator has no caller in lib",
-    "change": "geometry-on-a-map"
+    "change": "geometry-on-a-map",
+    "requirement": "openspec/specs/geo-metadata-kaart :: Schema properties MUST support geospatial data types"
    },
    "reachedOn": "API only: GET /api/geo/{register}/{schema}/geojson",
    "provider": "openregister",
@@ -3324,7 +3335,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "A schema declaring x-openregister-view {view} lists the rows of that saved view's query (one source register and schema, facet filters, search terms; caller filters narrow, never widen; the reader's access to source rows applies) through the read-only view object source (lib/Service/ObjectSource/ViewObjectSourceProvider.php, Schema::getObjectSource). Create, update and delete answer 405 SCHEMA_READ_ONLY (ReadOnlyTypeException from ObjectService). tests/Unit/Service/ViewBackedTypeTest.php. Change modelling-query-backed-type archived 2026-09-30.",
-    "change": "modelling-query-backed-type"
+    "change": "modelling-query-backed-type",
+    "requirement": "openspec/specs/saved-search-views :: REQ-QTYPE-001 A saved view can back a read-only record type"
    },
    "reachedOn": "/tables (saved views)",
    "provider": "openregister",
@@ -3358,7 +3370,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Source type 'Database (virtual register)' in src/modals/source/EditSource.vue:229, introspect action :423 -> sources#introspect routes.php:227; lib/Service/ObjectSource/DbalObjectSourceProvider.php serves rows live, registered Application.php:5125, dispatched ObjectService.php:3812",
-    "spec": "openspec/specs/dbal-virtual-registers"
+    "spec": "openspec/specs/dbal-virtual-registers",
+    "requirement": "openspec/specs/dbal-virtual-registers :: Serve external rows as live objects with opt-in writes"
    },
    "reachedOn": "/sources",
    "provider": "openregister",
@@ -3461,7 +3474,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/object/ViewObject.vue:1369 objectProperties built from currentSchema.properties, save :1161 -> PUT objects#update appinfo/routes.php:1177; opened from /tables row click src/views/search/SearchIndex.vue:384",
-    "spec": "openspec/specs/entity-management-modals"
+    "spec": "openspec/specs/entity-management-modals",
+    "requirement": "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor"
    },
    "reachedOn": "/tables and /objects (ViewObject modal)",
    "provider": "openregister",
@@ -3495,7 +3509,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-07-25-object-views-kanban-calendar with the renderer and API done: lib/Db/View.php presentation column, lib/Service/ViewService.php:210 validates it, GET /api/views/{id}/kanban appinfo/routes.php:1820 -> lib/Controller/ViewsController.php:916, board drawn by src/views/search/SearchIndex.vue:730 CnObjectKanban when presentation.viewType is kanban (:229). No screen writes presentation: src/modals/view/EditView.vue and the save form in src/sidebars/search/SearchSideBar.vue carry no viewType.",
     "change": "saved-view-presentation-picker",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/saved-search-views :: Kanban columns and cards (REQ-VIEW-KANBAN-02)"
    },
    "reachedOn": "/tables with a saved view whose presentation is kanban",
    "provider": "openregister",
@@ -3530,7 +3545,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-07-25-object-views-kanban-calendar: GET /api/views/{id}/calendar appinfo/routes.php:1821 -> lib/Controller/ViewsController.php:978, drawn by src/views/search/SearchIndex.vue:747 CnObjectCalendar when presentation.viewType is calendar. No screen writes presentation (src/modals/view/EditView.vue, src/sidebars/search/SearchSideBar.vue). ICS feed remains.",
     "change": "saved-view-presentation-picker",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/saved-search-views :: Calendar plots objects by a date field over a range (REQ-VIEW-CAL-04)"
    },
    "reachedOn": "/tables with a saved view whose presentation is calendar",
    "provider": "openregister",
@@ -3564,7 +3580,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "API: GET /api/integrations/maps/overviews/{register}/{schema}/points appinfo/routes.php:1010 -> lib/Controller/MapsOverviewController.php:148. src/views/object/MapView.vue exists but git grep MapView in src finds no importer; no manifest page.",
-    "change": "geometry-on-a-map"
+    "change": "geometry-on-a-map",
+    "requirement": "openspec/specs/geo-metadata-kaart :: Objects MUST be visualizable on a map widget"
    },
    "reachedOn": "API only: GET /api/integrations/maps/overviews/{register}/{schema}/points",
    "provider": "openregister",
@@ -3598,7 +3615,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched src and lib for gallery/cover/coverImage/CnCardGrid; card viewMode exists only for registers, schemas, sources, configurations (src/store/modules/register.js:20), not records. SearchIndex.vue presentations are table/kanban/calendar only (:211).",
-    "change": "records-gallery-view"
+    "change": "records-gallery-view",
+    "requirement": "openspec/changes/records-gallery-view/specs/saved-search-views :: A saved view can present records as a gallery"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -3633,7 +3651,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Mass delete and mass copy on /tables: src/views/search/SearchIndex.vue:626 showMassDelete, :420 handleMassDelete; export disabled :620 showMassExport=false. Mass change only via API bulk#save appinfo/routes.php:1282 and bulk-jobs :1292 (committed from /operations).",
     "change": "tables-bulk-jobs-and-file-search",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/changes/tables-bulk-jobs-and-file-search/specs/bulk-action-jobs :: The Tables page runs bulk actions as jobs"
    },
    "reachedOn": "/tables (delete, copy); API only for bulk change/export",
    "provider": "openregister",
@@ -3708,7 +3727,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:4771 lock, route appinfo/routes.php:1243; Lock action src/views/object/ObjectsList.vue (lockObject modal); banner 'This object is locked by {user}' src/views/object/ObjectDetails.vue:74",
-    "spec": "openspec/specs/object-lifecycle"
+    "spec": "openspec/specs/object-lifecycle",
+    "requirement": "openspec/specs/object-lifecycle :: Objects MUST expose an expiry-aware lock-state contract"
    },
    "reachedOn": "/objects/:register/:schema/:id",
    "provider": "openregister",
@@ -3742,7 +3762,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched appinfo/routes.php for object publish/depublish/draft (only flow#publish :854 and config draft-sets :526); lib/Db/ObjectEntity.php has no published/depublished field; no draft copy in lib/Service/Object*.",
-    "change": "records-draft-versions"
+    "change": "records-draft-versions",
+    "requirement": "openspec/specs/content-versioning :: Objects MUST support a draft/published lifecycle"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -3779,7 +3800,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched lib and appinfo/routes.php for promote/workingCopy/change request/named version on objects; only flow versions (appinfo/routes.php:852) and config draft-sets exist.",
-    "change": "records-draft-versions"
+    "change": "records-draft-versions",
+    "requirement": "openspec/specs/content-versioning :: Drafts MUST be promotable to published version"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -3813,7 +3835,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "POST /api/objects/{register}/{schema}/{id}/revert appinfo/routes.php:1450 -> lib/Controller/RevertController.php:80 revertService->revert. git grep revert in src finds no caller.",
-    "change": "history-revert-through-the-save-path"
+    "change": "history-revert-through-the-save-path",
+    "requirement": "openspec/specs/content-versioning :: The system MUST support version rollback"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/revert",
    "provider": "openregister",
@@ -3882,7 +3905,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-flow-task-entity: openregister_tasks carries assignee, due_at and an object anchor (object_uuid, register_id, schema_id) lib/Migration/Version1Date20260831120000.php:196,211,224; lifecycle verbs /api/flow-tasks appinfo/routes.php:2139-2153 -> lib/Controller/TaskController.php:373; inbox page /flow-tasks src/manifest.json:229 and detail src/views/task/FlowTaskDetail.vue. The record's Integrations tab (src/views/object/ObjectDetails.vue:413 CnIntegrationWidget) still uses the VTODO TasksController (appinfo/routes.php:1507-1510) without a real assignee, and no page creates a flow task on a record (no POST to /api/flow-tasks in src).",
     "change": "record-tasks-tab",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/changes/record-tasks-tab/specs/flow-tasks :: A record's page lists and creates the flow tasks anchored on it"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -3963,7 +3987,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-object-watchers, backend only: PUT/DELETE .../watch appinfo/routes.php:142 -> lib/Controller/ObjectWatchersController.php:98,129; watchers list :160; notify when a schema rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:160; _watching lens lib/Service/Object/SearchQueryHandler.php:197. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/object-interactions :: A user can watch an object they may read"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/watch",
    "provider": "openregister",
@@ -3997,7 +4022,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "API: PUT/GET .../presence appinfo/routes.php:1233-1235 -> lib/Controller/ObjectsController.php:5284 presenceBeat, :5368 presenceList. git grep presence in src: no heartbeat or avatar display.",
-    "change": "object-presence"
+    "change": "object-presence",
+    "requirement": "openspec/changes/object-presence/specs/realtime-updates :: An object knows who has it open"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}/{id}/presence",
    "provider": "openregister",
@@ -4147,7 +4173,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "POST .../move appinfo/routes.php:1242 -> lib/Controller/ObjectsController.php:5176 keeps uuid and history. UI src/modals/object/MigrationObject.vue opens from the actions menu of the object list (src/views/search/SearchIndex.vue handleMassMigrate) and posts to /api/migrate.",
-    "change": "identity-survives-a-move"
+    "change": "identity-survives-a-move",
+    "requirement": "openspec/changes/identity-survives-a-move/specs/objects-crud :: An object can move between registers and schemas without changing identity"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/move",
    "provider": "openregister",
@@ -4182,7 +4209,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-object-read-state, backend only: GET/PUT/DELETE .../read-state appinfo/routes.php:205-217 -> lib/Controller/ObjectReadStateController.php:96,142,194; _unread lens lib/Service/Object/SearchQueryHandler.php:254. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/object-read-state :: Unread is a filter and a badge, resolved in the query (REQ-ORS-002)"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}?_unread=true",
    "provider": "openregister",
@@ -4253,7 +4281,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/GraphQLController.php:96 execute -> lib/Service/GraphQL/GraphQLService.php:100 (schema from lib/Service/GraphQL/SchemaGenerator.php); route appinfo/routes.php:1990 POST /api/graphql",
-    "spec": "openspec/specs/graphql-api"
+    "spec": "openspec/specs/graphql-api",
+    "requirement": "openspec/specs/graphql-api :: The GraphQL schema MUST be auto-generated from register schemas"
    },
    "reachedOn": "API only: POST /api/graphql",
    "provider": "openregister",
@@ -4286,7 +4315,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/OasService.php:209 createOas builds from live register/schemas; lib/Controller/OasController.php:115; route appinfo/routes.php:1667; UI download in src/components/cards/RegisterSchemaCard.vue:886 and src/sidebars/register/RegisterSideBar.vue:522",
-    "spec": "openspec/specs/oas-generation"
+    "spec": "openspec/specs/oas-generation",
+    "requirement": "openspec/specs/openapi-generation :: The spec MUST regenerate in real-time when schemas change"
    },
    "reachedOn": "/registers (card action 'Download OAS')",
    "provider": "openregister",
@@ -4393,7 +4423,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record",
     "change": "query-filter-through-a-reference",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren :: The object query filters on a field of a referenced object"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?_related[...]",
    "provider": "openregister",
@@ -4498,7 +4529,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/AggregationController.php:383 grouped (metric count/sum/avg, groupBy, metrics[] list :297); routes appinfo/routes.php:618-623",
-    "spec": "openspec/specs/aggregation-api"
+    "spec": "openspec/specs/aggregation-api",
+    "requirement": "openspec/specs/aggregation-api :: Multi-metric responses (REQ-AGG-102)"
    },
    "reachedOn": "API only: GET /api/objects/aggregations/{register}/{schema}/grouped",
    "provider": "openregister",
@@ -4531,7 +4563,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "POST api/bulk/{register}/{schema}/save with atomic: true (lib/Controller/BulkController.php writeAtomicBatch) runs the batch in one transaction: a refused row or a failing write rolls back every row and the 422 names the first refused row; over 1000 rows answers 413. tests/Unit/Controller/BulkAtomicSaveTest.php on a real SQLite transaction. Change api-atomic-batch archived 2026-09-30.",
-    "change": "api-atomic-batch"
+    "change": "api-atomic-batch",
+    "requirement": "openspec/specs/objects-crud :: REQ-ATOMIC-001 An atomic batch is written whole or not at all"
    },
    "reachedOn": "API only: POST /api/bulk/{register}/{schema}/save",
    "provider": "openregister",
@@ -4564,7 +4597,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:3812 patch; route appinfo/routes.php:1178 PATCH (and :1179 POST alias)",
-    "spec": "openspec/specs/objects-crud"
+    "spec": "openspec/specs/objects-crud",
+    "requirement": "openspec/specs/object-lifecycle :: The object patch endpoint MUST merge with stored data and map domain errors to status codes"
    },
    "reachedOn": "API only: PATCH /api/objects/{register}/{schema}/{id}",
    "provider": "openregister",
@@ -4597,7 +4631,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "SSE lib/Controller/GraphQLSubscriptionController.php:80 route appinfo/routes.php:1994; fed by GraphQLSubscriptionListener registered lib/AppInfo/Application.php:3568-3570; notify_push via NotifyPushListener :3573 (soft-fail without notify_push)",
-    "spec": "openspec/specs/realtime-updates"
+    "spec": "openspec/specs/realtime-updates",
+    "requirement": "openspec/specs/realtime-updates :: The system MUST provide a dedicated SSE endpoint for object change events"
    },
    "reachedOn": "API only: GET /api/graphql/subscribe (SSE)",
    "provider": "openregister",
@@ -4672,7 +4707,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched repo root, package.json, git ls-files for sdk/client packages: none. Only an openapi.json and the in-app JS stores",
-    "change": "api-client-libraries"
+    "change": "api-client-libraries",
+    "requirement": "openspec/changes/api-client-libraries/specs/api-client-libraries :: Official client libraries exist for TypeScript and Python"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -4706,7 +4742,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:3131 wantsJsonLd -> lib/Service/JsonLd/JsonLdSerializer.php:144 serialize, application/ld+json :376; @context docs lib/Controller/ContextsController.php:226 routes appinfo/routes.php:433-434",
-    "spec": "openspec/specs/json-ld-output"
+    "spec": "openspec/specs/json-ld-output",
+    "requirement": "openspec/specs/json-ld-output :: Object read endpoints MUST serve JSON-LD via content negotiation"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}/{id} with Accept: application/ld+json",
    "provider": "openregister",
@@ -4794,10 +4831,12 @@
    "source": "own-code-derived",
    "openregister": "yes",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/UrnController.php:76 resolve -> lib/Service/UrnService.php:223 resolveUrl; routes appinfo/routes.php:428-430",
-    "spec": "openspec/specs/urn-resource-addressing"
+    "evidence": "Not built: UrnService builds the URN from the record's current register and schema slugs, so a move changes the URN; the open change identity-survives-a-move keeps only the old URL answering. lib/Controller/UrnController.php:76 resolve -> lib/Service/UrnService.php:223 resolveUrl; routes appinfo/routes.php:428-430",
+    "spec": "openspec/specs/urn-resource-addressing",
+    "requirement": "openspec/changes/capability-rows-stated-requirements/specs/urn-resource-addressing :: A record keeps its URN when it moves to another register or schema",
+    "change": "openspec/changes/capability-rows-stated-requirements"
    },
    "reachedOn": "API only: GET /api/urn/resolve?urn=...",
    "provider": "openregister",
@@ -4896,7 +4935,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/MagicMapper/MagicFacetHandler.php:290 getSimpleFacets (via _facets, lib/Db/MagicMapper.php:1253); UI src/sidebars/search/SearchSideBar.vue:9,188 mounted on /tables by src/sidebars/SideBars.vue:3",
-    "spec": "openspec/specs/faceting-configuration"
+    "spec": "openspec/specs/faceting-configuration",
+    "requirement": "openspec/specs/zoeken-filteren :: Faceted search with configurable facets"
    },
    "reachedOn": "/tables",
    "provider": "openregister",
@@ -4934,7 +4974,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Nextcloud top-bar search finds the owning record by file text: lib/Search/ObjectsProvider.php:519 passes _content_search; lib/Service/Object/QueryHandler.php:556 widens to chunk hits mapped to the owning object; lib/Service/Object/ContentSearchHandler.php caps candidates at 50 and carries no chunk text (unified-search-file-content). The Tables page search (src/views/search/SearchIndex.vue) never passes _content_search. Needs extraction configured.",
     "change": "tables-bulk-jobs-and-file-search",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/zoeken-filteren :: Chunk hits are mapped back to their owning object (ZKN-CONTENT-002)"
    },
    "reachedOn": "API only: POST /api/search/files/hybrid",
    "provider": "openregister",
@@ -5038,7 +5079,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Views CRUD lib/Controller/ViewsController.php:368 create, routes appinfo/routes.php:1781-1786; save/reopen UI in src/sidebars/search/SearchSideBar.vue:21-106 + src/modals/view/EditView.vue:447",
-    "spec": "openspec/specs/saved-search-views"
+    "spec": "openspec/specs/saved-search-views",
+    "requirement": "openspec/specs/saved-search-views :: REQ-001 — Saved view lifecycle through the views store and /api/views"
    },
    "reachedOn": "/tables (Search / views sidebar)",
    "provider": "openregister",
@@ -5074,7 +5116,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Share a saved view with a group in read or write mode: ViewsController create/update/patch store sharedWith (400 for a group that does not exist, tests/Unit/Controller/ViewGroupShareWriteTest.php); ViewMapper::findAllFor lists views shared with the caller's groups; a write member saves query/presentation/alert and is refused 403 on name, owner, isPublic and sharedWith, judged on the fields whose value changed (tests/Unit/Controller/ViewUpdateJudgedByChangeTest.php). Changes view-group-share and a-view-update-is-judged-by-what-changed archived 2026-09-30.",
-    "change": "a-view-update-is-judged-by-what-changed"
+    "change": "a-view-update-is-judged-by-what-changed",
+    "requirement": "openspec/specs/saved-search-views :: A view can be shared with groups in read or write mode"
    },
    "reachedOn": "/tables (share with everyone only)",
    "provider": "openregister",
@@ -5111,7 +5154,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/ViewAlertSweepJob.php:149 (job in appinfo/info.xml:136) evaluates view.alert, but View::setAlert has no caller (git grep setAlert lib/), no UI field in src/modals/view or src/sidebars/search, and ViewAlertCrossedEvent (dispatched :191) has no listener",
-    "change": "saved-view-count-alert"
+    "change": "saved-view-count-alert",
+    "requirement": "openspec/changes/saved-view-count-alert/specs/saved-search-views :: A view alert fires once per crossing and re-arms"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -5145,7 +5189,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. src/views/object/MapView.vue is imported by nothing, so no map screen",
-    "change": "geometry-on-a-map"
+    "change": "geometry-on-a-map",
+    "requirement": "openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart :: REQ-GEOMAP-002 Records with a geometry can be seen and searched on a map"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/geo-search",
    "provider": "openregister",
@@ -5181,7 +5226,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ObjectsController.php:2513 objects route appinfo/routes.php:608 GET /api/objects (multi register/schema UNION via MagicFacetHandler.php:425 getSimpleFacetsUnion); UI /tables SearchIndex (src/manifest.json:141-146, 'Faceted cross-schema search')",
-    "spec": "openspec/specs/zoeken-filteren"
+    "spec": "openspec/specs/zoeken-filteren",
+    "requirement": "openspec/specs/zoeken-filteren :: Search across registers (global search)"
    },
    "reachedOn": "/tables",
    "provider": "openregister",
@@ -5404,7 +5450,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/PropertyRbacHandler.php:150 filterReadableProperties called lib/Service/Object/RenderObject.php:789; lock on write lib/Service/Object/SaveObject.php:3214 getUnauthorizedProperties",
-    "spec": "openspec/specs/row-field-level-security"
+    "spec": "openspec/specs/row-field-level-security",
+    "requirement": "openspec/specs/row-field-level-security :: Schemas MUST support field-level security via property authorization blocks"
    },
    "reachedOn": "object detail /objects/:register/:schema/:id and all object APIs; configured in schema property authorization",
    "provider": "openregister",
@@ -5520,7 +5567,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "matrix compiled into scopes lib/Service/Object/PermissionHandler.php:2699 compileDepartmentMatrix called from resolveAuthorization :2609; validated lib/Db/SchemaMapper.php:2360. No matrix editor in src (grep department/matrix key)",
-    "change": "rbac-department-role-matrix"
+    "change": "rbac-department-role-matrix",
+    "requirement": "openspec/changes/rbac-department-role-matrix/specs/rbac-scopes :: A schema declares a department by role matrix keyed on an object field"
    },
    "reachedOn": "none as a screen; declared in schema authorization JSON ('matrix' key)",
    "provider": "openregister",
@@ -5907,7 +5955,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "SHA-256 chain lib/Service/AuditHashService.php:249 computeHash, write path AuditTrailMapper.php:117; AuditSealJob appinfo/info.xml:154; verify lib/Controller/AuditTrailController.php:771 routes.php:1351; src/views/settings/sections/LogIntegrity.vue:323",
-    "spec": "openspec/specs/audit-hash-chain"
+    "spec": "openspec/specs/audit-hash-chain",
+    "requirement": "openspec/specs/audit-hash-chain :: The system MUST provide a hash chain verification endpoint"
    },
    "reachedOn": "admin settings Log integrity section; API GET /api/audit-trails/verify",
    "provider": "openregister",
@@ -6042,7 +6091,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/ActivityEventListener.php:72 -> lib/Service/ActivityService.php:67/95, registered lib/AppInfo/Application.php:3636-3638; provider/filter/settings appinfo/info.xml:515-527",
-    "spec": "openspec/specs/activity-provider"
+    "spec": "openspec/specs/activity-provider",
+    "requirement": "openspec/specs/activity-provider :: OpenRegister MUST publish activity events for Object CRUD operations"
    },
    "reachedOn": "Nextcloud Activity app stream",
    "provider": "openregister",
@@ -6075,7 +6125,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "soft delete records deletedBy lib/Service/Object/DeleteObject.php:336; deleted#index/topDeleters/destructionRecord routes.php:1435-1446; page src/manifest.json:165 (DeletedIndex.vue)",
-    "spec": "openspec/specs/deletion-audit-trail"
+    "spec": "openspec/specs/deletion-audit-trail",
+    "requirement": "openspec/specs/deletion-audit-trail :: Deletions MUST use soft delete by default, marking objects as deleted without physical removal"
    },
    "reachedOn": "/deleted",
    "provider": "openregister",
@@ -6140,7 +6191,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/RetentionService.php:147 applyArchivalMetadata called lib/Service/Object/SaveObject.php:3916; date via lib/Service/Archival/ArchiveActionDateCalculator.php; shown in Metadata tab src/views/object/ObjectDetails.vue:163",
-    "spec": "openspec/specs/retention-management"
+    "spec": "openspec/specs/retention-management",
+    "requirement": "openspec/specs/retention-management :: Objects MUST carry MDTO-compliant archival metadata in the retention field"
    },
    "reachedOn": "/objects/:register/:schema/:id Metadata tab",
    "provider": "openregister",
@@ -6177,7 +6229,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/DestructionCheckJob.php:139 createDestructionList (info.xml:143); approve lib/Controller/RetentionController.php:243 queues DestructionExecutionJob; routes.php:2002, 2011-2014",
-    "spec": "openspec/specs/archival-destruction-workflow"
+    "spec": "openspec/specs/archival-destruction-workflow",
+    "requirement": "openspec/specs/retention-management :: Destruction MUST follow a multi-step approval workflow"
    },
    "reachedOn": "API only: /api/archival/destruction-lists/{id}/approve",
    "provider": "openregister",
@@ -6287,7 +6340,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "TMLO populated on save lib/Service/Object/SaveObject.php:4671 (TmloService), export routes.php:1154-1156; MDTO XML lib/Service/Edepot/MdtoXmlGenerator.php used by SipPackageBuilder",
-    "spec": "openspec/specs/tmlo-metadata"
+    "spec": "openspec/specs/tmlo-metadata",
+    "requirement": "openspec/specs/tmlo-metadata :: Register-level TMLO enablement gate"
    },
    "reachedOn": "API: /api/tmlo/{register}/{schema}/...; object Metadata tab",
    "provider": "openregister",
@@ -6320,7 +6374,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Archival/SelectielijstImportService.php via lib/Controller/SelectielijstController.php, routes.php:2030-2032; resolved into retention lib/Service/RetentionService.php:377 lookupSelectielijstEntry",
-    "spec": "openspec/specs/retention-management"
+    "spec": "openspec/specs/retention-management",
+    "requirement": "openspec/specs/retention-management :: The system MUST support configurable selectielijsten as register objects"
    },
    "reachedOn": "API only: POST /api/archival/selectielijst/import",
    "provider": "openregister",
@@ -6353,7 +6408,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "verwerkingsactiviteiten CRUD routes.php:452-457; UI src/store/modules/avg.js:311 used by src/views/avg/AvgIndex.vue; page src/manifest.json:301",
-    "spec": "openspec/specs/avg-verwerkingsregister"
+    "spec": "openspec/specs/avg-verwerkingsregister",
+    "requirement": "openspec/specs/avg-verwerkingsregister :: The system MUST maintain a verwerkingsactiviteiten register as an OpenRegister schema"
    },
    "reachedOn": "/avg",
    "provider": "openregister",
@@ -6430,7 +6486,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "exports area with expiry and served status lib/Db/ExportRun.php:95,124, recorder lib/Service/Export/ExportRunRecorder.php, sweep SweepExpiredExportRunsJob info.xml:162, exportRuns#index routes.php:1937; DSAR one-time bundle download src/store/modules/avg.js:874",
-    "change": "an-export-is-a-file-with-a-life"
+    "change": "an-export-is-a-file-with-a-life",
+    "requirement": "openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export :: An exports area lists the runs"
    },
    "reachedOn": "API: GET /api/exports; /avg case bundle download",
    "provider": "openregister",
@@ -6540,7 +6597,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/TextExtractionService.php:169-172 EmlParser/PdfExtractor/WordExtractor, rfc822 branch :986; auto on write lib/AppInfo/Application.php:2928 FileChangeListener; manual lib/Controller/FileTextController.php:194, route appinfo/routes.php:1818; page src/views/files/FilesIndex.vue",
-    "spec": "openspec/specs/text-extraction"
+    "spec": "openspec/specs/text-extraction",
+    "requirement": "openspec/specs/text-extraction :: Per-format text extraction is delegated to dedicated handlers"
    },
    "reachedOn": "/files and Files app sidebar",
    "provider": "openregister",
@@ -6573,7 +6631,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Files tab opens the file in the Nextcloud viewer src/views/object/ObjectDetails.vue:1170 openFile (openfile=true); thumbnail API lib/Controller/FilesController.php:2061 preview, route appinfo/routes.php:1470",
-    "spec": "openspec/specs/file-actions"
+    "spec": "openspec/specs/file-actions",
+    "requirement": "openspec/specs/file-actions :: File Preview and Thumbnail"
    },
    "reachedOn": "/objects/:register/:schema/:id (Files tab) into the Nextcloud Files viewer",
    "provider": "nextcloud",
@@ -6665,7 +6724,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/FileSidebarController.php:104 getObjectsForFile, route appinfo/routes.php:1159; tab src/components/files-sidebar/RegisterObjectsTab.vue injected by FilesSidebarListener registered lib/AppInfo/Application.php:3578",
-    "spec": "openspec/specs/files-sidebar-tabs"
+    "spec": "openspec/specs/files-sidebar-tabs",
+    "requirement": "openspec/specs/files-sidebar-tabs :: Backend File Reverse-Lookup and Extraction Status @e2e exclude backend service — covered by PHPUnit"
    },
    "reachedOn": "Nextcloud Files app sidebar",
    "provider": "openregister",
@@ -6701,7 +6761,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Mail: src/mail-sidebar/components/ActionsTab.vue:70 linkObject -> emailLinks#link appinfo/routes.php:682, injected via MailAppScriptListener lib/AppInfo/Application.php:3584. Files sidebar RegisterObjectsTab only lists links. Talk linking only from the record side appinfo/routes.php:747.",
-    "change": "files-leaf-save-to-object"
+    "change": "files-leaf-save-to-object",
+    "requirement": "openspec/changes/files-leaf-save-to-object/specs/file-actions :: A Files action attaches a file to a register object"
    },
    "reachedOn": "Nextcloud Mail sidebar; files and chats only from the record side",
    "provider": "openregister",
@@ -6844,7 +6905,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "logs appinfo/routes.php:1922-1924, manual retry :1925; lib/BackgroundJob/WebhookRetryJob.php:128 registered appinfo/info.xml:141; page src/manifest.json:253 (webhooks-logs)",
-    "spec": "openspec/specs/webhook-payload-mapping"
+    "spec": "openspec/specs/webhook-payload-mapping",
+    "requirement": "openspec/specs/webhook-payload-mapping :: Delivery logging MUST capture full request/response details"
    },
    "reachedOn": "/webhooks/logs",
    "provider": "openregister",
@@ -6877,7 +6939,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "The webhook dialog (src/modals/webhook/EditWebhook.vue) picks a payload mapping (clearable) and previews the payload through POST api/webhooks/preview, which calls the delivery's own WebhookService::buildPayload (tests/Unit/Controller/WebhookMappingPreviewTest.php). Change webhook-payload-mapping-picker archived 2026-09-30.",
-    "change": "webhook-payload-mapping-picker"
+    "change": "webhook-payload-mapping-picker",
+    "requirement": "openspec/specs/webhook-payload-mapping :: REQ-WHMAP-001 A webhook payload mapping is chosen and previewed on screen"
    },
    "reachedOn": "API only: PUT /api/webhooks/{id}",
    "provider": "openregister",
@@ -6911,7 +6974,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/FlowTriggerListener registered for object created/updated/deleted lib/AppInfo/Application.php:3039-3041, runs lib/Service/Flow/FlowEngine.php; canvas page src/manifest.json:226 (flowDetail, type flow, CnFlowDetail from nextcloud-vue); flow routes appinfo/routes.php:788-826",
-    "spec": "openspec/specs/flow-engine"
+    "spec": "openspec/specs/flow-engine",
+    "requirement": "openspec/specs/flow-engine :: A TRIGGER is a node, and a flow may carry several"
    },
    "reachedOn": "/flows/:id",
    "provider": "openregister",
@@ -6945,7 +7009,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/FlowScheduleWorker registered appinfo/info.xml:182 drives lib/Service/Flow/FlowScheduleService.php (cron per flow); entry node lib/Service/Flow/Nodes/TriggerScheduleNode.php",
-    "spec": "openspec/specs/flow-scheduled-trigger"
+    "spec": "openspec/specs/flow-scheduled-trigger",
+    "requirement": "openspec/specs/flow-scheduled-trigger :: The scheduler finds scheduled flows in every app's store (REQ-SCH-003)"
    },
    "reachedOn": "/flows/:id (On a schedule trigger)",
    "provider": "openregister",
@@ -7011,7 +7076,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "approval as flow steps: lib/Service/Flow/Nodes/UserTaskNode.php and AwaitSignalNode.php, task inbox src/manifest.json flow-task-inbox (/flow-tasks); destruction-list approval appinfo/routes.php:2001. Not shown that a record change is held until approved: the save commits first (lib/Service/Object/SaveObject.php)",
-    "change": "records-change-held-for-approval"
+    "change": "records-change-held-for-approval",
+    "requirement": "openspec/changes/records-change-held-for-approval/specs/approval-workflow :: An approval chain can hold a change until it is approved"
    },
    "reachedOn": "/flow-tasks",
    "provider": "openregister",
@@ -7076,7 +7142,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/AnnotationNotificationListener.php:92 registered for created/updated/transitioned lib/AppInfo/Application.php:3415-3417, delivered through INotifier registered :954 (AnnotationNotifier) and :969",
-    "spec": "openspec/specs/notificatie-engine"
+    "spec": "openspec/specs/notificatie-engine",
+    "requirement": "openspec/specs/notificatie-engine :: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications"
    },
    "reachedOn": "Nextcloud notifications",
    "provider": "openregister",
@@ -7110,7 +7177,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Flow/Nodes/SendEmailNode.php:47 'Send an email' step registered by lib/Listener/FlowNodeRegistrationListener.php:46, composed through FlowMessagingService; flow canvas src/manifest.json:226",
-    "spec": "openspec/specs/flow-messaging-nodes"
+    "spec": "openspec/specs/flow-messaging-nodes",
+    "requirement": "openspec/specs/flow-messaging-nodes :: Flows send through the notification subsystem, never beside it"
    },
    "reachedOn": "/flows/:id (Send an email step)",
    "provider": "openregister",
@@ -7250,7 +7318,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/ScheduledReportJob.php:91 registered appinfo/info.xml:189 runs lib/Service/ScheduledReportService.php, mail sent :1128 (deliveryMode email|both :101); routes appinfo/routes.php:1950-1952; no screen in src",
-    "spec": "openspec/specs/scheduled-report-jobs"
+    "spec": "openspec/specs/scheduled-report-jobs",
+    "requirement": "openspec/specs/scheduled-report-jobs :: Scheduled report execution MUST support email delivery of the export, isolated from Files delivery"
    },
    "reachedOn": "API only: /api/scheduled-reports",
    "provider": "openregister",
@@ -7283,7 +7352,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/register/ImportRegister.vue:409 accepts .csv/.xlsx -> registers#import routes.php:1656; dryRun preview only as API param RegistersController.php:1490 -> ImportService.php:473; grep dryRun/preview in ImportRegister.vue finds nothing",
-    "change": "import-preview-and-conflict-policy"
+    "change": "import-preview-and-conflict-policy",
+    "requirement": "openspec/changes/import-preview-and-conflict-policy/specs/data-import-export :: An import is previewed, and the write applies the preview (REQ-IPC-002)"
    },
    "reachedOn": "/registers (Import); preview API only",
    "provider": "openregister",
@@ -7317,7 +7387,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/register/ExportRegister.vue:90 Excel/CSV -> objects#export routes.php:1172 (ObjectsController.php:5464); JSON via registers#export default configuration branch RegistersController.php:1093 (routes.php:1655) and ExportConfiguration.vue",
-    "spec": "openspec/specs/data-import-export"
+    "spec": "openspec/specs/data-import-export",
+    "requirement": "openspec/specs/data-import-export :: The system MUST support structured export to CSV, Excel (XLSX), JSON, XML, and ODS formats @e2e exclude REST API export — covered by Newman"
    },
    "reachedOn": "/registers (Export), /configurations",
    "provider": "openregister",
@@ -7353,7 +7424,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "PDF list export RegistersController.php:1055 -> ExportService.php:332 (Dompdf) via GET /api/registers/{id}/export?format=pdf (routes.php:1655); ExportRegister.vue:90 offers only Excel/CSV; ReportView.vue:47 PDF is for reports, not records; no single-record PDF found",
-    "change": "export-pdf-house-style"
+    "change": "export-pdf-house-style",
+    "requirement": "openspec/specs/export-pdf-format :: The system MUST support PDF export of register/schema object lists"
    },
    "reachedOn": "API only: GET /api/registers/{id}/export?format=pdf",
    "provider": "openregister",
@@ -7416,7 +7488,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Read on development 26ff809cfb. The pipeline exists: lib/Service/Sync/HarvestPipelineService.php run() gather, fetch, import with MappingService and SyncConflictResolver; Source and SyncRecord in lib/Db/. Closed to apps: SourceFetcherRegistry is filled in lib/AppInfo/Application.php:919-922 with RestApiSourceFetcher only, and scheduling is the TimedJob lib/BackgroundJob/SyncDataJob.php, outside the flow engine. No conflict reasons, shadowed or rejected states, resolution API, protected fields or tombstones.",
     "change": "app-harvest-fetchers-and-flow-node",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting :: An app registers a fetcher for its own source type (REQ-HAF-001)"
    },
    "reachedOn": "API only: /api/sources (an app's own screens once built)",
    "provider": "openregister",
@@ -7477,7 +7550,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Import from GitHub/GitLab routes.php:1728-1729 via src/modals/configuration/ImportConfiguration.vue:82/97; publish PublishConfiguration.vue:267 -> configuration#publishToGitHub routes.php:1733",
-    "spec": "openspec/specs/data-import-export"
+    "spec": "openspec/specs/data-import-export",
+    "requirement": "openspec/specs/data-import-export :: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources @e2e exclude backend remote discovery/publish (Git provider HTTP integration) — covered by Newman/PHPUnit"
    },
    "reachedOn": "/configurations",
    "provider": "openregister",
@@ -7712,7 +7786,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/VectorizationService.php:129 vectorizeBatch; lib/Controller/ObjectsController.php:6055 and lib/Controller/FileExtractionController.php:722, routes appinfo/routes.php:324,339; config UI src/views/settings/sections/LlmConfiguration.vue",
-    "spec": "openspec/specs/vector-embeddings"
+    "spec": "openspec/specs/vector-embeddings",
+    "requirement": "openspec/specs/vector-embeddings :: The system MUST orchestrate batch vectorisation through a pluggable strategy interface with per-entity error capture"
    },
    "reachedOn": "OpenRegister admin settings (LLM / file configuration)",
    "provider": "openregister",
@@ -7745,7 +7820,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Provider choice incl. Ollama: lib/Service/Chat/ConversationManagementHandler.php:171; UI src/modals/settings/LLMConfigModal.vue:144 (OpenAI, Fireworks, Ollama) in src/views/settings/Settings.vue:63; routes appinfo/routes.php:294-299",
-    "spec": "openspec/specs/chat-ai"
+    "spec": "openspec/specs/chat-ai",
+    "requirement": "openspec/specs/chat-ai :: The system MUST expose an admin surface for reading and updating LLM provider settings"
    },
    "reachedOn": "OpenRegister admin settings (LLM configuration)",
    "provider": "openregister",
@@ -7807,7 +7883,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Context Chat content provider registered lib/AppInfo/Application.php:3017 (lib/ContextChat/ContentProviderRegistrationListener.php:70); objects submitted by lib/Listener/ContextChatSubmissionListener.php registered :3409 for schemas opted in via x-openregister-contextchat",
-    "spec": "openspec/specs/context-chat-provider"
+    "spec": "openspec/specs/context-chat-provider",
+    "requirement": "openspec/specs/context-chat-provider :: Only opted-in, published objects are submitted to Context Chat"
    },
    "reachedOn": "Nextcloud Assistant (Context Chat)",
    "provider": "openregister",
@@ -7841,7 +7918,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Tool half built by change ai-agent-limits-screen (archived 2026-09-30): the agents screen (src/views/agents/AgentsIndex.vue) sets an agent's tools, and an MCP session that names an agent is held to its grant (lib/Service/Mcp/McpAgentScope.php, tests/Unit/Controller/McpAgentLimitsTest.php). Data half built by change ai-agent-view-limits (archived 2026-10-01): the chat's context search keeps only objects inside the agent's views (lib/Service/Chat/ContextRetrievalHandler.php limitObjectsToViews, tests/Unit/Service/Chat/ContextRetrievalAgentViewsTest.php), and the agents screen sets the views.",
-    "change": "ai-agent-view-limits"
+    "change": "ai-agent-view-limits",
+    "requirement": "openspec/specs/agent-tool-governance :: An agent is held to its tool grant on every path"
    },
    "reachedOn": "API only: /api/agents",
    "provider": "openregister",
@@ -7874,7 +7952,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "DuplicateController.php:103 findDuplicates (routes.php:631, dismiss :643) listed in src/views/quality/DuplicatesIndex.vue:229 via store quality.js:237",
-    "spec": "openspec/specs/duplicate-detection"
+    "spec": "openspec/specs/duplicate-detection",
+    "requirement": "openspec/specs/duplicate-detection :: Declarative duplicate detection over a register/schema"
    },
    "reachedOn": "/duplicates",
    "provider": "openregister",
@@ -7907,7 +7986,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "MdmMergeWizardModal (DuplicatesIndex.vue:121) -> merge#preview/execute MergeController.php:114 (routes.php:655-657, reversible); survivorship rules SurvivorshipRecomputeListener Application.php:3325, override routes.php:662 from GoldenRecordDetail.vue:86",
-    "spec": "openspec/specs/mdm-merge"
+    "spec": "openspec/specs/mdm-merge",
+    "requirement": "openspec/specs/mdm-merge :: Atomic reversible merge execution"
    },
    "reachedOn": "/duplicates, /master-entities, /mergeOperations",
    "provider": "openregister",
@@ -7943,7 +8023,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "QualityScoreOnSaveListener registered Application.php:3319-3320; QualityController.php:75 stats (routes.php:628-629) shown in src/views/quality/QualityIndex.vue:330",
-    "spec": "openspec/specs/data-quality-scoring"
+    "spec": "openspec/specs/data-quality-scoring",
+    "requirement": "openspec/specs/data-quality-scoring :: Declarative per-object data-quality scoring"
    },
    "reachedOn": "/quality",
    "provider": "openregister",
@@ -8116,7 +8197,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-05-01-rapportage-bi-export: GraphQL across every register POST /api/graphql appinfo/routes.php:2021 (lib/Service/GraphQL/), with RBAC and tenant filters, for BI tools that speak GraphQL; export profiles run as CSV at a stable URL GET /api/export-profiles/{id}/run appinfo/routes.php:1975 -> lib/Controller/ExportProfilesController.php. OData was left out on purpose (archived tasks.md:51, design.md).",
     "change": "rapportage-bi-export",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/rapportage-bi-export :: The system MUST support API access for external BI tools via GraphQL + REST"
    },
    "reachedOn": "API only: GET /api/export-profiles/{id}/run",
    "provider": "openregister",
@@ -8187,7 +8269,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Middleware/TenantQuotaMiddleware.php registered lib/AppInfo/Application.php:670 enforces per-organisation quota; lifecycle and usage appinfo/routes.php:1764-1769 (lib/Service/TenantLifecycleService.php:216); page src/manifest.json:101 (organisation)",
-    "spec": "openspec/specs/tenant-quotas"
+    "spec": "openspec/specs/tenant-quotas",
+    "requirement": "openspec/specs/tenant-quotas :: Request quota MUST be enforced via middleware before controller execution"
    },
    "reachedOn": "/organisation",
    "provider": "openregister",
@@ -8220,7 +8303,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "GET /api/metrics appinfo/routes.php:421 served by lib/AppHost GenericMetrics controller from the observability.metrics block of src/manifest.json",
-    "spec": "openspec/specs/production-observability"
+    "spec": "openspec/specs/production-observability",
+    "requirement": "openspec/specs/production-observability :: Prometheus Metrics Endpoint"
    },
    "reachedOn": "API only: GET /api/metrics (Prometheus)",
    "provider": "openregister",
@@ -8354,7 +8438,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "27 occ commands declared in appinfo/info.xml:469-518, classes under lib/Command/ (28 files; DedupeSharedSchemasCommand is not declared). Repair commands preview first: --apply on openregister:objects:purge lib/Command/PurgeObjectCommand.php:105, --write on registers:relink-schemas lib/Command/RelinkRegisterSchemasCommand.php:115, --dry-run on migrate-application, rechain-audit-trail, encrypt-field",
     "spec": "openspec/specs/occ-commands",
-    "readOn": "2026-10-07"
+    "readOn": "2026-10-07",
+    "requirement": "openspec/specs/occ-commands :: Commands are registered with Nextcloud and named under openregister"
    },
    "reachedOn": "occ openregister:*",
    "provider": "openregister",
@@ -8390,7 +8475,8 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "subsystems switch on or off in admin settings, e.g. src/views/settings/sections/MultitenancyConfiguration.vue:47 and RbacConfiguration.vue:44; no general per-feature toggle (grep -i 'feature flag|featureToggle' in lib/Service/SettingsService.php and appinfo/routes.php finds none)",
-    "change": "feature-toggle-surface"
+    "change": "feature-toggle-surface",
+    "requirement": "openspec/changes/feature-toggle-surface/specs/apphost-settings-plane :: An app declares feature toggles and the plane administers them"
    },
    "reachedOn": "/settings/admin/openregister",
    "provider": "openregister",
@@ -8484,7 +8570,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change",
-    "change": "modelling-rename-without-loss"
+    "change": "modelling-rename-without-loss",
+    "requirement": "openspec/changes/modelling-rename-without-loss/specs/schema-migration :: A record type can be renamed without breaking its links"
    },
    "reachedOn": "API only: POST /api/schemas/{id}/migrations",
    "provider": "openregister",
@@ -8561,7 +8648,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)",
-    "change": "api-upsert-on-a-declared-key"
+    "change": "api-upsert-on-a-declared-key",
+    "requirement": "openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud :: A write can create or update by a declared key in one call"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}",
    "provider": "openregister",
@@ -8598,7 +8686,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)",
-    "change": "records-tree-view"
+    "change": "records-tree-view",
+    "requirement": "openspec/changes/records-tree-view/specs/saved-search-views :: A saved view can present hierarchical records as a tree"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -8631,10 +8720,12 @@
    "originUrl": "https://github.com/directus/directus/discussions/5162",
    "openregister": "no",
    "built": {
-    "state": "built",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Edepot/EdepotTransferService.php:478 -> lib/Service/Edepot/PackagedFileChecksum.php:67 hash_file sha256 computed at e-Depot transfer time, with a fixity check only when the record already carries a checksum; lib/Service/Edepot/SipPackageBuilder.php:346 checksum in the SIP manifest; no checksum is stored when a file is uploaded (lib/Service/FileService.php: no checksum/sha256 match)",
-    "spec": "openspec/specs/edepot-transfer"
+    "evidence": "Not built: nothing stores a checksum when a file is uploaded; lib/Service/FileService.php and lib/Service/File/CreateFileHandler.php compute none, checksums exist only at e-Depot transfer and for chunked uploads. lib/Service/Edepot/EdepotTransferService.php:478 -> lib/Service/Edepot/PackagedFileChecksum.php:67 hash_file sha256 computed at e-Depot transfer time, with a fixity check only when the record already carries a checksum; lib/Service/Edepot/SipPackageBuilder.php:346 checksum in the SIP manifest; no checksum is stored when a file is uploaded (lib/Service/FileService.php: no checksum/sha256 match)",
+    "spec": "openspec/specs/edepot-transfer",
+    "requirement": "openspec/changes/capability-rows-stated-requirements/specs/file-actions :: A stored file keeps a checksum from the moment it is uploaded",
+    "change": "openspec/changes/capability-rows-stated-requirements"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -8670,7 +8761,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:573 POST /api/translations/object/{uuid}/bulk-translate -> lib/Service/BulkTranslationService.php:154 provider->translate; the only bound provider is lib/AppInfo/Application.php:661-666 IdentityTranslationProvider (a no-op); src/dialogs/i18n/BulkTranslateDialog.vue:278 has no opener anywhere in src; no glossary or style guide input (grep glossary in lib/Service/Translation: no match)",
-    "change": "ai-translation-with-a-glossary"
+    "change": "ai-translation-with-a-glossary",
+    "requirement": "openspec/changes/ai-translation-with-a-glossary/specs/register-i18n :: A shared glossary and style guide steer the translation"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -8851,7 +8943,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route",
-    "change": "records-saved-templates"
+    "change": "records-saved-templates",
+    "requirement": "openspec/changes/records-saved-templates/specs/record-templates :: A new record can start from a template"
    },
    "reachedOn": "search page, copy action on a record",
    "provider": "openregister",
@@ -8924,7 +9017,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list and size limit are enforced at FilePropertyHandler.php:1105-1124 through resolveAllowedTypes and resolveMaxSizeBytes, which read allowedTypes and maxSize (bytes) from schema JSON or the API and, when those are absent, the property editor's fileConfiguration.allowedMimeTypes and fileConfiguration.maxSize (MB, converted to bytes) written at src/modals/schema/EditSchemaProperty.vue:171,181 (#4058)",
-    "spec": "openspec/specs/file-actions"
+    "spec": "openspec/specs/file-actions",
+    "requirement": "openspec/specs/file-actions :: Uploaded files screened for executable content and ownership repaired safely"
    },
    "reachedOn": "schema property editor (Allowed MIME Types, Maximum File Size) and schema JSON or API (allowedTypes, maxSize); executables refused on every upload",
    "provider": "openregister",
@@ -9000,7 +9094,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings), lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles) and, since #4060, lib/Service/Settings/OwnSettingsChangeRecorder.php for Open Register's own settings: every save door in lib/Service/Settings/ConfigurationSettingsHandler.php (updateSettings, updateRbacSettingsOnly, updateOrganisationSettingsOnly, updateMultitenancySettingsOnly) and lib/Service/Settings/ObjectRetentionHandler.php (object, retention, archival) snapshots before the write and records after it, one row per section.field; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)",
-    "change": "history-schema-and-settings-edits-audited"
+    "change": "history-schema-and-settings-edits-audited",
+    "requirement": "openspec/changes/settings-change-audit/specs/apphost-settings-plane :: Every settings change is on the audit chain"
    },
    "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings, feature toggles and Open Register's own RBAC, multitenancy, organisation, object, retention and archival settings",
    "provider": "openregister",
@@ -9036,7 +9131,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no draft or preview state on records: grep draft in lib/Service/Object and lib/Db/ObjectEntity.php finds nothing of the kind, and the only preview routes are for erasure, configuration draft sets and imports (appinfo/routes.php:498, :536); no preview token for a public site",
-    "change": "records-draft-versions"
+    "change": "records-draft-versions",
+    "requirement": "openspec/changes/records-draft-versions/specs/content-versioning :: A draft can be previewed on an outside site through an expiring link"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9101,7 +9197,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/mail-smart-picker: src/reference/ObjectReferenceWidget.vue.",
-    "spec": "openspec/specs/mail-smart-picker"
+    "spec": "openspec/specs/mail-smart-picker",
+    "requirement": "openspec/specs/mail-smart-picker :: OpenRegister MUST register a discoverable, searchable reference provider"
    },
    "reachedOn": "Nextcloud smart picker",
    "provider": "openregister",
@@ -9128,7 +9225,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/object-ownership: lib/Controller/ObjectOwnershipController.php, lib/Db/MagicMapper/MagicRbacHandler.php, lib/Notification/Notifier.php, lib/Service/Object/SaveObject.php.",
-    "spec": "openspec/specs/object-ownership"
+    "spec": "openspec/specs/object-ownership",
+    "requirement": "openspec/specs/object-ownership :: A record has one named owner, and the owner is admitted unconditionally (REQ-OWN-001)"
    },
    "reachedOn": "record detail",
    "provider": "openregister",
@@ -9194,7 +9292,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:2144 generateErrorMessage builds fixed English strings such as :2186 'The required property ({property}) is missing'; grep errorMessage or x-error in ValidateObject.php and lib/Service/Schemas/PropertyValidatorHandler.php: no schema key for a custom message",
-    "change": "modelling-validation-messages"
+    "change": "modelling-validation-messages",
+    "requirement": "openspec/changes/modelling-validation-messages/specs/schema-validation-messages :: A failed rule returns the declared message in the request language"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9230,7 +9329,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no backup feature: grep backup in appinfo/routes.php finds no route, and the lib/Service hits (ChatService, SharedSchemaDedupeService, SchemaTableMigrator, BulkRelationHandler) are internal copies, not backups; Nextcloud's server-side encryption (nextcloud/server apps/encryption) covers stored files only, not the database tables that hold the records",
-    "change": "exchange-encrypted-instance-export"
+    "change": "exchange-encrypted-instance-export",
+    "requirement": "openspec/changes/exchange-encrypted-instance-export/specs/data-import-export :: An instance set can be encrypted with a passphrase or an export key"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9264,7 +9364,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/integration-company-lookup: lib/Controller/CompanyLookupController.php.",
-    "spec": "openspec/specs/integration-company-lookup"
+    "spec": "openspec/specs/integration-company-lookup",
+    "requirement": "openspec/specs/integration-company-lookup :: KvK Company Lookup"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9370,7 +9471,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482",
-    "change": "operate-admin-query-console"
+    "change": "operate-admin-query-console",
+    "requirement": "openspec/changes/operate-admin-query-console/specs/admin-query-console :: An administrator runs a bounded read-only query"
    },
    "reachedOn": "GraphQL explorer page (/api/graphql/explorer) and report data sources",
    "provider": "openregister",
@@ -9521,7 +9623,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/integration-message-dispatch: lib/Controller/MessageDispatchController.php.",
-    "spec": "openspec/specs/integration-message-dispatch"
+    "spec": "openspec/specs/integration-message-dispatch",
+    "requirement": "openspec/specs/integration-message-dispatch :: Outbound-messaging send endpoints"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9548,7 +9651,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-user-task-node: lib/Event/TaskTerminalEvent.php, lib/Listener/UserTaskTerminalListener.php, lib/Service/Flow/FlowAdvanceBudget.php, lib/Service/Flow/FlowEngine.php.",
-    "spec": "openspec/specs/flow-user-task-node"
+    "spec": "openspec/specs/flow-user-task-node",
+    "requirement": "openspec/specs/flow-user-task-node :: The run continues on task TERMINALITY, never on a nudge"
    },
    "reachedOn": "task inbox and flow editor",
    "provider": "openregister",
@@ -9607,7 +9711,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-cases: lib/Controller/CaseController.php, lib/Db/CaseItem.php, lib/Db/CaseItemAudit.php, lib/Db/CaseItemAuditMapper.php. One engine (one-engine-bpmn-and-cmmn): lib/Service/Case/CasePlanEnsurer.php, lib/Service/Case/CasePlanItemTimers.php, lib/Service/Case/Nodes/CaseOpenNode.php, lib/Service/Case/Nodes/CaseAdvanceNode.php.",
     "spec": "openspec/specs/flow-cases",
-    "change": "2026-10-10-one-engine-bpmn-and-cmmn"
+    "change": "2026-10-10-one-engine-bpmn-and-cmmn",
+    "requirement": "openspec/specs/flow-cases :: A human plan item is realised by a task, and a stage may be realised by a flow run"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9634,7 +9739,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-definition-versioning: lib/Controller/FlowController.php, lib/Db/FlowDefinition.php, lib/Db/FlowDefinitionMapper.php, lib/Db/FlowRunMapper.php.",
-    "spec": "openspec/specs/flow-definition-versioning"
+    "spec": "openspec/specs/flow-definition-versioning",
+    "requirement": "openspec/specs/flow-definition-versioning :: A published version is immutable, and editing produces a new draft"
    },
    "reachedOn": "flow editor",
    "provider": "openregister",
@@ -9661,7 +9767,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-business-timers: lib/Service/Flow/Timer/SlaCalculator.php, lib/Service/Flow/Timer/WorkingCalendar.php.",
-    "spec": "openspec/specs/flow-business-timers"
+    "spec": "openspec/specs/flow-business-timers",
+    "requirement": "openspec/specs/flow-business-timers :: The calendar knows when the working day opens, and the calculator can measure elapsed working time"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9690,7 +9797,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares",
-    "change": "modelling-type-catalogue-metadata"
+    "change": "modelling-type-catalogue-metadata",
+    "requirement": "openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata :: A schema carries a data classification"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9724,7 +9832,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/account-self-service: src/views/account/sections/AccountSection.vue, src/views/account/sections/AvatarSection.vue, src/views/account/sections/PasswordSection.vue, src/views/account/sections/TokensSection.vue.",
-    "spec": "openspec/specs/account-self-service"
+    "spec": "openspec/specs/account-self-service",
+    "requirement": "openspec/specs/account-self-service :: The account page MUST provide self-service password and deactivation flows @e2e exclude isolated Vue component contract (PasswordSection.changePassword / AccountSection.requestDeactivation API call shape, inline feedback, form clearing, soft-state mutation) — covered by Vitest component unit tests with mocked fetch; the underlying password/deactivate endpoints are covered by Newman"
    },
    "reachedOn": "/account",
    "provider": "openregister",
@@ -9785,7 +9894,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue",
-    "change": "modelling-type-catalogue-metadata"
+    "change": "modelling-type-catalogue-metadata",
+    "requirement": "openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata :: A schema carries catalogue metadata"
    },
    "reachedOn": "schema edit modal and API only: GET /api/schemas/{id}",
    "provider": "openregister",
@@ -9821,7 +9931,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)",
-    "change": "operate-load-shedding"
+    "change": "operate-load-shedding",
+    "requirement": "openspec/changes/operate-load-shedding/specs/load-shedding :: A failing dependency is not called while its breaker is open"
    },
    "reachedOn": "API only: every /api/objects route",
    "provider": "openregister",
@@ -9855,7 +9966,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/apphost-boilerplate: lib/AppHost/Bootstrap.php, lib/AppHost/Controller/GenericDashboardController.php, lib/AppHost/Controller/GenericPreferencesController.php, lib/AppHost/Repair/GenericInitializeSettings.php.",
-    "spec": "openspec/specs/apphost-boilerplate"
+    "spec": "openspec/specs/apphost-boilerplate",
+    "requirement": "openspec/specs/apphost-boilerplate :: Canonical Route Table"
    },
    "reachedOn": "API and app manifests",
    "provider": "openregister",
@@ -9882,7 +9994,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/features-roadmap-menu: lib/AppInfo/Application.php.",
-    "spec": "openspec/specs/features-roadmap-menu"
+    "spec": "openspec/specs/features-roadmap-menu",
+    "requirement": "openspec/specs/features-roadmap-menu :: Suggest feature deep-link"
    },
    "reachedOn": "/roadmap",
    "provider": "openregister",
@@ -9912,7 +10025,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class",
-    "change": "retention-linked-destruction-conflict"
+    "change": "retention-linked-destruction-conflict",
+    "requirement": "openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow :: A destruction list names the linked records its entries clash with"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9946,7 +10060,8 @@
     "state": "built",
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/consent-evidence-envelope: lib/Db/SchemaMapper.php, lib/Listener/ConsentEnvelopeOnSaveListener.php, lib/Service/Consent/ConsentAnnotationValidator.php, lib/Service/Consent/ConsentDeclarationException.php.",
-    "spec": "openspec/specs/consent-evidence-envelope"
+    "spec": "openspec/specs/consent-evidence-envelope",
+    "requirement": "openspec/specs/consent-evidence-envelope :: An existing consent entry MUST NOT be mutated in place"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9976,7 +10091,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> validateNlGovRules, which checks two rules only, /core/http-methods (GET, POST, PUT, PATCH, DELETE, plus HEAD and OPTIONS per the rule's note) and /core/http-response-code, named by their NLGov API Design Rules 2.2.1 ids since #4059; addCrudPaths documents PATCH (merge patch) on every object path, matching objects#patch (appinfo/routes.php:1178); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)",
-    "change": "api-nl-design-rules-conformance"
+    "change": "api-nl-design-rules-conformance",
+    "requirement": "openspec/changes/api-nl-design-rules-conformance/specs/oas-validation :: Every rule of the NLGov API design rules is reported"
    },
    "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
    "provider": "openregister",
@@ -10010,7 +10126,8 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Read on development e3c2954612. A changed-since read works: _updated is an @self metadata filter column (lib/Db/MagicMapper/MagicSearchHandler.php:146) with gte among the operators (:94), and _includeDeleted=true returns soft-deleted rows (:483). Deletions are the gap: the soft delete in lib/Service/Object/DeleteObject.php:334-361 writes the deleted block but never sets updated, GET /api/deleted (DeletedController::index) reads only limit and offset, and a destroyed object leaves only a per-object audit-trail destruction entry.",
-    "change": "incremental-sync-for-api-consumers"
+    "change": "incremental-sync-for-api-consumers",
+    "requirement": "openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync :: The deleted list filters by register, schema and deletion time (REQ-SYNC-002)"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema} and GET /api/deleted",
    "provider": "openregister",
