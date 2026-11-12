@@ -71,3 +71,4 @@ cover:dossiq:6ca0231e:23f6b1f1	PR dossiq#6084: 5 tests for RebindImpactRows; sui
 gap:integriq:9:7d352ecb	PR #3387: 8 token/secret-named constants renamed (public ones keep deprecated aliases), values unchanged; 1406 related tests OK before/after. Not re-measured (checker unavailable)	session-20261112T184455-8702e064	2026-11-12T19:16:34Z
 cover:dossiq:6ca0231e:3d4b295b	PR #6085: 4 Settings classes, 31 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:17:08Z
 cover:buildiq:8ca317f6:baa54041	opened buildiq#1450 (5 tests, CompileInput; Service suite errors/failures unchanged)	session-20261112T184441-77ab05a6	2026-11-12T19:17:37Z
+cover:openregister:dc0dbf81:e372e6ff	PR #10030: 5 tests for 3 Event classes; lib/Event was already 95% covered, rest are getters	session-20261112T184502-4ecd6072	2026-11-12T19:17:48Z
