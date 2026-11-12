@@ -238,3 +238,4 @@ cover:dossiq:6ca0231e:c900fa11	PR #6122: 8 Email/Filters classes, 41 tests; suit
 fix:buildiq:1455:50d05dfc	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:22:14Z
 merge:decidiq:2061:16da9a35	2061 SKIP	session-20261112T184502-4ecd6072	2026-11-12T20:22:32Z
 cover:stackiq:8cfacb29:9d3a1784	PR #1749: ContractStatusJobTest (5 tests) + @covers on SyncJobsRunTest; suite 2334->2339, no failures	session-20261112T182617-a12dc411	2026-11-12T20:22:56Z
+verify:learniq:2417:a9f4d5db	GREEN: 2417, 2418 (0 new failures, 1 inherited)	session-20261112T200018-e68ecbf8	2026-11-12T20:23:18Z
