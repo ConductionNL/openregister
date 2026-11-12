@@ -3882,3 +3882,4 @@ humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	GREEN	fv11-11:humaniq-t1	u
 humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	GREEN	fv11-25:humaniq-t4	unit 3662 OK (baseline 3662 clean, dev 10eab220); no JS touched; diff review: test docblock @uses annotations only
 buildiq	1437	4938b7b7fc344d3d5049575edc93858951e13619	GREEN	fv11-31:buildiq-t1	unit 2191 tests, 1227 errors + 5 failures all baseline (dev a2be5a354), 0 new; php -l clean; no JS; diff review: test docblock @uses only
 buildiq	1437	4938b7b7fc344d3d5049575edc93858951e13619	GREEN	fv11-25:buildiq-t1	unit 2191 tests, 6 failing all baseline (dev a2be5a35), 0 new; no JS touched; diff review: test docblock @uses annotations only
+humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	RED	worker-36:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 93 -> 89
