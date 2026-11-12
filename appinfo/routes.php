@@ -1752,6 +1752,8 @@ return [
         // a version it has not moved to yet.
         ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
         ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        // The root OpenAPI document, public (NL API Design Rules, /core/publish-openapi).
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         [
             'name'         => 'apiSurface#contract',
             'url'          => '/api/versions/{version}/oas',

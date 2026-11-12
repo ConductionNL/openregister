@@ -287,6 +287,7 @@ Controller/MigrationController.php,82,Controller,Configuration,Configuration/Con
 Controller/MigrationPacksController.php,197,Controller,Configuration,Configuration/Controller/MigrationPacksController.php,3,,Configuration
 Controller/NamesController.php,162,Controller,Work,Work/Controller/NamesController.php,0,,Processes
 Controller/OasController.php,71,Controller,Service,Service/Controller/OasController.php,0,,Core
+Controller/OpenApiController.php,107,Controller,Service,Service/Controller/OpenApiController.php,0,,Core
 Controller/ObjectActionsController.php,210,Controller,Flows,Flows/Controller/ObjectActionsController.php,0,,Processes
 Controller/ObjectDraftController.php,114,Controller,Service,Service/Controller/ObjectDraftController.php,0,,Core
 Controller/ObjectFavouriteController.php,99,Controller,Work,Work/Controller/ObjectFavouriteController.php,0,,Processes
