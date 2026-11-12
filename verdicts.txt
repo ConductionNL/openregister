@@ -2553,3 +2553,4 @@
 10031 6d96e2a0ac4de47a9069523fa34a51666dfc9f1d APPROVE Tests only: 8 new Rbac test files (36 tests), no lib change, no clock-bound assertions. Merged with main: Rbac 1102 OK, Architecture 2355 OK, Rules and Contract OK.
 10035 deba91343a2d99457f0d157a29e3ab6bffc5feb0 APPROVE Tests only (8 new files, 20 tests, pass, no risky under pcov); no lib changes; Architecture, Rules, Contract green; Controller errors identical to main.
 10030 e2bf0423d97e09f4f6c574176c2abe0d513054a9 APPROVE Tests only, one new file; 5 tests pass on merge with main with strict coverage (no risky); Event, Architecture, Rules, Contract suites green.
+10034 36a29ce11cd84a9949062bebaec5b09f6b60927d APPROVE Tests only, no lib changes; new Controller/Support tests pass, not risky under pcov; Architecture, Rules, Contract green on merge with main; the 9 Controller errors are in untouched files (inherited).
