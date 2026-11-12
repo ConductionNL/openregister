@@ -419,3 +419,4 @@ merge:learniq:2195:4ca2b015	stale	feeder	2026-11-12T21:15:09Z
 cover:stackiq:8cfacb29:js6c0659ad	PR #1770: SbomComponentsPanel, 17 vitest tests; src/components/sbom lines 80.2%->98.2%; suite 1593->1610 all green	session-20261112T184505-d34a144f	2026-11-12T21:20:15Z
 cover:stackiq:8cfacb29:js38fd627f	PR #1771: 7 tests (ValueFitPlot); portfolio 62.5%->93.44% lines	session-20261112T202437-4020bd95	2026-11-12T21:20:46Z
 cover:hermiq:755cdfe7:js4829b6aa	PR #1592: 8 vitest tests for AdminRoot.vue (was 0%); suite 944->952, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:21:00Z
+cover:stackiq:8cfacb29:jsec821f64	PR opened: 8 vitest tests for SuiteWizard Step1/2/3; vitest 1593->1601, all green	session-20261112T202912-56c18a61	2026-11-12T21:20:54Z
