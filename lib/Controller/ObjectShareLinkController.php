@@ -223,7 +223,7 @@ class ObjectShareLinkController extends Controller {
 	 * @return JSONResponse The object, or the refusal.
 	 */
 	private function published(?ObjectEntity $object, IShare $share): JSONResponse {
-		if ($object === null) {
+		if ($object === null || self::sharesTheObjectFolder(share: $share, object: $object) === false) {
 			return $this->refused();
 		}
 
@@ -234,6 +234,31 @@ class ObjectShareLinkController extends Controller {
 			]
 		);
 	}//end published()
+
+	/**
+	 * Whether the share is on the object's own folder, the node OpenRegister made for it.
+	 *
+	 * The folder name only says which object to load. The share must point at
+	 * that object's stored folder node; a folder elsewhere with the same name
+	 * shares nothing of the object.
+	 *
+	 * @param IShare       $share  The live share.
+	 * @param ObjectEntity $object The object the folder name addresses.
+	 *
+	 * @return bool
+	 */
+	private static function sharesTheObjectFolder(IShare $share, ObjectEntity $object): bool {
+		$folder = (string)$object->getFolder();
+		if (ctype_digit($folder) === false) {
+			return false;
+		}
+
+		try {
+			return (int)$folder === $share->getNodeId();
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end sharesTheObjectFolder()
 
 	/**
 	 * Resolve a token to a live, permitted share, or null.

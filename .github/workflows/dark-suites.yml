@@ -70,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout Nextcloud server
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           repository: nextcloud/server
@@ -81,13 +81,13 @@ jobs:
         run: git -C server submodule update --init 3rdparty
 
       - name: Checkout app
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           path: server/apps/openregister
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           extensions: mbstring, intl, pgsql, pdo_pgsql, zip, gd, curl, xml, json
@@ -95,7 +95,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache composer downloads
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/composer
           key: ${{ runner.os }}-composer-dark-${{ hashFiles('server/apps/openregister/composer.lock') }}
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload clover and junit
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dark-clover-${{ env.SLUG }}
           path: server/apps/openregister/coverage/dark-*.xml
