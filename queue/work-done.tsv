@@ -462,3 +462,4 @@ cover:openregister:7350e3ef:js30a52488	PR #10039: 14 tests for SearchSideBar vie
 cover:openregister:7350e3ef:jsbd7d0461	PR #10038: 36 jest tests for 4 schema modals; schema dir lines 81.2->86.7%, suite 7111 green	session-20261112T212928-8b609f19	2026-11-12T21:36:19Z
 cover:buildiq:8ca317f6:jsea7197ec	PR #1480: 17 vitest tests, src/utils lines 84.4% -> 100%	session-20261112T184508-711de18c	2026-11-12T21:36:28Z
 cover:pipelinq:f67520ec:jsa492b7c7	PR #3549: 21 mounted vitest tests (BookingPortal, MyWork, ReportExport, XWiki widget, refresh mixin), task dirs lines 68.77%->81.3%, suite 3158->3179 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:36:42Z
+merge:shillinq:2759:8be73db8	2759 MERGED 2773 MERGED 2774 MERGED already recorded 2772;	session-20261112T184502-4ecd6072	2026-11-12T21:36:59Z
