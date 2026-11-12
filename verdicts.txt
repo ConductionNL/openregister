@@ -2613,3 +2613,4 @@
 7739 9ca7991ae91e8fe7835731664ac1555764a98f32 APPROVE delta since 6f15fd1bc8 is a main merge plus regenerated sbom (--check current); head contains main 1574bc5db5: npm ci ok (vue and @vue/server-renderer 3.5.45), jest 464/464 suites (7075 tests, as main), build ok (17 warnings, as main); conflicts with #4731 (older vue bump)
 10043 ddfa95036c4691f8b7e8d69b63fa4aac11ef03af APPROVE Adds one jest spec only, no production code; jest src/views/register 84/84 green merged with main, eslint clean.
 10041 01db7c32f7cda2f851ea14fa37351997627ab619 APPROVE Adds three jest specs only, no production code; jest settings sections 321/321 green merged with main, eslint clean.
+10044 ed11c5d6c04be757fa7c281e1f75616ce04b372d APPROVE Tests only (2 jest specs); 62/62 schema view tests pass merged with main; eslint clean; no production code changed.
