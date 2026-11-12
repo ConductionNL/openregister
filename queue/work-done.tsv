@@ -763,6 +763,7 @@ cover:integriq:9b0f5894m2367:jsd825828c	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:js716923f8	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:23Z
 cover:integriq:9b0f5894m2367:jsb97b9aec	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:32Z
 cover:integriq:9b0f5894m2367:js05cc1463	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:42Z
+cover:hermiq:755cdfe7:js6d016cfb	PR hermiq#1617: 22 vitest tests, all 5 settings components -> 100%; suite 944->966 green (CnAgentChatTab/RunsWidget untouched)	session-20261112T221237-836ed3f0	2026-11-12T22:56:01Z
 review:openregister:10053:db69d331	APPROVE: test-only, 40 jest tests green on main	session-20261112T221239-5f377795	2026-11-12T22:56:21Z
 verify:larpinq:1006:14c4c964	stale	session-20261112T224530-faaec44c	2026-11-12T22:56:26Z
 cover:hermiq:755cdfe7m7444:9910e837	PR #1619: 10 tests for OutsideCall, OutsideCallRefusedException, OutsideToolSurface; suite 3559->3569, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:56:33Z
