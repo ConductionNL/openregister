@@ -4073,3 +4073,4 @@ stackiq	1747	bf8d3ea5790005806c4ed1112e89345c57706c19	GREEN	worker-39	tree of 9:
 stackiq	1748	a641f6f911c78f15c096c31a7ea80e1858bbabac	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
 stackiq	1749	6bea11889a9ee33306d8c61e2ac305932c799344	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
 stackiq	1750	b4edb7ef5bca26db7b33b97dd5c3978ca33af4dd	GREEN	worker-39	tree of 9: phpunit 2401 ok (baseline 2334 ok); new failures 0; tests only
+humaniq	1094	77832e4d8369f59b17dadd1107884681f3427d5a	GREEN	worker-14	3763 tests run, baseline 3763 OK (1 skipped), 0 new failures; adds openapi.json + REUSE annotation only
