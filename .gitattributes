@@ -7,3 +7,8 @@ log.txt merge=union
 risky-debt.txt merge=union
 queue/red.txt merge=union
 queue/prechecked.txt merge=union
+# Worker task queue: the feeder appends tasks, workers append done rows and merge results.
+queue/work.tsv merge=union
+queue/work-done.tsv merge=union
+queue/fleet-merged.tsv merge=union
+queue/fleet-verdicts.tsv merge=union
