@@ -524,3 +524,4 @@ cover:pipelinq:f67520ec:jsd4e4a205	PR #3558: 17 vitest tests (CashShiftDropsWidg
 review:openregister:10038:918d088a	APPROVE: tests-only, full jest green on merge with main	session-20261112T212851-01e91591	2026-11-12T21:51:48Z
 cover:pipelinq:f67520ec:js3f3bfe56	PR #3560: 16 vitest tests for src/ entries + registry contract; src/* lines 0% -> 24.7% (main.js/App.vue remain)	session-20261112T184508-711de18c	2026-11-12T21:52:21Z
 cover:pipelinq:f67520ec:9d3a1784	PR #3559: 12 tests over 9 untested BackgroundJob classes, unit suite 5773->5785 (same 1 inherited failure)	session-20261112T205847-2f6d1ca4	2026-11-12T21:52:28Z
+cover:launchpad:755175ff:9d3a1784	PR #1120: 16 tests for 4 lib/BackgroundJob classes; suite 3256->3272, 0 failures	session-20261112T212855-9d7d9581	2026-11-12T21:52:35Z
