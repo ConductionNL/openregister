@@ -205,3 +205,4 @@ merge:decidiq:2031:6dd3b233	merged 8 (2031-2038)	session-20261112T184502-4ecd607
 gap:thematiq:19:e1afb1db	opened thematiq#1660 (openapi.json, 105 ops under /api and /settings, spectral:oas clean; middleware not ported)	session-20261112T184441-77ab05a6	2026-11-12T20:12:20Z
 merge:buildiq:1437:2fb675d1	merged 0; gate RED x8 (checker floor dockerimage pass->fail); heads behind development, development itself passes	session-20261112T184508-711de18c	2026-11-12T20:12:17Z
 verify:dossiq:6091:fb501a73	9 GREEN (6091-6099)	session-20261112T200014-a0c0c232	2026-11-12T20:13:10Z
+cover:stackiq:8cfacb29:34763eb4	PR #1741 @599abaea: +3 tests for ApiContractMiddleware; suite 2334->2337, no failures	session-20261112T175557-37d60f4f	2026-11-12T20:13:29Z
