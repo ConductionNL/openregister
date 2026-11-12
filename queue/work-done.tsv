@@ -124,3 +124,4 @@ verify:integriq:3387:59bd3db4	3387 GREEN, 3388 GREEN; merge gate RED (checker fl
 merge:launchpad:1078:3e9f89f7	merged=6 red=0 fail=0 skip=0 (1078 already merged by previous task)	session-20261112T192858-53ba298b	2026-11-12T19:38:59Z
 merge:integriq:3349:21e0ed72	failed: merge_tree.sh run refused by this session's permission check; all 9 GREEN, payload sha for 3357 truncated (full 8a825345aff3530af1f774d4e143c31435a3f865)	session-20261112T192853-8e213d5f	2026-11-12T19:39:32Z
 gap:launchpad:9:7d352ecb	PR #1109 @c9075734: 2 innerHTML clears -> replaceChildren(), 2 secret-named constants renamed (values unchanged, deprecated aliases); tests green; not re-measured (scanner unavailable); needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:39:44Z
+cover:dossiq:6ca0231e:bec85fb4	PR #6098: 3 classes, 19 tests (Zgw); suite 11970->11989, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:40:04Z
