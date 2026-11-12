@@ -292,3 +292,4 @@ fix:buildiq:1447:5574756b	false RED (gate local-path origin); score 84, dockerim
 fix:learniq:2182:f5f058c0	not reproducible: dockerimage passes locally on f5f058c0, PR touches no docker files; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T20:39:00Z
 fix:buildiq:1443:898d3f70	false RED (gate local-path origin); score 84, dockerimage pass; REVERIFY recorded, no push	session-20261112T200015-391c2792	2026-11-12T20:39:35Z
 cover:dossiq:6ca0231e:84ff77b2	PR #6145: CaseTypeVersionGuard + BulkJobHandoff, 17 tests; suite 11976->11993, 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:39:39Z
+gap:buildiq:opensourcehealth:663c741a	failed: opensourcehealth stars come from 528 transitive npm deps (activity, licence use, freshness), mostly pulled in by Nextcloud libraries; no bounded app-level change lifts it to 4 stars	session-20261112T200015-391c2792	2026-11-12T20:39:52Z
