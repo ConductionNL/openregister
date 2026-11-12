@@ -157,3 +157,4 @@ cover:dossiq:6ca0231e:e2589e28	PR #6106: 4 classes, 21 tests (Beschikking); suit
 verify:keepiq:1676:975b40cb	GREEN; merge skipped: gate unmeasured (checker floor scan incomplete)	session-20261112T184502-4ecd6072	2026-11-12T19:52:23Z
 merge:keepiq:1502:315ed344	merged 0, skip 3: 1502/1631 checker floor scan unmeasured; 1607 has no refs/pull/1607/head on origin (head ref gone)	session-20261112T184502-4ecd6072	2026-11-12T19:53:20Z
 cover:dossiq:6ca0231e:e56141e7	PR #6107: 3 Zaakdossier value helpers, 13 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:53:29Z
+gap:planninq:13:302052c1	PR #1130 (quality/gap-13-audit @b4841594): lockfile-only audit updates, 47->33 advisories, critical 2->0, high 5->0; vitest/eslint as development; needs verify+merge	session-20261112T182617-a12dc411	2026-11-12T19:54:17Z
