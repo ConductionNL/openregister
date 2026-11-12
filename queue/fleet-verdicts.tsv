@@ -4113,3 +4113,4 @@ stackiq	1762	a0b0256622d1a36e7e7e869b74e8ec51d3f962ae	GREEN	worker-39	tree of 6:
 stackiq	1763	b244dc8558fec63465e9ffc2c2ab249912113a32	GREEN	worker-39	tree of 6: phpunit 2334 ok (baseline 2334), vitest 1667 ok (baseline 1593); new failures 0; tests only
 dossiq	6151	dc90a5b0672dba75e3c8108f77ad6b01c90acb04	BLOCK	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; behaviour change: middleware rewrites every API error JSON body into problem details with a new content type, and all routes gain /api/v1/ aliases
 dossiq	6152	fc1a467fc9965109aa79fdd62fda108997d885f3	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
+dossiq	6153	906a3884f38eeb6ec06e9db169b7b77a50480966	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
