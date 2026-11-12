@@ -18,6 +18,9 @@
  * the test never needs network. A word upstream starts to reserve that a
  * migration already uses fails this test; rename the column in a new migration
  * or, for a column that is already released, add the word to ALREADY_IN_USE.
+ * The development branches (`main`, `trunk`; ReservedWordSource::SOURCES marks
+ * them) are not a gate: a word only they reserve is reported as an incomplete
+ * test naming the columns, engine and series, and the run stays green.
  * `php fixtures/update-reserved-words.php` refreshes the snapshots.
  *
  * It needs a Nextcloud server's classes for the migrated schema, like the
@@ -66,48 +69,109 @@ class ReservedColumnNamesTest extends TestCase {
 	}//end reservedWords()
 
 	/**
-	 * Every word any supported series of either engine reserves, as a lookup.
+	 * Which series reserve each word, for the released series or for the development branches.
 	 *
-	 * @return array<string, true>
+	 * @param bool $development True for the development branches, false for the released series.
+	 *
+	 * @return array<string, string[]> Word => the `<engine> <series>` entries that reserve it.
 	 */
-	private static function reserved(): array {
-		$words = [];
+	private static function reservers(bool $development): array {
+		$by = [];
 		foreach (ReservedWordSource::SOURCES as $engine => $source) {
 			foreach ($source['series'] as $series) {
-				$words = array_merge($words, self::reservedWords(engine: $engine, series: $series));
-			}
-		}
+				if (ReservedWordSource::isDevelopment(engine: $engine, series: $series) !== $development) {
+					continue;
+				}
 
-		return array_fill_keys($words, true);
-	}//end reserved()
-
-	/**
-	 * No column the migrations define is a reserved word, apart from the ones already in use.
-	 *
-	 * @return void
-	 */
-	public function testNoMigrationColumnIsAReservedWord(): void {
-		$reserved  = self::reserved();
-		$offenders = [];
-		$columns   = 0;
-		foreach (MigratedSqliteDatabase::migratedSchema(test: $this)->getTables() as $table) {
-			foreach ($table->getColumns() as $column) {
-				$columns++;
-				$name = strtolower(trim($column->getName(), '"`'));
-				if (isset($reserved[$name]) === true && in_array($name, self::ALREADY_IN_USE, true) === false) {
-					$offenders[] = $table->getName().'.'.$name;
+				foreach (self::reservedWords(engine: $engine, series: $series) as $word) {
+					$by[$word][] = $engine.' '.$series;
 				}
 			}
 		}
 
-		$this->assertGreaterThan(100, $columns, 'The migrated schema came back nearly empty, so nothing was checked');
+		return $by;
+	}//end reservers()
+
+	/**
+	 * Every column the migrations define, lower case, as `<table>.<column>` entries per name.
+	 *
+	 * @param TestCase $test The running test, for the schema's database setup.
+	 *
+	 * @return array<string, string[]> Column name => the tables that have it.
+	 */
+	private static function migratedColumns(TestCase $test): array {
+		$columns = [];
+		foreach (MigratedSqliteDatabase::migratedSchema(test: $test)->getTables() as $table) {
+			foreach ($table->getColumns() as $column) {
+				$columns[strtolower(trim($column->getName(), '"`'))][] = $table->getName();
+			}
+		}
+
+		self::assertGreaterThan(100, count($columns), 'The migrated schema came back nearly empty, so nothing was checked');
+
+		return $columns;
+	}//end migratedColumns()
+
+	/**
+	 * The columns whose name is in a reserved-word map and not in the allowance.
+	 *
+	 * @param array<string, string[]> $columns  Column name => tables, from migratedColumns().
+	 * @param array<string, string[]> $reserved Word => the series that reserve it.
+	 *
+	 * @return string[] Entries like `table.column (mariadb 10.6, mysql 8.0)`.
+	 */
+	private static function offenders(array $columns, array $reserved): array {
+		$offenders = [];
+		foreach ($columns as $name => $tables) {
+			if (isset($reserved[$name]) === false || in_array($name, self::ALREADY_IN_USE, true) === true) {
+				continue;
+			}
+
+			foreach ($tables as $table) {
+				$offenders[] = $table.'.'.$name.' ('.implode(', ', $reserved[$name]).')';
+			}
+		}
+
+		sort($offenders);
+
+		return $offenders;
+	}//end offenders()
+
+	/**
+	 * No column the migrations define is a word a released series reserves, apart from the ones already in use.
+	 *
+	 * @return void
+	 */
+	public function testNoMigrationColumnIsAReservedWord(): void {
 		$this->assertSame(
 			[],
-			$offenders,
-			'These columns use a word MariaDB or MySQL reserves; Doctrine may not quote it there. Pick another name. '
-			.'Lists used: '.json_encode(ReservedWordSource::origins())
+			self::offenders(columns: self::migratedColumns(test: $this), reserved: self::reservers(development: false)),
+			'These columns use a word the listed MariaDB or MySQL series reserve; Doctrine may not quote it there. '
+			.'Pick another name. Lists used: '.json_encode(ReservedWordSource::origins())
 		);
 	}//end testNoMigrationColumnIsAReservedWord()
+
+	/**
+	 * A word only a development branch reserves is reported, not failed: it is a heads-up for the next release.
+	 *
+	 * The suite stays green (nothing in phpunit.xml or the CI workflow sets failOnIncomplete);
+	 * the report names each column with the engine and series that reserve its word.
+	 *
+	 * @return void
+	 */
+	public function testNoMigrationColumnIsReservedOnlyOnADevelopmentBranch(): void {
+		$released = self::reservers(development: false);
+		$coming   = array_diff_key(self::reservers(development: true), $released);
+		$notices  = self::offenders(columns: self::migratedColumns(test: $this), reserved: $coming);
+		if ($notices !== []) {
+			$this->markTestIncomplete(
+				'Heads-up, not a failure: these columns use a word only a development branch reserves so far, '
+				.'so a coming MariaDB or MySQL series may need a rename migration: '.implode('; ', $notices)
+			);
+		}
+
+		$this->addToAssertionCount(1);
+	}//end testNoMigrationColumnIsReservedOnlyOnADevelopmentBranch()
 
 	/**
 	 * The lists hold the words they must, so the check above can catch the word that broke MariaDB.
@@ -136,13 +200,8 @@ class ReservedColumnNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAllowanceOnlyHoldsReservedColumnsInUse(): void {
-		$reserved = self::reserved();
-		$names    = [];
-		foreach (MigratedSqliteDatabase::migratedSchema(test: $this)->getTables() as $table) {
-			foreach ($table->getColumns() as $column) {
-				$names[strtolower(trim($column->getName(), '"`'))] = true;
-			}
-		}
+		$reserved = (self::reservers(development: false) + self::reservers(development: true));
+		$names    = self::migratedColumns(test: $this);
 
 		foreach (self::ALREADY_IN_USE as $word) {
 			$this->assertArrayHasKey($word, $reserved, $word.' is not reserved; drop it from ALREADY_IN_USE');

@@ -43,19 +43,24 @@ class ReservedWordSource {
 	 * 8.0 or newer and docs/installation.md for MariaDB 10.5 or newer; the other
 	 * MariaDB series are the long-term releases Nextcloud 32 to 35 run on, plus
 	 * 11.3: MariaDB 11.0 to 11.3 reserve ROW_NUMBER, the word that broke the
-	 * import preview migration (#4909), and 11.4 and later do not. `main` /
-	 * `trunk` are the development lines (the words a coming series reserves).
+	 * import preview migration (#4909).
+	 *
+	 * `development` names the series that are not released: `main` and `trunk`
+	 * hold the words a coming series may reserve. A word only they reserve is a
+	 * heads-up for the next release, not a defect of a server anyone runs.
 	 */
 	public const SOURCES = [
 		'mariadb' => [
-			'repository' => 'MariaDB/server',
-			'series'     => ['10.5', '10.6', '10.11', '11.3', '11.4', '11.8', 'main'],
-			'identifier' => 'keyword_ident',
+			'repository'  => 'MariaDB/server',
+			'series'      => ['10.5', '10.6', '10.11', '11.3', '11.4', '11.8', 'main'],
+			'development' => ['main'],
+			'identifier'  => 'keyword_ident',
 		],
 		'mysql'   => [
-			'repository' => 'mysql/mysql-server',
-			'series'     => ['8.0', '8.4', 'trunk'],
-			'identifier' => 'ident_keyword',
+			'repository'  => 'mysql/mysql-server',
+			'series'      => ['8.0', '8.4', 'trunk'],
+			'development' => ['trunk'],
+			'identifier'  => 'ident_keyword',
 		],
 	];
 
@@ -95,6 +100,18 @@ class ReservedWordSource {
 	 * @var array<string, string>
 	 */
 	private static array $origin = [];
+
+	/**
+	 * Whether a series is a development branch rather than a released series.
+	 *
+	 * @param string $engine The engine, a key of SOURCES.
+	 * @param string $series The series, an entry of that engine's series.
+	 *
+	 * @return bool
+	 */
+	public static function isDevelopment(string $engine, string $series): bool {
+		return in_array($series, self::SOURCES[$engine]['development'], true);
+	}//end isDevelopment()
 
 	/**
 	 * The snapshot file of one series.
