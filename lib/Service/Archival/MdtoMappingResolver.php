@@ -39,8 +39,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -53,14 +51,12 @@ class MdtoMappingResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface         $schemaMapper Loads the object's schema.
-	 * @param MdtoElementCatalogue $catalogue    The authority on which elements MDTO demands.
-	 * @param LoggerInterface      $logger       Where an unreadable schema is reported.
+	 * @param ArchivalSchemaLookup $lookup    Loads the object's schema; reports an unreadable one.
+	 * @param MdtoElementCatalogue $catalogue The authority on which elements MDTO demands.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ArchivalSchemaLookup $lookup,
 		private readonly MdtoElementCatalogue $catalogue,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -79,13 +75,8 @@ class MdtoMappingResolver {
 			return null;
 		}
 
-		try {
-			$configuration = ($this->schemaMapper->find($schemaId)->getConfiguration() ?? []);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[MdtoMappingResolver] Could not read the schema of ' . (string)$object->getUuid()
-				. ', so its MDTO mapping is unknown: ' . $e->getMessage()
-			);
+		$configuration = $this->schemaConfiguration(object: $object, schemaId: $schemaId);
+		if ($configuration === null) {
 			return null;
 		}
 
@@ -96,6 +87,26 @@ class MdtoMappingResolver {
 
 		return $mapping;
 	}//end mappingFor()
+
+	/**
+	 * The configuration of a record's schema; null (logged) when the schema cannot be read.
+	 *
+	 * @param ObjectEntity $object   The record.
+	 * @param string       $schemaId Its schema id.
+	 *
+	 * @return array<string, mixed>|null The configuration.
+	 */
+	private function schemaConfiguration(ObjectEntity $object, string $schemaId): ?array {
+		try {
+			return ($this->lookup->schemaMapper->find($schemaId)->getConfiguration() ?? []);
+		} catch (Throwable $e) {
+			$this->lookup->logger->warning(
+				'[MdtoMappingResolver] Could not read the schema of ' . (string)$object->getUuid()
+				. ', so its MDTO mapping is unknown: ' . $e->getMessage()
+			);
+			return null;
+		}
+	}//end schemaConfiguration()
 
 	/**
 	 * The mandatory MDTO elements this object's mapping does not fill.
@@ -116,30 +127,65 @@ class MdtoMappingResolver {
 			return [];
 		}
 
+		return $this->unfilledOf(mapping: $mapping, object: $object);
+	}//end unfilledMandatoryElements()
+
+	/**
+	 * The mandatory elements a mapping leaves empty for a record; none when the catalogue cannot say.
+	 *
+	 * @param array<string, mixed> $mapping The schema's MDTO mapping.
+	 * @param ObjectEntity         $object  The record.
+	 *
+	 * @return array<int, string> The unfilled element names.
+	 */
+	private function unfilledOf(array $mapping, ObjectEntity $object): array {
+		$mandatory = $this->mandatoryElements();
+		if ($mandatory === null) {
+			return [];
+		}
+
+		$row = $this->recordRow(object: $object);
+
+		return array_values(
+			array_filter(
+				$mandatory,
+				fn (string|int $element): bool => $this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false
+			)
+		);
+	}//end unfilledOf()
+
+	/**
+	 * The elements MDTO demands, or null (logged) when the catalogue cannot establish them.
+	 *
+	 * @return array<int, string>|null The mandatory element names.
+	 */
+	private function mandatoryElements(): ?array {
 		try {
-			$mandatory = $this->catalogue->mandatory();
+			return $this->catalogue->mandatory();
 		} catch (Throwable $e) {
 			// The catalogue refuses rather than reporting an empty set, and an
 			// empty set here would wave every transfer through. Reported, and
 			// treated as "cannot establish", which is not the same as "fine".
-			$this->logger->error('[MdtoMappingResolver] ' . $e->getMessage());
+			$this->lookup->logger->error('[MdtoMappingResolver] ' . $e->getMessage());
+			return null;
+		}
+	}//end mandatoryElements()
+
+	/**
+	 * The record's data, or an empty row.
+	 *
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function recordRow(ObjectEntity $object): array {
+		$row = ($object->getObject() ?? []);
+		if (is_array($row) === false) {
 			return [];
 		}
 
-		$row = ($object->getObject() ?? []);
-		if (is_array($row) === false) {
-			$row = [];
-		}
-
-		$unfilled = [];
-		foreach ($mandatory as $element) {
-			if ($this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false) {
-				$unfilled[] = $element;
-			}
-		}
-
-		return $unfilled;
-	}//end unfilledMandatoryElements()
+		return $row;
+	}//end recordRow()
 
 	/**
 	 * Does this mapping entry put a value on this record?

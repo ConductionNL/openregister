@@ -28,8 +28,10 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -74,10 +76,8 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->service = new EmailLinkService(
 			$this->mapper,
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
 		);
 	}
 
@@ -161,7 +161,7 @@ class EmailLinkServiceTest extends TestCase {
 		$this->mapper
 			->expects($this->once())
 			->method('findByObjectAccountMessageUid')
-			->with('uuid', 42, 7, 'uid-7')
+			->with('uuid', new MailMessageKey(42, 7, 'uid-7'))
 			->willReturn($existing);
 
 		// insert() must NOT be called.
@@ -280,7 +280,7 @@ class EmailLinkServiceTest extends TestCase {
 	public function testGetMessagesForMailboxReturnsEmptyShape(): void {
 		$this->appManager->method('isEnabledForUser')->with('mail')->willReturn(false);
 
-		$result = $this->service->getMessagesForMailbox(1, 'INBOX', null, 25);
+		$result = $this->service->getMessagesForMailbox((new \OCA\OpenRegister\Service\MailboxPage(1, 'INBOX'))->startingAfter(null, 25));
 		$this->assertSame(['items' => [], 'nextCursor' => null], $result);
 	}
 }//end class

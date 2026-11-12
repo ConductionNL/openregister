@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\IconController;
+use OCA\OpenRegister\Service\MdiIconSvg;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -59,8 +60,8 @@ class IconControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 
 		$this->controller = new IconController(
-			'openregister',
-			$this->request
+			$this->request,
+			new MdiIconSvg()
 		);
 	}
 

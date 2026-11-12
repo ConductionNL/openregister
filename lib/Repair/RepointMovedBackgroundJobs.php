@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\AppInfo\ClassAliasMap;
-use OCA\OpenRegister\Service\Operations\MovedJobState;
+use OCA\OpenRegister\Service\Operations\MovedJobStateInterface;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\Migration\IOutput;
@@ -44,10 +44,10 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IJobList        $jobList The Nextcloud job list.
-	 * @param ClassAliasMap   $map     The old => new class map.
-	 * @param LoggerInterface $logger  Logger.
-	 * @param MovedJobState   $state   The schedule and run log kept per job class.
+	 * @param IJobList               $jobList The Nextcloud job list.
+	 * @param ClassAliasMap          $map     The old => new class map.
+	 * @param LoggerInterface        $logger  Logger.
+	 * @param MovedJobStateInterface $state   The schedule and run log kept per job class.
 	 *
 	 * @return void
 	 */
@@ -55,7 +55,7 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 		private readonly IJobList $jobList,
 		private readonly ClassAliasMap $map,
 		private readonly LoggerInterface $logger,
-		private readonly MovedJobState $state,
+		private readonly MovedJobStateInterface $state,
 	) {
 	}//end __construct()
 
@@ -78,14 +78,10 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 	 * @spec exclude Upgrade plumbing for moved job classes; no capability spec covers the job list.
 	 */
 	public function run(IOutput $output): void {
-		foreach ($this->map->entries() as $old => $entry) {
-			if (is_subclass_of($entry['class'], IJob::class) === false) {
-				continue;
-			}
-
+		foreach ($this->movedJobs() as $old => $class) {
 			try {
-				$this->repoint(old: $old, new: $entry['class']);
-				$output->info('Repointed background job '.$old.' to '.$entry['class']);
+				$this->repoint(old: $old, new: $class);
+				$output->info('Repointed background job '.$old.' to '.$class);
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					'[RepointMovedBackgroundJobs] Could not repoint '.$old.': '.$e->getMessage(),
@@ -95,6 +91,24 @@ class RepointMovedBackgroundJobs implements IRepairStep {
 			}
 		}
 	}//end run()
+
+	/**
+	 * The moved classes that are background jobs: old class name => new class name, in map order.
+	 *
+	 * @return array<string, string> The moves to repoint.
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; no capability spec covers the job list.
+	 */
+	private function movedJobs(): array {
+		$moves = [];
+		foreach ($this->map->entries() as $old => $entry) {
+			if (is_subclass_of($entry['class'], IJob::class) === true) {
+				$moves[$old] = $entry['class'];
+			}
+		}
+
+		return $moves;
+	}//end movedJobs()
 
 	/**
 	 * Re-add every row of one old class under the new class, then drop the old rows.

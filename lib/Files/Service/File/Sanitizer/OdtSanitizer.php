@@ -31,10 +31,11 @@ namespace OCA\OpenRegister\Files\Service\File\Sanitizer;
 
 use DOMDocument;
 use DOMElement;
-use DOMNode;
 use DOMXPath;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts;
+use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
 use ZipArchive;
 
 /**
@@ -78,6 +79,13 @@ class OdtSanitizer implements SanitizerInterface {
 	];
 
 	/**
+	 * The shared package-part steps, built with this sanitiser's sentinel.
+	 *
+	 * @var OfficePartSurgery
+	 */
+	private readonly OfficePartSurgery $surgery;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $sentinel The sentinel string applied to scrubbed metadata.
@@ -87,6 +95,7 @@ class OdtSanitizer implements SanitizerInterface {
 	public function __construct(
 		private readonly string $sentinel = 'DocuDesk Anonymisation',
 	) {
+		$this->surgery = new OfficePartSurgery(sentinel: $sentinel);
 	}//end __construct()
 
 	/**
@@ -115,14 +124,51 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
-		if ($sourcePath !== $destPath) {
-			if (copy($sourcePath, $destPath) === false) {
-				throw new SanitizationException(
-					reason: SanitizationException::REASON_INTERNAL,
-					message: 'Could not copy source document to destination'
-				);
-			}
-		}
+		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
+
+		$counts = [
+			'commentsRemoved' => 0,
+			'trackedChangesAccepted' => 0,
+			'trackedChangesDropped' => 0,
+			'hyperlinksFlattened' => 0,
+			'metadataFieldsScrubbed' => 0,
+			'fieldCodesStripped' => 0,
+		];
+
+		$this->sanitizeContent(zip: $zip, counts: $counts);
+		$this->scrubMetadata(zip: $zip, counts: $counts);
+
+		$zip->close();
+
+		return new SanitizationReport(
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: $counts['commentsRemoved'],
+				trackedChangesAccepted: $counts['trackedChangesAccepted'],
+				trackedChangesDropped: $counts['trackedChangesDropped'],
+				revisionAttributesStripped: 0
+			),
+			structure: new SanitizationStructureCounts(
+				hyperlinksFlattened: $counts['hyperlinksFlattened'],
+				metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
+				customXmlPartsDropped: 0,
+				fieldCodesStripped: $counts['fieldCodesStripped']
+			),
+			sentinelApplied: $this->sentinel
+		);
+	}//end sanitize()
+
+	/**
+	 * Copy the source to the destination (when they differ) and open it.
+	 *
+	 * @param string $sourcePath Path to the source ODT.
+	 * @param string $destPath Path the sanitized ODT is written to.
+	 *
+	 * @return ZipArchive The open destination archive.
+	 *
+	 * @throws SanitizationException When the copy fails or the package cannot be opened.
+	 */
+	private function openPackage(string $sourcePath, string $destPath): ZipArchive {
+		$this->surgery->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
 
 		$zip = new ZipArchive();
 		$code = $zip->open($destPath);
@@ -141,44 +187,34 @@ class OdtSanitizer implements SanitizerInterface {
 			);
 		}
 
-		$counts = [
-			'commentsRemoved' => 0,
-			'trackedChangesAccepted' => 0,
-			'trackedChangesDropped' => 0,
-			'hyperlinksFlattened' => 0,
-			'metadataFieldsScrubbed' => 0,
-			'fieldCodesStripped' => 0,
-		];
+		return $zip;
+	}//end openPackage()
 
+
+	/**
+	 * Run the content.xml passes (one load / one save).
+	 *
+	 * @param ZipArchive $zip The open archive.
+	 * @param array<string, int> $counts Mutable counter map.
+	 *
+	 * @return void
+	 */
+	private function sanitizeContent(ZipArchive $zip, array &$counts): void {
 		$contentXml = $zip->getFromName('content.xml');
-		if ($contentXml !== false) {
-			$dom = $this->loadXml(xml: $contentXml);
-			$xpath = $this->xpath(dom: $dom);
-
-			$this->removeAnnotations(xpath: $xpath, counts: $counts);
-			$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
-			$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
-			$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
-
-			$zip->addFromString('content.xml', $dom->saveXML());
+		if ($contentXml === false) {
+			return;
 		}
 
-		$this->scrubMetadata(zip: $zip, counts: $counts);
+		$dom = $this->loadXml(xml: $contentXml);
+		$xpath = $this->xpath(dom: $dom);
 
-		$zip->close();
+		$this->removeAnnotations(xpath: $xpath, counts: $counts);
+		$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
+		$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
+		$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
 
-		return new SanitizationReport(
-			commentsRemoved: $counts['commentsRemoved'],
-			trackedChangesAccepted: $counts['trackedChangesAccepted'],
-			trackedChangesDropped: $counts['trackedChangesDropped'],
-			revisionAttributesStripped: 0,
-			hyperlinksFlattened: $counts['hyperlinksFlattened'],
-			metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
-			customXmlPartsDropped: 0,
-			fieldCodesStripped: $counts['fieldCodesStripped'],
-			sentinelApplied: $this->sentinel
-		);
-	}//end sanitize()
+		$zip->addFromString('content.xml', $dom->saveXML());
+	}//end sanitizeContent()
 
 	/**
 	 * Remove office:annotation comments.
@@ -247,7 +283,7 @@ class OdtSanitizer implements SanitizerInterface {
 	 */
 	private function flattenHyperlinks(DOMXPath $xpath, array &$counts): void {
 		foreach (iterator_to_array($xpath->query('//text:a')) as $link) {
-			$this->unwrap(node: $link);
+			$this->surgery->unwrap(node: $link);
 			$counts['hyperlinksFlattened']++;
 		}
 	}//end flattenHyperlinks()
@@ -297,37 +333,12 @@ class OdtSanitizer implements SanitizerInterface {
 			[self::NS['dc'], 'description'],
 		];
 
-		$counts['metadataFieldsScrubbed'] += $this->scrubNamedFields(dom: $dom, fields: $fields);
+		$counts['metadataFieldsScrubbed'] += $this->surgery->scrubElements(dom: $dom, fields: $fields);
 		$counts['metadataFieldsScrubbed'] += $this->scrubUserDefinedFields(dom: $dom);
 
 		$zip->addFromString('meta.xml', $dom->saveXML());
 	}//end scrubMetadata()
 
-	/**
-	 * Scrub each present, non-empty namespaced meta field to the sentinel.
-	 *
-	 * @param DOMDocument $dom The meta DOM.
-	 * @param array<int, array{0:string,1:string}> $fields Namespace-URI / local-name pairs.
-	 *
-	 * @return int The number of fields scrubbed.
-	 *
-	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 */
-	private function scrubNamedFields(DOMDocument $dom, array $fields): int {
-		$count = 0;
-		foreach ($fields as [$namespace, $local]) {
-			$nodes = $dom->getElementsByTagNameNS($namespace, $local);
-			foreach (iterator_to_array($nodes) as $node) {
-				assert($node instanceof DOMNode);
-				if (trim($node->textContent) !== '') {
-					$node->textContent = $this->sentinel;
-					$count++;
-				}
-			}
-		}
-
-		return $count;
-	}//end scrubNamedFields()
 
 	/**
 	 * Scrub string-typed (or untyped) meta:user-defined fields to the sentinel.
@@ -339,41 +350,19 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	private function scrubUserDefinedFields(DOMDocument $dom): int {
-		$count = 0;
 		$userDefined = $dom->getElementsByTagNameNS(self::NS['meta'], 'user-defined');
-		foreach (iterator_to_array($userDefined) as $node) {
-			assert($node instanceof DOMElement);
-			$valueType = $node->getAttributeNS(self::NS['meta'], 'value-type');
-			if (($valueType === '' || $valueType === 'string') && trim($node->textContent) !== '') {
-				$node->textContent = $this->sentinel;
-				$count++;
-			}
-		}
+		$stringTyped = array_filter(
+			iterator_to_array($userDefined),
+			fn (DOMElement $node): bool => in_array(
+				$node->getAttributeNS(self::NS['meta'], 'value-type'),
+				['', 'string'],
+				true
+			)
+		);
 
-		return $count;
+		return $this->surgery->scrubNodes(nodes: $stringTyped);
 	}//end scrubUserDefinedFields()
 
-	/**
-	 * Replace a node with its own child nodes (unwrap).
-	 *
-	 * @param DOMNode $node The node to unwrap.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 */
-	private function unwrap(DOMNode $node): void {
-		$parent = $node->parentNode;
-		if ($parent === null) {
-			return;
-		}
-
-		while ($node->firstChild !== null) {
-			$parent->insertBefore($node->firstChild, $node);
-		}
-
-		$parent->removeChild($node);
-	}//end unwrap()
 
 	/**
 	 * Load XML into a namespace-aware DOMDocument (XXE-safe).
@@ -387,18 +376,7 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	private function loadXml(string $xml): DOMDocument {
-		$dom = new DOMDocument();
-		$dom->preserveWhiteSpace = true;
-		$dom->formatOutput = false;
-		$loaded = $dom->loadXML($xml, (LIBXML_NONET | LIBXML_COMPACT));
-		if ($loaded === false) {
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_CORRUPT_ZIP,
-				message: 'An ODT part was not well-formed XML'
-			);
-		}
-
-		return $dom;
+		return $this->surgery->loadXml(xml: $xml, failureMessage: 'An ODT part was not well-formed XML');
 	}//end loadXml()
 
 	/**

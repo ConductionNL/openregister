@@ -30,8 +30,10 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
-use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Db\FederatedShareMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Federation\ShareCreatorCheck;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
@@ -39,7 +41,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Create, list and revoke federated shares.
  */
-class FederationShareService {
+class FederationShareService implements FederationShareServiceInterface {
 
 	/**
 	 * Recognised share scopes.
@@ -65,18 +67,36 @@ class FederationShareService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
+	 * @param FederatedShareMapperInterface $shareMapper Federated-share persistence.
 	 * @param ShareGrantor $grantor The signed-in user granting or managing a share.
 	 * @param ISecureRandom $secureRandom Secure token generator.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ShareCreatorCheck $creatorCheck Judges a share as its creator when it is used.
 	 */
 	public function __construct(
-		private readonly FederatedShareMapper $shareMapper,
+		private readonly FederatedShareMapperInterface $shareMapper,
 		private readonly ShareGrantor $grantor,
 		private readonly ISecureRandom $secureRandom,
 		private readonly LoggerInterface $logger,
+		private readonly ShareCreatorCheck $creatorCheck,
 	) {
 	}//end __construct()
+
+	/**
+	 * Why a share may not be served now, or null when its creator still holds what it hands out.
+	 *
+	 * Asked on every use of a share token, so a creator who loses a right, or is
+	 * removed, stops the share at once. A share without a recorded creator is refused.
+	 *
+	 * @param FederatedShare $share The share about to be served.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function servingRefusal(FederatedShare $share): ?string {
+		return $this->creatorCheck->refusal(share: $share);
+	}//end servingRefusal()
 
 	/**
 	 * Create an outgoing federated share and mint its scoped token.
@@ -237,7 +257,7 @@ class FederationShareService {
 
 		return array_map(
 			fn (FederatedShare $share): array => $this->listedRow(share: $share),
-			$this->shareMapper->findAll(limit: null, offset: null, filters: $filters)
+			$this->shareMapper->findAll(query: ListQuery::unbounded(filters: $filters))
 		);
 	}//end listShares()
 

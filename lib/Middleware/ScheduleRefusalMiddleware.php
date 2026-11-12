@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -47,10 +47,10 @@ class ScheduleRefusalMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduleRefusals $refusals This request's refusals.
+	 * @param ScheduleRefusalReportInterface $refusals This request's refusals.
 	 */
 	public function __construct(
-		private readonly ScheduleRefusals $refusals,
+		private readonly ScheduleRefusalReportInterface $refusals,
 	) {
 	}//end __construct()
 
@@ -68,11 +68,22 @@ class ScheduleRefusalMiddleware extends Middleware {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		return $this->withRefusals(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer with this request's refusals in a header, when there are any.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function withRefusals(Response $response): Response {
 		$refusals = $this->refusals->all();
 		if ($refusals !== []) {
 			$response->addHeader(self::HEADER, (string)json_encode($refusals));
 		}
 
 		return $response;
-	}//end afterController()
+	}//end withRefusals()
 }//end class

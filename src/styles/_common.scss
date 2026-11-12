@@ -17,6 +17,14 @@
 	}
 }
 
+@mixin config-badge-sync-idle {
+	.configBadge--sync-pending,
+	.configBadge--sync-never {
+		background-color: var(--color-background-dark);
+		color: var(--color-text-lighter);
+	}
+}
+
 @mixin config-badge-update {
 	.configBadge--update {
 		background-color: var(--color-warning);
@@ -130,4 +138,14 @@
 @mixin status-success-rules {
 	@include status-success;
 	@include status-failed;
+}
+
+// Hidden on screen, still read by screen readers.
+@mixin visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
 }

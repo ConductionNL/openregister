@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -88,7 +89,7 @@ class FlowLifecycleControllerTest extends TestCase {
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->createMock(FlowNodePreflight::class),
 			$this->flows,
-			new FlowAccess($session, $groups, $auth),
+			new FlowAccess(new CallerContext($session, $groups), $auth),
 			$this->versions
 		);
 	}//end setUp()

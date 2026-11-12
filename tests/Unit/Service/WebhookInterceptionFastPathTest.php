@@ -34,9 +34,13 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
-use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -74,14 +78,18 @@ class WebhookInterceptionFastPathTest extends TestCase {
 		$this->interceptionCache = $this->createMock(WebhookInterceptionCache::class);
 
 		$this->service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: null,
-			interceptionCache: $this->interceptionCache
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: null,
+				interceptionCache: $this->interceptionCache
+			),
+			logger: $this->logger
 		);
 	}//end setUp()
 
@@ -270,12 +278,16 @@ class WebhookInterceptionFastPathTest extends TestCase {
 	 */
 	public function testWithoutCacheBackendFallsBackToScan(): void {
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList
+			),
+			logger: $this->logger
 		);
 
 		$this->webhookMapper->expects($this->once())
@@ -368,9 +380,10 @@ class WebhookInterceptionFastPathTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$this->service->deliverWebhook(
-			webhook: $webhook,
-			eventName: 'object.created',
-			payload: ['objectType' => 'object']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'object.created', payload: ['objectType' => 'object'])
+			)
 		);
 
 		$this->assertNotNull($capturedOptions, 'Delivery request was never issued');

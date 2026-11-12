@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Formats\RecurrenceWindow;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\ExtendedFieldTypeValidatorInterface;
+use OCA\OpenRegister\Formats\FormatFactory;
 use OCP\IRequest;
 
 /**
@@ -65,18 +67,32 @@ final class RecurrenceOccurrences {
 		}
 
 		$count = $this->requestedCount();
-		$validator = new ExtendedFieldTypeValidator();
+		$validator = FormatFactory::extendedFieldTypes();
 		foreach ($rules as $propertyName => $rrule) {
-			$key = $propertyName . '_occurrences';
-			if (count($rules) === 1) {
-				$key = '_occurrences';
-			}
-
-			$objectData[$key] = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
+			$key = self::occurrencesKey(propertyName: $propertyName, ruleCount: count($rules));
+			$objectData[$key] = $validator->occurrencesIn(window: new RecurrenceWindow(rrule: $rrule, count: $count));
 		}
 
 		return $objectData;
 	}//end enrich()
+
+	/**
+	 * The key of an occurrence list: plain for a lone rule, named by property otherwise.
+	 *
+	 * @param string $propertyName The recurrence property.
+	 * @param int    $ruleCount    The number of rules on the object.
+	 *
+	 * @return string The key.
+	 *
+	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
+	 */
+	private static function occurrencesKey(string $propertyName, int $ruleCount): string {
+		if ($ruleCount === 1) {
+			return '_occurrences';
+		}
+
+		return $propertyName . '_occurrences';
+	}//end occurrencesKey()
 
 	/**
 	 * The recurrence properties present with a string value.
@@ -110,7 +126,7 @@ final class RecurrenceOccurrences {
 	private function requestedCount(): int {
 		$raw = $this->request?->getParam('recurrenceOccurrences', null);
 		if (is_numeric($raw) === false) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+			return ExtendedFieldTypeValidatorInterface::DEFAULT_OCCURRENCES;
 		}
 
 		return (int)$raw;

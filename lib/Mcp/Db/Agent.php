@@ -28,8 +28,8 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\AppFramework\Db\Entity;
-use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Organisation;
@@ -111,7 +111,7 @@ use OCA\OpenRegister\Db\Organisation;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Agent extends Entity implements JsonSerializable {
+class Agent extends Entity implements JsonSerializable, AgentInterface {
 
 	/**
 	 * Unique identifier for the agent
@@ -344,36 +344,9 @@ class Agent extends Entity implements JsonSerializable {
 	 * Sets up the entity type mappings for proper database handling.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'provider', type: 'string');
-		$this->addType(fieldName: 'model', type: 'string');
-		$this->addType(fieldName: 'prompt', type: 'string');
-		$this->addType(fieldName: 'temperature', type: 'float');
-		$this->addType(fieldName: 'maxTokens', type: 'integer');
-		$this->addType(fieldName: 'configuration', type: 'json');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'active', type: 'boolean');
-		$this->addType(fieldName: 'enableRag', type: 'boolean');
-		$this->addType(fieldName: 'ragSearchMode', type: 'string');
-		$this->addType(fieldName: 'ragNumSources', type: 'integer');
-		$this->addType(fieldName: 'ragIncludeFiles', type: 'boolean');
-		$this->addType(fieldName: 'ragIncludeObjects', type: 'boolean');
-		$this->addType(fieldName: 'requestQuota', type: 'integer');
-		$this->addType(fieldName: 'tokenQuota', type: 'integer');
-		$this->addType(fieldName: 'views', type: 'json');
-		$this->addType(fieldName: 'searchFiles', type: 'boolean');
-		$this->addType(fieldName: 'searchObjects', type: 'boolean');
-		$this->addType(fieldName: 'isPrivate', type: 'boolean');
-		$this->addType(fieldName: 'invitedUsers', type: 'json');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'tools', type: 'json');
-		$this->addType(fieldName: 'user', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (AgentColumns::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -399,48 +372,9 @@ class Agent extends Entity implements JsonSerializable {
 	 * @return static The hydrated entity
 	 */
 	public function hydrate(array $object): static {
-		// Set UUID - generate if not provided.
-		$uuid = Uuid::v4()->toRfc4122();
-		if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
-			$uuid = $object['uuid'];
-		}
-
-		// Map property names to their resolved values.
-		// Uses camelCase keys with snake_case fallback and defaults where needed.
 		// NOTE: Entity setters use __call which does not support named arguments,
 		// so we use dynamic $this->$method($value) calls via the mapping approach.
-		$fields = [
-			'uuid' => $uuid,
-			'name' => $object['name'] ?? null,
-			'description' => $object['description'] ?? null,
-			'type' => $object['type'] ?? null,
-			'provider' => $object['provider'] ?? null,
-			'model' => $object['model'] ?? null,
-			'prompt' => $object['prompt'] ?? null,
-			'temperature' => $object['temperature'] ?? null,
-			'maxTokens' => $object['maxTokens'] ?? $object['max_tokens'] ?? null,
-			'configuration' => $object['configuration'] ?? null,
-			'organisation' => $object['organisation'] ?? null,
-			'owner' => $object['owner'] ?? null,
-			'active' => $object['active'] ?? true,
-			'enableRag' => $object['enableRag'] ?? $object['enable_rag'] ?? false,
-			'ragSearchMode' => $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null,
-			'ragNumSources' => $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null,
-			'ragIncludeFiles' => $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false,
-			'ragIncludeObjects' => $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false,
-			'requestQuota' => $object['requestQuota'] ?? $object['request_quota'] ?? null,
-			'tokenQuota' => $object['tokenQuota'] ?? $object['token_quota'] ?? null,
-			'views' => $object['views'] ?? null,
-			'searchFiles' => $object['searchFiles'] ?? $object['search_files'] ?? true,
-			'searchObjects' => $object['searchObjects'] ?? $object['search_objects'] ?? true,
-			'isPrivate' => $object['isPrivate'] ?? $object['is_private'] ?? true,
-			'invitedUsers' => $object['invitedUsers'] ?? $object['invited_users'] ?? null,
-			'groups' => $object['groups'] ?? null,
-			'tools' => $object['tools'] ?? null,
-			'user' => $object['user'] ?? null,
-		];
-
-		foreach ($fields as $key => $value) {
+		foreach (AgentColumns::hydrationValues(object: $object) as $key => $value) {
 			$method = 'set' . ucfirst($key);
 			try {
 				$this->$method($value);
@@ -473,6 +407,25 @@ class Agent extends Entity implements JsonSerializable {
 	 *     title: null|string}|null}
 	 */
 	public function jsonSerialize(): array {
+		return array_merge(
+			$this->definitionFields(),
+			$this->ownershipFields(),
+			$this->ragFields(),
+			$this->usageScopeFields(),
+			[
+				'created' => $this->created?->format('Y-m-d\TH:i:s\Z'),
+				'updated' => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+				'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			]
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * The serialised identity and LLM definition: what the agent is and which model it runs.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function definitionFields(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -485,14 +438,44 @@ class Agent extends Entity implements JsonSerializable {
 			'temperature' => $this->temperature,
 			'maxTokens' => $this->maxTokens,
 			'configuration' => $this->configuration,
+		];
+	}//end definitionFields()
+
+	/**
+	 * The serialised ownership: organisation, owner and whether the agent is active.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function ownershipFields(): array {
+		return [
 			'organisation' => $this->organisation,
 			'owner' => $this->owner,
 			'active' => $this->active,
+		];
+	}//end ownershipFields()
+
+	/**
+	 * The serialised retrieval (RAG) settings.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function ragFields(): array {
+		return [
 			'enableRag' => $this->enableRag,
 			'ragSearchMode' => $this->ragSearchMode,
 			'ragNumSources' => $this->ragNumSources,
 			'ragIncludeFiles' => $this->ragIncludeFiles,
 			'ragIncludeObjects' => $this->ragIncludeObjects,
+		];
+	}//end ragFields()
+
+	/**
+	 * The serialised usage scope: quotas, searchable views and sources, sharing, tools and user.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function usageScopeFields(): array {
+		return [
 			'requestQuota' => $this->requestQuota,
 			'tokenQuota' => $this->tokenQuota,
 			'views' => $this->views,
@@ -503,11 +486,8 @@ class Agent extends Entity implements JsonSerializable {
 			'groups' => $this->groups,
 			'tools' => $this->tools,
 			'user' => $this->user,
-			'created' => $this->created?->format('Y-m-d\TH:i:s\Z'),
-			'updated' => $this->updated?->format('Y-m-d\TH:i:s\Z'),
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
 		];
-	}//end jsonSerialize()
+	}//end usageScopeFields()
 
 	/**
 	 * Get managed by configuration data for JSON serialization

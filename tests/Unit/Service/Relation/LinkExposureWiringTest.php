@@ -39,10 +39,12 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -61,6 +63,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  */
 final class LinkExposureWiringTest extends TestCase {
 
@@ -427,4 +431,30 @@ final class LinkExposureWiringTest extends TestCase {
 			$this->refusalsFor($this->mapperResolving($this->farSchema()), $this->schemaLinkingTo(null))
 		);
 	}//end testALinkWithNoDeclaredSetIsNotRefused()
+
+	/**
+	 * Of `@self` the identity stays, and a display field only when its value is shown anyway.
+	 *
+	 * @return void
+	 */
+	public function testTheEnvelopeKeepsTheIdentityAndWhatIsShownAnyway(): void {
+		$self = [
+			'id' => 'uuid-1',
+			'register' => 1,
+			'schema' => 9,
+			'name' => 'shown',
+			'summary' => 'private',
+			'description' => 'uuid-1',
+			'image' => LinkExposure::WITHHELD,
+			'slug' => '9',
+			'owner' => 'alice',
+			'relations' => ['geheim' => 'uuid-2'],
+		];
+		$shown = ['status' => 'shown', 'nested' => ['a' => 1], 'geheim' => LinkExposure::WITHHELD];
+
+		$this->assertSame(
+			['id' => 'uuid-1', 'register' => 1, 'schema' => 9, 'name' => 'shown', 'description' => 'uuid-1'],
+			(new LinkExposure())->envelope(self: $self, shown: $shown)
+		);
+	}
 }//end class

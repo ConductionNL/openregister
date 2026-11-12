@@ -1,0 +1,1463 @@
+{
+    "preload nothing": {
+        "answer": [],
+        "calls": []
+    },
+    "preload from the database": {
+        "answer": [
+            [
+                "object aaaaaaaa-0000-0000-0000-000000000001",
+                "object bbbbbbbb-0000-0000-0000-000000000002"
+            ],
+            2
+        ],
+        "calls": [
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ]
+                ]
+            }
+        ]
+    },
+    "preload all cached keeps positions": {
+        "answer": {
+            "x": "object bbbbbbbb-0000-0000-0000-000000000002",
+            "y": "object aaaaaaaa-0000-0000-0000-000000000001"
+        },
+        "calls": []
+    },
+    "preload loads only what is missing": {
+        "answer": [
+            [
+                "object bbbbbbbb-0000-0000-0000-000000000002"
+            ],
+            1
+        ],
+        "calls": [
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "bbbbbbbb-0000-0000-0000-000000000002",
+                        "cccccccc-0000-0000-0000-000000000003"
+                    ]
+                ]
+            }
+        ]
+    },
+    "preload failure": {
+        "answer": [],
+        "calls": [
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ]
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[CacheHandler] Bulk preload failed in CacheHandler",
+                "context": {
+                    "exception": "down",
+                    "identifiersToLoad": 2
+                }
+            }
+        ]
+    },
+    "preload in a register": {
+        "answer": [
+            "object aaaaaaaa-0000-0000-0000-000000000001",
+            "object bbbbbbbb-0000-0000-0000-000000000002"
+        ],
+        "calls": [
+            {
+                "mapper": "acrossMagic",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ],
+                    [
+                        false,
+                        7
+                    ]
+                ]
+            },
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ]
+                ]
+            }
+        ]
+    },
+    "warm-up without magic tables": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 1,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "dddddddd-0000-0000-0000-000000000004": "The organisation",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects"
+                },
+                "nameOrganisations": {
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "dddddddd-0000-0000-0000-000000000004": "organisation",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "The organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "organisation"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 1,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up with a magic table": {
+        "answer": [
+            4,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 1,
+                    "objects_table": 2,
+                    "magic_tables": 3,
+                    "total_unique": 4
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 4,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "dddddddd-0000-0000-0000-000000000004": "The organisation",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "Named",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "cccccccc-0000-0000-0000-000000000003": "cccccccc-0000-0000-0000-000000000003"
+                },
+                "nameOrganisations": {
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "bbbbbbbb-0000-0000-0000-000000000002": null,
+                    "cccccccc-0000-0000-0000-000000000003": null
+                },
+                "nameSources": {
+                    "dddddddd-0000-0000-0000-000000000004": "organisation",
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "1:5",
+                    "cccccccc-0000-0000-0000-000000000003": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": "person"
+            },
+            {
+                "sql": "SELECT \"_uuid\", \"_name\", \"_organisation\" FROM *PREFIX*openregister_table_1_5 WHERE \"_deleted\" IS NULL"
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "The organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "organisation"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "Named",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_bbbbbbbb-0000-0000-0000-000000000002",
+                "value": {
+                    "n": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_cccccccc-0000-0000-0000-000000000003",
+                "value": {
+                    "n": "cccccccc-0000-0000-0000-000000000003",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 4,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 4,
+                    "magic_names_loaded": 3,
+                    "objects_processed": 2,
+                    "organisations_processed": 1,
+                    "total_names_cached": 4
+                }
+            }
+        ]
+    },
+    "warm-up with an unreadable table": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": "person"
+            },
+            {
+                "sql": "SELECT \"_uuid\", \"_name\", \"_organisation\" FROM *PREFIX*openregister_table_1_5 WHERE \"_deleted\" IS NULL"
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Could not query magic table for names",
+                "context": {
+                    "error": "no table",
+                    "table": "*PREFIX*openregister_table_1_5"
+                }
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up with a table outside magic mapping": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": "person"
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up with an unknown schema": {
+        "answer": [
+            3,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 0,
+                    "magic_tables": 3,
+                    "total_unique": 3
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 3,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "Named",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "cccccccc-0000-0000-0000-000000000003": "cccccccc-0000-0000-0000-000000000003"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "bbbbbbbb-0000-0000-0000-000000000002": null,
+                    "cccccccc-0000-0000-0000-000000000003": null
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "1:5",
+                    "cccccccc-0000-0000-0000-000000000003": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": null
+            },
+            {
+                "sql": "SELECT \"_uuid\", \"_name\", \"_organisation\" FROM *PREFIX*openregister_table_1_5 WHERE \"_deleted\" IS NULL"
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "Named",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_bbbbbbbb-0000-0000-0000-000000000002",
+                "value": {
+                    "n": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_cccccccc-0000-0000-0000-000000000003",
+                "value": {
+                    "n": "cccccccc-0000-0000-0000-000000000003",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 3,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 3,
+                    "magic_names_loaded": 3,
+                    "objects_processed": 0,
+                    "organisations_processed": 0,
+                    "total_names_cached": 3
+                }
+            }
+        ]
+    },
+    "warm-up with failing registers": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "warning",
+                "message": "[CacheHandler] Failed to load names from magic tables",
+                "context": {
+                    "error": "no registers"
+                }
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up with a register failing halfway": {
+        "answer": [
+            3,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 0,
+                    "magic_tables": 3,
+                    "total_unique": 3
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 3,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "Named",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "cccccccc-0000-0000-0000-000000000003": "cccccccc-0000-0000-0000-000000000003"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "bbbbbbbb-0000-0000-0000-000000000002": null,
+                    "cccccccc-0000-0000-0000-000000000003": null
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "1:5",
+                    "cccccccc-0000-0000-0000-000000000003": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": "person"
+            },
+            {
+                "sql": "SELECT \"_uuid\", \"_name\", \"_organisation\" FROM *PREFIX*openregister_table_1_5 WHERE \"_deleted\" IS NULL"
+            },
+            {
+                "log": "warning",
+                "message": "[CacheHandler] Failed to load names from magic tables",
+                "context": {
+                    "error": "no schemas"
+                }
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "Named",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_bbbbbbbb-0000-0000-0000-000000000002",
+                "value": {
+                    "n": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_cccccccc-0000-0000-0000-000000000003",
+                "value": {
+                    "n": "cccccccc-0000-0000-0000-000000000003",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 3,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 3,
+                    "magic_names_loaded": 3,
+                    "objects_processed": 0,
+                    "organisations_processed": 0,
+                    "total_names_cached": 3
+                }
+            }
+        ]
+    },
+    "warm-up with failing organisations": {
+        "answer": [
+            0,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 0,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": [],
+                "nameOrganisations": [],
+                "nameSources": []
+            }
+        ],
+        "calls": [
+            {
+                "log": "error",
+                "message": "[CacheHandler] Name cache warmup failed",
+                "context": {
+                    "error": "no organisations"
+                }
+            }
+        ]
+    },
+    "warm-up, distributed store failing": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "log": "warning",
+                "message": "[CacheHandler] Failed to persist name cache entry to distributed cache",
+                "context": {
+                    "error": "store down",
+                    "identifier": "aaaaaaaa-0000-0000-0000-000000000001"
+                }
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "log": "warning",
+                "message": "[CacheHandler] Failed to persist name cache entry to distributed cache",
+                "context": {
+                    "error": "store down",
+                    "identifier": "dddddddd-0000-0000-0000-000000000004"
+                }
+            },
+            {
+                "set": "_metadata_count",
+                "value": 0,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 0,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up, distributed store failing after the first": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 1,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 1,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up, count not stored": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "warm-up without a distributed cache": {
+        "answer": [
+            2,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 2,
+                    "magic_tables": 0,
+                    "total_unique": 2
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 2,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "From objects",
+                    "dddddddd-0000-0000-0000-000000000004": "Hidden by the organisation"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "dddddddd-0000-0000-0000-000000000004": "dddddddd-0000-0000-0000-000000000004"
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "dddddddd-0000-0000-0000-000000000004": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 0,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            }
+        ]
+    },
+    "all names warm the first time only": {
+        "answer": [
+            {
+                "aaaaaaaa-0000-0000-0000-000000000001": "From objects"
+            },
+            {
+                "aaaaaaaa-0000-0000-0000-000000000001": "From objects"
+            },
+            {
+                "aaaaaaaa-0000-0000-0000-000000000001": "From objects"
+            },
+            2
+        ],
+        "calls": [
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] All object names retrieved",
+                "context": {
+                    "total_cached": 2,
+                    "uuid_names_returned": 1,
+                    "warmup_triggered": true
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] All object names retrieved",
+                "context": {
+                    "total_cached": 2,
+                    "uuid_names_returned": 1,
+                    "warmup_triggered": false
+                }
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "From objects",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_dddddddd-0000-0000-0000-000000000004",
+                "value": {
+                    "n": "Hidden by the organisation",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 2,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 2,
+                    "magic_names_loaded": 0,
+                    "objects_processed": 2,
+                    "organisations_processed": 0,
+                    "total_names_cached": 2
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] All object names retrieved",
+                "context": {
+                    "total_cached": 2,
+                    "uuid_names_returned": 1,
+                    "warmup_triggered": true
+                }
+            }
+        ]
+    },
+    "table: no identifiers": {
+        "answer": [],
+        "calls": []
+    },
+    "table: first column answers": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": "1:5"
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": "1:5"
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    },
+    "table: a missing column moves on": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": "1:5"
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": "1:5"
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, naam as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    },
+    "table: an empty column moves on": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": "1:5"
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": "1:5"
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, naam as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    },
+    "table: blank names move on": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": "1:5"
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": "1:5"
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, naam as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, title as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    },
+    "table: a failure halfway keeps what it read": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": "1:5"
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": "1:5"
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, naam as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    },
+    "table: every column fails": {
+        "answer": [],
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, naam as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "sql": "SELECT _uuid, _organisation, title as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            }
+        ]
+    },
+    "table: no source": {
+        "answer": {
+            "aaaaaaaa-0000-0000-0000-000000000001": {
+                "name": "Named",
+                "organisation": "12",
+                "source": null
+            },
+            "cccccccc-0000-0000-0000-000000000003": {
+                "name": "0",
+                "organisation": null,
+                "source": null
+            }
+        },
+        "calls": [
+            {
+                "sql": "SELECT _uuid, _organisation, _name as name_value FROM tbl WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "bind": 1,
+                "value": "aaaaaaaa-0000-0000-0000-000000000001"
+            },
+            {
+                "bind": 2,
+                "value": "bbbbbbbb-0000-0000-0000-000000000002"
+            }
+        ]
+    }
+}

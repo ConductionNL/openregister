@@ -33,8 +33,10 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
-use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
+use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -96,9 +98,11 @@ class TimeTrackerLinkServiceTest extends TestCase {
 			$this->mapper,
 			$this->db,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -129,7 +133,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkEntry($this->target(), 'client', 'cli-1');
+		$this->service->linkEntry($this->target(), new TimeEntry('client', 'cli-1'));
 	}//end testLinkEntryThrowsWhenNoUser()
 
 	public function testLinkEntryThrowsOnUnknownType(): void {
@@ -138,7 +142,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->linkEntry($this->target(), 'banana', 'cli-1');
+		$this->service->linkEntry($this->target(), new TimeEntry('banana', 'cli-1'));
 	}//end testLinkEntryThrowsOnUnknownType()
 
 	public function testLinkEntryThrowsOnEmptyId(): void {
@@ -147,7 +151,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->linkEntry($this->target(), 'client', '   ');
+		$this->service->linkEntry($this->target(), new TimeEntry('client', '   '));
 	}//end testLinkEntryThrowsOnEmptyId()
 
 	public function testLinkEntryThrowsWhenTimeManagerUnavailable(): void {
@@ -157,7 +161,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkEntry($this->target(), 'client', 'cli-1');
+		$this->service->linkEntry($this->target(), new TimeEntry('client', 'cli-1'));
 	}//end testLinkEntryThrowsWhenTimeManagerUnavailable()
 
 	public function testLinkEntryThrowsOnDuplicate(): void {
@@ -169,7 +173,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Entry already linked to this object');
 
-		$this->service->linkEntry($this->target(), 'client', 'cli-1');
+		$this->service->linkEntry($this->target(), new TimeEntry('client', 'cli-1'));
 	}//end testLinkEntryThrowsOnDuplicate()
 
 	public function testCreateAndLinkClientThrowsWhenNoUser(): void {
@@ -319,11 +323,11 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->setupUser('bob');
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->expects($this->once())->method('findByObjectAndEntry')
-			->with('abc-123', 'time', null, null, 'tim-1')->willReturn(null);
+			->with('abc-123', $this->callback(static fn (TimeTrackerLink $entry): bool => [$entry->getEntryType(), $entry->getClientId(), $entry->getTaskId(), $entry->getTimeId()] === ['time', null, null, 'tim-1']))->willReturn(null);
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->upstreamRow(['name' => 'Standup', 'duration' => 1.5, 'payed' => 0, 'start' => '2026-01-02 09:00:00']);
 
-		$link = $this->service->linkEntry($this->target(), 'time', ' tim-1 ');
+		$link = $this->service->linkEntry($this->target(), new TimeEntry('time', ' tim-1 '));
 
 		$this->assertSame('abc-123', $link->getObjectUuid());
 		$this->assertSame(1, $link->getRegisterId());
@@ -342,11 +346,11 @@ class TimeTrackerLinkServiceTest extends TestCase {
 	public function testLinkEntryStoresAClientIdForAClient(): void {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
-		$this->mapper->method('findByObjectAndEntry')->with('abc-123', 'client', 'cli-1', null, null)->willReturn(null);
+		$this->mapper->method('findByObjectAndEntry')->with('abc-123', $this->callback(static fn (TimeTrackerLink $entry): bool => [$entry->getEntryType(), $entry->getClientId(), $entry->getTaskId(), $entry->getTimeId()] === ['client', 'cli-1', null, null]))->willReturn(null);
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->upstreamRow(['name' => 'Acme']);
 
-		$link = $this->service->linkEntry($this->target(), 'client', 'cli-1');
+		$link = $this->service->linkEntry($this->target(), new TimeEntry('client', 'cli-1'));
 
 		$this->assertSame('cli-1', $link->getClientId());
 		$this->assertNull($link->getTimeId());
@@ -362,6 +366,6 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 
-		$this->service->linkEntry($this->target(), 'task', 'tsk-1');
+		$this->service->linkEntry($this->target(), new TimeEntry('task', 'tsk-1'));
 	}//end testLinkEntryThrowsWhenTheEntryIsMissing()
 }//end class

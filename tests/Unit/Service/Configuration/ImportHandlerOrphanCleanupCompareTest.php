@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -45,6 +47,12 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 
@@ -117,12 +125,17 @@ class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 		);
 		$schemas->method('update')->willReturnArgument(0);
 		$handler = new ImportHandler(
-			schemaMapper: $schemas,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $schemas,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)
@@ -135,17 +148,17 @@ class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 		$handler->setGroupManager($this->createMock(IGroupManager::class));
 
 		$handler->importSchema(
-			data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => [], 'configuration' => ['orphanCleanup' => true, 'allowFiles' => true]],
-			slugsAndIdsMap: [],
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => [], 'configuration' => ['orphanCleanup' => true, 'allowFiles' => true]],
+				registerSchemaIds: []
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame(['allowFiles' => true], $stored);
 	}
 
 	public function testTheFlagIsAComparedConfigurationKey(): void {
-		$compared = new ReflectionMethod(ImportHandler::class, 'isComparedConfigurationKey');
-
-		$this->assertTrue($compared->invoke(null, 'orphanCleanup'));
+		$this->assertTrue((new ImportedSchemaComparison())->differs(data: ['orphanCleanup' => ['allow' => true]], existing: new Schema()));
 	}
 }//end class

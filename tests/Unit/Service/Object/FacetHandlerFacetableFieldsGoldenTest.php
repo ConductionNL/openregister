@@ -12,10 +12,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
@@ -159,12 +162,11 @@ class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			fn (Schema $schema, string $property, array $object): bool => $property === 'allowed'
+			fn (SchemaProperty $read, PropertyAccessRequest $request): bool => $read->name === 'allowed'
 		);
 
 		$handler = new FacetHandler(
-			unifiedObjectMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapperInterface::class),
+			lookups: new FacetLookups($this->createMock(MagicMapper::class), $this->createMock(SchemaMapperInterface::class)),
 			responseCache: $this->createMock(FacetResponseCache::class),
 			logger: $logger,
 			propertyRbac: $rbac

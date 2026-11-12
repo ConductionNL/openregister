@@ -95,7 +95,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectCreatingEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -125,7 +124,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectUpdatingEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -150,7 +148,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectUpdatingEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['action'] === 'updating'
@@ -170,7 +167,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectDeletingEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -194,7 +190,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -222,7 +217,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -249,7 +243,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -273,7 +266,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectLockedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -294,7 +286,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectUnlockedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -315,7 +306,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectRevertedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'object'
@@ -335,7 +325,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ObjectRevertedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['revertPoint'] === 'audit-id-42';
@@ -354,7 +343,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				RegisterCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'register'
@@ -376,7 +364,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				RegisterUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'register'
@@ -397,7 +384,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				RegisterDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'register'
@@ -418,7 +404,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SchemaCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'schema'
@@ -440,7 +425,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SchemaUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'schema'
@@ -461,7 +445,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SchemaDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'schema'
@@ -482,7 +465,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ApplicationCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'application'
@@ -504,7 +486,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ApplicationUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'application'
@@ -525,7 +506,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ApplicationDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'application'
@@ -546,7 +526,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				AgentCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'agent'
@@ -568,7 +547,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				AgentUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'agent'
@@ -589,7 +567,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				AgentDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'agent'
@@ -610,7 +587,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SourceCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'source'
@@ -632,7 +608,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SourceUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'source'
@@ -653,7 +628,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				SourceDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'source'
@@ -674,7 +648,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ConfigurationCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'configuration'
@@ -700,7 +673,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				$this->callback(function (string $eventName) {
 					// The mock class name contains a suffix, so just check it contains the right part.
 					return str_contains($eventName, 'ConfigurationUpdatedEvent');
@@ -724,7 +696,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ConfigurationDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'configuration'
@@ -745,7 +716,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ViewCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'view'
@@ -770,7 +740,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				$this->callback(function (string $eventName) {
 					return str_contains($eventName, 'ViewUpdatedEvent');
 				}),
@@ -793,7 +762,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ViewDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'view'
@@ -814,7 +782,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ConversationCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'conversation'
@@ -836,7 +803,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ConversationUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'conversation'
@@ -857,7 +823,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				ConversationDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'conversation'
@@ -878,7 +843,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				OrganisationCreatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'organisation'
@@ -900,7 +864,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				OrganisationUpdatedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'organisation'
@@ -921,7 +884,6 @@ class WebhookEventListenerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('dispatchEvent')
 			->with(
-				$this->identicalTo($event),
 				OrganisationDeletedEvent::class,
 				$this->callback(function (array $payload) {
 					return $payload['objectType'] === 'organisation'

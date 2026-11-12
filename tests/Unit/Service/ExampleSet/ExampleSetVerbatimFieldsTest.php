@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
@@ -55,6 +57,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 	/**
@@ -95,7 +102,7 @@ class ExampleSetVerbatimFieldsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$row = $this->store->find(register: 'mail', schema: 'emailTemplate', filters: [])[0];
+		$row = $this->store->find(table: new RegisterSchemaRef(register: 'mail', schema: 'emailTemplate'), filters: [])[0];
 		$this->assertSame('Uw verzoek {{zaakNummer}} is ontvangen', $row['subject']);
 		$this->assertSame('Geachte {{contactNaam}}, wij beslissen uiterlijk op {{deadline}}.', $row['body']);
 		$this->assertSame('esra.demir', $row['author']);

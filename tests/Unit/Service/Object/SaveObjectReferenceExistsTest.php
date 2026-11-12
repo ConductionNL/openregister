@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -77,6 +78,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectReferenceExistsTest extends TestCase {
 
@@ -120,6 +123,10 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 				throw new RuntimeException('database down');
 			}
 
+			if ($lookup === 'lookup failed') {
+				throw new ObjectLookupFailedException('database down');
+			}
+
 			return new ObjectEntity();
 		});
 		$events = $this->createMock(IEventDispatcher::class);
@@ -128,29 +135,47 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 		});
 
 		return new SaveObject(
-			$this->createMock(MagicMapper::class),
-			$unified,
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(AuditTrailMapper::class),
-			$schemas,
-			$registers,
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			$this->createMock(PermissionHandler::class),
-			eventDispatcher: $events
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $unified
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->createMock(IUserSession::class),
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $this->createMock(LoggerInterface::class),
+					eventDispatcher: $events
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class)
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 	}
 
@@ -209,6 +234,17 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 			],
 			$this->checkTwice($this->handler(lookup: 'fails'), null)
 		);
+	}
+
+	public function testAFailedStoreLookupRefusesTheSave(): void {
+		try {
+			$this->checkTwice($this->handler(lookup: 'lookup failed'), null);
+			$this->fail('A failed store lookup must not let the reference pass.');
+		} catch (ObjectLookupFailedException $e) {
+			$this->assertSame('database down', $e->getMessage());
+		}
+
+		$this->assertSame([['find', self::UUID, null, 2, false, false, false]], $this->trace);
 	}
 
 	public function testAnUnknownRegisterSkipsTheLookup(): void {

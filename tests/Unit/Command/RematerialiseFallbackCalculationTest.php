@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -39,6 +42,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -47,6 +52,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * learniq session (O8) and enrolment (O9), each one row.
@@ -99,16 +106,13 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 
 		// The REAL readOnly rule ObjectService::enforceReadOnlyOnUpdate() applies.
 		$rules = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$schemas,
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $schemas, urlGenerator: $this->createMock(IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema, $stored, $listener): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema, $stored, $listener): ObjectEntity {
 				$this->saved[] = $object;
 				// The type rule validation applies: a `type: string` property refuses an array.
 				foreach ($schema->getProperties() as $name => $property) {
@@ -117,7 +121,7 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 					}
 				}
 
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $stored, schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $stored), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -130,13 +134,9 @@ class RematerialiseFallbackCalculationTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			$registers,
-			$schemas,
-			$magic,
-			$objects,
-			$evaluator,
-			$this->createMock(ReferenceResolver::class),
-			($aggregates ?? $this->createMock(AggregateReferenceResolver::class))
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

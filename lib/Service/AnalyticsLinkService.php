@@ -52,11 +52,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
-use OCP\App\IAppManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -80,7 +77,7 @@ use Throwable;
  *     are referenced FQN-only on purpose — importing them would break
  *     autoloading when Analytics is not installed.
  */
-class AnalyticsLinkService {
+class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	/**
 	 * NC Analytics app id.
 	 *
@@ -112,17 +109,13 @@ class AnalyticsLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Persistence for link rows.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 * @param ContainerInterface $container App container NC Analytics' ReportService is resolved from.
 	 */
 	public function __construct(
-		private readonly AnalyticsLinkMapper $analyticsLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly AnalyticsLinkMapperInterface $analyticsLinkMapper,
+		private readonly LinkServiceRuntime $runtime,
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
@@ -133,7 +126,7 @@ class AnalyticsLinkService {
 	 * @return bool
 	 */
 	public function isAnalyticsAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isAnalyticsAvailable()
 
 	/**
@@ -144,7 +137,7 @@ class AnalyticsLinkService {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -173,7 +166,7 @@ class AnalyticsLinkService {
 		try {
 			return $this->container->get(self::REPORT_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveReportService()
@@ -231,15 +224,13 @@ class AnalyticsLinkService {
 	}//end assertReportLinkable()
 
 	/**
-	 * Create a new NC Analytics report and link it to an OR object.
+	 * Create the drafted NC Analytics report and link it to an OR object.
 	 *
 	 * The new report is a blank group/folder report by default; callers
-	 * may pass a different NC Analytics datasource type integer via
-	 * `$type`.
+	 * may draft a different NC Analytics datasource type integer.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string     $name   New report name.
-	 * @param int|null   $type   NC Analytics datasource type (default group).
+	 * @param LinkTarget           $target The object to link to.
+	 * @param AnalyticsReportDraft $draft  The report name and optional datasource type (default group).
 	 *
 	 * @return AnalyticsLink The persisted link row.
 	 *
@@ -248,15 +239,15 @@ class AnalyticsLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink {
+	public function createAndLinkReport(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
 		$uid = $this->requireUid();
 
-		$name = trim($name);
+		$name = trim($draft->name);
 		if ($name === '') {
 			throw new Exception('Report name is required', 400);
 		}
 
-		$reportType = ($type ?? self::REPORT_TYPE_GROUP);
+		$reportType = ($draft->type ?? self::REPORT_TYPE_GROUP);
 		$reportId   = $this->createReport(name: $name, reportType: $reportType);
 
 		$info = ($this->fetchReportInfo(reportId: $reportId) ?? $this->draftReportInfo(name: $name, reportType: $reportType));
@@ -282,19 +273,32 @@ class AnalyticsLinkService {
 			throw new Exception('NC Analytics is not available', 503);
 		}
 
-		try {
-			$reportId = (int)$service->create($name, '', 0, $reportType, 0, '', '', '', '', '', '');
-		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
-			throw new Exception('Failed to create Analytics report', 500);
-		}
-
+		$reportId = $this->invokeCreate(service: $service, args: [$name, '', 0, $reportType, 0, '', '', '', '', '', '']);
 		if ($reportId === 0) {
 			throw new Exception('Failed to create Analytics report', 500);
 		}
 
 		return $reportId;
 	}//end createReport()
+
+	/**
+	 * Call ReportService::create(), turning any failure into a 500.
+	 *
+	 * @param object $service The NC Analytics ReportService.
+	 * @param array<int,mixed> $args The positional create() arguments.
+	 *
+	 * @return int The new report id (0 when none was returned).
+	 *
+	 * @throws Exception Create failure (500).
+	 */
+	private function invokeCreate(object $service, array $args): int {
+		try {
+			return (int)$service->create(...$args);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
+			throw new Exception('Failed to create Analytics report', 500);
+		}
+	}//end invokeCreate()
 
 	/**
 	 * The cached metadata for a new report whose read came back empty.
@@ -383,26 +387,12 @@ class AnalyticsLinkService {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getAvailableReports(?string $search = null): array {
-		$service = $this->resolveReportService();
-		if ($service === null) {
-			return [];
-		}
-
-		try {
-			$reports = $service->index();
-		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
-			return [];
-		}
-
-		$needle = null;
-		if ($search !== null && $search !== '') {
-			$needle = mb_strtolower($search);
-		}
+		$reports = $this->indexReports();
+		$needle = $this->needleOf(search: $search);
 
 		$out = [];
 		foreach ($reports as $report) {
-			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle);
+			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle ?? '');
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -410,6 +400,41 @@ class AnalyticsLinkService {
 
 		return $out;
 	}//end getAvailableReports()
+
+	/**
+	 * The current user's NC Analytics reports; empty when Analytics is
+	 * unavailable or the listing fails.
+	 *
+	 * @return mixed The ReportService::index() result, or an empty array.
+	 */
+	private function indexReports(): mixed {
+		$service = $this->resolveReportService();
+		if ($service === null) {
+			return [];
+		}
+
+		try {
+			return $service->index();
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
+			return [];
+		}
+	}//end indexReports()
+
+	/**
+	 * The lower-cased name filter, or null when no search was given.
+	 *
+	 * @param string|null $search Optional name-substring filter.
+	 *
+	 * @return string|null
+	 */
+	private function needleOf(?string $search): ?string {
+		if ($search === null || $search === '') {
+			return null;
+		}
+
+		return mb_strtolower($search);
+	}//end needleOf()
 
 	/**
 	 * Build an AnalyticsLink entity from cached report info.
@@ -439,40 +464,58 @@ class AnalyticsLinkService {
 	 * the optional name filter.
 	 *
 	 * @param array<string,mixed> $report A normalised report row.
-	 * @param string|null $needle Lower-cased name-substring filter, or null.
+	 * @param string $needle Lower-cased name-substring filter, or '' for none.
 	 *
 	 * @return array<string,mixed>|null The picker row, or null when the
 	 *                                  report is unreadable or filtered out.
 	 */
-	private function pickerRowFromReport(array $report, ?string $needle): ?array {
+	private function pickerRowFromReport(array $report, string $needle): ?array {
 		$reportId = (int)($report['id'] ?? 0);
 		if ($reportId === 0) {
 			return null;
 		}
 
-		$name = (string)($report['name'] ?? '');
-		if ($needle !== null && str_contains(mb_strtolower($name), $needle) === false) {
+		$row = $this->pickerRow(report: $report, reportId: $reportId);
+		if ($needle !== '' && str_contains(mb_strtolower($row['name']), $needle) === false) {
 			return null;
 		}
 
-		$type = null;
-		$subheader = null;
-		if (isset($report['type']) === true) {
-			$type = (string)$report['type'];
-		}
+		return $row;
+	}//end pickerRowFromReport()
 
-		if (isset($report['subheader']) === true) {
-			$subheader = (string)$report['subheader'];
-		}
-
+	/**
+	 * The picker row of a readable report.
+	 *
+	 * @param array<string,mixed> $report A normalised report row.
+	 * @param int $reportId The report's (non-zero) id.
+	 *
+	 * @return array{id:int,name:string,type:?string,subheader:?string,url:string}
+	 */
+	private function pickerRow(array $report, int $reportId): array {
 		return [
 			'id' => $reportId,
-			'name' => $name,
-			'type' => $type,
-			'subheader' => $subheader,
+			'name' => (string)($report['name'] ?? ''),
+			'type' => $this->optionalString(report: $report, key: 'type'),
+			'subheader' => $this->optionalString(report: $report, key: 'subheader'),
 			'url' => $this->reportDeepLink(reportId: $reportId),
 		];
-	}//end pickerRowFromReport()
+	}//end pickerRow()
+
+	/**
+	 * A report field as a string, or null when it is not set.
+	 *
+	 * @param array<string,mixed> $report A report row.
+	 * @param string $key The field.
+	 *
+	 * @return string|null
+	 */
+	private function optionalString(array $report, string $key): ?string {
+		if (isset($report[$key]) === false) {
+			return null;
+		}
+
+		return (string)$report[$key];
+	}//end optionalString()
 
 	/**
 	 * Whether a link row's cache is older than the stale window.
@@ -516,14 +559,24 @@ class AnalyticsLinkService {
 		}
 
 		$link->setLinkedAt(new DateTime());
+		return $this->saveRefreshed(link: $link);
+	}//end refreshLink()
 
+	/**
+	 * Persist a refreshed link row, best-effort.
+	 *
+	 * @param AnalyticsLink $link The refreshed link row.
+	 *
+	 * @return AnalyticsLink The stored row, or the in-memory row when the update fails.
+	 */
+	private function saveRefreshed(AnalyticsLink $link): AnalyticsLink {
 		try {
 			return $this->analyticsLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
-	}//end refreshLink()
+	}//end saveRefreshed()
 
 	/**
 	 * Fetch normalised report metadata from NC Analytics.
@@ -533,40 +586,40 @@ class AnalyticsLinkService {
 	 * @return array{title:string,type:?string,subheader:?string,createdAt:?DateTime,modifiedAt:?DateTime}|null
 	 */
 	private function fetchReportInfo(int $reportId): ?array {
+		$report = $this->readReport(reportId: $reportId);
+		if (is_array($report) === false || $report === []) {
+			return null;
+		}
+
+		return [
+			'title' => (string)($report['name'] ?? ''),
+			'type' => $this->optionalString(report: $report, key: 'type'),
+			'subheader' => $this->optionalString(report: $report, key: 'subheader'),
+			'createdAt' => $this->parseTimestamp(value: ($report['created_at'] ?? null)),
+			'modifiedAt' => $this->parseTimestamp(value: ($report['modified_at'] ?? ($report['updated_at'] ?? null))),
+		];
+	}//end fetchReportInfo()
+
+	/**
+	 * Read a report from NC Analytics; null when Analytics is unavailable or the read fails.
+	 *
+	 * @param int $reportId The report id.
+	 *
+	 * @return mixed The ReportService::read() result, or null.
+	 */
+	private function readReport(int $reportId): mixed {
 		$service = $this->resolveReportService();
 		if ($service === null) {
 			return null;
 		}
 
 		try {
-			$report = $service->read($reportId);
+			return $service->read($reportId);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
 			return null;
 		}
-
-		if (is_array($report) === false || $report === []) {
-			return null;
-		}
-
-		$type2 = null;
-		$subheader2 = null;
-		if (isset($report['type']) === true) {
-			$type2 = (string)$report['type'];
-		}
-
-		if (isset($report['subheader']) === true) {
-			$subheader2 = (string)$report['subheader'];
-		}
-
-		return [
-			'title' => (string)($report['name'] ?? ''),
-			'type' => $type2,
-			'subheader' => $subheader2,
-			'createdAt' => $this->parseTimestamp(value: ($report['created_at'] ?? null)),
-			'modifiedAt' => $this->parseTimestamp(value: ($report['modified_at'] ?? ($report['updated_at'] ?? null))),
-		];
-	}//end fetchReportInfo()
+	}//end readReport()
 
 	/**
 	 * Parse a NC Analytics timestamp (epoch int or datetime string) into
@@ -577,20 +630,44 @@ class AnalyticsLinkService {
 	 * @return DateTime|null
 	 */
 	private function parseTimestamp(mixed $value): ?DateTime {
-		if ($value === null || $value === '' || $value === 0) {
+		if ($this->isUnsetTimestamp(value: $value) === true) {
 			return null;
 		}
 
 		try {
-			if (is_numeric($value) === true) {
-				return (new DateTime())->setTimestamp((int)$value);
-			}
-
-			return new DateTime((string)$value);
+			return $this->toDateTime(value: $value);
 		} catch (Throwable $e) {
 			return null;
 		}
 	}//end parseTimestamp()
+
+	/**
+	 * Whether a timestamp value means "no timestamp": null, '' or 0.
+	 *
+	 * @param mixed $value Raw timestamp value.
+	 *
+	 * @return bool
+	 */
+	private function isUnsetTimestamp(mixed $value): bool {
+		return $value === null || $value === '' || $value === 0;
+	}//end isUnsetTimestamp()
+
+	/**
+	 * An epoch number or a datetime string as a DateTime.
+	 *
+	 * @param mixed $value Raw, non-empty timestamp value.
+	 *
+	 * @return DateTime
+	 *
+	 * @throws Throwable When the string is not a parseable datetime.
+	 */
+	private function toDateTime(mixed $value): DateTime {
+		if (is_numeric($value) === true) {
+			return (new DateTime())->setTimestamp((int)$value);
+		}
+
+		return new DateTime((string)$value);
+	}//end toDateTime()
 
 	/**
 	 * Build the NC Analytics deep link for a report.

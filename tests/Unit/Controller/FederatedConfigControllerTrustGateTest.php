@@ -31,6 +31,8 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederatedConfigControllerFactory;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -46,6 +48,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses   \OCA\OpenRegister\Service\Config\FederatedConfigService
+ * @uses \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices
+ * @uses \OCA\OpenRegister\Service\Config\FederatedConfigTransport
  */
 class FederatedConfigControllerTrustGateTest extends TestCase {
 
@@ -110,7 +114,7 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 
-		return new FederatedConfigController(
+		return FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -292,10 +296,12 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 			->method('setValueString')
 			->with('openregister', 'federated_config_allow_unverified_bundles', 'true');
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->createMock(\OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry::class),
-			$this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$appConfig,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
@@ -308,7 +314,7 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		);
 		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 		$this->groupManager->method('isAdmin')->willReturn(true);
-		$controller = new FederatedConfigController(
+		$controller = FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$service,

@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener;
 use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -36,6 +38,7 @@ use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -43,12 +46,16 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
@@ -296,11 +303,11 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$mapper->method('insert')->willReturnCallback($store);
 		$mapper->method('update')->willReturnCallback($store);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			fn (?string $app = null, ?string $applicationSlug = null) => array_values(
+			fn (FlowSelection $selection) => array_values(
 				array_filter(
 					$this->flows,
-					static fn (Flow $flow) => ($app === null || $flow->getApp() === $app)
-						&& ($applicationSlug === null || $flow->getApplicationSlug() === $applicationSlug)
+					static fn (Flow $flow) => ($selection->app === null || $flow->getApp() === $selection->app)
+						&& ($selection->applicationSlug === null || $flow->getApplicationSlug() === $selection->applicationSlug)
 				)
 			)
 		);
@@ -322,7 +329,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 	private function flowVersionService(): FlowVersionService&MockObject {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(
-			function (Flow $flow, ?string $by): FlowVersion {
+			function (Flow $flow, FlowPublishOptions $options): FlowVersion {
+				$by = $options->publishedBy;
 				$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 				$this->published[] = [(string)$flow->getUuid(), $by];
 				return new FlowVersion();
@@ -406,7 +414,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->method('slugOrNull')->willReturnCallback(fn () => $this->slugsAnswer);
 
-		return new ScheduleReleaseReader($objects, new ApplicationRegister($registers, $schemas, $slugs), $session);
+		return new ScheduleReleaseReader($objects, new ApplicationRegister(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $slugs), $session);
 	}
 
 	/**
@@ -418,11 +426,9 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 */
 	private function flowLocator(FlowMapper $flowMapper): FlowLocator {
 		return new FlowLocator(
-			$flowMapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($flowMapper, $this->createMock(FlowTriggerMapper::class), $this->createMock(FlowVersionMapper::class)),
 			$this->createMock(ObjectOperationsInterface::class),
-			$this->logger,
-			$this->createMock(FlowVersionMapper::class)
+			$this->logger
 		);
 	}
 
@@ -443,12 +449,13 @@ abstract class ManifestScheduleHarness extends TestCase {
 		);
 
 		return new FlowRunService(
-			$runs,
-			$this->createMock(FlowStateMapper::class),
-			$this->createMock(FlowEngine::class),
-			$this->createMock(FlowNodeRegistry::class),
-			$this->logger,
-			$container
+			stores: new FlowRunStores(
+				mapper: $runs,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->createMock(FlowEngine::class), registry: $this->createMock(FlowNodeRegistry::class)),
+			logger: $this->logger,
+			container: $container
 		);
 	}
 
@@ -470,7 +477,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flowMapper, $versions, $membership) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowTenantMembership::class => $membership,
 					'OCA\OpenRegister\Db\FlowMapper' => $flowMapper,
 					IUserSession::class => $this->createConfiguredMock(IUserSession::class, ['getUser' => $this->user()]),

@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\OfficeSession;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionToken;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -47,6 +49,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -73,6 +76,8 @@ class FilesControllerObjectAccessTest extends TestCase {
 	private ObjectService&MockObject $objectService;
 
 	private ?OfficeSessionService $officeService = null;
+
+	private ?IRootFolder $rootFolder = null;
 
 	private Schema $schema;
 
@@ -117,16 +122,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 	 *
 	 * @param string        $uid    The acting user.
 	 * @param array<string> $groups Their groups.
+	 * @param bool          $signedIn False leaves the session without a user.
 	 *
 	 * @return FilesController
 	 */
-	private function controllerAs(string $uid, array $groups): FilesController {
+	private function controllerAs(string $uid, array $groups, bool $signedIn = true): FilesController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getDisplayName')->willReturn(ucfirst($uid));
 
 		$userSession = $this->createMock(IUserSession::class);
-		$userSession->method('getUser')->willReturn($user);
+		$userSession->method('getUser')->willReturn($signedIn === true ? $user : null);
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturn($user);
@@ -142,7 +148,7 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->schema);
 
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -187,11 +193,10 @@ class FilesControllerObjectAccessTest extends TestCase {
 		);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$this->objectService,
-			$this->createMock(IRootFolder::class),
+			($this->rootFolder ?? $this->createMock(IRootFolder::class)),
 			$userManager,
 			$this->createMock(IEventDispatcher::class),
 			null,
@@ -275,6 +280,26 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 	}//end testANonMemberGets404OnUpload()
 
+	public function testAnUpdateHolderCannotOverwriteAFileTheObjectDoesNotHold(): void {
+		$this->fileService->method('getFile')->willReturn(null);
+		$this->fileService->expects($this->never())->method('overwriteFile');
+		$this->fileService->expects($this->never())->method('changeFileMetadata');
+		$controller = $this->controllerAs('behandelaar', ['openformulieren-behandelaars']);
+
+		$this->assertSame(404, $controller->update(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+		$this->assertSame(404, $controller->updateLabels(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+		$this->assertSame(404, $controller->updateMetadata(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 9001)->getStatus());
+	}//end testAnUpdateHolderCannotOverwriteAFileTheObjectDoesNotHold()
+
+	public function testAnUpdateHolderOverwritesAFileTheObjectHolds(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
+		$this->fileService->expects($this->exactly(2))->method('overwriteFile')->willReturn($this->createMock(File::class));
+		$controller = $this->controllerAs('behandelaar', ['openformulieren-behandelaars']);
+
+		$this->assertSame(200, $controller->update(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77)->getStatus());
+		$this->assertSame(200, $controller->updateLabels(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77)->getStatus());
+	}//end testAnUpdateHolderOverwritesAFileTheObjectHolds()
+
 	public function testANonMemberCannotFetchAManagedFileById(): void {
 		$file = $this->createMock(File::class);
 		$file->method('getId')->willReturn(901);
@@ -300,6 +325,44 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 	}//end testAManagedFileWithNoObjectIsRefusedById()
 
+	public function testAnotherUsersOwnFileIsNotServedById(): void {
+		$this->arrangeUnmanagedFile(inCallersTree: false);
+		$this->fileService->expects($this->never())->method('streamFile');
+
+		$response = $this->controllerAs('gewoon', [])->downloadById(fileId: 903);
+
+		$this->assertSame(404, $response->getStatus());
+	}//end testAnotherUsersOwnFileIsNotServedById()
+
+	public function testAFileInTheCallersOwnTreeIsServedById(): void {
+		$this->arrangeUnmanagedFile(inCallersTree: true);
+		$this->fileService->expects($this->once())->method('streamFile')
+			->willReturn(new \OCP\AppFramework\Http\StreamResponse('content'));
+
+		$response = $this->controllerAs('gewoon', [])->downloadById(fileId: 903);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testAFileInTheCallersOwnTreeIsServedById()
+
+	/**
+	 * A file outside the managed tree, reachable or not through the caller's own folder.
+	 *
+	 * @param bool $inCallersTree Whether the caller's user folder holds the file.
+	 *
+	 * @return void
+	 */
+	private function arrangeUnmanagedFile(bool $inCallersTree): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(903);
+		$this->fileService->method('getFileById')->willReturn($file);
+		$this->fileService->method('isManagedFile')->willReturn(false);
+
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getFirstNodeById')->with(903)->willReturn($inCallersTree === true ? $file : null);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->rootFolder->method('getUserFolder')->with('gewoon')->willReturn($userFolder);
+	}//end arrangeUnmanagedFile()
+
 	/**
 	 * An Office service whose token issuer records what it was asked for.
 	 *
@@ -315,15 +378,18 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->fileService->method('getFile')->willReturn($file);
 
 		$service = $this->createMock(OfficeSessionService::class);
-		$service->method('open')->willReturnCallback(
-			static function (File $file, string $editorUid, string $displayName, bool $canWrite) use (&$issued): OfficeSession {
+		$service->method('openSession')->willReturnCallback(
+			static function (OfficeOpenRequest $request) use (&$issued): OfficeSession {
+				$canWrite = $request->canWrite;
 				$issued[] = $canWrite;
 				return new OfficeSession(
 					urlSrc: 'https://office.test/browser/cool.html?',
 					wopiSrc: 'https://nc.test/index.php/apps/richdocuments/wopi/files/77_oc',
-					token: 'tok',
-					tokenTtl: 1,
-					readOnly: ($canWrite === false)
+					access: new OfficeSessionToken(
+						token: 'tok',
+						tokenTtl: 1,
+						readOnly: ($canWrite === false)
+					)
 				);
 			}
 		);
@@ -364,6 +430,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame([], $issued);
 	}//end testAPersonWithoutAccessGetsNoToken()
+
+	public function testAnAnonymousCallerGetsNoToken(): void {
+		$issued = [];
+		$this->arrangeOffice($issued);
+
+		$response = $this->controllerAs('admin', ['admin'], signedIn: false)
+			->office(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame([], $issued);
+	}//end testAnAnonymousCallerGetsNoToken()
 
 	public function testTheOfficePagePostsAnEditTokenForAnUpdateHolder(): void {
 		$issued = [];

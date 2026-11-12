@@ -27,12 +27,15 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\ActivityFilter;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use Exception;
 use OCA\OpenRegister\Controller\ActivityLinksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ActivityLinksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -89,7 +92,7 @@ class ActivityLinksControllerTest extends TestCase {
 
 		$this->visibility = $this->createMock(TimelineVisibilityService::class);
 
-		$this->controller = new ActivityLinksController(
+		$this->controller = ActivityLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->filterService,
@@ -264,13 +267,8 @@ class ActivityLinksControllerTest extends TestCase {
 		$this->filterService->expects($this->once())
 			->method('getActivityEntries')
 			->with(
-				'test-uuid-1234',
-				null,
-				null,
-				null,
-				0,
-				null,
-				'public'
+				$this->equalTo((new ActivityFilter('test-uuid-1234', null, null, null))->withCursor(null)),
+				$this->equalTo(new ActivityEntriesOptions(0, 'public'))
 			)
 			->willReturn(['results' => [], 'total' => 0, 'nextCursor' => null]);
 
@@ -299,13 +297,8 @@ class ActivityLinksControllerTest extends TestCase {
 		$this->filterService->expects($this->once())
 			->method('getActivityEntries')
 			->with(
-				'test-uuid-1234',
-				null,
-				null,
-				null,
-				10,
-				null,
-				null
+				$this->equalTo((new ActivityFilter('test-uuid-1234', null, null, null))->withCursor(null)),
+				$this->equalTo(new ActivityEntriesOptions(10, null))
 			)
 			->willReturn(
 				[

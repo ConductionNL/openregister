@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EndpointsControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -34,6 +35,10 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Controller\EndpointsController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Endpoint
+ * @uses \OCA\OpenRegister\Controller\Support\EndpointsControllerServices
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Db\EndpointLogScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class EndpointsControllerAnswersGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/endpoints-answers-golden.json';
@@ -101,6 +106,11 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 			}
 
 			$logs->method($method)->willReturnCallback(function (...$args) use ($method, $fail) {
+				if ($method === 'findPageWithin') {
+					[$scope, $query] = $args;
+					$args = [$scope->visibleIds, $scope->endpointId, $query->limit, $query->offset];
+				}
+
 				$this->calls[] = ['endpointLogMapper.' . $method => $this->plain(args: $args)];
 				$this->failOn(fail: $fail);
 				if ($method === 'findPageWithin') {
@@ -136,7 +146,7 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 			return $uid === 'alice';
 		});
 
-		$controller = new EndpointsController(
+		$controller = EndpointsControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,

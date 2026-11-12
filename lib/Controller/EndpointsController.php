@@ -24,11 +24,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
-use OCA\OpenRegister\Db\EndpointLogMapper;
-use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointLogScope;
+use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -72,27 +76,27 @@ class EndpointsController extends Controller {
 	 *
 	 * Handles CRUD operations for endpoint entities in the database.
 	 *
-	 * @var EndpointMapper Endpoint mapper instance
+	 * @var EndpointMapperInterface Endpoint mapper instance
 	 */
-	private readonly EndpointMapper $endpointMapper;
+	private readonly EndpointMapperInterface $endpointMapper;
 
 	/**
 	 * Endpoint service for business logic
 	 *
 	 * Handles endpoint testing and execution logic.
 	 *
-	 * @var EndpointService Endpoint service instance
+	 * @var EndpointServiceInterface Endpoint service instance
 	 */
-	private readonly EndpointService $endpointService;
+	private readonly EndpointServiceInterface $endpointService;
 
 	/**
 	 * Endpoint log mapper for log operations
 	 *
 	 * Handles database operations for endpoint execution logs.
 	 *
-	 * @var EndpointLogMapper Endpoint log mapper instance
+	 * @var EndpointLogMapperInterface Endpoint log mapper instance
 	 */
-	private readonly EndpointLogMapper $endpointLogMapper;
+	private readonly EndpointLogMapperInterface $endpointLogMapper;
 
 	/**
 	 * Logger for error tracking and debugging
@@ -116,32 +120,24 @@ class EndpointsController extends Controller {
 	 * Initializes controller with required dependencies for endpoint management.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param EndpointMapper $endpointMapper Endpoint mapper for database operations
-	 * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
-	 * @param EndpointService $endpointService Endpoint service for business logic
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param EndpointsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		EndpointMapper $endpointMapper,
-		EndpointLogMapper $endpointLogMapper,
-		EndpointService $endpointService,
-		ControllerSession $session,
+		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->endpointMapper = $endpointMapper;
-		$this->endpointLogMapper = $endpointLogMapper;
-		$this->endpointService = $endpointService;
-		$this->logger = $session->logger;
-		$this->session = $session;
+		$this->endpointMapper = $services->endpointMapper;
+		$this->endpointLogMapper = $services->endpointLogMapper;
+		$this->endpointService = $services->endpointService;
+		$this->logger = $services->session->logger;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**
@@ -229,8 +225,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created endpoint or error
 	 *
 	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
@@ -240,7 +234,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -267,8 +260,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated endpoint or error
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
@@ -278,7 +269,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -329,12 +319,10 @@ class EndpointsController extends Controller {
 	 * @return JSONResponse JSON response containing patched endpoint.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function patch(int $id): JSONResponse {
 		return $this->update(id: $id);
 	}//end patch()
@@ -349,7 +337,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -378,8 +365,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-suppress InvalidReturnType
 	 * @psalm-suppress InvalidReturnStatement
 	 * @psalm-suppress InvalidTemplateParam The status code is the int echoed back from the
@@ -398,7 +383,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(int $id): JSONResponse {
 		try {
 			$endpoint = $this->endpointMapper->find($id);
@@ -668,10 +652,8 @@ class EndpointsController extends Controller {
 		if ($this->isCurrentUserAdmin() === false) {
 			$visibleIds = array_map(static fn (Endpoint $endpoint): int => (int)$endpoint->getId(), $this->endpointMapper->findAll());
 			[$logs, $total] = $this->endpointLogMapper->findPageWithin(
-				visibleIds: $visibleIds,
-				endpointId: $endpointId,
-				limit: $limit,
-				offset: $offset
+				scope: new EndpointLogScope(visibleIds: $visibleIds, endpointId: $endpointId),
+				query: new ListQuery(limit: $limit, offset: $offset)
 			);
 			return new JSONResponse(data: ['results' => $logs, 'total' => $total], statusCode: 200);
 		}

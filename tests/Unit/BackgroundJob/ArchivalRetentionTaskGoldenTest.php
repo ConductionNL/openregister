@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -31,6 +32,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Golden test for ArchivalRetentionTask::run().
@@ -49,6 +53,17 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Archival\AnnotatedRow
+ * @uses \OCA\OpenRegister\Service\Archival\IndexedRule
+ * @uses \OCA\OpenRegister\Service\Archival\RetentionEvaluatorFactory
  */
 class ArchivalRetentionTaskGoldenTest extends TestCase
 {
@@ -104,14 +119,8 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
     {
         $task = new ArchivalRetentionTask(
             $this->createMock(ITimeFactory::class),
-            $this->db($case),
-            $this->registers($case),
-            $this->schemas($case),
-            $this->magic($case),
-            $this->objects(),
-            $this->holds(),
-            $this->container($case),
-            $this->logger()
+            new ArchivalRetentionSources($this->db($case), new SchemaCatalog($this->registers($case), $this->schemas($case), $this->magic($case))),
+            new ArchivalRetentionPlatform($this->objects(), $this->holds(), $this->container($case), $this->logger())
         );
         $run = new ReflectionMethod($task, 'run');
         $run->invoke($task, null);
@@ -270,7 +279,8 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
             }
         );
         $service->method('deleteObject')->willReturnCallback(
-            function (...$args): bool {
+            function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+                $args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
                 $this->record('deleteObject', array_slice($args, 0, 6));
                 if ($args[0] === 'broken') {
                     throw new RuntimeException('delete failed');

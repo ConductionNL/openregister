@@ -24,9 +24,13 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -67,6 +71,15 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperFolderIdsTest extends TestCase {
 
@@ -102,17 +115,22 @@ class MagicMapperFolderIdsTest extends TestCase {
 
 		return new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->systemDefaults(),
-			$this->createMock(IEventDispatcher::class),
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->userSession,
+				$this->groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->systemDefaults(),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			)
 		);
 	}//end makeMapper()
 
@@ -131,13 +149,13 @@ class MagicMapperFolderIdsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
 					return $conditionMatcher;
 				}
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 				return null;

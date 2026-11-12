@@ -34,22 +34,20 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  */
 class OAuth2TokenSetTest extends TestCase {
 	public function testRoundTripsThroughTheStoredDocument(): void {
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: [
+		$set = OAuth2TokenSet::fromResponse(response: [
 				'access_token' => 'ACCESS_TOKEN_HERE',
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => 3600,
 				'token_type' => 'Bearer',
 				'scope' => 'read:accounts write:statuses',
-			],
-			now: new DateTimeImmutable('2026-09-04T12:00:00+00:00')
-		)->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
+			], options: new TokenResponseOptions(now: new DateTimeImmutable('2026-09-04T12:00:00+00:00')))->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
 
 		$decoded = OAuth2TokenSet::fromStoredJson(stored: $set->toStoredJson());
 
@@ -61,45 +59,32 @@ class OAuth2TokenSetTest extends TestCase {
 	}
 
 	public function testARefreshResponseWithoutARefreshTokenKeepsThePreviousOne(): void {
-		$previous = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'OLD_ACCESS', 'refresh_token' => 'KEEP_THIS_REFRESH', 'expires_in' => 60]
-		);
+		$previous = OAuth2TokenSet::fromResponse(response: ['access_token' => 'OLD_ACCESS', 'refresh_token' => 'KEEP_THIS_REFRESH', 'expires_in' => 60]);
 
-		$rotated = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'NEW_ACCESS', 'expires_in' => 3600],
-			previous: $previous
-		);
+		$rotated = OAuth2TokenSet::fromResponse(response: ['access_token' => 'NEW_ACCESS', 'expires_in' => 3600], options: new TokenResponseOptions(previous: $previous));
 
 		$this->assertSame('NEW_ACCESS', $rotated->getAccessToken());
 		$this->assertSame('KEEP_THIS_REFRESH', $rotated->getRefreshToken());
 	}
 
 	public function testARotationThatIssuesANewRefreshTokenUsesIt(): void {
-		$previous = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'OLD_ACCESS', 'refresh_token' => 'OLD_REFRESH', 'expires_in' => 60]
-		);
+		$previous = OAuth2TokenSet::fromResponse(response: ['access_token' => 'OLD_ACCESS', 'refresh_token' => 'OLD_REFRESH', 'expires_in' => 60]);
 
-		$rotated = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'NEW_ACCESS', 'refresh_token' => 'NEW_REFRESH', 'expires_in' => 3600],
-			previous: $previous
-		);
+		$rotated = OAuth2TokenSet::fromResponse(response: ['access_token' => 'NEW_ACCESS', 'refresh_token' => 'NEW_REFRESH', 'expires_in' => 3600], options: new TokenResponseOptions(previous: $previous));
 
 		$this->assertSame('NEW_REFRESH', $rotated->getRefreshToken());
 	}
 
 	public function testTheMarginDecidesWhetherARefreshIsDue(): void {
 		$now = new DateTimeImmutable('2026-09-04T12:00:00+00:00');
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'ACCESS_TOKEN_HERE', 'expires_in' => 300],
-			now: $now
-		);
+		$set = OAuth2TokenSet::fromResponse(response: ['access_token' => 'ACCESS_TOKEN_HERE', 'expires_in' => 300], options: new TokenResponseOptions(now: $now));
 
 		$this->assertFalse($set->needsRefresh(marginSeconds: 120, now: $now));
 		$this->assertTrue($set->needsRefresh(marginSeconds: 400, now: $now));
 	}
 
 	public function testASetWithNoDeclaredExpiryIsNeverRefreshedOnTheClock(): void {
-		$set = OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'ACCESS_TOKEN_HERE']);
+		$set = OAuth2TokenSet::fromResponse(response: ['access_token' => 'ACCESS_TOKEN_HERE']);
 
 		$this->assertNull($set->getExpiresAt());
 		$this->assertFalse($set->needsRefresh(marginSeconds: 86400));
@@ -123,13 +108,11 @@ class OAuth2TokenSetTest extends TestCase {
 
 	public function testATokenResponseWithoutAnAccessTokenIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
-		OAuth2TokenSet::fromTokenResponse(response: ['refresh_token' => 'REFRESH_TOKEN_HERE']);
+		OAuth2TokenSet::fromResponse(response: ['refresh_token' => 'REFRESH_TOKEN_HERE']);
 	}
 
 	public function testCommaSeparatedScopesAreAcceptedBecauseMetaSpellsThemThatWay(): void {
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'ACCESS_TOKEN_HERE', 'scope' => 'pages_manage_posts,pages_read_engagement']
-		);
+		$set = OAuth2TokenSet::fromResponse(response: ['access_token' => 'ACCESS_TOKEN_HERE', 'scope' => 'pages_manage_posts,pages_read_engagement']);
 
 		$this->assertSame(['pages_manage_posts', 'pages_read_engagement'], $set->getScopes());
 	}

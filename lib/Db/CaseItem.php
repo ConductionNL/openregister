@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\CaseItem\CaseItemFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -493,45 +494,9 @@ class CaseItem extends Entity implements JsonSerializable {
 	 * Constructor: declare field types so the mapper hydrates them correctly.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'itemKey', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'flowUuid', type: 'string');
-		$this->addType(fieldName: 'flowVersion', type: 'integer');
-		$this->addType(fieldName: 'definitionItemKey', type: 'string');
-		$this->addType(fieldName: 'origin', type: 'string');
-		$this->addType(fieldName: 'parentItemId', type: 'integer');
-		$this->addType(fieldName: 'planItemType', type: 'string');
-		$this->addType(fieldName: 'position', type: 'integer');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'isTerminal', type: 'boolean');
-		$this->addType(fieldName: 'enteredAt', type: 'datetime');
-		$this->addType(fieldName: 'terminatedReason', type: 'string');
-		$this->addType(fieldName: 'entryCriteria', type: 'json');
-		$this->addType(fieldName: 'exitCriteria', type: 'json');
-		$this->addType(fieldName: 'required', type: 'boolean');
-		$this->addType(fieldName: 'discretionary', type: 'boolean');
-		$this->addType(fieldName: 'repetition', type: 'json');
-		$this->addType(fieldName: 'realisationKind', type: 'string');
-		$this->addType(fieldName: 'realisationUuid', type: 'string');
-		$this->addType(fieldName: 'realisationCount', type: 'integer');
-		$this->addType(fieldName: 'authorizationRules', type: 'json');
-		$this->addType(fieldName: 'candidateUsers', type: 'json');
-		$this->addType(fieldName: 'candidateGroups', type: 'json');
-		$this->addType(fieldName: 'candidateRole', type: 'string');
-		$this->addType(fieldName: 'dueAt', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'doorlooptijd', type: 'string');
-		$this->addType(fieldName: 'servicenorm', type: 'string');
-		$this->addType(fieldName: 'planSettings', type: 'json');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-
+		foreach (CaseItemFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -569,46 +534,12 @@ class CaseItem extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'key' => $this->itemKey,
-			'name' => $this->name,
-			'description' => $this->description,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'flowUuid' => $this->flowUuid,
-			'flowVersion' => $this->flowVersion,
-			'definitionItemKey' => $this->definitionItemKey,
-			'origin' => $this->origin,
-			'parentItemId' => $this->parentItemId,
-			'type' => $this->planItemType,
-			'position' => $this->position,
-			'state' => $this->state,
-			'isTerminal' => $this->isTerminal,
-			'enteredAt' => $this->enteredAt?->format('c'),
-			'terminatedReason' => $this->terminatedReason,
-			'entryCriteria' => ($this->entryCriteria ?? []),
-			'exitCriteria' => ($this->exitCriteria ?? []),
-			'required' => $this->required,
-			'discretionary' => $this->discretionary,
-			'repetition' => $this->repetition,
-			'realisationKind' => $this->realisationKind,
-			'realisationUuid' => $this->realisationUuid,
-			'realisationCount' => $this->realisationCount,
-			'authorization' => $this->authorizationRules,
-			'candidateUsers' => $this->candidateUsers,
-			'candidateGroups' => $this->candidateGroups,
-			'candidateRole' => $this->candidateRole,
-			'dueAt' => $this->dueAt?->format('c'),
-			'expiresAt' => $this->expiresAt?->format('c'),
-			'doorlooptijd' => $this->doorlooptijd,
-			'servicenorm' => $this->servicenorm,
-			'planSettings' => $this->planSettings,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-			'createdBy' => $this->createdBy,
-		];
+		return array_merge(
+			(new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['itemKey' => 'key', 'planItemType' => 'type', 'authorizationRules' => 'authorization']),
+			[
+				'entryCriteria' => ($this->entryCriteria ?? []),
+				'exitCriteria' => ($this->exitCriteria ?? []),
+			]
+		);
 	}//end jsonSerialize()
 }//end class

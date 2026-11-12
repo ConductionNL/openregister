@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -67,7 +68,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * Else clauses improve readability in find and update methods
  */
-class MappingMapper extends QBMapper {
+class MappingMapper extends QBMapper implements MappingMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -119,9 +120,7 @@ class MappingMapper extends QBMapper {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy and RBAC
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
+	 * @param TenancyServices $tenancy Organisation mapper, session and groups for multi-tenancy and RBAC
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching
 	 * @param LoggerInterface $logger Logger for cache diagnostics
 	 *
@@ -129,13 +128,11 @@ class MappingMapper extends QBMapper {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		// A MAPPER, not a service. MultiTenancyTrait's RBAC check resolves the
+		// Its organisation mapper is a MAPPER, not a service. MultiTenancyTrait's RBAC check resolves the
 		// active organisation's membership through this; without it the check can
 		// only fail closed and would deny every non-admin write to mappings.
 		// openregister#2833.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -143,11 +140,22 @@ class MappingMapper extends QBMapper {
 		parent::__construct(db: $db, tableName: 'openregister_mappings', entityClass: Mapping::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 
 		// Initialize distributed cache for invalidation on write operations.
+		$this->initialiseCache(cacheFactory: $cacheFactory);
+	}//end __construct()
+
+	/**
+	 * Build the distributed cache the write paths invalidate; without one, log and go on uncached.
+	 *
+	 * @param ICacheFactory $cacheFactory The cache factory.
+	 *
+	 * @return void
+	 */
+	private function initialiseCache(ICacheFactory $cacheFactory): void {
 		try {
 			$this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
 		} catch (\Exception $e) {
@@ -156,7 +164,7 @@ class MappingMapper extends QBMapper {
 				context: ['error' => $e->getMessage()]
 			);
 		}
-	}//end __construct()
+	}//end initialiseCache()
 
 	/**
 	 * Find all mappings
@@ -377,15 +385,7 @@ class MappingMapper extends QBMapper {
 
 		// Set version if not provided (auto-increment patch version).
 		if (isset($data['version']) === false || empty($data['version']) === true) {
-			$currentVersion = $mapping->getVersion();
-			$data['version'] = '0.0.1';
-			if (empty($currentVersion) === false) {
-				$version = explode('.', $currentVersion);
-				if (isset($version[2]) === true) {
-					$version[2] = (int)$version[2] + 1;
-					$data['version'] = implode('.', $version);
-				}
-			}
+			$data['version'] = $this->nextPatchVersion(currentVersion: $mapping->getVersion());
 		}
 
 		// Update timestamp.
@@ -405,6 +405,28 @@ class MappingMapper extends QBMapper {
 
 		return $mapping;
 	}//end updateFromArray()
+
+	/**
+	 * The version after a patch bump: the third part plus one, or 0.0.1 when there is none.
+	 *
+	 * @param string|null $currentVersion The stored version.
+	 *
+	 * @return string The next version.
+	 */
+	private function nextPatchVersion(?string $currentVersion): string {
+		if (empty($currentVersion) === true) {
+			return '0.0.1';
+		}
+
+		$version = explode('.', $currentVersion);
+		if (isset($version[2]) === false) {
+			return '0.0.1';
+		}
+
+		$version[2] = (int)$version[2] + 1;
+
+		return implode('.', $version);
+	}//end nextPatchVersion()
 
 	/**
 	 * Delete a mapping

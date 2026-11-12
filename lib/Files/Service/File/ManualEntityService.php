@@ -34,12 +34,13 @@ namespace OCA\OpenRegister\Files\Service\File;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -78,29 +79,81 @@ class ManualEntityService {
 	private const CHUNK_SOURCE_TYPE = 'file';
 
 	/**
+	 * Catalogue mapper.
+	 *
+	 * @var GdprEntityMapperInterface
+	 */
+	private readonly GdprEntityMapperInterface $gdprEntityMapper;
+
+	/**
+	 * Relation mapper.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Chunk reader for the target file.
+	 *
+	 * @var ChunkSourceReaderInterface
+	 */
+	private readonly ChunkSourceReaderInterface $chunkMapper;
+
+	/**
+	 * Chunk-aware string-match utility.
+	 *
+	 * @var ChunkTextMatcher
+	 */
+	private readonly ChunkTextMatcher $matcher;
+
+	/**
+	 * Audit-trail persistence.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Nextcloud root folder (for file-write access check).
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Connection for explicit transaction control.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Structured log sink for write-access failures and forensic context on rollback paths.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GdprEntityMapper $gdprEntityMapper Catalogue mapper.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
-	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
-	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
-	 * @param IRootFolder $rootFolder Nextcloud root folder (for file-write access check).
-	 * @param IDBConnection $db Connection for explicit transaction control.
-	 * @param LoggerInterface $logger Structured log sink for write-access failures and
-	 *                                forensic context on rollback paths.
+	 * @param ManualEntityCatalogue $catalogue The entity catalogue, relation and chunk mappers and the chunk text matcher
+	 * @param ManualEntityRecording $recording The audit trail mapper, the root folder and the database connection
+	 * @param LoggerInterface       $logger    Structured log sink for write-access failures and forensic context on rollback paths.
 	 */
 	public function __construct(
-		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly ChunkTextMatcher $matcher,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IRootFolder $rootFolder,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		ManualEntityCatalogue $catalogue,
+		ManualEntityRecording $recording,
+		LoggerInterface $logger,
 	) {
-
+		$this->gdprEntityMapper = $catalogue->gdprEntityMapper;
+		$this->entityRelationMapper = $catalogue->entityRelationMapper;
+		$this->chunkMapper = $catalogue->chunkMapper;
+		$this->matcher = $catalogue->matcher;
+		$this->auditTrailMapper = $recording->auditTrailMapper;
+		$this->rootFolder = $recording->rootFolder;
+		$this->db = $recording->db;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -118,12 +171,9 @@ class ManualEntityService {
 	 *   8. Write audit-trail entries.
 	 *   9. Commit. On any exception in steps 4-8, rollback and re-throw.
 	 *
-	 * @param int $fileId Nextcloud file id the manual entity applies to.
-	 * @param string $value Operator-supplied text to add as an anonymisable entity.
-	 * @param string $type Entity type tag (e.g. `PERSON`, `ORGANIZATION`).
-	 * @param bool $wholeWord Wrap the needle in `\b...\b` regex boundaries when true.
-	 * @param bool $caseSensitive Use case-sensitive matching when true.
-	 * @param IUser $actor The acting user (already authenticated upstream).
+	 * @param ManualEntityRequest $request The file, the operator-supplied value and type,
+	 *                                     the match options and the acting user (already
+	 *                                     authenticated upstream).
 	 *
 	 * @return ManualEntityResult The persisted entity + relation rows + match counts.
 	 *
@@ -132,17 +182,8 @@ class ManualEntityService {
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
-	public function addManualEntity(
-		int $fileId,
-		string $value,
-		string $type,
-		bool $wholeWord,
-		bool $caseSensitive,
-		IUser $actor,
-	): ManualEntityResult {
-		$request = (new ManualEntityRequest(fileId: $fileId, value: $value, type: $type, actor: $actor))
-			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
-		$this->assertFileWriteAccess(fileId: $fileId, actor: $actor);
+	public function addManualEntity(ManualEntityRequest $request): ManualEntityResult {
+		$this->assertFileWriteAccess(request: $request);
 
 		// Run the matcher BEFORE opening the transaction: a regex compile
 		// failure aborts the operation without any DB writes to roll back.
@@ -184,13 +225,11 @@ class ManualEntityService {
 		}
 
 		try {
-			return $this->matcher->match(
+			return $this->matcher->search(search: new ChunkSearch(
 				chunks: $chunks,
-				needle: $request->value,
-				wholeWord: $request->wholeWord(),
-				caseSensitive: $request->caseSensitive(),
+				request: $request,
 				chunkOverlap: $chunkOverlap
-			);
+			));
 		} catch (ChunkMatcherException $e) {
 			// Both `value_too_long` and `regex_compile_failure` map to
 			// `regex_compile_failure`; the controller does not distinguish them.
@@ -222,8 +261,7 @@ class ManualEntityService {
 			);
 
 			[$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
-				fileId: $request->fileId,
-				entity: $entity,
+				placement: new EntityPlacement(fileId: $request->fileId, entity: $entity),
 				matches: $matches
 			);
 
@@ -231,7 +269,6 @@ class ManualEntityService {
 				entity: $entity,
 				entityWasNew: $entityWasNew,
 				relations: $insertedRelations,
-				matchCount: count($matches),
 				matchesSkipped: $matchesSkipped
 			);
 			$this->writeAuditTrails(request: $request, result: $result);
@@ -294,34 +331,14 @@ class ManualEntityService {
 	 * be reachable in the actor's user-folder and `isUpdateable()`
 	 * MUST return true. Denial is reported as a 403 by the controller.
 	 *
-	 * @param int $fileId Nextcloud file id.
-	 * @param IUser $actor Acting user.
+	 * @param ManualEntityRequest $request The manual-entity input: the Nextcloud file id and the acting user.
 	 *
 	 * @return void
 	 *
 	 * @throws ManualEntityException When the file does not exist for the actor or is read-only.
 	 */
-	private function assertFileWriteAccess(int $fileId, IUser $actor): void {
-		try {
-			$userFolder = $this->rootFolder->getUserFolder($actor->getUID());
-			$nodes = $userFolder->getById($fileId);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ManualEntityService] File lookup raised exception',
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'actor' => $actor->getUID(),
-					'error' => $e->getMessage(),
-				]
-			);
-			throw new ManualEntityException(
-				reason: ManualEntityException::REASON_INTERNAL_ERROR,
-				message: 'File lookup failed: ' . $e->getMessage(),
-				previous: $e
-			);
-		}
+	private function assertFileWriteAccess(ManualEntityRequest $request): void {
+		$nodes = $this->actorNodes(request: $request);
 
 		if (empty($nodes) === true) {
 			// No node visible to the actor. Per the spec a write-blocked
@@ -330,49 +347,132 @@ class ManualEntityService {
 			// reason is the closest semantic match because either way
 			// there's nothing the operator can do without write access
 			// / re-extraction.
-			$this->logger->info(
-				'[ManualEntityService] File not visible to actor',
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'actor' => $actor->getUID(),
-				]
-			);
-			throw new ManualEntityException(
-				reason: ManualEntityException::REASON_FILE_NOT_EXTRACTED,
-				message: sprintf('File %d is not accessible to the acting user.', $fileId)
-			);
-		}//end if
+			throw $this->notVisible(request: $request);
+		}
 
 		$node = $nodes[0];
 		if (($node instanceof NcFile) === false || $node->isUpdateable() === false) {
 			// Read-only access. REASON_FORBIDDEN is the type-checked signal
 			// the controller maps to HTTP 403 (vs the default 500 for
 			// REASON_INTERNAL_ERROR).
-			$isUpdateable = false;
-			if ($node instanceof NcFile) {
-				$isUpdateable = $node->isUpdateable();
-			}
-
-			$this->logger->info(
-				'[ManualEntityService] Write-access denied on target file',
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'actor' => $actor->getUID(),
-					'isFile' => ($node instanceof NcFile),
-					'isUpdateable' => $isUpdateable,
-				]
-			);
-			throw new ManualEntityException(
-				reason: ManualEntityException::REASON_FORBIDDEN,
-				message: 'write access to file required'
-			);
-		}//end if
+			throw $this->writeDenied(request: $request, node: $node);
+		}
 
 	}//end assertFileWriteAccess()
+
+	/**
+	 * The nodes with the file's id in the actor's user folder.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 *
+	 * @return array The nodes found; empty when the actor cannot see the file.
+	 *
+	 * @throws ManualEntityException When the lookup itself fails.
+	 */
+	private function actorNodes(ManualEntityRequest $request): array {
+		try {
+			$userFolder = $this->rootFolder->getUserFolder($request->actor->getUID());
+			return $userFolder->getById($request->fileId);
+		} catch (Throwable $e) {
+			throw $this->lookupFailure(request: $request, error: $e);
+		}
+
+	}//end actorNodes()
+
+	/**
+	 * Log a failed file lookup and wrap it as an internal error.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param Throwable           $error   The lookup failure.
+	 *
+	 * @return ManualEntityException The exception to throw.
+	 */
+	private function lookupFailure(ManualEntityRequest $request, Throwable $error): ManualEntityException {
+		$this->logger->warning(
+			'[ManualEntityService] File lookup raised exception',
+			['file' => __FILE__, 'line' => __LINE__] + $this->actorFields(request: $request) + ['error' => $error->getMessage()]
+		);
+		return new ManualEntityException(
+			reason: ManualEntityException::REASON_INTERNAL_ERROR,
+			message: 'File lookup failed: ' . $error->getMessage(),
+			previous: $error
+		);
+
+	}//end lookupFailure()
+
+	/**
+	 * Log a file the actor cannot see and refuse it as not extracted.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 *
+	 * @return ManualEntityException The exception to throw.
+	 */
+	private function notVisible(ManualEntityRequest $request): ManualEntityException {
+		$this->logger->info(
+			'[ManualEntityService] File not visible to actor',
+			['file' => __FILE__, 'line' => __LINE__] + $this->actorFields(request: $request)
+		);
+		return new ManualEntityException(
+			reason: ManualEntityException::REASON_FILE_NOT_EXTRACTED,
+			message: sprintf('File %d is not accessible to the acting user.', $request->fileId)
+		);
+
+	}//end notVisible()
+
+	/**
+	 * Log a node the actor may not write and refuse it as forbidden.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param mixed               $node    The first node found: not a file, or a read-only file.
+	 *
+	 * @return ManualEntityException The exception to throw.
+	 */
+	private function writeDenied(ManualEntityRequest $request, mixed $node): ManualEntityException {
+		$this->logger->info(
+			'[ManualEntityService] Write-access denied on target file',
+			['file' => __FILE__, 'line' => __LINE__] + $this->actorFields(request: $request) + [
+				'isFile' => ($node instanceof NcFile),
+				'isUpdateable' => self::isUpdateableFile(node: $node),
+			]
+		);
+		return new ManualEntityException(
+			reason: ManualEntityException::REASON_FORBIDDEN,
+			message: 'write access to file required'
+		);
+
+	}//end writeDenied()
+
+	/**
+	 * Whether the node is a file the actor may update.
+	 *
+	 * @param mixed $node The node.
+	 *
+	 * @return bool
+	 */
+	private static function isUpdateableFile(mixed $node): bool {
+		$isUpdateable = false;
+		if ($node instanceof NcFile) {
+			$isUpdateable = $node->isUpdateable();
+		}
+
+		return $isUpdateable;
+
+	}//end isUpdateableFile()
+
+	/**
+	 * The file id and acting user the access log lines carry.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 *
+	 * @return array{fileId: int, actor: string}
+	 */
+	private function actorFields(ManualEntityRequest $request): array {
+		return [
+			'fileId' => $request->fileId,
+			'actor' => $request->actor->getUID(),
+		];
+
+	}//end actorFields()
 
 	/**
 	 * Find an existing catalogue row by (value, type) or create a new one.
@@ -418,35 +518,29 @@ class ManualEntityService {
 	 * For each match position, insert a new relation row unless one
 	 * already exists at exactly that position.
 	 *
-	 * @param int $fileId Target file id.
-	 * @param GdprEntity $entity Catalogue entry the relations point to.
+	 * @param EntityPlacement $placement Target file and the catalogue entry the relations point to.
 	 * @param array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> $matches Output of `ChunkTextMatcher::match`.
 	 *
 	 * @return array{0: EntityRelation[], 1: int} Tuple of (insertedRelations, matchesSkipped).
 	 */
-	private function createRelationsForMatches(int $fileId, GdprEntity $entity, array $matches): array {
+	private function createRelationsForMatches(EntityPlacement $placement, array $matches): array {
+		$fileId = $placement->fileId;
 		$rowsToInsert = [];
 		$matchesSkipped = 0;
 
 		foreach ($matches as $match) {
-			$existsAlready = $this->entityRelationMapper->existsForFileAtPosition(
-				fileId: $fileId,
-				entityId: (int)$entity->getId(),
-				chunkId: $match['chunkId'],
-				positionStart: $match['positionStart'],
-				positionEnd: $match['positionEnd']
-			);
-			if ($existsAlready === true) {
+			$mention = EntityMention::atMatch(entityId: $placement->entityId(), match: $match);
+			if ($this->entityRelationMapper->existsForFileAtPosition(fileId: $fileId, mention: $mention) === true) {
 				$matchesSkipped++;
 				continue;
 			}
 
 			$rowsToInsert[] = [
-				'entityId' => (int)$entity->getId(),
+				'entityId' => $mention->entityId,
 				'fileId' => $fileId,
-				'chunkId' => $match['chunkId'],
-				'positionStart' => $match['positionStart'],
-				'positionEnd' => $match['positionEnd'],
+				'chunkId' => $mention->chunkId,
+				'positionStart' => $mention->positionStart,
+				'positionEnd' => $mention->positionEnd,
 				'context' => $match['context'],
 				'detectionMethod' => DetectionMethod::MANUAL,
 				'role' => 'anonymisable',
@@ -486,45 +580,77 @@ class ManualEntityService {
 			// server-derived value is recorded verbatim.
 			$entityAudit = $this->newAuditRow(request: $request, created: $now);
 			$entityAudit->setAction('entity_create');
-			$entityAudit->setChanged(
-				[
-					'subjectType' => 'openregister_entities',
-					'subjectId' => (int)$result->entity->getId(),
-					'fields' => [
-						'value' => $request->value,
-						'type' => $request->type,
-						'category' => $result->entity->getCategory(),
-					],
-				]
-			);
+			$entityAudit->setChanged(self::entityCreateChange(request: $request, result: $result));
 			$this->auditTrailMapper->insert($entityAudit);
-		}//end if
+		}
 
-		$relationIds = array_map(
+		$batchAudit = $this->newAuditRow(request: $request, created: $now);
+		$batchAudit->setAction('entity_relations_batch_create');
+		$batchAudit->setChanged(self::batchCreateChange(request: $request, result: $result));
+		$this->auditTrailMapper->insert($batchAudit);
+
+	}//end writeAuditTrails()
+
+	/**
+	 * The `changed` payload of the `entity_create` audit row.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param ManualEntityResult  $result  The persisted entity and relation rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function entityCreateChange(ManualEntityRequest $request, ManualEntityResult $result): array {
+		return [
+			'subjectType' => 'openregister_entities',
+			'subjectId' => (int)$result->entity->getId(),
+			'fields' => [
+				'value' => $request->value,
+				'type' => $request->type,
+				'category' => $result->entity->getCategory(),
+			],
+		];
+
+	}//end entityCreateChange()
+
+	/**
+	 * The `changed` payload of the `entity_relations_batch_create` audit row.
+	 *
+	 * @param ManualEntityRequest $request The manual-entity input.
+	 * @param ManualEntityResult  $result  The persisted entity and relation rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function batchCreateChange(ManualEntityRequest $request, ManualEntityResult $result): array {
+		return [
+			'subjectType' => 'openregister_files',
+			'subjectId' => $request->fileId,
+			'fields' => [
+				'value' => $request->value,
+				'type' => $request->type,
+				'fileId' => $request->fileId,
+				'detectionMethod' => DetectionMethod::MANUAL,
+				'matchCount' => (count($result->relations) + $result->matchesSkipped),
+				'matchesSkipped' => $result->matchesSkipped,
+				'relationIds' => self::relationIds(result: $result),
+			],
+		];
+
+	}//end batchCreateChange()
+
+	/**
+	 * The ids of the relation rows created.
+	 *
+	 * @param ManualEntityResult $result The persisted entity and relation rows.
+	 *
+	 * @return list<int>
+	 */
+	private static function relationIds(ManualEntityResult $result): array {
+		return array_map(
 			static fn (EntityRelation $r): int => (int)$r->getId(),
 			$result->relations
 		);
 
-		$batchAudit = $this->newAuditRow(request: $request, created: $now);
-		$batchAudit->setAction('entity_relations_batch_create');
-		$batchAudit->setChanged(
-			[
-				'subjectType' => 'openregister_files',
-				'subjectId' => $request->fileId,
-				'fields' => [
-					'value' => $request->value,
-					'type' => $request->type,
-					'fileId' => $request->fileId,
-					'detectionMethod' => DetectionMethod::MANUAL,
-					'matchCount' => (count($result->relations) + $result->matchesSkipped),
-					'matchesSkipped' => $result->matchesSkipped,
-					'relationIds' => $relationIds,
-				],
-			]
-		);
-		$this->auditTrailMapper->insert($batchAudit);
-
-	}//end writeAuditTrails()
+	}//end relationIds()
 
 	/**
 	 * A new audit row stamped with a fresh uuid, the actor's UID and the given time.

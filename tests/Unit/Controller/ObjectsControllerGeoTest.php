@@ -43,6 +43,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\RdCrsTransformer;
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -392,7 +393,7 @@ class ObjectsControllerGeoTest extends TestCase {
 		$geocoder->method('isAvailable')->willReturn(true);
 		$geocoder->expects($this->once())
 			->method('geocodeFree')
-			->with('Nieuwe Gracht 1 Utrecht', 5, true)
+			->with('Nieuwe Gracht 1 Utrecht', $this->equalTo(new GeocodeOptions(5, true)))
 			->willReturn([['weergavenaam' => 'Nieuwe Gracht 1, Utrecht']]);
 
 		$controller = $this->controllerWithGeocoder($geocoder);

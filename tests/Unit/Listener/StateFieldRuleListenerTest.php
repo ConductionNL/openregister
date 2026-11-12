@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -39,7 +40,6 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\StateFieldRuleListener
@@ -100,11 +101,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$resolver = new StateFieldRuleResolver($this->userSession, $this->groupManager, $dialect);
 
 		return new StateFieldRuleListener(
-			$this->schemaMapper,
+			new StateFieldRulePlatform($this->schemaMapper, $this->ruleRuns, $this->createMock(LoggerInterface::class)),
 			$resolver,
-			new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect)),
-			$this->ruleRuns,
-			$this->createMock(LoggerInterface::class)
+			new StateConditionEvaluator($resolver, $dialect)
 		);
 	}
 
@@ -409,9 +408,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$this->ruleRuns->expects($this->once())
 			->method('record')
 			->with(
-				$this->stringContains('stateFieldRule'),
-				'zaak',
-				$this->anything(),
+				$this->callback(
+					fn (RuleRunSubject $subject): bool => str_contains($subject->ruleId, 'stateFieldRule') && $subject->schemaSlug === 'zaak'
+				),
 				$this->anything(),
 				$this->anything()
 			);

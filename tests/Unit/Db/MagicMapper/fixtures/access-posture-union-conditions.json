@@ -1,0 +1,759 @@
+{
+    "plain member / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')"
+    ],
+    "plain member / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "plain member / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "plain member / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0"
+    ],
+    "no organisation / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "no organisation / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "no organisation / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / default": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')"
+    ],
+    "rules bypass / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "rules bypass / register key": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / drafts only": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / drafts any": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / archived": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "rules bypass / archived any": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')"
+    ],
+    "bypass + grants / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "bypass + grants / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "bypass + grants / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(_organisation IN ('org-a') OR CROSS_SQL)"
+    ],
+    "cross branch / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "cross branch / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cross branch / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(_organisation IN ('org-a') OR CROSS_SQL)",
+        "(RBAC_SQL)"
+    ],
+    "cascade / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "cascade / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0"
+    ],
+    "cascade / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "cascade / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "cascade / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "1 = 0",
+        "(RBAC_SQL)"
+    ],
+    "cascade / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "cascade / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "cascade / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "cascade / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "cascade / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "cascade / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "admin all / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "admin all / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "admin all / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "(RBAC_SQL)"
+    ],
+    "admin all / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "admin all / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "admin all / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / default": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / rbac off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "public lifted / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "public lifted / register key": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / drafts only": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / drafts any": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / archived": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public lifted / archived any": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / default": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / rbac off": [
+        "scope true 3 5",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')"
+    ],
+    "public kept / mt off": [
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / explicit": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / explicit string": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / both off": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')"
+    ],
+    "public kept / register key": [
+        "scope true 7 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / drafts only": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_status = 'draft'",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / drafts any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / archived": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "_deleted IS NOT NULL",
+        "_archived IS NOT NULL",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ],
+    "public kept / archived any": [
+        "scope true 3 5",
+        "rbac-sql read 'openregister_table_1_5'",
+        "((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
+        "_organisation IN ('org-a')",
+        "(RBAC_SQL)"
+    ]
+}

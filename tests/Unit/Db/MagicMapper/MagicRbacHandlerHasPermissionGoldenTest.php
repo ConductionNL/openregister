@@ -23,12 +23,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -39,6 +43,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
@@ -51,6 +58,16 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantLookup
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
  */
 class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
@@ -163,13 +180,19 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 		}
 
 		$handler = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->appConfig(),
-			$this->conditionMatcher(),
-			$this->container(wiring: $wiring),
-			$this->logger()
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig()
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher(),
+				container: $this->container(wiring: $wiring),
+				logger: $this->logger()
+			)
 		);
 
 		$schema = new Schema();
@@ -179,7 +202,16 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$decide = fn () => $handler->hasPermission($schema, $action, $owner, $data, $objectAuthorization, $uuid);
+			$decide = fn () => $handler->hasPermission(new RbacPermissionAsk($schema, $action));
+			if ($uuid !== null) {
+				$row = new ObjectEntity();
+				$row->setOwner($owner);
+				$row->setObject($data);
+				$row->setAuthorization($objectAuthorization);
+				$row->setUuid($uuid);
+				$decide = fn () => $handler->hasRowPermission(new RbacPermissionAsk($schema, $action), $row);
+			}
+
 			if ($uid === '@anonymous') {
 				$outcome['verdict'] = AnonymousEvaluationContext::run($decide);
 			} else {
@@ -194,7 +226,7 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 	}//end decide()
 
 	private function container(string $wiring): ContainerInterface {
-		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler = $this->createMock(PermissionHandlerInterface::class);
 		$permissionHandler->method('resolveAuthorization')->willReturnCallback(
 			function (Schema $schema) use ($wiring): ?array {
 				$this->calls[] = 'resolveAuthorization';
@@ -214,9 +246,9 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
 		$grants = $this->createMock(ObjectGrantResolver::class);
 		$grants->method('isGranted')->willReturnCallback(
-			function (?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-				$this->calls[] = "isGranted {$userId} {$objectUuid} {$action}";
-				return $userId === 'jan' && $objectUuid === 'u-granted';
+			function (GrantLookup $lookup, string $action = 'read'): bool {
+				$this->calls[] = "isGranted {$lookup->userId} {$lookup->objectUuid} {$action}";
+				return $lookup->userId === 'jan' && $lookup->objectUuid === 'u-granted';
 			}
 		);
 

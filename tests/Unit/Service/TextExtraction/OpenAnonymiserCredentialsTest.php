@@ -7,7 +7,7 @@
  * behind HTTP Basic. Open Register posted to `/api/v1/analyze` with only a
  * Content-Type and an Accept header, so requiring a login there would have
  * sent every redaction run to the regex fallback. These tests drive the real
- * curl request against a local PHP server that records what it received.
+ * request, through the Nextcloud HTTP client, against a local PHP server that records what it received.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\TextExtraction
@@ -34,16 +34,22 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
+use OCA\OpenRegister\Tests\Unit\Files\Service\TextExtraction\GuzzleClientServiceTrait;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
+	use GuzzleClientServiceTrait;
+
 
 	/**
 	 * The directory holding the router script and what it recorded.
@@ -181,17 +187,18 @@ class OpenAnonymiserCredentialsTest extends TestCase {
 		$backend->expects($this->never())->method('requestOpenAnonymiser');
 
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$logger,
-			$settings,
-			$backend
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend, clientService: $this->guzzleClientService()),
+			logger: $logger
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');
-		$method->invoke($handler, 'Jan de Vries woont in Utrecht', null, 0.5);
+		$method->invoke($handler, new EntityDetectionQuery('Jan de Vries woont in Utrecht', null, 0.5));
 
 		$seen = $this->dir . '/seen.json';
 		$this->assertFileExists($seen, 'The request never reached the server. Logged: ' . implode(' | ', $this->logged));

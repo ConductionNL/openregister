@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
@@ -47,8 +49,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
@@ -82,7 +86,7 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 	private array $queued = [];
 
 	/**
-	 * What flowUuidsFor() was asked for.
+	 * What flowUuidsSubscribedTo() was asked for.
 	 *
 	 * @var array<int, array{event: string, register: string, schema: string}>
 	 */
@@ -98,8 +102,10 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 	 */
 	private function listener(): FlowTriggerListener {
 		$triggerMapper = $this->createMock(FlowTriggerMapper::class);
-		$triggerMapper->method('flowUuidsFor')->willReturnCallback(
-			function (string $event, string $register, string $schema): array {
+		$triggerMapper->method('flowUuidsSubscribedTo')->willReturnCallback(
+			function (string $event, RegisterSchemaRef $table): array {
+				$register = (string)$table->register;
+				$schema   = (string)$table->schema;
 				$this->asked[] = ['event' => $event, 'register' => $register, 'schema' => $schema];
 				if ($event === 'object.created' && $register === 'dossiq' && $schema === 'case') {
 					return ['flow-imported'];
@@ -128,15 +134,13 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		$versionMapper->method('findPublished')->willReturn($publishedVersion);
 
 		$locator = new FlowLocator(
-			$flowMapper,
-			$triggerMapper,
+			new FlowLocatorStores($flowMapper, $triggerMapper, $versionMapper),
 			$this->createMock(ObjectService::class),
-			new NullLogger(),
-			$versionMapper
+			new NullLogger()
 		);
 
 		$runner = $this->createMock(FlowRunService::class);
-		$runner->method('queue')->willReturnCallback(
+		$runner->method('queueRun')->willReturnCallback(
 			function (string $flowId): FlowRun {
 				$this->queued[] = $flowId;
 				$run = new FlowRun();
@@ -178,9 +182,9 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 		$session->method('getUser')->willReturn(null);
 
 		return new FlowTriggerListener(
-			new FlowTriggerService($locator, $runner, new NullLogger()),
+			new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new NullLogger())),
 			$session,
-			new FlowTriggerSlugs($registers, $schemas, new NullLogger())
+			new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger())
 		);
 	}
 

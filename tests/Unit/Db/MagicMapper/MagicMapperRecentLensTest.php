@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -30,7 +33,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -41,6 +46,8 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -80,30 +87,43 @@ class MagicMapperRecentLensTest extends TestCase {
 	private function mapper(): MagicMapper {
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
+		$services[PurposeGuardInterface::class] = $this->createMock(PurposeGuard::class);
+		$services[PurposeGuardInterface::class]->method('allows')->willReturn(true);
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
+
+		$pairs = $this->pairs();
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(static fn (int $id): Schema => $pairs[($id - 1)]['schema']);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($pairs[0]['register']);
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
-					$this->createMock(IConfig::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$schemas,
+						$registers,
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
-			->onlyMethods(['searchObjectsInRegisterSchemaTable'])
+			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable', 'findMultipleAcrossAllMagicTables'])
 			->getMock();
 
 		$rows = ['zaak' => ['uuid-a', 'uuid-c', 'uuid-e'], 'taak' => ['uuid-b', 'uuid-d']];
@@ -269,17 +289,26 @@ class MagicMapperRecentLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheGlobalIdsPathOrdersAndStamps(): void {
-		$objects = array_map(fn (string $uuid): ObjectEntity => $this->object(uuid: $uuid), ['uuid-e', 'uuid-a', 'uuid-c', 'uuid-b']);
+		$located = [];
+		foreach ([1, 2] as $schema) {
+			$row = $this->object(uuid: 'uuid-' . $schema);
+			$row->setRegister('7');
+			$row->setSchema((string) $schema);
+			$located[] = $row;
+		}
 
-		$method = new \ReflectionMethod(MagicMapper::class, 'getGlobalSearchResult');
-		$result = $method->invoke(
-			$this->mapper(),
-			$objects,
-			$this->query(['_limit' => 2, '_offset' => 1]),
-			false
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
+		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
+			static fn (array $query, Register $register, Schema $schema): int => ($schema->getId() === 1 ? 3 : 2)
 		);
 
-		$this->assertSame(4, $result['total']);
+		$result = $mapper->searchObjectsPaginated(
+			searchQuery: $this->query(['_limit' => 2, '_offset' => 1, '_ids' => array_keys(self::VIEWS)]),
+			countQuery: ['_aggregations' => [], '_ids' => array_keys(self::VIEWS)]
+		);
+
+		$this->assertSame(5, $result['total']);
 		$this->assertSame(
 			[['uuid-b', self::VIEWS['uuid-b']], ['uuid-a', self::VIEWS['uuid-a']]],
 			$this->shape($result['results'])

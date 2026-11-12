@@ -72,13 +72,6 @@ class OfficeDocumentSanitizer {
 	public const SENTINEL = 'DocuDesk Anonymisation';
 
 	/**
-	 * Registered per-format sanitiser strategies.
-	 *
-	 * @var SanitizerInterface[]
-	 */
-	private array $strategies;
-
-	/**
 	 * Constructor.
 	 *
 	 * Strategies default to the built-in DOCX + ODT sanitisers so the service
@@ -87,7 +80,7 @@ class OfficeDocumentSanitizer {
 	 * @param IRootFolder $rootFolder Root folder for file resolution.
 	 * @param ITempManager $tempManager Temp file allocator (auto-cleans at request end).
 	 * @param LoggerInterface $logger PII-free logger.
-	 * @param SanitizerInterface[]|null $strategies Optional strategy override (DI / tests).
+	 * @param SanitizerInterface[] $strategies Registered per-format strategies (override for DI / tests).
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
@@ -95,16 +88,11 @@ class OfficeDocumentSanitizer {
 		private readonly IRootFolder $rootFolder,
 		private readonly ITempManager $tempManager,
 		private readonly LoggerInterface $logger,
-		?array $strategies = null,
+		private readonly array $strategies = [
+			new DocxSanitizer(sentinel: self::SENTINEL),
+			new OdtSanitizer(sentinel: self::SENTINEL),
+		],
 	) {
-		if ($strategies === null) {
-			$strategies = [
-				new DocxSanitizer(sentinel: self::SENTINEL),
-				new OdtSanitizer(sentinel: self::SENTINEL),
-			];
-		}
-
-		$this->strategies = $strategies;
 	}//end __construct()
 
 	/**

@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
  */
-class FlowRunAuthorization {
+class FlowRunAuthorization implements FlowRunAuthorizationInterface {
 
 	/**
 	 * The right that lets a caller run a flow that is not theirs.
@@ -67,13 +67,6 @@ class FlowRunAuthorization {
 	 * @var string
 	 */
 	public const RIGHT = 'flow.update';
-
-	/**
-	 * Refused: there is nobody to attribute the run to.
-	 *
-	 * @var string
-	 */
-	public const NO_SESSION = 'no-session';
 
 	/**
 	 * Refused: the flow belongs to nobody, so the engine would not dispatch it.
@@ -175,6 +168,24 @@ class FlowRunAuthorization {
 	 * @spec openspec/changes/flow-runs-honour-their-declaration/specs/flow-engine/spec.md
 	 */
 	private function verdictForOwnedFlow(string $owner, IUser $user): string {
+		$adminVerdict = $this->adminVerdict();
+		if ($adminVerdict !== null) {
+			return $adminVerdict;
+		}
+
+		if ($owner === $user->getUID()) {
+			return self::ALLOWED;
+		}
+
+		return $this->rightVerdict(user: $user);
+	}//end verdictForOwnedFlow()
+
+	/**
+	 * ALLOWED for an administrator, UNDECIDABLE when that cannot be told, else null.
+	 *
+	 * @return string|null The verdict, or null to keep deciding.
+	 */
+	private function adminVerdict(): ?string {
 		try {
 			if ($this->access->callerIsAdmin() === true) {
 				return self::ALLOWED;
@@ -183,10 +194,17 @@ class FlowRunAuthorization {
 			return self::UNDECIDABLE;
 		}
 
-		if ($owner === $user->getUID()) {
-			return self::ALLOWED;
-		}
+		return null;
+	}//end adminVerdict()
 
+	/**
+	 * ALLOWED when the user holds the right to run other people's flows, UNDECIDABLE when that cannot be told.
+	 *
+	 * @param IUser $user The caller, not the flow's owner.
+	 *
+	 * @return string The verdict.
+	 */
+	private function rightVerdict(IUser $user): string {
 		try {
 			if ($this->access->may(user: $user, action: self::RIGHT) === true) {
 				return self::ALLOWED;
@@ -196,7 +214,7 @@ class FlowRunAuthorization {
 		}
 
 		return self::NOT_YOURS;
-	}//end verdictForOwnedFlow()
+	}//end rightVerdict()
 
 	/**
 	 * Whether this caller may run this flow.

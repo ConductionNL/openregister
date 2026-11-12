@@ -17,6 +17,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Golden test for SearchTrailController::extractRequestParameters().
@@ -27,6 +28,8 @@ use ReflectionMethod;
  * as ISO 8601 text. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SearchTrailController
+ * @uses \OCA\OpenRegister\Controller\Support\SearchTrailControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
  */
 class SearchTrailControllerRequestParametersGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/search-trail-request-parameters-golden.json';
@@ -70,7 +73,7 @@ class SearchTrailControllerRequestParametersGoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		$controller = new SearchTrailController(
+		$controller = SearchTrailControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(SearchTrailService::class),

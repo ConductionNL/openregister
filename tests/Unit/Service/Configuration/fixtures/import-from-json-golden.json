@@ -33,6 +33,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -61,6 +69,14 @@
                 "schemaKey": "broken",
                 "schemaTitle": "no title",
                 "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
             }
         },
         {
@@ -94,6 +110,14 @@
                 "schemaKey": "gamma",
                 "schemaTitle": "Gamma",
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -151,6 +175,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -176,6 +208,14 @@
             "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
             "context": {
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -582,6 +622,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -610,6 +658,14 @@
                 "schemaKey": "broken",
                 "schemaTitle": "no title",
                 "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
             }
         },
         {
@@ -643,6 +699,14 @@
                 "schemaKey": "gamma",
                 "schemaTitle": "Gamma",
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -700,6 +764,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -725,6 +797,14 @@
             "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
             "context": {
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -1132,6 +1212,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -1160,6 +1248,14 @@
                 "schemaKey": "broken",
                 "schemaTitle": "no title",
                 "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
             }
         },
         {
@@ -1193,6 +1289,14 @@
                 "schemaKey": "gamma",
                 "schemaTitle": "Gamma",
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -1250,6 +1354,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -1275,6 +1387,14 @@
             "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
             "context": {
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -1682,6 +1802,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -1710,6 +1838,14 @@
                 "schemaKey": "broken",
                 "schemaTitle": "no title",
                 "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
             }
         },
         {
@@ -1743,6 +1879,14 @@
                 "schemaKey": "gamma",
                 "schemaTitle": "Gamma",
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -1800,6 +1944,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -1825,6 +1977,14 @@
             "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
             "context": {
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -2226,6 +2386,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -2254,6 +2422,14 @@
                 "schemaKey": "broken",
                 "schemaTitle": "no title",
                 "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
             }
         },
         {
@@ -2287,6 +2463,14 @@
                 "schemaKey": "gamma",
                 "schemaTitle": "Gamma",
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {
@@ -2344,6 +2528,14 @@
             }
         },
         {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
             "schema.create": {
                 "title": "Alpha",
                 "version": "1.0.0",
@@ -2369,6 +2561,14 @@
             "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
             "context": {
                 "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
             }
         },
         {

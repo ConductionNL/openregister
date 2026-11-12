@@ -81,37 +81,71 @@ final class RuleAuditService {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function switched(RuleDescriptor $rule, bool $enabled): array {
+		$entry = $this->entryFor(rule: $rule, enabled: $enabled);
+
+		$this->logger->info($this->auditLine(rule: $rule, entry: $entry), self::auditContext(rule: $rule, entry: $entry));
+
+		return $entry;
+	}//end switched()
+
+	/**
+	 * The switch entry: who switched the rule, and from what to what.
+	 *
+	 * @param RuleDescriptor $rule    The rule as it stood before the switch.
+	 * @param bool           $enabled What it was switched to.
+	 *
+	 * @return array{actor: string, actorName: string, ruleId: string, from: bool, to: bool} The entry.
+	 */
+	private function entryFor(RuleDescriptor $rule, bool $enabled): array {
 		$user = $this->userSession->getUser();
-		$entry = [
+
+		return [
 			'actor' => ($user?->getUID() ?? 'system'),
 			'actorName' => ($user?->getDisplayName() ?? 'System'),
 			'ruleId' => $rule->getId(),
 			'from' => $rule->isEnabled(),
 			'to' => $enabled,
 		];
+	}//end entryFor()
 
-		$this->logger->info(
-			sprintf(
-				'[%s] %s switched rule "%s" on schema "%s" from %s to %s.',
-				self::EVENT_TYPE,
-				$entry['actorName'],
-				$rule->getId(),
-				$rule->getSchemaSlug(),
-				$this->word(enabled: $entry['from']),
-				$this->word(enabled: $entry['to'])
-			),
-			[
-				'eventType' => self::EVENT_TYPE,
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'rule' => $entry,
-				'schema' => $rule->getSchemaSlug(),
-				'kind' => $rule->getKind(),
-			]
+	/**
+	 * The audit line: who switched which rule on which schema, from what to what.
+	 *
+	 * @param RuleDescriptor                                                         $rule  The rule.
+	 * @param array{actor: string, actorName: string, ruleId: string, from: bool, to: bool} $entry The entry.
+	 *
+	 * @return string The line.
+	 */
+	private function auditLine(RuleDescriptor $rule, array $entry): string {
+		return sprintf(
+			'[%s] %s switched rule "%s" on schema "%s" from %s to %s.',
+			self::EVENT_TYPE,
+			$entry['actorName'],
+			$rule->getId(),
+			$rule->getSchemaSlug(),
+			$this->word(enabled: $entry['from']),
+			$this->word(enabled: $entry['to'])
 		);
+	}//end auditLine()
 
-		return $entry;
-	}//end switched()
+	/**
+	 * The structured context of the audit line.
+	 *
+	 * @param RuleDescriptor                                                         $rule  The rule.
+	 * @param array{actor: string, actorName: string, ruleId: string, from: bool, to: bool} $entry The entry.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private static function auditContext(RuleDescriptor $rule, array $entry): array {
+		return [
+			'eventType' => self::EVENT_TYPE,
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'rule' => $entry,
+			'schema' => $rule->getSchemaSlug(),
+			'kind' => $rule->getKind(),
+		];
+	}//end auditContext()
 
 	/**
 	 * The word an audit line uses for a switch state.

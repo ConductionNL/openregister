@@ -63,6 +63,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetTasksTest extends ExampleSetTestCase {
 	protected function setUp(): void {

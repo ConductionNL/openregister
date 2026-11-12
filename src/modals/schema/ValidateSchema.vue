@@ -40,6 +40,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:objectCount="objectCount"
 					:objectStats="objectStats"
 					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects to be validated')" />
 			</div>
 
@@ -221,12 +222,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ validationResults ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="validationResults ? 'Close' : 'Cancel'" @click="closeDialog" />
 			<NcButton
 				v-if="!validationResults && !loading && !error"
 				:disabled="loading"
@@ -252,10 +248,12 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { bulkResultOf, postJson } from './schemaBulkRequest.js'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'ValidateSchema',
@@ -268,11 +266,13 @@ export default {
 		NcCheckboxRadioSwitch,
 		CheckCircle,
 		AlertCircle,
-		Cancel,
+		CloseCancelButton,
 		Eye,
 		DatabaseOutline,
 		SchemaStatsBlock,
 	},
+
+	mixins: [schemaObjectCount],
 
 	data() {
 		return {
@@ -280,16 +280,10 @@ export default {
 			error: false,
 			validationResults: null,
 			showOnlyInvalid: false,
-			countLoading: true,
-			objectCount: 0,
-			objectStats: null,
 		}
 	},
 
 	computed: {
-		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		schemaStore: () => schemaStore,
-
 		/**
 		 * @spec exclude UI display helper — flattens/filters validation results for the table.
 		 */
@@ -314,21 +308,6 @@ export default {
 		},
 	},
 
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchemaItem
-			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-		},
-	},
-
 	/**
 	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
 	 */
@@ -338,26 +317,13 @@ export default {
 
 	methods: {
 		/**
-		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			this.countLoading = true
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('Error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.objectStats = null
-			} finally {
-				this.countLoading = false
-			}
+		logCountFailure(err) {
+			console.error('Error in loadObjectCount:', err)
 		},
 
 		/**
@@ -369,27 +335,10 @@ export default {
 
 			try {
 				// Call the new direct validation API
-				const response = await fetch(
+				const response = await postJson(
 					`/index.php/apps/openregister/api/bulk/schema/${schemaStore.schemaItem.id}/validate`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
 				)
-
-				if (!response.ok) {
-					throw new Error(`Validation failed: ${response.statusText}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
-				this.validationResults = data
+				this.validationResults = await bulkResultOf(response, 'Validation')
 			} catch (err) {
 				this.error = err.message || 'An error occurred during validation'
 				console.error('Validation error:', err)
@@ -426,6 +375,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
+@use './schemaCountSummary.scss' as *;
 
 @include loading-container-2-rules;
 
@@ -435,25 +385,7 @@ export default {
 
 @include object-count-section-rules;
 
-@include object-count-centered-rules;
-
-.count-label {
-	color: var(--color-text-lighter);
-}
-
-@include loading-count-rules;
-
-.breakdown-item:last-child {
-	margin-bottom: 0;
-}
-
-@include breakdown-label-rules;
-
-.steps-section {
-	margin-bottom: 2rem;
-}
-
-@include steps-section-h4-rules;
+@include schema-count-summary-rules;
 
 .results-container {
 	padding: 1rem 0;

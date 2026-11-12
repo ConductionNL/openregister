@@ -27,8 +27,8 @@ use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
@@ -77,10 +77,8 @@ class RulesControllerScopeTest extends TestCase {
 		);
 
 		$inventory = new RuleInventoryService(
-			triggers: $this->createMock(originalClassName: FlowTriggerMapper::class),
 			summaries: $this->createMock(originalClassName: RuleRunSummaryMapper::class),
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			flows: new FlowRuleDescriptors(triggers: $this->createMock(originalClassName: FlowTriggerMapper::class), published: null)
 		);
 
 		return RulesControllerFactory::create(

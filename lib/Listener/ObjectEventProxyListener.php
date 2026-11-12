@@ -32,6 +32,7 @@ use OCA\OpenRegister\Event\ObjectEventSubscription;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -79,6 +80,14 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @var integer
 	 */
 	private const MAP_TTL = 60;
+
+	/**
+	 * Layout of one trace log line.
+	 *
+	 * @var string
+	 */
+	private const TRACE_FORMAT = "%s proxy subscriptions=%d dispatches=%d invoked=%d skipped=%d"
+		. " proxyUs=%.1f mapUs=%.1f steadyPerDispatchUs=%.1f listenerUs=%.1f\n";
 
 	/**
 	 * Memoised listener instances, keyed by class name.
@@ -175,48 +184,104 @@ final class ObjectEventProxyListener implements IEventListener {
 			return;
 		}
 
-		$trace = $this->traceEnabled();
-		$start = 0.0;
-		if ($trace === true) {
-			$start = (float)hrtime(true);
-			$this->trace['dispatch']++;
-		}
-
-		[$registerId, $schemaId, $hasObject] = $this->identify(event: $event);
+		$start = $this->traceDispatch();
+		$target = $this->identify(event: $event);
 
 		$listenerNs = 0.0;
 		foreach ($subscriptions as $subscription) {
-			if ($this->wants(subscription: $subscription, registerId: $registerId, schemaId: $schemaId, hasObject: $hasObject) === false) {
-				if ($trace === true) {
-					$this->trace['skipped']++;
-				}
-
+			if ($this->wants(subscription: $subscription, target: $target) === false) {
+				$this->traceCount(counter: 'skipped');
 				continue;
 			}
 
-			$listener = $this->resolve(class: $subscription['listener']);
-			if ($listener === null) {
-				continue;
-			}
-
-			if ($trace === true) {
-				$this->trace['invoked']++;
-				$handlerStart = (float)hrtime(true);
-				$listener->handle($event);
-				$listenerNs += ((float)hrtime(true) - $handlerStart);
-				continue;
-			}
-
-			$listener->handle($event);
-		}//end foreach
-
-		if ($trace === true) {
-			$total = ((float)hrtime(true) - $start);
-			$this->trace['proxyUs'] += (($total - $listenerNs) / 1000);
-			$this->trace['listenerUs'] += ($listenerNs / 1000);
+			$listenerNs += $this->invoke(class: $subscription['listener'], event: $event);
 		}
 
+		$this->traceTotals(start: $start, listenerNs: $listenerNs);
+
 	}//end handle()
+
+	/**
+	 * Invoke one subscription that wants the written object.
+	 *
+	 * @param string $class The subscribed listener's class name.
+	 * @param Event  $event The dispatched event.
+	 *
+	 * @return float Nanoseconds spent inside the listener while tracing, else 0.
+	 */
+	private function invoke(string $class, Event $event): float {
+		$listener = $this->resolve(class: $class);
+		if ($listener === null) {
+			return 0.0;
+		}
+
+		if ($this->traceOn !== true) {
+			$listener->handle($event);
+			return 0.0;
+		}
+
+		return $this->timedHandle(listener: $listener, event: $event);
+	}//end invoke()
+
+	/**
+	 * Run one listener while tracing and count it.
+	 *
+	 * @param IEventListener<Event> $listener The listener.
+	 * @param Event                 $event    The dispatched event.
+	 *
+	 * @return float Nanoseconds spent inside the listener.
+	 */
+	private function timedHandle(IEventListener $listener, Event $event): float {
+		$this->trace['invoked']++;
+		$handlerStart = (float)hrtime(true);
+		$listener->handle($event);
+		return ((float)hrtime(true) - $handlerStart);
+	}//end timedHandle()
+
+	/**
+	 * Start the trace of one dispatch.
+	 *
+	 * @return float hrtime at the start of the dispatch, or 0 when not tracing.
+	 */
+	private function traceDispatch(): float {
+		if ($this->traceEnabled() === false) {
+			return 0.0;
+		}
+
+		$this->trace['dispatch']++;
+		return (float)hrtime(true);
+	}//end traceDispatch()
+
+	/**
+	 * Count one trace event while tracing.
+	 *
+	 * @param string $counter The trace counter to raise.
+	 *
+	 * @return void
+	 */
+	private function traceCount(string $counter): void {
+		if ($this->traceOn === true) {
+			$this->trace[$counter]++;
+		}
+	}//end traceCount()
+
+	/**
+	 * Add one dispatch's proxy and listener time to the trace.
+	 *
+	 * @param float $start      hrtime at the start of the dispatch.
+	 * @param float $listenerNs Nanoseconds spent inside listeners.
+	 *
+	 * @return void
+	 */
+	private function traceTotals(float $start, float $listenerNs): void {
+		if ($this->traceOn !== true) {
+			return;
+		}
+
+		$total = ((float)hrtime(true) - $start);
+		$this->trace['proxyUs'] += (($total - $listenerNs) / 1000);
+		$this->trace['listenerUs'] += ($listenerNs / 1000);
+	}//end traceTotals()
 
 	/**
 	 * Read the written object's register and schema ids off the event.
@@ -231,79 +296,111 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @return array{0: string|null, 1: string|null, 2: bool}
 	 */
 	private function identify(Event $event): array {
-		// ObjectUpdatingEvent carries the written object as getNewObject() and
-		// has no getObject(). Reading only getObject() left every pre-update
-		// event undecidable, so every ObjectUpdatingEvent subscriber ran on
-		// every update in every register, whatever it declared.
-		$object = null;
-		if (method_exists($event, 'getObject') === true) {
-			$object = $event->getObject();
-		} else if (method_exists($event, 'getNewObject') === true) {
-			$object = $event->getNewObject();
-		}
-
+		$object = $this->writtenObject(event: $event);
 		if (($object instanceof ObjectEntity) === false) {
 			return [null, null, false];
 		}
 
-		$register = $object->getRegister();
-		$schema = $object->getSchema();
-
-		$registerId = null;
-		if ($register !== null) {
-			$registerId = (string)$register;
-		}
-
-		$schemaId = null;
-		if ($schema !== null) {
-			$schemaId = (string)$schema;
-		}
-
-		return [$registerId, $schemaId, true];
+		return [$this->idOf(value: $object->getRegister()), $this->idOf(value: $object->getSchema()), true];
 	}//end identify()
+
+	/**
+	 * The object an event carries, whichever accessor it uses.
+	 *
+	 * ObjectUpdatingEvent carries the written object as getNewObject() and
+	 * has no getObject(). Reading only getObject() left every pre-update
+	 * event undecidable, so every ObjectUpdatingEvent subscriber ran on
+	 * every update in every register, whatever it declared.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return mixed The carried object, or null.
+	 */
+	private function writtenObject(Event $event): mixed {
+		if (method_exists($event, 'getObject') === true) {
+			return $event->getObject();
+		}
+
+		if (method_exists($event, 'getNewObject') === true) {
+			return $event->getNewObject();
+		}
+
+		return null;
+	}//end writtenObject()
+
+	/**
+	 * A register or schema reference as a string id.
+	 *
+	 * @param mixed $value The reference the object carries.
+	 *
+	 * @return string|null Null when the object carries none.
+	 */
+	private function idOf(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end idOf()
 
 	/**
 	 * Decide whether one subscription wants this object.
 	 *
+	 * No object on the event (a merge): a filter cannot be applied, and
+	 * skipping would leave every filtered listener on it silently dead.
+	 *
 	 * @param array{listener: string, registers: array<int,string>|null, schemas: array<int,string>|null} $subscription The declaration.
-	 * @param string|null $registerId Written object's register id.
-	 * @param string|null $schemaId Written object's schema id.
-	 * @param bool $hasObject Whether the event carries an object at all.
+	 * @param array{0: string|null, 1: string|null, 2: bool} $target Register id, schema id, and whether the event carries an object.
 	 *
 	 * @return boolean
 	 */
-	private function wants(array $subscription, ?string $registerId, ?string $schemaId, bool $hasObject): bool {
-		if ($this->filterEnabled() === false) {
+	private function wants(array $subscription, array $target): bool {
+		if ($this->filterEnabled() === false || $target[2] === false) {
 			return true;
 		}
 
-		// No object on the event (a merge): a filter cannot be applied, and
-		// skipping would leave every filtered listener on it silently dead.
-		if ($hasObject === false) {
-			return true;
-		}
-
-		// An object without a register or schema is not in the declared one:
-		// fail closed. Invoking here is how a listener filtered to one schema
-		// once ran on every update instance-wide (live defect H1).
-		if ($subscription['registers'] !== null) {
-			if ($registerId === null
-				|| $this->tokensMatch(tokens: $subscription['registers'], id: $registerId, isSchema: false) === false
-			) {
-				return false;
-			}
-		}
-
-		if ($subscription['schemas'] !== null) {
-			if ($schemaId === null
-				|| $this->tokensMatch(tokens: $subscription['schemas'], id: $schemaId, isSchema: true) === false
-			) {
-				return false;
-			}
-		}
-
-		return true;
+		return $this->filterAccepts(tokens: $subscription['registers'], run: $this->filterRun(id: $target[0], isSchema: false))
+			&& $this->filterAccepts(tokens: $subscription['schemas'], run: $this->filterRun(id: $target[1], isSchema: true));
 	}//end wants()
+
+	/**
+	 * One declared filter's comparison against the written object.
+	 *
+	 * @param string|null $id       The written object's register/schema id.
+	 * @param boolean     $isSchema True for schemas, false for registers.
+	 *
+	 * @return ObjectEventFilterRun
+	 */
+	private function filterRun(?string $id, bool $isSchema): ObjectEventFilterRun {
+		$run = new ObjectEventFilterRun();
+		$run->id = $id;
+		$run->isSchema = $isSchema;
+		return $run;
+	}//end filterRun()
+
+	/**
+	 * Whether one declared filter (registers or schemas) accepts the object.
+	 *
+	 * An object without a register or schema is not in the declared one:
+	 * fail closed. Invoking here is how a listener filtered to one schema
+	 * once ran on every update instance-wide (live defect H1).
+	 *
+	 * @param array<int,string>|null $tokens Declared tokens, or null for no filter.
+	 * @param ObjectEventFilterRun   $run    The written object's id and which filter this is.
+	 *
+	 * @return boolean
+	 */
+	private function filterAccepts(?array $tokens, ObjectEventFilterRun $run): bool {
+		if ($tokens === null) {
+			return true;
+		}
+
+		if ($run->id === null) {
+			return false;
+		}
+
+		return $this->tokensMatch(tokens: $tokens, run: $run);
+	}//end filterAccepts()
 
 	/**
 	 * Whether any declared token resolves to the given id.
@@ -319,40 +416,46 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * fire and the listener would be silently dead. That failure is strictly
 	 * worse than the `TypeError` it replaced, because a 500 is at least loud.
 	 *
-	 * @param array<int,string> $tokens Declared slugs and/or ids.
-	 * @param string $id The written object's register/schema id.
-	 * @param boolean $isSchema True for schemas, false for registers.
+	 * @param array<int,string>    $tokens Declared slugs and/or ids.
+	 * @param ObjectEventFilterRun $run    The written object's (non-null) id and which filter this is.
 	 *
 	 * @return boolean
 	 */
-	private function tokensMatch(array $tokens, string $id, bool $isSchema): bool {
+	private function tokensMatch(array $tokens, ObjectEventFilterRun $run): bool {
 		$slugs = [];
 		foreach ($tokens as $token) {
 			$token = (string)$token;
-			if (ObjectEventSubscription::isIdToken($token) === true) {
-				if ($token === $id) {
-					return true;
-				}
-
+			if (ObjectEventSubscription::isIdToken($token) === false) {
+				$slugs[] = $token;
 				continue;
 			}
 
-			$slugs[] = $token;
+			if ($token === $run->id) {
+				return true;
+			}
 		}
 
-		if ($slugs === []) {
-			return false;
-		}
+		return $slugs !== [] && $this->slugsMatch(slugs: $slugs, run: $run);
+	}//end tokensMatch()
 
-		$map = $this->tokenMap(isSchema: $isSchema);
+	/**
+	 * Whether any declared slug resolves to the given id.
+	 *
+	 * @param array<int,string>    $slugs Declared slugs.
+	 * @param ObjectEventFilterRun $run   The written object's id and which filter this is.
+	 *
+	 * @return boolean
+	 */
+	private function slugsMatch(array $slugs, ObjectEventFilterRun $run): bool {
+		$map = $this->tokenMap(isSchema: $run->isSchema);
 		foreach ($slugs as $slug) {
-			if (in_array($id, ($map[strtolower($slug)] ?? []), true) === true) {
+			if (in_array($run->id, ($map[strtolower($slug)] ?? []), true) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end tokensMatch()
+	}//end slugsMatch()
 
 	/**
 	 * Per-request map of declared slug to the ids it resolves to.
@@ -363,9 +466,9 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * lookup would be a database read per object write, which would cost more
 	 * than the handlers it skips.
 	 *
-	 * Measured on the reference instance: neither `oc_openregister_registers`
-	 * nor `oc_openregister_schemas` carries an index on `slug`, so each lookup
-	 * is a sequential scan — 1,137 us for the two of them, against ~29 us of
+	 * Measured on the reference instance: neither the registers nor the
+	 * schemas table carries an index on `slug`, so each lookup is a
+	 * sequential scan — 1,137 us for the two of them, against ~29 us of
 	 * steady-state per-dispatch filtering. Uncached, the fixed cost dominated
 	 * the mechanism.
 	 *
@@ -380,87 +483,148 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @return array<string, array<int, string>>
 	 */
 	private function tokenMap(bool $isSchema): array {
-		if ($isSchema === true && $this->schemaIds !== null) {
+		$known = $this->knownMap(isSchema: $isSchema);
+		if ($known !== null) {
+			return $known;
+		}
+
+		$run = new ObjectEventSlugMapRun();
+		$run->isSchema = $isSchema;
+		$run->mapStart = (float)hrtime(true);
+		$run->tokens = $this->declaredTokens(isSchema: $isSchema);
+		$map = array_fill_keys(array_map('strtolower', $run->tokens), []);
+
+		if ($run->tokens !== []) {
+			$map = $this->resolveMap(run: $run, fallback: $map);
+		}
+
+		return $this->rememberMap(run: $run, map: $map);
+	}//end tokenMap()
+
+	/**
+	 * The map already resolved this request, if any.
+	 *
+	 * @param boolean $isSchema True for schemas, false for registers.
+	 *
+	 * @return array<string, array<int, string>>|null
+	 */
+	private function knownMap(bool $isSchema): ?array {
+		if ($isSchema === true) {
 			return $this->schemaIds;
 		}
 
-		if ($isSchema === false && $this->registerIds !== null) {
-			return $this->registerIds;
+		return $this->registerIds;
+	}//end knownMap()
+
+	/**
+	 * The slug tokens every app declared for registers or schemas.
+	 *
+	 * @param boolean $isSchema True for schemas, false for registers.
+	 *
+	 * @return array<int, string>
+	 */
+	private function declaredTokens(bool $isSchema): array {
+		if ($isSchema === true) {
+			return ObjectEventSubscription::declaredSchemaTokens();
 		}
 
-		$mapStart = (float)hrtime(true);
+		return ObjectEventSubscription::declaredRegisterTokens();
+	}//end declaredTokens()
 
-		$tokens = ObjectEventSubscription::declaredSchemaTokens();
-		if ($isSchema === false) {
-			$tokens = ObjectEventSubscription::declaredRegisterTokens();
+	/**
+	 * Answer a slug map from the local cache, else from the mapper.
+	 *
+	 * Sorts the run's tokens and sets its cache and cache key.
+	 *
+	 * @param ObjectEventSlugMapRun             $run      The resolution in progress.
+	 * @param array<string, array<int, string>> $fallback The empty-but-built map kept when resolution fails.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	private function resolveMap(ObjectEventSlugMapRun $run, array $fallback): array {
+		sort($run->tokens);
+
+		$prefix = 'r:';
+		if ($run->isSchema === true) {
+			$prefix = 's:';
 		}
 
-		$map = [];
-		foreach ($tokens as $token) {
-			$map[strtolower($token)] = [];
+		$run->cacheKey = $prefix . hash(algo: 'xxh128', data: implode(',', $run->tokens));
+		$run->cache = $this->cacheFactory->createLocal('openregister_event_interest');
+		$cached = $this->cachedMap(cache: $run->cache, cacheKey: $run->cacheKey);
+		if ($cached !== null) {
+			return $cached;
 		}
 
-		if ($tokens !== []) {
-			sort($tokens);
+		return ($this->fetchMap(run: $run) ?? $fallback);
+	}//end resolveMap()
 
-			$prefix = 'r:';
-			if ($isSchema === true) {
-				$prefix = 's:';
-			}
+	/**
+	 * A slug map from the local cache.
+	 *
+	 * @param ICache $cache    The local cache.
+	 * @param string $cacheKey The map's key.
+	 *
+	 * @return array<string, array<int, string>>|null Null on a miss or an undecodable entry.
+	 */
+	private function cachedMap(ICache $cache, string $cacheKey): ?array {
+		$cached = $cache->get($cacheKey);
+		if (is_string($cached) === false) {
+			return null;
+		}
 
-			$cacheKey = $prefix . md5(implode(',', $tokens));
-			$cache = $this->cacheFactory->createLocal('openregister_event_interest');
-			$cached = $cache->get($cacheKey);
+		$decoded = json_decode($cached, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
 
-			if (is_string($cached) === true) {
-				$decoded = json_decode($cached, true);
-				if (is_array($decoded) === true) {
-					$map = $decoded;
-					return $this->rememberMap(isSchema: $isSchema, map: $map, mapStart: $mapStart);
-				}
-			}
+		return $decoded;
+	}//end cachedMap()
 
-			try {
-				if ($isSchema === true) {
-					$mapper = $this->container->get(SchemaMapperInterface::class);
-				} else {
-					$mapper = $this->container->get(RegisterMapperInterface::class);
-				}
+	/**
+	 * A slug map from the register or schema mapper, stored in the local cache.
+	 *
+	 * A resolution failure must not swallow the listener: the caller keeps the
+	 * map empty-but-built and every declaration falls through to the id
+	 * comparison. Logged, never silent.
+	 *
+	 * @param ObjectEventSlugMapRun $run The resolution, with sorted tokens, cache and cache key set.
+	 *
+	 * @return array<string, array<int, string>>|null Null when the lookup failed.
+	 */
+	private function fetchMap(ObjectEventSlugMapRun $run): ?array {
+		$mapperClass = RegisterMapperInterface::class;
+		if ($run->isSchema === true) {
+			$mapperClass = SchemaMapperInterface::class;
+		}
 
-				$map = $mapper->findIdsBySlugs($tokens);
+		$map = null;
+		try {
+			$map = $this->container->get($mapperClass)->findIdsBySlugs($run->tokens);
+			$run->cache->set($run->cacheKey, json_encode($map), self::MAP_TTL);
+		} catch (\Throwable $e) {
+			$this->logger->warning('Filtered object-event subscription could not resolve slugs: ' . $e->getMessage(), ['exception' => $e]);
+		}
 
-				$cache->set($cacheKey, json_encode($map), self::MAP_TTL);
-			} catch (\Throwable $e) {
-				// A resolution failure must not swallow the listener: leave the
-				// map empty-but-built and let every declaration fall through to
-				// the id comparison. Logged, never silent.
-				$this->logger->warning(
-					'Filtered object-event subscription could not resolve slugs: ' . $e->getMessage(),
-					['exception' => $e]
-				);
-			}//end try
-		}//end if
-
-		return $this->rememberMap(isSchema: $isSchema, map: $map, mapStart: $mapStart);
-	}//end tokenMap()
+		return $map;
+	}//end fetchMap()
 
 	/**
 	 * Memoise a resolved token map for the rest of the request.
 	 *
-	 * @param boolean $isSchema True for schemas, false for registers.
+	 * @param ObjectEventSlugMapRun             $run The resolution: which map, and when it started.
 	 * @param array<string, array<int, string>> $map The resolved map.
-	 * @param float $mapStart hrtime at which resolution started.
 	 *
 	 * @return array<string, array<int, string>>
 	 */
-	private function rememberMap(bool $isSchema, array $map, float $mapStart): array {
-		if ($isSchema === true) {
+	private function rememberMap(ObjectEventSlugMapRun $run, array $map): array {
+		if ($run->isSchema === true) {
 			$this->schemaIds = $map;
 		} else {
 			$this->registerIds = $map;
 		}
 
-		$this->trace['mapUs'] += (((float)hrtime(true) - $mapStart) / 1000);
+		$this->trace['mapUs'] += (((float)hrtime(true) - $run->mapStart) / 1000);
 
 		return $map;
 	}//end rememberMap()
@@ -473,31 +637,35 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @return IEventListener|null Null when the class cannot be resolved.
 	 */
 	private function resolve(string $class): ?IEventListener {
-		if (array_key_exists($class, $this->resolved) === true) {
-			return $this->resolved[$class];
+		if (array_key_exists($class, $this->resolved) === false) {
+			$this->resolved[$class] = $this->load(class: $class);
 		}
 
+		return $this->resolved[$class];
+	}//end resolve()
+
+	/**
+	 * Load a subscribed listener from the container.
+	 *
+	 * @param string $class Listener class name.
+	 *
+	 * @return IEventListener|null Null, logged, when it cannot be loaded or is no listener.
+	 */
+	private function load(string $class): ?IEventListener {
 		try {
 			$listener = $this->container->get($class);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Could not load filtered event listener service ' . $class . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			$this->resolved[$class] = null;
+			$this->logger->error('Could not load filtered event listener service ' . $class . ': ' . $e->getMessage(), ['exception' => $e]);
 			return null;
 		}
 
 		if (($listener instanceof IEventListener) === false) {
 			$this->logger->error('Filtered event listener ' . $class . ' does not implement IEventListener');
-			$this->resolved[$class] = null;
 			return null;
 		}
 
-		$this->resolved[$class] = $listener;
-
 		return $listener;
-	}//end resolve()
+	}//end load()
 
 	/**
 	 * Whether filtering is active.
@@ -558,20 +726,28 @@ final class ObjectEventProxyListener implements IEventListener {
 			return;
 		}
 
-		$line = sprintf(
-			"%s proxy subscriptions=%d dispatches=%d invoked=%d skipped=%d proxyUs=%.1f mapUs=%.1f steadyPerDispatchUs=%.1f listenerUs=%.1f\n",
-			date('H:i:s'),
-			ObjectEventSubscription::subscriptionCount(),
-			(int)$this->trace['dispatch'],
-			(int)$this->trace['invoked'],
-			(int)$this->trace['skipped'],
-			$this->trace['proxyUs'],
-			$this->trace['mapUs'],
-			(($this->trace['proxyUs'] - $this->trace['mapUs']) / $this->trace['dispatch']),
-			$this->trace['listenerUs']
-		);
-
-		@file_put_contents('/tmp/or-event-proxy.log', $line, (FILE_APPEND | LOCK_EX));
+		@file_put_contents('/tmp/or-event-proxy.log', $this->traceLine(), (FILE_APPEND | LOCK_EX));
 
 	}//end flushTrace()
+
+	/**
+	 * This request's trace counters as one log line.
+	 *
+	 * @return string
+	 */
+	private function traceLine(): string {
+		$trace = $this->trace;
+		return sprintf(
+			self::TRACE_FORMAT,
+			date('H:i:s'),
+			ObjectEventSubscription::subscriptionCount(),
+			(int)$trace['dispatch'],
+			(int)$trace['invoked'],
+			(int)$trace['skipped'],
+			$trace['proxyUs'],
+			$trace['mapUs'],
+			(($trace['proxyUs'] - $trace['mapUs']) / $trace['dispatch']),
+			$trace['listenerUs']
+		);
+	}//end traceLine()
 }//end class

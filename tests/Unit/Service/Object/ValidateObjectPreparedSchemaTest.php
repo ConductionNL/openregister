@@ -18,6 +18,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -39,12 +41,9 @@ class ValidateObjectPreparedSchemaTest extends TestCase {
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost:8080');
 		return new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$urlGenerator,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $this->createMock(SchemaMapper::class), urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end validator()
 
@@ -94,7 +93,7 @@ class ValidateObjectPreparedSchemaTest extends TestCase {
 	public function testAPropertyNotSuppliedIsExcusedAndTheCallIsNotCached(): void {
 		$validator = $this->validator();
 
-		$result = $validator->validateObject(['note' => 'n'], $this->schema(), new stdClass(), 0, ['title' => 'not_known']);
+		$result = $validator->validateObject(['note' => 'n'], $this->schema(), new stdClass(), ['title' => 'not_known']);
 
 		$this->assertTrue($result->isValid(), 'a required property recorded as not supplied is excused');
 		$this->assertSame([], $this->cache($validator), 'an excused call must not leave its excusals in the cache');

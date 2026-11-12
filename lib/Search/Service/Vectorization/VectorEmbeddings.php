@@ -26,12 +26,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Vectorization;
 
 use Exception;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStatsHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -55,19 +55,13 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param SettingsServiceInterface $settingsService Settings service
-	 * @param EmbeddingGeneratorHandler $generatorHandler Embedding generator handler
-	 * @param VectorStorageHandlerInterface $storageHandler Vector storage handler
-	 * @param VectorSearchHandler $searchHandler Vector search handler
-	 * @param VectorStatsHandler $statsHandler Vector statistics handler
+	 * @param VectorEmbeddingHandlers $handlers The generation, storage, search and statistics handlers
 	 * @param LoggerInterface $logger PSR-3 logger
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly SettingsServiceInterface $settingsService,
-		private readonly EmbeddingGeneratorHandler $generatorHandler,
-		private readonly VectorStorageHandlerInterface $storageHandler,
-		private readonly VectorSearchHandler $searchHandler,
-		private readonly VectorStatsHandler $statsHandler,
+		private readonly VectorEmbeddingHandlers $handlers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -105,7 +99,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		);
 
 		try {
-			$generator = $this->generatorHandler->getGenerator($config);
+			$generator = $this->handlers->generator->getGenerator($config);
 			$embedding = $generator->embedText($text);
 			$dimensions = count($embedding);
 
@@ -151,11 +145,33 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @psalm-return array<float>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function generateEmbeddingWithCustomConfig(string $text, array $config): array {
+		$this->logCustomConfigStart(text: $text, config: $config);
+
+		try {
+			$normalizedConfig = $this->normalizeCustomConfig(config: $config);
+			$this->assertUsableCustomConfig(normalizedConfig: $normalizedConfig);
+
+			return $this->embedWithCustomConfig(text: $text, normalizedConfig: $normalizedConfig);
+		} catch (Exception $e) {
+			throw $this->customConfigFailure(
+				error: $e->getMessage(),
+				attempt: ['provider' => $config['provider'] ?? 'unknown', 'text_length' => strlen($text)]
+			);
+		}
+	}//end generateEmbeddingWithCustomConfig()
+
+	/**
+	 * Log the start of a custom-config embedding.
+	 *
+	 * @param string $text   Text to embed
+	 * @param array  $config Custom configuration array
+	 *
+	 * @return void
+	 */
+	private function logCustomConfigStart(string $text, array $config): void {
 		$this->logger->debug(
 			message: '[VectorEmbeddings] Generating embedding with custom config',
 			context: [
@@ -166,136 +182,190 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				'model' => $config['model'] ?? 'unknown',
 			]
 		);
+	}//end logCustomConfigStart()
 
-		try {
-			// Normalize config format.
-			$normalizedConfig = [
-				'provider' => $config['provider'],
-				'model' => $config['model'] ?? null,
-				'api_key' => $config['apiKey'] ?? null,
-				'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
-			];
+	/**
+	 * The custom configuration in the generator's format.
+	 *
+	 * @param array $config Custom configuration array
+	 *
+	 * @return array{provider: mixed, model: mixed, api_key: mixed, base_url: mixed} The normalised config.
+	 */
+	private function normalizeCustomConfig(array $config): array {
+		return [
+			'provider' => $config['provider'],
+			'model' => $config['model'] ?? null,
+			'api_key' => $config['apiKey'] ?? null,
+			'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
+		];
+	}//end normalizeCustomConfig()
 
-			// Validate required fields.
-			if (empty($normalizedConfig['provider']) === true) {
-				throw new Exception('Provider is required');
-			}
+	/**
+	 * Refuse a normalised config without a provider, a model, or the API key its provider needs.
+	 *
+	 * @param array $normalizedConfig The normalised config.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a required field is missing.
+	 */
+	private function assertUsableCustomConfig(array $normalizedConfig): void {
+		if (empty($normalizedConfig['provider']) === true) {
+			throw new Exception('Provider is required');
+		}
 
-			if (empty($normalizedConfig['model']) === true) {
-				throw new Exception('Model is required');
-			}
+		if (empty($normalizedConfig['model']) === true) {
+			throw new Exception('Model is required');
+		}
 
-			// Validate API keys for providers that need them.
-			if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
-				&& empty($normalizedConfig['api_key']) === true
-			) {
-				throw new Exception("API key is required for {$normalizedConfig['provider']}");
-			}
+		// Validate API keys for providers that need them.
+		if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
+			&& empty($normalizedConfig['api_key']) === true
+		) {
+			throw new Exception("API key is required for {$normalizedConfig['provider']}");
+		}
+	}//end assertUsableCustomConfig()
 
-			// Create embedding generator and generate.
-			$generator = $this->generatorHandler->getGenerator($normalizedConfig);
-			$embedding = $generator->embedText($text);
+	/**
+	 * Create the embedding generator for a normalised config and embed the text.
+	 *
+	 * @param string $text             Text to embed
+	 * @param array  $normalizedConfig The normalised config.
+	 *
+	 * @return float[] Embedding vector (array of floats)
+	 */
+	private function embedWithCustomConfig(string $text, array $normalizedConfig): array {
+		$generator = $this->handlers->generator->getGenerator($normalizedConfig);
+		$embedding = $generator->embedText($text);
 
-			$this->logger->debug(
-				message: '[VectorEmbeddings] Embedding generated successfully with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'dimensions' => count($embedding),
-					'model' => $normalizedConfig['model'],
-				]
-			);
+		$this->logger->debug(
+			message: '[VectorEmbeddings] Embedding generated successfully with custom config',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'dimensions' => count($embedding),
+				'model' => $normalizedConfig['model'],
+			]
+		);
 
-			return $embedding;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Failed to generate embedding with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'provider' => $config['provider'] ?? 'unknown',
-					'text_length' => strlen($text),
-				]
-			);
-			throw new Exception('Embedding generation failed: ' . $e->getMessage());
-		}//end try
-	}//end generateEmbeddingWithCustomConfig()
+		return $embedding;
+	}//end embedWithCustomConfig()
+
+	/**
+	 * Log a failed custom-config embedding and build the exception that reports it.
+	 *
+	 * @param string $error   The failure message.
+	 * @param array  $attempt The provider and text length of the attempt, as logged.
+	 *
+	 * @return Exception The exception to throw.
+	 */
+	private function customConfigFailure(string $error, array $attempt): Exception {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Failed to generate embedding with custom config',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error] + $attempt
+		);
+
+		return new Exception('Embedding generation failed: ' . $error);
+	}//end customConfigFailure()
 
 	/**
 	 * Test embedding generation with custom configuration
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
+	public function testEmbedding(EmbeddingProbe $probe): array {
+		return $this->probe(probe: $probe);
+	}//end testEmbedding()
+
+	/**
+	 * Generate one embedding for a probe's text with its provider and config, and report the outcome.
+	 *
+	 * @param EmbeddingProbe $probe The provider, the config and the test text.
+	 *
+	 * @return array{success: bool, message: string, data?: array, error?: string}
+	 */
+	private function probe(EmbeddingProbe $probe): array {
 		$this->logger->info(
 			message: '[VectorEmbeddings] Testing embedding generation',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'provider' => $provider,
-				'model' => $config['model'] ?? 'unknown',
-				'testTextLength' => strlen($testText),
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'testTextLength' => strlen($probe->testText),
 			]
 		);
 
 		try {
-			$embedding = $this->generateEmbeddingWithCustomConfig(
-				text: $testText,
-				config: [
-					'provider' => $provider,
-					'model' => $config['model'] ?? null,
-					'apiKey' => $config['apiKey'] ?? null,
-					'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
-				]
-			);
-
-			$this->logger->info(
-				message: '[VectorEmbeddings] Embedding test successful',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'dimensions' => count($embedding),
-				]
-			);
-
-			return [
-				'success' => true,
-				'message' => 'Embedding test successful',
-				'data' => [
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'vectorLength' => count($embedding),
-					'sampleValues' => array_slice($embedding, 0, 5),
-					'testText' => $testText,
-				],
-			];
+			$embedding = $this->generateEmbeddingWithCustomConfig(text: $probe->testText, config: $probe->customConfig());
+			return $this->probeSucceeded(probe: $probe, embedding: $embedding);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Embedding test failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->probeFailed(probe: $probe, error: $e);
+		}
+	}//end probe()
 
-			return [
-				'success' => false,
-				'error' => $e->getMessage(),
-				'message' => 'Failed to generate embedding: ' . $e->getMessage(),
-			];
-		}//end try
-	}//end testEmbedding()
+	/**
+	 * Log and report a probe that produced an embedding.
+	 *
+	 * @param EmbeddingProbe $probe     The probe.
+	 * @param array          $embedding The embedding it produced.
+	 *
+	 * @return array{success: true, message: string, data: array}
+	 */
+	private function probeSucceeded(EmbeddingProbe $probe, array $embedding): array {
+		$this->logger->info(
+			message: '[VectorEmbeddings] Embedding test successful',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'dimensions' => count($embedding),
+			]
+		);
+
+		return [
+			'success' => true,
+			'message' => 'Embedding test successful',
+			'data' => [
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'vectorLength' => count($embedding),
+				'sampleValues' => array_slice($embedding, 0, 5),
+				'testText' => $probe->testText,
+			],
+		];
+	}//end probeSucceeded()
+
+	/**
+	 * Log and report a probe that failed.
+	 *
+	 * @param EmbeddingProbe $probe The probe.
+	 * @param Exception      $error Why it failed.
+	 *
+	 * @return array{success: false, error: string, message: string}
+	 */
+	private function probeFailed(EmbeddingProbe $probe, Exception $error): array {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Embedding test failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'error' => $error->getMessage(),
+			]
+		);
+
+		return [
+			'success' => false,
+			'error' => $error->getMessage(),
+			'message' => 'Failed to generate embedding: ' . $error->getMessage(),
+		];
+	}//end probeFailed()
 
 	/**
 	 * Generate embeddings for multiple texts in batch
@@ -327,7 +397,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		);
 
 		try {
-			$generator = $this->generatorHandler->getGenerator($config);
+			$generator = $this->handlers->generator->getGenerator($config);
 
 			// Generate embeddings individually for each text.
 			$results = [];
@@ -393,15 +463,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Store vector embedding in the PostgreSQL database
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, its embedding and its chunk position
 	 *
 	 * @return int The ID of the inserted vector
 	 *
@@ -409,28 +471,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
-	): int {
-		return $this->storageHandler->storeVector(
-			entityType: $entityType,
-			entityId: $entityId,
-			embedding: $embedding,
-			model: $model,
-			dimensions: $dimensions,
-			chunkIndex: $chunkIndex,
-			totalChunks: $totalChunks,
-			chunkText: $chunkText,
-			metadata: $metadata
-		);
+	public function storeVector(StoredVector $vector): int {
+		return $this->handlers->storage->storeVector(vector: $vector);
 	}//end storeVector()
 
 	// =============================================================================
@@ -440,10 +482,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Perform semantic similarity search
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -451,21 +490,9 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array {
-		// Generate query embedding.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->searchHandler->semanticSearch(
-			queryEmbedding: $queryEmbedding,
-			limit: $limit,
-			filters: $filters
-		);
+	public function semanticSearch(SemanticSearchRequest $request): array {
+		$embedding = $this->generateEmbedding(text: $request->query, provider: $request->provider)['embedding'];
+		return $this->handlers->search->semanticSearch(query: new VectorQuery(embedding: $embedding, limit: $request->limit, filters: $request->filters));
 	}//end semanticSearch()
 
 	/**
@@ -474,11 +501,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * Caller supplies keyword search results; vector search runs against the database.
 	 * Results are fused using Reciprocal Rank Fusion (RRF).
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
-	 * @param string|null $provider Embedding provider
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown
 	 *
@@ -486,23 +510,11 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-		?string $provider = null,
-	): array {
-		// Generate query embedding.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->searchHandler->hybridSearch(
-			queryEmbedding: $queryEmbedding,
-			keywordResults: $keywordResults,
-			limit: $limit,
-			weights: $weights
-		);
+	public function hybridSearch(HybridSearchRequest $request): array {
+		// The query embedding comes from the configured provider.
+		$vectorQuery = new VectorQuery(embedding: $this->generateEmbedding(text: $request->query)['embedding'], limit: $request->limit);
+		$keyword     = new KeywordFusion(results: $request->keywordResults, weights: $request->weights);
+		return $this->handlers->search->hybridSearch(query: $vectorQuery, keyword: $keyword);
 	}//end hybridSearch()
 
 	// =============================================================================
@@ -520,7 +532,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function getVectorStats(): array {
-		return $this->statsHandler->getStats();
+		return $this->handlers->stats->getStats();
 	}//end getVectorStats()
 
 	// =============================================================================
@@ -540,19 +552,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 */
 	public function checkEmbeddingModelMismatch(): array {
 		try {
-			// Get current configured model.
-			$settings = $this->settingsService->getLLMSettingsOnly();
-			$currentProvider = $settings['embeddingProvider'] ?? null;
-			$currentModel = null;
-
-			if ($currentProvider === 'openai') {
-				$currentModel = $settings['openaiConfig']['model'] ?? null;
-			} elseif ($currentProvider === 'ollama') {
-				$currentModel = $settings['ollamaConfig']['model'] ?? null;
-			} elseif ($currentProvider === 'fireworks') {
-				$currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
-			}
-
+			$currentModel = $this->configuredEmbeddingModel(settings: $this->settingsService->getLLMSettingsOnly());
 			if ($currentModel === null || $currentModel === '') {
 				return [
 					'has_vectors' => false,
@@ -561,14 +561,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				];
 			}
 
-			// Check database for existing vectors.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('*', 'total'))
-				->from('openregister_vectors');
-			$result = $qb->executeQuery();
-			$totalVectors = (int)$result->fetchOne();
-			$result->closeCursor();
-
+			$totalVectors = $this->countVectors();
 			if ($totalVectors === 0) {
 				return [
 					'has_vectors' => false,
@@ -578,56 +571,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				];
 			}
 
-			// Get distinct embedding models.
-			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct('embedding_model')
-				->from('openregister_vectors')
-				->where($qb->expr()->isNotNull('embedding_model'));
-			$result = $qb->executeQuery();
-			$existingModels = [];
-			while (($row = $result->fetch()) !== false) {
-				$existingModels[] = $row['embedding_model'];
-			}
-
-			$result->closeCursor();
-
-			// Count vectors with NULL model.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('*', 'null_count'))
-				->from('openregister_vectors')
-				->where($qb->expr()->isNull('embedding_model'));
-			$result = $qb->executeQuery();
-			$nullModelCount = (int)$result->fetchOne();
-			$result->closeCursor();
-
-			// Check for mismatch.
-			$hasMismatch = false;
-			$mismatchDetails = [];
-
-			foreach ($existingModels as $existingModel) {
-				if ($existingModel !== $currentModel) {
-					$hasMismatch = true;
-					$mismatchDetails[] = $existingModel;
-				}
-			}
-
-			$message = 'All vectors use the same embedding model.';
-			if ($hasMismatch === true) {
-				$message = 'Multiple embedding models detected. Consider re-embedding all vectors with a single model.';
-			} elseif ($nullModelCount > 0) {
-				$message = sprintf('%d vectors have no model information.', $nullModelCount);
-			}
-
-			return [
-				'has_vectors' => true,
-				'mismatch' => $hasMismatch || $nullModelCount > 0,
-				'current_model' => $currentModel,
-				'existing_models' => $existingModels,
-				'total_vectors' => $totalVectors,
-				'null_model_count' => $nullModelCount,
-				'mismatched_models' => $mismatchDetails,
-				'message' => $message,
-			];
+			return $this->modelReport(currentModel: $currentModel, totalVectors: $totalVectors);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[VectorEmbeddings] Failed to check embedding model mismatch',
@@ -643,6 +587,110 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	}//end checkEmbeddingModelMismatch()
 
 	/**
+	 * The embedding model the configured provider uses, or null.
+	 *
+	 * @param array<string, mixed> $settings The LLM settings.
+	 *
+	 * @return mixed The model.
+	 */
+	private function configuredEmbeddingModel(array $settings): mixed {
+		return match ($settings['embeddingProvider'] ?? null) {
+			'openai' => $settings['openaiConfig']['model'] ?? null,
+			'ollama' => $settings['ollamaConfig']['model'] ?? null,
+			'fireworks' => $settings['fireworksConfig']['embeddingModel'] ?? null,
+			default => null,
+		};
+	}//end configuredEmbeddingModel()
+
+	/**
+	 * How many vectors are stored.
+	 *
+	 * @return int The count.
+	 */
+	private function countVectors(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'total'))
+			->from('openregister_vectors');
+		$result = $qb->executeQuery();
+		$total  = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $total;
+	}//end countVectors()
+
+	/**
+	 * How many stored vectors carry no model.
+	 *
+	 * @return int The count.
+	 */
+	private function countVectorsWithoutModel(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'null_count'))
+			->from('openregister_vectors')
+			->where($qb->expr()->isNull('embedding_model'));
+		$result = $qb->executeQuery();
+		$count  = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countVectorsWithoutModel()
+
+	/**
+	 * The distinct models the stored vectors were embedded with.
+	 *
+	 * @return array<int, mixed> The models.
+	 */
+	private function distinctEmbeddingModels(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('embedding_model')
+			->from('openregister_vectors')
+			->where($qb->expr()->isNotNull('embedding_model'));
+		$result = $qb->executeQuery();
+		$models = [];
+		while (($row = $result->fetch()) !== false) {
+			$models[] = $row['embedding_model'];
+		}
+
+		$result->closeCursor();
+
+		return $models;
+	}//end distinctEmbeddingModels()
+
+	/**
+	 * The mismatch report over existing vectors: reads the distinct stored
+	 * models, then how many vectors carry no model.
+	 *
+	 * @param mixed $currentModel The configured model.
+	 * @param int   $totalVectors How many vectors exist.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function modelReport(mixed $currentModel, int $totalVectors): array {
+		$existingModels = $this->distinctEmbeddingModels();
+		$nullModelCount = $this->countVectorsWithoutModel();
+		$mismatchDetails = array_values(array_filter($existingModels, static fn ($model): bool => $model !== $currentModel));
+		$hasMismatch     = $mismatchDetails !== [];
+
+		$message = 'All vectors use the same embedding model.';
+		if ($hasMismatch === true) {
+			$message = 'Multiple embedding models detected. Consider re-embedding all vectors with a single model.';
+		} elseif ($nullModelCount > 0) {
+			$message = sprintf('%d vectors have no model information.', $nullModelCount);
+		}
+
+		return [
+			'has_vectors' => true,
+			'mismatch' => $hasMismatch || $nullModelCount > 0,
+			'current_model' => $currentModel,
+			'existing_models' => $existingModels,
+			'total_vectors' => $totalVectors,
+			'null_model_count' => $nullModelCount,
+			'mismatched_models' => $mismatchDetails,
+			'message' => $message,
+		];
+	}//end modelReport()
+
+	/**
 	 * Clear all embeddings from the database
 	 *
 	 * @return (bool|int|string)[]
@@ -654,12 +702,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	public function clearAllEmbeddings(): array {
 		try {
 			// Count vectors before deletion.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('*', 'total'))
-				->from('openregister_vectors');
-			$result = $qb->executeQuery();
-			$totalVectors = (int)$result->fetchOne();
-			$result->closeCursor();
+			$totalVectors = $this->countVectors();
 
 			if ($totalVectors === 0) {
 				return [
@@ -742,7 +785,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		return [
 			'provider' => $configuredProvider,
 			'model' => $model,
-			'dimensions' => $this->generatorHandler->getDefaultDimensions($model),
+			'dimensions' => $this->handlers->generator->getDefaultDimensions($model),
 			'api_key' => $apiKey,
 			'base_url' => $baseUrl,
 		];

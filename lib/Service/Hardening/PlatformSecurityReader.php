@@ -37,9 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
-use OCP\App\IAppManager;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Throwable;
@@ -66,18 +63,14 @@ class PlatformSecurityReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig $config Reads the session and brute-force system configuration.
-	 * @param IAppConfig $appConfig Reads the password policy app's own values.
-	 * @param IAppManager $appManager Answers whether the password policy is running.
+	 * @param PlatformConfiguration $platform The system and app configuration and the installed apps.
 	 * @param IThrottler $throttler Reports the brute-force state for the calling address.
 	 * @param IRequest $request Names the address the state is reported for.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
-		private readonly IAppManager $appManager,
+		private readonly PlatformConfiguration $platform,
 		private readonly IThrottler $throttler,
 		private readonly IRequest $request,
 	) {
@@ -93,7 +86,7 @@ class PlatformSecurityReader {
 	 */
 	public function passwordPolicyRuns(): bool {
 		try {
-			return $this->appManager->isEnabledForAnyone(self::POLICY_APP);
+			return $this->platform->appManager->isEnabledForAnyone(self::POLICY_APP);
 		} catch (Throwable) {
 			return false;
 		}
@@ -156,41 +149,74 @@ class PlatformSecurityReader {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function bruteForceState(): array {
-		$enabled = null;
-		try {
-			$raw = $this->config->getSystemValue('auth.bruteforce.protection.enabled', true);
-			$enabled = 0;
-			if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
-				$enabled = 1;
-			}
-		} catch (Throwable) {
-			$enabled = null;
-		}
-
-		$delay = 0;
-		$attempts = 0;
-		$bypass = false;
-		try {
-			$address = $this->request->getRemoteAddress();
-			if ($address !== '') {
-				$delay = $this->throttler->getDelay($address);
-				$attempts = $this->throttler->getAttempts($address);
-				$bypass = $this->throttler->isBypassListed($address);
-			}
-		} catch (Throwable) {
-			$delay = 0;
-			$attempts = 0;
-			$bypass = false;
-		}
+		$enabled  = $this->throttlerEnabled();
+		$throttle = $this->throttleOfCaller();
 
 		return [
 			'throttlerEnabled' => $enabled,
-			'delayMilliseconds' => $delay,
-			'attempts' => $attempts,
-			'bypassListed' => $bypass,
+			'delayMilliseconds' => $throttle['delay'],
+			'attempts' => $throttle['attempts'],
+			'bypassListed' => $throttle['bypass'],
 		];
 
 	}//end bruteForceState()
+
+	/**
+	 * Whether brute-force protection is switched on.
+	 *
+	 * @return int|null 1 when on, 0 when off, null when the system config cannot be read.
+	 */
+	private function throttlerEnabled(): ?int {
+		try {
+			$raw = $this->platform->config->getSystemValue('auth.bruteforce.protection.enabled', true);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
+			return 1;
+		}
+
+		return 0;
+
+	}//end throttlerEnabled()
+
+	/**
+	 * The throttle on the address the request came from.
+	 *
+	 * @return array{delay: int, attempts: int, bypass: bool} The delay, the attempts and
+	 *                                                       whether the address is bypass-listed;
+	 *                                                       zeros when there is no address or the throttler cannot answer.
+	 */
+	private function throttleOfCaller(): array {
+		$none = ['delay' => 0, 'attempts' => 0, 'bypass' => false];
+		try {
+			$address = $this->request->getRemoteAddress();
+			if ($address === '') {
+				return $none;
+			}
+
+			return $this->throttleOf(address: $address);
+		} catch (Throwable) {
+			return $none;
+		}
+
+	}//end throttleOfCaller()
+
+	/**
+	 * The throttler's view of one address.
+	 *
+	 * @param string $address The remote address.
+	 *
+	 * @return array{delay: int, attempts: int, bypass: bool} The delay, the attempts and whether it is bypass-listed.
+	 */
+	private function throttleOf(string $address): array {
+		return [
+			'delay' => $this->throttler->getDelay($address),
+			'attempts' => $this->throttler->getAttempts($address),
+			'bypass' => $this->throttler->isBypassListed($address),
+		];
+	}//end throttleOf()
 
 	/**
 	 * Read one integer from the password policy app.
@@ -202,7 +228,7 @@ class PlatformSecurityReader {
 	 */
 	private function policyInt(string $key, int $default): ?int {
 		try {
-			return $this->appConfig->getValueInt(self::POLICY_APP, $key, $default);
+			return $this->platform->appConfig->getValueInt(self::POLICY_APP, $key, $default);
 		} catch (Throwable) {
 			return null;
 		}
@@ -218,7 +244,7 @@ class PlatformSecurityReader {
 	 */
 	private function policyFlag(string $key): ?int {
 		try {
-			if ($this->appConfig->getValueBool(self::POLICY_APP, $key, true) === true) {
+			if ($this->platform->appConfig->getValueBool(self::POLICY_APP, $key, true) === true) {
 				return 1;
 			}
 
@@ -239,7 +265,7 @@ class PlatformSecurityReader {
 	 */
 	private function systemInt(string $key, int $default): ?int {
 		try {
-			return (int)$this->config->getSystemValue($key, $default);
+			return (int)$this->platform->config->getSystemValue($key, $default);
 		} catch (Throwable) {
 			return null;
 		}
@@ -259,7 +285,7 @@ class PlatformSecurityReader {
 	 */
 	private function systemFlag(string $key): ?int {
 		try {
-			$raw = $this->config->getSystemValue($key, 'false');
+			$raw = $this->platform->config->getSystemValue($key, 'false');
 			if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
 				return 1;
 			}

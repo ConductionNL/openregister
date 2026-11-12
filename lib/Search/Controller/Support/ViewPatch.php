@@ -65,14 +65,7 @@ final class ViewPatch {
 	public function query(): ?array {
 		$config = $this->data['configuration'] ?? null;
 		if (is_array($config) === true) {
-			return [
-				'registers' => $config['registers'] ?? [],
-				'schemas' => $config['schemas'] ?? [],
-				'source' => $config['source'] ?? 'auto',
-				'searchTerms' => $config['searchTerms'] ?? [],
-				'facetFilters' => $config['facetFilters'] ?? [],
-				'enabledFacets' => $config['enabledFacets'] ?? [],
-			];
+			return self::configurationQuery(config: $config);
 		}
 
 		$query = $this->data['query'] ?? null;
@@ -82,6 +75,24 @@ final class ViewPatch {
 
 		return null;
 	}//end query()
+
+	/**
+	 * The query keys of a legacy `configuration` body, with their defaults.
+	 *
+	 * @param array<string, mixed> $config The `configuration` the frontend sent.
+	 *
+	 * @return array<string, mixed> registers, schemas, source, searchTerms, facetFilters and enabledFacets.
+	 */
+	private static function configurationQuery(array $config): array {
+		return [
+			'registers' => $config['registers'] ?? [],
+			'schemas' => $config['schemas'] ?? [],
+			'source' => $config['source'] ?? 'auto',
+			'searchTerms' => $config['searchTerms'] ?? [],
+			'facetFilters' => $config['facetFilters'] ?? [],
+			'enabledFacets' => $config['enabledFacets'] ?? [],
+		];
+	}//end configurationQuery()
 
 
 	/**

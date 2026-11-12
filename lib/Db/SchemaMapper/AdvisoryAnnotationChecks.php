@@ -21,14 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
-use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
-use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
+use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\MasterDataAnnotationValidators;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,7 +63,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-aggregations');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new AggregationAnnotationValidator())->validate($annotation->shape()),
+				errors: SearchAnnotationValidators::aggregation()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (aggregation not registered)'
 			);
 		}
@@ -88,7 +84,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-quality');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new QualityAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::quality()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (quality score not materialised)'
 			);
 		}
@@ -110,7 +106,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-dedup');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new DedupAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::dedup()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (declared match rules not used)'
 			);
 		}
@@ -139,7 +135,7 @@ final class AdvisoryAnnotationChecks {
 		}
 
 		$this->warn(
-			errors: (new HingeAnnotationValidator())->validate(['properties' => ($schema->getProperties() ?? [])] + $declared),
+			errors: SchemaAnnotationValidators::hinge()->validate(['properties' => ($schema->getProperties() ?? [])] + $declared),
 			text: 'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are invalid and were ignored'
 		);
 	}//end checkHinge()
@@ -159,7 +155,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-survivorship');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new SurvivorshipAnnotationValidator())->validate($annotation->shape()),
+				errors: SchemaAnnotationValidators::survivorship()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (golden record not materialised)'
 			);
 		}
@@ -181,7 +177,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-merge');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new MergeAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::merge()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (merge falls back to defaults)'
 			);
 		}
@@ -209,38 +205,6 @@ final class AdvisoryAnnotationChecks {
 			);
 		}
 	}//end checkParty()
-
-	/**
-	 * Validate the optional `x-openregister-notifications` annotation.
-	 *
-	 * A malformed notification annotation must NOT block the schema itself and,
-	 * on config import, the entire register and every schema that references it
-	 * (the import aborts and 0 objects land). The runtime dispatcher only fires
-	 * notifications whose trigger matches a known event, so an invalid or legacy
-	 * spec (e.g. the older `onCreate`/`onStatusChange` shape without a
-	 * trigger.type) is simply inert.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
-	 */
-	public function checkNotifications(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-notifications');
-		if ($annotation->isBlock() === false) {
-			return;
-		}
-
-		$errors = (new NotificationAnnotationValidator())->validate($annotation->shape());
-		if (count($errors) > 0) {
-			$this->logger->warning(
-				'Schema "' . $schema->getSlug() . '" has invalid x-openregister-notifications (ignored at runtime, fix to enable): '
-				. implode(' ', array_map(static fn (array $err) => $err['message'], $errors)),
-				['schema' => $schema->getSlug()]
-			);
-		}
-	}//end checkNotifications()
 
 	/**
 	 * Log the given text with the messages of the errors, if there are any.

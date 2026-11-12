@@ -55,6 +55,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetArchivalTest extends ExampleSetTestCase {
 	/**

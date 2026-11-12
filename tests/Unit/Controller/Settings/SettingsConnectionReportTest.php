@@ -60,13 +60,14 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
- * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConnectionReporting
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
  * @uses \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ApiTokenProbe
  */
 class SettingsConnectionReportTest extends TestCase {
 

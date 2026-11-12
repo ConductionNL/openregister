@@ -36,35 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
  *
  * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
  */
-final class FlowNextHint {
-
-	/**
-	 * Stay on the record the macro ran against.
-	 *
-	 * @var string
-	 */
-	public const STAY = 'stay';
-
-	/**
-	 * Go to the next item in the list the person came from.
-	 *
-	 * @var string
-	 */
-	public const NEXT = 'next';
-
-	/**
-	 * Go back to the list.
-	 *
-	 * @var string
-	 */
-	public const LIST = 'list';
-
-	/**
-	 * The whole vocabulary.
-	 *
-	 * @var array<int, string>
-	 */
-	public const HINTS = [self::STAY, self::NEXT, self::LIST];
+final class FlowNextHint implements FlowNextHintsInterface {
 
 	/**
 	 * The manual trigger's node type.

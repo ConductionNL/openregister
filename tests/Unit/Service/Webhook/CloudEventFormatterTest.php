@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Webhook;
 
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -35,10 +36,7 @@ class CloudEventFormatterTest extends TestCase {
 	 * Test formatAsCloudEvent with default source
 	 */
 	public function testFormatAsCloudEventDefaultSource(): void {
-		$result = $this->formatter->formatAsCloudEvent(
-			'object.created',
-			['key' => 'value']
-		);
+		$result = $this->formatter->formatAsCloudEvent(new CloudEventAttributes('object.created'), ['key' => 'value']);
 
 		$this->assertSame('1.0', $result['specversion']);
 		$this->assertSame('object.created', $result['type']);
@@ -62,12 +60,7 @@ class CloudEventFormatterTest extends TestCase {
 	 * Test formatAsCloudEvent with custom source
 	 */
 	public function testFormatAsCloudEventCustomSource(): void {
-		$result = $this->formatter->formatAsCloudEvent(
-			'object.updated',
-			['id' => '123'],
-			'https://example.com/api',
-			'object:reg1/schema1/123'
-		);
+		$result = $this->formatter->formatAsCloudEvent(new CloudEventAttributes('object.updated', 'https://example.com/api', 'object:reg1/schema1/123'), ['id' => '123']);
 
 		$this->assertSame('https://example.com/api', $result['source']);
 		$this->assertSame('object:reg1/schema1/123', $result['subject']);
@@ -78,7 +71,7 @@ class CloudEventFormatterTest extends TestCase {
 	 * Test formatAsCloudEvent with empty payload
 	 */
 	public function testFormatAsCloudEventEmptyPayload(): void {
-		$result = $this->formatter->formatAsCloudEvent('object.deleted', []);
+		$result = $this->formatter->formatAsCloudEvent(new CloudEventAttributes('object.deleted'), []);
 
 		$this->assertSame([], $result['data']);
 		$this->assertSame('1.0', $result['specversion']);
@@ -106,11 +99,7 @@ class CloudEventFormatterTest extends TestCase {
 			return $headers[$key] ?? '';
 		});
 
-		$result = $this->formatter->formatRequestAsCloudEvent(
-			$request,
-			'object.creating',
-			['extra' => 'data']
-		);
+		$result = $this->formatter->formatRequestAsCloudEvent($request, 'object.creating');
 
 		$this->assertSame('1.0', $result['specversion']);
 		$this->assertSame('object.creating', $result['type']);
@@ -119,7 +108,6 @@ class CloudEventFormatterTest extends TestCase {
 		$this->assertSame('object:1/2/3', $result['subject']);
 		$this->assertSame('POST', $result['data']['method']);
 		$this->assertSame('/api/objects/1/2/3', $result['data']['path']);
-		$this->assertSame('data', $result['data']['extra']);
 	}
 
 	/**
@@ -182,8 +170,8 @@ class CloudEventFormatterTest extends TestCase {
 	 * Test that each call generates a unique ID
 	 */
 	public function testUniqueIdsGenerated(): void {
-		$result1 = $this->formatter->formatAsCloudEvent('test', []);
-		$result2 = $this->formatter->formatAsCloudEvent('test', []);
+		$result1 = $this->formatter->formatAsCloudEvent(new CloudEventAttributes('test'), []);
+		$result2 = $this->formatter->formatAsCloudEvent(new CloudEventAttributes('test'), []);
 
 		$this->assertNotSame($result1['id'], $result2['id']);
 	}

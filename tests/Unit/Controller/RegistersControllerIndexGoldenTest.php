@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -49,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\RegisterDownloads
  * @uses \OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterAccessAudit
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterUpdate
  * @uses \OCA\OpenRegister\Controller\Support\RegisterStatistics
  * @uses \OCA\OpenRegister\Controller\Support\RegistersControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\RegisterMappers
@@ -59,6 +63,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses \OCA\OpenRegister\Controller\Support\RequestListPage
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterExpansion
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterListExtension
+ * @uses \OCA\OpenRegister\Service\Serializer\SchemaObjectCounts
  */
 class RegistersControllerIndexGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-index-golden.json';
@@ -127,15 +140,16 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 		});
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('getStatistics')->willReturnCallback(function (...$args) {
+		$objectMapper->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope) {
+			$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 			$this->calls[] = ['objectMapper.getStatistics' => $args];
 			return ['total' => 1, 'size' => 2];
 		});
 		$auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-		$auditTrailMapper->method('getStatistics')->willReturnCallback(function (...$args) {
+		$auditTrailMapper->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args) {
 			$this->calls[] = ['auditTrailMapper.getStatistics' => $args];
 			return ['total' => 3];
-		});
+		}));
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn($case['admin'] ?? true);

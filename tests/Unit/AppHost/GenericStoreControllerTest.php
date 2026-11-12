@@ -33,12 +33,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Controller\GenericStoreController;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -63,6 +68,17 @@ use RuntimeException;
  *
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class GenericStoreControllerTest extends TestCase {
 	/** @var ManifestLoader&MockObject */
@@ -113,7 +129,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
 		$this->actionAuthorizer = $this->getMockBuilder(StoreActionAuthorizer::class)
-			->disableOriginalConstructor()->onlyMethods(['can', 'canPublish'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['permits', 'canPublish'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -130,15 +146,23 @@ class GenericStoreControllerTest extends TestCase {
 		return new GenericStoreController(
 			appName: $appId,
 			request: $this->request,
-			manifestLoader: $this->manifestLoader,
-			storeService: $this->storeService,
-			installer: $this->installer,
-			catalog: $this->catalog,
-			gitHubSource: $this->gitHubSource,
-			actionAuthorizer: $this->actionAuthorizer,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			logger: $this->createMock(LoggerInterface::class)
+			services: new GenericStoreControllerServices(
+				sources: new GenericStoreSources(
+					manifestLoader: $this->manifestLoader,
+					storeService: $this->storeService,
+					gitHubSource: $this->gitHubSource,
+					catalog: $this->catalog
+				),
+				install: new GenericStoreInstall(
+					installer: $this->installer,
+					actionAuthorizer: $this->actionAuthorizer
+				),
+				platform: new GenericStorePlatform(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 	}//end controller()
 
@@ -654,8 +678,8 @@ class GenericStoreControllerTest extends TestCase {
 		$this->signIn(isAdmin: false);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
 		$this->actionAuthorizer->expects($this->once())
-			->method('can')
-			->with('demo', 'catalog.instantiate', $this->anything())
+			->method('permits')
+			->with($this->callback(static fn (StoreActionCheck $check): bool => $check->appId === 'demo' && $check->action === 'catalog.instantiate'))
 			->willReturn(true);
 		$this->storeService->method('resolve')->willReturn(['slug' => 'vth', 'components' => []]);
 		$this->installer->expects($this->once())
@@ -676,7 +700,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnActionPostureRefusesWhenTheLeafMatrixDeclines(): void {
 		$this->signIn(isAdmin: false);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->method('can')->willReturn(false);
+		$this->actionAuthorizer->method('permits')->willReturn(false);
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
@@ -697,7 +721,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnAdministratorStillGoesThroughTheActionMatrix(): void {
 		$this->signIn(isAdmin: true);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->expects($this->once())->method('can')->willReturn(false);
+		$this->actionAuthorizer->expects($this->once())->method('permits')->willReturn(false);
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
@@ -715,7 +739,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnActionPostureRefusesAnonymousWithoutAsking(): void {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->expects($this->never())->method('can');
+		$this->actionAuthorizer->expects($this->never())->method('permits');
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(

@@ -1,0 +1,899 @@
+{
+    "available yes": {
+        "result": true,
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "available no": {
+        "result": false,
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "link no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 0
+        },
+        "calls": []
+    },
+    "link duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmark already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 8)"
+        ]
+    },
+    "link unavailable": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmarks is not available",
+            "code": 503
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 8)",
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "link no mapper": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmark not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 8)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "debug resolveBookmarkMapper failed: no \\OCA\\Bookmarks\\Db\\BookmarkMapper"
+        ]
+    },
+    "link find throws": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmark not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 99)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(99)",
+            "debug fetchBookmarkDetails find failed: no bookmark 99"
+        ]
+    },
+    "link other user": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmark not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 9)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(9)"
+        ]
+    },
+    "link ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 8,
+            "Title": "Docs",
+            "Url": "https://d.nl",
+            "Description": "D",
+            "Tags": [
+                "x",
+                "y"
+            ],
+            "AddedAt": "1700000000",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "addedAt",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 8)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(8)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":8,\"Title\":\"Docs\",\"Url\":\"https:\\/\\/d.nl\",\"Description\":\"D\",\"Tags\":[\"x\",\"y\"],\"AddedAt\":\"1700000000\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link no title tag lookup": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 10,
+            "Title": "https://notitle.nl",
+            "Url": "https://notitle.nl",
+            "Description": "",
+            "Tags": [
+                "t2"
+            ],
+            "AddedAt": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 10)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(10)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":10,\"Title\":\"https:\\/\\/notitle.nl\",\"Url\":\"https:\\/\\/notitle.nl\",\"Description\":\"\",\"Tags\":[\"t2\"],\"AddedAt\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link tag lookup throws": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 10,
+            "Title": "https://notitle.nl",
+            "Url": "https://notitle.nl",
+            "Description": "",
+            "Tags": [],
+            "AddedAt": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 10)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(10)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":10,\"Title\":\"https:\\/\\/notitle.nl\",\"Url\":\"https:\\/\\/notitle.nl\",\"Description\":\"\",\"Tags\":[],\"AddedAt\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link no tag mapper": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 10,
+            "Title": "https://notitle.nl",
+            "Url": "https://notitle.nl",
+            "Description": "",
+            "Tags": [],
+            "AddedAt": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 10)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "debug resolveTagMapper failed: no \\OCA\\Bookmarks\\Db\\TagMapper",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":10,\"Title\":\"https:\\/\\/notitle.nl\",\"Url\":\"https:\\/\\/notitle.nl\",\"Description\":\"\",\"Tags\":[],\"AddedAt\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link toArray negative added": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 11,
+            "Title": "Plain",
+            "Url": "https://p.nl",
+            "Description": "",
+            "Tags": [],
+            "AddedAt": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 11)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(11)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(11)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":11,\"Title\":\"Plain\",\"Url\":\"https:\\/\\/p.nl\",\"Description\":\"\",\"Tags\":[],\"AddedAt\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "link getId fallback": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 12,
+            "Title": "NoArrId",
+            "Url": "https://n.nl",
+            "Description": "",
+            "Tags": [
+                "t3"
+            ],
+            "AddedAt": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "findByObjectAndBookmark(obj-1, 12)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(12)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(12)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":12,\"Title\":\"NoArrId\",\"Url\":\"https:\\/\\/n.nl\",\"Description\":\"\",\"Tags\":[\"t3\"],\"AddedAt\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "unlink ok": {
+        "result": null,
+        "calls": [
+            "deleteByObjectAndBookmark(obj-1, 8)"
+        ]
+    },
+    "unlink missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmark link not found",
+            "code": 404
+        },
+        "calls": [
+            "deleteByObjectAndBookmark(obj-1, 8)"
+        ]
+    },
+    "linked empty": {
+        "result": [],
+        "calls": [
+            "findByObjectUuid(obj-1)"
+        ]
+    },
+    "linked unavailable": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "cached",
+                "url": null,
+                "description": null,
+                "tags": [],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": null
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "linked no user": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "cached",
+                "url": null,
+                "description": null,
+                "tags": [],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": null
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "linked fresh": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "cached",
+                "url": null,
+                "description": null,
+                "tags": [],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "linked refresh": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "Docs",
+                "url": "https://d.nl",
+                "description": "D",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "addedAt": "1700000000",
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 10,
+                "title": "https://notitle.nl",
+                "url": "https://notitle.nl",
+                "description": "",
+                "tags": [
+                    "t2"
+                ],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 77,
+                "title": "cached",
+                "url": null,
+                "description": null,
+                "tags": [],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": null
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "cached",
+                "url": null,
+                "description": null,
+                "tags": [],
+                "addedAt": null,
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(8)",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"BookmarkId\":8,\"Title\":\"Docs\",\"Url\":\"https:\\/\\/d.nl\",\"Description\":\"D\",\"Tags\":[\"x\",\"y\"],\"AddedAt\":\"1700000000\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"linkedAt\"]})",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(10)",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"BookmarkId\":10,\"Title\":\"https:\\/\\/notitle.nl\",\"Url\":\"https:\\/\\/notitle.nl\",\"Description\":\"\",\"Tags\":[\"t2\"],\"AddedAt\":null,\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"title\",\"url\",\"description\",\"tags\",\"linkedAt\"]})",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(77)",
+            "debug fetchBookmarkDetails find failed: no bookmark 77"
+        ]
+    },
+    "linked refresh update fails": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "bookmarkId": 8,
+                "title": "Docs",
+                "url": "https://d.nl",
+                "description": "D",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "addedAt": "1700000000",
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "find(8)",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"BookmarkId\":8,\"Title\":\"Docs\",\"Url\":\"https:\\/\\/d.nl\",\"Description\":\"D\",\"Tags\":[\"x\",\"y\"],\"AddedAt\":\"1700000000\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"linkedAt\"]})",
+            "debug BookmarkLinkService cache refresh failed: update down"
+        ]
+    },
+    "available none": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "available no user": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "available no mapper": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "debug resolveBookmarkMapper failed: no \\OCA\\Bookmarks\\Db\\BookmarkMapper"
+        ]
+    },
+    "available all": {
+        "result": [
+            {
+                "id": 8,
+                "title": "Docs",
+                "url": "https://d.nl",
+                "description": "D",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "added": 1700000000
+            },
+            {
+                "id": 9,
+                "title": "Bob",
+                "url": "https://b.nl",
+                "description": "",
+                "tags": [],
+                "added": null
+            },
+            {
+                "id": 10,
+                "title": "https://notitle.nl",
+                "url": "https://notitle.nl",
+                "description": "",
+                "tags": [
+                    "t2"
+                ],
+                "added": 0
+            },
+            {
+                "id": 11,
+                "title": "Plain",
+                "url": "https://p.nl",
+                "description": "",
+                "tags": [],
+                "added": -4
+            },
+            {
+                "id": 12,
+                "title": "NoArrId",
+                "url": "https://n.nl",
+                "description": "",
+                "tags": [
+                    "t3"
+                ],
+                "added": null
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "findAll(alice, [])",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(9)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(11)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(12)"
+        ]
+    },
+    "available empty filters": {
+        "result": [
+            {
+                "id": 8,
+                "title": "Docs",
+                "url": "https://d.nl",
+                "description": "D",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "added": 1700000000
+            },
+            {
+                "id": 9,
+                "title": "Bob",
+                "url": "https://b.nl",
+                "description": "",
+                "tags": [],
+                "added": null
+            },
+            {
+                "id": 10,
+                "title": "https://notitle.nl",
+                "url": "https://notitle.nl",
+                "description": "",
+                "tags": [],
+                "added": 0
+            },
+            {
+                "id": 11,
+                "title": "Plain",
+                "url": "https://p.nl",
+                "description": "",
+                "tags": [],
+                "added": -4
+            },
+            {
+                "id": 12,
+                "title": "NoArrId",
+                "url": "https://n.nl",
+                "description": "",
+                "tags": [],
+                "added": null
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "findAll(alice, [])",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(9)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(10)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(11)",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "findByBookmark(12)"
+        ]
+    },
+    "available filtered": {
+        "result": [
+            {
+                "id": 8,
+                "title": "Docs",
+                "url": "https://d.nl",
+                "description": "D",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "added": 1700000000
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "findAll(alice, {\"setSearch\":[\"doc\"],\"setTags\":[\"a\",\"b\"]})"
+        ]
+    },
+    "available findAll throws": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "findAll(alice, {\"setSearch\":[\"doc\"]})",
+            "warning BookmarkLinkService::getAvailableBookmarks failed: list down"
+        ]
+    },
+    "create no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 0
+        },
+        "calls": []
+    },
+    "create unavailable": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmarks is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "create empty title": {
+        "result": {
+            "throws": "Exception",
+            "message": "Title is required",
+            "code": 400
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "create empty url": {
+        "result": {
+            "throws": "Exception",
+            "message": "URL is required",
+            "code": 400
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)"
+        ]
+    },
+    "create no mapper": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bookmarks is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "debug resolveBookmarkMapper failed: no \\OCA\\Bookmarks\\Db\\BookmarkMapper"
+        ]
+    },
+    "create zero id": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to retrieve created bookmark id",
+            "code": 500
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})"
+        ]
+    },
+    "create insert exception": {
+        "result": {
+            "throws": "RuntimeException",
+            "message": "insert refused",
+            "code": 7
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})"
+        ]
+    },
+    "create insert error": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to create bookmark: insert broke",
+            "code": 500
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})",
+            "warning Failed to create bookmark: insert broke"
+        ]
+    },
+    "create ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 21,
+            "Title": "Docs",
+            "Url": "https://x.nl",
+            "Description": "",
+            "Tags": [
+                "a"
+            ],
+            "AddedAt": "NOW",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "addedAt",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "addTo([\"a\"], 21)",
+            "findByObjectAndBookmark(obj-1, 21)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":21,\"Title\":\"Docs\",\"Url\":\"https:\\/\\/x.nl\",\"Description\":\"\",\"Tags\":[\"a\"],\"AddedAt\":\"NOW\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create ok long title": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 21,
+            "Title": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+            "Url": "https://x.nl",
+            "Description": "desc",
+            "Tags": [],
+            "AddedAt": "NOW",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "addedAt",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\",\"setDescription\":\"desc\"})",
+            "findByObjectAndBookmark(obj-1, 21)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":21,\"Title\":\"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\",\"Url\":\"https:\\/\\/x.nl\",\"Description\":\"desc\",\"Tags\":[],\"AddedAt\":\"NOW\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create no tag mapper": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "BookmarkId": 21,
+            "Title": "Docs",
+            "Url": "https://x.nl",
+            "Description": "",
+            "Tags": [
+                "a"
+            ],
+            "AddedAt": "NOW",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "bookmarkId",
+                "title",
+                "url",
+                "description",
+                "tags",
+                "addedAt",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "debug resolveTagMapper failed: no \\OCA\\Bookmarks\\Db\\TagMapper",
+            "findByObjectAndBookmark(obj-1, 21)",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"BookmarkId\":21,\"Title\":\"Docs\",\"Url\":\"https:\\/\\/x.nl\",\"Description\":\"\",\"Tags\":[\"a\"],\"AddedAt\":\"NOW\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"bookmarkId\",\"title\",\"url\",\"description\",\"tags\",\"addedAt\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create existing link": {
+        "result": {
+            "ObjectUuid": null,
+            "RegisterId": null,
+            "SchemaId": null,
+            "BookmarkId": 21,
+            "Title": "cached",
+            "Url": null,
+            "Description": null,
+            "Tags": null,
+            "AddedAt": null,
+            "LinkedBy": null,
+            "LinkedAt": "1600000000",
+            "updated": []
+        },
+        "calls": [
+            "isEnabledForUser(bookmarks)",
+            "container.get(\\OCA\\Bookmarks\\Db\\BookmarkMapper)",
+            "insertOrUpdate({\"setUserId\":\"alice\",\"setUrl\":\"https:\\/\\/x.nl\",\"setTitle\":\"Docs\",\"setDescription\":\"\"})",
+            "container.get(\\OCA\\Bookmarks\\Db\\TagMapper)",
+            "addTo([\"a\"], 21)",
+            "findByObjectAndBookmark(obj-1, 21)"
+        ]
+    }
+}

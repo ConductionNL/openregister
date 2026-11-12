@@ -35,9 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\FlowAdvanceBudget;
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
 use UnexpectedValueException;
@@ -50,24 +48,19 @@ use UnexpectedValueException;
  * dependency to say the same thing.
  */
 final class UserTaskConfig {
+	use TaskConfigReadingsTrait;
+
 
 	/**
-	 * Minutes between heartbeats when the flow does not choose.
+	 * The config keys whose value must come from a published vocabulary, with that vocabulary.
 	 *
-	 * Same reasoning as {@see AwaitSignalNode}: short enough that a lost wake
-	 * is an inconvenience, long enough that a fortnight-long approval costs a
-	 * few thousand no-op wakes. A completion wakes the run at once either way.
-	 *
-	 * @var int
+	 * @var array<string, array<int, string>>
 	 */
-	private const DEFAULT_HEARTBEAT_MINUTES = 15;
-
-	/**
-	 * The floor a configured heartbeat is clamped to: the stock cron period.
-	 *
-	 * @var int
-	 */
-	private const MIN_HEARTBEAT_MINUTES = 5;
+	private const VOCABULARIES = [
+		'performerType' => Task::PERFORMER_TYPES,
+		'priority' => Task::PRIORITIES,
+		'routingStrategy' => Task::ROUTING_STRATEGIES,
+	];
 
 	/**
 	 * The item key the outcome lands under when the flow does not choose.
@@ -80,6 +73,13 @@ final class UserTaskConfig {
 	private const DEFAULT_OUTCOME_KEY = 'task';
 
 	/**
+	 * The config readings this step shares with the other task step.
+	 *
+	 * @var TaskConfigCommon
+	 */
+	private readonly TaskConfigCommon $common;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IL10N $l10n Translations, for refusal messages an author reads.
@@ -89,7 +89,7 @@ final class UserTaskConfig {
 		private readonly IL10N $l10n,
 		private readonly TaskFormReader $forms,
 	) {
-
+		$this->common = new TaskConfigCommon(defaultOutcomeKey: self::DEFAULT_OUTCOME_KEY);
 	}//end __construct()
 
 	/**
@@ -117,6 +117,28 @@ final class UserTaskConfig {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function validate(array $config): void {
+		$this->refuseIncompleteAsk(config: $config);
+		$this->refuseOutsideVocabularies(config: $config);
+		$this->refuseUnreadableOutcomesOrHeartbeat(config: $config);
+
+		// Throws its own message, which names the value and states the spelling.
+		FlowAdvanceBudget::fromConfig(config: $config);
+
+		// Throws naming schema, field and reason; a step with no form passes.
+		$this->forms->validate(form: $this->forms->fromConfig(config: $config));
+
+	}//end validate()
+
+	/**
+	 * Refuse a step that asks nothing, or asks nobody.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the title or every performer is missing.
+	 */
+	private function refuseIncompleteAsk(array $config): void {
 		if (trim((string)($config['title'] ?? '')) === '') {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Say what is being asked, or nobody can do it.')
@@ -130,12 +152,34 @@ final class UserTaskConfig {
 				)
 			);
 		}
+	}//end refuseIncompleteAsk()
 
-		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
+	/**
+	 * Refuse a closed-vocabulary key set to a value outside its vocabulary.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When a value is outside its vocabulary.
+	 */
+	private function refuseOutsideVocabularies(array $config): void {
+		foreach (array_keys(self::VOCABULARIES) as $key) {
+			$this->refuseOutsideVocabulary(config: $config, key: $key);
+		}
+	}//end refuseOutsideVocabularies()
 
-		if (array_key_exists('outcomes', $config) === true && $this->listOf(value: $config['outcomes']) === []) {
+	/**
+	 * Refuse outcomes that read as no list, and a heartbeat that is not a number.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When either is unreadable.
+	 */
+	private function refuseUnreadableOutcomesOrHeartbeat(array $config): void {
+		if (array_key_exists('outcomes', $config) === true && $this->common->listOf(value: $config['outcomes']) === []) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Possible outcomes must be a list of names, like "approved, rejected".')
 			);
@@ -146,14 +190,7 @@ final class UserTaskConfig {
 				$this->l10n->t('Re-check every (minutes) must be a number.')
 			);
 		}
-
-		// Throws its own message, which names the value and states the spelling.
-		FlowAdvanceBudget::fromConfig(config: $config);
-
-		// Throws naming schema, field and reason; a step with no form passes.
-		$this->forms->validate(form: $this->forms->fromConfig(config: $config));
-
-	}//end validate()
+	}//end refuseUnreadableOutcomesOrHeartbeat()
 
 	/**
 	 * The task fields, templated against the representative item.
@@ -164,17 +201,18 @@ final class UserTaskConfig {
 	 * interprets. The task is anchored to the object the item is about when
 	 * the item says which one that is, so the inbox can show its subject.
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items; the first is the representative.
-	 * @param string $nodeId The node raising the task.
-	 * @param string $nodeType The node's catalogue id.
+	 * @param UserTaskStep $step     The step configuration, the input items (the
+	 *                               first is the representative) and the node raising the task.
+	 * @param string       $nodeType The node's catalogue id.
 	 *
 	 * @return array<string, mixed> The creation payload.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
-	public function taskData(array $config, array $items, string $nodeId, string $nodeType): array {
-		$json = $this->representativeJson(items: $items);
+	public function taskData(UserTaskStep $step, string $nodeType): array {
+		$config = $step->config;
+		$items  = $step->items;
+		$json   = $this->common->representativeJson(items: $items);
 		$assignee = $this->assignee(config: $config);
 
 		$state = Task::STATE_ENABLED;
@@ -184,29 +222,29 @@ final class UserTaskConfig {
 
 		$data = [
 			'title' => $this->renderedTitle(config: $config, items: $items),
-			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
+			'description' => $this->common->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => $state,
 			'performerType' => UserTaskPerformers::kindFor(config: $config, performers: $this->performers(config: $config)),
 			'priority' => trim((string)($config['priority'] ?? 'normal')),
 			'assignee' => $this->nullIfEmpty(value: $assignee),
-			'candidateUsers' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateUsers'] ?? null))),
-			'candidateGroups' => $this->nullIfEmptyList(value: $this->listOf(value: ($config['candidateGroups'] ?? null))),
+			'candidateUsers' => $this->nullIfEmptyList(value: $this->common->listOf(value: ($config['candidateUsers'] ?? null))),
+			'candidateGroups' => $this->nullIfEmptyList(value: $this->common->listOf(value: ($config['candidateGroups'] ?? null))),
 			'candidateRole' => $this->nullIfEmpty(value: trim((string)($config['candidateRole'] ?? ''))),
 			'routingStrategy' => $this->nullIfEmpty(value: trim((string)($config['routingStrategy'] ?? ''))),
 			'routingFallback' => $this->nullIfEmpty(value: trim((string)($config['routingFallback'] ?? ''))),
-			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
-			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'dueAt' => $this->common->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
+			'expiresAt' => $this->common->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
 			'onTimeout' => $this->nullIfEmpty(value: trim((string)($config['onTimeout'] ?? ''))),
 			'onReject' => $this->nullIfEmpty(value: trim((string)($config['onReject'] ?? ''))),
 			'metadata' => [
 				'flowNodeType' => $nodeType,
-				'flowNode' => $nodeId,
-				'outcomes' => $this->listOf(value: ($config['outcomes'] ?? null)),
+				'flowNode' => $step->nodeId,
+				'outcomes' => $this->common->listOf(value: ($config['outcomes'] ?? null)),
 				'outcomeKey' => $this->outcomeKey(config: $config),
 			],
 		];
 
-		return array_merge($data, $this->subjectAnchor(json: $json));
+		return array_merge($data, $this->common->subjectAnchor(json: $json));
 	}//end taskData()
 
 	/**
@@ -218,21 +256,22 @@ final class UserTaskConfig {
 	 * assignee is read by FlowRunAssignee so a resume POSTed at the run by
 	 * anyone else is refused at the door as well as ignored by the node.
 	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
-	 * @param string $taskUuid The created task.
+	 * @param UserTaskStep $step     The step configuration and input items.
+	 * @param string       $taskUuid The created task.
 	 *
 	 * @return array<string, mixed> The slot values.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-several-user-task-nodes-in-one-flow-keep-independent-state
 	 */
-	public function slotValues(array $config, array $items, string $taskUuid): array {
+	public function slotValues(UserTaskStep $step, string $taskUuid): array {
+		$config = $step->config;
+
 		return [
 			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
 			FlowTaskBridge::SLOT_ASKED_AT => (new DateTime())->format('c'),
 			FlowTaskBridge::SLOT_ADVANCE => FlowAdvanceBudget::fromConfig(config: $config)->toStored(),
 			'assignee' => $this->assigneeValue(config: $config),
-			'title' => $this->renderedTitle(config: $config, items: $items),
+			'title' => $this->renderedTitle(config: $config, items: $step->items),
 		];
 	}//end slotValues()
 
@@ -270,59 +309,6 @@ final class UserTaskConfig {
 
 		return trim((string)$value);
 	}//end assigneeValue()
-
-	/**
-	 * The item key the outcome is written under.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return string The key.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
-	 */
-	public function outcomeKey(array $config): string {
-		$key = trim((string)($config['outcomeKey'] ?? ''));
-		if ($key === '') {
-			return self::DEFAULT_OUTCOME_KEY;
-		}
-
-		return $key;
-	}//end outcomeKey()
-
-	/**
-	 * The title, templated against the representative item.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The rendered title.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
-	 */
-	public function renderedTitle(array $config, array $items): string {
-		return trim((string)FlowValueTemplate::render(
-			value: (string)($config['title'] ?? ''),
-			json: $this->representativeJson(items: $items)
-		));
-	}//end renderedTitle()
-
-	/**
-	 * When to wake up and re-ask, absent a wake. Never null.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return DateTime The next heartbeat.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
-	 */
-	public function heartbeatAt(array $config): DateTime {
-		$minutes = (int)($config['heartbeatMinutes'] ?? self::DEFAULT_HEARTBEAT_MINUTES);
-		if ($minutes < self::MIN_HEARTBEAT_MINUTES) {
-			$minutes = self::MIN_HEARTBEAT_MINUTES;
-		}
-
-		return (new DateTime())->modify('+' . $minutes . ' minutes');
-	}//end heartbeatAt()
 
 	/**
 	 * Whether the config names anybody who could perform the task.
@@ -377,14 +363,14 @@ final class UserTaskConfig {
 	 * Refuse a set value outside a published vocabulary, naming both.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
-	 * @param string $key The config key.
-	 * @param array<int, string> $vocabulary The accepted values.
+	 * @param string $key The config key, one of {@see self::VOCABULARIES}.
 	 *
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When the value is set and not in the vocabulary.
 	 */
-	private function refuseOutsideVocabulary(array $config, string $key, array $vocabulary): void {
+	private function refuseOutsideVocabulary(array $config, string $key): void {
+		$vocabulary = self::VOCABULARIES[$key];
 		$value = trim((string)($config[$key] ?? ''));
 		if ($value === '' || in_array($value, $vocabulary, true) === true) {
 			return;
@@ -394,101 +380,6 @@ final class UserTaskConfig {
 			$this->l10n->t('%1$s "%2$s" is not one of %3$s.', [$key, $value, implode(', ', $vocabulary)])
 		);
 	}//end refuseOutsideVocabulary()
-
-	/**
-	 * The object anchor an item carries, when it carries one.
-	 *
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return array<string, mixed> objectUuid, registerId and schemaId as far as known.
-	 */
-	private function subjectAnchor(array $json): array {
-		$self = (array)($json['@self'] ?? []);
-		$objectUuid = trim((string)($self['uuid'] ?? ($json['uuid'] ?? ($self['id'] ?? ''))));
-		if ($objectUuid === '') {
-			return [];
-		}
-
-		$anchor = ['objectUuid' => $objectUuid];
-		if (is_numeric($self['register'] ?? null) === true) {
-			$anchor['registerId'] = (int)$self['register'];
-		}
-
-		if (is_numeric($self['schema'] ?? null) === true) {
-			$anchor['schemaId'] = (int)$self['schema'];
-		}
-
-		return $anchor;
-	}//end subjectAnchor()
-
-	/**
-	 * A list from a list or a comma-separated string; empty for anything else.
-	 *
-	 * @param mixed $value The configured value.
-	 *
-	 * @return array<int, string> Trimmed, non-empty entries.
-	 */
-	private function listOf(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = explode(',', $value);
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		$list = [];
-		foreach ($value as $entry) {
-			if (is_scalar($entry) === false) {
-				continue;
-			}
-
-			$entry = trim((string)$entry);
-			if ($entry !== '') {
-				$list[] = $entry;
-			}
-		}
-
-		return $list;
-	}//end listOf()
-
-	/**
-	 * The record of the representative item: the first array item's json.
-	 *
-	 * @param array $items The input items.
-	 *
-	 * @return array<string, mixed> The record, empty when there is none.
-	 */
-	private function representativeJson(array $items): array {
-		foreach ($items as $item) {
-			if (is_array($item) === true) {
-				return (array)($item[FlowItems::JSON] ?? []);
-			}
-		}
-
-		return [];
-	}//end representativeJson()
-
-	/**
-	 * A templated string, or null when it renders to nothing.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return string|null The rendered string, or null.
-	 */
-	private function renderedOrNull(mixed $value, array $json): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$rendered = FlowValueTemplate::render(value: $value, json: $json);
-		if (is_scalar($rendered) === false) {
-			return null;
-		}
-
-		return $this->nullIfEmpty(value: trim((string)$rendered));
-	}//end renderedOrNull()
 
 	/**
 	 * Null for an empty string.

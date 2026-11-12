@@ -25,8 +25,8 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 
 /**
  * Maps JSON Schema properties to GraphQL types and generates input types.
@@ -47,6 +47,33 @@ use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 class TypeMapperHandler {
 
 	/**
+	 * String formats with a custom output scalar.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OUTPUT_FORMATS = [
+		'date-time' => 'DateTime',
+		'date' => 'DateTime',
+		'uuid' => 'UUID',
+		'email' => 'Email',
+		'uri' => 'URI',
+		'url' => 'URI',
+	];
+
+	/**
+	 * String formats with a custom input scalar; `url` stays a String on input.
+	 *
+	 * @var array<string, string>
+	 */
+	private const INPUT_FORMATS = [
+		'date-time' => 'DateTime',
+		'date' => 'DateTime',
+		'uuid' => 'UUID',
+		'email' => 'Email',
+		'uri' => 'URI',
+	];
+
+	/**
 	 * Cached input types by schema ID and purpose.
 	 *
 	 * @var array<string, InputObjectType>
@@ -60,12 +87,6 @@ class TypeMapperHandler {
 	 */
 	private array $connectionTypes = [];
 
-	/**
-	 * Custom scalar type instances.
-	 *
-	 * @var array<string, Type>
-	 */
-	private array $scalars = [];
 
 	/**
 	 * Shared PageInfo type.
@@ -103,56 +124,28 @@ class TypeMapperHandler {
 	private AggregationTypes $aggregationTypes;
 
 	/**
-	 * Callback to resolve a $ref string to a RegisterSchema.
+	 * Callback to resolve a $ref string to the ObjectType of the schema it names.
 	 *
-	 * @var callable(string): ?RegisterSchema
+	 * @var callable(string): ?ObjectType
 	 */
-	private $refResolver;
+	private $refTypeResolver;
 
-	/**
-	 * Callback to get/create an ObjectType for a schema.
-	 *
-	 * @var callable(RegisterSchema): ObjectType
-	 */
-	private $objectTypeFactory;
-
-	/**
-	 * Callback to convert a slug to a valid GraphQL field name.
-	 *
-	 * @var callable(string): string
-	 */
-	private $fieldNameConverter;
-
-	/**
-	 * Callback to convert a slug to a PascalCase type name.
-	 *
-	 * @var callable(string, ?int): string
-	 */
-	private $typeNameConverter;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string, Type> $scalars Custom scalar type instances
-	 * @param callable $refResolver Resolves a $ref to a RegisterSchema
-	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
-	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
-	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandler $propertyRbac Withholds a property the caller may not read
+	 * @param array<string, Type>          $scalars         Custom scalar type instances
+	 * @param callable                     $refTypeResolver Resolves a $ref to the ObjectType of its schema, or null
+	 * @param GraphQLNames                 $names           Converts a slug to a GraphQL field or type name
+	 * @param PropertyRbacHandlerInterface $propertyRbac    Withholds a property the caller may not read
 	 */
 	public function __construct(
-		array $scalars,
-		callable $refResolver,
-		callable $objectTypeFactory,
-		callable $fieldNameConverter,
-		callable $typeNameConverter,
-		private readonly PropertyRbacHandler $propertyRbac,
+		private array $scalars,
+		callable $refTypeResolver,
+		private readonly GraphQLNames $names,
+		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
-		$this->scalars = $scalars;
-		$this->refResolver = $refResolver;
-		$this->objectTypeFactory = $objectTypeFactory;
-		$this->fieldNameConverter = $fieldNameConverter;
-		$this->typeNameConverter = $typeNameConverter;
+		$this->refTypeResolver = $refTypeResolver;
 		$this->aggregationTypes = new AggregationTypes();
 		$this->aggregationTypes->setScalars(scalars: $scalars);
 
@@ -186,13 +179,12 @@ class TypeMapperHandler {
 	 */
 	public function mapPropertyToGraphQLType(array $property): Type {
 		$type = ($property['type'] ?? 'string');
-		$format = ($property['format'] ?? null);
 
 		// Handle object references.
 		if ($type === 'object' && isset($property['$ref']) === true) {
-			$refSchema = ($this->refResolver)($property['$ref']);
-			if ($refSchema !== null) {
-				return ($this->objectTypeFactory)($refSchema);
+			$refType = ($this->refTypeResolver)($property['$ref']);
+			if ($refType !== null) {
+				return $refType;
 			}
 
 			return $this->scalars['JSON'];
@@ -205,21 +197,15 @@ class TypeMapperHandler {
 		}
 
 		// Map by type and format.
-		return match (true) {
-			$type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'date' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'uuid' => $this->scalars['UUID'],
-			$type === 'string' && $format === 'email' => $this->scalars['Email'],
-			$type === 'string' && $format === 'uri' => $this->scalars['URI'],
-			$type === 'string' && $format === 'url' => $this->scalars['URI'],
-			$type === 'string' => Type::string(),
-			$type === 'integer' => Type::int(),
-			$type === 'number' => Type::float(),
-			$type === 'boolean' => Type::boolean(),
-			$type === 'object' => $this->scalars['JSON'],
-			$type === 'array' => Type::listOf(Type::string()),
-			default => Type::string(),
-		};
+		if ($type === 'object') {
+			return $this->scalars['JSON'];
+		}
+
+		if ($type === 'array') {
+			return Type::listOf(Type::string());
+		}
+
+		return $this->primitiveType(property: $property, formats: self::OUTPUT_FORMATS);
 
 	}//end mapPropertyToGraphQLType()
 
@@ -238,7 +224,6 @@ class TypeMapperHandler {
 	 */
 	public function mapPropertyToInputType(array $property): Type {
 		$type = ($property['type'] ?? 'string');
-		$format = ($property['format'] ?? null);
 
 		// Object references accept IDs.
 		if ($type === 'object' && isset($property['$ref']) === true) {
@@ -258,20 +243,34 @@ class TypeMapperHandler {
 			return $this->scalars['JSON'];
 		}
 
-		return match (true) {
-			$type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'date' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'uuid' => $this->scalars['UUID'],
-			$type === 'string' && $format === 'email' => $this->scalars['Email'],
-			$type === 'string' && $format === 'uri' => $this->scalars['URI'],
-			$type === 'string' => Type::string(),
-			$type === 'integer' => Type::int(),
-			$type === 'number' => Type::float(),
-			$type === 'boolean' => Type::boolean(),
-			default => Type::string(),
-		};
+		return $this->primitiveType(property: $property, formats: self::INPUT_FORMATS);
 
 	}//end mapPropertyToInputType()
+
+	/**
+	 * The GraphQL type of a scalar JSON Schema type: a string whose format
+	 * is listed maps to that custom scalar, the other primitives to their
+	 * built-in type, anything else to String.
+	 *
+	 * @param array<string, mixed>  $property The property definition.
+	 * @param array<string, string> $formats  Format => custom scalar name.
+	 *
+	 * @return Type The GraphQL type
+	 */
+	private function primitiveType(array $property, array $formats): Type {
+		$type = ($property['type'] ?? 'string');
+		$format = ($property['format'] ?? null);
+		if ($type === 'string' && is_string($format) === true && isset($formats[$format]) === true) {
+			return $this->scalars[$formats[$format]];
+		}
+
+		return match ($type) {
+			'integer' => Type::int(),
+			'number' => Type::float(),
+			'boolean' => Type::boolean(),
+			default => Type::string(),
+		};
+	}//end primitiveType()
 
 	/**
 	 * Get a filter input type for a schema.
@@ -294,7 +293,7 @@ class TypeMapperHandler {
 			$filterSlug = 'Schema' . $schema->getId();
 		}
 
-		$typeName = ($this->typeNameConverter)($filterSlug, $schema->getId());
+		$typeName = $this->names->toTypeName($filterSlug, $schema->getId());
 		$fields = $this->filterFieldsFor(schema: $schema);
 
 		if (empty($fields) === true) {
@@ -332,19 +331,7 @@ class TypeMapperHandler {
 	 */
 	private function filterFieldsFor(RegisterSchema $schema): array {
 		$fields = [];
-
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $name => $property) {
-			if (is_array(value: $property) === false) {
-				continue;
-			}
-
-			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
-				continue;
-			}
-
-			$fieldName = ($this->fieldNameConverter)($name);
-
+		foreach ($this->describedProperties(schema: $schema) as $fieldName => $property) {
 			// Each filter field accepts the base type or a comparison object.
 			// Simple types use the base type; complex types use JSON.
 			$baseType = $this->mapPropertyToGraphQLType(property: $property);
@@ -365,8 +352,6 @@ class TypeMapperHandler {
 	 * @return InputObjectType The create input type
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getCreateInputType(RegisterSchema $schema): InputObjectType {
 		$key = 'create_' . $schema->getId();
@@ -375,42 +360,11 @@ class TypeMapperHandler {
 			return $this->inputTypes[$key];
 		}
 
-		$createSlug = $schema->getSlug();
-		if ($createSlug === null || $createSlug === '') {
-			$createSlug = 'Schema' . $schema->getId();
-		}
+		$typeName = $this->inputTypeName(schema: $schema);
+		$fields = $this->markRequired(fields: $this->buildInputFields(schema: $schema), schema: $schema);
 
-		$typeName = ($this->typeNameConverter)($createSlug, $schema->getId());
-		$fields = $this->buildInputFields(schema: $schema);
-		$required = $schema->getRequired() ?? [];
-
-		// Mark required fields (sanitize names to match field keys).
-		foreach ($required as $reqField) {
-			$reqField = ($this->fieldNameConverter)($reqField);
-			if (isset($fields[$reqField]) === true) {
-				$fieldType = $fields[$reqField];
-				if ($fieldType instanceof Type) {
-					$fields[$reqField] = Type::nonNull($fieldType);
-				} elseif (is_array(value: $fieldType) === true && isset($fieldType['type']) === true) {
-					$fieldType['type'] = Type::nonNull($fieldType['type']);
-					$fields[$reqField] = $fieldType;
-				}
-			}
-		}
-
-		if (empty($fields) === true) {
-			$fields['_placeholder'] = Type::string();
-		}
-
-		$inputType = new InputObjectType(
-			[
-				'name' => 'Create' . $typeName . 'Input',
-				'fields' => $fields,
-			]
-		);
-
-		$this->inputTypes[$key] = $inputType;
-		return $inputType;
+		$this->inputTypes[$key] = $this->inputObjectType(name: 'Create' . $typeName . 'Input', fields: $fields);
+		return $this->inputTypes[$key];
 	}//end getCreateInputType()
 
 	/**
@@ -429,28 +383,98 @@ class TypeMapperHandler {
 			return $this->inputTypes[$key];
 		}
 
-		$updateSlug = $schema->getSlug();
-		if ($updateSlug === null || $updateSlug === '') {
-			$updateSlug = 'Schema' . $schema->getId();
-		}
-
-		$typeName = ($this->typeNameConverter)($updateSlug, $schema->getId());
+		$typeName = $this->inputTypeName(schema: $schema);
 		$fields = $this->buildInputFields(schema: $schema);
 
+		$this->inputTypes[$key] = $this->inputObjectType(name: 'Update' . $typeName . 'Input', fields: $fields);
+		return $this->inputTypes[$key];
+	}//end getUpdateInputType()
+
+	/**
+	 * The type name an input type is built on: the schema's slug, or `Schema<id>` without one.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return string The GraphQL type name.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function inputTypeName(RegisterSchema $schema): string {
+		$slug = $schema->getSlug();
+		if ($slug === null || $slug === '') {
+			$slug = 'Schema' . $schema->getId();
+		}
+
+		return $this->names->toTypeName($slug, $schema->getId());
+	}//end inputTypeName()
+
+	/**
+	 * Make the schema's required fields non-null (required names are sanitised to match field keys).
+	 *
+	 * @param array<string, Type|array<string,mixed>> $fields The input fields.
+	 * @param RegisterSchema                          $schema The register schema
+	 *
+	 * @return array<string, Type|array<string,mixed>> The fields, required ones non-null.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function markRequired(array $fields, RegisterSchema $schema): array {
+		$required = $schema->getRequired() ?? [];
+
+		// Mark required fields (sanitize names to match field keys).
+		foreach ($required as $reqField) {
+			$reqField = $this->names->toFieldName($reqField);
+			if (isset($fields[$reqField]) === true) {
+				$fields[$reqField] = $this->nonNullField(field: $fields[$reqField]);
+			}
+		}
+
+		return $fields;
+	}//end markRequired()
+
+	/**
+	 * One input field, made non-null: a bare type is wrapped, a field config has its `type` wrapped.
+	 *
+	 * @param Type|array<string,mixed> $field The input field.
+	 *
+	 * @return Type|array<string,mixed> The non-null field; anything else unchanged.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function nonNullField(Type|array $field): Type|array {
+		if ($field instanceof Type) {
+			return Type::nonNull($field);
+		}
+
+		if (isset($field['type']) === true) {
+			$field['type'] = Type::nonNull($field['type']);
+		}
+
+		return $field;
+	}//end nonNullField()
+
+	/**
+	 * An input object type over the fields, with a `_placeholder` when there are none.
+	 *
+	 * @param string                                  $name   The input type name.
+	 * @param array<string, Type|array<string,mixed>> $fields The input fields.
+	 *
+	 * @return InputObjectType The input type.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function inputObjectType(string $name, array $fields): InputObjectType {
 		if (empty($fields) === true) {
 			$fields['_placeholder'] = Type::string();
 		}
 
-		$inputType = new InputObjectType(
+		return new InputObjectType(
 			[
-				'name' => 'Update' . $typeName . 'Input',
+				'name' => $name,
 				'fields' => $fields,
 			]
 		);
-
-		$this->inputTypes[$key] = $inputType;
-		return $inputType;
-	}//end getUpdateInputType()
+	}//end inputObjectType()
 
 	/**
 	 * Build input fields from schema properties.
@@ -463,29 +487,44 @@ class TypeMapperHandler {
 	 */
 	private function buildInputFields(RegisterSchema $schema): array {
 		$fields = [];
-		$properties = $schema->getProperties() ?? [];
+		foreach ($this->describedProperties(schema: $schema) as $fieldName => $property) {
+			$fields[$fieldName] = $this->mapPropertyToInputType(property: $property);
+		}
 
+		return $fields;
+	}//end buildInputFields()
+
+	/**
+	 * The schema's array-shaped properties this caller may see described,
+	 * keyed by GraphQL field name.
+	 *
+	 * A GraphQL type IS a description of the shape, and a field name is
+	 * information. A governed property named here can be introspected by
+	 * anyone who can reach the endpoint, and the governed names are the
+	 * ones worth protecting: a property carries an authorization block
+	 * or a scope precisely because it is sensitive.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return array<string, array<string, mixed>> Field name => property definition.
+	 */
+	private function describedProperties(RegisterSchema $schema): array {
+		$described  = [];
+		$properties = $schema->getProperties() ?? [];
 		foreach ($properties as $name => $property) {
 			if (is_array(value: $property) === false) {
 				continue;
 			}
 
-			// A GraphQL type IS a description of the shape, and a field name is
-			// information. A governed property named here can be introspected by
-			// anyone who can reach the endpoint, and the governed names are the
-			// ones worth protecting: a property carries an authorization block
-			// or a scope precisely because it is sensitive.
 			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
 				continue;
 			}
 
-			$fieldName = ($this->fieldNameConverter)($name);
-			$type = $this->mapPropertyToInputType(property: $property);
-			$fields[$fieldName] = $type;
+			$described[$this->names->toFieldName($name)] = $property;
 		}
 
-		return $fields;
-	}//end buildInputFields()
+		return $described;
+	}//end describedProperties()
 
 	/**
 	 * Get the Relay connection type for a schema.
@@ -506,9 +545,32 @@ class TypeMapperHandler {
 
 		$typeName = $objectType->name;
 
-		$edgeType = new ObjectType(
+		$edgeType = $this->edgeType(objectType: $objectType);
+
+		$connectionType = new ObjectType(
 			[
-				'name' => $typeName . 'Edge',
+				'name' => $typeName . 'Connection',
+				'fields' => array_merge($this->connectionPageFields(edgeType: $edgeType), $this->connectionAggregationFields()),
+			]
+		);
+
+		$this->connectionTypes[$schemaId] = $connectionType;
+		return $connectionType;
+	}//end getConnectionType()
+
+	/**
+	 * The Relay edge type of an object type: cursor, node and fuzzy relevance.
+	 *
+	 * @param ObjectType $objectType The object type for the schema
+	 *
+	 * @return ObjectType The edge type.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function edgeType(ObjectType $objectType): ObjectType {
+		return new ObjectType(
+			[
+				'name' => $objectType->name . 'Edge',
 				'fields' => [
 					'cursor' => Type::nonNull(Type::string()),
 					'node' => Type::nonNull($objectType),
@@ -519,45 +581,60 @@ class TypeMapperHandler {
 				],
 			]
 		);
+	}//end edgeType()
 
-		$connectionType = new ObjectType(
-			[
-				'name' => $typeName . 'Connection',
-				'fields' => [
-					'edges' => Type::nonNull(Type::listOf(Type::nonNull($edgeType))),
-					'pageInfo' => Type::nonNull($this->getPageInfoType()),
-					'totalCount' => Type::nonNull(Type::int()),
-					'facets' => $this->scalars['JSON'],
-					'facetable' => Type::listOf(Type::string()),
-					'groups' => [
-						'type' => Type::listOf(Type::nonNull($this->aggregationTypes->getGroupBucketType())),
-						'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
-					],
-					// JSON rather than a typed shape, deliberately.
-					//
-					// A declared aggregation's envelope varies with what it
-					// declares: a scalar `value`, a `values` map for `metrics`,
-					// `groups[].keys` for a composite groupBy, `joined` when it
-					// joins. Typing that today would either flatten it — the
-					// mistake GroupBucket already makes, where `value: Float!`
-					// cannot carry a values map and a null key coerces to "" —
-					// or invent a union per declaration shape.
-					//
-					// JSON keeps the envelope identical to the REST one, which
-					// every existing consumer already parses. A typed
-					// AggregationResult is the right next step once a consumer
-					// needs introspection over it.
-					'aggregation' => [
-						'type' => $this->scalars['JSON'],
-						'description' => 'Declared-aggregation result envelope; null unless `aggregation` was supplied.',
-					],
-				],
-			]
-		);
+	/**
+	 * The connection fields of a result page: edges, page info, total count and facets.
+	 *
+	 * @param ObjectType $edgeType The schema's edge type.
+	 *
+	 * @return array<string, mixed> The field definitions, in schema order.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function connectionPageFields(ObjectType $edgeType): array {
+		return [
+			'edges' => Type::nonNull(Type::listOf(Type::nonNull($edgeType))),
+			'pageInfo' => Type::nonNull($this->getPageInfoType()),
+			'totalCount' => Type::nonNull(Type::int()),
+			'facets' => $this->scalars['JSON'],
+			'facetable' => Type::listOf(Type::string()),
+		];
+	}//end connectionPageFields()
 
-		$this->connectionTypes[$schemaId] = $connectionType;
-		return $connectionType;
-	}//end getConnectionType()
+	/**
+	 * The connection fields carrying an aggregation: ad-hoc `groups` and the declared `aggregation`.
+	 *
+	 * @return array<string, mixed> The field definitions, in schema order.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function connectionAggregationFields(): array {
+		return [
+			'groups' => [
+				'type' => Type::listOf(Type::nonNull($this->aggregationTypes->getGroupBucketType())),
+				'description' => 'Ad-hoc bucket aggregation result; null unless `groupBy` was supplied.',
+			],
+			// JSON rather than a typed shape, deliberately.
+			//
+			// A declared aggregation's envelope varies with what it
+			// declares: a scalar `value`, a `values` map for `metrics`,
+			// `groups[].keys` for a composite groupBy, `joined` when it
+			// joins. Typing that today would either flatten it — the
+			// mistake GroupBucket already makes, where `value: Float!`
+			// cannot carry a values map and a null key coerces to "" —
+			// or invent a union per declaration shape.
+			//
+			// JSON keeps the envelope identical to the REST one, which
+			// every existing consumer already parses. A typed
+			// AggregationResult is the right next step once a consumer
+			// needs introspection over it.
+			'aggregation' => [
+				'type' => $this->scalars['JSON'],
+				'description' => 'Declared-aggregation result envelope; null unless `aggregation` was supplied.',
+			],
+		];
+	}//end connectionAggregationFields()
 
 	/**
 	 * Get the shared PageInfo type.
@@ -628,6 +705,20 @@ class TypeMapperHandler {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
 	 */
 	public function getListArgs(RegisterSchema $schema): array {
+		return array_merge($this->filterArgs(schema: $schema), $this->pagingAndAggregationArgs());
+
+	}//end getListArgs()
+
+	/**
+	 * The list arguments that narrow and order the result: filter, sort, selfFilter, search, fuzzy and facets.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return array<string, array<string, mixed>> The argument definitions, in schema order.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function filterArgs(RegisterSchema $schema): array {
 		return [
 			'filter' => [
 				'type' => $this->getFilterInputType(schema: $schema),
@@ -638,6 +729,18 @@ class TypeMapperHandler {
 			'search' => ['type' => Type::string(), 'description' => 'Full-text search query'],
 			'fuzzy' => ['type' => Type::boolean(), 'defaultValue' => false, 'description' => 'Enable fuzzy matching'],
 			'facets' => ['type' => Type::listOf(Type::string()), 'description' => 'Fields to calculate facets for'],
+		];
+	}//end filterArgs()
+
+	/**
+	 * The list arguments that page the result or aggregate it: first, offset, after, groupBy and aggregation.
+	 *
+	 * @return array<string, array<string, mixed>> The argument definitions, in schema order.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function pagingAndAggregationArgs(): array {
+		return [
 			'first' => ['type' => Type::int(), 'defaultValue' => 20, 'description' => 'Number of items to return'],
 			'offset' => ['type' => Type::int(), 'description' => 'Offset for pagination'],
 			'after' => ['type' => Type::string(), 'description' => 'Cursor for forward pagination'],
@@ -664,8 +767,7 @@ class TypeMapperHandler {
 					. '(x-openregister-aggregations); emits an `aggregation` field on the connection.',
 			],
 		];
-
-	}//end getListArgs()
+	}//end pagingAndAggregationArgs()
 
 	/**
 	 * Get the shared sort input type.
@@ -781,7 +883,7 @@ class TypeMapperHandler {
 	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
 	public function mayCarryField(RegisterSchema $schema, string $property): bool {
-		return (new AggregateVisibility(rbac: $this->propertyRbac))->mayReadOnSomeRow(
+		return RbacRuleChecks::aggregateVisibility(rbac: $this->propertyRbac)->mayReadOnSomeRow(
 			schema: $schema,
 			property: $property
 		);
@@ -802,7 +904,7 @@ class TypeMapperHandler {
 	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
 	private function mayDescribe(RegisterSchema $schema, string $property): bool {
-		return (new AggregateVisibility(rbac: $this->propertyRbac))->maySummarise(
+		return RbacRuleChecks::aggregateVisibility(rbac: $this->propertyRbac)->maySummarise(
 			schema: $schema,
 			property: $property
 		);

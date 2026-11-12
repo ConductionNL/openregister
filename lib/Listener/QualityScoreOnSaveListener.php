@@ -33,13 +33,12 @@ namespace OCA\OpenRegister\Listener;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Quality\QualityScorer;
+use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -60,18 +59,16 @@ class QualityScoreOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up and score the schema's quality rules.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param QualityScorer $scorer Pure data-quality scorer.
-	 * @param LoggerInterface $logger PSR logger for warnings.
+	 * @param QualityScorerInterface $scorer       Pure data-quality scorer.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly QualityScorer $scorer,
-		private readonly LoggerInterface $logger,
+		private readonly QualityScorerInterface $scorer,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -104,98 +101,177 @@ class QualityScoreOnSaveListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method runs the linear score-on-save
-	 *   pipeline (load schema, read annotation, score, patch score, optionally patch status);
-	 *   the guards short-circuit absent annotations and the steps share one payload, so
-	 *   extracting them would only scatter a strictly-sequential flow across helpers.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — sequential save-time guards.
 	 */
 	private function process(ObjectEntity $object): void {
 		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return;
-		}
-
-		$quality = $this->getQuality(schema: $schema);
-		if ($quality === null) {
-			return;
-		}
-
+		$quality = ($this->getQuality(schema: $schema) ?? []);
 		$rules = ($quality['rules'] ?? null);
 		if (is_array($rules) === false || count($rules) === 0) {
 			return;
 		}
 
-		$data = ($object->getObject() ?? []);
-		$changed = false;
-
-		try {
-			$score = $this->scorer->score(object: $data, rules: $rules, now: new DateTimeImmutable());
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				sprintf(
-					'Quality scoring failed on %s: %s',
-					(string)$object->getUuid(),
-					$e->getMessage()
-				)
-			);
-			return;
+		$score = $this->score(object: $object, rules: $rules);
+		if ($score !== null) {
+			$status = $this->scorer->status(score: $score, thresholds: $this->thresholdsOf(quality: $quality));
+			$assessment = ['score' => $score, 'status' => $status];
+			$this->writeAssessment(object: $object, assessment: $assessment);
+			$candidates = $this->candidateFields(quality: $quality, assessment: $assessment);
+			$this->writeBodyFields(object: $object, fields: $this->bodyFields(schema: $schema, candidates: $candidates));
 		}
+	}//end process()
 
+	/**
+	 * Score the data, or log and answer null when the scorer fails.
+	 *
+	 * @param ObjectEntity             $object The object being saved; its data is scored.
+	 * @param array<int|string, mixed> $rules  The quality rules.
+	 *
+	 * @return float|null The score, or null on failure.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function score(ObjectEntity $object, array $rules): ?float {
+		try {
+			return $this->scorer->score(object: ($object->getObject() ?? []), rules: $rules, now: new DateTimeImmutable());
+		} catch (Throwable $e) {
+			$this->lookup->logger->warning(
+				sprintf('Quality scoring failed on %s: %s', (string)$object->getUuid(), $e->getMessage())
+			);
+			return null;
+		}
+	}//end score()
+
+	/**
+	 * The configured thresholds, or the empty list when they are not a list.
+	 *
+	 * @param array<string, mixed> $quality The quality configuration.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function thresholdsOf(array $quality): array {
 		$thresholds = ($quality['thresholds'] ?? []);
 		if (is_array($thresholds) === false) {
-			$thresholds = [];
+			return [];
 		}
 
-		$status = $this->scorer->status(score: $score, thresholds: $thresholds);
+		return $thresholds;
+	}//end thresholdsOf()
 
-		// The assessment goes in the `@self` envelope, always. It describes
-		// the object's data rather than the thing the object describes, and
-		// putting it there is what lets a schema be scored WITHOUT declaring
-		// `qualityScore` as an ordinary property — which used to put a number
-		// field the platform overwrites on save in front of whoever was
-		// filling the form.
+	/**
+	 * Put the assessment in the `@self` envelope, always.
+	 *
+	 * It describes the object's data rather than the thing the object
+	 * describes, and putting it there is what lets a schema be scored WITHOUT
+	 * declaring `qualityScore` as an ordinary property — which used to put a
+	 * number field the platform overwrites on save in front of whoever was
+	 * filling the form.
+	 *
+	 * @param ObjectEntity                        $object     The object being saved.
+	 * @param array{score: float, status: string} $assessment The score and the status it reaches.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function writeAssessment(ObjectEntity $object, array $assessment): void {
 		$object->setQuality(
 			[
-				'score' => $score,
-				'status' => $status,
+				'score' => $assessment['score'],
+				'status' => $assessment['status'],
 				'scoredAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 			]
 		);
+	}//end writeAssessment()
 
-		// The body properties are still written, but ONLY where the schema
-		// actually declares them. Dropping the write outright would freeze the
-		// stored value of every schema that has one, and a score that silently
-		// stops updating reads exactly like a score that is simply good.
-		//
-		// A schema that has migrated to `@self.quality` declares neither, so
-		// this writes nothing and the object body stays clean.
+	/**
+	 * The body properties the score and status go to, ONLY where the schema declares them.
+	 *
+	 * Dropping the write outright would freeze the stored value of every
+	 * schema that has one, and a score that silently stops updating reads
+	 * exactly like a score that is simply good. A schema that has migrated to
+	 * `@self.quality` declares neither, so this answers nothing and the object
+	 * body stays clean.
+	 *
+	 * @param Schema                                  $schema     The object's schema.
+	 * @param list<array{0: string, 1: float|string}> $candidates The configured fields and their values.
+	 *
+	 * @return list<array{0: string, 1: float|string}> Property and value, score first.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function bodyFields(Schema $schema, array $candidates): array {
 		$properties = ($schema->getProperties() ?? []);
-
-		$field = (string)($quality['field'] ?? self::DEFAULT_FIELD);
-		if ($field === '') {
-			$field = self::DEFAULT_FIELD;
+		$fields = [];
+		foreach ($candidates as $pair) {
+			if ($pair[0] !== '' && array_key_exists($pair[0], $properties) === true) {
+				$fields[] = $pair;
+			}
 		}
 
-		if (array_key_exists($field, $properties) === true && ($data[$field] ?? null) !== $score) {
-			$data[$field] = $score;
-			$changed = true;
-		}
+		return $fields;
+	}//end bodyFields()
 
-		$statusField = (string)($quality['statusField'] ?? '');
-		if ($statusField !== ''
-			&& array_key_exists($statusField, $properties) === true
-			&& ($data[$statusField] ?? null) !== $status
-		) {
-			$data[$statusField] = $status;
-			$changed = true;
+	/**
+	 * The configured score and status fields with their values, score first.
+	 *
+	 * @param array<string, mixed>                $quality    The quality configuration.
+	 * @param array{score: float, status: string} $assessment The score and status.
+	 *
+	 * @return list<array{0: string, 1: float|string}> Property (empty when not configured) and value.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function candidateFields(array $quality, array $assessment): array {
+		return [
+			[$this->scoreField(quality: $quality), $assessment['score']],
+			[(string)($quality['statusField'] ?? ''), $assessment['status']],
+		];
+	}//end candidateFields()
+
+	/**
+	 * Write values into the object body, replacing the data only when one differs.
+	 *
+	 * @param ObjectEntity                            $object The object being saved.
+	 * @param list<array{0: string, 1: float|string}> $fields Property and value pairs, in order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function writeBodyFields(ObjectEntity $object, array $fields): void {
+		$data = ($object->getObject() ?? []);
+		$changed = false;
+		foreach ($fields as [$field, $value]) {
+			if (($data[$field] ?? null) !== $value) {
+				$data[$field] = $value;
+				$changed = true;
+			}
 		}
 
 		if ($changed === true) {
 			$object->setObject($data);
 		}
-	}//end process()
+	}//end writeBodyFields()
+
+	/**
+	 * The body property the score is written to.
+	 *
+	 * @param array<string, mixed> $quality The quality configuration.
+	 *
+	 * @return string The field, the default when none or an empty one is configured.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function scoreField(array $quality): string {
+		$field = (string)($quality['field'] ?? self::DEFAULT_FIELD);
+		if ($field === '') {
+			return self::DEFAULT_FIELD;
+		}
+
+		return $field;
+	}//end scoreField()
 
 	/**
 	 * Look up the schema referenced by an object instance.
@@ -213,7 +289,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 		}
 
 		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
+			return $this->lookup->catalog->schemas()->find($ref, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -222,19 +298,34 @@ class QualityScoreOnSaveListener implements IEventListener {
 	/**
 	 * Read the `x-openregister-quality` configuration block.
 	 *
-	 * @param Schema $schema Schema to inspect.
+	 * @param Schema|null $schema Schema to inspect, or null when none was found.
 	 *
 	 * @return array<string, mixed>|null Quality config, or null when absent.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
-	private function getQuality(Schema $schema): ?array {
-		$config = ($schema->getConfiguration() ?? []);
-		$value = ($config['x-openregister-quality'] ?? null);
-		if (is_array($value) === true && count($value) > 0) {
-			return $value;
+	private function getQuality(?Schema $schema): ?array {
+		if ($schema === null) {
+			return null;
 		}
 
-		return null;
+		return $this->nonEmptyArray(value: (($schema->getConfiguration() ?? [])['x-openregister-quality'] ?? null));
 	}//end getQuality()
+
+	/**
+	 * The value when it is a non-empty array, else null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
+	 */
+	private function nonEmptyArray(mixed $value): ?array {
+		if (is_array($value) === false || $value === []) {
+			return null;
+		}
+
+		return $value;
+	}//end nonEmptyArray()
 }//end class

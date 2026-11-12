@@ -8,7 +8,7 @@
  * bigint pointing at a magic-table row). Magic-table sequences are
  * scoped per-table (each register/schema combo has its own table),
  * so the same `object_id` can collide across tables — DSAR composition
- * (`DsarService::findObjectsForSubject` / `eraseObjectsForSubject`)
+ * (`DsarService::findObjectsFor` / `eraseObjectsFor`)
  * couldn't reliably resolve the int back to a single concrete object.
  *
  * Adding `register_id` + `schema_id` + `object_uuid` makes the lookup

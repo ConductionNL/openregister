@@ -32,6 +32,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\WorkPackageDraft;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -93,9 +95,11 @@ class OpenProjectLinkServiceTest extends TestCase {
 			$this->mapper,
 			$this->provider,
 			$this->router,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -187,7 +191,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it');
+		$this->service->createAndLinkDraft((new LinkTarget('abc-123', 1))->inSchema(2), new WorkPackageDraft('5', 'Ship it'));
 	}//end testCreateAndLinkWorkPackageThrowsWhenNoUser()
 
 	public function testCreateAndLinkWorkPackageThrowsOnEmptySubject(): void {
@@ -196,7 +200,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', '   ');
+		$this->service->createAndLinkDraft((new LinkTarget('abc-123', 1))->inSchema(2), new WorkPackageDraft('5', '   '));
 	}//end testCreateAndLinkWorkPackageThrowsOnEmptySubject()
 
 	public function testCreateAndLinkWorkPackageThrowsOnMissingProject(): void {
@@ -205,7 +209,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '', 'Ship it');
+		$this->service->createAndLinkDraft((new LinkTarget('abc-123', 1))->inSchema(2), new WorkPackageDraft('', 'Ship it'));
 	}//end testCreateAndLinkWorkPackageThrowsOnMissingProject()
 
 	public function testCreateAndLinkWorkPackageSurfaces503WhenSourceUnavailable(): void {
@@ -220,7 +224,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it');
+		$this->service->createAndLinkDraft((new LinkTarget('abc-123', 1))->inSchema(2), new WorkPackageDraft('5', 'Ship it'));
 	}//end testCreateAndLinkWorkPackageSurfaces503WhenSourceUnavailable()
 
 	public function testCreateAndLinkWorkPackagePersistsLink(): void {
@@ -240,7 +244,7 @@ class OpenProjectLinkServiceTest extends TestCase {
 			->method('insert')
 			->willReturnCallback(static fn (OpenProjectLink $link): OpenProjectLink => $link);
 
-		$link = $this->service->createAndLinkWorkPackage((new LinkTarget('abc-123', 1))->inSchema(2), '5', 'Ship it', 'Task');
+		$link = $this->service->createAndLinkDraft((new LinkTarget('abc-123', 1))->inSchema(2), new WorkPackageDraft('5', 'Ship it', 'Task'));
 
 		$this->assertSame(42, $link->getWorkPackageId());
 		$this->assertSame('Ship it', $link->getSubject());

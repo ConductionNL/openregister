@@ -8,6 +8,8 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -19,6 +21,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 class SyncConfigurationsJobTest extends TestCase {
 	private SyncConfigurationsJob $job;
@@ -42,8 +45,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->job = new SyncConfigurationsJob(
 			$timeFactory,
-			$this->configurationMapper,
-			$this->configurationService,
+			new ConfigurationRecords($this->configurationMapper, $this->configurationService),
 			$this->githubService,
 			$this->gitlabService,
 			$this->httpClient,
@@ -120,7 +122,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn($configData);
 
 		$this->configurationService->expects($this->once())
@@ -400,7 +402,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->configurationService->expects($this->once())->method('importFromApp');
@@ -585,8 +587,8 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$recorded = [];
 		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
-			function (int $id, string $status, \DateTime $syncDate) use (&$recorded) {
-				$recorded[] = [$id, $status, abs($syncDate->getTimestamp() - time()) <= 5];
+			function (int $id, ConfigurationSyncResult $result) use (&$recorded) {
+				$recorded[] = [$id, $result->status, abs($result->syncDate->getTimestamp() - time()) <= 5];
 				return $this->createConfigEntity(['id' => $id]);
 			}
 		);
@@ -610,9 +612,9 @@ class SyncConfigurationsJobTest extends TestCase {
 		]);
 		$statuses = [];
 		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
-			function (int $id, string $status, \DateTime $date, string $message = '') use (&$statuses) {
-				$statuses[] = "$id $status $message";
-				if ($status === 'failed') {
+			function (int $id, ConfigurationSyncResult $result) use (&$statuses) {
+				$statuses[] = "$id {$result->status} {$result->message}";
+				if ($result->status === 'failed') {
 					throw new \Exception('db gone');
 				}
 
@@ -652,7 +654,7 @@ class SyncConfigurationsJobTest extends TestCase {
 			$this->createConfigEntity(['githubRepo' => 'acme/conf', 'githubBranch' => 'release', 'githubPath' => 'c.json']),
 		]);
 		$this->githubService->expects($this->once())->method('getFileContent')
-			->with('acme', 'conf', 'c.json', 'release')
+			->with(new GitHubFileLocation(owner: 'acme', repo: 'conf', path: 'c.json', branch: 'release'))
 			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->runJob(null);

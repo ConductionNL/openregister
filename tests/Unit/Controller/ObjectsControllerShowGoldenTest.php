@@ -12,6 +12,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -24,11 +25,14 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -72,6 +76,14 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Service\Audit\PurposeRefusedException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\VerbListing
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class ObjectsControllerShowGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-show-golden.json';
@@ -193,7 +205,7 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 		$entity->setUuid('object-uuid');
 		$service = $this->createMock(ObjectService::class);
 		$service->method('find')->willReturnCallback(function (...$args) use ($entity, $setup) {
-			$this->calls[] = ['find' => $args];
+			$this->calls[] = ['find' => FindCallShape::find(args: $args)];
 			return match ($setup['find'] ?? 'found') {
 				'found' => $entity,
 				'null' => null,
@@ -202,8 +214,8 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 				'ambiguous' => throw new MultipleObjectsReturnedException('two'),
 			};
 		});
-		$service->method('renderEntity')->willReturnCallback(function (...$args) use ($setup): array {
-			unset($args['entity'], $args[0]);
+		$service->method('renderEntity')->willReturnCallback(function (ObjectEntity $entity, ?RenderSelection $selection, bool $_rbac, bool $_multitenancy) use ($setup): array {
+			$args = [1 => $selection?->extend, 2 => 0, 3 => $selection?->filter, 4 => $selection?->fields, 5 => $selection?->unset, 6 => $_rbac, 7 => $_multitenancy];
 			$this->calls[] = ['render' => $args];
 			if (($setup['render'] ?? '') === 'denied') {
 				throw new NotAuthorizedException('denied');
@@ -262,8 +274,8 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 		$readState->method('unreadCounts')->willReturn(($setup['unread'] ?? []));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id) => match ($id) {
-			ExplicitReveal::class => (($setup['noReveal'] ?? false) ? new \stdClass() : $reveal),
-			ReadStateService::class => $readState,
+			ExplicitRevealInterface::class => (($setup['noReveal'] ?? false) ? new \stdClass() : $reveal),
+			ReadStateServiceInterface::class => $readState,
 		});
 		return $container;
 	}

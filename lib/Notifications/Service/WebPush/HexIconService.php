@@ -126,42 +126,90 @@ class HexIconService {
 	 */
 	private function getOrRender(string $appId, bool $badge): array {
 		$safeApp = preg_replace('/[^a-z0-9_-]/', '', strtolower($appId)) ?? 'openregister';
+		$entry = new IconCacheEntry(folder: $this->cacheFolder(), key: $safeApp . $this->cacheSuffix(badge: $badge));
+
+		$cached = $this->readCached(entry: $entry);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		$png = $this->render(appId: $safeApp, badge: $badge);
+		if ($png === null) {
+			return $this->rawAppSvg(appId: $safeApp);
+		}
+
+		$this->writeCached(entry: $entry, png: $png);
+
+		return ['body' => $png, 'mime' => 'image/png'];
+	}//end getOrRender()
+
+	/**
+	 * The cache file suffix of the icon or the badge.
+	 *
+	 * @param bool $badge Whether the badge variant is meant.
+	 *
+	 * @return string
+	 */
+	private function cacheSuffix(bool $badge): string {
 		$suffix = '-icon.png';
 		if ($badge === true) {
 			$suffix = '-badge.png';
 		}
 
-		$cacheKey = $safeApp . $suffix;
+		return $suffix;
+	}//end cacheSuffix()
 
-		$folder = $this->cacheFolder();
-		if ($folder !== null && $folder->fileExists($cacheKey) === true) {
+	/**
+	 * The cached PNG, or null when it is not cached or cannot be read.
+	 *
+	 * @param IconCacheEntry $entry The icon's cache entry.
+	 *
+	 * @return array{body: string, mime: string}|null
+	 */
+	private function readCached(IconCacheEntry $entry): ?array {
+		if ($entry->exists() === true) {
 			try {
-				return ['body' => $folder->getFile($cacheKey)->getContent(), 'mime' => 'image/png'];
+				return ['body' => $entry->read(), 'mime' => 'image/png'];
 			} catch (\Throwable $e) {
 				$this->logger->debug('[HexIconService] cache read failed: ' . $e->getMessage());
 			}
 		}
 
+		return null;
+	}//end readCached()
+
+	/**
+	 * Cache a rendered PNG; a failed write is logged and otherwise ignored.
+	 *
+	 * @param IconCacheEntry $entry The icon's cache entry.
+	 * @param string         $png   The rendered PNG bytes.
+	 *
+	 * @return void
+	 */
+	private function writeCached(IconCacheEntry $entry, string $png): void {
+		try {
+			$entry->write(png: $png);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[HexIconService] cache write failed: ' . $e->getMessage());
+		}
+	}//end writeCached()
+
+	/**
+	 * Render the PNG, or null when Imagick is unavailable or compositing failed.
+	 *
+	 * @param string $appId The sanitised originApp id.
+	 * @param bool   $badge Whether to render the monochrome badge variant.
+	 *
+	 * @return string|null PNG bytes.
+	 */
+	private function render(string $appId, bool $badge): ?string {
 		// Imagick unavailable → degrade to the raw app.svg (SVG MIME).
 		if (extension_loaded('imagick') === false) {
-			return $this->rawAppSvg(appId: $safeApp);
+			return null;
 		}
 
-		$png = $this->composite(appId: $safeApp, badge: $badge);
-		if ($png === null) {
-			return $this->rawAppSvg(appId: $safeApp);
-		}
-
-		if ($folder !== null) {
-			try {
-				$folder->newFile($cacheKey, $png);
-			} catch (\Throwable $e) {
-				$this->logger->debug('[HexIconService] cache write failed: ' . $e->getMessage());
-			}
-		}
-
-		return ['body' => $png, 'mime' => 'image/png'];
-	}//end getOrRender()
+		return $this->composite(appId: $appId, badge: $badge);
+	}//end render()
 
 	/**
 	 * Composite the white app glyph onto the cobalt hexagon via Imagick.
@@ -182,65 +230,125 @@ class HexIconService {
 		}
 
 		try {
-			$size = self::ICON_SIZE;
-
-			// Base canvas: the cobalt hexagon for the icon, transparent for the badge.
-			$canvas = new Imagick();
-			$canvas->newImage($size, $size, new ImagickPixel('transparent'), 'png');
-
-			if ($badge === false) {
-				$hex = new Imagick();
-				$hex->setBackgroundColor(new ImagickPixel('transparent'));
-				// The brand hex is a regular pointy-top hexagon with a 100:115
-				// (width:height) ratio. Rendering it into a square canvas would
-				// stretch it ~15% horizontally and distort the shape, so fit it
-				// to the canvas height and centre it horizontally instead.
-				$hexHeight = $size;
-				$hexWidth = (int)round($size * (100 / 115));
-				$hexSvg = sprintf(
-					'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 115" width="%d" height="%d">'
-					. '<polygon points="50,0 100,28.75 100,86.25 50,115 0,86.25 0,28.75" fill="%s"/></svg>',
-					$hexWidth,
-					$hexHeight,
-					self::COBALT
-				);
-				$hex->readImageBlob($hexSvg);
-				$hex->setImageFormat('png');
-				$hexX = (int)(($size - $hexWidth) / 2);
-				$canvas->compositeImage($hex, \Imagick::COMPOSITE_OVER, $hexX, 0);
-				$hex->clear();
-			}//end if
-
-			// The app glyph, tinted white, scaled to ~60% of the canvas and centred.
-			$glyph = new Imagick();
-			$glyph->setBackgroundColor(new ImagickPixel('transparent'));
-			$glyph->readImage($svgPath);
-			$glyph->setImageFormat('png');
-			$glyphSize = (int)($size * 0.6);
-			$glyph->resizeImage($glyphSize, $glyphSize, \Imagick::FILTER_LANCZOS, 1, true);
-
-			// Force the glyph to white (monochrome) so it reads on cobalt / as a badge.
-			$glyph->setImageAlphaChannel(\Imagick::ALPHACHANNEL_EXTRACT);
-			$white = new Imagick();
-			$white->newImage($glyph->getImageWidth(), $glyph->getImageHeight(), new ImagickPixel('white'), 'png');
-			$white->compositeImage($glyph, \Imagick::COMPOSITE_COPYOPACITY, 0, 0);
-
-			$offset = (int)(($size - $white->getImageWidth()) / 2);
-			$canvas->compositeImage($white, \Imagick::COMPOSITE_OVER, $offset, $offset);
-
-			$canvas->setImageFormat('png');
-			$blob = $canvas->getImageBlob();
-
-			$glyph->clear();
-			$white->clear();
-			$canvas->clear();
-
-			return $blob;
+			return $this->renderIcon(svgPath: $svgPath, badge: $badge);
 		} catch (\Throwable $e) {
 			$this->logger->warning('[HexIconService] Imagick compositing failed: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 	}//end composite()
+
+	/**
+	 * Render the icon (glyph on hex) or the badge (glyph on transparency) as PNG.
+	 *
+	 * @param string $svgPath The app glyph's SVG file.
+	 * @param bool   $badge   Whether to render the badge (no hex).
+	 *
+	 * @return string PNG bytes.
+	 *
+	 * @throws \ImagickException When Imagick cannot render.
+	 */
+	private function renderIcon(string $svgPath, bool $badge): string {
+		$size = self::ICON_SIZE;
+
+		// Base canvas: the cobalt hexagon for the icon, transparent for the badge.
+		$canvas = new Imagick();
+		$canvas->newImage($size, $size, new ImagickPixel('transparent'), 'png');
+
+		if ($badge === false) {
+			$this->drawHex(canvas: $canvas);
+		}
+
+		$this->drawGlyph(canvas: $canvas, svgPath: $svgPath);
+
+		$canvas->setImageFormat('png');
+		$blob = $canvas->getImageBlob();
+		$canvas->clear();
+
+		return $blob;
+	}//end renderIcon()
+
+	/**
+	 * Draw the cobalt hexagon onto the canvas, fitted to its height and centred.
+	 *
+	 * @param Imagick $canvas The square canvas.
+	 *
+	 * @return void
+	 */
+	private function drawHex(Imagick $canvas): void {
+		$size = self::ICON_SIZE;
+		$hex = new Imagick();
+		$hex->setBackgroundColor(new ImagickPixel('transparent'));
+		// The brand hex is a regular pointy-top hexagon with a 100:115
+		// (width:height) ratio. Rendering it into a square canvas would
+		// stretch it ~15% horizontally and distort the shape, so fit it
+		// to the canvas height and centre it horizontally instead.
+		$hexWidth = (int)round($size * (100 / 115));
+		$hex->readImageBlob($this->hexSvg(width: $hexWidth, height: $size));
+		$hex->setImageFormat('png');
+		$hexX = (int)(($size - $hexWidth) / 2);
+		$canvas->compositeImage($hex, \Imagick::COMPOSITE_OVER, $hexX, 0);
+		$hex->clear();
+	}//end drawHex()
+
+	/**
+	 * The SVG of the cobalt hexagon at a size.
+	 *
+	 * @param int $width  Width in pixels.
+	 * @param int $height Height in pixels.
+	 *
+	 * @return string
+	 */
+	private function hexSvg(int $width, int $height): string {
+		return sprintf(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 115" width="%d" height="%d">'
+			. '<polygon points="50,0 100,28.75 100,86.25 50,115 0,86.25 0,28.75" fill="%s"/></svg>',
+			$width,
+			$height,
+			self::COBALT
+		);
+	}//end hexSvg()
+
+	/**
+	 * Draw the app glyph, forced to white, centred onto the canvas.
+	 *
+	 * @param Imagick $canvas  The canvas.
+	 * @param string  $svgPath The app glyph's SVG file.
+	 *
+	 * @return void
+	 */
+	private function drawGlyph(Imagick $canvas, string $svgPath): void {
+		$glyph = $this->loadGlyph(svgPath: $svgPath);
+
+		// Force the glyph to white (monochrome) so it reads on cobalt / as a badge.
+		$glyph->setImageAlphaChannel(\Imagick::ALPHACHANNEL_EXTRACT);
+		$white = new Imagick();
+		$white->newImage($glyph->getImageWidth(), $glyph->getImageHeight(), new ImagickPixel('white'), 'png');
+		$white->compositeImage($glyph, \Imagick::COMPOSITE_COPYOPACITY, 0, 0);
+
+		$offset = (int)((self::ICON_SIZE - $white->getImageWidth()) / 2);
+		$canvas->compositeImage($white, \Imagick::COMPOSITE_OVER, $offset, $offset);
+
+		$glyph->clear();
+		$white->clear();
+	}//end drawGlyph()
+
+	/**
+	 * Read the app glyph and scale it to ~60% of the canvas.
+	 *
+	 * @param string $svgPath The app glyph's SVG file.
+	 *
+	 * @return Imagick The scaled glyph.
+	 */
+	private function loadGlyph(string $svgPath): Imagick {
+		$glyph = new Imagick();
+		$glyph->setBackgroundColor(new ImagickPixel('transparent'));
+		$glyph->readImage($svgPath);
+		$glyph->setImageFormat('png');
+		$glyphSize = (int)(self::ICON_SIZE * 0.6);
+		$glyph->resizeImage($glyphSize, $glyphSize, \Imagick::FILTER_LANCZOS, 1, true);
+
+		return $glyph;
+	}//end loadGlyph()
 
 	/**
 	 * Resolve the absolute filesystem path to an app's img/app.svg.

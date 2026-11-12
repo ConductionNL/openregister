@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EmailLinksControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -109,7 +110,7 @@ class EmailLinksControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new EmailLinksController(
+		$this->controller = EmailLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

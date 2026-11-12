@@ -30,18 +30,21 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
-use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class ScheduleFlowStore {
+class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
 	 * More schedules than one manifest declares.
 	 */
@@ -50,16 +53,16 @@ class ScheduleFlowStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper The flow table.
-	 * @param FlowVersionService $versions Publishes a flow's head.
-	 * @param FlowService $flows Deletes a flow with its runs and versions.
-	 * @param FlowTriggerValidator $validator Validates the trigger under the publisher's session.
+	 * @param FlowMapperInterface $mapper The flow table.
+	 * @param FlowVersionServiceInterface $versions Publishes a flow's head.
+	 * @param FlowServiceInterface $flows Deletes a flow with its runs and versions.
+	 * @param FlowTriggerValidatorInterface $validator Validates the trigger under the publisher's session.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly FlowVersionService $versions,
-		private readonly FlowService $flows,
-		private readonly FlowTriggerValidator $validator,
+		private readonly FlowMapperInterface $mapper,
+		private readonly FlowVersionServiceInterface $versions,
+		private readonly FlowServiceInterface $flows,
+		private readonly FlowTriggerValidatorInterface $validator,
 	) {
 	}//end __construct()
 
@@ -75,9 +78,8 @@ class ScheduleFlowStore {
 	public function ofApplication(string $application): array {
 		$flows = [];
 		$found = $this->mapper->findAllFlows(
-			app: Flow::APP_MANIFEST_SCHEDULE,
-			applicationSlug: $application,
-			limit: self::PAGE
+			selection: new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE, applicationSlug: $application),
+			query: new ListQuery(limit: self::PAGE)
 		);
 		foreach ($found as $flow) {
 			$flows[(string)$flow->getUuid()] = $flow;
@@ -98,7 +100,8 @@ class ScheduleFlowStore {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function hasFlowsNamedFor(string $slug): bool {
-		foreach ($this->mapper->findAllFlows(app: Flow::APP_MANIFEST_SCHEDULE, limit: self::PAGE) as $flow) {
+		$selection = new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE);
+		foreach ($this->mapper->findAllFlows(selection: $selection, query: new ListQuery(limit: self::PAGE)) as $flow) {
 			if (str_starts_with((string)$flow->getName(), $slug . ': ') === true) {
 				return true;
 			}
@@ -162,7 +165,7 @@ class ScheduleFlowStore {
 		$this->validator->validate(flow: $flow);
 
 		$stored = $this->mapper->insert($flow);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end create()
 
 	/**
@@ -181,6 +184,6 @@ class ScheduleFlowStore {
 		$compiled->applyTo(flow: $stored);
 		$this->validator->validate(flow: $stored);
 		$this->mapper->update($stored);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end republish()
 }//end class

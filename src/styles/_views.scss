@@ -639,3 +639,12 @@
 	@include section-description-full-rules;
 	@include main-description-info-note;
 }
+
+// view-container-3 with a subtitle right under the title.
+@mixin view-container-3-subtitled {
+	@include view-container-3;
+
+	.viewHeader h1 {
+		margin-bottom: 4px;
+	}
+}

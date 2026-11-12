@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -81,7 +82,7 @@ class ExampleSetValuesTest extends TestCase {
 	 */
 	public function testFillsEveryForm(mixed $declared, mixed $expected): void {
 		$gaps = [];
-		$this->assertSame($expected, $this->values->fill(value: $declared, context: $this->context, gaps: $gaps));
+		$this->assertSame($expected, $this->values->fill(value: $declared, scope: new ExampleSetFillScope(context: $this->context, gaps: $gaps)));
 		$this->assertSame([], $gaps);
 	}
 
@@ -101,7 +102,7 @@ class ExampleSetValuesTest extends TestCase {
 		$gaps      = [];
 		$amsterdam = new DateTimeZone('Europe/Amsterdam');
 		$context   = ['today' => new DateTimeImmutable($today, $amsterdam)];
-		$filled    = $this->values->fill(value: '{{datetime:-1 09:05}}', context: $context, gaps: $gaps);
+		$filled    = $this->values->fill(value: '{{datetime:-1 09:05}}', scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 
 		$column = (new DateTime($filled))->format('Y-m-d H:i:s');
 		$read   = new DateTime($column, new DateTimeZone('UTC'));
@@ -149,7 +150,7 @@ class ExampleSetValuesTest extends TestCase {
 	 */
 	public function testAnUnresolvedPlaceholderIsAGapNotAnEmptyString(string $placeholder): void {
 		$gaps   = [];
-		$filled = $this->values->fill(value: ['x' => 'a '.$placeholder], context: $this->context, gaps: $gaps);
+		$filled = $this->values->fill(value: ['x' => 'a '.$placeholder], scope: new ExampleSetFillScope(context: $this->context, gaps: $gaps));
 
 		$this->assertSame([$placeholder], $gaps);
 		$this->assertSame('a '.$placeholder, $filled['x']);
@@ -160,7 +161,7 @@ class ExampleSetValuesTest extends TestCase {
 		$context['objects']['case-2'] = ['id' => 'stand-in', ExampleSetValues::PLANNED => true];
 		$gaps    = [];
 
-		$this->assertSame('example-set-stand-in:case-2.identifier', $this->values->fill(value: '{{object:case-2.identifier}}', context: $context, gaps: $gaps));
+		$this->assertSame('example-set-stand-in:case-2.identifier', $this->values->fill(value: '{{object:case-2.identifier}}', scope: new ExampleSetFillScope(context: $context, gaps: $gaps)));
 		$this->assertSame([], $gaps);
 	}
 }

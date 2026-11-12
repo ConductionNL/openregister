@@ -1,0 +1,126 @@
+{
+    "empty result": {
+        "created": [],
+        "updated": [],
+        "unchanged": []
+    },
+    "empty lists": {
+        "created": [],
+        "updated": [],
+        "unchanged": []
+    },
+    "id shapes": {
+        "created": [
+            "self-id",
+            "uuid-only",
+            3,
+            "plain-id",
+            null,
+            null
+        ],
+        "updated": [
+            null,
+            null,
+            "plain-id",
+            3,
+            "uuid-only",
+            "self-id"
+        ],
+        "unchanged": [
+            "plain-id"
+        ],
+        "deduplication_efficiency": "7.7% operations avoided"
+    },
+    "keyed objects": {
+        "created": {
+            "a": "self-id",
+            "b": "plain-id"
+        },
+        "updated": [],
+        "unchanged": {
+            "5": "uuid-only"
+        },
+        "deduplication_efficiency": "33.3% operations avoided"
+    },
+    "saved only": {
+        "found": 3,
+        "created": [
+            "s0",
+            "s1",
+            "s2"
+        ],
+        "updated": [],
+        "unchanged": []
+    },
+    "unchanged only": {
+        "created": [],
+        "updated": [],
+        "unchanged": [
+            "n0",
+            "n1"
+        ],
+        "deduplication_efficiency": "100% operations avoided"
+    },
+    "one third unchanged": {
+        "created": [
+            "s0"
+        ],
+        "updated": [
+            "u0"
+        ],
+        "unchanged": [
+            "n0"
+        ],
+        "deduplication_efficiency": "33.3% operations avoided"
+    },
+    "two thirds unchanged": {
+        "created": [
+            "s0"
+        ],
+        "updated": [],
+        "unchanged": [
+            "n0",
+            "n1"
+        ],
+        "deduplication_efficiency": "66.7% operations avoided"
+    },
+    "one in seven unchanged": {
+        "created": [
+            "s0",
+            "s1",
+            "s2",
+            "s3",
+            "s4",
+            "s5"
+        ],
+        "updated": [],
+        "unchanged": [
+            "n0"
+        ],
+        "deduplication_efficiency": "14.3% operations avoided"
+    },
+    "prior summary keys": {
+        "found": 9,
+        "created": [
+            "s0"
+        ],
+        "errors": [
+            "e"
+        ],
+        "deduplication_efficiency": "stale",
+        "updated": [],
+        "unchanged": []
+    },
+    "prior efficiency replaced": {
+        "deduplication_efficiency": "25% operations avoided",
+        "created": [],
+        "updated": [
+            "u0",
+            "u1",
+            "u2"
+        ],
+        "unchanged": [
+            "n0"
+        ]
+    }
+}

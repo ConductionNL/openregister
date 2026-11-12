@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationProvenance;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
@@ -88,7 +90,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static function (string $layer, ?string $layerRef, string $configKey) use ($liveByKey): ConfigurationSnapshot {
-				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent($layer, $layerRef, $configKey));
+				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $layerRef, $configKey)));
 			}
 		);
 
@@ -96,7 +98,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 	}//end previews()
 
 	private function live(string $key, mixed $value, string $layer = ConfigurationLayer::INSTANCE): ConfigurationSnapshot {
-		return new ConfigurationSnapshot($layer, null, $key, $value, true, 'dep-old', 'admin');
+		return new ConfigurationSnapshot(new ConfigurationAddress($layer, null, $key), $value, true, new ConfigurationProvenance('dep-old', 'admin'));
 	}//end live()
 
 	public function testAChangedValueIsReportedWithBothSides(): void {

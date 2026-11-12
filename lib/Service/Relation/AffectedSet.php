@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class AffectedSet {
+class AffectedSet implements AffectedSetInterface {
 
 	/**
 	 * A reached node that is a record.
@@ -150,7 +150,12 @@ class AffectedSet {
 		foreach ($edges as $edge) {
 			$type = (string)($edge['type'] ?? '');
 			if ($query->prunes(type: $type) === true) {
-				$split['pruned'][] = ['type' => $type, 'at' => (string)($edge['from'] ?? ''), 'to' => (string)($edge['to'] ?? '')];
+				[$near, $far] = [(string)($edge['from'] ?? ''), (string)($edge['to'] ?? '')];
+				if (($edge['direction'] ?? null) === RelationTypeResolver::DIRECTION_INCOMING) {
+					[$near, $far] = [$far, $near];
+				}
+
+				$split['pruned'][] = ['type' => $type, 'at' => $near, 'to' => $far];
 				continue;
 			}
 
@@ -215,16 +220,15 @@ class AffectedSet {
 	 * @return array<string, array<int, array<string, string>>> The path to each reached uuid.
 	 */
 	private function reachableFrom(string $root, array $edges): array {
-		$outgoing = $this->outgoing(edges: $edges);
+		$adjacent = $this->adjacency(edges: $edges);
 		$paths = [$root => []];
 		$queue = [$root];
 		while ($queue !== []) {
-			$from = (string)array_shift($queue);
-			foreach (($outgoing[$from] ?? []) as $to => $type) {
-				if (array_key_exists($to, $paths) === false) {
-					$paths[$to] = array_merge($paths[$from], [['from' => $from, 'to' => (string)$to, 'type' => $type]]);
-					$queue[] = (string)$to;
-				}
+			$from  = (string)array_shift($queue);
+			$found = self::newlyReached(from: $from, steps: ($adjacent[$from] ?? []), paths: $paths);
+			$paths = $paths + $found;
+			foreach (array_keys($found) as $to) {
+				$queue[] = (string)$to;
 			}
 		}
 
@@ -232,23 +236,62 @@ class AffectedSet {
 		return $paths;
 	}//end reachableFrom()
 
+
 	/**
-	 * The kept edges grouped by the node they leave: from => [to => type], first edge wins.
+	 * The paths to the neighbours of one node that no earlier path reached.
 	 *
-	 * @param array<int, array<string, mixed>> $edges The kept edges.
+	 * @param string                                           $from  The node the steps leave.
+	 * @param array<string, array<string, string>>             $steps The edges leaving the node, keyed by the uuid they reach.
+	 * @param array<string, array<int, array<string, string>>> $paths The paths found so far.
 	 *
-	 * @return array<string, array<string, string>> The outgoing edges.
+	 * @return array<string, array<int, array<string, string>>> The path to each newly reached uuid, in edge order.
 	 */
-	private function outgoing(array $edges): array {
-		$outgoing = [];
-		foreach ($edges as $edge) {
-			$from = (string)($edge['from'] ?? '');
-			$to = (string)($edge['to'] ?? '');
-			if ($from !== '' && $to !== '' && isset($outgoing[$from][$to]) === false) {
-				$outgoing[$from][$to] = (string)($edge['type'] ?? '');
+	private static function newlyReached(string $from, array $steps, array $paths): array {
+		$found = [];
+		foreach ($steps as $to => $step) {
+			if (array_key_exists($to, $paths) === false) {
+				$found[$to] = array_merge($paths[$from], [$step]);
 			}
 		}
 
-		return $outgoing;
-	}//end outgoing()
+		return $found;
+	}//end newlyReached()
+
+	/**
+	 * The kept edges grouped by the end the walk came from: near => [far => edge], first edge wins.
+	 *
+	 * An edge the graph walked as incoming (a record that references the node)
+	 * is followed from its target to its source, as the graph walk followed it;
+	 * every other edge from its source to its target. The step keeps the edge's
+	 * own from, to and direction.
+	 *
+	 * @param array<int, array<string, mixed>> $edges The kept edges.
+	 *
+	 * @return array<string, array<string, array<string, string>>> The steps leaving each node.
+	 */
+	private function adjacency(array $edges): array {
+		$adjacent = [];
+		foreach ($edges as $edge) {
+			$from = (string)($edge['from'] ?? '');
+			$to = (string)($edge['to'] ?? '');
+			if ($from === '' || $to === '') {
+				continue;
+			}
+
+			$step = ['from' => $from, 'to' => $to, 'type' => (string)($edge['type'] ?? '')];
+			[$near, $far] = [$from, $to];
+			if (isset($edge['direction']) === true) {
+				$step['direction'] = (string)$edge['direction'];
+				if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
+					[$near, $far] = [$to, $from];
+				}
+			}
+
+			if (isset($adjacent[$near][$far]) === false) {
+				$adjacent[$near][$far] = $step;
+			}
+		}
+
+		return $adjacent;
+	}//end adjacency()
 }//end class

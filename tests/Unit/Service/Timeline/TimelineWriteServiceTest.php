@@ -26,7 +26,9 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
@@ -104,9 +106,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->service = new TimelineWriteService(
 			$this->notes,
 			$this->entries,
-			$this->references,
-			$this->mentions,
-			$this->blocks,
+			new TimelineEntryDerivations(references: $this->references, mentions: $this->mentions, blocks: $this->blocks),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
@@ -174,7 +174,7 @@ class TimelineWriteServiceTest extends TestCase {
 			)
 			->willReturn('Uw aanvraag Z-2026-0044 is ontvangen.');
 		$this->notes->expects($this->once())->method('createNote')
-			->with('case-1', 'Uw aanvraag Z-2026-0044 is ontvangen.', null)
+			->with(new NoteDraft(objectUuid: 'case-1', message: 'Uw aanvraag Z-2026-0044 is ontvangen.', visibility: null))
 			->willReturn(['id' => 41]);
 
 		$this->service->write($this->object(), ['textBlock' => 'ontvangstbevestiging']);

@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -42,9 +45,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
@@ -229,14 +235,10 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		}
 
 		return new ReferentialIntegrityService(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$this->dbReturning($versionRows),
-			$this->cacheFactory,
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->dbReturning($versionRows)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 	}//end service()
@@ -581,7 +583,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 
 	/**
@@ -625,14 +627,10 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		});
 
 		$service = new ReferentialIntegrityService(
-			$this->createMock(SchemaMapper::class),
-			$registers,
-			$this->createMock(MagicMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$db,
-			$this->cacheFactory,
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		(new \ReflectionProperty($service, 'schemaRegisterMap'))->setValue($service, []);
 		(new \ReflectionMethod($service, 'buildSchemaRegisterMap'))->invoke($service);

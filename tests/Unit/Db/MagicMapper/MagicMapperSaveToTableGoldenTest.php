@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicRowWrite;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -78,6 +81,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperSaveToTableGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -205,17 +218,22 @@ class MagicMapperSaveToTableGoldenTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$db,
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
-					$config,
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$logger,
-					$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-					$this->container(),
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$this->container()
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$config,
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$logger
+					),
 				]
 			)
 			->onlyMethods(['findObjectInRegisterSchemaTable'])
@@ -278,9 +296,9 @@ class MagicMapperSaveToTableGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): ?object => match ($id) {
-				\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+				\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
 				\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-				\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+				\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
 				default => null,
 			}
 		);

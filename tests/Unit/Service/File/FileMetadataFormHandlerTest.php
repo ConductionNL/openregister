@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler
@@ -75,7 +76,7 @@ final class FileMetadataFormHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testThreeRenamesWriteThreeEntries(): void {
-		$this->fileService->expects($this->exactly(3))->method('renameFile');
+		$this->fileService->expects($this->exactly(3))->method('renameAttachedFile');
 		$this->audit->expects($this->exactly(3))->method('logFileAction');
 
 		$result = (new FileMetadataFormHandler($this->fileService))->save(
@@ -101,8 +102,8 @@ final class FileMetadataFormHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testSavingWithNoEditsWritesNothing(): void {
-		$this->fileService->expects($this->never())->method('renameFile');
-		$this->fileService->expects($this->never())->method('updateFileMetadata');
+		$this->fileService->expects($this->never())->method('renameAttachedFile');
+		$this->fileService->expects($this->never())->method('changeFileMetadata');
 		$this->audit->expects($this->never())->method('logFileAction');
 
 		$result = (new FileMetadataFormHandler($this->fileService))->save(
@@ -123,7 +124,7 @@ final class FileMetadataFormHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAChangedDescriptionIsRecordedWithBothValues(): void {
-		$this->fileService->expects($this->once())->method('updateFileMetadata');
+		$this->fileService->expects($this->once())->method('changeFileMetadata');
 
 		$result = (new FileMetadataFormHandler($this->fileService))->save(
 			object: $this->object,
@@ -144,9 +145,9 @@ final class FileMetadataFormHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testOneRefusedRowDoesNotRollTheOthersBack(): void {
-		$this->fileService->method('renameFile')->willReturnCallback(
-			function (ObjectEntity $object, int $fileId, string $newName): File {
-				if ($fileId === 2) {
+		$this->fileService->method('renameAttachedFile')->willReturnCallback(
+			function (FileRename $rename): File {
+				if ($rename->fileId === 2) {
 					throw new \Exception('A file with that name already exists');
 				}
 

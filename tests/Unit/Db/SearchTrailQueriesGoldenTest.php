@@ -23,7 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\SearchTrail;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -34,6 +36,12 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Db\SearchTrailMapper
  * @uses   \OCA\OpenRegister\Db\SearchTrail
+ * @uses \OCA\OpenRegister\Db\SearchTrailCriteria
+ * @uses \OCA\OpenRegister\Db\SearchTrail\CreatedRange
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailFilterRun
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailPage
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailStatistics
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class SearchTrailQueriesGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -72,9 +80,9 @@ class SearchTrailQueriesGoldenTest extends TestCase {
 				$s = var_export($search, true);
 				$calls["findAll $tag search $s"] = fn (SearchTrailMapper $m) => array_map(
 					fn (SearchTrail $t) => $t->getId(),
-					$m->findAll(5, 10, ['user' => 'alice'], [], $search, $from, $to)
+					$m->findAll(new ListQuery(limit: 5, offset: 10), new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to))
 				);
-				$calls["count $tag search $s"] = fn (SearchTrailMapper $m) => $m->count(['user' => 'alice'], $search, $from, $to);
+				$calls["count $tag search $s"] = fn (SearchTrailMapper $m) => $m->count(new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to));
 			}
 
 			$calls["getSearchStatistics $tag"] = fn (SearchTrailMapper $m) => $m->getSearchStatistics($from, $to);

@@ -48,11 +48,10 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -103,18 +102,16 @@ class ProcessingLogService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Activity resolver + fallback seed.
-	 * @param SchemaMapperInterface $schemaMapper Schema annotation reader.
-	 * @param RegisterMapperInterface $registerMapper Register annotation reader (inheritance).
+	 * @param ProcessingLogMapperInterface $logMapper Append-only log mapper.
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Activity resolver + fallback seed.
+	 * @param SchemaCatalogInterface $catalog Schema and register annotation readers (register inheritance).
 	 * @param IUserSession $userSession Actor identity.
 	 * @param LoggerInterface $logger Fail-soft diagnostics.
 	 */
 	public function __construct(
-		private readonly ProcessingLogMapper $logMapper,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly ProcessingLogMapperInterface $logMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -127,148 +124,200 @@ class ProcessingLogService {
 	 * Fail-soft: never throws. Buffers the entry; nothing is written to
 	 * the database until `flush()` runs.
 	 *
-	 * @param ObjectEntity $object The object being processed.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel; defaults from the request shape.
-	 * @param string|null $actor Explicit actor (e.g. API client id) or null for the NC user.
+	 * @param ObjectEntity   $object The object being processed.
+	 * @param ProcessingRead $read   The read: action, channel and actor.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function logRead(
-		ObjectEntity $object,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-	): void {
+	public function recordRead(ObjectEntity $object, ProcessingRead $read): void {
 		try {
-			$config = $this->resolveProcessingConfig(schemaId: $object->getSchema(), registerId: $object->getRegister());
-			if ($config === null || ($config['logReads'] ?? false) !== true) {
-				return;
-			}
-
-			$activityUuid = $this->resolveAttribution(
-				config: $config,
-				action: $action,
-				organisationId: (string)$object->getOrganisation()
-			);
-
-			$confidential = false;
-			$subject = $this->extractSubject(object: $object, config: $config);
-
-			$entry = new ProcessingLogEntry();
-			$entry->setActivityId($activityUuid);
-			$entry->setAction($action);
-			$entry->setActor($actor ?? $this->currentActor());
-			$entry->setChannel($channel ?? $this->detectChannel());
-			$entry->setRegisterId((string)$object->getRegister());
-			$entry->setSchemaId((string)$object->getSchema());
-			$entry->setObjectUuid((string)$object->getUuid());
-			$entry->setSubjectIdType($subject['type']);
-			$entry->setSubjectIdValue($subject['value']);
-			$entry->setObjectCount(1);
-			$entry->setConfidential($confidential);
-			$entry->setOrganisationId((string)$object->getOrganisation());
-
-			$this->buffer[] = $entry;
+			$this->captureRead(object: $object, read: $read);
 		} catch (\Throwable $e) {
 			// Fail-soft: logging never breaks the read.
-			$this->logger->debug(
-				message: '[AVG] processing-log capture skipped',
-				context: ['exception' => $e->getMessage()]
-			);
-		}//end try
+			$this->logger->debug(message: '[AVG] processing-log capture skipped', context: ['exception' => $e->getMessage()]);
+		}
+	}//end recordRead()
 
-	}//end logRead()
+	/**
+	 * Buffer the entry for one object read when its schema or register opted in.
+	 *
+	 * @param ObjectEntity   $object The object read.
+	 * @param ProcessingRead $read   The read.
+	 *
+	 * @return void
+	 */
+	private function captureRead(ObjectEntity $object, ProcessingRead $read): void {
+		$run = $this->startRun(read: $read, objects: [$object]);
+		if ($run === null) {
+			return;
+		}
+
+		$entry   = $this->newEntry(run: $run);
+		$subject = $this->extractSubject(object: $object, config: $run->config);
+		$entry->setObjectUuid((string)$object->getUuid());
+		$entry->setSubjectIdType($subject['type']);
+		$entry->setSubjectIdValue($subject['value']);
+		$entry->setObjectCount(1);
+		$entry->setConfidential(false);
+		$entry->setOrganisationId((string)$object->getOrganisation());
+
+		$this->buffer[] = $entry;
+	}//end captureRead()
+
+	/**
+	 * The capture of a read when its first object's schema or register logs reads; null otherwise.
+	 *
+	 * @param ProcessingRead           $read    The read.
+	 * @param array<int|string, mixed> $objects The objects read.
+	 *
+	 * @return ReadCaptureRun|null
+	 */
+	private function startRun(ProcessingRead $read, array $objects): ?ReadCaptureRun {
+		$anchor = $this->listAnchor(objects: $objects);
+		if ($anchor === null) {
+			return null;
+		}
+
+		$config = $this->readLoggingConfig(anchor: $anchor);
+		if ($config === null) {
+			return null;
+		}
+
+		return new ReadCaptureRun(read: $read, anchor: $anchor, objects: $objects, config: $config);
+	}//end startRun()
+
+	/**
+	 * The processing configuration of an object's schema/register, when it logs reads; null otherwise.
+	 *
+	 * @param ObjectEntity $anchor The object whose schema and register decide.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function readLoggingConfig(ObjectEntity $anchor): ?array {
+		$config = $this->resolveProcessingConfig(schemaId: $anchor->getSchema(), registerId: $anchor->getRegister());
+		if ($config === null || ($config['logReads'] ?? false) !== true) {
+			return null;
+		}
+
+		return $config;
+	}//end readLoggingConfig()
+
+	/**
+	 * A new entry with the attribution, action, actor, channel, register and schema set, in that order.
+	 *
+	 * @param ReadCaptureRun $run The capture.
+	 *
+	 * @return ProcessingLogEntry
+	 */
+	private function newEntry(ReadCaptureRun $run): ProcessingLogEntry {
+		$activityUuid = $this->resolveAttribution(run: $run);
+
+		$entry = new ProcessingLogEntry();
+		$entry->setActivityId($activityUuid);
+		$entry->setAction($run->read->action);
+		$entry->setActor($run->read->actor ?? $this->currentActor());
+		$entry->setChannel($run->read->channel ?? $this->detectChannel());
+		$entry->setRegisterId((string)$run->anchor->getRegister());
+		$entry->setSchemaId((string)$run->anchor->getSchema());
+
+		return $entry;
+	}//end newEntry()
 
 	/**
 	 * Record a single collapsed entry for a list/search result.
 	 *
-	 * A list response produces ONE entry carrying `objectCount` and the
-	 * query parameters — never one row per scanned object. When the result
-	 * set holds LIST_IDENTIFIER_LIMIT objects or fewer, the entry also
-	 * carries every object's uuid and the subject identifiers found.
+	 * Fail-soft: never throws.
 	 *
 	 * @param array<int, ObjectEntity> $objects The list result.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel.
-	 * @param string|null $actor Explicit actor or null.
-	 * @param array<string, mixed> $query The query parameters of the list or search.
+	 * @param ProcessingRead           $read    The read: action, channel, actor and query.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function logReadList(
-		array $objects,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-		array $query = [],
-	): void {
-		if ($objects === []) {
+	public function recordReadList(array $objects, ProcessingRead $read): void {
+		try {
+			$this->captureReadList(objects: $objects, read: $read);
+		} catch (\Throwable $e) {
+			$this->logger->debug(message: '[AVG] processing-log list capture skipped', context: ['exception' => $e->getMessage()]);
+		}
+	}//end recordReadList()
+
+	/**
+	 * Buffer one entry for a list read when the first object's schema or register opted in.
+	 *
+	 * @param array<int|string, mixed> $objects The objects read.
+	 * @param ProcessingRead           $read    The read.
+	 *
+	 * @return void
+	 */
+	private function captureReadList(array $objects, ProcessingRead $read): void {
+		$run = $this->startRun(read: $read, objects: $objects);
+		if ($run === null) {
 			return;
 		}
 
-		try {
-			// Anchor on the first object to resolve schema/register opt-in.
-			$first = $objects[array_key_first($objects)];
-			if (($first instanceof ObjectEntity) === false) {
-				return;
-			}
+		$entry = $this->newEntry(run: $run);
+		$this->completeListEntry(entry: $entry, run: $run);
 
-			$config = $this->resolveProcessingConfig(schemaId: $first->getSchema(), registerId: $first->getRegister());
-			if ($config === null || ($config['logReads'] ?? false) !== true) {
-				return;
-			}
+		$this->buffer[] = $entry;
+	}//end captureReadList()
 
-			$activityUuid = $this->resolveAttribution(
-				config: $config,
-				action: $action,
-				organisationId: (string)$first->getOrganisation()
-			);
+	/**
+	 * The object a list read is anchored on: the first one, when it is an entity.
+	 *
+	 * @param array<int|string, mixed> $objects The objects read.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function listAnchor(array $objects): ?ObjectEntity {
+		if ($objects === []) {
+			return null;
+		}
 
-			$entry = new ProcessingLogEntry();
-			$entry->setActivityId($activityUuid);
-			$entry->setAction($action);
-			$entry->setActor($actor ?? $this->currentActor());
-			$entry->setChannel($channel ?? $this->detectChannel());
-			$entry->setRegisterId((string)$first->getRegister());
-			$entry->setSchemaId((string)$first->getSchema());
-			$entry->setObjectCount(count($objects));
-			$entry->setConfidential(false);
-			$entry->setOrganisationId((string)$first->getOrganisation());
-			$entry->setQueryParams($query);
-			if (count($objects) <= self::LIST_IDENTIFIER_LIMIT) {
-				$this->attachListIdentifiers(entry: $entry, objects: $objects, config: $config);
-			}
+		// Anchor on the first object to resolve schema/register opt-in.
+		$first = $objects[array_key_first($objects)];
+		if (($first instanceof ObjectEntity) === false) {
+			return null;
+		}
 
-			$this->buffer[] = $entry;
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[AVG] processing-log list capture skipped',
-				context: ['exception' => $e->getMessage()]
-			);
-		}//end try
+		return $first;
+	}//end listAnchor()
 
-	}//end logReadList()
+	/**
+	 * Set the list fields: count, confidentiality, organisation, query and (up to the cap) identifiers.
+	 *
+	 * @param ProcessingLogEntry $entry The entry being built.
+	 * @param ReadCaptureRun     $run   The capture: anchor, objects, configuration and query.
+	 *
+	 * @return void
+	 */
+	private function completeListEntry(ProcessingLogEntry $entry, ReadCaptureRun $run): void {
+		$entry->setObjectCount(count($run->objects));
+		$entry->setConfidential(false);
+		$entry->setOrganisationId((string)$run->anchor->getOrganisation());
+		$entry->setQueryParams($run->read->query);
+		if (count($run->objects) <= self::LIST_IDENTIFIER_LIMIT) {
+			$this->attachListIdentifiers(entry: $entry, run: $run);
+		}
+	}//end completeListEntry()
 
 	/**
 	 * Put every object's uuid, and each subject identifier found, on a list entry.
 	 *
-	 * @param ProcessingLogEntry       $entry   The collapsed entry.
-	 * @param array<int, ObjectEntity> $objects The list result.
-	 * @param array<string, mixed>     $config  The schema's processing configuration.
+	 * @param ProcessingLogEntry $entry The collapsed entry.
+	 * @param ReadCaptureRun     $run   The capture: the objects read and the configuration.
 	 *
 	 * @return void
 	 */
-	private function attachListIdentifiers(ProcessingLogEntry $entry, array $objects, array $config): void {
+	private function attachListIdentifiers(ProcessingLogEntry $entry, ReadCaptureRun $run): void {
 		$uuids = [];
 		$subjects = [];
-		foreach ($objects as $object) {
+		foreach ($run->objects as $object) {
 			$uuids[] = (string)$object->getUuid();
-			$subject = $this->extractSubject(object: $object, config: $config);
+			$subject = $this->extractSubject(object: $object, config: $run->config);
 			if ($subject['type'] !== null) {
 				$subjects[] = ['type' => $subject['type'], 'value' => (string)$subject['value']];
 			}
@@ -299,13 +348,10 @@ class ProcessingLogService {
 			$this->buffer = [];
 			return $count;
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[AVG] processing-log flush failed; entries retained for retry',
-				context: ['exception' => $e->getMessage(), 'pending' => count($this->buffer)]
-			);
+			$pending = ['exception' => $e->getMessage(), 'pending' => count($this->buffer)];
+			$this->logger->error(message: '[AVG] processing-log flush failed; entries retained for retry', context: $pending);
 			return 0;
 		}
-
 	}//end flush()
 
 	/**
@@ -332,20 +378,14 @@ class ProcessingLogService {
 		$schemaConfig = $this->readAnnotation(loader: fn () => $this->loadSchemaConfig(schemaId: $schemaId));
 		$registerConfig = $this->readAnnotation(loader: fn () => $this->loadRegisterConfig(registerId: $registerId));
 
-		if ($schemaConfig === null && $registerConfig === null) {
-			return null;
+		// Schema-level wins; fall back to register-level field by field.
+		if ($schemaConfig === null) {
+			return $registerConfig;
 		}
 
-		// Schema-level wins; fall back to register-level field by field.
-		$effective = ($registerConfig ?? []);
-		if ($schemaConfig !== null) {
-			$effective = array_merge($effective, $schemaConfig);
-			// Attribution merges per-key, schema overriding register.
-			$effective['attribution'] = array_merge(
-				($registerConfig['attribution'] ?? []),
-				($schemaConfig['attribution'] ?? [])
-			);
-		}
+		$effective = array_merge(($registerConfig ?? []), $schemaConfig);
+		// Attribution merges per-key, schema overriding register.
+		$effective['attribution'] = array_merge(($registerConfig['attribution'] ?? []), ($schemaConfig['attribution'] ?? []));
 
 		return $effective;
 	}//end resolveProcessingConfig()
@@ -373,32 +413,39 @@ class ProcessingLogService {
 			];
 		}
 
-		// Legacy shorthand: a single attribution reference, reads off.
-		$legacy = ($config[self::LEGACY_ANNOTATION_KEY] ?? null);
-		if (is_string($legacy) === true && $legacy !== '') {
-			return [
-				'logReads' => false,
-				'attribution' => ['default' => $legacy],
-				'subjectIdFields' => [],
-			];
-		}
-
-		return null;
+		return $this->legacyAnnotation(legacy: ($config[self::LEGACY_ANNOTATION_KEY] ?? null));
 	}//end readAnnotation()
 
 	/**
-	 * Resolve the attributed activity uuid for an action, falling back
-	 * to the seeded flagged fallback activity when nothing resolves.
+	 * The legacy shorthand: a single attribution reference, reads off; null when absent.
 	 *
-	 * @param array<string, mixed> $config Normalised processing config.
-	 * @param string $action Operation (`read`|`export`|...).
-	 * @param string $organisationId Tenant for the fallback seed.
+	 * @param mixed $legacy The legacy annotation value.
+	 *
+	 * @return array{logReads: false, attribution: array{default: string}, subjectIdFields: array{}}|null
+	 */
+	private function legacyAnnotation(mixed $legacy): ?array {
+		if (is_string($legacy) === false || $legacy === '') {
+			return null;
+		}
+
+		return [
+			'logReads' => false,
+			'attribution' => ['default' => $legacy],
+			'subjectIdFields' => [],
+		];
+	}//end legacyAnnotation()
+
+	/**
+	 * Resolve the attributed activity uuid for the run's action, falling back
+	 * to the seeded flagged fallback activity of the anchor's organisation when nothing resolves.
+	 *
+	 * @param ReadCaptureRun $run The capture: its configuration, action and anchor.
 	 *
 	 * @return string Resolved (or fallback) activity uuid.
 	 */
-	private function resolveAttribution(array $config, string $action, string $organisationId): string {
-		$attribution = $this->asArray(value: ($config['attribution'] ?? null));
-		$reference = ($attribution[$action] ?? $attribution['default'] ?? null);
+	private function resolveAttribution(ReadCaptureRun $run): string {
+		$attribution = $this->asArray(value: ($run->config['attribution'] ?? null));
+		$reference = ($attribution[$run->read->action] ?? $attribution['default'] ?? null);
 
 		if (is_string($reference) === true && $reference !== '') {
 			$resolved = $this->vrwMapper->resolveReference(reference: $reference);
@@ -408,7 +455,7 @@ class ProcessingLogService {
 			}
 		}
 
-		return $this->fallbackActivityUuid(organisationId: $organisationId);
+		return $this->fallbackActivityUuid(organisationId: (string)$run->anchor->getOrganisation());
 	}//end resolveAttribution()
 
 	/**
@@ -524,7 +571,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+		$schema = $this->catalog->schemas()->find($schemaId, _rbac: false, _multitenancy: false);
 		return $schema->getConfiguration();
 	}//end loadSchemaConfig()
 
@@ -540,7 +587,7 @@ class ProcessingLogService {
 			return null;
 		}
 
-		$register = $this->registerMapper->find($registerId, _multitenancy: false);
+		$register = $this->catalog->registers()->find($registerId, _multitenancy: false);
 		return $register->getConfiguration();
 	}//end loadRegisterConfig()
 

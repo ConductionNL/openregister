@@ -9,17 +9,23 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 
 /**
  * Golden record of the schema-wide validate-and-save run over every branch: the schema and
@@ -109,12 +115,13 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->world = $scenario;
 
+		$query  = new ListQuery(limit: ($scenario['limit'] ?? ListQuery::UNBOUNDED), offset: ($scenario['offset'] ?? 0));
 		$result = $this->handler()->validateAndSaveObjectsBySchema(
-			registerId: 7,
-			schemaId: 9,
-			saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk')),
-			limit: ($scenario['limit'] ?? null),
-			offset: ($scenario['offset'] ?? 0)
+			revalidation: new SchemaRevalidation(
+				table: new RegisterSchemaRef(register: 7, schema: 9),
+				query: $query,
+				saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk'))
+			)
 		);
 
 		$calls = $this->typed(value: $this->calls);
@@ -167,13 +174,25 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 			/**
 			 * The bulk save double.
 			 *
-			 * @param array<int, mixed> $objects The chunk.
-			 * @param mixed             ...$rest  The named options.
+			 * @param array<int, mixed> $objects       The chunk.
+			 * @param BulkSaveOptions   $options       The register, schema, validation, events and audit choices.
+			 * @param bool              $_rbac         Whether RBAC applies.
+			 * @param bool              $_multitenancy Whether multitenancy applies.
 			 *
 			 * @return array<string, mixed>
 			 */
-			public function saveObjects(array $objects, mixed ...$rest): array {
-				return $this->test->bulkSave(objects: $objects, options: $rest);
+			public function saveObjects(array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): array {
+				return $this->test->bulkSave(
+					objects: $objects,
+					options: [
+						'register' => $options->defaults->register,
+						'schema' => $options->defaults->schema,
+						'_rbac' => $_rbac,
+						'_multitenancy' => $_multitenancy,
+						'validation' => $options->validation,
+						'events' => $options->events,
+					]
+				);
 			}//end saveObjects()
 		}, 'saveObject'];
 	}//end saveCallback()
@@ -236,7 +255,9 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ...$rest): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema] = [$table->register, $table->schema];
+				$rest = [$listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->calls[] = ['findAllInRegisterSchemaTable', $register->getId(), $schema->getId(), $rest];
 				if (($this->world['tableFails'] ?? false) === true) {
 					throw new Exception('no table');
@@ -273,10 +294,7 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		return new ValidationHandler(
 			validateHandler: $this->createMock(ValidateObject::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			magicMapper: $magic,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			logger: $logger
 		);
 	}//end handler()

@@ -4,7 +4,6 @@ import {
 	dashboardStore,
 	navigationStore,
 	registerStore,
-	schemaStore,
 } from '../../store/store.js'
 </script>
 
@@ -197,7 +196,6 @@ import {
 	CnKpiGrid,
 	CnStatsBlock,
 } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import {
 	NcActionButton,
@@ -219,6 +217,8 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import formatBytes from '../../services/formatBytes.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
+import { findActiveRegister } from '../../views/register/activeRegister.js'
 
 export default {
 	name: 'RegisterSideBar',
@@ -260,18 +260,7 @@ export default {
 		 * @return {object|undefined} The active register record
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from the register
-			// store, falling back to the route param on a deep link / page refresh.
-			// Mirrors RegisterDetail.register — the whole sidebar is v-if'd on this.
-			const registerId =
-				registerStore.getRegisterItem?.id || this.$route.params.id
-			if (!registerId) {
-				return undefined
-			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			return findActiveRegister(this.$route)
 		},
 
 		activeTab: {
@@ -345,20 +334,8 @@ export default {
 		async downloadOas() {
 			if (!this.register) return
 
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${this.register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(this.register)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -374,12 +351,7 @@ export default {
 		viewOasDoc() {
 			if (!this.register) return
 
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(this.register.id)
 		},
 
 		/**

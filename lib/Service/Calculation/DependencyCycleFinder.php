@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Service\Calculation;
  * Nodes are visited in the order the graph lists them; the first cycle
  * found is returned as the path that closes it (`a -> b -> a`). Edges to
  * names that are not nodes of the graph are ignored.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
 final class DependencyCycleFinder {
 
@@ -106,15 +108,26 @@ final class DependencyCycleFinder {
 
 		$this->colour[$node] = 1;
 		$this->stack[] = $node;
+		$this->visitDependencies(node: $node);
+		array_pop($this->stack);
+		$this->colour[$node] = 2;
+	}//end visit()
+
+
+	/**
+	 * Visit the nodes a node depends on that are nodes of the graph.
+	 *
+	 * @param string $node The node.
+	 *
+	 * @return void
+	 */
+	private function visitDependencies(string $node): void {
 		foreach (($this->deps[$node] ?? []) as $next) {
 			if (isset($this->deps[$next]) === true) {
 				$this->visit(node: $next);
 			}
 		}
-
-		array_pop($this->stack);
-		$this->colour[$node] = 2;
-	}//end visit()
+	}//end visitDependencies()
 
 
 	/**

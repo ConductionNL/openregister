@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -36,6 +37,7 @@ use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * EmailProvider unit tests.
@@ -157,10 +159,10 @@ class EmailProviderTest extends TestCase {
 
 	public function testListDelegatesToEmailServiceAndReturnsPaginatedEnvelope(): void {
 		$this->emailService->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: null, offset: null)
+			->with('obj-uuid', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn(['results' => [['id' => 1, 'subject' => 'Hello']], 'total' => 1]);
 
-		$result = $this->provider->list('reg', 'schema', 'obj-uuid');
+		$result = $this->provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid'));
 
 		$this->assertSame([['id' => 1, 'subject' => 'Hello']], $result['items']);
 		$this->assertSame(1, $result['total']);
@@ -170,10 +172,10 @@ class EmailProviderTest extends TestCase {
 	public function testListHonoursPaginationFilters(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: 10, offset: 10)
+			->with('obj-uuid', new ListQuery(limit: 10, offset: 10))
 			->willReturn(['results' => [['id' => 2]], 'total' => 25]);
 
-		$result = $this->provider->list('reg', 'schema', 'obj-uuid', ['_limit' => 10, '_page' => 1]);
+		$result = $this->provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid'), ['_limit' => 10, '_page' => 1]);
 
 		$this->assertSame([['id' => 2]], $result['items']);
 		$this->assertSame(25, $result['total']);
@@ -184,36 +186,36 @@ class EmailProviderTest extends TestCase {
 	public function testListWithoutALimitAsksForEverythingAndHasNoCursor(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: null, offset: null)
+			->with('obj-uuid', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn(['results' => [['id' => 2]], 'total' => '25']);
 
 		$this->assertSame(
 			['items' => [['id' => 2]], 'total' => 25, 'nextCursor' => null],
-			$this->provider->list('reg', 'schema', 'obj-uuid', ['_page' => 4])
+			$this->provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid'), ['_page' => 4])
 		);
 	}//end testListWithoutALimitAsksForEverythingAndHasNoCursor()
 
 	public function testListTreatsANegativePageAsTheFirst(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: 2, offset: 0)
+			->with('obj-uuid', new ListQuery(limit: 2, offset: 0))
 			->willReturn(['results' => [['id' => 1], ['id' => 2]], 'total' => 3]);
 
-		$this->assertSame('1', $this->provider->list('reg', 'schema', 'obj-uuid', ['_limit' => '2', '_page' => '-3'])['nextCursor']);
+		$this->assertSame('1', $this->provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid'), ['_limit' => '2', '_page' => '-3'])['nextCursor']);
 	}//end testListTreatsANegativePageAsTheFirst()
 
 	public function testListHasNoCursorWhenThisPageReachesTheTotalExactly(): void {
 		$this->emailService->method('getEmailsForObject')
 			->willReturn(['results' => [['id' => 3]], 'total' => 3]);
 
-		$this->assertNull($this->provider->list('r', 's', 'obj', ['_limit' => 1, '_page' => 2])['nextCursor']);
+		$this->assertNull($this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj'), ['_limit' => 1, '_page' => 2])['nextCursor']);
 	}//end testListHasNoCursorWhenThisPageReachesTheTotalExactly()
 
 	public function testListReturnsEmptyEnvelopeOnException(): void {
 		$this->emailService->method('getEmailsForObject')
 			->willThrowException(new \RuntimeException('Mail down'));
 
-		$result = $this->provider->list('reg', 'schema', 'obj-uuid');
+		$result = $this->provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-uuid'));
 
 		$this->assertSame([], $result['items']);
 		$this->assertSame(0, $result['total']);
@@ -225,7 +227,7 @@ class EmailProviderTest extends TestCase {
 			->willReturn(['results' => [['id' => 3], ['id' => 4], ['id' => 5]], 'total' => 3]);
 
 		// Limit 5 page 0 — all 3 rows fit: offset 0, 0 + 3 = 3 = total → no cursor.
-		$result = $this->provider->list('r', 's', 'obj', ['_limit' => 5, '_page' => 0]);
+		$result = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj'), ['_limit' => 5, '_page' => 0]);
 
 		$this->assertNull($result['nextCursor']);
 	}//end testListSetsNoNextCursorOnLastPage()
@@ -252,7 +254,7 @@ class EmailProviderTest extends TestCase {
 			'messageUid' => 'uid-1',
 		];
 
-		$result = $this->provider->create('1', '2', 'obj-uuid', $payload);
+		$result = $this->provider->create(new ObjectRef(register: '1', schema: '2', id: 'obj-uuid'), $payload);
 
 		$this->assertSame(99, $result['id']);
 	}//end testCreateDelegatesToEmailLinkService()
@@ -276,7 +278,7 @@ class EmailProviderTest extends TestCase {
 			'mailMessageId' => 'legacy-msg',
 		];
 
-		$result = $this->provider->create('1', '2', 'obj-uuid', $payload);
+		$result = $this->provider->create(new ObjectRef(register: '1', schema: '2', id: 'obj-uuid'), $payload);
 
 		$this->assertSame(7, $result['id']);
 	}//end testCreateFallsThroughToLegacyMailMessageIdField()
@@ -286,6 +288,6 @@ class EmailProviderTest extends TestCase {
 			->method('unlinkEmail')
 			->with(objectUuid: 'obj-uuid', linkId: 42);
 
-		$this->provider->delete('r', 's', 'obj-uuid', '42');
+		$this->provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-uuid'), '42');
 	}//end testDeleteDelegatesToEmailLinkService()
 }//end class

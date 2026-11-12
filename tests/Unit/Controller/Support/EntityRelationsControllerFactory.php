@@ -18,7 +18,7 @@ final class EntityRelationsControllerFactory {
 	/**
 	 * The constructor arguments of EntityRelationsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param EntityRelationMapper $entityRelationMapper Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -31,6 +31,7 @@ final class EntityRelationsControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param RelationDecisionService $relationDecisions Constructor argument.
 	 * @param DecisionVisibility $decisionVisibility Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -48,16 +49,18 @@ final class EntityRelationsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		\OCA\OpenRegister\Service\Decision\RelationDecisionService $relationDecisions,
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\EntityRelationsMappers(
 					entityRelationMapper: $entityRelationMapper,
-					magicMapper: $magicMapper,
-					schemaMapper: $schemaMapper,
-					registerMapper: $registerMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+						registers: $registerMapper,
+						schemas: $schemaMapper,
+						tables: $magicMapper,
+					),
 				),
 				links: new \OCA\OpenRegister\Controller\Support\EntityRelationsLinks(
 					emailLinkMapper: $emailLinkMapper,
@@ -68,9 +71,12 @@ final class EntityRelationsControllerFactory {
 					decisionVisibility: $decisionVisibility,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\EntityRelationsPlatform(
-					userSession: $userSession,
+					session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+						userSession: $userSession,
+						groupManager: $groupManager,
+						logger: $logger,
+					),
 					rootFolder: $rootFolder,
-					logger: $logger,
 				),
 			),
 		];

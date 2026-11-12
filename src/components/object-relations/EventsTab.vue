@@ -89,14 +89,9 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink event')"
-					@click="unlinkEvent(event)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink event')"
+					@unlink="unlinkEvent(event)" />
 			</li>
 		</ul>
 	</div>
@@ -107,9 +102,9 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
 import CalendarRemove from 'vue-material-design-icons/CalendarRemove.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useEventRelationsStore } from '../../store/modules/object-relations/events.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -136,7 +131,7 @@ export default {
 		CalendarOutline,
 		CalendarPlus,
 		CalendarRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 		LinkVariant,
 	},
 
@@ -179,65 +174,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.events-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.events-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.events-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.events-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.events-tab__item:last-child {
-	border-bottom: none;
-}
-
-.events-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.events-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.events-tab__summary {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.events-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.events-tab__calendar {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('events-tab', 'summary', 'calendar');
 </style>

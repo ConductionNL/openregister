@@ -10,6 +10,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 
 /**
  * Coverage tests for VectorSearchHandler — targets uncovered branches in
@@ -62,11 +64,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn([]);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [0.1, 0.2, 0.3],
-			limit: 5,
-			filters: []
-		);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [0.1, 0.2, 0.3], limit: 5, filters: []));
 
 		$this->assertSame([], $results);
 	}
@@ -105,11 +103,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn($vectors);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [0.1, 0.2, 0.3],
-			limit: 5,
-			filters: []
-		);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [0.1, 0.2, 0.3], limit: 5, filters: []));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('object', $results[0]['entity_type']);
@@ -150,11 +144,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn($vectors);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [0.1, 0.2, 0.3],
-			limit: 5,
-			filters: []
-		);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [0.1, 0.2, 0.3], limit: 5, filters: []));
 
 		// Non-array embedding is skipped
 		$this->assertSame([], $results);
@@ -194,11 +184,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn($vectors);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [1.0, 0.0],
-			limit: 5,
-			filters: ['entity_type' => 'file']
-		);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5, filters: ['entity_type' => 'file']));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('file', $results[0]['entity_type']);
@@ -222,14 +208,10 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn([]);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [1.0],
-			limit: 5,
-			filters: [
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0], limit: 5, filters: [
 				'entity_type' => ['file', 'object'],
 				'entity_id' => ['1', '2'],
-			]
-		);
+			]));
 
 		$this->assertSame([], $results);
 	}
@@ -252,11 +234,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$result->method('fetchAll')->willReturn([]);
 
-		$results = $this->handler->semanticSearch(
-			queryEmbedding: [1.0],
-			limit: 5,
-			filters: ['entity_id' => '42']
-		);
+		$results = $this->handler->semanticSearch(new VectorQuery(embedding: [1.0], limit: 5, filters: ['entity_id' => '42']));
 
 		$this->assertSame([], $results);
 	}
@@ -295,12 +273,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 			],
 		];
 
-		$hybrid = $this->handler->hybridSearch(
-			queryEmbedding: [0.1, 0.2],
-			keywordResults: $solrResults,
-			limit: 10,
-			weights: ['keyword' => 0.7, 'vector' => 0.3]
-		);
+		$hybrid = $this->handler->hybridSearch(new VectorQuery(embedding: [0.1, 0.2], limit: 10), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.7, 'vector' => 0.3]));
 
 		$this->assertArrayHasKey('results', $hybrid);
 		$this->assertArrayHasKey('source_breakdown', $hybrid);
@@ -318,12 +291,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 			],
 		];
 
-		$hybrid = $this->handler->hybridSearch(
-			queryEmbedding: [0.1],
-			keywordResults: $solrResults,
-			limit: 5,
-			weights: ['keyword' => 1.0, 'vector' => 0.0]
-		);
+		$hybrid = $this->handler->hybridSearch(new VectorQuery(embedding: [0.1], limit: 5), new KeywordFusion(results: $solrResults, weights: ['keyword' => 1.0, 'vector' => 0.0]));
 
 		$this->assertSame(1, $hybrid['total']);
 		$this->assertSame(1, $hybrid['source_breakdown']['keyword_only']);
@@ -377,12 +345,7 @@ class VectorSearchHandlerCoverageTest extends TestCase {
 			],
 		];
 
-		$hybrid = $this->handler->hybridSearch(
-			queryEmbedding: [1.0, 0.0],
-			keywordResults: $solrResults,
-			limit: 10,
-			weights: ['keyword' => 0.5, 'vector' => 0.5]
-		);
+		$hybrid = $this->handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 10), new KeywordFusion(results: $solrResults, weights: ['keyword' => 0.5, 'vector' => 0.5]));
 
 		$this->assertGreaterThanOrEqual(2, $hybrid['total']);
 		$this->assertGreaterThanOrEqual(1, $hybrid['source_breakdown']['both']);

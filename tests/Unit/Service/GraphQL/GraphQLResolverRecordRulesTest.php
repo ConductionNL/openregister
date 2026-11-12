@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -28,6 +29,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -99,8 +103,8 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (Schema $schema, array $object): array {
-				$this->seen['update'] = $object;
+			function (PropertyWriteCheck $write): array {
+				$this->seen['update'] = $write->request->object;
 				return [];
 			}
 		);
@@ -112,16 +116,22 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 		);
 
 		return new GraphQLResolver(
-			$this->getObject,
-			$this->objectService,
-			$permissionHandler,
-			$rbac,
-			$this->createMock(RelationHandler::class),
-			$registerMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(AggregationRunner::class),
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$this->getObject,
+				$this->objectService,
+				$this->createMock(RelationHandler::class),
+				$registerMapper
+			),
+			new GraphQLResolverRights(
+				$permissionHandler,
+				$rbac
+			),
+			new GraphQLResolverShaping(
+				$this->createMock(TranslationHandler::class),
+				$this->createMock(AggregationRunner::class),
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()
 
@@ -178,7 +188,7 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 		$resolver = $this->resolver();
 		$this->getObject->method('find')->willReturn($this->record());
 
-		$resolver->resolveSingle(schema: $this->schema(), root: null, args: ['id' => 'obj-1']);
+		$resolver->resolveSingle(schema: $this->schema(), args: ['id' => 'obj-1']);
 
 		$this->assertSame('org-b', $this->seen['read']['@self']['organisation'] ?? null);
 	}//end testTheReadFilterReadsTheRecord()

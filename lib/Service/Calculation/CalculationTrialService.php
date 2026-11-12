@@ -27,8 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Try an expression before you save it.
@@ -41,8 +39,10 @@ use OCA\OpenRegister\Db\Schema;
  * A named object is resolved by the caller, CalculationsController, with RBAC and tenancy
  * on. This service never looks an object up itself, so it cannot be handed an id that
  * skips the caller's read check.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
-final class CalculationTrialService {
+final class CalculationTrialService implements CalculationTrialServiceInterface {
 
 	/**
 	 * The synthetic name a trial declaration is validated under.
@@ -92,21 +92,20 @@ final class CalculationTrialService {
 	 * tenancy on, so only an object the acting user may read arrives here.
 	 *
 	 * @param array<string, mixed> $declaration The `{type, expression}` declaration.
-	 * @param ObjectEntity $object The object, already resolved for the acting user.
-	 * @param Schema $schema The object's schema.
+	 * @param TrialObject $target The object and its schema, already resolved for the acting user.
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function tryObject(array $declaration, ObjectEntity $object, Schema $schema): array {
-		$properties = ($schema->getProperties() ?? []);
+	public function tryObject(array $declaration, TrialObject $target): array {
+		$properties = ($target->schema->getProperties() ?? []);
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($properties));
 		if ($errors !== []) {
 			return $this->failure(error: $errors[0], declaration: $declaration);
 		}
 
-		$payload = $this->payloadBuilder->build(object: $object, schema: $schema);
+		$payload = $this->payloadBuilder->build(object: $target->object, schema: $target->schema);
 
 		return $this->run(declaration: $declaration, payload: $payload);
 	}//end tryObject()
@@ -118,18 +117,17 @@ final class CalculationTrialService {
 	 * whether an object the caller may not read exists.
 	 *
 	 * @param array<string, mixed> $declaration The declaration under trial.
-	 * @param string $objectId The object id the caller named.
-	 * @param string $reason Why the lookup failed.
+	 * @param UnresolvedTrialObject $target The object id the caller named, and why the lookup failed.
 	 *
 	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function objectNotFound(array $declaration, string $objectId, string $reason): array {
+	public function objectNotFound(array $declaration, UnresolvedTrialObject $target): array {
 		return $this->failure(
 			error: [
 				'code' => 'calculation-trial-object-not-found',
-				'message' => sprintf('Could not resolve object "%s": %s', $objectId, $reason),
+				'message' => sprintf('Could not resolve object "%s": %s', $target->objectId, $target->reason),
 			],
 			declaration: $declaration
 		);
@@ -172,16 +170,9 @@ final class CalculationTrialService {
 		$expression = ($declaration['expression'] ?? null);
 
 		try {
-			$value = $this->evaluator->evaluate($payload, $expression);
+			$value = $this->valueOf(payload: $payload, expression: $expression);
 		} catch (EvaluationException $e) {
-			return $this->failure(
-				error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()],
-				declaration: $declaration
-			);
-		}
-
-		if ($value instanceof DateTimeInterface) {
-			$value = $value->format(DATE_ATOM);
+			return $this->failure(error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()], declaration: $declaration);
 		}
 
 		return [
@@ -190,6 +181,25 @@ final class CalculationTrialService {
 			'dependencies' => $this->evaluator->referencedProperties($expression),
 		];
 	}//end run()
+
+	/**
+	 * Evaluate the expression; a date comes back in ATOM form.
+	 *
+	 * @param array<string, mixed> $payload The payload to evaluate against.
+	 * @param mixed $expression The expression under trial.
+	 *
+	 * @return mixed The value.
+	 *
+	 * @throws EvaluationException When the expression fails.
+	 */
+	private function valueOf(array $payload, mixed $expression): mixed {
+		$value = $this->evaluator->evaluate($payload, $expression);
+		if ($value instanceof DateTimeInterface) {
+			$value = $value->format(DATE_ATOM);
+		}
+
+		return $value;
+	}//end valueOf()
 
 	/**
 	 * Shape a refusal, carrying the derived dependency list so the author

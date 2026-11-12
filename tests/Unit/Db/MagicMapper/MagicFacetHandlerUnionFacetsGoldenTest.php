@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -51,6 +52,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DateHistogramUnion
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetResults
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -137,13 +146,7 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 		$groupManager = $this->createMock(IGroupManager::class);
 
-		$rbac = new PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			new \Psr\Log\NullLogger(),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new \Psr\Log\NullLogger());
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($rbac);
 
@@ -184,6 +187,6 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
 }//end class

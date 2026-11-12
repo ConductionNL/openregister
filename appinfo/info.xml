@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261106140000</version>
+    <version>2.2.0-dev.0</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -420,6 +420,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
 			<!-- A schedule in an app's own manifest has no publisher: say so, it does not run. -->
 			<step>OCA\OpenRegister\Repair\ReportUnpublishedSchedules</step>
+			<!-- Encrypts webhook and consumer secrets stored in clear and hashes stored
+			     calendar feed tokens; idempotent. -->
+			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

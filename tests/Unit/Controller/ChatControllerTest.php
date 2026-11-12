@@ -57,7 +57,6 @@ class ChatControllerTest extends TestCase {
 		});
 
 		$this->controller = ChatControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->chatService,
 			$this->conversationMapper,

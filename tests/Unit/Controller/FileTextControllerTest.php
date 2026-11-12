@@ -22,6 +22,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use Psr\Log\LoggerInterface;
 
 class FileTextControllerTest extends TestCase {
@@ -421,7 +422,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						return count($entities) === 2
 						&& $entities[0]['text'] === 'John Doe'
 						&& $entities[0]['entityType'] === 'PERSON'
@@ -471,7 +473,12 @@ class FileTextControllerTest extends TestCase {
 		$anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
 		$this->fileService->expects($this->once())
 			->method('anonymizeDocument')
-			->with($fileNode, $this->anything(), $expected[0], $expected[1], $expected[2])
+			->with(
+				$fileNode,
+				$this->callback(
+					fn (DocumentAnonymization $anonymization): bool => [$anonymization->scope, $anonymization->fileKey, $anonymization->preserveStructure] === $expected
+				)
+			)
 			->willReturn($anonymizedFileNode);
 
 		$this->assertSame(200, $this->controller->anonymizeFile(10)->getStatus());
@@ -523,7 +530,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						// Should be deduplicated: 2 unique entities, not 3.
 						return count($entities) === 2;
 					}

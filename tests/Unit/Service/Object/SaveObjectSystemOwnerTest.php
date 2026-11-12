@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -82,28 +83,46 @@ class SaveObjectSystemOwnerTest extends TestCase {
 		$this->organisationService = $this->createMock(OrganisationService::class);
 
 		$this->handler = new SaveObject(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$this->organisationService,
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$this->createMock(PermissionHandler::class)
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}//end setUp()
 
@@ -233,7 +252,9 @@ class SaveObjectSystemOwnerTest extends TestCase {
 		$entity = new ObjectEntity();
 		$method = new ReflectionMethod(SaveObject::class, 'applyOwnerAttribution');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, false, 'portal:subject-1');
+		$flags        = new ObjectSaveFlags();
+		$flags->owner = 'portal:subject-1';
+		$method->invoke($this->handler, $entity, $flags);
 
 		$this->assertSame('portal:subject-1', $entity->getOwner());
 	}//end testAnExplicitOwnerWinsOverTheSession()

@@ -1,0 +1,103 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CalendarProviderTab saves a refused save 1`] = `
+{
+  "logged": [
+    "Failed to save calendar provider config:",
+  ],
+  "saving": false,
+  "seen": [
+    [
+      {
+        "configuration": {
+          "calendarProvider": {
+            "color": "#000",
+            "displayName": "Cal",
+            "enabled": true,
+          },
+        },
+        "id": 6,
+      },
+      true,
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`CalendarProviderTab saves a schema with a configuration 1`] = `
+{
+  "logged": [],
+  "saving": false,
+  "seen": [
+    [
+      {
+        "configuration": {
+          "calendarProvider": {
+            "color": "#000",
+            "displayName": "Cal",
+            "enabled": true,
+          },
+          "other": 1,
+        },
+        "id": 4,
+      },
+      true,
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`CalendarProviderTab saves a schema without one 1`] = `
+{
+  "logged": [],
+  "saving": false,
+  "seen": [
+    [
+      {
+        "configuration": {
+          "calendarProvider": {
+            "color": "#000",
+            "displayName": "Cal",
+            "enabled": true,
+          },
+        },
+        "id": 5,
+      },
+      true,
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`CalendarProviderTab starts from this configuration 1`] = `
+{
+  "keys": [
+    "enabled",
+    "displayName",
+    "color",
+    "dtstart",
+    "dtend",
+    "titleTemplate",
+    "descriptionTemplate",
+    "locationField",
+    "allDay",
+  ],
+  "state": {
+    "localConfig": {
+      "allDay": null,
+      "color": "#0082C9",
+      "descriptionTemplate": "",
+      "displayName": "",
+      "dtend": null,
+      "dtstart": null,
+      "enabled": false,
+      "locationField": null,
+      "titleTemplate": "",
+    },
+    "saving": false,
+  },
+}
+`;

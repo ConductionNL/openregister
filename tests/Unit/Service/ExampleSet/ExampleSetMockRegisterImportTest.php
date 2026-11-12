@@ -26,6 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -37,6 +40,7 @@ use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterImporters;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
@@ -92,6 +96,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */
@@ -144,18 +153,20 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 		$descriptors = new RegisterDescriptorService(
 			$appManager,
 			$registerMapper,
-			$configuration,
-			$this->createMock(LoggerInterface::class),
-			new CountedRegisterImport(
-				registerMapper: $registerMapper,
-				schemaMapper: $this->createMock(SchemaMapper::class),
+			new RegisterImporters(
+				$configuration,
+				new CountedRegisterImport(
+				catalog: new SchemaCatalog(registers: $registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 				decision: new ShippedAuthorizationDecision()
 			),
-			new AppRegisterImportRunner(
+				new AppRegisterImportRunner(
 				appManager: $appManager,
 				containers: $this->createMock(AppContainerLocator::class),
-				configurationService: $configuration
+				configurationService: $configuration,
+				documents: new RegisterDocumentLoader(appManager: $appManager)
 			)
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$jobs = $this->createMock(AppImportJobRecorder::class);

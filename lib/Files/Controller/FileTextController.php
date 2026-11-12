@@ -24,15 +24,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -73,9 +77,9 @@ class FileTextController extends Controller {
 	/**
 	 * File service for file operations
 	 *
-	 * @var FileService
+	 * @var FileServiceInterface
 	 */
-	private readonly FileService $fileService;
+	private readonly FileServiceInterface $fileService;
 
 	/**
 	 * Entity relation mapper
@@ -113,32 +117,23 @@ class FileTextController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * Root folder for per-user file access checks
+	 * Whether the caller can open a file.
 	 *
-	 * @var IRootFolder
+	 * @var CallerFileAccess
 	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * The object read rule for an object's file.
-	 *
-	 * @var ?\OCA\OpenRegister\Files\Service\File\FileReadScope
-	 */
-	private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope;
+	private readonly CallerFileAccess $fileAccess;
 
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request object
 	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FileTextControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->fileService = $services->domain->fileService;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
@@ -146,8 +141,11 @@ class FileTextController extends Controller {
 		$this->manualEntityService = $services->domain->manualEntityService;
 		$this->userSession = $services->session->userSession;
 		$this->session = $services->session;
-		$this->rootFolder = $services->platform->rootFolder;
-		$this->fileReadScope = $services->domain->fileReadScope;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $services->domain->fileReadScope,
+			userSession: $services->session->userSession,
+			rootFolder: $services->platform->rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -163,19 +161,7 @@ class FileTextController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**
@@ -236,23 +222,7 @@ class FileTextController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileTextController] Failed to get file text',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Failed to retrieve file text: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'Failed to get file text', message: 'Failed to retrieve file text', e: $e, fileId: $fileId);
 		}//end try
 	}//end getFileText()
 
@@ -260,8 +230,6 @@ class FileTextController extends Controller {
 	 * Bulk extract text from multiple files
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk extraction result
 	 *
@@ -293,22 +261,7 @@ class FileTextController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileTextController] Failed bulk extraction',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Bulk extraction failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'Failed bulk extraction', message: 'Bulk extraction failed', e: $e);
 		}//end try
 	}//end bulkExtract()
 
@@ -337,22 +290,7 @@ class FileTextController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileTextController] Failed to get stats',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Failed to retrieve statistics: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'Failed to get stats', message: 'Failed to retrieve statistics', e: $e);
 		}//end try
 	}//end getStats()
 
@@ -362,8 +300,6 @@ class FileTextController extends Controller {
 	 * @param int $fileId Nextcloud file ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
@@ -391,23 +327,7 @@ class FileTextController extends Controller {
 				statusCode: 501
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileTextController] Failed to delete file text',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Failed to delete file text: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'Failed to delete file text', message: 'Failed to delete file text', e: $e, fileId: $fileId);
 		}//end try
 	}//end deleteFileText()
 
@@ -426,8 +346,6 @@ class FileTextController extends Controller {
 	 * @param int $fileId Nextcloud file ID to anonymize
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with anonymization result
 	 *
@@ -471,10 +389,12 @@ class FileTextController extends Controller {
 			// mark them again (a second UPDATE would overwrite anonymized_value).
 			$anonymizedFile = $this->fileService->anonymizeDocument(
 				node: $fileNode,
-				entities: $entities,
-				scope: $this->requestedPlaceholderScope(),
-				fileKey: $this->requestedDossierKey(),
-				preserveStructure: $this->requestedPreserveStructure()
+				anonymization: new DocumentAnonymization(
+					entities: $entities,
+					scope: $this->requestedPlaceholderScope(),
+					fileKey: $this->requestedDossierKey(),
+					preserveStructure: $this->requestedPreserveStructure()
+				)
 			);
 
 			$residualEntities = $this->fileService->getLastResidualEntities();
@@ -499,6 +419,31 @@ class FileTextController extends Controller {
 			);
 		}//end try
 	}//end anonymizeFile()
+
+	/**
+	 * Log a failed file-text action and answer 500.
+	 *
+	 * @param string     $action  What failed, as the log names it.
+	 * @param string     $message What failed, as the response names it.
+	 * @param \Exception $e       The failure.
+	 * @param int|null   $fileId  The file, when the action had one.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function failed(string $action, string $message, \Exception $e, ?int $fileId=null): JSONResponse {
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		if ($fileId !== null) {
+			$context['file_id'] = $fileId;
+		}
+
+		$context['error'] = $e->getMessage();
+		$this->logger->error(message: '[FileTextController] '.$action, context: $context);
+
+		return new JSONResponse(
+			data: ['success' => false, 'message' => $message.': '.$e->getMessage()],
+			statusCode: 500
+		);
+	}//end failed()
 
 	/**
 	 * The response that refuses an anonymisation before it starts, if any.
@@ -553,6 +498,7 @@ class FileTextController extends Controller {
 			$entities[] = [
 				'text'       => $value,
 				'entityType' => $entity['entity_type'],
+				// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 				'key'        => substr(md5($value . $entity['entity_type']), 0, 8),
 			];
 		}
@@ -740,7 +686,6 @@ class FileTextController extends Controller {
 	 * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
@@ -781,14 +726,9 @@ class FileTextController extends Controller {
 		);
 
 		try {
-			$result = $this->manualEntityService->addManualEntity(
-				fileId: $fileId,
-				value: $input['value'],
-				type: $input['type'],
-				wholeWord: $input['wholeWord'],
-				caseSensitive: $input['caseSensitive'],
-				actor: $user
-			);
+			$manualEntity = (new ManualEntityRequest(fileId: $fileId, value: $input['value'], type: $input['type'], actor: $user))
+				->withMatching(wholeWord: $input['wholeWord'], caseSensitive: $input['caseSensitive']);
+			$result       = $this->manualEntityService->addManualEntity(request: $manualEntity);
 		} catch (ManualEntityException $e) {
 			return $this->mapManualEntityException(exception: $e, fileId: $fileId);
 		} catch (Throwable $e) {

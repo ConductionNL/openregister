@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 
 /**
  * The mappers and repositories of the entity relations API.
@@ -33,12 +33,12 @@ final class EntityRelationsLinks {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
+	 * @param EmailLinkMapperInterface $emailLinkMapper EmailLink loader (for email-bound authz indirection).
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
-		public readonly EmailLinkMapper $emailLinkMapper,
+		public readonly EmailLinkMapperInterface $emailLinkMapper,
 	) {
 	}//end __construct()
 }//end class

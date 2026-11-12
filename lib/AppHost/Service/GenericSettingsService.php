@@ -96,12 +96,46 @@ class GenericSettingsService extends AppHostSettingsService {
 	 */
 	public function loadConfiguration(bool $force = false): array {
 		if ($this->isOpenRegisterAvailable() === false) {
-			$this->logger->error(sprintf('[AppHost:%s] OpenRegister not available — register import refused (fail-closed)', $this->appId));
-			throw new FoundationUnavailableException(appId: $this->appId);
+			throw $this->foundationUnavailable();
 		}
 
+		$configurationService = $this->configurationService();
+
+		[$data, $version] = $this->resolveRegisterConfiguration();
+		if ($data === null) {
+			throw $this->registerJsonMissing();
+		}
+
+		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
+		if (empty($result) === true) {
+			// Version-gated no-op or empty import: explicit non-success, never
+			// dressed up as a successful import.
+			return $this->registerImportEmpty();
+		}
+
+		return $this->registerImportSucceeded(result: $result);
+	}//end loadConfiguration()
+
+	/**
+	 * Log, and build, the refusal for a missing OpenRegister.
+	 *
+	 * @return FoundationUnavailableException
+	 */
+	private function foundationUnavailable(): FoundationUnavailableException {
+		$this->logger->error(sprintf('[AppHost:%s] OpenRegister not available — register import refused (fail-closed)', $this->appId));
+		return new FoundationUnavailableException(appId: $this->appId);
+	}//end foundationUnavailable()
+
+	/**
+	 * Resolve the ConfigurationService, refusing (fail-closed) when it cannot be.
+	 *
+	 * @return object The ConfigurationService.
+	 *
+	 * @throws FoundationUnavailableException When the container cannot resolve it.
+	 */
+	private function configurationService(): object {
 		try {
-			$configurationService = $this->container->get(self::CONFIGURATION_SERVICE);
+			return $this->container->get(self::CONFIGURATION_SERVICE);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				sprintf('[AppHost:%s] ConfigurationService unresolvable — register import refused (fail-closed)', $this->appId),
@@ -113,35 +147,18 @@ class GenericSettingsService extends AppHostSettingsService {
 				previous: $e
 			);
 		}
+	}//end configurationService()
 
-		[$data, $version] = $this->resolveRegisterConfiguration();
-		if ($data === null) {
-			$this->logger->error(sprintf('[AppHost:%s] register JSON lib/Settings/%s_register.json missing or invalid', $this->appId, $this->appId));
-			throw new ConfigurationMissingException(
-				appId: $this->appId,
-				configKey: 'lib/Settings/' . $this->appId . '_register.json'
-			);
-		}
-
-		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
-		if (empty($result) === true) {
-			// Version-gated no-op or empty import: explicit non-success, never
-			// dressed up as a successful import.
-			return [
-				'success' => false,
-				'message' => 'Import returned an empty result.',
-			];
-		}
-
-		$this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
-		// Stamp the app version the config was imported for, so admin UIs can
-		// show a REAL up-to-date check (config_version === app version).
-		$this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
-
-		return [
-			'success' => true,
-			'message' => 'Configuration imported successfully.',
-			'version' => ($result['version'] ?? 'unknown'),
-		];
-	}//end loadConfiguration()
+	/**
+	 * Log, and build, the refusal for a missing or invalid register JSON.
+	 *
+	 * @return ConfigurationMissingException
+	 */
+	private function registerJsonMissing(): ConfigurationMissingException {
+		$this->logger->error(sprintf('[AppHost:%s] register JSON lib/Settings/%s_register.json missing or invalid', $this->appId, $this->appId));
+		return new ConfigurationMissingException(
+			appId: $this->appId,
+			configKey: 'lib/Settings/' . $this->appId . '_register.json'
+		);
+	}//end registerJsonMissing()
 }//end class

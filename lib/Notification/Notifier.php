@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Notification;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
@@ -114,7 +115,9 @@ class Notifier implements INotifier {
 			return null;
 		}
 
-		$rendered = $this->templates->render(event: $event, locale: $languageCode, variables: $notification->getSubjectParameters());
+		$rendered = $this->templates->renderFor(
+			rendering: new TemplateRendering(event: $event, locale: $languageCode, variables: $notification->getSubjectParameters())
+		);
 		if ($rendered === null || $rendered['subject'] === '') {
 			return null;
 		}

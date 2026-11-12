@@ -3,7 +3,9 @@
 /**
  * Tenant HMAC Key Service
  *
- * Manages per-tenant HMAC signing keys for the audit-trail hash-chain.
+ * Manages per-tenant HMAC keys, kept for audit-trail evidence signing.
+ * The audit-trail hash chain itself (AuditHashService) is not keyed with
+ * them: it is a plain SHA-256 chain.
  * Each tenant has exactly one active 256-bit key at a time. On first
  * access a fresh key is generated, encrypted at rest via ICrypto, and
  * persisted. Annual rotation is driven by admin action or cron; this
@@ -11,8 +13,8 @@
  *
  * Security design:
  * - Keys are NEVER exposed through any REST endpoint.
- * - Storage is encrypted via OCP\Security\ICrypto (AES-256-GCM + HMAC
- *   with the instance secret as the wrapping key).
+ * - Storage is encrypted via OCP\Security\ICrypto (AES-CBC with an
+ *   HMAC-SHA512, keyed off the instance secret).
  * - This service is an internal server-side API only; it is not wired
  *   into any HTTP controller.
  *
@@ -49,7 +51,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class TenantKeyService {
+class TenantKeyService implements TenantKeyRotationInterface {
 	/**
 	 * Table that stores encrypted tenant keys.
 	 *
@@ -117,7 +119,9 @@ class TenantKeyService {
 	 *
 	 * The old key is retained in the table (status = 'retired') so that
 	 * verifiers can still re-check evidence records signed under it.
-	 * A fresh key is inserted with status = 'active'.
+	 * A fresh key is inserted with status = 'active'. Both happen in one
+	 * transaction, so a failed insert never leaves the tenant without an
+	 * active key.
 	 *
 	 * Returns metadata ONLY — never the plaintext key material. Callers that
 	 * legitimately need the new active key after rotation must call
@@ -141,22 +145,18 @@ class TenantKeyService {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md#new-active-keys-must-be-stored-encrypted-with-status-active
 	 */
 	public function rotateTenantKey(string $tenantId): array {
-		$oldRow = $this->fetchActiveRow(tenantId: $tenantId);
-		$retiredKeyId = null;
-
-		if ($oldRow !== null) {
-			$retiredKeyId = (int)$oldRow['id'];
-			$this->retireRow(id: $retiredKeyId);
+		$rotatedAt = (new DateTime())->format('c');
+		$this->db->beginTransaction();
+		try {
+			$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
+			$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
 		}
 
-		$newKey = $this->generateKey();
-		$rotatedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, rawKey: $newKey, rotatedAt: $rotatedAt);
-
-		$this->logger->info(
-			'Rotated tenant HMAC key',
-			['tenant_id' => $tenantId, 'rotated_at' => $rotatedAt]
-		);
+		$this->logger->info('Rotated tenant HMAC key', ['tenant_id' => $tenantId, 'rotated_at' => $rotatedAt]);
 
 		return [
 			'tenant_id' => $tenantId,
@@ -164,6 +164,24 @@ class TenantKeyService {
 			'retired_key_id' => $retiredKeyId,
 		];
 	}//end rotateTenantKey()
+
+	/**
+	 * Retire the tenant's active key row, if there is one.
+	 *
+	 * @param string $tenantId Tenant identifier
+	 *
+	 * @return int|null The retired row id, or null when there was no active key.
+	 */
+	private function retireActiveKey(string $tenantId): ?int {
+		$oldRow = $this->fetchActiveRow(tenantId: $tenantId);
+		if ($oldRow === null) {
+			return null;
+		}
+
+		$retiredKeyId = (int)$oldRow['id'];
+		$this->retireRow(id: $retiredKeyId);
+		return $retiredKeyId;
+	}//end retireActiveKey()
 
 	/**
 	 * Whether a tenant has an active key, without creating one.
@@ -192,21 +210,22 @@ class TenantKeyService {
 
 		$qb->select('id', 'encrypted_key')
 			->from(self::TABLE)
-			->where(
-				$qb->expr()->eq(
-					'tenant_id',
-					$qb->createNamedParameter($tenantId, IQueryBuilder::PARAM_STR)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'status',
-					$qb->createNamedParameter('active', IQueryBuilder::PARAM_STR)
-				)
-			)
+			->where($qb->expr()->eq('tenant_id', $qb->createNamedParameter($tenantId, IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter('active', IQueryBuilder::PARAM_STR)))
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
+		return $this->firstRow(qb: $qb);
+	}//end fetchActiveRow()
+
+	/**
+	 * Run a select and return its first row, or null when it has none.
+	 *
+	 * @param IQueryBuilder $qb The prepared select.
+	 *
+	 * @return array<string,mixed>|null Database row or null
+	 */
+	private function firstRow(IQueryBuilder $qb): ?array {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -216,7 +235,7 @@ class TenantKeyService {
 		}
 
 		return $row;
-	}//end fetchActiveRow()
+	}//end firstRow()
 
 	/**
 	 * Generate a fresh key, persist it, and return the plaintext key.
@@ -226,9 +245,8 @@ class TenantKeyService {
 	 * @return string Raw plaintext key material
 	 */
 	private function bootstrapKey(string $tenantId): string {
-		$rawKey = $this->generateKey();
 		$issuedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, rawKey: $rawKey, rotatedAt: $issuedAt);
+		$rawKey = $this->insertKey(tenantId: $tenantId, createdAt: $issuedAt);
 
 		$this->logger->info(
 			'Bootstrapped new tenant HMAC key',
@@ -253,17 +271,17 @@ class TenantKeyService {
 	}//end generateKey()
 
 	/**
-	 * Encrypt and insert a new active key row.
+	 * Generate a fresh key, encrypt it and insert it as the new active key row.
 	 *
-	 * @param string $tenantId Tenant identifier
-	 * @param string $rawKey Plaintext key (64-char hex)
-	 * @param string $rotatedAt ISO-8601 timestamp
+	 * @param string $tenantId  Tenant identifier
+	 * @param string $createdAt ISO-8601 timestamp
 	 *
-	 * @return void
+	 * @return string The plaintext key (64-char hex)
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	private function insertKey(string $tenantId, string $rawKey, string $rotatedAt): void {
+	private function insertKey(string $tenantId, string $createdAt): string {
+		$rawKey = $this->generateKey();
 		$encrypted = $this->crypto->encrypt($rawKey);
 
 		$qb = $this->db->getQueryBuilder();
@@ -273,10 +291,12 @@ class TenantKeyService {
 					'tenant_id' => $qb->createNamedParameter($tenantId, IQueryBuilder::PARAM_STR),
 					'encrypted_key' => $qb->createNamedParameter($encrypted, IQueryBuilder::PARAM_STR),
 					'status' => $qb->createNamedParameter('active', IQueryBuilder::PARAM_STR),
-					'created_at' => $qb->createNamedParameter($rotatedAt, IQueryBuilder::PARAM_STR),
+					'created_at' => $qb->createNamedParameter($createdAt, IQueryBuilder::PARAM_STR),
 				]
 			)
 			->executeStatement();
+
+		return $rawKey;
 	}//end insertKey()
 
 	/**

@@ -23,13 +23,17 @@
 namespace OCA\OpenRegister\Service;
 
 use Generator;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCP\IDBConnection;
+use PDO;
 
 /**
  * Reads every row a whole-table delete is about to remove.
@@ -44,10 +48,20 @@ final class WholeTableRows {
 	private const CHUNK_SIZE = 500;
 
 	/**
+	 * How long the delete waits for a row another writer holds, on PostgreSQL.
+	 *
+	 * PostgreSQL waits without limit by default; MariaDB and MySQL give up after
+	 * innodb_lock_wait_timeout (50 s). Past it the delete fails and rolls back whole.
+	 */
+	public const LOCK_TIMEOUT = '50s';
+
+	/**
 	 * @param MagicMapperInterface $mapper Reads the magic table.
+	 * @param IDBConnection        $db     Holds the rows of the table.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $mapper,
+		private readonly IDBConnection $db,
 	) {
 	}//end __construct()
 
@@ -58,6 +72,9 @@ final class WholeTableRows {
 	 * event that refuses such a row on every other delete never fires there. A lock of
 	 * the caller's own refuses too: this door takes rows of every holder at once.
 	 *
+	 * Call it inside the transaction of the delete: the rows stay held until that
+	 * transaction ends, so what this check saw is what the delete removes.
+	 *
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
 	 *
@@ -66,8 +83,6 @@ final class WholeTableRows {
 	 * @throws ObjectStateWriteException When a row is frozen or archived.
 	 * @throws LockedException When a row is locked.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) forObject() is the exception's named constructor, as in SaveObject.
-	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
 	 */
 	public function assertNoneKept(Register $register, Schema $schema): void {
@@ -75,13 +90,45 @@ final class WholeTableRows {
 			return;
 		}
 
+		$this->holdRows(register: $register, schema: $schema);
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
 			(new FileWriteGuard())->assertWritable(object: $object);
 			if ($object->isLocked() === true) {
-				throw LockedException::forObject($object);
+				throw (new LockedException())->forObject($object);
 			}
 		}
 	}//end assertNoneKept()
+
+	/**
+	 * Take a row lock on every row of the table, until the transaction ends.
+	 *
+	 * A plain read holds nothing: a lock or freeze committed after it would be missed.
+	 * SQLite has no row locks and no FOR UPDATE, and it runs one writer at a time.
+	 * On PostgreSQL the wait for a held row is bounded for the rest of the transaction.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return void
+	 */
+	private function holdRows(Register $register, Schema $schema): void {
+		$provider = $this->db->getDatabaseProvider();
+		if ($provider === IDBConnection::PLATFORM_SQLITE) {
+			return;
+		}
+
+		if ($provider === IDBConnection::PLATFORM_POSTGRES) {
+			$this->db->executeStatement("SET LOCAL lock_timeout = '".self::LOCK_TIMEOUT."'");
+		}
+
+		$query = $this->db->getQueryBuilder();
+		$query->select('_uuid')
+			->from($this->mapper->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->where($query->expr()->eq('_register', $query->createNamedParameter($register->getId(), PDO::PARAM_INT)))
+			->andWhere($query->expr()->eq('_schema', $query->createNamedParameter($schema->getId(), PDO::PARAM_INT)));
+
+		$this->db->executeQuery($query->getSQL().' FOR UPDATE', $query->getParameters(), $query->getParameterTypes())->closeCursor();
+	}//end holdRows()
 
 	/**
 	 * How many rows of the table are frozen, archived or locked.
@@ -100,13 +147,24 @@ final class WholeTableRows {
 
 		$kept = 0;
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
-			if ($object->isArchived() === true || $object->isFrozen() === true || $object->isLocked() === true) {
+			if ($this->isKept(object: $object) === true) {
 				$kept++;
 			}
 		}
 
 		return $kept;
 	}//end countKept()
+
+	/**
+	 * Whether a whole-table delete must not take this row unasked: it is archived, frozen or locked.
+	 *
+	 * @param ObjectEntity $object The row.
+	 *
+	 * @return bool True when the row is kept.
+	 */
+	private function isKept(ObjectEntity $object): bool {
+		return $object->isArchived() === true || $object->isFrozen() === true || $object->isLocked() === true;
+	}//end isKept()
 
 	/**
 	 * Every row of one table, soft-deleted ones included, chunk by chunk.
@@ -126,11 +184,8 @@ final class WholeTableRows {
 		$offset = 0;
 		do {
 			$objects = $this->mapper->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $schema,
-				limit: self::CHUNK_SIZE,
-				offset: $offset,
-				filters: $filters
+				table: new RegisterSchema(register: $register, schema: $schema),
+				listing: new ListQuery(limit: self::CHUNK_SIZE, offset: $offset, filters: $filters)
 			);
 			$full = (count($objects) === self::CHUNK_SIZE);
 			yield from $objects;

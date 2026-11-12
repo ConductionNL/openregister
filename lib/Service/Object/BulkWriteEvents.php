@@ -113,25 +113,64 @@ final class BulkWriteEvents {
 		}
 
 		$entity = $this->entityFor(row: $row, run: $run);
-		$event  = new ObjectCreatingEvent(object: $entity);
-		$denial = 'Object creation rejected by hook';
-		if ($run->rowExisting !== null) {
-			$event  = new ObjectUpdatingEvent(newObject: $entity, oldObject: $run->rowExisting);
-			$denial = 'Object update rejected by hook';
-		}
+		$event  = self::guardEvent(entity: $entity, run: $run);
 
 		$this->events->dispatchTyped($event);
 		if ($event->isPropagationStopped() === true) {
-			return [$row, (string)($event->getErrors()['message'] ?? $denial)];
+			return [$row, (string)($event->getErrors()['message'] ?? self::denial(run: $run))];
 		}
 
 		$business = array_merge(($entity->getObject() ?? []), $event->getModifiedData());
+
+		return [self::withSelf(business: $business, row: $row), null];
+	}//end screen()
+
+	/**
+	 * The event a hook may stop: creating for a new row, updating for an existing one.
+	 *
+	 * @param ObjectEntity     $entity The row as an entity.
+	 * @param BulkSafeguardRun $run    The row being screened.
+	 *
+	 * @return ObjectCreatingEvent|ObjectUpdatingEvent
+	 */
+	private static function guardEvent(ObjectEntity $entity, BulkSafeguardRun $run): ObjectCreatingEvent|ObjectUpdatingEvent {
+		if ($run->rowExisting !== null) {
+			return new ObjectUpdatingEvent(newObject: $entity, oldObject: $run->rowExisting);
+		}
+
+		return new ObjectCreatingEvent(object: $entity);
+	}//end guardEvent()
+
+	/**
+	 * The refusal a stopped event gives when its hook names none.
+	 *
+	 * @param BulkSafeguardRun $run The row being screened.
+	 *
+	 * @return string
+	 */
+	private static function denial(BulkSafeguardRun $run): string {
+		if ($run->rowExisting !== null) {
+			return 'Object update rejected by hook';
+		}
+
+		return 'Object creation rejected by hook';
+	}//end denial()
+
+	/**
+	 * The screened business data, with the row's `@self` block carried over when it has one.
+	 *
+	 * @param array<string, mixed> $business The business data after the hooks.
+	 * @param array<string, mixed> $row      The row as given.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withSelf(array $business, array $row): array {
 		if (array_key_exists('@self', $row) === true) {
 			$business['@self'] = $row['@self'];
 		}
 
-		return [$business, null];
-	}//end screen()
+		return $business;
+	}//end withSelf()
 
 	/**
 	 * The object the event carries: the stored one with the row's data, or a new one.
@@ -152,6 +191,20 @@ final class BulkWriteEvents {
 		$entity->setObject($business);
 		$entity->setUuid((string)$run->rowUuid);
 		$entity->setSchema((string)$run->rowSchema?->getId());
+		self::stampRegisterAndOwner(entity: $entity, run: $run);
+
+		return $entity;
+	}//end entityFor()
+
+	/**
+	 * Set the row's register, and the acting user as owner of a new row.
+	 *
+	 * @param ObjectEntity     $entity The row as an entity.
+	 * @param BulkSafeguardRun $run    The row being screened.
+	 *
+	 * @return void
+	 */
+	private static function stampRegisterAndOwner(ObjectEntity $entity, BulkSafeguardRun $run): void {
 		if ($run->rowRegister !== null) {
 			$entity->setRegister((string)$run->rowRegister->getId());
 		}
@@ -159,9 +212,7 @@ final class BulkWriteEvents {
 		if ($run->rowExisting === null && $run->currentUser !== null) {
 			$entity->setOwner($run->userId());
 		}
-
-		return $entity;
-	}//end entityFor()
+	}//end stampRegisterAndOwner()
 
 	/**
 	 * The boolean a configuration block declares, or null when it declares none.

@@ -30,9 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 /**
  * Checks, writes, proves and deletes the follows of an example set.
@@ -40,10 +40,22 @@ use Throwable;
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-let-the-sets-own-accounts-follow-its-objects
  */
 class ExampleSetWatchers extends ExampleSetEngineRows {
+	use ExampleSetUserObjectRows;
+
 	/**
 	 * The follow fields a fragment may set.
 	 */
 	public const FIELDS = ['user', 'objectUuid', 'register', 'schema', 'notify'];
+
+	/**
+	 * The row in the unknown-field message.
+	 */
+	private const FIELD_WORD = 'watcher';
+
+	/**
+	 * The refusal for a row without its object.
+	 */
+	private const NEEDS_OBJECT = 'a watcher needs the object it follows (objectUuid)';
 
 	/**
 	 * Constructor.
@@ -90,18 +102,9 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-let-the-sets-own-accounts-follow-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a watcher field a set may write';
-		}
-
-		$user = (string) ($data['user'] ?? '');
-		if (in_array($user, $users, true) === false) {
-			return 'user "'.$user.'" is not an account the set creates or adopts';
-		}
-
-		if (is_string($data['objectUuid'] ?? null) === false || trim($data['objectUuid']) === '') {
-			return 'a watcher needs the object it follows (objectUuid)';
+		$refusal = $this->userObjectRefusal(data: $data, users: $users);
+		if ($refusal !== '') {
+			return $refusal;
 		}
 
 		if (isset($data['notify']) === true && is_bool($data['notify']) === false) {
@@ -114,38 +117,18 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	/**
 	 * Let the account follow the object.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: a follow names its user).
-	 * @param string               $key  The follow's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled follow fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{user: string, objectUuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-let-the-sets-own-accounts-follow-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
-		$register = null;
-		if (isset($data['register']) === true) {
-			$register = (string) $data['register'];
-		}
-
-		$schema = null;
-		if (isset($data['schema']) === true) {
-			$schema = (string) $data['schema'];
-		}
-
-		try {
-			$this->mapper()->subscribe(
-				userId: (string) $data['user'],
-				objectUuid: (string) $data['objectUuid'],
-				register: $register,
-				schema: $schema,
-				notify: ($data['notify'] ?? null)
-			);
-		} catch (Throwable $e) {
-			return ['error' => $e->getMessage(), 'entry' => null];
-		}
-
-		return ['error' => '', 'entry' => ['user' => (string) $data['user'], 'objectUuid' => (string) $data['objectUuid']]];
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
+		return $this->userObjectWrite(
+			write: fn () => $this->mapper()->subscribe(watcher: $this->follow(data: $data), notify: ($data['notify'] ?? null)),
+			data: $data
+		);
 	}//end write()
 
 	/**
@@ -158,11 +141,9 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-let-the-sets-own-accounts-follow-its-objects
 	 */
 	public function lost(array $entry): bool {
-		try {
-			return $this->mapper()->findOne(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid']) === null;
-		} catch (Throwable) {
-			return true;
-		}
+		return $this->userObjectLost(
+			find: fn () => $this->mapper()->findOne(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid'])
+		);
 	}//end lost()
 
 	/**
@@ -175,14 +156,26 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-takes-away-the-follows-a-set-wrote
 	 */
 	public function revert(array $entry): string {
-		try {
-			$this->mapper()->unsubscribe(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid']);
-		} catch (Throwable) {
-			return 'failed';
-		}
-
-		return 'removed';
+		return $this->userObjectRevert(
+			remove: fn () => $this->mapper()->unsubscribe(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid'])
+		);
 	}//end revert()
+
+	/**
+	 * The unsaved follow a fragment row asks for.
+	 *
+	 * @param array<string, mixed> $data The row's filled fields.
+	 *
+	 * @return Watcher The follow of the row's user on its object, with its register and schema.
+	 */
+	private function follow(array $data): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId((string) $data['user']);
+		$follow->setObjectUuid((string) $data['objectUuid']);
+		$follow->setRegister($this->textOrNull(value: ($data['register'] ?? null)));
+		$follow->setSchema($this->textOrNull(value: ($data['schema'] ?? null)));
+		return $follow;
+	}//end follow()
 
 	/**
 	 * The watcher mapper.

@@ -23,14 +23,21 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use GraphQL\Error\FormattedError;
+use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -62,6 +69,13 @@ class GraphQLResolverErrorsTest extends TestCase {
 	private $getObject;
 
 	/**
+	 * The permission double.
+	 *
+	 * @var PermissionHandler&MockObject
+	 */
+	private $permissions;
+
+	/**
 	 * Build the resolver over permissive doubles.
 	 *
 	 * @return GraphQLResolver The resolver.
@@ -69,6 +83,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 	private function resolver(): GraphQLResolver {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->getObject     = $this->createMock(GetObject::class);
+		$this->permissions   = $this->createMock(PermissionHandler::class);
 
 		$register = new Register();
 		$register->setId(1);
@@ -80,18 +95,39 @@ class GraphQLResolverErrorsTest extends TestCase {
 		$rbac->method('getUnauthorizedProperties')->willReturn([]);
 
 		return new GraphQLResolver(
-			$this->getObject,
-			$this->objectService,
-			$this->createMock(PermissionHandler::class),
-			$rbac,
-			$this->createMock(RelationHandler::class),
-			$registerMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(AggregationRunner::class),
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$this->getObject,
+				$this->objectService,
+				$this->createMock(RelationHandler::class),
+				$registerMapper
+			),
+			new GraphQLResolverRights(
+				$this->permissions,
+				$rbac
+			),
+			new GraphQLResolverShaping(
+				$this->createMock(TranslationHandler::class),
+				$this->createMock(AggregationRunner::class),
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()
+
+	/**
+	 * A caller without read on the schema gets no list: the search does not run.
+	 *
+	 * @return void
+	 */
+	public function testAListWithoutReadRightIsRefusedBeforeTheSearch(): void {
+		$resolver = $this->resolver();
+		$this->permissions->method('checkPermission')->willThrowException(new NotAuthorizedException('No read right.'));
+		$this->objectService->expects($this->never())->method('searchObjectsPaginated');
+
+		$error = $this->errorOf(fn () => $resolver->resolveList($this->schema(), []));
+
+		$this->assertSame('FORBIDDEN', $error->getExtensions()['code']);
+	}//end testAListWithoutReadRightIsRefusedBeforeTheSearch()
 
 	/**
 	 * A schema with a slug and, optionally, a title.
@@ -138,6 +174,73 @@ class GraphQLResolverErrorsTest extends TestCase {
 	}//end parts()
 
 	/**
+	 * A list query sorted on an encrypted property, as the resolver sends it.
+	 *
+	 * @return Error The error.
+	 */
+	private function encryptedSortError(): Error {
+		$resolver = $this->resolver();
+		$schema   = $this->schema();
+		$schema->setProperties(['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+			function (array $query) use ($schema): array {
+				(new EncryptedOrderRefusal(order: $query['_order']))->check(schemas: [$schema]);
+				return [];
+			}
+		);
+
+		return $this->errorOf(fn () => $resolver->resolveList($schema, ['sort' => ['field' => 'bsn', 'order' => 'desc']]));
+	}//end encryptedSortError()
+
+	/**
+	 * A sort on an encrypted property reaches the caller as a bad request naming it.
+	 *
+	 * @return void
+	 */
+	public function testAListSortedOnAnEncryptedPropertyIsABadRequest(): void {
+		$error = $this->encryptedSortError();
+
+		$this->assertSame(
+			[
+				'Property "bsn" is encrypted at rest and cannot be sorted on.',
+				['code' => 'BAD_REQUEST', 'reason' => 'encrypted-field-not-sortable', 'property' => 'bsn'],
+				null,
+			],
+			$this->parts(error: $error)
+		);
+	}//end testAListSortedOnAnEncryptedPropertyIsABadRequest()
+
+	/**
+	 * The formatted error keeps the message: a previous exception would hide it.
+	 *
+	 * @return void
+	 */
+	public function testTheRefusalSurvivesFormatting(): void {
+		$formatted = FormattedError::createFromException($this->encryptedSortError());
+
+		$this->assertSame('Property "bsn" is encrypted at rest and cannot be sorted on.', $formatted['message']);
+		$this->assertSame('BAD_REQUEST', $formatted['extensions']['code']);
+	}//end testTheRefusalSurvivesFormatting()
+
+	/**
+	 * A filter on an encrypted property is the same bad request.
+	 *
+	 * @return void
+	 */
+	public function testAListFilteredOnAnEncryptedPropertyIsABadRequest(): void {
+		$resolver = $this->resolver();
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willThrowException(new EncryptedFieldFilterException(property: 'bsn'));
+
+		$error = $this->errorOf(fn () => $resolver->resolveList($this->schema(), []));
+
+		$this->assertSame('encrypted-field-not-filterable', $error->getExtensions()['reason']);
+		$this->assertSame('bsn', $error->getExtensions()['property']);
+	}//end testAListFilteredOnAnEncryptedPropertyIsABadRequest()
+
+	/**
 	 * A missing single record names the schema title.
 	 *
 	 * @return void
@@ -145,7 +248,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 	public function testSingleNotFoundNamesTheTitle(): void {
 		$resolver = $this->resolver();
 		$this->getObject->method('find')->willThrowException(new DoesNotExistException('gone'));
-		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), null, ['id' => 'obj-1']));
+		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), ['id' => 'obj-1']));
 		$this->assertSame(["Zaak with ID 'obj-1' not found", ['code' => 'NOT_FOUND'], null], $this->parts($error));
 	}//end testSingleNotFoundNamesTheTitle()
 

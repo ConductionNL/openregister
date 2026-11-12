@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Search\Service\Geo;
  *
  * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
  */
-final class GeoResponseCrs {
+final class GeoResponseCrs implements GeoResponseCrsInterface {
 
 	/**
 	 * The requested CRS, uppercased; empty when the client asked for none.

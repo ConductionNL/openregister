@@ -18,7 +18,7 @@ final class EdepotSettingsControllerFactory {
 	/**
 	 * The constructor arguments of EdepotSettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IAppConfig $appConfig Constructor argument.
 	 * @param EdepotTransferService $transferService Constructor argument.
@@ -42,7 +42,6 @@ final class EdepotSettingsControllerFactory {
 		\OCA\OpenRegister\Service\Connection\ConnectionReporter $connectionReporter,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain(
@@ -51,10 +50,9 @@ final class EdepotSettingsControllerFactory {
 					restTransport: $restTransport,
 					ocTransport: $ocTransport,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\ConnectionReporting(
 					connectionReporter: $connectionReporter,
 					appConfig: $appConfig,
-					logger: $logger,
 				),
 			),
 		];

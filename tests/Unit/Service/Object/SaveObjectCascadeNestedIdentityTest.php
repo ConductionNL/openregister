@@ -22,10 +22,12 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * SaveObject::cascadeSingleObject resolves plain-slug, numeric and uuid `$ref`s that the
@@ -72,12 +74,12 @@ class SaveObjectCascadeNestedIdentityTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->saves[] = [$data, $uuid];
 				$created = new ObjectEntity();
 				$created->setUuid('33333333-3333-3333-3333-333333333333');
 				return $created;
-			}
+			})
 		);
 
 		$note = new Schema();
@@ -95,7 +97,7 @@ class SaveObjectCascadeNestedIdentityTest extends TestCase {
 		$parent->setUuid('p-1');
 		$parent->setRegister('10');
 
-		return $reflection->getMethod('cascadeSingleObject')->invoke($handler, $parent, $definition, $nested);
+		return $reflection->getMethod('cascadeSingleObject')->invoke($handler, new NestedObjectTarget(parent: $parent, definition: $definition), $nested);
 	}//end cascade()
 
 	public function testANestedIdUnderAnInverseRelationIsNotWrittenOnto(): void {

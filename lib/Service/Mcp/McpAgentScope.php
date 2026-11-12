@@ -26,13 +26,13 @@ namespace OCA\OpenRegister\Service\Mcp;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 
 /**
  * Binds an MCP session to an agent and holds every call on it to the agent's grant.
@@ -69,16 +69,16 @@ class McpAgentScope {
 	/**
 	 * Constructor
 	 *
-	 * @param AgentMapper $agentMapper Agent lookup
+	 * @param AgentMapperInterface $agentMapper Agent lookup
 	 * @param ToolGrantResolver $grantResolver Grant grammar (shared with the chat)
-	 * @param McpToolsService $toolsService The MCP tool catalogue
+	 * @param McpToolCatalogueInterface $toolsService The MCP tool catalogue
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly AgentMapper $agentMapper,
+		private readonly AgentMapperInterface $agentMapper,
 		private readonly ToolGrantResolver $grantResolver,
-		private readonly McpToolsService $toolsService,
+		private readonly McpToolCatalogueInterface $toolsService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -118,16 +118,15 @@ class McpAgentScope {
 	/**
 	 * The tools/list result, narrowed to the session agent's grant.
 	 *
-	 * @param string $sessionId The MCP session
-	 * @param string $userId The signed-in user
+	 * @param McpSessionCaller    $caller  The MCP session and the signed-in user
 	 * @param array{tools: array} $listing The full tools/list result
 	 *
 	 * @return array{tools: array} The listing the session may see
 	 *
 	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
-	public function filterListing(string $sessionId, string $userId, array $listing): array {
-		$agent = $this->sessionAgent(sessionId: $sessionId, userId: $userId);
+	public function filterListing(McpSessionCaller $caller, array $listing): array {
+		$agent = $this->sessionAgent(sessionId: $caller->sessionId, userId: $caller->userId);
 		if ($agent === null) {
 			return $listing;
 		}
@@ -146,10 +145,8 @@ class McpAgentScope {
 	/**
 	 * Refuse a tools/call the session agent's grant does not cover.
 	 *
-	 * @param string $sessionId The MCP session
-	 * @param string $userId The signed-in user
-	 * @param string $name The tool as the client named it (id or short name)
-	 * @param array<string, mixed> $arguments The call's arguments
+	 * @param McpSessionCaller $caller The MCP session and the signed-in user
+	 * @param ToolCall         $call   The tool as the client named it, and its arguments
 	 *
 	 * @return void
 	 *
@@ -157,49 +154,99 @@ class McpAgentScope {
 	 *
 	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
-	public function assertMayCall(string $sessionId, string $userId, string $name, array $arguments): void {
-		$agent = $this->sessionAgent(sessionId: $sessionId, userId: $userId);
+	public function assertMayCall(McpSessionCaller $caller, ToolCall $call): void {
+		$agent = $this->sessionAgent(sessionId: $caller->sessionId, userId: $caller->userId);
 		if ($agent === null) {
 			return;
 		}
 
-		$catalog = $this->toolsService->listTools()['tools'];
-		$toolId  = $name;
+		$catalog  = $this->toolsService->listTools()['tools'];
+		$resolved = new ToolCall(name: $this->toolIdOf(catalog: $catalog, name: $call->name), arguments: $call->arguments);
+		if (in_array($resolved->name, $this->grantedIds(agent: $agent, catalog: $catalog), true) === false) {
+			throw $this->notGranted(agent: $agent, toolId: $resolved->name);
+		}
+
+		$this->assertArguments(agent: $agent, call: $resolved);
+	}//end assertMayCall()
+
+	/**
+	 * The catalogue id of the tool a client named by id or short name.
+	 *
+	 * @param array<int, array<string, mixed>> $catalog The tools/list descriptors
+	 * @param string                           $name    The tool as the client named it
+	 *
+	 * @return string The catalogue id, or the name itself when no descriptor matches
+	 */
+	private function toolIdOf(array $catalog, string $name): string {
 		foreach ($catalog as $descriptor) {
 			if (($descriptor['id'] ?? null) === $name || ($descriptor['name'] ?? null) === $name) {
-				$toolId = (string) $descriptor['id'];
-				break;
+				return (string) $descriptor['id'];
 			}
 		}
 
-		if (in_array($toolId, $this->grantedIds(agent: $agent, catalog: $catalog), true) === false) {
-			$this->logger->info(
-				message: '[MCP] Tool call refused: not in the agent grant',
-				context: ['tool' => $toolId, 'agent' => $agent->getUuid()]
-			);
-			throw new InvalidArgumentException(
-				message: 'Tool ' . $toolId . ' is not in the grant of agent ' . (string) $agent->getName()
-			);
-		}
+		return $name;
+	}//end toolIdOf()
 
+	/**
+	 * Log and build the refusal of a tool outside the agent's grant.
+	 *
+	 * @param Agent  $agent  The session agent
+	 * @param string $toolId The catalogue id of the refused tool
+	 *
+	 * @return InvalidArgumentException The refusal to throw
+	 */
+	private function notGranted(Agent $agent, string $toolId): InvalidArgumentException {
+		$this->logger->info(
+			message: '[MCP] Tool call refused: not in the agent grant',
+			context: ['tool' => $toolId, 'agent' => $agent->getUuid()]
+		);
+
+		return new InvalidArgumentException(
+			message: 'Tool ' . $toolId . ' is not in the grant of agent ' . (string) $agent->getName()
+		);
+	}//end notGranted()
+
+	/**
+	 * Refuse a granted tool called with an argument its grant constraint excludes.
+	 *
+	 * @param Agent    $agent The session agent
+	 * @param ToolCall $call  The call, named by its catalogue id
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException Naming the tool and the constrained argument
+	 */
+	private function assertArguments(Agent $agent, ToolCall $call): void {
 		$constraints = $this->grantResolver->argumentConstraints(grants: (array) $agent->getTools());
 		$violation   = $this->grantResolver::violationFor(
-			constraintSets: ($constraints[$toolId] ?? []),
-			arguments: $arguments
+			constraintSets: ($constraints[$call->name] ?? []),
+			arguments: $call->arguments
 		);
-		if ($violation !== null) {
-			$relation = '= ';
-			if ($violation['mode'] === ToolGrantResolver::CONSTRAINT_MODE_SET) {
-				$relation = 'in ';
-			}
-
-			throw new InvalidArgumentException(
-				message: 'Tool ' . $toolId . ' is granted to agent ' . (string) $agent->getName()
-					. ' only with argument ' . $violation['argument'] . ' ' . $relation
-					. implode(', ', $violation['values'])
-			);
+		if ($violation === null) {
+			return;
 		}
-	}//end assertMayCall()
+
+		throw new InvalidArgumentException(
+			message: 'Tool ' . $call->name . ' is granted to agent ' . (string) $agent->getName()
+				. ' only with argument ' . $this->constraintText(violation: $violation)
+		);
+	}//end assertArguments()
+
+	/**
+	 * The constraint a violating argument missed, as the refusal names it.
+	 *
+	 * @param array{argument: string, mode: string, values: array<int, string>} $violation The violation
+	 *
+	 * @return string For example `register = zaken` or `register in zaken, hr`
+	 */
+	private function constraintText(array $violation): string {
+		$relation = '= ';
+		if ($violation['mode'] === ToolGrantResolver::CONSTRAINT_MODE_SET) {
+			$relation = 'in ';
+		}
+
+		return $violation['argument'] . ' ' . $relation . implode(', ', $violation['values']);
+	}//end constraintText()
 
 	/**
 	 * The agent a session is bound to, re-read so grant edits apply at once.

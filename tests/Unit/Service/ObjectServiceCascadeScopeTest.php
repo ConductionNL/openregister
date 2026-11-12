@@ -76,6 +76,10 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The pre-validation cascade runs inside a cascade scope that carries the save's RBAC mode.
@@ -96,7 +100,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
@@ -110,6 +114,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveAccessRequest
  */
 class ObjectServiceCascadeScopeTest extends TestCase {
 
@@ -172,19 +177,19 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (...$arguments): ObjectEntity {
 				$this->calls[] = 'save';
 				$this->savedData = $arguments[2];
 				$entity = new ObjectEntity();
 				$entity->setUuid('11111111-1111-1111-1111-111111111111');
 				return $entity;
-			}
+			})
 		);
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -223,7 +228,7 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**
@@ -241,8 +246,7 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 		$schema->setSlug('ticket');
 		$this->service->saveObject(
 			object: ['subject' => 'new', 'note' => ['text' => 'nested']],
-			register: $register,
-			schema: $schema,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -300,8 +304,7 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['subject' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
-			register: $register,
-			schema: $schema,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			_rbac: false,
 			_multitenancy: false
 		);

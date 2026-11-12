@@ -21,7 +21,7 @@ jest.mock('@nextcloud/l10n', () => ({
 	translate: (app, text) => `t:${text}`,
 	translatePlural: (app, one) => `n:${one}`,
 }))
-jest.mock('@nextcloud/auth', () => ({ getCurrentUser: () => ({ uid: 'me' }) }))
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: () => ({ uid: 'me' }), getRequestToken: () => 'test-request-token' }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('vue-material-design-icons/Cancel.vue', () => mockIcon('Cancel'))
 jest.mock('vue-material-design-icons/DeleteOutline.vue', () =>
@@ -295,10 +295,15 @@ beforeEach(() => {
 		doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'],
 	})
 	global.fetch = jest.fn()
+	const toLocaleString = Date.prototype.toLocaleString
+	jest.spyOn(Date.prototype, 'toLocaleString').mockImplementation(function(locale, options) {
+		return toLocaleString.call(this, locale, { ...options, timeZone: 'UTC' })
+	})
 })
 
 afterEach(() => {
 	jest.useRealTimers()
+	jest.restoreAllMocks()
 })
 
 describe.each(Object.keys(DIALOGS))('confirm dialog %s', (name) => {

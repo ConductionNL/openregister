@@ -21,6 +21,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\LinkedEntityIntegrations;
+use OCA\OpenRegister\Service\LinkedEntityMappers;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -174,7 +176,7 @@ class LinkedEntityServiceReverseLookupGoldenTest extends TestCase {
 			}
 		);
 
-		$service = new LinkedEntityService($magic, $schemaMapper, $registerMapper, $organisationMapper, $integrations, $logger, $this->createMock(PermissionHandler::class), $deepLinks);
+		$service = new LinkedEntityService(new LinkedEntityMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic), $organisationMapper), new LinkedEntityIntegrations($integrations, $this->createMock(PermissionHandler::class), $deepLinks), $logger);
 		$actual = ['results' => $service->reverseLookup(type: $case['type'], entityId: $case['id']), 'log' => $log];
 		$actual = json_decode((string)json_encode($actual, JSON_UNESCAPED_SLASHES), true);
 

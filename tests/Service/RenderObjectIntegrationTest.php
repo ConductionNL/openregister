@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for RenderObject handler
@@ -67,7 +68,7 @@ class RenderObjectIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}
@@ -175,7 +176,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);
@@ -191,7 +191,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$schema,
 			$data,
-			null,
 			null,
 			false,
 			false
@@ -1751,7 +1750,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$parentSchema,
 			['title' => 'phpunit-inv-parent-obj-' . uniqid()],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1762,7 +1760,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$childSchema,
 			['name' => 'Child Object', 'parent' => $parent->getUuid()],
-			null,
 			null,
 			false,
 			false

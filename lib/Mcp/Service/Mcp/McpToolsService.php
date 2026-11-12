@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
+use Generator;
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use Psr\Log\LoggerInterface;
@@ -47,7 +48,7 @@ use stdClass;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class McpToolsService {
+class McpToolsService implements McpToolCatalogueInterface {
 
 	/**
 	 * Registered tool providers.
@@ -97,38 +98,58 @@ class McpToolsService {
 	 */
 	public function listTools(): array {
 		$tools = [];
-
 		foreach ($this->providers as $provider) {
-			$appId = $provider->getAppId();
-
-			foreach ($provider->getTools() as $descriptor) {
-				$toolId = $descriptor['id'] ?? '';
-
-				// Namespace enforcement: drop descriptors with wrong prefix.
-				if (str_starts_with($toolId, $appId . '.') === false) {
-					$this->logger->warning(
-						message: '[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'providerClass' => get_class($provider),
-							'appId' => $appId,
-							'toolId' => $toolId,
-						]
-					);
-					continue;
-				}
-
-				$descriptor['inputSchema'] = $this->normaliseInputSchema(
-					inputSchema: ($descriptor['inputSchema'] ?? [])
-				);
-
-				$tools[] = $descriptor;
-			}//end foreach
-		}//end foreach
+			$tools = array_merge($tools, $this->providerTools(provider: $provider));
+		}
 
 		return ['tools' => $tools];
 	}//end listTools()
+
+	/**
+	 * The conforming tool descriptors of one provider, with their input schema normalised.
+	 *
+	 * Namespace enforcement: descriptors with the wrong prefix are dropped and logged.
+	 *
+	 * @param IMcpToolProvider $provider The provider.
+	 *
+	 * @return list<array<string, mixed>> The provider's descriptors whose id starts with its app id.
+	 */
+	private function providerTools(IMcpToolProvider $provider): array {
+		$appId = $provider->getAppId();
+		$tools = [];
+		foreach ($provider->getTools() as $descriptor) {
+			$toolId = $descriptor['id'] ?? '';
+			if (str_starts_with($toolId, $appId . '.') === false) {
+				$this->logDroppedTool(provider: $provider, toolId: $toolId);
+				continue;
+			}
+			$descriptor['inputSchema'] = $this->normaliseInputSchema(inputSchema: ($descriptor['inputSchema'] ?? []));
+			$tools[] = $descriptor;
+		}
+
+		return $tools;
+	}//end providerTools()
+
+	/**
+	 * Log a dropped descriptor whose id does not start with its provider's app id.
+	 *
+	 * @param IMcpToolProvider $provider The provider of the descriptor.
+	 * @param string           $toolId   The descriptor's id.
+	 *
+	 * @return void
+	 */
+	private function logDroppedTool(IMcpToolProvider $provider, string $toolId): void {
+		$this->logger->warning(
+			message: '[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'providerClass' => get_class($provider),
+				'appId' => $provider->getAppId(),
+				'toolId' => $toolId,
+			]
+		);
+	}//end logDroppedTool()
 
 	/**
 	 * Force `inputSchema.properties` to serialise as a JSON object.
@@ -154,19 +175,24 @@ class McpToolsService {
 			return ['type' => 'object', 'properties' => new stdClass()];
 		}
 
-		if (isset($inputSchema['type']) === false) {
-			$inputSchema['type'] = 'object';
-		}
-
-		if (array_key_exists('properties', $inputSchema) === false
-			|| $inputSchema['properties'] === []
-			|| $inputSchema['properties'] === null
-		) {
+		$inputSchema['type'] ??= 'object';
+		if ($this->hasProperties(inputSchema: $inputSchema) === false) {
 			$inputSchema['properties'] = new stdClass();
 		}
 
 		return $inputSchema;
 	}//end normaliseInputSchema()
+
+	/**
+	 * Whether an input schema has a properties map that is neither absent, null nor empty.
+	 *
+	 * @param array<string, mixed> $inputSchema The input schema.
+	 *
+	 * @return bool True when the schema's own properties can be kept.
+	 */
+	private function hasProperties(array $inputSchema): bool {
+		return ($inputSchema['properties'] ?? null) !== null && $inputSchema['properties'] !== [];
+	}//end hasProperties()
 
 	/**
 	 * Execute an MCP tool by its namespaced id or short name
@@ -189,56 +215,31 @@ class McpToolsService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
 	 */
 	public function callTool(string $name, array $arguments): array {
-		$this->logger->debug(
-			message: '[MCP] Tool call',
-			context: ['tool' => $name, 'arguments' => $arguments]
-		);
-
-		// Find a provider + descriptor that owns this tool id.
+		$this->logger->debug(message: '[MCP] Tool call', context: ['tool' => $name, 'arguments' => $arguments]);
 		$match = $this->findProviderForTool(toolId: $name);
-
 		if ($match === null) {
 			throw new InvalidArgumentException('Unknown tool: ' . $name);
 		}
 
-		// Forward the descriptor's namespaced id, not the raw client-supplied
-		// identifier — providers that multiplex on $toolId must see the
-		// canonical form even when the client addressed the tool by short name.
-		$providerToolId = (string)($match['descriptor']['id'] ?? $name);
+		$outcome = $this->invokeMatch(match: $match, arguments: $arguments);
+		if ($outcome['error'] !== null) {
+			$this->logger->error(message: '[MCP] Tool execution failed', context: ['tool' => $name, 'error' => $outcome['error']->getMessage()]);
+			return $this->textContent(text: json_encode(value: $outcome['result'])) + ['isError' => true];
+		}
 
-		try {
-			$result = $match['provider']->invokeTool(toolId: $providerToolId, arguments: $arguments);
-
-			return [
-				'content' => [
-					[
-						'type' => 'text',
-						'text' => json_encode(value: $result, flags: JSON_PRETTY_PRINT),
-					],
-				],
-				'isError' => false,
-			];
-		} catch (\Throwable $e) {
-			// Catch \Throwable, not \Exception: TypeError / ArgumentCountError
-			// and friends are \Error subclasses. If we only caught \Exception
-			// those would propagate to the framework as fatal 500s without
-			// the SSE / JSON envelope the caller is parsing.
-			$this->logger->error(
-				message: '[MCP] Tool execution failed',
-				context: ['tool' => $name, 'error' => $e->getMessage()]
-			);
-
-			return [
-				'content' => [
-					[
-						'type' => 'text',
-						'text' => json_encode(value: ['error' => $e->getMessage()]),
-					],
-				],
-				'isError' => true,
-			];
-		}//end try
+		return $this->textContent(text: json_encode(value: $outcome['result'], flags: JSON_PRETTY_PRINT)) + ['isError' => false];
 	}//end callTool()
+
+	/**
+	 * An MCP tool result whose content is one text item.
+	 *
+	 * @param string|false $text The text (false when the result could not be encoded).
+	 *
+	 * @return array{content: list<array{type: string, text: string|false}>}
+	 */
+	private function textContent(string|false $text): array {
+		return ['content' => [['type' => 'text', 'text' => $text]]];
+	}//end textContent()
 
 	/**
 	 * Invoke a tool by namespaced id or short name, returning a flat result array.
@@ -258,36 +259,43 @@ class McpToolsService {
 	 */
 	public function invokeTool(string $toolId, array $arguments): array {
 		$match = $this->findProviderForTool(toolId: $toolId);
-
 		if ($match === null) {
-			return [
-				'result' => ['error' => 'Unknown tool: ' . $toolId],
-				'isError' => true,
-			];
+			return ['result' => ['error' => 'Unknown tool: ' . $toolId], 'isError' => true];
 		}
 
-		$providerToolId = (string)($match['descriptor']['id'] ?? $toolId);
+		$outcome = $this->invokeMatch(match: $match, arguments: $arguments);
+		if ($outcome['error'] !== null) {
+			$this->logger->error(message: '[MCP] invokeTool failed', context: ['tool' => $toolId, 'error' => $outcome['error']->getMessage()]);
+		}
 
-		try {
-			$result = $match['provider']->invokeTool(toolId: $providerToolId, arguments: $arguments);
-			return [
-				'result' => $result,
-				'isError' => false,
-			];
-		} catch (\Throwable $e) {
-			// See callTool(): catching \Throwable (not \Exception) prevents
-			// \Error subclasses from escaping the MCP envelope.
-			$this->logger->error(
-				message: '[MCP] invokeTool failed',
-				context: ['tool' => $toolId, 'error' => $e->getMessage()]
-			);
-
-			return [
-				'result' => ['error' => $e->getMessage()],
-				'isError' => true,
-			];
-		}//end try
+		return ['result' => $outcome['result'], 'isError' => $outcome['error'] !== null];
 	}//end invokeTool()
+
+	/**
+	 * Invoke the matched tool on its provider, catching whatever it throws.
+	 *
+	 * Forwards the descriptor's namespaced id, not the raw client-supplied
+	 * identifier — providers that multiplex on $toolId must see the canonical
+	 * form even when the client addressed the tool by short name.
+	 *
+	 * Catches \Throwable, not \Exception: TypeError / ArgumentCountError and
+	 * friends are \Error subclasses. If only \Exception were caught those would
+	 * propagate to the framework as fatal 500s without the SSE / JSON envelope
+	 * the caller is parsing.
+	 *
+	 * @param array{provider: IMcpToolProvider, descriptor: array<string, mixed>, requested: string} $match     The match.
+	 * @param array<string, mixed>                                                                     $arguments Tool arguments.
+	 *
+	 * @return array{result: array<string, mixed>, error: \Throwable|null} The result, or the error and its message as result.
+	 */
+	private function invokeMatch(array $match, array $arguments): array {
+		$providerToolId = (string)($match['descriptor']['id'] ?? $match['requested']);
+		try {
+			return ['result' => $match['provider']->invokeTool(toolId: $providerToolId, arguments: $arguments), 'error' => null];
+		} catch (\Throwable $e) {
+			return ['result' => ['error' => $e->getMessage()], 'error' => $e];
+		}
+	}//end invokeMatch()
 
 	/**
 	 * Find the first provider + descriptor that owns the given tool id.
@@ -313,52 +321,62 @@ class McpToolsService {
 	 *
 	 * @param string $toolId Tool identifier as sent by the client.
 	 *
-	 * @return array{provider: IMcpToolProvider, descriptor: array<string, mixed>}|null
+	 * @return array{provider: IMcpToolProvider, descriptor: array<string, mixed>, byId: bool, requested: string}|null
 	 */
 	private function findProviderForTool(string $toolId): ?array {
-		$first = null;
-		$collisions = 0;
+		$matches = $this->matchesFor(toolId: $toolId);
+		if ($matches->valid() === false) {
+			return null;
+		}
 
-		foreach ($this->providers as $provider) {
-			foreach ($provider->getTools() as $descriptor) {
-				$matchesId = (($descriptor['id'] ?? '') === $toolId);
-				$matchesName = (($descriptor['name'] ?? '') === $toolId);
-
-				if ($matchesId === false && $matchesName === false) {
-					continue;
-				}
-
-				if ($first === null) {
-					$first = ['provider' => $provider, 'descriptor' => $descriptor];
-
-					// An exact id-match is the canonical form — no ambiguity
-					// is possible because listTools() already enforces the
-					// namespace prefix uniqueness. Stop scanning for collisions.
-					if ($matchesId === true) {
-						return $first;
-					}
-
-					continue;
-				}
-
-				// Short-name collision across providers — log once below.
-				++$collisions;
-			}//end foreach
-		}//end foreach
-
-		if ($collisions > 0 && $first !== null) {
-			$this->logger->warning(
-				message: '[MCP] Short-name tool collision — first provider wins; use namespaced id to disambiguate.',
-				context: [
-					'tool' => $toolId,
-					'winningAppId' => $first['provider']->getAppId(),
-					'collisionCount' => $collisions,
-				]
-			);
+		// An exact id-match is canonical (listTools() enforces the prefix); only a short name can collide.
+		$first = $matches->current();
+		if ($first['byId'] === false) {
+			$this->warnOnCollisions(first: $first, matches: $matches);
 		}
 
 		return $first;
 	}//end findProviderForTool()
+
+	/**
+	 * The descriptors whose id or short name is the tool id, in provider order, found lazily.
+	 *
+	 * @param string $toolId Tool identifier as sent by the client.
+	 *
+	 * @return Generator<int, array{provider: IMcpToolProvider, descriptor: array<string, mixed>, byId: bool, requested: string}>
+	 */
+	private function matchesFor(string $toolId): Generator {
+		foreach ($this->providers as $provider) {
+			foreach ($provider->getTools() as $descriptor) {
+				$byId = (($descriptor['id'] ?? '') === $toolId);
+				if ($byId === true || ($descriptor['name'] ?? '') === $toolId) {
+					yield ['provider' => $provider, 'descriptor' => $descriptor, 'byId' => $byId, 'requested' => $toolId];
+				}
+			}
+		}
+	}//end matchesFor()
+
+	/**
+	 * Count the matches after the first and log the short-name collision once when there are any.
+	 *
+	 * @param array{provider: IMcpToolProvider, requested: string} $first   The first match, which wins.
+	 * @param Generator                                            $matches The matches, positioned on the first.
+	 *
+	 * @return void
+	 */
+	private function warnOnCollisions(array $first, Generator $matches): void {
+		$collisions = 0;
+		for ($matches->next(); $matches->valid() === true; $matches->next()) {
+			++$collisions;
+		}
+
+		if ($collisions > 0) {
+			$this->logger->warning(
+				message: '[MCP] Short-name tool collision — first provider wins; use namespaced id to disambiguate.',
+				context: ['tool' => $first['requested'], 'winningAppId' => $first['provider']->getAppId(), 'collisionCount' => $collisions]
+			);
+		}
+	}//end warnOnCollisions()
 
 	/**
 	 * Add a provider to the list at runtime (e.g. from external apps).
@@ -378,21 +396,32 @@ class McpToolsService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-6
 	 */
 	public function addProvider(IMcpToolProvider $provider): void {
-		$appId = $provider->getAppId();
+		$existing = $this->providerWithAppId(appId: $provider->getAppId());
+		if ($existing === null) {
+			$this->providers[] = $provider;
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[McpToolsService] addProvider() skipped — provider with same appId already registered',
+			context: ['appId' => $existing->getAppId(), 'incomingClass' => get_class($provider), 'existingClass' => get_class($existing)]
+		);
+	}//end addProvider()
+
+	/**
+	 * The registered provider with the given app id, if any.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return IMcpToolProvider|null The first provider with that app id, or null.
+	 */
+	private function providerWithAppId(string $appId): ?IMcpToolProvider {
 		foreach ($this->providers as $existing) {
 			if ($existing->getAppId() === $appId) {
-				$this->logger->debug(
-					message: '[McpToolsService] addProvider() skipped — provider with same appId already registered',
-					context: [
-						'appId' => $appId,
-						'incomingClass' => get_class($provider),
-						'existingClass' => get_class($existing),
-					]
-				);
-				return;
+				return $existing;
 			}
 		}
 
-		$this->providers[] = $provider;
-	}//end addProvider()
+		return null;
+	}//end providerWithAppId()
 }//end class

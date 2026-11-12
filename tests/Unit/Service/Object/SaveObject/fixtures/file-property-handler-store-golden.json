@@ -1,0 +1,646 @@
+{
+    "store": {
+        "data uri": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_T_R.txt",
+                    "object": "obj-1",
+                    "content": "aGVsbG8=",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "data uri indexed": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_3_T_R.txt",
+                    "object": "obj-1",
+                    "content": "aGVsbG8=",
+                    "share": true,
+                    "tags": [
+                        "property:doc",
+                        "a",
+                        "b"
+                    ]
+                }
+            ]
+        },
+        "plain base64 png": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_T_R.png",
+                    "object": "obj-1",
+                    "content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "wrong type": {
+            "exception": "Exception",
+            "message": "File at doc has invalid type 'image/png'. Allowed types: text/plain",
+            "calls": []
+        },
+        "too big": {
+            "exception": "Exception",
+            "message": "File at doc[0] exceeds maximum size (10 bytes). File size: 12 bytes",
+            "calls": []
+        },
+        "editor mime refused": {
+            "exception": "Exception",
+            "message": "File at doc has invalid type 'text/plain'. Allowed types: image/png",
+            "calls": []
+        },
+        "exe mime": {
+            "exception": "Exception",
+            "message": "File at doc has executable MIME type 'application/x-msdownload'. Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable MIME type blocked",
+                    "context": {
+                        "app": "openregister",
+                        "mimeType": "application/x-msdownload"
+                    }
+                }
+            ]
+        },
+        "mz bytes": {
+            "exception": "Exception",
+            "message": "File at doc contains executable code (Windows executable (PE/EXE)). Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable magic bytes detected",
+                    "context": {
+                        "app": "openregister",
+                        "type": "Windows executable (PE/EXE)"
+                    }
+                }
+            ]
+        },
+        "elf bytes": {
+            "exception": "Exception",
+            "message": "File at doc contains executable code (Linux/Unix executable (ELF)). Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable magic bytes detected",
+                    "context": {
+                        "app": "openregister",
+                        "type": "Linux/Unix executable (ELF)"
+                    }
+                }
+            ]
+        },
+        "shebang": {
+            "exception": "Exception",
+            "message": "File at doc contains executable code (Shell script). Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable magic bytes detected",
+                    "context": {
+                        "app": "openregister",
+                        "type": "Shell script"
+                    }
+                }
+            ]
+        },
+        "php tag": {
+            "exception": "Exception",
+            "message": "File at doc contains PHP code. PHP files are blocked for security reasons.",
+            "calls": []
+        },
+        "executables allowed": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_T_R.bin",
+                    "object": "obj-1",
+                    "content": "TVqQ",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "invalid data uri": {
+            "exception": "Exception",
+            "message": "Invalid data URI format",
+            "calls": []
+        },
+        "invalid uri base64": {
+            "exception": "Exception",
+            "message": "Invalid base64 content in data URI",
+            "calls": []
+        },
+        "invalid base64": {
+            "exception": "Exception",
+            "message": "Invalid base64 content",
+            "calls": []
+        },
+        "unsupported": {
+            "exception": "Exception",
+            "message": "Unsupported file input type for property 'doc'",
+            "calls": []
+        },
+        "non file array": {
+            "exception": "Exception",
+            "message": "Unsupported file input type for property 'doc'",
+            "calls": []
+        },
+        "existing file": {
+            "result": 7,
+            "calls": [
+                {
+                    "getFile": 7
+                },
+                {
+                    "log": "debug",
+                    "message": "[FilePropertyHandler] Using existing file ID {fileId} for property {property}",
+                    "context": {
+                        "app": "openregister",
+                        "fileId": 7,
+                        "property": "doc"
+                    }
+                }
+            ]
+        },
+        "existing string id": {
+            "result": 8,
+            "calls": [
+                {
+                    "getFile": 8
+                },
+                {
+                    "log": "debug",
+                    "message": "[FilePropertyHandler] Using existing file ID {fileId} for property {property}",
+                    "context": {
+                        "app": "openregister",
+                        "fileId": "8",
+                        "property": "doc"
+                    }
+                }
+            ]
+        },
+        "missing no url": {
+            "exception": "Exception",
+            "message": "File object for property 'doc' has no downloadable URL",
+            "calls": [
+                {
+                    "getFile": 99
+                }
+            ]
+        },
+        "lookup fails no url": {
+            "exception": "Exception",
+            "message": "File object for property 'doc' has no downloadable URL",
+            "calls": [
+                {
+                    "getFile": 13
+                },
+                {
+                    "log": "debug",
+                    "message": "[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}",
+                    "context": {
+                        "app": "openregister",
+                        "fileId": 13,
+                        "error": "not accessible"
+                    }
+                }
+            ]
+        },
+        "non numeric no url": {
+            "exception": "Exception",
+            "message": "File object for property 'doc' has no downloadable URL",
+            "calls": []
+        },
+        "missing download url": {
+            "result": 502,
+            "calls": [
+                {
+                    "getFile": 99
+                },
+                {
+                    "addFile": "doc_T_R.pdf",
+                    "object": "obj-1",
+                    "content": "JVBERi0xLjQgYm9keQ==",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "lookup fails access": {
+            "result": 503,
+            "calls": [
+                {
+                    "getFile": 13
+                },
+                {
+                    "log": "debug",
+                    "message": "[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}",
+                    "context": {
+                        "app": "openregister",
+                        "fileId": 13,
+                        "error": "not accessible"
+                    }
+                },
+                {
+                    "addFile": "doc_T_R.txt",
+                    "object": "obj-1",
+                    "content": "cGxhaW4gYm9keQ==",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "url with extension": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_T_R.csv",
+                    "object": "obj-1",
+                    "content": "YSxi",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "url no extension": {
+            "result": 501,
+            "calls": [
+                {
+                    "addFile": "doc_T_R.png",
+                    "object": "obj-1",
+                    "content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                    "share": false,
+                    "tags": [
+                        "property:doc"
+                    ]
+                }
+            ]
+        },
+        "url loopback refused": {
+            "exception": "InvalidArgumentException",
+            "message": "URL resolves to a non-public address and cannot be fetched.",
+            "calls": []
+        },
+        "url mime refused": {
+            "exception": "Exception",
+            "message": "File at doc has invalid type 'image/png'. Allowed types: text/plain",
+            "calls": []
+        }
+    },
+    "validate": {
+        "no rules": {
+            "result": null,
+            "calls": []
+        },
+        "allowed type": {
+            "result": null,
+            "calls": []
+        },
+        "refused type": {
+            "exception": "Exception",
+            "message": "File at f[2] has invalid type 'text/plain'. Allowed types: image/png, image/gif",
+            "calls": []
+        },
+        "empty types": {
+            "result": null,
+            "calls": []
+        },
+        "within size": {
+            "result": null,
+            "calls": []
+        },
+        "over size": {
+            "exception": "Exception",
+            "message": "File at f exceeds maximum size (2 bytes). File size: 3 bytes",
+            "calls": []
+        },
+        "size zero": {
+            "result": null,
+            "calls": []
+        },
+        "editor megabytes": {
+            "exception": "Exception",
+            "message": "File at f[0] exceeds maximum size (2097152 bytes). File size: 3000000 bytes",
+            "calls": []
+        },
+        "exe refused": {
+            "exception": "Exception",
+            "message": "File at f has executable MIME type 'application/x-sh'. Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable MIME type blocked",
+                    "context": {
+                        "app": "openregister",
+                        "mimeType": "application/x-sh"
+                    }
+                }
+            ]
+        },
+        "exe allowed": {
+            "result": null,
+            "calls": []
+        },
+        "exe before type": {
+            "exception": "Exception",
+            "message": "File at f has executable MIME type 'application/x-sh'. Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable MIME type blocked",
+                    "context": {
+                        "app": "openregister",
+                        "mimeType": "application/x-sh"
+                    }
+                }
+            ]
+        },
+        "type before size": {
+            "exception": "Exception",
+            "message": "File at f has invalid type 'text/plain'. Allowed types: image/png",
+            "calls": []
+        }
+    },
+    "block": {
+        "safe": {
+            "result": null,
+            "calls": []
+        },
+        "exe name": {
+            "exception": "Exception",
+            "message": "P is an executable file (.exe). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable file upload blocked",
+                    "context": {
+                        "app": "openregister",
+                        "filename": "a.exe",
+                        "extension": "exe",
+                        "mimeType": "text/plain"
+                    }
+                }
+            ]
+        },
+        "upper PHP name": {
+            "exception": "Exception",
+            "message": "P is an executable file (.php). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable file upload blocked",
+                    "context": {
+                        "app": "openregister",
+                        "filename": "A.PHP",
+                        "extension": "php",
+                        "mimeType": "text/plain"
+                    }
+                }
+            ]
+        },
+        "no name exe mime": {
+            "exception": "Exception",
+            "message": "P has executable MIME type 'application/x-msdownload'. Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable MIME type blocked",
+                    "context": {
+                        "app": "openregister",
+                        "mimeType": "application/x-msdownload"
+                    }
+                }
+            ]
+        },
+        "jar mime": {
+            "exception": "Exception",
+            "message": "P has executable MIME type 'application/java-archive'. Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable MIME type blocked",
+                    "context": {
+                        "app": "openregister",
+                        "mimeType": "application/java-archive"
+                    }
+                }
+            ]
+        },
+        "php in png name": {
+            "exception": "Exception",
+            "message": "P contains PHP code. PHP files are blocked for security reasons.",
+            "calls": []
+        },
+        "php in txt name": {
+            "exception": "Exception",
+            "message": "P contains PHP code. PHP files are blocked for security reasons.",
+            "calls": []
+        },
+        "name before mime": {
+            "exception": "Exception",
+            "message": "P is an executable file (.sh). Executable files are blocked for security reasons. Allowed formats: documents, images, archives, data files.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable file upload blocked",
+                    "context": {
+                        "app": "openregister",
+                        "filename": "run.sh",
+                        "extension": "sh",
+                        "mimeType": "application/x-sh"
+                    }
+                }
+            ]
+        },
+        "bytes before mime": {
+            "exception": "Exception",
+            "message": "P contains executable code (Windows executable (PE/EXE)). Executable files are blocked for security reasons.",
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] Executable magic bytes detected",
+                    "context": {
+                        "app": "openregister",
+                        "type": "Windows executable (PE/EXE)"
+                    }
+                }
+            ]
+        },
+        "nothing": {
+            "result": null,
+            "calls": []
+        }
+    },
+    "uploads": {
+        "single": {
+            "result": {
+                "doc": "data:text/plain;base64,dXBsb2Fk",
+                "x": 1
+            },
+            "calls": []
+        },
+        "error skipped": {
+            "result": [],
+            "calls": [
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] File upload error for field {field}: {error}",
+                    "context": {
+                        "app": "openregister",
+                        "field": "doc",
+                        "error": 4,
+                        "filename": "a.txt"
+                    }
+                },
+                {
+                    "log": "warning",
+                    "message": "[FilePropertyHandler] File upload error for field {field}: {error}",
+                    "context": {
+                        "app": "openregister",
+                        "field": "b",
+                        "error": 3,
+                        "filename": "unknown"
+                    }
+                }
+            ]
+        },
+        "array names": {
+            "result": {
+                "img": [
+                    "kept",
+                    "data:text/plain;base64,dXBsb2Fk",
+                    "data:application/octet-stream;base64,dXBsb2Fk"
+                ],
+                "z[x]": "data:text/plain;base64,dXBsb2Fk"
+            },
+            "calls": []
+        },
+        "unreadable": {
+            "exception": "Exception",
+            "message": "Failed to read uploaded file for field 'doc'",
+            "calls": []
+        }
+    },
+    "parse": {
+        "data:application/pdf;base64,JVBERg==": {
+            "result": {
+                "content": "JVBERg==",
+                "mimeType": "application/pdf",
+                "extension": "pdf",
+                "size": 4
+            },
+            "calls": []
+        },
+        "data:foo/bar;base64,eA==": {
+            "result": {
+                "content": "eA==",
+                "mimeType": "foo/bar",
+                "extension": "bin",
+                "size": 1
+            },
+            "calls": []
+        },
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==": {
+            "result": {
+                "content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+                "mimeType": "image/png",
+                "extension": "png",
+                "size": 70
+            },
+            "calls": []
+        },
+        "data:text/plain,abc": {
+            "exception": "Exception",
+            "message": "Invalid data URI format",
+            "calls": []
+        },
+        "***": {
+            "exception": "Exception",
+            "message": "Invalid base64 content",
+            "calls": []
+        }
+    },
+    "mime": {
+        "image/jpeg": "jpg",
+        "image/jpg": "jpg",
+        "image/png": "png",
+        "image/gif": "gif",
+        "image/webp": "webp",
+        "image/svg+xml": "svg",
+        "image/bmp": "bmp",
+        "image/tiff": "tiff",
+        "image/x-icon": "ico",
+        "application/pdf": "pdf",
+        "application/msword": "doc",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+        "application/vnd.ms-excel": "xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+        "application/vnd.ms-powerpoint": "ppt",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "application/rtf": "rtf",
+        "application/vnd.oasis.opendocument.text": "odt",
+        "application/vnd.oasis.opendocument.spreadsheet": "ods",
+        "application/vnd.oasis.opendocument.presentation": "odp",
+        "text/plain": "txt",
+        "text/csv": "csv",
+        "text/html": "html",
+        "text/css": "css",
+        "text/javascript": "js",
+        "application/json": "json",
+        "application/xml": "xml",
+        "text/xml": "xml",
+        "application/zip": "zip",
+        "application/x-rar-compressed": "rar",
+        "application/x-7z-compressed": "7z",
+        "application/x-tar": "tar",
+        "application/gzip": "gz",
+        "audio/mpeg": "mp3",
+        "audio/wav": "wav",
+        "audio/ogg": "ogg",
+        "audio/aac": "aac",
+        "audio/flac": "flac",
+        "video/mp4": "mp4",
+        "video/mpeg": "mpeg",
+        "video/quicktime": "mov",
+        "video/x-msvideo": "avi",
+        "video/webm": "webm",
+        "application/x-unknown": "bin",
+        "": "bin",
+        "executable mime types": [
+            "application/x-executable",
+            "application/x-sharedlib",
+            "application/x-dosexec",
+            "application/x-msdownload",
+            "application/x-msdos-program",
+            "application/x-sh",
+            "application/x-shellscript",
+            "application/x-php",
+            "application/x-httpd-php",
+            "text/x-php",
+            "text/x-shellscript",
+            "text/x-script.python",
+            "application/x-python-code",
+            "application/java-archive"
+        ]
+    }
+}

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Controller\RevertController;
+use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -113,7 +115,7 @@ class ExplicitRevealReReviewTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['version' => '1.0.0']);
 
-		$response = (new RevertController('openregister', $request, $revert, $objects))->revert('dossiq', 'brpPerson', self::UUID);
+		$response = (new RevertController($request, new RevertControllerServices($revert, $objects)))->revert('dossiq', 'brpPerson', self::UUID);
 
 		$this->assertSame(['citizenServiceNumber' => '*****7609'], $response->getData());
 	}//end testTheRevertAnswerIsRendered()
@@ -139,7 +141,7 @@ class ExplicitRevealReReviewTest extends TestCase {
 		$properties->method('canReadProperty')->willReturn(true);
 		$reveal = new ExplicitReveal();
 		$reveal->grantFor(objectId: '42', reveal: 'citizenServiceNumber');
-		$masker = new ExplicitRevealMasker($reveal, $properties, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker($reveal, $properties, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 
 		[$byId] = $masker->maskObject(schema: $this->schema(), object: ['id' => '42', 'citizenServiceNumber' => self::BSN], objectIds: ['42']);
 		$this->assertSame('*****7609', $byId['citizenServiceNumber']);

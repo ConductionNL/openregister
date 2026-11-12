@@ -139,18 +139,37 @@ final class SeedReferenceIndex
 			return;
 		}
 
-		if (is_string($value) === false || str_starts_with($value, self::TOKEN_PREFIX) === false) {
-			return;
+		if ($this->isToken(value: $value) === true) {
+			$this->collectReference(reference: substr($value, strlen(self::TOKEN_PREFIX)));
 		}
+	}//end collect()
 
-		$reference = substr($value, strlen(self::TOKEN_PREFIX));
+	/**
+	 * Record one referenced slug: qualified when it names a schema, bare otherwise.
+	 *
+	 * @param string $reference The token without its prefix.
+	 *
+	 * @return void
+	 */
+	private function collectReference(string $reference): void {
 		if (str_contains($reference, ':') === true) {
 			$this->referencedSchemaKeys[$reference] = true;
 			return;
 		}
 
 		$this->referencedSlugs[$reference] = true;
-	}//end collect()
+	}//end collectReference()
+
+	/**
+	 * Whether a value is a `@ref:` token: a string that starts with the prefix.
+	 *
+	 * @param mixed $value A seed object's value.
+	 *
+	 * @return bool
+	 */
+	private function isToken(mixed $value): bool {
+		return is_string($value) === true && str_starts_with($value, self::TOKEN_PREFIX) === true;
+	}//end isToken()
 
 	/**
 	 * Whether no collected value references anything.
@@ -195,21 +214,30 @@ final class SeedReferenceIndex
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function record(array $self): void {
-		$objectSlug = $self['slug'];
-		$uuid = $self['id'];
-
 		$schemaSlugKey = self::schemaSlugKey(self: $self);
 		if ($schemaSlugKey !== null) {
-			$this->uuidBySchemaSlug[$schemaSlugKey] = $uuid;
+			$this->uuidBySchemaSlug[$schemaSlugKey] = $self['id'];
 		}
 
-		if (array_key_exists($objectSlug, $this->uuidBySlug) === true && $this->uuidBySlug[$objectSlug] !== $uuid) {
-			$this->ambiguousSlugs[$objectSlug] = true;
+		$this->recordSlug(slug: $self['slug'], uuid: $self['id']);
+	}//end record()
+
+	/**
+	 * Index a UUID by object slug; a slug that already maps to a different UUID becomes ambiguous.
+	 *
+	 * @param mixed $slug The object slug.
+	 * @param mixed $uuid The assigned UUID.
+	 *
+	 * @return void
+	 */
+	private function recordSlug(mixed $slug, mixed $uuid): void {
+		if (array_key_exists($slug, $this->uuidBySlug) === true && $this->uuidBySlug[$slug] !== $uuid) {
+			$this->ambiguousSlugs[$slug] = true;
 			return;
 		}
 
-		$this->uuidBySlug[$objectSlug] = $uuid;
-	}//end record()
+		$this->uuidBySlug[$slug] = $uuid;
+	}//end recordSlug()
 
 	/**
 	 * Replace the tokens in a seed object's values, leaving `@self` as it is.
@@ -253,7 +281,7 @@ final class SeedReferenceIndex
 			return $value;
 		}
 
-		if (is_string($value) === false || str_starts_with($value, self::TOKEN_PREFIX) === false) {
+		if ($this->isToken(value: $value) === false) {
 			return $value;
 		}
 
@@ -263,6 +291,9 @@ final class SeedReferenceIndex
 	/**
 	 * Resolve one token, or log why it stays as it is.
 	 *
+	 * A token with a non-empty schema part resolves by schema and slug; any
+	 * other resolves by its slug (the part after an empty schema, if any).
+	 *
 	 * @param string $token The `@ref:` token.
 	 *
 	 * @return mixed The UUID, or the token when it does not resolve.
@@ -271,20 +302,27 @@ final class SeedReferenceIndex
 	 */
 	private function resolve(string $token): mixed {
 		$reference = substr($token, strlen(self::TOKEN_PREFIX));
-		$schemaSlug = null;
-		$objectSlug = $reference;
-		if (str_contains($reference, ':') === true) {
-			[$schemaSlug, $objectSlug] = explode(':', $reference, 2);
-		}
-
-		if ($schemaSlug !== null && $schemaSlug !== '') {
-			return $this->uuidBySchemaSlug[$schemaSlug.':'.$objectSlug]
+		$parts = explode(':', $reference, 2);
+		if (count($parts) === 2 && $parts[0] !== '') {
+			return $this->uuidBySchemaSlug[$reference]
 				?? $this->unresolved(token: $token, reason: 'no imported object for that schema+slug.');
 		}
 
-		if (array_key_exists($objectSlug, $this->ambiguousSlugs) === true) {
+		return $this->resolveSlug(token: $token, slug: (string)array_pop($parts));
+	}//end resolve()
+
+	/**
+	 * Resolve a token by its bare slug, unless the slug is ambiguous.
+	 *
+	 * @param string $token The `@ref:` token.
+	 * @param string $slug  The object slug it names.
+	 *
+	 * @return mixed The UUID, or the token when it does not resolve.
+	 */
+	private function resolveSlug(string $token, string $slug): mixed {
+		if (array_key_exists($slug, $this->ambiguousSlugs) === true) {
 			$this->logger->warning(
-				message: '[ImportHandler] Ambiguous seed reference "'.$token.'"; slug exists in '
+				message: ImportLogTag::PREFIX.'Ambiguous seed reference "'.$token.'"; slug exists in '
 					.'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -292,9 +330,9 @@ final class SeedReferenceIndex
 			return $token;
 		}
 
-		return $this->uuidBySlug[$objectSlug]
+		return $this->uuidBySlug[$slug]
 			?? $this->unresolved(token: $token, reason: 'no imported object with that slug.');
-	}//end resolve()
+	}//end resolveSlug()
 
 	/**
 	 * Log an unresolved token and return it unchanged.
@@ -308,7 +346,7 @@ final class SeedReferenceIndex
 	 */
 	private function unresolved(string $token, string $reason): string {
 		$this->logger->warning(
-			message: '[ImportHandler] Unresolved seed reference "'.$token.'" — '.$reason,
+			message: ImportLogTag::PREFIX.'Unresolved seed reference "'.$token.'" — '.$reason,
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 

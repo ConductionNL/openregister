@@ -35,10 +35,8 @@ interface CloudEventFormatterInterface {
 	 * Creates a CloudEvent-compliant payload from event data.
 	 * This allows external systems to receive standardized event notifications.
 	 *
-	 * @param string $eventType Event type (e.g., 'object.created', 'object.updated')
-	 * @param array $payload Event payload data
-	 * @param string|null $source Event source (defaults to '/apps/openregister')
-	 * @param string|null $subject Event subject (optional)
+	 * @param CloudEventAttributes $attributes The event type, source (defaults to '/apps/openregister') and subject.
+	 * @param array                $payload    Event payload data
 	 *
 	 * @return (array|null|string)[] CloudEvent-formatted payload
 	 *
@@ -49,7 +47,7 @@ interface CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatAsCloudEvent(string $eventType, array $payload, ?string $source = null, ?string $subject = null): array;
+	public function formatAsCloudEvent(CloudEventAttributes $attributes, array $payload): array;
 
 	/**
 	 * Format a request as a CloudEvent
@@ -58,9 +56,8 @@ interface CloudEventFormatterInterface {
 	 * This is useful for pre-request webhook interception where the request
 	 * itself is the event data.
 	 *
-	 * @param IRequest $request The HTTP request
-	 * @param string $eventType The event type (e.g., 'object.creating', 'object.updating')
-	 * @param array $data Additional event data
+	 * @param IRequest $request   The HTTP request
+	 * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
 	 *
 	 * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
 	 *
@@ -73,5 +70,5 @@ interface CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatRequestAsCloudEvent(IRequest $request, string $eventType, array $data = []): array;
+	public function formatRequestAsCloudEvent(IRequest $request, string $eventType): array;
 }//end interface

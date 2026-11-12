@@ -18,7 +18,7 @@ final class FlowNodeRunControllerFactory {
 	/**
 	 * The constructor arguments of FlowNodeRunController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param FlowService $flows Constructor argument.
@@ -46,7 +46,6 @@ final class FlowNodeRunControllerFactory {
 		\OCA\OpenRegister\Service\Object\PermissionHandler $permissions,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\FlowNodeRunMappers(
@@ -63,7 +62,7 @@ final class FlowNodeRunControllerFactory {
 					objects: $objects,
 					permissions: $permissions,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FlowNodeRunPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\DsarCasePlatform(
 					userSession: $userSession,
 				),
 			),

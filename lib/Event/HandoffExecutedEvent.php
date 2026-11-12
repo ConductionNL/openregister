@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
+use OCA\OpenRegister\Service\Handoff\HandoffRequest;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -44,32 +45,14 @@ class HandoffExecutedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $sourceApp The app owning the emitting schema ('' when undeclared).
-	 * @param int $sourceRegister Register id of the source object.
-	 * @param int $sourceSchema Schema id of the source object.
-	 * @param string $sourceObjectUuid UUID of the source object.
-	 * @param string|null $subjectLabel Human-readable label of the source object.
-	 * @param string $targetSemanticType The canonical kind URI that was handed off to.
-	 * @param int $targetRegister Register id of the created target object.
-	 * @param int $targetSchema Schema id of the created target object.
-	 * @param string $targetObjectUuid UUID of the created target object.
-	 * @param string $handoffId The declared handoff entry id.
-	 * @param string $correlationId Correlation id minted for this execution.
-	 * @param bool $deferred True when this execution drained a parked queue entry.
+	 * @param HandoffExecutedSource $source  The owning app, the source object and its label.
+	 * @param HandoffExecutedTarget $target  The kind handed off to and the created target object.
+	 * @param HandoffRequest        $request The handoff id, correlation id and deferred flag.
 	 */
 	public function __construct(
-		private readonly string $sourceApp,
-		private readonly int $sourceRegister,
-		private readonly int $sourceSchema,
-		private readonly string $sourceObjectUuid,
-		private readonly ?string $subjectLabel,
-		private readonly string $targetSemanticType,
-		private readonly int $targetRegister,
-		private readonly int $targetSchema,
-		private readonly string $targetObjectUuid,
-		private readonly string $handoffId,
-		private readonly string $correlationId,
-		private readonly bool $deferred = false,
+		private readonly HandoffExecutedSource $source,
+		private readonly HandoffExecutedTarget $target,
+		private readonly HandoffRequest $request,
 	) {
 		parent::__construct();
 
@@ -84,7 +67,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getSourceApp(): string {
-		return $this->sourceApp;
+		return $this->source->app;
 	}//end getSourceApp()
 
 	/**
@@ -96,7 +79,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getSourceRegister(): int {
-		return $this->sourceRegister;
+		return (int)$this->source->object->register;
 	}//end getSourceRegister()
 
 	/**
@@ -108,7 +91,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getSourceSchema(): int {
-		return $this->sourceSchema;
+		return (int)$this->source->object->schema;
 	}//end getSourceSchema()
 
 	/**
@@ -120,7 +103,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getSourceObjectUuid(): string {
-		return $this->sourceObjectUuid;
+		return $this->source->object->id;
 	}//end getSourceObjectUuid()
 
 	/**
@@ -132,7 +115,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getSubjectLabel(): ?string {
-		return $this->subjectLabel;
+		return $this->source->label;
 	}//end getSubjectLabel()
 
 	/**
@@ -144,7 +127,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getTargetSemanticType(): string {
-		return $this->targetSemanticType;
+		return $this->target->semanticType;
 	}//end getTargetSemanticType()
 
 	/**
@@ -156,7 +139,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getTargetRegister(): int {
-		return $this->targetRegister;
+		return (int)$this->target->object->register;
 	}//end getTargetRegister()
 
 	/**
@@ -168,7 +151,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getTargetSchema(): int {
-		return $this->targetSchema;
+		return (int)$this->target->object->schema;
 	}//end getTargetSchema()
 
 	/**
@@ -180,7 +163,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getTargetObjectUuid(): string {
-		return $this->targetObjectUuid;
+		return $this->target->object->id;
 	}//end getTargetObjectUuid()
 
 	/**
@@ -192,7 +175,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getHandoffId(): string {
-		return $this->handoffId;
+		return $this->request->handoffId;
 	}//end getHandoffId()
 
 	/**
@@ -206,7 +189,7 @@ class HandoffExecutedEvent extends Event {
 	 *   (Requirement: ADR-041 event emission on handoff execution)
 	 */
 	public function getCorrelationId(): string {
-		return $this->correlationId;
+		return $this->request->correlationId;
 	}//end getCorrelationId()
 
 	/**
@@ -218,6 +201,6 @@ class HandoffExecutedEvent extends Event {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function isDeferred(): bool {
-		return $this->deferred;
+		return $this->request->deferred;
 	}//end isDeferred()
 }//end class

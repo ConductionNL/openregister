@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\SubjectExport\SubjectExportFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -204,21 +205,9 @@ class SubjectExport extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'subject', type: 'string');
-		$this->addType(fieldName: 'subjectType', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'requestedBy', type: 'string');
-		$this->addType(fieldName: 'requestId', type: 'string');
-		$this->addType(fieldName: 'objectCount', type: 'integer');
-		$this->addType(fieldName: 'contentHash', type: 'string');
-		$this->addType(fieldName: 'error', type: 'string');
-		$this->addType(fieldName: 'readyAt', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'deliveredAt', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (SubjectExportFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -254,24 +243,9 @@ class SubjectExport extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised export request.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'subject' => $this->subject,
-			'subjectType' => $this->subjectType,
-			'status' => $this->status,
-			'requestedBy' => $this->requestedBy,
-			'requestId' => $this->requestId,
-			'objectCount' => $this->objectCount,
-			'contentHash' => $this->contentHash,
-			'error' => $this->error,
-			'readyAt' => $this->readyAt?->format(DateTime::ATOM),
-			'expiresAt' => $this->expiresAt?->format(DateTime::ATOM),
-			'deliveredAt' => $this->deliveredAt?->format(DateTime::ATOM),
-			'downloadable' => $this->isDownloadableAt(),
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
 
+		return $typed->inserted(json: $json, entriesAfter: ['deliveredAt' => ['downloadable' => $this->isDownloadableAt()]]);
 	}//end jsonSerialize()
 }//end class

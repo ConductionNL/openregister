@@ -34,7 +34,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<FlowStream>
  */
-class FlowStreamMapper extends QBMapper {
+class FlowStreamMapper extends QBMapper implements FlowStreamMapperInterface {
 
 	use RunScopedRowsTrait;
 	use SelectByColumnTrait;

@@ -55,12 +55,7 @@ import {
 					<template v-if="type === 'register'">
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('publishRegister')
-								}
-							">
+							@click="openRegisterModal('publishRegister')">
 							<template #icon>
 								<CloudUploadOutline :size="20" />
 							</template>
@@ -68,12 +63,7 @@ import {
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('importRegister')
-								}
-							">
+							@click="openRegisterModal('importRegister')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
@@ -297,13 +287,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'exportRegister',
-												)
-											}
+											openSchemaModal(schema, 'exportRegister')
 										">
 										<template #icon>
 											<Export :size="20" />
@@ -313,13 +297,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'importRegister',
-												)
-											}
+											openSchemaModal(schema, 'importRegister')
 										">
 										<template #icon>
 											<Upload :size="20" />
@@ -357,18 +335,12 @@ import {
 										{{ t('openregister', 'Delete Objects') }}
 									</NcActionButton>
 									<NcActionButton
-										v-if="
-											(schema.stats?.objects?.deleted || 0) > 0
-										"
+										v-if="deletedCount(schema) > 0"
 										:title="
 											t(
 												'openregister',
 												'Permanently delete all {count} soft-deleted objects. This cannot be undone!',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										"
 										closeAfterClick
@@ -380,11 +352,7 @@ import {
 											t(
 												'openregister',
 												'Permanently Delete ({count})',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										}}
 									</NcActionButton>
@@ -513,6 +481,7 @@ import Table from 'vue-material-design-icons/Table.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 
 const JSON_HEADERS = {
 	'Content-Type': 'application/json',
@@ -544,6 +513,17 @@ function apiUrl(path) {
  */
 function errorText(error) {
 	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
+ * The placeholders of a "failed for {schema}: {error}" message.
+ *
+ * @param {object} schema The schema the request was for
+ * @param {Error} error The error
+ * @return {{schema: string, error: string}} The placeholders
+ */
+function schemaFailure(schema, error) {
+	return { schema: schema.title, error: errorText(error) }
 }
 
 /**
@@ -690,16 +670,7 @@ function conversionNotice(schema, configurationType) {
  */
 function hardDeletionPrompt(counts) {
 	if (counts.active > 0 && counts.deleted > 0) {
-		return t(
-			'openregister',
-			'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
-			{
-				active: counts.active,
-				deleted: counts.deleted,
-				total: counts.total,
-				schema: counts.schema,
-			},
-		)
+		return allObjectsDeletionPrompt(counts)
 	}
 	return t(
 		'openregister',
@@ -731,6 +702,61 @@ function softDeletionPrompt(counts) {
 		'Are you sure you want to soft-delete {count} active objects for schema "{schema}"?\n\nThey will be marked as deleted but can be permanently removed later.',
 		{ count: counts.active, schema: counts.schema },
 	)
+}
+
+/**
+ * Say a schema's objects are about to be deleted, permanently or softly.
+ *
+ * @param {object} schema The schema
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {void}
+ */
+function announceDeletionStart(schema, hardDelete) {
+	const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
+	showSuccess(
+		t('openregister', 'Starting {action} for {schema}...', {
+			action,
+			schema: schema.title,
+		}),
+	)
+}
+
+/**
+ * Why deleting a schema's objects failed.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function deletionFailureText(schema, error) {
+	return t(
+		'openregister',
+		'Failed to delete objects for {schema}: {error}',
+		schemaFailure(schema, error),
+	)
+}
+
+/**
+ * Ask the server to delete a schema's objects.
+ *
+ * @param {string} url The bulk delete URL
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {Promise<object>} The axios response
+ */
+function postDeletion(url, hardDelete) {
+	return axios.post(url, { hardDelete }, { headers: JSON_HEADERS })
+}
+
+/**
+ * Refresh the register list and the dashboard's registers together.
+ *
+ * @return {Promise<void>}
+ */
+async function refreshRegisterViews() {
+	await Promise.all([
+		registerStore.refreshRegisterList(),
+		dashboardStore.fetchRegisters(),
+	])
 }
 
 /**
@@ -935,6 +961,41 @@ export default {
 	methods: {
 		// Common methods
 		/**
+		 * Open a register modal for this card's register.
+		 *
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openRegisterModal(modal) {
+			registerStore.setRegisterItem(this.item)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * Open a register modal for one schema of this card's register.
+		 *
+		 * @param {object} schema The schema
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openSchemaModal(schema, modal) {
+			registerStore.setRegisterItem(this.item)
+			schemaStore.setSchemaItem(schema)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * The number of soft-deleted objects of a schema, 0 when unknown.
+		 *
+		 * @param {object} schema The schema
+		 * @return {number} The count
+		 * @spec exclude UI plumbing: reads the schema statistics
+		 */
+		deletedCount(schema) {
+			return schema.stats?.objects?.deleted || 0
+		},
+
+		/**
 		 * @spec exclude store/modal-dispatch UI handler opening edit, register/schema contract owned by register/schema capability
 		 */
 		openEdit() {
@@ -984,20 +1045,8 @@ export default {
 		 * @spec exclude API fetch + browser file-download UI plumbing; OAS contract owned by openapi-generation capability
 		 */
 		async downloadOas() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${this.item.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(this.item)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -1008,12 +1057,7 @@ export default {
 		 * @spec exclude window.open to external Redoc viewer, UI plumbing
 		 */
 		viewOasDoc() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(this.item.id)
 		},
 
 		/**
@@ -1063,7 +1107,7 @@ export default {
 					t(
 						'openregister',
 						'Failed to sync magic table for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
+						schemaFailure(schema, error),
 					),
 				)
 			}
@@ -1098,7 +1142,7 @@ export default {
 					t(
 						'openregister',
 						'Failed to update schema configuration for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
+						schemaFailure(schema, error),
 					),
 				)
 			}
@@ -1125,10 +1169,11 @@ export default {
 			} catch (error) {
 				console.error('Error validating schema objects:', error)
 				showError(
-					t('openregister', 'Failed to validate {schema}: {error}', {
-						schema: schema.title,
-						error: errorText(error),
-					}),
+					t(
+						'openregister',
+						'Failed to validate {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},
@@ -1190,12 +1235,7 @@ export default {
 		 * @spec exclude UI plumbing: confirmation text for a bulk delete
 		 */
 		deletionPrompt(schema, hardDelete) {
-			const counts = {
-				total: schema.stats?.objects?.total || 0,
-				active: this.getSchemaObjectCount(schema),
-				deleted: schema.stats?.objects?.deleted || 0,
-				schema: schema.title,
-			}
+			const counts = this.objectCounts(schema)
 			if (counts.total === 0) {
 				showError(
 					t('openregister', 'No objects to delete for schema {schema}', {
@@ -1210,6 +1250,22 @@ export default {
 		},
 
 		/**
+		 * How many objects a schema holds in this register: in total, active
+		 * and soft-deleted.
+		 *
+		 * @param {object} schema The schema
+		 * @return {{total: number, active: number, deleted: number, schema: string}} The counts
+		 */
+		objectCounts(schema) {
+			return {
+				total: schema.stats?.objects?.total || 0,
+				active: this.getSchemaObjectCount(schema),
+				deleted: this.deletedCount(schema),
+				schema: schema.title,
+			}
+		},
+
+		/**
 		 * Delete a schema's objects on the server and refresh the lists.
 		 *
 		 * @param {object} schema The schema
@@ -1219,32 +1275,13 @@ export default {
 		async runSchemaDeletion(schema, hardDelete) {
 			const url = apiUrl(`bulk/${this.item.id}/${schema.id}/delete-objects`)
 			try {
-				const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
-				showSuccess(
-					t('openregister', 'Starting {action} for {schema}...', {
-						action,
-						schema: schema.title,
-					}),
-				)
-				const response = await axios.post(
-					url,
-					{ hardDelete },
-					{ headers: JSON_HEADERS },
-				)
+				announceDeletionStart(schema, hardDelete)
+				const response = await postDeletion(url, hardDelete)
 				showSuccess(deletionResult(response.data, schema))
-				await Promise.all([
-					registerStore.refreshRegisterList(),
-					dashboardStore.fetchRegisters(),
-				])
+				await refreshRegisterViews()
 			} catch (error) {
 				console.error('Error deleting schema objects:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to delete objects for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
-					),
-				)
+				showError(deletionFailureText(schema, error))
 			}
 		},
 
@@ -1273,10 +1310,11 @@ export default {
 			} catch (error) {
 				console.error('Error removing schema:', error)
 				showError(
-					t('openregister', 'Failed to remove schema {schema}: {error}', {
-						schema: schema.title,
-						error: errorText(error),
-					}),
+					t(
+						'openregister',
+						'Failed to remove schema {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},
@@ -1310,6 +1348,26 @@ export default {
 			)
 		},
 	},
+}
+
+/**
+ * The warning before permanently deleting both the active and the
+ * soft-deleted objects of a schema.
+ *
+ * @param {{total: number, active: number, deleted: number, schema: string}} counts The counts
+ * @return {string} The warning
+ */
+function allObjectsDeletionPrompt(counts) {
+	return t(
+		'openregister',
+		'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
+		{
+			active: counts.active,
+			deleted: counts.deleted,
+			total: counts.total,
+			schema: counts.schema,
+		},
+	)
 }
 </script>
 

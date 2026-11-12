@@ -38,7 +38,9 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -56,6 +58,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowInnerRow
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
  */
 class RelatedRowPrefixedDatabaseTest extends TestCase {
 
@@ -123,12 +129,11 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 		$register->setId(1);
 
 		(new RelatedRowQueryApplier(
-			schemaMapper: $schemaMapper,
-			tableHandler: $tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $schemaMapper, tableHandler: $tableHandler),
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
-		))->apply(qb: $qb, query: $query, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+		))->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: $query);
 
 		return [$where, $parameters];
 	}

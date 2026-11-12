@@ -45,6 +45,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class SaveObjectLookupsGoldenTest extends TestCase {
 

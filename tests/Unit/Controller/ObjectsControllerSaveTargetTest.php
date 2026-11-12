@@ -49,6 +49,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -57,6 +58,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\SentWrite
  * @uses \OCA\OpenRegister\Controller\Support\VersionClaim
  * @uses \OCA\OpenRegister\Controller\Support\StringTypedPatch
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTarget
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectUpdate
+ * @uses \OCA\OpenRegister\Controller\Support\WriteCaller
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
@@ -67,6 +71,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerSaveTargetTest extends TestCase {
 
@@ -108,7 +119,8 @@ class ObjectsControllerSaveTargetTest extends TestCase {
 		// The caller's own read: whatever identifier names B in the caller's scope answers B.
 		$this->objectService->method('findSilent')->willReturn($this->visible);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saveTargets[] = ($args['uuid'] ?? $args[4] ?? null);
 				return $this->visible;
 			}

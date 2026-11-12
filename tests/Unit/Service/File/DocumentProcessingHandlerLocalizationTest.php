@@ -29,6 +29,8 @@ namespace Unit\Service\File;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
+use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\IRootFolder;
 use OCP\IL10N;
@@ -51,13 +53,17 @@ class DocumentProcessingHandlerLocalizationTest extends TestCase {
 	 */
 	private function makeHandler(?IL10N $l10n): DocumentProcessingHandler {
 		return new DocumentProcessingHandler(
-			rootFolder: $this->createMock(originalClassName: IRootFolder::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
-			sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
-			anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class),
-			l10n: $l10n
+			platform: new DocumentProcessingPlatform(
+				rootFolder: $this->createMock(originalClassName: IRootFolder::class),
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				l10n: $l10n
+			),
+			redaction: new DocumentRedactionServices(
+				entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
+				sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
+				anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class)
+			),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end makeHandler()

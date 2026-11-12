@@ -60,37 +60,20 @@ import {
 							"
 							@update:modelValue="updateDescription" />
 
-						<div class="selectField">
-							<label for="type-select">{{
-								t('openregister', 'Type')
-							}}</label>
-							<NcSelect
-								id="type-select"
-								v-model="selectedType"
-								inputLabel="Selected Type"
-								:options="typeOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select configuration type...')
-								"
-								@update:modelValue="updateType">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Configuration type (default, application, etc.)',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							id="type-select"
+							v-model="selectedType"
+							:title="t('openregister', 'Type')"
+							:hint="t('openregister', 'Configuration type (default, application, etc.)')"
+							inputLabel="Selected Type"
+							:options="typeOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select configuration type...')
+							"
+							@update:modelValue="updateType" />
 
 						<NcTextField
 							:label="t('openregister', 'App ID')"
@@ -123,134 +106,107 @@ import {
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label for="registers-select">{{
-								t('openregister', 'Registers')
-							}}</label>
-							<NcSelect
-								id="registers-select"
-								v-model="selectedRegisters"
-								inputLabel="Selected Registers"
-								:options="registerOptions"
-								:loading="loadingRegisters"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search registers...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchRegisters"
-								@update:modelValue="updateRegisters">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingRegisters">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No registers found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="registers-select"
+							v-model="selectedRegisters"
+							:title="t('openregister', 'Registers')"
+							inputLabel="Selected Registers"
+							:options="registerOptions"
+							:loading="loadingRegisters"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search registers...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchRegisters"
+							@update:modelValue="updateRegisters">
+							<template #noOptions>
+								<span v-if="loadingRegisters">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No registers found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedRegisters.length }} register(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="schemas-select">{{
-								t('openregister', 'Schemas')
-							}}</label>
-							<NcSelect
-								id="schemas-select"
-								v-model="selectedSchemas"
-								inputLabel="Selected Schemas"
-								:options="schemaOptions"
-								:loading="loadingSchemas"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search schemas...')"
-								:closeOnSelect="false"
-								@searchChange="searchSchemas"
-								@update:modelValue="updateSchemas">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingSchemas">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No schemas found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="schemas-select"
+							v-model="selectedSchemas"
+							:title="t('openregister', 'Schemas')"
+							inputLabel="Selected Schemas"
+							:options="schemaOptions"
+							:loading="loadingSchemas"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search schemas...')"
+							:closeOnSelect="false"
+							@searchChange="searchSchemas"
+							@update:modelValue="updateSchemas">
+							<template #noOptions>
+								<span v-if="loadingSchemas">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No schemas found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedSchemas.length }} schema(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="objects-select">{{
-								t('openregister', 'Objects')
-							}}</label>
-							<NcSelect
-								id="objects-select"
-								v-model="selectedObjects"
-								inputLabel="Selected Objects"
-								:options="objectOptions"
-								:loading="loadingObjects"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search objects...')"
-								:closeOnSelect="false"
-								:disabled="
-									selectedRegisters.length === 0
-									&& selectedSchemas.length === 0
-								"
-								@searchChange="searchObjects"
-								@update:modelValue="updateObjects">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingObjects">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span
-										v-else-if="
-											selectedRegisters.length === 0
-											&& selectedSchemas.length === 0
-										"
-										>{{
-											t(
-												'openregister',
-												'Please select registers or schemas first',
-											)
-										}}</span
-									>
-									<span v-else>{{
-										t('openregister', 'No objects found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="objects-select"
+							v-model="selectedObjects"
+							:title="t('openregister', 'Objects')"
+							inputLabel="Selected Objects"
+							:options="objectOptions"
+							:loading="loadingObjects"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search objects...')"
+							:closeOnSelect="false"
+							:disabled="
+								selectedRegisters.length === 0
+								&& selectedSchemas.length === 0
+							"
+							@searchChange="searchObjects"
+							@update:modelValue="updateObjects">
+							<template #noOptions>
+								<span v-if="loadingObjects">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span
+									v-else-if="
+										selectedRegisters.length === 0
+										&& selectedSchemas.length === 0
+									"
+									>{{
+										t(
+											'openregister',
+											'Please select registers or schemas first',
+										)
+									}}</span
+								>
+								<span v-else>{{
+									t('openregister', 'No objects found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedObjects.length }} object(s) selected
 								<span
 									v-if="
@@ -259,159 +215,123 @@ import {
 									">
 									- filtered by selected registers/schemas</span
 								>
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="sources-select">{{
-								t('openregister', 'Data Sources')
-							}}</label>
-							<NcSelect
-								id="sources-select"
-								v-model="selectedSources"
-								inputLabel="Selected Sources"
-								:options="sourceOptions"
-								:loading="loadingSources"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search data sources...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchSources"
-								@update:modelValue="updateSources">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingSources">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No sources found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="sources-select"
+							v-model="selectedSources"
+							:title="t('openregister', 'Data Sources')"
+							inputLabel="Selected Sources"
+							:options="sourceOptions"
+							:loading="loadingSources"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search data sources...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchSources"
+							@update:modelValue="updateSources">
+							<template #noOptions>
+								<span v-if="loadingSources">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No sources found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedSources.length }} source(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="agents-select">{{
-								t('openregister', 'Agents')
-							}}</label>
-							<NcSelect
-								id="agents-select"
-								v-model="selectedAgents"
-								inputLabel="Selected Agents"
-								:options="agentOptions"
-								:loading="loadingAgents"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search agents...')"
-								:closeOnSelect="false"
-								@searchChange="searchAgents"
-								@update:modelValue="updateAgents">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingAgents">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No agents found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="agents-select"
+							v-model="selectedAgents"
+							:title="t('openregister', 'Agents')"
+							inputLabel="Selected Agents"
+							:options="agentOptions"
+							:loading="loadingAgents"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search agents...')"
+							:closeOnSelect="false"
+							@searchChange="searchAgents"
+							@update:modelValue="updateAgents">
+							<template #noOptions>
+								<span v-if="loadingAgents">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No agents found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedAgents.length }} agent(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="views-select">{{
-								t('openregister', 'Views')
-							}}</label>
-							<NcSelect
-								id="views-select"
-								v-model="selectedViews"
-								inputLabel="Selected Views"
-								:options="viewOptions"
-								:loading="loadingViews"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search views...')"
-								:closeOnSelect="false"
-								@searchChange="searchViews"
-								@update:modelValue="updateViews">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingViews">Searching...</span>
-									<span v-else>No views found</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="views-select"
+							v-model="selectedViews"
+							:title="t('openregister', 'Views')"
+							inputLabel="Selected Views"
+							:options="viewOptions"
+							:loading="loadingViews"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search views...')"
+							:closeOnSelect="false"
+							@searchChange="searchViews"
+							@update:modelValue="updateViews">
+							<template #noOptions>
+								<span v-if="loadingViews">Searching...</span>
+								<span v-else>No views found</span>
+							</template>
+							<template #hint>
 								{{ selectedViews.length }} view(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="managed-applications-select"
-								>Applications</label
-							>
-							<NcSelect
-								id="managed-applications-select"
-								v-model="selectedManagedApplications"
-								inputLabel="Selected Managed Applications"
-								:options="applicationOptions"
-								:loading="loadingApplications"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search applications...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchApplications"
-								@update:modelValue="updateManagedApplications">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingApplications"
-										>Searching...</span
-									>
-									<span v-else>No applications found</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="managed-applications-select"
+							v-model="selectedManagedApplications"
+							title="Applications"
+							inputLabel="Selected Managed Applications"
+							:options="applicationOptions"
+							:loading="loadingApplications"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search applications...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchApplications"
+							@update:modelValue="updateManagedApplications">
+							<template #noOptions>
+								<span v-if="loadingApplications"
+									>Searching...</span
+								>
+								<span v-else>No applications found</span>
+							</template>
+							<template #hint>
 								{{ selectedManagedApplications.length }}
 								application(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 					</div>
 				</AppTab>
 
@@ -423,30 +343,23 @@ import {
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label for="source-type-select">Source Type *</label>
-							<NcSelect
-								id="source-type-select"
-								v-model="selectedSourceType"
-								inputLabel="Selected Source Type"
-								:options="sourceTypeOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select source type...')
-								"
-								@update:modelValue="updateSourceType">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="source-type-select"
+							v-model="selectedSourceType"
+							title="Source Type *"
+							inputLabel="Selected Source Type"
+							:options="sourceTypeOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select source type...')
+							"
+							@update:modelValue="updateSourceType">
+							<template #hint>
 								Determines where the configuration is managed
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
 						<NcTextField
 							v-if="
@@ -479,37 +392,32 @@ import {
 							</template>
 						</NcTextField>
 
-						<div class="selectField">
-							<label for="application-select">Owner Application</label>
-							<NcSelect
-								id="application-select"
-								v-model="selectedApplication"
-								inputLabel="Selected Application"
-								:options="applicationOptions"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:placeholder="
-									t(
-										'openregister',
-										'Select owner application (optional)...',
-									)
-								"
-								@update:modelValue="updateApplication">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p v-if="selectedApplication" class="field-hint">
-								Owner: {{ selectedApplication.name }}
-							</p>
-							<p v-else class="field-hint">
+						<FormSelectField
+							id="application-select"
+							v-model="selectedApplication"
+							title="Owner Application"
+							inputLabel="Selected Application"
+							:options="applicationOptions"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:placeholder="
+								t(
+									'openregister',
+									'Select owner application (optional)...',
+								)
+							"
+							@update:modelValue="updateApplication">
+							<template #hint>
+								<template v-if="selectedApplication">
+									Owner: {{ selectedApplication.name }}
+							</template>
+							<template v-else>
 								The application that owns this configuration
 								(optional)
-							</p>
-						</div>
+							</template>
+							</template>
+						</FormSelectField>
 
 						<NcTextField
 							label="Local Version"
@@ -542,111 +450,92 @@ import {
 							</template>
 						</NcTextField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="
-									configurationStore.configurationItem?.autoUpdate
-									|| false
-								"
-								@update:modelValue="updateAutoUpdate">
-								Enable Auto-Update
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								Automatically import updates when a new version is
-								detected
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="
+								configurationStore.configurationItem?.autoUpdate
+								|| false
+							"
+							hint="Automatically import updates when a new version is detected"
+							@update:modelValue="updateAutoUpdate">
+							Enable Auto-Update
+						</FormCheckboxField>
 
-						<div class="selectField">
-							<label for="notification-groups-select"
-								>Notification Groups</label
-							>
-							<NcSelect
-								id="notification-groups-select"
-								v-model="selectedNotificationGroups"
-								inputLabel="Selected Notification Groups"
-								:options="notificationGroupOptions"
-								:multiple="true"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select groups to notify...')
-								"
-								:closeOnSelect="false"
-								@update:modelValue="updateNotificationGroups">
-								<template #option="{ label }">
-									<span>{{ label }}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="notification-groups-select"
+							v-model="selectedNotificationGroups"
+							title="Notification Groups"
+							inputLabel="Selected Notification Groups"
+							:options="notificationGroupOptions"
+							:multiple="true"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select groups to notify...')
+							"
+							:closeOnSelect="false"
+							@update:modelValue="updateNotificationGroups">
+							<template #option="{ label }">
+								<span>{{ label }}</span>
+							</template>
+							<template #hint>
 								Groups that will receive notifications when updates
 								are available (admin is always included)
-							</p>
-						</div>
-
-						<NcNoteCard
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							type="info">
-							<p>GitHub Integration Settings</p>
-						</NcNoteCard>
-
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Repository"
-							placeholder="owner/repository"
-							:modelValue="
-								configurationStore.configurationItem?.githubRepo
-								|| ''
-							"
-							@update:modelValue="updateGithubRepo">
-							<template #helper-text-message>
-								<p>Repository in format: owner/repo</p>
 							</template>
-						</NcTextField>
+						</FormSelectField>
 
-						<NcTextField
+						<template
 							v-if="
 								selectedSourceType
 								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Branch"
-							placeholder="main"
-							:modelValue="
-								configurationStore.configurationItem?.githubBranch
-								|| 'main'
-							"
-							@update:modelValue="updateGithubBranch">
-							<template #helper-text-message>
-								<p>Branch to push/pull configurations</p>
-							</template>
-						</NcTextField>
+							">
+							<NcNoteCard
+								type="info">
+								<p>GitHub Integration Settings</p>
+							</NcNoteCard>
 
-						<NcTextField
-							v-if="
-								selectedSourceType
-								&& selectedSourceType.value === 'github'
-							"
-							label="GitHub Path"
-							placeholder="configs/configuration.json"
-							:modelValue="
-								configurationStore.configurationItem?.githubPath
-								|| ''
-							"
-							@update:modelValue="updateGithubPath">
-							<template #helper-text-message>
-								<p>
-									Path within the repository for the configuration
-									file
-								</p>
-							</template>
-						</NcTextField>
+							<NcTextField
+								label="GitHub Repository"
+								placeholder="owner/repository"
+								:modelValue="
+									configurationStore.configurationItem?.githubRepo
+									|| ''
+								"
+								@update:modelValue="updateGithubRepo">
+								<template #helper-text-message>
+									<p>Repository in format: owner/repo</p>
+								</template>
+							</NcTextField>
+
+							<NcTextField
+								label="GitHub Branch"
+								placeholder="main"
+								:modelValue="
+									configurationStore.configurationItem?.githubBranch
+									|| 'main'
+								"
+								@update:modelValue="updateGithubBranch">
+								<template #helper-text-message>
+									<p>Branch to push/pull configurations</p>
+								</template>
+							</NcTextField>
+
+							<NcTextField
+								label="GitHub Path"
+								placeholder="configs/configuration.json"
+								:modelValue="
+									configurationStore.configurationItem?.githubPath
+									|| ''
+								"
+								@update:modelValue="updateGithubPath">
+								<template #helper-text-message>
+									<p>
+										Path within the repository for the configuration
+										file
+									</p>
+								</template>
+							</NcTextField>
+						</template>
 					</div>
 				</AppTab>
 			</AppTabs>
@@ -676,11 +565,9 @@ import {
 <script>
 import {
 	NcButton,
-	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -689,10 +576,12 @@ import CloudSync from 'vue-material-design-icons/CloudSync.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
-import SelectOption from '../../components/shared/SelectOption.vue'
+import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
+import FormSelectField from '../../components/shared/FormSelectField.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { freshState } from '../../services/initialState.js'
+import { optionSearchMethods, searchUrl } from './optionSearch.js'
 
 /**
  * The entities a configuration links to: its key and API path, the selection
@@ -729,6 +618,19 @@ function isEmptyList(list) {
  */
 function newConfiguration() {
 	return {
+		...blankConfigurationContent(),
+		// Management tab defaults
+		...localManagementDefaults(),
+	}
+}
+
+/**
+ * What a blank configuration describes and holds: nothing yet, at 1.0.0.
+ *
+ * @return {object} The content fields
+ */
+function blankConfigurationContent() {
+	return {
 		title: '',
 		description: null,
 		type: 'default',
@@ -743,7 +645,16 @@ function newConfiguration() {
 		sources: [],
 		agents: [],
 		views: [],
-		// Management tab defaults
+	}
+}
+
+/**
+ * How a new configuration is managed: locally, without updates.
+ *
+ * @return {object} The management fields
+ */
+function localManagementDefaults() {
+	return {
 		sourceType: 'local',
 		isLocal: true, // New configurations are local by default
 		sourceUrl: null,
@@ -755,6 +666,20 @@ function newConfiguration() {
 		githubBranch: 'main',
 		githubPath: null,
 	}
+}
+
+/**
+ * Select options from rows of value, label and description.
+ *
+ * @param {Array<Array<string>>} rows The rows
+ * @return {Array<object>} The options
+ */
+function describedOptions(rows) {
+	return rows.map(([value, label, description]) => ({
+		value,
+		label,
+		description,
+	}))
 }
 
 /**
@@ -802,19 +727,95 @@ const INITIAL_STATE = {
 	applicationSearchDebounce: null,
 }
 
+/**
+ * The debounced option searches of the entity selects: the fields each one
+ * fills and the URL it asks. Objects are narrowed to the selected registers
+ * and schemas.
+ *
+ * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+ */
+const OPTION_SEARCHES = {
+	searchRegisters: {
+		timer: 'registerSearchDebounce',
+		loading: 'loadingRegisters',
+		options: 'registerOptions',
+		selected: 'selectedRegisters',
+		label: 'registers',
+		url: (query) => searchUrl('registers', query),
+	},
+	searchSchemas: {
+		timer: 'schemaSearchDebounce',
+		loading: 'loadingSchemas',
+		options: 'schemaOptions',
+		selected: 'selectedSchemas',
+		label: 'schemas',
+		url: (query) => searchUrl('schemas', query),
+	},
+	searchObjects: {
+		timer: 'objectSearchDebounce',
+		loading: 'loadingObjects',
+		options: 'objectOptions',
+		selected: 'selectedObjects',
+		label: 'objects',
+		url: (query, vm) => {
+			const params = new URLSearchParams()
+			params.append('_search', query)
+			params.append('_limit', '10')
+			vm.selectedRegisters.forEach((register) => {
+				params.append('_register[]', register.id)
+			})
+			vm.selectedSchemas.forEach((schema) => {
+				params.append('_schema[]', schema.id)
+			})
+			return `/index.php/apps/openregister/api/objects?${params.toString()}`
+		},
+	},
+	searchSources: {
+		timer: 'sourceSearchDebounce',
+		loading: 'loadingSources',
+		options: 'sourceOptions',
+		selected: 'selectedSources',
+		label: 'sources',
+		url: (query) => searchUrl('sources', query),
+	},
+	searchAgents: {
+		timer: 'agentSearchDebounce',
+		loading: 'loadingAgents',
+		options: 'agentOptions',
+		selected: 'selectedAgents',
+		label: 'agents',
+		url: (query) => searchUrl('agents', query),
+	},
+	searchViews: {
+		timer: 'viewSearchDebounce',
+		loading: 'loadingViews',
+		options: 'viewOptions',
+		selected: 'selectedViews',
+		label: 'views',
+		url: (query) => searchUrl('views', query),
+	},
+	searchApplications: {
+		timer: 'applicationSearchDebounce',
+		loading: 'loadingApplications',
+		options: 'applicationOptions',
+		selected: 'selectedManagedApplications',
+		label: 'applications',
+		url: (query) => searchUrl('applications', query),
+	},
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
 		NcDialog,
 		NcButton,
-		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
 		NcTextField,
 		NcTextArea,
 		AppTabs,
-		SelectOption,
+		FormCheckboxField,
+		FormSelectField,
 		AppTab,
 		// Icons
 		Cancel,
@@ -841,51 +842,23 @@ export default {
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		sourceTypeOptions() {
-			return [
-				{
-					value: 'local',
-					label: 'Local',
-					description: 'Manually managed configuration',
-				},
-				{
-					value: 'github',
-					label: 'GitHub',
-					description: 'Configuration from GitHub repository',
-				},
-				{
-					value: 'gitlab',
-					label: 'GitLab',
-					description: 'Configuration from GitLab repository',
-				},
-				{
-					value: 'url',
-					label: 'URL',
-					description: 'Configuration from any URL',
-				},
-			]
+			return describedOptions([
+				['local', 'Local', 'Manually managed configuration'],
+				['github', 'GitHub', 'Configuration from GitHub repository'],
+				['gitlab', 'GitLab', 'Configuration from GitLab repository'],
+				['url', 'URL', 'Configuration from any URL'],
+			])
 		},
 
 		/**
 		 * @spec exclude Computed static select-option list; UI presentation data.
 		 */
 		typeOptions() {
-			return [
-				{
-					value: 'default',
-					label: 'Default',
-					description: 'Standard configuration type',
-				},
-				{
-					value: 'application',
-					label: 'Application',
-					description: 'Application-specific configuration',
-				},
-				{
-					value: 'manual',
-					label: 'Manual',
-					description: 'Manually created configuration',
-				},
-			]
+			return describedOptions([
+				['default', 'Default', 'Standard configuration type'],
+				['application', 'Application', 'Application-specific configuration'],
+				['manual', 'Manual', 'Manually created configuration'],
+			])
 		},
 
 		/**
@@ -905,22 +878,10 @@ export default {
 	 * @spec exclude Vue created() lifecycle hook — hydrates store lists and seeds a blank configurationItem; modal init plumbing.
 	 */
 	async created() {
-		// Organisations and applications are now hot-loaded at app startup
-		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (isEmptyList(organisationStore.organisationList)) {
-			organisationStore.refreshOrganisationList()
-		}
-		if (isEmptyList(applicationStore.applicationList)) {
-			applicationStore.refreshApplicationList()
-		}
+		refreshEmptyOwnerLists()
 
 		// Perform initial searches for Configuration tab entities (load top 10)
-		this.searchRegisters('')
-		this.searchSchemas('')
-		this.searchSources('')
-		this.searchAgents('')
-		this.searchViews('')
-		this.searchApplications('')
+		this.searchAllEntities()
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
@@ -933,6 +894,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Search every Configuration tab entity with an empty query (the top 10).
+		 *
+		 * @return {void}
+		 */
+		searchAllEntities() {
+			this.searchRegisters('')
+			this.searchSchemas('')
+			this.searchSources('')
+			this.searchAgents('')
+			this.searchViews('')
+			this.searchApplications('')
+		},
+
 		/**
 		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -1213,13 +1188,7 @@ export default {
 		 * @return {void}
 		 */
 		resetSelections() {
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
+			this.clearSelections()
 			this.selectedType = this.typeOptions[0] // 'default'
 			// Management tab defaults
 			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
@@ -1263,14 +1232,27 @@ export default {
 					|| null
 			}
 			if (Array.isArray(item.notificationGroups)) {
-				this.selectedNotificationGroups = item.notificationGroups
-					.map((groupValue) =>
-						this.notificationGroupOptions.find(
-							(g) => g.value === groupValue,
-						),
-					)
-					.filter(Boolean)
+				this.selectedNotificationGroups = this.notificationGroupsOf(
+					item.notificationGroups,
+				)
 			}
+		},
+
+		/**
+		 * The notification group options of the stored group values, skipping
+		 * values that are no longer offered.
+		 *
+		 * @param {Array<string>} groupValues The stored group values
+		 * @return {Array<object>} The selected options
+		 */
+		notificationGroupsOf(groupValues) {
+			return groupValues
+				.map((groupValue) =>
+					this.notificationGroupOptions.find(
+						(g) => g.value === groupValue,
+					),
+				)
+				.filter(Boolean)
 		},
 
 		/**
@@ -1287,12 +1269,7 @@ export default {
 			}
 			this[link.loading] = true
 			try {
-				const promises = ids.map((id) =>
-					fetch(`/index.php/apps/openregister/api/${link.key}/${id}`).then(
-						(r) => r.json(),
-					),
-				)
-				this[link.target] = await Promise.all(promises)
+				this[link.target] = await fetchLinkedEntities(link.key, ids)
 			} catch (error) {
 				console.error(`Error loading selected ${link.key}:`, error)
 			} finally {
@@ -1301,233 +1278,7 @@ export default {
 		},
 
 		// Search methods with debouncing
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchRegisters(query) {
-			clearTimeout(this.registerSearchDebounce)
-			this.registerSearchDebounce = setTimeout(async () => {
-				this.loadingRegisters = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/registers?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.registerOptions = data.results || data || []
-					// Include already selected items
-					this.selectedRegisters.forEach((selected) => {
-						if (
-							!this.registerOptions.find((r) => r.id === selected.id)
-						) {
-							this.registerOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching registers:', error)
-					this.registerOptions = []
-				} finally {
-					this.loadingRegisters = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchSchemas(query) {
-			clearTimeout(this.schemaSearchDebounce)
-			this.schemaSearchDebounce = setTimeout(async () => {
-				this.loadingSchemas = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/schemas?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.schemaOptions = data.results || data || []
-					// Include already selected items
-					this.selectedSchemas.forEach((selected) => {
-						if (!this.schemaOptions.find((s) => s.id === selected.id)) {
-							this.schemaOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching schemas:', error)
-					this.schemaOptions = []
-				} finally {
-					this.loadingSchemas = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
-		 */
-		searchObjects(query) {
-			clearTimeout(this.objectSearchDebounce)
-			this.objectSearchDebounce = setTimeout(async () => {
-				this.loadingObjects = true
-				try {
-					// Build filter params based on selected registers and schemas
-					const params = new URLSearchParams()
-					params.append('_search', query)
-					params.append('_limit', '10')
-
-					// Filter by selected registers
-					if (this.selectedRegisters.length > 0) {
-						this.selectedRegisters.forEach((register) => {
-							params.append('_register[]', register.id)
-						})
-					}
-
-					// Filter by selected schemas
-					if (this.selectedSchemas.length > 0) {
-						this.selectedSchemas.forEach((schema) => {
-							params.append('_schema[]', schema.id)
-						})
-					}
-
-					const response = await fetch(
-						`/index.php/apps/openregister/api/objects?${params.toString()}`,
-					)
-					const data = await response.json()
-					this.objectOptions = data.results || data || []
-					// Include already selected items
-					this.selectedObjects.forEach((selected) => {
-						if (!this.objectOptions.find((o) => o.id === selected.id)) {
-							this.objectOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching objects:', error)
-					this.objectOptions = []
-				} finally {
-					this.loadingObjects = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchSources(query) {
-			clearTimeout(this.sourceSearchDebounce)
-			this.sourceSearchDebounce = setTimeout(async () => {
-				this.loadingSources = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/sources?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.sourceOptions = data.results || data || []
-					// Include already selected items
-					this.selectedSources.forEach((selected) => {
-						if (!this.sourceOptions.find((s) => s.id === selected.id)) {
-							this.sourceOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching sources:', error)
-					this.sourceOptions = []
-				} finally {
-					this.loadingSources = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchAgents(query) {
-			clearTimeout(this.agentSearchDebounce)
-			this.agentSearchDebounce = setTimeout(async () => {
-				this.loadingAgents = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/agents?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.agentOptions = data.results || data || []
-					// Include already selected items
-					this.selectedAgents.forEach((selected) => {
-						if (!this.agentOptions.find((a) => a.id === selected.id)) {
-							this.agentOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching agents:', error)
-					this.agentOptions = []
-				} finally {
-					this.loadingAgents = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchViews(query) {
-			clearTimeout(this.viewSearchDebounce)
-			this.viewSearchDebounce = setTimeout(async () => {
-				this.loadingViews = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/views?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.viewOptions = data.results || data || []
-					// Include already selected items
-					this.selectedViews.forEach((selected) => {
-						if (!this.viewOptions.find((v) => v.id === selected.id)) {
-							this.viewOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching views:', error)
-					this.viewOptions = []
-				} finally {
-					this.loadingViews = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchApplications(query) {
-			clearTimeout(this.applicationSearchDebounce)
-			this.applicationSearchDebounce = setTimeout(async () => {
-				this.loadingApplications = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/applications?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.applicationOptions = data.results || data || []
-					// Include already selected items
-					this.selectedManagedApplications.forEach((selected) => {
-						if (
-							!this.applicationOptions.find(
-								(a) => a.id === selected.id,
-							)
-						) {
-							this.applicationOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching applications:', error)
-					this.applicationOptions = []
-				} finally {
-					this.loadingApplications = false
-				}
-			}, 300)
-		},
+		...optionSearchMethods(OPTION_SEARCHES),
 
 		/**
 		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
@@ -1543,6 +1294,16 @@ export default {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
+			this.clearSelections()
+		},
+
+		/**
+		 * Empty the settings selections both a close and a reset clear.
+		 *
+		 * @spec exclude Resets local select-model refs; modal plumbing.
+		 * @return {void}
+		 */
+		clearSelections() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
@@ -1571,6 +1332,38 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * Refresh the organisation and application lists when they are empty.
+ * They are hot-loaded at app startup, so this should not happen in the
+ * normal flow.
+ *
+ * @return {void}
+ */
+function refreshEmptyOwnerLists() {
+	if (isEmptyList(organisationStore.organisationList)) {
+		organisationStore.refreshOrganisationList()
+	}
+	if (isEmptyList(applicationStore.applicationList)) {
+		applicationStore.refreshApplicationList()
+	}
+}
+
+/**
+ * Fetch the linked entities of one kind, one request per id.
+ *
+ * @param {string} key The kind, as its API path (e.g. registers)
+ * @param {Array<number|string>} ids The ids
+ * @return {Promise<Array<object>>} The entities, in id order
+ */
+function fetchLinkedEntities(key, ids) {
+	const promises = ids.map((id) =>
+		fetch(`/index.php/apps/openregister/api/${key}/${id}`).then((r) =>
+			r.json(),
+		),
+	)
+	return Promise.all(promises)
 }
 </script>
 

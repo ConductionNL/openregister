@@ -162,6 +162,10 @@ final class TenancyGuardHost {
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Source
  * @uses \OCA\OpenRegister\Service\TenantLogRedactor
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 
@@ -284,7 +288,10 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 		$host = new TenancyGuardHost('org-a');
 		$host->verify($entity);
 
-		$this->addToAssertionCount(1);
+		$entity->setOrganisation('org-b');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(Response::HTTP_FORBIDDEN);
+		$host->verify($entity);
 	}//end testSameOrganisationWriteIsAllowed()
 
 	/**
@@ -303,7 +310,11 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 		$host = new TenancyGuardHost('org-b');
 		$host->verify(new $entityClass());
 
-		$this->addToAssertionCount(1);
+		$owned = new $entityClass();
+		$owned->setOrganisation('org-a');
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(Response::HTTP_FORBIDDEN);
+		$host->verify($owned);
 	}//end testEntityWithoutAnOrganisationIsAllowed()
 
 	/**
@@ -391,9 +402,19 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 			protected ?string $label = null;
 		};
 
-		$host = new TenancyGuardHost('org-b');
-		$host->verify($entity);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method($this->anything());
+		$host = new TenancyGuardHost('org-b', $logger);
 
-		$this->addToAssertionCount(1);
+		$thrown = null;
+		try {
+			$host->verify($entity);
+		} catch (\Throwable $e) {
+			$thrown = get_class($e) . ': ' . $e->getMessage();
+		}
+
+		// The pair is testCrossOrganisationRefusalIsAudited: an entity that DOES
+		// carry an organisation, foreign to the active one, is refused and logged.
+		$this->assertNull($thrown, 'An entity without an organisation column must be waved through.');
 	}//end testEntityWithoutAnOrganisationPropertyIsWavedThrough()
 }//end class

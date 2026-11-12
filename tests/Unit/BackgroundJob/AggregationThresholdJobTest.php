@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
 use OCA\OpenRegister\Search\BackgroundJob\AggregationThresholdJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -18,7 +20,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\LoggerInterface;use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
+
 
 /**
  * Deferred threshold evaluation: schema reload + fresh evaluation per live
@@ -42,13 +46,17 @@ class AggregationThresholdJobTest extends TestCase {
 
 		$this->job = new AggregationThresholdJob(
 			time: $this->createMock(ITimeFactory::class),
-			userSession: $this->createMock(IUserSession::class),
-			userManager: $this->userManager,
-			organisation: $this->createMock(OrganisationService::class),
-			logger: $this->logger,
-			resolver: $this->resolver,
-			schemaMapper: $this->schemaMapper,
-			evaluator: $this->evaluator,
+			actor: new ActorForwardingServices(
+				userSession: $this->createMock(IUserSession::class),
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $this->logger
+			),
+			evaluation: new AggregationThresholdServices(
+				resolver: $this->resolver,
+				schemaMapper: $this->schemaMapper,
+				evaluator: $this->evaluator
+			),
 		);
 	}
 
@@ -115,5 +123,35 @@ class AggregationThresholdJobTest extends TestCase {
 			['uuid' => 'a', 'register' => 'r', 'schema' => 'broken-schema'],
 			['uuid' => 'b', 'register' => 'r', 'schema' => 'ok-schema'],
 		]);
+	}
+
+	public function testTheEvaluationRunsAsOneRevealingProcess(): void {
+		$audit = $this->createMock(ProcessRevealAuditInterface::class);
+		$audit->expects($this->once())->method('run')->willReturnCallback(
+			function (RevealingProcess $run, callable $operation): mixed {
+				$this->assertSame('aggregation', $run->process);
+				return $operation();
+			}
+		);
+		$this->job = new AggregationThresholdJob(
+			time: $this->createMock(ITimeFactory::class),
+			actor: new ActorForwardingServices(
+				userSession: $this->createMock(IUserSession::class),
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $this->logger
+			),
+			evaluation: new AggregationThresholdServices(
+				resolver: $this->resolver,
+				schemaMapper: $this->schemaMapper,
+				evaluator: $this->evaluator,
+				processAudit: $audit
+			),
+		);
+		$this->resolver->method('resolve')->willReturn(new ObjectEntity());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->evaluator->expects($this->once())->method('evaluateSchema');
+
+		$this->runJob([['uuid' => 'u1', 'register' => 'r', 'schema' => 's']]);
 	}
 }

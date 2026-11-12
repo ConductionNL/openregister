@@ -24,9 +24,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\Tables\Service\ColumnService;
 use OCA\Tables\Service\FakeEntity;
+use OCA\Tables\Service\PermissionsService;
 use OCA\Tables\Service\RowService;
 use OCA\Tables\Service\TableService;
 use OCA\Tables\Service\ViewService;
@@ -43,6 +45,7 @@ use Stringable;
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesTableReader
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesEntityDescriptors
  * @uses   \OCA\OpenRegister\Service\ObjectSource\ContainerServiceLookup
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\TablesReadScope
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -101,7 +104,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 			}//end log()
 		};
 
-		return new TablesTableReader($appManager, $container, $logger);
+		return new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: $logger));
 	}//end reader()
 
 	/**
@@ -163,7 +166,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function tableRows(TablesTableReader $reader): array {
-		return $reader->findRowsByTable(tableId: 5, userId: 'alice', limit: 10, offset: 20);
+		return $reader->findRows(scope: (new TablesReadScope(5, 'alice'))->withPage(limit: 10, offset: 20));
 	}//end tableRows()
 
 	/**
@@ -174,7 +177,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function viewRows(TablesTableReader $reader): array {
-		return $reader->findRowsByView(viewId: 9, userId: 'alice', limit: 10, offset: 20);
+		return $reader->findRows(scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 10, offset: 20));
 	}//end viewRows()
 
 	/**
@@ -185,7 +188,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return int The count.
 	 */
 	private function countTable(TablesTableReader $reader): int {
-		return $reader->countRows(id: 5, userId: 'alice');
+		return $reader->countRows(scope: new TablesReadScope(5, 'alice'));
 	}//end countTable()
 
 	/**
@@ -196,8 +199,19 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return int The count.
 	 */
 	private function countView(TablesTableReader $reader): int {
-		return $reader->countRows(id: 9, userId: 'alice', isView: true);
+		return $reader->countRows(scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9));
 	}//end countView()
+
+	/**
+	 * Read row 42 of table 5 as alice.
+	 *
+	 * @param TablesTableReader $reader The reader.
+	 *
+	 * @return array<string, mixed>|null The row.
+	 */
+	private function boundRow(TablesTableReader $reader): ?array {
+		return $reader->findRow(rowId: 42, scope: new TablesReadScope(5, 'alice'));
+	}//end boundRow()
 
 	/**
 	 * Tables are listed without creating the tutorial table, and rows that are not
@@ -465,4 +479,100 @@ class TablesTableReaderGoldenTest extends TestCase {
 		$this->assertSame(0, $this->countView($reader));
 		$this->assertSame(['warning [ObjectSource:tables] could not count rows for 9: denied'], $this->warnings);
 	}//end testCountViewFailureIsZero()
+
+	/**
+	 * Tables is asked about the bound table and the asking user before the row is read.
+	 *
+	 * @return void
+	 */
+	public function testFindRowAsksPermissionFirst(): void {
+		$reader = $this->reader();
+		PermissionsService::$replies['canReadRowsByElementId'] = true;
+		RowService::$replies['find'] = new FakeEntity(['getId' => 42, 'getTableId' => 5, 'getData' => []]);
+
+		$this->assertSame(42, $this->boundRow($reader)['id']);
+		$this->assertSame([['canReadRowsByElementId', 5, 'table', 'alice']], PermissionsService::$calls);
+		$this->assertSame([['find', 42]], RowService::$calls);
+	}//end testFindRowAsksPermissionFirst()
+
+	/**
+	 * Only a literal true grants the read.
+	 *
+	 * @return void
+	 */
+	public function testFindRowNeedsLiteralTrue(): void {
+		$reader = $this->reader();
+		PermissionsService::$replies['canReadRowsByElementId'] = 1;
+
+		$this->assertNull($this->boundRow($reader));
+		$this->assertSame([], RowService::$calls);
+	}//end testFindRowNeedsLiteralTrue()
+
+	/**
+	 * A failing permission check refuses, logs, and reads nothing.
+	 *
+	 * @return void
+	 */
+	public function testFindRowPermissionFailureRefuses(): void {
+		$reader = $this->reader();
+		PermissionsService::$replies['canReadRowsByElementId'] = new RuntimeException('boom');
+
+		$this->assertNull($this->boundRow($reader));
+		$this->assertSame([], RowService::$calls);
+		$this->assertSame(['warning [ObjectSource:tables] could not read row 42: boom'], $this->warnings);
+	}//end testFindRowPermissionFailureRefuses()
+
+	/**
+	 * Without the permission service nothing is read.
+	 *
+	 * @return void
+	 */
+	public function testFindRowWithoutPermissionServiceRefuses(): void {
+		$reader = $this->reader([PermissionsService::class]);
+
+		$this->assertNull($this->boundRow($reader));
+		$this->assertSame([], RowService::$calls);
+		$this->assertCount(1, $this->warnings, 'only the failed lookup is logged');
+	}//end testFindRowWithoutPermissionServiceRefuses()
+
+	/**
+	 * Without the row service the permission check is not even made.
+	 *
+	 * @return void
+	 */
+	public function testFindRowWithoutRowServiceRefuses(): void {
+		$reader = $this->reader([RowService::class]);
+
+		$this->assertNull($this->boundRow($reader));
+		$this->assertSame([], PermissionsService::$calls);
+	}//end testFindRowWithoutRowServiceRefuses()
+
+	/**
+	 * A failing read and a reply that is no entity are both null.
+	 *
+	 * @return void
+	 */
+	public function testFindRowUnreadableRowIsNull(): void {
+		$reader = $this->reader();
+		PermissionsService::$replies['canReadRowsByElementId'] = true;
+		RowService::$replies['find'] = new RuntimeException('gone');
+		$this->assertNull($this->boundRow($reader));
+		$this->assertSame(['warning [ObjectSource:tables] could not read row 42: gone'], $this->warnings);
+
+		RowService::$replies['find'] = 'not an entity';
+		$this->assertNull($this->boundRow($reader));
+	}//end testFindRowUnreadableRowIsNull()
+
+	/**
+	 * A row with no table id is not a row of the bound table.
+	 *
+	 * @return void
+	 */
+	public function testFindRowWithoutTableIdIsNull(): void {
+		$reader = $this->reader();
+		PermissionsService::$replies['canReadRowsByElementId'] = true;
+		RowService::$replies['find'] = new FakeEntity(['getId' => 42]);
+
+		$this->assertNull($this->boundRow($reader));
+	}//end testFindRowWithoutTableIdIsNull()
 }//end class

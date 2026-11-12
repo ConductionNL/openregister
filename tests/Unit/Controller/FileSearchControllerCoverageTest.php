@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
@@ -31,12 +33,13 @@ class FileSearchControllerCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSearchController(
-			'openregister',
-			$this->request,
-			$this->vectorService,
-			$this->chunkMapper,
-			$this->logger,
-			$this->passThroughScope()
+			request: $this->request,
+			services: new FileSearchControllerServices(
+				vectorService: $this->vectorService,
+				chunkMapper: $this->chunkMapper,
+				readScope: $this->passThroughScope(),
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -52,7 +55,7 @@ class FileSearchControllerCoverageTest extends TestCase {
 			]);
 
 		$this->vectorService->method('semanticSearch')
-			->with('financial report', 25, ['entity_type' => 'file'])
+			->with(new SemanticSearchRequest(query: 'financial report', limit: 25, filters: ['entity_type' => 'file']))
 			->willReturn([['id' => 1], ['id' => 2]]);
 
 		$result = $this->controller->semanticSearch();

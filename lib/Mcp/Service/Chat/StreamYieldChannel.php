@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Chat;
 
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
+
 /**
  * StreamYieldChannel
  *
@@ -48,7 +50,7 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  */
-class StreamYieldChannel {
+class StreamYieldChannel implements ChatStreamChannelInterface {
 
 	/**
 	 * Registered token callbacks. Each receives the new token delta as a

@@ -6,11 +6,6 @@ parameters:
 			path: lib/AppInfo/Application.php
 
 		-
-			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
-			count: 1
-			path: lib/Service/ServiceRegistrar.php
-
-		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\SettingsService constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, OCP\\\\IContainer given\\.$#"
 			count: 1
 			path: lib/Service/Configuration/ConfigurationServiceRegistrar.php
@@ -1076,14 +1071,14 @@ parameters:
 			path: lib/Files/Controller/FilesController.php
 
 		-
-			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\Support\\\\GraphQLControllerServices\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
 			count: 2
-			path: lib/Search/Controller/GraphQLController.php
+			path: lib/Search/Controller/Support/GraphQLControllerServices.php
 
 		-
-			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\Support\\\\GraphQLControllerServices\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
 			count: 2
-			path: lib/Search/Controller/GraphQLController.php
+			path: lib/Search/Controller/Support/GraphQLControllerServices.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Controller\\\\HeartbeatController\\:\\:heartbeat\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: 'alive', timestamp\\: int\\<1, max\\>, message\\: 'Heartbeat…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: int, message\\: string\\}, array\\{\\}\\>\\.$#"
@@ -1767,11 +1762,6 @@ parameters:
 			path: lib/Controller/Settings/ApiTokenSettingsController.php
 
 		-
-			message: "#^Parameter \\$appDataFactory of method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:__construct\\(\\) has invalid type OC\\\\Files\\\\AppData\\\\Factory\\.$#"
-			count: 2
-			path: lib/Controller/Settings/CacheSettingsController.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\ConfigurationSettingsController\\:\\:\\$logger is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/Settings/ConfigurationSettingsController.php
@@ -1912,16 +1902,6 @@ parameters:
 			path: lib/Controller/Settings/LlmSettingsController.php
 
 
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{all_organizations\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\: array\\{count\\: int, organizations\\: array\\<int, array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/SettingsController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string, trace\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/SettingsController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:getSearchBackend\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\{\\}\\>\\.$#"
@@ -2895,10 +2875,6 @@ parameters:
 			count: 1
 			path: lib/Db/SourceMapper.php
 
-		-
-			message: "#^Strict comparison using \\=\\=\\= between non\\-empty\\-string and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Db/TranslationMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
@@ -3311,7 +3287,7 @@ parameters:
 
 		-
 			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VEVENT\\.$#"
-			count: 3
+			count: 1
 			path: lib/Service/CalendarEventService.php
 
 		-
@@ -3920,11 +3896,6 @@ parameters:
 			path: lib/Service/ExportService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\CreateFileHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/CreateFileHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DeleteFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/DeleteFileHandler.php
@@ -4015,21 +3986,6 @@ parameters:
 			path: lib/Service/File/FileFormattingHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$taggingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$urlGenerator is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
 			message: "#^Result of && is always false\\.$#"
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php
@@ -4066,7 +4022,7 @@ parameters:
 
 		-
 			message: "#^Iterating over an object of an unknown class ddn\\\\sapp\\\\oid\\.$#"
-			count: 2
+			count: 1
 			path: lib/Files/Service/File/Pdf/PdfStructureInspector.php
 
 		-
@@ -4075,17 +4031,12 @@ parameters:
 			path: lib/Files/Service/File/Pdf/PdfTextReplacer.php
 
 		-
-			message: "#^Cannot call method getCategory\\(\\) on array\\<string, int\\|string\\|null\\>\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/ReadFileHandler.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\.$#"
-			count: 2
-			path: lib/Service/File/ReadFileHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\|null\\.$#"
 			count: 1
 			path: lib/Service/File/ReadFileHandler.php
 
@@ -5356,7 +5307,7 @@ parameters:
 		-
 			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VTODO\\.$#"
 			count: 2
-			path: lib/Service/TaskService.php
+			path: lib/Service/TaskVtodoDocument.php
 
 		-
 			message: "#^Parameter \\$calDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\TaskService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"

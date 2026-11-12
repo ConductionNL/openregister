@@ -28,10 +28,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
+use OCA\OpenRegister\Controller\Support\RegisterUpdate;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -45,7 +48,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class RegistersToolProvider implements IMcpToolProvider {
+class RegistersToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the registers tool
@@ -55,30 +58,25 @@ class RegistersToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterService       $registerService Register service for CRUD operations
-	 * @param DefinitionWriteRights $rights          The rights of the signed-in user
+	 * @param RegisterServiceInterface       $registerService Register service for CRUD operations
+	 * @param DefinitionWriteRightsInterface $rights          The rights of the signed-in user
+	 * @param AuthorizationAuditService      $audit           Logs authorization and role changes, as the register routes do
+	 * @param LoggerInterface                $logger          Notes an audit entry that could not be written
 	 */
 	public function __construct(
-		private readonly RegisterService $registerService,
-		private readonly DefinitionWriteRights $rights,
+		private readonly RegisterServiceInterface $registerService,
+		private readonly DefinitionWriteRightsInterface $rights,
+		private readonly AuthorizationAuditService $audit,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
-
-	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
 
 	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'registers',
@@ -86,11 +84,7 @@ class RegistersToolProvider implements IMcpToolProvider {
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
-					'action' => [
-						'type' => 'string',
-						'enum' => ['list', 'get', 'create', 'update', 'delete'],
-						'description' => 'The CRUD action to perform',
-					],
+					...CrudToolSchema::ACTION,
 					'id' => [
 						'type' => 'integer',
 						'description' => 'Register ID (required for get, update, delete)',
@@ -99,28 +93,12 @@ class RegistersToolProvider implements IMcpToolProvider {
 						'type' => 'object',
 						'description' => 'Register fields (for create and update)',
 					],
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results (for list)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip (for list)',
-					],
+					...CrudToolSchema::PAGING,
 				],
 				'required' => ['action'],
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the registers tool.
@@ -156,7 +134,7 @@ class RegistersToolProvider implements IMcpToolProvider {
 		$limit = $arguments['limit'] ?? null;
 		$offset = $arguments['offset'] ?? null;
 
-		// IDOR boundary (IMcpToolProvider contract): RegisterService::findAll
+		// IDOR boundary (IMcpToolProvider contract): RegisterServiceInterface::findAll
 		// applies RBAC + multi-tenancy filtering by default — the underlying
 		// mapper joins on the active organisation and filters by RBAC role.
 		// We pass the flags explicitly so a future refactor of the service
@@ -200,7 +178,7 @@ class RegistersToolProvider implements IMcpToolProvider {
 			throw new RuntimeException('Only administrators may create registers');
 		}
 
-		$register = $this->registerService->createFromArray(data: $arguments['data']);
+		$register = $this->registerService->createFromArray(data: $this->withoutInternalKeys(data: $arguments['data']));
 		return $register->jsonSerialize();
 	}//end createRegister()
 
@@ -214,15 +192,48 @@ class RegistersToolProvider implements IMcpToolProvider {
 	private function updateRegister(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
-		$this->manageableRegister(id: $arguments['id']);
-		$data = $arguments['data'];
+		$stored = $this->manageableRegister(id: $arguments['id']);
+		$data = $this->withoutInternalKeys(data: $arguments['data']);
 		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
+		$audit = new RegisterAccessAudit(update: new RegisterUpdate(id: (int)$stored->getId(), data: $data), before: $stored);
 		$register = $this->registerService->updateFromArray(
 			id: $arguments['id'],
 			data: $data
 		);
+		$this->logAccessChanges(audit: $audit, register: $register);
+
 		return $register->jsonSerialize();
 	}//end updateRegister()
+
+	/**
+	 * Log authorization and role changes; a failing audit never breaks the update.
+	 *
+	 * @param RegisterAccessAudit $audit    The access settings before the update.
+	 * @param Register            $register The saved register.
+	 *
+	 * @return void
+	 */
+	private function logAccessChanges(RegisterAccessAudit $audit, Register $register): void {
+		try {
+			$audit->log(service: $this->audit, after: $register);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[RegistersToolProvider] Register access change not written to the audit trail',
+				context: ['registerId' => $register->getId(), 'exception' => $e->getMessage()]
+			);
+		}
+	}//end logAccessChanges()
+
+	/**
+	 * The fields without internal parameters, those starting with '_', as the REST routes drop them.
+	 *
+	 * @param array<string, mixed> $data The fields as given.
+	 *
+	 * @return array<string, mixed> The fields to write.
+	 */
+	private function withoutInternalKeys(array $data): array {
+		return array_filter($data, static fn ($key): bool => str_starts_with((string)$key, '_') === false, ARRAY_FILTER_USE_KEY);
+	}//end withoutInternalKeys()
 
 	/**
 	 * Delete a register.
@@ -255,20 +266,4 @@ class RegistersToolProvider implements IMcpToolProvider {
 
 		return $register;
 	}//end manageableRegister()
-
-	/**
-	 * Assert a parameter is present in arguments.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If parameter is missing
-	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
-		}
-	}//end requireParam()
 }//end class

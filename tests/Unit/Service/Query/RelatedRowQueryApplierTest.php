@@ -33,8 +33,10 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -55,6 +57,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowInnerRow
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
  */
 class RelatedRowQueryApplierTest extends TestCase {
 
@@ -79,8 +85,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$rbac->method('buildRbacPredicateForAlias')->willReturn('rel0._owner = \'alice\'');
 
 		return new RelatedRowQueryApplier(
-			schemaMapper: $schemaMapper,
-			tableHandler: $tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $schemaMapper, tableHandler: $tableHandler),
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger(), guard: $guard)
@@ -148,12 +153,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$qb = $this->createMock(IQueryBuilder::class);
 		$qb->expects($this->never())->method('andWhere');
 
-		$applied = $this->applierFinding([])->apply(
-			qb: $qb,
-			query: ['_limit' => 10],
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$applied = $this->applierFinding([])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: ['_limit' => 10]);
 
 		$this->assertSame(0, $applied);
 	}//end testAQueryWithoutRelatedBlocksIsUntouched()
@@ -173,12 +173,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->applierFinding([])->apply(
-			qb: $qb,
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$this->applierFinding([])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $this->relatedQuery());
 	}//end testAnUnresolvableSchemaIsRefusedNotSkipped()
 
 	/**
@@ -192,12 +187,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 	public function testAnAmbiguousSchemaNameIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->applierFinding([$this->schema(), $this->schema()])->apply(
-			qb: $this->createMock(IQueryBuilder::class),
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$this->applierFinding([$this->schema(), $this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $this->createMock(IQueryBuilder::class), register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $this->relatedQuery());
 	}//end testAnAmbiguousSchemaNameIsRefused()
 
 	/**
@@ -214,12 +204,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$qb->expects($this->atLeastOnce())->method('setParameter');
 		$qb->method('createFunction')->willReturnArgument(0);
 
-		$applied = $this->applierFinding([$this->schema()])->apply(
-			qb: $qb,
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$applied = $this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $this->relatedQuery());
 
 		$this->assertSame(1, $applied);
 	}//end testAResolvableBlockNarrowsTheQuery()
@@ -246,12 +231,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$query = $this->relatedQuery();
 		$query['register'] = '1';
 
-		$applied = $this->applierFinding([$this->schema()])->apply(
-			qb: $qb,
-			query: $query,
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$applied = $this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $query);
 
 		$this->assertSame(1, $applied);
 	}//end testTheRegisterMayComeFromTheQueryItself()
@@ -277,18 +257,13 @@ class RelatedRowQueryApplierTest extends TestCase {
 			}
 		);
 
-		$applied = $this->applierFinding(found: [$this->schema()], tableExists: false)->apply(
-			qb: $qb,
-			query: [
+		$applied = $this->applierFinding(found: [$this->schema()], tableExists: false)->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: [
 				'_referenced' => [
 					'subsidieAanvraag' => [
 						'subsidieaanvraag' => ['case' => '9eab0293-7ce5-4bcf-b7aa-0ab79a1eab4f'],
 					],
 				],
-			],
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+			]);
 
 		$this->assertSame(expected: 1, actual: $applied);
 		$this->assertSame(expected: ['1 = 0'], actual: $conditions);
@@ -312,12 +287,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
-			qb: $qb,
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$this->applierFinding(found: [$this->schema()], guard: $guard)->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $this->relatedQuery());
 	}//end testAConditionOnAnUnreadablePropertyIsRefused()
 
 	/**
@@ -333,12 +303,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$qb->method('createFunction')->willReturnArgument(0);
 		$qb->expects($this->once())->method('andWhere');
 
-		$applied = $this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
-			qb: $qb,
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$applied = $this->applierFinding(found: [$this->schema()], guard: $guard)->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: $this->relatedQuery());
 
 		$this->assertSame(1, $applied);
 	}//end testAConditionOnAReadablePropertyIsApplied()
@@ -364,12 +329,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 			return $qb;
 		});
 
-		$this->applierFinding([$this->schema()])->apply(
-			qb: $qb,
-			query: $this->relatedQuery(),
-			register: $this->register(),
-			organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-a', 'org-b']]
-		);
+		$this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-a', 'org-b']]), query: $this->relatedQuery());
 
 		$this->assertStringContainsString("(rel0._owner = 'alice') AND (rel0._organisation IN (:rel0_org0, :rel0_org1) OR rel0._organisation IS NULL)", $sql[0]);
 		$this->assertSame('org-a', $parameters['rel0_org0']);
@@ -397,12 +357,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 				return $text;
 			});
 
-			$this->applierFinding([$this->schema()])->apply(
-				qb: $qb,
-				query: $this->relatedQuery(),
-				register: $this->register(),
-				organisationScopeFor: static fn (): array => $scope
-			);
+			$this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: static fn (): array => $scope), query: $this->relatedQuery());
 
 			$this->assertStringContainsString($expected, $sql[0], $label);
 		}
@@ -422,12 +377,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 			$qb->expects($this->never())->method('andWhere');
 
 			try {
-				$this->applierFinding([$this->schema()])->apply(
-					qb: $qb,
-					query: ['_related' => ['caseProperty' => ['case' => [$field => ['gt' => 'a']]]]],
-					register: $this->register(),
-					organisationScopeFor: $this->allOrganisations()
-				);
+				$this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: ['_related' => ['caseProperty' => ['case' => [$field => ['gt' => 'a']]]]]);
 				$this->fail('Expected a refusal for ' . $field);
 			} catch (InvalidArgumentException $e) {
 				$this->assertStringContainsString("'" . $field . "'", $e->getMessage());
@@ -444,11 +394,6 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("'_organisation'");
 
-		$this->applierFinding([$this->schema()])->apply(
-			qb: $this->createMock(IQueryBuilder::class),
-			query: ['_related' => ['caseProperty' => ['_organisation' => ['value' => 'x']]]],
-			register: $this->register(),
-			organisationScopeFor: $this->allOrganisations()
-		);
+		$this->applierFinding([$this->schema()])->apply(target: new RelatedRowFilterTarget(qb: $this->createMock(IQueryBuilder::class), register: $this->register(), organisationScopeFor: $this->allOrganisations()), query: ['_related' => ['caseProperty' => ['_organisation' => ['value' => 'x']]]]);
 	}//end testAForeignKeyThatIsNotAPropertyIsRefused()
 }//end class

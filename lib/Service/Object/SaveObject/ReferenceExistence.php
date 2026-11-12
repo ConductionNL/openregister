@@ -23,8 +23,11 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
+use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -45,13 +48,13 @@ final class ReferenceExistence {
 	/**
 	 * @param SaveLookups          $lookups   Schema and register lookups.
 	 * @param SaveCallStack        $saveCalls The saves in flight.
-	 * @param MagicMapperInterface $mapper    Reads the referenced object.
+	 * @param MagicObjectFinderInterface $mapper    Reads the referenced object.
 	 * @param ReferenceEvents      $events    Announces the verdicts.
 	 */
 	public function __construct(
 		private readonly SaveLookups $lookups,
 		private readonly SaveCallStack $saveCalls,
-		private readonly MagicMapperInterface $mapper,
+		private readonly MagicObjectFinderInterface $mapper,
 		private readonly ReferenceEvents $events,
 	) {
 	}//end __construct()
@@ -146,13 +149,27 @@ final class ReferenceExistence {
 		$context = ['property' => $check->propertyName, 'uuid' => $check->uuid, 'targetSchema' => $check->schemaRef, 'cycleDepth' => count($cycle)];
 		$this->events->logger->warning(message: '[SaveObject] Circular reference detected during validation', context: $context);
 
-		throw new CircularReferenceException(
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			cycle: array_map(self::frameTrace(...), $cycle),
+		throw self::circularReference(check: $check, cycle: $cycle);
+	}//end refuseCycle()
+
+	/**
+	 * The refusal of a reference that closes a cycle of saves.
+	 *
+	 * @param ReferenceCheck $check The reference.
+	 * @param array          $cycle The save frames of the cycle.
+	 *
+	 * @return CircularReferenceException
+	 */
+	private static function circularReference(ReferenceCheck $check, array $cycle): CircularReferenceException {
+		return new CircularReferenceException(
+			referenceCycle: new ReferenceCycle(
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				cycle: array_map(self::frameTrace(...), $cycle)
+			),
 			code: 422
 		);
-	}//end refuseCycle()
+	}//end circularReference()
 
 	/**
 	 * One frame of a cycle, as the refusal reports it.
@@ -186,14 +203,27 @@ final class ReferenceExistence {
 			return true;
 		}
 
-		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			targetRegister: $check->register,
+		throw self::brokenReference(check: $check);
+	}//end replay()
+
+	/**
+	 * The refusal of a reference to an object that does not exist.
+	 *
+	 * @param ReferenceCheck $check The reference.
+	 *
+	 * @return ReferenceValidationException
+	 */
+	private static function brokenReference(ReferenceCheck $check): ReferenceValidationException {
+		return new ReferenceValidationException(
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				targetRegister: $check->register
+			),
 			code: 422
 		);
-	}//end replay()
+	}//end brokenReference()
 
 	/**
 	 * Record the target schema of a reference and the slug its refusal names.
@@ -254,16 +284,17 @@ final class ReferenceExistence {
 	}//end resolveRegister()
 
 	/**
-	 * Whether the referenced object exists; a missing one is refused, a failing lookup skips the check.
+	 * Whether the referenced object exists; a missing one and a failed lookup are refused, other errors skip the check.
 	 *
 	 * Soft-deleted objects count as nonexistent (`includeDeleted: false` is
 	 * pinned here, not left to the mapper default).
 	 *
 	 * @param ReferenceCheck $check The reference.
 	 *
-	 * @return bool True when found, false when the lookup itself failed.
+	 * @return bool True when found, false when another error skipped the check.
 	 *
 	 * @throws ReferenceValidationException When the reference resolves to no stored object.
+	 * @throws ObjectLookupFailedException When the store could not answer.
 	 */
 	private function objectFound(ReferenceCheck $check): bool {
 		try {
@@ -271,8 +302,10 @@ final class ReferenceExistence {
 			return true;
 		} catch (DoesNotExistException $e) {
 			$this->refuseMissing(check: $check, cause: $e);
+		} catch (ObjectLookupFailedException $e) {
+			throw $e;
 		} catch (Exception $e) {
-			// Errors other than non-existence (e.g. database errors) are logged, never blocking.
+			// Other errors (e.g. an unresolvable target) are logged, never blocking.
 			$this->events->logger->warning(
 				message: '[SaveObject] Reference validation lookup failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $check->propertyName, 'uuid' => $check->uuid, 'error' => $e->getMessage()]
@@ -317,10 +350,12 @@ final class ReferenceExistence {
 		$this->events->refused(check: $check);
 
 		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->targetSchemaSlug,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register
+			),
 			code: 422,
 			previous: $cause
 		);

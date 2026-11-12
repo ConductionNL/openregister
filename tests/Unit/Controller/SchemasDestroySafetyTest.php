@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -165,7 +166,7 @@ class SchemasDestroySafetyTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 
@@ -255,7 +256,7 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->objectMapper
 			->expects($this->once())
 			->method('getStatistics')
-			->with($this->equalTo(null), $this->equalTo(42))
+			->with($this->equalTo(new StatisticsScope(schemaId: 42)))
 			->willReturn(['total' => 5]);
 
 		// No disposition flag is set → guard MUST fire.
@@ -635,4 +636,22 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertNotSame(403, $this->controller->destroy(42)->getStatus());
 
 	}//end testAManagerMayStillDeleteASchemaWithoutObjects()
+
+	/**
+	 * A manager of the schema who is no administrator may not orphan its objects with force.
+	 */
+	public function testForceByAManagerWhoIsNoAdministratorIsRefusedWith403(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags(force: 'true');
+
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$this->assertSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testForceByAManagerWhoIsNoAdministratorIsRefusedWith403()
 }//end class

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden master for DocumentProcessingHandler::anonymizeDocument() on a
+ * Golden master for DocumentProcessingHandler::anonymize() on a
  * plain-text document.
  *
  * Every case anonymises one text file and records the content written, the
@@ -32,8 +32,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
+use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -202,12 +206,16 @@ class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 		);
 
 		$handler = new DocumentProcessingHandler(
-			rootFolder: $rootFolder,
-			userSession: $this->createMock(IUserSession::class),
-			logger: $logger,
-			entityRelationMapper: $mapper,
-			sanitizer: $sanitizer,
-			l10n: $l10n
+			platform: new DocumentProcessingPlatform(
+				rootFolder: $rootFolder,
+				userSession: $this->createMock(IUserSession::class),
+				l10n: $l10n
+			),
+			redaction: new DocumentRedactionServices(
+				entityRelationMapper: $mapper,
+				sanitizer: $sanitizer
+			),
+			logger: $logger
 		);
 
 		$written = [];
@@ -236,11 +244,12 @@ class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 		$node->method('getContent')->willReturn(self::TEXT);
 		$node->method('getParent')->willReturn($parent);
 
-		$handler->anonymizeDocument(
-			node: $node,
-			entities: $scenario['entities'],
-			scope: ($scenario['scope'] ?? 'document'),
-			fileKey: ($scenario['fileKey'] ?? null)
+		$handler->anonymize(
+			request: new DocumentAnonymisationRequest(
+				node: $node,
+				entities: $scenario['entities'],
+				options: new DocumentAnonymisationOptions(scope: ($scenario['scope'] ?? 'document'), fileKey: ($scenario['fileKey'] ?? null))
+			)
 		);
 
 		return [

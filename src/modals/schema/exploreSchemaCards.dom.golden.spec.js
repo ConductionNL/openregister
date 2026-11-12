@@ -186,4 +186,35 @@ describe('ExploreSchema analysis results', () => {
 		}
 		expect(changed).toMatchSnapshot()
 	})
+
+	for (const type of ['string', 'number']) {
+		it(`shows the configuration fields of a selected ${type} property`, async () => {
+			const wrapper = await dialog()
+			wrapper.vm.togglePropertySelection('title')
+			wrapper.vm.selectedPropertiesConfig.title.type = type
+			await flushPromises()
+			expect(markup(wrapper, '.config-fields')).toMatchSnapshot()
+		})
+
+		it(`writes each ${type} configuration field to the property configuration`, async () => {
+			const wrapper = await dialog()
+			wrapper.vm.togglePropertySelection('title')
+			wrapper.vm.selectedPropertiesConfig.title.type = type
+			await flushPromises()
+			const fields = wrapper
+				.find('.config-fields')
+				.findAll('x-NcTextField, x-NcSelect, x-NcTextArea')
+			const components = wrapper
+				.find('.config-fields')
+				.findAllComponents({ name: 'NcTextField' })
+				.concat(wrapper.find('.config-fields').findAllComponents({ name: 'NcSelect' }))
+				.concat(wrapper.find('.config-fields').findAllComponents({ name: 'NcTextArea' }))
+			expect(components.length).toBe(fields.length)
+			for (const [index, item] of components.entries()) {
+				item.vm.$attrs['onUpdate:modelValue'](`v${index}`)
+				await flushPromises()
+			}
+			expect(wrapper.vm.selectedPropertiesConfig.title).toMatchSnapshot()
+		})
+	}
 })

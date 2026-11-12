@@ -23,20 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use RuntimeException;
-use Throwable;
 
 /**
  * Thrown when an anonymisation may not run, or could not finish.
  */
 class AnonymisationRefusedException extends RuntimeException {
-
-	/**
-	 * Build the refusal.
-	 *
-	 * @param string         $message  Why, in words somebody can act on.
-	 * @param Throwable|null $previous The underlying failure, when there was one.
-	 */
-	public function __construct(string $message, ?Throwable $previous = null) {
-		parent::__construct(message: $message, code: 0, previous: $previous);
-	}//end __construct()
 }//end class

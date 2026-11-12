@@ -116,6 +116,6 @@ class RelationCascadeReferenceResolutionGoldenTest extends TestCase {
 			return [$register];
 		});
 
-		return new RelationCascadeHandler($this->createMock(MagicMapperInterface::class), $schemas, $registers, new NullLogger());
+		return new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), logger: new NullLogger());
 	}//end handler()
 }//end class

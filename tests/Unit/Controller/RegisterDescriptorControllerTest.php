@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Controller\RegisterDescriptorController;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCP\IGroupManager;
@@ -28,6 +29,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegisterDescriptorControllerFactory;
 
 /**
  * Covers the inventory endpoint, the forced re-import, and who may call them.
@@ -46,8 +48,7 @@ class RegisterDescriptorControllerTest extends TestCase {
 		$this->userSession  = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new RegisterDescriptorController(
-			'openregister',
+		$this->controller = RegisterDescriptorControllerFactory::create(
 			$this->createMock(IRequest::class),
 			$this->descriptors,
 			$this->userSession,
@@ -139,7 +140,7 @@ class RegisterDescriptorControllerTest extends TestCase {
 	 */
 	public function testANonAdministratorImportsNothing(): void {
 		$this->signIn('alice', isAdmin: false);
-		$this->descriptors->expects($this->never())->method('reimport');
+		$this->descriptors->expects($this->never())->method('reimportShipped');
 
 		$response = $this->controller->import('openregister', 'flows');
 
@@ -155,8 +156,8 @@ class RegisterDescriptorControllerTest extends TestCase {
 
 	public function testAnImportedDescriptorAnswersTwoHundredWithItsOutcome(): void {
 		$this->signIn('admin', isAdmin: true);
-		$this->descriptors->method('reimport')
-			->with('openregister', 'flows')
+		$this->descriptors->method('reimportShipped')
+			->with(new ShippedRegister('openregister', 'flows'))
 			->willReturn(['outcome' => 'imported', 'reason' => null]);
 
 		$response = $this->controller->import('openregister', 'flows');
@@ -171,7 +172,7 @@ class RegisterDescriptorControllerTest extends TestCase {
 	 */
 	public function testAFailedImportAnswersFourTwentyTwoAndCarriesItsReason(): void {
 		$this->signIn('admin', isAdmin: true);
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportShipped')
 			->willReturn(['outcome' => 'failed', 'reason' => 'no such register "nope"']);
 
 		$response = $this->controller->import('openregister', 'nope');

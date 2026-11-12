@@ -1,0 +1,617 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, context failing, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(bad json)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, context failing, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(bad json)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, context loaded, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(bad json)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, context loaded, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(bad json)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, context failing, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "setObjectItem",
+    {
+      "id": "o/1",
+    },
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, context failing, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "setObjectItem",
+    {
+      "id": "o/1",
+    },
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, context loaded, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "setObjectItem",
+    {
+      "id": "o/1",
+    },
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, context loaded, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "setObjectItem",
+    {
+      "id": "o/1",
+    },
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, context failing, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, context failing, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, context loaded, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, context loaded, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, context failing, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(offline)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, context failing, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(offline)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, context loaded, setFilters false 1`] = `
+[
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(offline)",
+  ],
+]
+`;
+
+exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, context loaded, setFilters true 1`] = `
+[
+  [
+    "setFilters",
+    {
+      "register": "r 1",
+      "schema": "s/2",
+    },
+  ],
+  [
+    "getRegister",
+    "r 1",
+  ],
+  [
+    "getSchema",
+    "s/2",
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "refreshObjectList",
+  ],
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+        "requesttoken": "tok",
+      },
+    },
+  ],
+  [
+    "console.error",
+    "[ObjectsIndex] deep-link fetch failed",
+    "Error(offline)",
+  ],
+]
+`;

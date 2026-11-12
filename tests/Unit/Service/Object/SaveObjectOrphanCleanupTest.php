@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -25,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
@@ -46,6 +48,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
@@ -57,6 +60,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Every case runs the real SaveObject::saveObject. The mapper finds a row by uuid or slug, as
@@ -94,6 +99,8 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 class SaveObjectOrphanCleanupTest extends TestCase {
 
@@ -250,8 +257,8 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('assertWritable')->willReturnCallback(
-			function (string $table, ?int $id): void {
-				if ($this->onlyConsumes === true && $table === SharedMasterDataService::SCHEMAS && $id === 2) {
+			function (DeclaredRow $row): void {
+				if ($this->onlyConsumes === true && $row->table === SharedMasterDataService::SCHEMAS && $row->id === 2) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder', holderName: null, resourceType: 'schema', resourceTitle: 'note');
 				}
 			}
@@ -298,35 +305,53 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$translations->method('normalizeTranslationsForSave')->willReturnArgument(0);
 
 		$handler = new SaveObject(
-			$mapper,
-			$mapper,
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$session,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$organisations,
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$translations,
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			new NullLogger(),
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			$permissions,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$container
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $mapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class),
+						objectSourceRegistry: null,
+						runContext: null,
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translations,
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class),
+						fieldEncryptionHandler: null
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: new NullLogger(),
+					eventDispatcher: null
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisations,
+					groupManager: null,
+					appConfig: null
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $permissions,
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 
 		return $handler;
@@ -374,7 +399,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		SaveLookupsAccess::set($handler, 'registerCache', ['10' => $register]);
 
 		try {
-			$handler->saveObject(register: $register, schema: $incident, data: ['notes' => $notes] + $this->extra['data'], uuid: $uuid, _rbac: $rbac, persist: $this->persist);
+			$handler->saveObject(data: ['notes' => $notes] + $this->extra['data'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $incident), uuid: $uuid), _rbac: $rbac, persist: $this->persist);
 		} catch (NotAuthorizedException $e) {
 			$this->refused = true;
 		}
@@ -591,9 +616,9 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$row = [['objectUuid' => 'x']];
 
 		return [
-			'cascade' => [new DeletionAnalysis(deletable: true, cascadeTargets: $row)],
-			'nullify' => [new DeletionAnalysis(deletable: true, nullifyTargets: $row)],
-			'default' => [new DeletionAnalysis(deletable: true, defaultTargets: $row)],
+			'cascade' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(cascadeTargets: $row))],
+			'nullify' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: $row))],
+			'default' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(defaultTargets: $row))],
 		];
 	}//end dependants()
 
@@ -705,8 +730,8 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	public function testAConsumerOfASharedRegisterDeletesNothing(): void {
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('assertWritable')->willReturnCallback(
-			static function (string $table): void {
-				if ($table === SharedMasterDataService::REGISTERS) {
+			static function (DeclaredRow $row): void {
+				if ($row->table === SharedMasterDataService::REGISTERS) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder');
 				}
 			}
@@ -725,7 +750,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$session->method('getUser')->willReturn($this->createMock(IUser::class));
 		$guard = new OrphanDeletionGuard(objectMapper: $mapper, permissionHandler: $permissions, userSession: $session, container: $container);
 
-		$this->assertFalse($guard->allows(row: $this->row, register: new Register(), schema: new Schema()));
+		$this->assertFalse($guard->allows(row: $this->row, table: new RegisterSchema(register: new Register(), schema: new Schema())));
 	}
 
 	public function testAnInverseRelationOnThePropertyCounts(): void {

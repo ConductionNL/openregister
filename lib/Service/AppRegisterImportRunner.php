@@ -42,9 +42,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use ReflectionMethod;
 use Throwable;
 
@@ -53,20 +54,13 @@ use Throwable;
  *
  * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
  */
-class AppRegisterImportRunner {
+class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	/**
 	 * The import ran through the app's own SettingsService.
 	 *
 	 * @var string
 	 */
 	public const PATH_APP = 'app';
-
-	/**
-	 * The import ran through OpenRegister's reader of the app's files.
-	 *
-	 * @var string
-	 */
-	public const PATH_OPENREGISTER = 'openregister';
 
 	/**
 	 * The forced entry points the fleet's SettingsServices have, in order.
@@ -94,15 +88,17 @@ class AppRegisterImportRunner {
 	 * Constructor.
 	 *
 	 * @param IAppManager          $appManager           Resolves the app's namespace and path.
-	 * @param AppContainerLocator  $containers           Reaches the app's own DI container.
-	 * @param ConfigurationServiceInterface $configurationService Imports on the fallback path.
+	 * @param AppContainerFinderInterface $containers         Reaches the app's own DI container.
+	 * @param AppConfigurationImporterInterface $configurationService Imports on the fallback path.
+	 * @param RegisterDocumentLoaderInterface $documents Reads the app's register document and fragments.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
-		private readonly AppContainerLocator $containers,
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly AppContainerFinderInterface $containers,
+		private readonly AppConfigurationImporterInterface $configurationService,
+		private readonly RegisterDocumentLoaderInterface $documents,
 	) {
 	}//end __construct()
 
@@ -120,7 +116,7 @@ class AppRegisterImportRunner {
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function document(string $appId): array {
-		[$data, $version] = (new RegisterDocumentLoader(appManager: $this->appManager))->load(appId: $appId);
+		[$data, $version] = $this->documents->load(appId: $appId);
 
 		$fragments = 0;
 		try {
@@ -162,8 +158,8 @@ class AppRegisterImportRunner {
 	 * @return array{service: object, method: string, force: string|null, class: string}|null
 	 */
 	private function appEntryPoint(string $appId): ?array {
-		$namespace = (string)($this->appManager->getAppInfo($appId)['namespace'] ?? '');
-		if ($namespace === '') {
+		$class = $this->settingsServiceClass(appId: $appId);
+		if ($class === null) {
 			return null;
 		}
 
@@ -172,7 +168,39 @@ class AppRegisterImportRunner {
 			return null;
 		}
 
-		$class = 'OCA\\' . $namespace . '\\Service\\SettingsService';
+		$service = $this->serviceFrom(container: $container, class: $class);
+		if ($service === null) {
+			return null;
+		}
+
+		return $this->forcedEntry(service: $service, class: $class);
+	}//end appEntryPoint()
+
+	/**
+	 * The app's SettingsService class name, or null when the app declares no namespace.
+	 *
+	 * @param string $appId The app.
+	 *
+	 * @return string|null
+	 */
+	private function settingsServiceClass(string $appId): ?string {
+		$namespace = (string)($this->appManager->getAppInfo($appId)['namespace'] ?? '');
+		if ($namespace === '') {
+			return null;
+		}
+
+		return 'OCA\\' . $namespace . '\\Service\\SettingsService';
+	}//end settingsServiceClass()
+
+	/**
+	 * The service from the app's container, or null when it is absent, unresolvable or not an object.
+	 *
+	 * @param ContainerInterface $container The app's container.
+	 * @param string $class The SettingsService class name.
+	 *
+	 * @return object|null
+	 */
+	private function serviceFrom(ContainerInterface $container, string $class): ?object {
 		try {
 			if ($container->has($class) === false) {
 				return null;
@@ -187,41 +215,69 @@ class AppRegisterImportRunner {
 			return null;
 		}
 
-		foreach (self::FORCED_ENTRY_POINTS as [$method, $force]) {
-			if ($this->accepts(service: $service, method: $method, force: $force) === true) {
-				return ['service' => $service, 'method' => $method, 'force' => $force, 'class' => $class];
+		return $service;
+	}//end serviceFrom()
+
+	/**
+	 * The first forced entry point the service has.
+	 *
+	 * @param object $service The app's SettingsService.
+	 * @param string $class The SettingsService class name.
+	 *
+	 * @return array{service: object, method: string, force: string|null, class: string}|null
+	 */
+	private function forcedEntry(object $service, string $class): ?array {
+		foreach (self::FORCED_ENTRY_POINTS as $entryPoint) {
+			if ($this->accepts(service: $service, entryPoint: $entryPoint) === true) {
+				return ['service' => $service, 'method' => $entryPoint[0], 'force' => $entryPoint[1], 'class' => $class];
 			}
 		}
 
 		return null;
-	}//end appEntryPoint()
+	}//end forcedEntry()
 
 	/**
 	 * Whether a service has a method of the given forced shape.
 	 *
-	 * @param object      $service The app's SettingsServiceInterface.
-	 * @param string      $method  The method name.
-	 * @param string|null $force   The force parameter's name, or null for a method taking none.
+	 * @param object $service The app's SettingsServiceInterface.
+	 * @param array{0: string, 1: string|null} $entryPoint [method name, force parameter's name or null for a method taking none].
 	 *
 	 * @return bool True when the method exists, is public and has that shape.
 	 */
-	private function accepts(object $service, string $method, ?string $force): bool {
-		if (method_exists($service, $method) === false) {
+	private function accepts(object $service, array $entryPoint): bool {
+		$reflection = $this->publicMethod(service: $service, method: $entryPoint[0]);
+		if ($reflection === null) {
 			return false;
+		}
+
+		if ($entryPoint[1] === null) {
+			return ($reflection->getNumberOfRequiredParameters() === 0);
+		}
+
+		$params = $reflection->getParameters();
+		return (isset($params[0]) === true && $params[0]->getName() === $entryPoint[1]);
+	}//end accepts()
+
+	/**
+	 * Reflection of a public method of the service, or null when it has no such public method.
+	 *
+	 * @param object $service The app's SettingsService.
+	 * @param string $method The method name.
+	 *
+	 * @return ReflectionMethod|null
+	 */
+	private function publicMethod(object $service, string $method): ?ReflectionMethod {
+		if (method_exists($service, $method) === false) {
+			return null;
 		}
 
 		$reflection = new ReflectionMethod($service, $method);
 		if ($reflection->isPublic() === false) {
-			return false;
+			return null;
 		}
 
-		$params = $reflection->getParameters();
-		if ($force === null) {
-			return ($reflection->getNumberOfRequiredParameters() === 0);
-		}
-
-		return (isset($params[0]) === true && $params[0]->getName() === $force);
-	}//end accepts()
+		return $reflection;
+	}//end publicMethod()
 
 	/**
 	 * Run the import through the app's own SettingsService.
@@ -231,34 +287,69 @@ class AppRegisterImportRunner {
 	 * @return array{success: bool, path: string, via: string, message: string}
 	 */
 	private function runThroughApp(array $entry): array {
-		$method = $entry['method'];
-		$via    = sprintf('%s::%s()', $entry['class'], $method);
-		if ($entry['force'] !== null) {
-			$via = sprintf('%s::%s(%s: true)', $entry['class'], $method, $entry['force']);
-		}
+		$route = new RegisterImportRoute(path: self::PATH_APP, via: $this->viaOf(entry: $entry));
 
 		// Named, so the value can only land on the parameter that was checked
 		// to be called `force`. ONE call: the import is not idempotent in cost.
-		$args = [];
-		if ($entry['force'] !== null) {
-			$args = [$entry['force'] => true];
-		}
-
 		try {
-			$result = $entry['service']->{$method}(...$args);
+			$result = $entry['service']->{$entry['method']}(...$this->forcedArgs(entry: $entry));
 		} catch (Throwable $e) {
-			return ['success' => false, 'path' => self::PATH_APP, 'via' => $via, 'message' => $e->getMessage()];
+			return $route->failed(message: $e->getMessage());
 		}
 
-		if (is_array($result) === false) {
-			return ['success' => false, 'path' => self::PATH_APP, 'via' => $via, 'message' => 'The app returned no result.'];
-		}
-
-		$failed = (($result['success'] ?? true) === false || empty($result['error']) === false);
-		$message = (string)($result['message'] ?? ($result['error'] ?? ''));
-
-		return ['success' => ($failed === false), 'path' => self::PATH_APP, 'via' => $via, 'message' => $message];
+		return $this->appOutcome(route: $route, result: $result);
 	}//end runThroughApp()
+
+	/**
+	 * How the entry point is called, for the operator.
+	 *
+	 * @param array{service: object, method: string, force: string|null, class: string} $entry The entry point.
+	 *
+	 * @return string
+	 */
+	private function viaOf(array $entry): string {
+		if ($entry['force'] === null) {
+			return sprintf('%s::%s()', $entry['class'], $entry['method']);
+		}
+
+		return sprintf('%s::%s(%s: true)', $entry['class'], $entry['method'], $entry['force']);
+	}//end viaOf()
+
+	/**
+	 * The named arguments of the forced call: `[force => true]`, or none.
+	 *
+	 * @param array{service: object, method: string, force: string|null, class: string} $entry The entry point.
+	 *
+	 * @return array<string, bool>
+	 */
+	private function forcedArgs(array $entry): array {
+		if ($entry['force'] === null) {
+			return [];
+		}
+
+		return [$entry['force'] => true];
+	}//end forcedArgs()
+
+	/**
+	 * The result of the app's reply: a non-array, `success: false` or a non-empty `error` is a failure.
+	 *
+	 * @param RegisterImportRoute $route The app path.
+	 * @param mixed $result The app's reply.
+	 *
+	 * @return array{success: bool, path: string, via: string, message: string}
+	 */
+	private function appOutcome(RegisterImportRoute $route, mixed $result): array {
+		if (is_array($result) === false) {
+			return $route->failed(message: 'The app returned no result.');
+		}
+
+		$message = (string)($result['message'] ?? ($result['error'] ?? ''));
+		if (($result['success'] ?? true) === false || empty($result['error']) === false) {
+			return $route->failed(message: $message);
+		}
+
+		return $route->succeeded(message: $message);
+	}//end appOutcome()
 
 	/**
 	 * Run the import through OpenRegister's reader of the app's files.
@@ -268,32 +359,54 @@ class AppRegisterImportRunner {
 	 * @return array{success: bool, path: string, via: string, message: string}
 	 */
 	private function runThroughOpenRegister(string $appId): array {
-		$via      = sprintf('OpenRegister (lib/Settings/%s_register.json + register.d)', $appId);
+		$route = new RegisterImportRoute(
+			path: self::PATH_OPENREGISTER,
+			via: sprintf('OpenRegister (lib/Settings/%s_register.json + register.d)', $appId)
+		);
 		$document = $this->document(appId: $appId);
 		if ($document['data'] === null) {
-			return [
-				'success' => false,
-				'path'    => self::PATH_OPENREGISTER,
-				'via'     => $via,
-				'message' => sprintf('%s ships no lib/Settings/%s_register.json.', $appId, $appId),
-			];
+			return $route->failed(message: sprintf('%s ships no lib/Settings/%s_register.json.', $appId, $appId));
 		}
 
+		$request = ['appId' => $appId, 'data' => $document['data'], 'version' => $document['version']];
+		return $this->importDocument(route: $route, request: $request);
+	}//end runThroughOpenRegister()
+
+	/**
+	 * Hand the app's document to OpenRegister's importer, forced.
+	 *
+	 * @param RegisterImportRoute $route The OpenRegister path.
+	 * @param array{appId: string, data: array<string, mixed>, version: string} $request The import request.
+	 *
+	 * @return array{success: bool, path: string, via: string, message: string}
+	 */
+	private function importDocument(RegisterImportRoute $route, array $request): array {
 		try {
-			$result = $this->configurationService->importFromApp(
-				appId: $appId,
-				data: $document['data'],
-				version: $document['version'],
-				force: true
-			);
+			$result = $this->forcedImport(request: $request);
 		} catch (Throwable $e) {
-			return ['success' => false, 'path' => self::PATH_OPENREGISTER, 'via' => $via, 'message' => $e->getMessage()];
+			return $route->failed(message: $e->getMessage());
 		}
 
 		if ($result === []) {
-			return ['success' => false, 'path' => self::PATH_OPENREGISTER, 'via' => $via, 'message' => 'The import returned an empty result.'];
+			return $route->failed(message: 'The import returned an empty result.');
 		}
 
-		return ['success' => true, 'path' => self::PATH_OPENREGISTER, 'via' => $via, 'message' => ''];
-	}//end runThroughOpenRegister()
+		return $route->succeeded(message: '');
+	}//end importDocument()
+
+	/**
+	 * OpenRegister's forced import of the app's document.
+	 *
+	 * @param array{appId: string, data: array<string, mixed>, version: string} $request The import request.
+	 *
+	 * @return array<string, mixed> The importer's result.
+	 */
+	private function forcedImport(array $request): array {
+		return $this->configurationService->importFromApp(
+			appId: $request['appId'],
+			data: $request['data'],
+			version: $request['version'],
+			force: true
+		);
+	}//end forcedImport()
 }//end class

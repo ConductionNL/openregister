@@ -22,9 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Service\FileWriterInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -37,9 +42,9 @@ final class SeedRelatedItems
 {
 
 	/**
-	 * @var FileService|null Writes the seed files, when present.
+	 * @var FileWriterInterface|null Writes the seed files, when present.
 	 */
-	private ?FileService $fileService = null;
+	private ?FileWriterInterface $fileService = null;
 
 	/**
 	 * @var NoteServiceInterface|null Writes the seed notes, when present.
@@ -47,9 +52,9 @@ final class SeedRelatedItems
 	private ?NoteServiceInterface $noteService = null;
 
 	/**
-	 * @var TaskService|null Writes the seed tasks, when present.
+	 * @var ObjectCalendarTasksInterface|null Writes the seed tasks, when present.
 	 */
-	private ?TaskService $taskService = null;
+	private ?ObjectCalendarTasksInterface $taskService = null;
 
 	/**
 	 * Build the creator; the services arrive later and may stay missing.
@@ -63,13 +68,13 @@ final class SeedRelatedItems
 	/**
 	 * Set the service that writes seed files.
 	 *
-	 * @param FileService|null $fileService The file service.
+	 * @param FileWriterInterface|null $fileService The file service.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function useFileService(?FileService $fileService): void
+	public function useFileService(?FileWriterInterface $fileService): void
 	{
 		$this->fileService = $fileService;
 	}//end useFileService()
@@ -91,13 +96,13 @@ final class SeedRelatedItems
 	/**
 	 * Set the service that writes seed tasks.
 	 *
-	 * @param TaskService|null $taskService The task service.
+	 * @param ObjectCalendarTasksInterface|null $taskService The task service.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function useTaskService(?TaskService $taskService): void
+	public function useTaskService(?ObjectCalendarTasksInterface $taskService): void
 	{
 		$this->taskService = $taskService;
 	}//end useTaskService()
@@ -140,7 +145,7 @@ final class SeedRelatedItems
 	private function logStart(SeedRelatedTarget $target, array $counts): void
 	{
 		$this->logger->debug(
-			message: '[ImportHandler] Processing related items for seed object',
+			message: ImportLogTag::PREFIX.'Processing related items for seed object',
 			context: [
 				'file'        => __FILE__,
 				'line'        => __LINE__,
@@ -163,7 +168,7 @@ final class SeedRelatedItems
 	private function logDone(SeedRelatedTarget $target, array $counts): void
 	{
 		$this->logger->debug(
-			message: '[ImportHandler] Related items processed for seed object',
+			message: ImportLogTag::PREFIX.'Related items processed for seed object',
 			context: [
 				'file'          => __FILE__,
 				'line'          => __LINE__,
@@ -214,7 +219,10 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$this->fileService->addFile($target->object, $name, $content, (bool) ($spec['share'] ?? false), (array) ($spec['tags'] ?? []));
+			$this->fileService->addFile(
+				new FileTarget(object: $target->object),
+				new FileUpload(fileName: $name, content: $content, share: (bool) ($spec['share'] ?? false), tags: (array) ($spec['tags'] ?? []))
+			);
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'file', 'name' => $name, 'error' => $e->getMessage()]);
@@ -260,7 +268,7 @@ final class SeedRelatedItems
 		$decoded = base64_decode(substr((string) $spec['content'], 7), strict: true);
 		if ($decoded === false) {
 			$context = ['object_uuid' => $target->object->getUuid(), 'name' => (string) $spec['name']];
-			$this->warn(message: '[ImportHandler] Seed file base64 decode failed - skipping', context: $context);
+			$this->warn(message: ImportLogTag::PREFIX.'Seed file base64 decode failed - skipping', context: $context);
 			return null;
 		}
 
@@ -310,7 +318,7 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$this->noteService->createNote((string) $target->object->getUuid(), $message);
+			$this->noteService->createNote(draft: new NoteDraft(objectUuid: (string) $target->object->getUuid(), message: $message));
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'note', 'error' => $e->getMessage()]);
@@ -362,7 +370,10 @@ final class SeedRelatedItems
 
 		try {
 			$data = $this->taskData(spec: $spec);
-			$this->taskService->createTask($target->registerId, $target->schemaId, (string) $target->object->getUuid(), $target->title, $data);
+			$this->taskService->createObjectTask(
+				ref: new ObjectRef(register: $target->registerId, schema: $target->schemaId, id: (string) $target->object->getUuid()),
+				draft: new LinkedTaskDraft(objectTitle: $target->title, data: $data)
+			);
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'task', 'summary' => $summary, 'error' => $e->getMessage()]);
@@ -398,7 +409,7 @@ final class SeedRelatedItems
 	 */
 	private function warnNoUser(string $kind, array $context): void
 	{
-		$this->warn(message: "[ImportHandler] Skipping seed {$kind} - no user session available", context: $context);
+		$this->warn(message: ImportLogTag::PREFIX."Skipping seed {$kind} - no user session available", context: $context);
 	}//end warnNoUser()
 
 	/**
@@ -413,7 +424,7 @@ final class SeedRelatedItems
 	{
 		$kind = $detail['kind'];
 		unset($detail['kind']);
-		$this->warn(message: "[ImportHandler] Seed {$kind} creation failed", context: (['object_uuid' => $target->object->getUuid()] + $detail));
+		$this->warn(message: ImportLogTag::PREFIX."Seed {$kind} creation failed", context: (['object_uuid' => $target->object->getUuid()] + $detail));
 	}//end failed()
 
 	/**

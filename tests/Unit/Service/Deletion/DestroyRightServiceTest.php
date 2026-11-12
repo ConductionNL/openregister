@@ -29,6 +29,7 @@ namespace Unit\Service\Deletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -59,7 +60,7 @@ final class DestroyRightServiceTest extends TestCase {
 		$permissions->method('resolveAuthorization')->willReturn($authorization);
 		$permissions->method('hasPermission')->willReturn($hasPermission);
 
-		return new DestroyRightService($permissions, $session, $groups, new NullLogger());
+		return new DestroyRightService($permissions, new CallerContext($session, $groups), new NullLogger());
 	}//end service()
 
 	private function object(): ObjectEntity {

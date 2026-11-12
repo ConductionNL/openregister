@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Search\Service\Geo;
 /**
  * Applies spatial filters to a list of rows by post-filtering.
  */
-class GeoFilterApplier {
+class GeoFilterApplier implements GeoFilterApplierInterface {
 
 	private const GEOJSON_TYPES = ['Point', 'Polygon', 'MultiPolygon', 'LineString'];
 
@@ -110,6 +110,19 @@ class GeoFilterApplier {
 			return $this->coerceGeometry(value: ($row[$property] ?? null));
 		}
 
+		return $this->firstGeometry(row: $row);
+	}//end extractGeometry()
+
+	/**
+	 * The first GeoJSON-shaped value of a row.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return ?array The GeoJSON geometry, or null when none found.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-geo-metadata-kaart/tasks.md#task-1
+	 */
+	private function firstGeometry(array $row): ?array {
 		foreach ($row as $value) {
 			$geometry = $this->coerceGeometry(value: $value);
 			if ($geometry !== null) {
@@ -118,7 +131,7 @@ class GeoFilterApplier {
 		}
 
 		return null;
-	}//end extractGeometry()
+	}//end firstGeometry()
 
 	/**
 	 * Coerce a raw value to a GeoJSON geometry array.

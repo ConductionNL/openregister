@@ -25,6 +25,7 @@ use OCA\OpenRegister\Controller\ApiSurfaceController;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiSurfaceControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -38,6 +39,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiSurfaceControllerTest extends TestCase {
 
@@ -71,7 +74,7 @@ class ApiSurfaceControllerTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('');
 
-		return new ApiSurfaceController(
+		return ApiSurfaceControllerFactory::create(
 			'openregister',
 			$request,
 			$capabilities,

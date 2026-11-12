@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -85,43 +80,15 @@ import {
 				don't want to migrate by clicking the remove button.
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| 'Unnamed Object'
-							}}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for migration.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for migration.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<!-- Step 2: Select Target Register and Schema -->
@@ -317,36 +284,12 @@ import {
 					</div>
 				</div>
 
-				<!-- Warnings -->
-				<div v-if="migrationResult.warnings?.length" class="report-section">
-					<h4>Warnings</h4>
-					<ul>
-						<li
-							v-for="warning in migrationResult.warnings"
-							:key="warning"
-							class="warning-text">
-							{{ warning }}
-						</li>
-					</ul>
-				</div>
-
-				<!-- Errors -->
-				<div v-if="migrationResult.errors?.length" class="report-section">
-					<h4>Errors</h4>
-					<ul>
-						<li
-							v-for="error in migrationResult.errors"
-							:key="error"
-							class="error-text">
-							{{ error }}
-						</li>
-					</ul>
-				</div>
+				<TransferMessages :result="migrationResult" />
 			</div>
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -408,7 +351,6 @@ import {
 import {
 	NcButton,
 	NcDialog,
-	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
@@ -417,34 +359,64 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 // Icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import TransferMessages from './TransferMessages.vue'
+import { withRequestToken } from '../../services/requestToken.js'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
+import { failedTransfer } from './transferResult.js'
+
+/**
+ * Post a migration and read its result.
+ *
+ * @param {object} request The migration request body
+ * @return {Promise<object>} The migration result
+ * @throws {Error} With the server's error when the migration is refused
+ */
+async function postMigration(request) {
+	const response = await fetch('/index.php/apps/openregister/api/migrate', withRequestToken({
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(request),
+	}))
+
+	const result = await response.json().catch(() => ({}))
+	if (!response.ok) {
+		throw new Error(result.error)
+	}
+	return result
+}
 
 export default {
 	name: 'MigrationObject',
 	components: {
+		SelectedObjectsList,
 		NcButton,
 		NcDialog,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		Cancel,
 		ArrowRight,
 		ArrowLeft,
-		Close,
 		DatabaseExport,
 		DatabaseOutline,
 		FileTreeOutline,
+		TransferMessages,
 	},
+
+	mixins: [selectedObjectsDialog],
 
 	data() {
 		return {
 			step: 1, // 1: confirm selection, 2: select target register/schema, 3: property mapping, 4: report
 			loading: false,
-			selectedObjects: [],
 			availableRegisters: [],
 			availableSchemas: [],
 			targetRegister: null,
@@ -497,13 +469,10 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeMigration() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-				return
+			this.initializeSelection()
+			if (this.selectedObjects.length > 0) {
+				this.loadAvailableRegisters()
 			}
-			this.loadAvailableRegisters()
 		},
 
 		/**
@@ -513,7 +482,7 @@ export default {
 			this.loading = true
 			try {
 				const response = await fetch(
-					'/index.php/apps/openregister/api/registers',
+					'/index.php/apps/openregister/api/registers?_extend[]=schemas',
 				)
 				const data = await response.json()
 				this.availableRegisters = data.results || []
@@ -526,28 +495,11 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Reloads target schemas when the register select changes; UI reactivity plumbing.
+		 * @spec exclude Offers the schemas of the chosen register; UI reactivity plumbing.
 		 */
-		async onRegisterChange() {
-			if (!this.targetRegister) {
-				this.availableSchemas = []
-				this.targetSchema = null
-				return
-			}
-
-			this.loading = true
-			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/schemas?register=${this.targetRegister.id}`,
-				)
-				const data = await response.json()
-				this.availableSchemas = data.results || []
-			} catch (error) {
-				console.error('Error loading schemas:', error)
-				this.availableSchemas = []
-			} finally {
-				this.loading = false
-			}
+		onRegisterChange() {
+			this.availableSchemas = this.targetRegister?.schemas || []
+			this.targetSchema = null
 		},
 
 		/**
@@ -558,19 +510,6 @@ export default {
 				return
 			}
 			await this.loadSchemaProperties()
-		},
-
-		/**
-		 * @param {string|number} objectId
-		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-			}
 		},
 
 		/**
@@ -608,12 +547,7 @@ export default {
 				)
 
 				// Load target schema properties
-				const response = await fetch(
-					`/index.php/apps/openregister/api/schemas/${this.targetSchema.id}`,
-				)
-				const targetSchemaData = await response.json()
-				this.targetProperties =
-					this.extractSchemaProperties(targetSchemaData)
+				await this.loadTargetProperties()
 
 				// Initialize property mappings
 				this.initializePropertyMappings()
@@ -623,6 +557,16 @@ export default {
 			} catch (error) {
 				console.error('Error loading schema properties:', error)
 			}
+		},
+
+		/**
+		 * Load the properties of the target schema.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadTargetProperties() {
+			const targetSchemaData = await fetchSchema(this.targetSchema.id)
+			this.targetProperties = this.extractSchemaProperties(targetSchemaData)
 		},
 
 		/**
@@ -684,49 +628,52 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(
-					'/index.php/apps/openregister/api/migrate',
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							sourceRegister: registerStore.registerItem.id,
-							sourceSchema: schemaStore.schemaItem.id,
-							targetRegister: this.targetRegister.id,
-							targetSchema: this.targetSchema.id,
-							objects: this.selectedObjects.map((obj) => obj.id),
-							mapping: this.mapping,
-						}),
-					},
-				)
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				this.migrationResult = await response.json()
+				this.migrationResult = await postMigration(this.migrationRequest())
 				this.step = 4
-
-				// Refresh the object list
-				objectStore.refreshObjectList()
+				refreshObjectLists()
 			} catch (error) {
-				console.error('Error performing migration:', error)
-				this.migrationResult = {
-					success: false,
-					errors: [error.message || 'An error occurred during migration'],
-				}
-				this.step = 4
+				this.showMigrationFailure(error)
 			} finally {
 				this.loading = false
 			}
 		},
 
 		/**
+		 * Log a failed migration and show it on the report step.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showMigrationFailure(error) {
+			console.error('Error performing migration:', error)
+			this.migrationResult = failedTransfer(
+				error,
+				'An error occurred during migration',
+			)
+			this.step = 4
+		},
+
+		/**
+		 * The migration to ask for: from the current register and schema to
+		 * the chosen ones, for the selected objects, with the property mapping.
+		 *
+		 * @return {object} The migration request body
+		 */
+		migrationRequest() {
+			return {
+				sourceRegister: registerStore.registerItem.id,
+				sourceSchema: schemaStore.schemaItem.id,
+				targetRegister: this.targetRegister.id,
+				targetSchema: this.targetSchema.id,
+				objects: this.selectedObjects.map((obj) => obj.id),
+				mapping: this.mapping,
+			}
+		},
+
+		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
 		 */
-		closeModal() {
+		closeDialog() {
 			navigationStore.setModal(false)
 		},
 
@@ -773,6 +720,17 @@ export default {
 		},
 	},
 }
+
+/**
+ * Fetch a schema by id.
+ *
+ * @param {number|string} id The schema id
+ * @return {Promise<object>} The schema
+ */
+async function fetchSchema(id) {
+	const response = await fetch(`/index.php/apps/openregister/api/schemas/${id}`)
+	return response.json()
+}
 </script>
 
 <style scoped lang="scss">
@@ -791,23 +749,6 @@ export default {
 .migration-step h3 {
 	margin-bottom: 16px;
 	color: var(--color-main-text);
-}
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-.selected-objects-list {
-	max-height: 400px;
-	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-}
-
-@include selected-object-item;
-
-.selected-object-item:last-child {
-	border-bottom: none;
 }
 
 .selection-section {
@@ -975,8 +916,6 @@ export default {
 }
 
 @include loading-container;
-
-@include object-info-strong-rules;
 
 @include report-section;
 

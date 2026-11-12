@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -79,6 +81,11 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
@@ -290,7 +297,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		}
 
 		$routing->method('findSlugHolders')->willReturnCallback(
-			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
+			fn (RegisterSchema $table, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
 		);
 		return $this->buildSlugHandler(
 			magicMapper: $routing,
@@ -353,7 +360,8 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 		$routing->method('findSlugsByPrefix')->willReturnCallback(
-			function ($register, $schema, string $prefix): array {
+			function (RegisterSchema $table, string $prefix): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$matches = [];
 				foreach ($this->inserted as $entity) {
 					if (str_starts_with((string)$entity->getSlug(), $prefix) === true) {
@@ -382,15 +390,20 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $registerMapper,
-			objectEntityMapper:  $plainMapper,
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $plainMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
 		$handler->setSlugHandler($this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders));
@@ -418,7 +431,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		$result = ['objects' => []];
 		$method = $ref->getMethod('importSeedData');
 		for ($run = 0; $run < $runs; $run++) {
-			$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+			$seed = new SeedImport(configData: $configData, result: $result);
+			$seed->appId = 'learniq';
+			$method->invokeArgs($handler, [$seed, $configuration]);
 		}
 	}//end importSeed()
 

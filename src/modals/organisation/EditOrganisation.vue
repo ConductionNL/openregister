@@ -66,53 +66,27 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 								"
 								:rows="4" />
 
-							<div class="groups-select-container">
-								<label class="groups-label">{{
-									t('openregister', 'Nextcloud Groups')
-								}}</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:placeholder="
-										t('openregister', 'Search groups...')
-									"
-									@searchChange="searchGroups"
-									@update:modelValue="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'No groups found. Try a different search.',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Only members of selected groups can access this organisation',
-										)
-									}}
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								:label="t('openregister', 'Nextcloud Groups')"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								:hint="
+									t(
+										'openregister',
+										'Only members of selected groups can access this organisation',
+									)
+								"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 
 							<NcCheckboxRadioSwitch
 								v-model="organisationItem.active"
@@ -297,7 +271,6 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -307,17 +280,19 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import OrganisationMembers from './OrganisationMembers.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
 import SpecialRightsTable from './SpecialRightsTable.vue'
-import { entityTabs, SPECIAL_RIGHTS } from './organisationRights.js'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { freshState } from '../../services/initialState.js'
 import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
+import { withRequestToken } from '../../services/requestToken.js'
+import { entityTabs, SPECIAL_RIGHTS } from './organisationRights.js'
 
 /**
  * The state every instance of this component starts from.
@@ -377,20 +352,20 @@ const NEXT_FORM = {
  * @return {Promise<Response>} The response
  */
 function postLeave(uuid, userId) {
-	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, {
+	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, withRequestToken({
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ userId }),
-	})
+	}))
 }
 
 export default {
 	name: 'EditOrganisation',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -988,12 +963,6 @@ export default {
 
 .create-another-checkbox {
 	margin-right: auto;
-}
-
-@include groups-select-container-rules-2;
-
-.group-name {
-	font-weight: 500;
 }
 
 @include security-section;

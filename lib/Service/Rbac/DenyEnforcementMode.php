@@ -69,7 +69,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DenyEnforcementMode {
+class DenyEnforcementMode implements DenyEnforcementModeInterface {
 
 	/**
 	 * App identifier used for `IAppConfig` lookups.
@@ -194,31 +194,35 @@ class DenyEnforcementMode {
 	 * administrator reading the log for "what will change when I flip the
 	 * switch" should not have to raise the level to see the answer.
 	 *
-	 * @param array<string, mixed> $denial  The denial as the resolver returned it.
-	 * @param string               $action  The verb that would have been removed.
-	 * @param string|null          $userId  The caller it would have been removed from.
-	 * @param array<string, mixed> $context Where it happened: schema, object, path.
+	 * @param StagedDenial $staged The denial, the verb, the caller and where it happened.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function record(array $denial, string $action, ?string $userId, array $context = []): void {
+	public function record(StagedDenial $staged): void {
 		$this->logger->warning(
 			message: '[DenyEnforcementMode] A deny rule would refuse this action; staging, so it was allowed',
 			context: array_merge(
-				[
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'mode' => self::MODE_STAGING,
-					'action' => $action,
-					'userId' => $userId,
-					'principal' => ($denial['principal'] ?? null),
-					'rule' => ($denial['rule'] ?? null),
-					'conditional' => ($denial['conditional'] ?? false),
-				],
-				$context
+				['file' => __FILE__, 'line' => __LINE__, 'mode' => self::MODE_STAGING, 'action' => $staged->action, 'userId' => $staged->userId],
+				$this->ruleOf(denial: $staged->denial),
+				$staged->context
 			)
 		);
 	}//end record()
+
+	/**
+	 * The rule, the principal it names and whether it is conditional, as a staged record carries them.
+	 *
+	 * @param array<string, mixed> $denial The denial as the resolver returned it.
+	 *
+	 * @return array{principal: mixed, rule: mixed, conditional: mixed} The record's rule part.
+	 */
+	private function ruleOf(array $denial): array {
+		return [
+			'principal' => ($denial['principal'] ?? null),
+			'rule' => ($denial['rule'] ?? null),
+			'conditional' => ($denial['conditional'] ?? false),
+		];
+	}//end ruleOf()
 }//end class

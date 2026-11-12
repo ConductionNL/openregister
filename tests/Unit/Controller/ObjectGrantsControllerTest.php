@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Controller\ObjectGrantsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -32,12 +34,18 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectGrantsControllerFactory;
 
 /**
  * Tasks 3.1, 3.2 and the 404 and 403 halves of 4.4.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectGrantsController
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGrantsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowsQuery
  */
 class ObjectGrantsControllerTest extends TestCase {
 
@@ -71,7 +79,7 @@ class ObjectGrantsControllerTest extends TestCase {
 
 		$this->report = $this->createMock(ObjectGrantsReport::class);
 
-		return new ObjectGrantsController(
+		return ObjectGrantsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objectService,
@@ -121,7 +129,7 @@ class ObjectGrantsControllerTest extends TestCase {
 		$rows = ['object' => 'case-1', 'results' => [], 'denyEnforcement' => 'staging'];
 		$this->report->expects($this->once())
 			->method('rowsFor')
-			->with($this->isInstanceOf(ObjectEntity::class), 1, 7, ['user', 'group'])
+			->with($this->isInstanceOf(ObjectEntity::class), new GrantRowsQuery(new RegisterSchemaRef(1, 7), ['user', 'group']))
 			->willReturn($rows);
 
 		$response = $controller->index('dossiq', 'case', 'case-1', ' user, group ,');
@@ -139,7 +147,7 @@ class ObjectGrantsControllerTest extends TestCase {
 		$controller = $this->controllerFor(readable: true, mayRead: true);
 		$this->report->expects($this->once())
 			->method('rowsFor')
-			->with($this->anything(), $this->anything(), $this->anything(), [])
+			->with($this->anything(), $this->callback(static fn (GrantRowsQuery $query): bool => $query->principalTypes === []))
 			->willReturn(['object' => 'case-1', 'results' => [], 'denyEnforcement' => 'off']);
 
 		$this->assertSame(200, $controller->index('dossiq', 'case', 'case-1')->getStatus());

@@ -132,27 +132,34 @@ class MdtoElementCatalogue {
 	 */
 	private function elementsOfType(DOMXPath $xpath, string $type): array {
 		$elements = [];
-		$query = sprintf('//xsd:complexType[@name="%s"]//xsd:element[@name]', $type);
+		$query    = sprintf('//xsd:complexType[@name="%s"]//xsd:element[@name]', $type);
 
 		foreach ($xpath->query($query) as $node) {
-			if (($node instanceof DOMElement) === false) {
+			if (($node instanceof DOMElement) === false || $node->getAttribute('name') === '') {
 				continue;
 			}
 
-			$name = $node->getAttribute('name');
-			if ($name === '') {
-				continue;
-			}
-
-			// An absent minOccurs means 1 in XSD, which is the direction that
-			// matters: treating it as optional would let a mandatory element go
-			// unmapped and the refusal never fire.
-			$minOccurs = $node->getAttribute('minOccurs');
-			$elements[$name] = ($minOccurs === '' || (int)$minOccurs >= 1);
+			$elements[$node->getAttribute('name')] = $this->isMandatory(node: $node);
 		}
 
 		return $elements;
 	}//end elementsOfType()
+
+	/**
+	 * Whether an element declaration is mandatory.
+	 *
+	 * @param DOMElement $node The element declaration.
+	 *
+	 * @return bool True when it must occur at least once.
+	 */
+	private function isMandatory(DOMElement $node): bool {
+		// An absent minOccurs means 1 in XSD, which is the direction that
+		// matters: treating it as optional would let a mandatory element go
+		// unmapped and the refusal never fire.
+		$minOccurs = $node->getAttribute('minOccurs');
+
+		return ($minOccurs === '' || (int)$minOccurs >= 1);
+	}//end isMandatory()
 
 	/**
 	 * Read the element declarations out of the vendored XSD.

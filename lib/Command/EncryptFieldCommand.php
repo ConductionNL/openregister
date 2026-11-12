@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -52,14 +52,14 @@ class EncryptFieldCommand extends MagicTableCommand {
 	 * Wire the table selection, encryption handler and database connection used by the command.
 	 *
 	 * @param MagicTableSelection $selection Finds the tables to work on.
-	 * @param FieldEncryptionHandler $fieldEncryptionHandler Envelope encrypt/decrypt logic.
+	 * @param FieldEncryptionHandlerInterface $fieldEncryptionHandler Envelope encrypt/decrypt logic.
 	 * @param IDBConnection $db Database connection for native SELECT/UPDATE.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		MagicTableSelection $selection,
-		private readonly FieldEncryptionHandler $fieldEncryptionHandler,
+		private readonly FieldEncryptionHandlerInterface $fieldEncryptionHandler,
 		private readonly IDBConnection $db,
 	) {
 		parent::__construct(selection: $selection);

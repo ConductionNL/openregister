@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use Exception;
-use OCA\OpenRegister\Service\Rbac\RevealFlusher;
+use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use Psr\Log\LoggerInterface;
@@ -59,11 +59,11 @@ class RevealAuditMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param RevealFlusher $flusher Writes what the read path collected.
+	 * @param RevealFlusherInterface $flusher Writes what the read path collected.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly RevealFlusher $flusher,
+		private readonly RevealFlusherInterface $flusher,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

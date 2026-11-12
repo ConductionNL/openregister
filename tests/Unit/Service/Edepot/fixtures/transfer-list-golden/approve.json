@@ -1,0 +1,99 @@
+[
+    [
+        "info",
+        "[TransferListService] Transfer list approved",
+        {
+            "uuid": "l1",
+            "approvedBy": "archivist-1"
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "l1",
+            "status": "approved",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "approvedBy": "archivist-1",
+                "approvedAt": "<now>"
+            }
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "l1",
+            "status": "approved",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "approvedBy": "archivist-1",
+                "approvedAt": "<now>"
+            },
+            "saved": true
+        }
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'approved'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'rejected'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'in_progress'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'completed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'partially_failed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'failed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot approve transfer list with status 'bogus'; expected 'in_review'"
+    ]
+]

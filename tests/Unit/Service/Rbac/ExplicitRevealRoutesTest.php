@@ -29,10 +29,15 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RowRedaction;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -46,10 +51,12 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -167,7 +174,8 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$rbac->method('filterReadableProperties')->willReturnArgument(1);
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($this->schema());
-		$reader = $this->bare(AccessLinkReader::class, ['schemas' => $schemas, 'properties' => $rbac, 'logger' => $this->createMock(LoggerInterface::class)]);
+		$filters = new AccessLinkReaderFilters(schemas: $schemas, properties: $rbac, timeline: $this->createMock(PublicTimelineInterface::class));
+		$reader = $this->bare(AccessLinkReader::class, ['filters' => $filters, 'logger' => $this->createMock(LoggerInterface::class)]);
 		$object = new ObjectEntity();
 		$object->setSchema('7');
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
@@ -183,10 +191,10 @@ class ExplicitRevealRoutesTest extends TestCase {
 	public function testAListRowIsMaskedWithItsNameCopy(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
-		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
-		$render = $this->bare(RenderObject::class, ['container' => $container]);
+		$render = $this->bare(RenderObject::class, ['runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: $container)]);
 
 		$row = $this->call($render, 'maskRowReveals', [
 			'row' => ['id' => '11111111-1111-4111-8111-111111111111', 'citizenServiceNumber' => self::BSN, '@self' => ['name' => self::BSN]],
@@ -196,4 +204,78 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$this->assertSame(self::MASK, $row['citizenServiceNumber']);
 		$this->assertNull($row['@self']['name']);
 	}//end testAListRowIsMaskedWithItsNameCopy()
+
+	/**
+	 * A rendered entity loses the copy of the value on `@self` too, not only the body.
+	 *
+	 * @return void
+	 */
+	public function testAnEntityIsMaskedWithItsNameCopy(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-1111-4111-8111-111111111111');
+		$entity->setName(self::BSN);
+		$entity->setObject(['citizenServiceNumber' => self::BSN]);
+
+		$this->call($this->masking(), 'maskEntityReveals', ['entity' => $entity, 'schema' => $this->schema()]);
+
+		$this->assertSame(self::MASK, $entity->getObject()['citizenServiceNumber']);
+		$this->assertNull($entity->getName());
+	}//end testAnEntityIsMaskedWithItsNameCopy()
+
+	/**
+	 * An encrypted list row is masked after decryption: the mask is of the value, not of its ciphertext.
+	 *
+	 * @return void
+	 */
+	public function testAnEncryptedRowIsMaskedAfterDecryption(): void {
+		$schema = $this->schema();
+		$properties = $schema->getProperties();
+		$properties['citizenServiceNumber']['x-openregister-encrypted'] = true;
+		$schema->setProperties($properties);
+
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$rbac->method('filterReadableProperties')->willReturnArgument(1);
+		$encryption = $this->createMock(FieldEncryptionHandler::class);
+		$encryption->method('decryptInScope')->willReturnCallback(
+			static fn (array $data): array => (['citizenServiceNumber' => self::BSN] + $data)
+		);
+		$render = $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime($encryption)]);
+		$reflection = new ReflectionClass($render);
+		$reflection->getProperty('propertyRbacHandler')->setValue($render, $rbac);
+		$reflection->getProperty('schemasCache')->setValue($render, [7 => $schema]);
+
+		$row = $this->call($render, 'redactArrayRow', [
+			'pass' => new RowRedaction(),
+			'row' => ['citizenServiceNumber' => 'ciphertext-9999', '@self' => ['schema' => 7]],
+		]);
+
+		$this->assertSame(self::MASK, $row['citizenServiceNumber']);
+	}//end testAnEncryptedRowIsMaskedAfterDecryption()
+
+	/**
+	 * A render that can mask explicit-reveal values.
+	 *
+	 * @return RenderObject The render.
+	 */
+	private function masking(): RenderObject {
+		return $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime(null)]);
+	}//end masking()
+
+	/**
+	 * The runtime of a render that can mask explicit-reveal values.
+	 *
+	 * @param FieldEncryptionHandler|null $encryption The field encryption handler, if any.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\RenderRuntime The runtime.
+	 */
+	private function maskingRuntime(?FieldEncryptionHandler $encryption): \OCA\OpenRegister\Service\Object\RenderRuntime {
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($masker);
+
+		return new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(fieldEncryptionHandler: $encryption), container: $container);
+	}//end maskingRuntime()
 }//end class

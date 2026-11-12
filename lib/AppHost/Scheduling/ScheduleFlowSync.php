@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
+use OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface;
 use Throwable;
 
 /**
@@ -46,13 +46,13 @@ class ScheduleFlowSync {
 	 * Constructor.
 	 *
 	 * @param ScheduleFlowStore $store The compiled flows.
-	 * @param FlowTenantMembership $membership Answers whether the publisher is in the organisation.
+	 * @param FlowTenantMembershipInterface $membership Answers whether the publisher is in the organisation.
 	 * @param ScheduleAuditTrail $audit Records identity changes.
 	 * @param ScheduleRefusals $refusals Logs a refusal and keeps it for the response.
 	 */
 	public function __construct(
 		private readonly ScheduleFlowStore $store,
-		private readonly FlowTenantMembership $membership,
+		private readonly FlowTenantMembershipInterface $membership,
 		private readonly ScheduleAuditTrail $audit,
 		private readonly ScheduleRefusals $refusals,
 	) {
@@ -78,6 +78,18 @@ class ScheduleFlowSync {
 			return;
 		}
 
+		$this->replaceFlows(release: $release, schedules: $schedules);
+	}//end apply()
+
+	/**
+	 * Store a flow per schedule and remove the application's flows no schedule names any more.
+	 *
+	 * @param ScheduleRelease      $release   The publish.
+	 * @param ScheduleDescriptor[] $schedules The manifest's valid schedules.
+	 *
+	 * @return void
+	 */
+	private function replaceFlows(ScheduleRelease $release, array $schedules): void {
 		$stored = $this->store->ofApplication(application: $release->applicationUuid());
 		foreach ($schedules as $schedule) {
 			$this->applySchedule(compiled: $this->compile(schedule: $schedule, release: $release), stored: $stored);
@@ -87,7 +99,7 @@ class ScheduleFlowSync {
 		foreach ($stored as $flow) {
 			$this->store->remove(flow: $flow);
 		}
-	}//end apply()
+	}//end replaceFlows()
 
 	/**
 	 * The manifest's valid schedules, logging the entries that are not.
@@ -117,25 +129,39 @@ class ScheduleFlowSync {
 	 * @return bool False after logging why not.
 	 */
 	private function mayPublish(ScheduleRelease $release): bool {
-		$publisher = $release->publisher;
+		$reason = $this->publishRefusal(release: $release);
+		if ($reason === null) {
+			return true;
+		}
+
+		$this->refusals->refuse(release: $release, reason: $reason);
+		return false;
+	}//end mayPublish()
+
+	/**
+	 * Why this publish may not set a schedule's identity and tenant; null when it may.
+	 *
+	 * @param ScheduleRelease $release The publish.
+	 *
+	 * @return string|null
+	 */
+	private function publishRefusal(ScheduleRelease $release): ?string {
+		$publisher    = $release->publisher;
 		$organisation = $release->organisation();
 		if ($publisher === null) {
-			$this->refusals->refuse(release: $release, reason: 'Nobody signed in published it.');
-			return false;
+			return 'Nobody signed in published it.';
 		}
 
 		if ($organisation === null) {
-			$this->refusals->refuse(release: $release, reason: 'The application has no organisation.');
-			return false;
+			return 'The application has no organisation.';
 		}
 
 		if ($this->membership->isMember(uid: $publisher, organisation: $organisation) === false) {
-			$this->refusals->refuse(release: $release, reason: 'The publisher is not a member of its organisation.');
-			return false;
+			return 'The publisher is not a member of its organisation.';
 		}
 
-		return true;
-	}//end mayPublish()
+		return null;
+	}//end publishRefusal()
 
 	/**
 	 * The flow of a schedule, or null after logging why it may not run.

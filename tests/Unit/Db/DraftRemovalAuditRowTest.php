@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -69,10 +71,7 @@ class DraftRemovalAuditRowTest extends TestCase {
 		$this->record = new DraftRemovalRecord(
 			auditTrail: new AuditTrailMapper(
 				db: $this->database->idbConnection(),
-				container: $this->createMock(ContainerInterface::class),
-				userSession: $session,
-				request: $this->createMock(IRequest::class),
-				logger: new NullLogger()
+				services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $session, request: $this->createMock(IRequest::class))
 			),
 			logger: new NullLogger()
 		);
@@ -118,7 +117,7 @@ class DraftRemovalAuditRowTest extends TestCase {
 	public function testTheStoredRowSaysWhoWhenWhereAndNothingTheDraftHeld(): void {
 		[$draft, $register, $schema] = $this->draft();
 
-		$this->assertTrue($this->record->write(draft: $draft, register: $register, schema: $schema));
+		$this->assertTrue($this->record->write(new RemovedDraft(draft: $draft, register: $register, schema: $schema)));
 
 		$rows = $this->rows();
 		$this->assertCount(1, $rows);
@@ -148,7 +147,7 @@ class DraftRemovalAuditRowTest extends TestCase {
 	public function testTheStoredRowNamesTheJob(): void {
 		[$draft, $register, $schema] = $this->draft();
 
-		DraftRemovalRecord::asJob(job: 'DraftExpiryJob', operation: fn (): bool => $this->record->write(draft: $draft, register: $register, schema: $schema));
+		DraftRemovalRecord::asJob(job: 'DraftExpiryJob', operation: fn (): bool => $this->record->write(new RemovedDraft(draft: $draft, register: $register, schema: $schema)));
 
 		$rows = $this->rows();
 		$this->assertCount(1, $rows);

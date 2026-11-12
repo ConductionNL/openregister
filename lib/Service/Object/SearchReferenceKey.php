@@ -59,7 +59,9 @@ final class SearchReferenceKey {
 		array $spelling,
 		public readonly string $kind,
 	) {
-		[$this->parent, $this->key, $this->plural] = $spelling;
+		$this->parent = $spelling[0];
+		$this->key    = $spelling[1];
+		$this->plural = $spelling[2];
 	}//end __construct()
 
 	/**

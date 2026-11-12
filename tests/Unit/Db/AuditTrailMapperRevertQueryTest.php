@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
@@ -65,10 +67,7 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $container,
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $container, logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 
 		// The object was created, then edited twice; another object was edited in between.
@@ -122,7 +121,7 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 		$object->setObject(['title' => 'third', 'note' => 'added later']);
 		$this->magicMapper->method('find')->willReturn($object);
 
-		$reverted = $this->mapper->revertObject(identifier: self::OBJECT, until: 1);
+		$reverted = $this->mapper->revertObjectWith(identifier: self::OBJECT, options: new RevertOptions(until: 1));
 
 		$this->assertSame('first', $reverted->getObject()['title']);
 		// The property the later edit added is gone again.

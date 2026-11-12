@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -40,6 +41,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * What a create through SaveObject::saveObject() does around the insert: the
@@ -73,6 +78,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectCreateObjectTest extends TestCase {
 
@@ -88,12 +95,12 @@ final class SaveObjectCreateObjectTest extends TestCase {
 	 */
 	private static function cases(): array {
 		return [
-			'create' => ['args' => ['folderId' => 77, 'failIfExists' => true, '_owner' => 'alice']],
+			'create' => ['args' => ['failIfExists' => true, '_owner' => 'alice']],
 			'mapper took its update branch' => ['action' => 'update', 'session' => true, 'args' => ['_unowned' => true]],
 			'session user owns the create' => ['session' => true, 'args' => []],
 			'silent' => ['args' => ['silent' => true]],
 			'audit off' => ['audit' => false, 'args' => []],
-			'not persisted' => ['args' => ['persist' => false, 'folderId' => 77]],
+			'not persisted' => ['args' => ['persist' => false]],
 			'file property stored' => ['data' => ['doc' => 'raw'], 'image' => 'file', 'args' => []],
 			'file property, image not a file' => ['data' => ['doc' => 'raw'], 'image' => 'string', 'args' => []],
 			'file write fails' => ['data' => ['doc' => 'raw'], 'fileFails' => true, 'args' => []],
@@ -144,18 +151,11 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
-			folderId: ($args['folderId'] ?? null),
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: false,
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\RuntimeException $e) {
 			return ['trace' => $this->trace, 'thrown' => $e->getMessage()];
 		}
@@ -190,14 +190,14 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
 				throw new \RuntimeException('disk full');
 			}
 
-			$object[$propertyName] = 42;
+			$write->data[$propertyName] = 42;
 		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willThrowException(new DoesNotExistException('none'));
@@ -210,7 +210,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		});
 		$unified->method('getLastWriteAction')->willReturn($case['action'] ?? 'insert');
 		$cache = $this->createMock(CacheHandler::class);
-		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, int $ttl = 0, ?string $organisation = null): void {
+		$cache->method('setObjectName')->willReturnCallback(function (string $identifier, string $name, ?string $organisation = null): void {
 			$this->trace[] = ['cacheName', $identifier, $name, $organisation];
 		});
 		$settings = $this->createMock(SettingsService::class);
@@ -246,29 +246,47 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-1');
 
 		return new SaveObject(
-			$mapper,
-			$unified,
-			$this->createMock(MetadataHydrationHandler::class),
-			$files,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$session,
-			$audit,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$organisations,
-			$cache,
-			$settings,
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$translations,
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			$logger,
-			$this->createMock(TmloService::class),
-			$folders,
-			$this->createMock(PermissionHandler::class),
-			container: $container
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $unified
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $audit,
+						settingsService: $settings,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $cache,
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $files,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translations,
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisations
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $folders
 		);
 	}
 
@@ -282,8 +300,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$saved->setUuid(self::UUID);
 		$data = ['title' => 'new', 'doc' => 'raw'];
 
-		$method = (new \ReflectionClass(SaveObject::class))->getMethod('processFilePropertiesWithRollback');
-		$method->invokeArgs($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
+		FilePropertyCalls::processFilePropertiesWithRollback($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
 
 		$this->assertSame(['title' => 'new', 'doc' => 42], $data);
 	}

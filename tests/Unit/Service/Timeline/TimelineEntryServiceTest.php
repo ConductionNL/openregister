@@ -27,6 +27,7 @@ namespace Unit\Service\Timeline;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
@@ -103,9 +104,11 @@ class TimelineEntryServiceTest extends TestCase {
 		);
 
 		$this->service = new TimelineEntryService(
-			$this->entryMapper,
-			$this->kinds,
-			new LanguageDetector(),
+			new TimelineEntryRecords(
+				entryMapper: $this->entryMapper,
+				kinds: $this->kinds,
+				languages: new LanguageDetector()
+			),
 			$this->visibility,
 			$this->userSession,
 			$this->createMock(LoggerInterface::class)

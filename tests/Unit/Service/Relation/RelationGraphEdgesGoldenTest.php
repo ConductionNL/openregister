@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
+use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -108,9 +109,11 @@ class RelationGraphEdgesGoldenTest extends TestCase {
 
 		return new RelationGraphService(
 			objectEntityMapper: $objects,
-			relationMapper: $rows,
-			schemaMapper: $schemaMapper,
-			relationTypes: new RelationTypeResolver(),
+			sources: new RelationGraphSources(
+				relationMapper: $rows,
+				schemaMapper: $schemaMapper,
+				relationTypes: new RelationTypeResolver()
+			),
 			appConfig: $appConfig,
 			logger: new NullLogger()
 		);

@@ -28,14 +28,17 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
@@ -56,6 +59,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use PDO;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests that a marked public rule widens the organisation filter by its own rows only.
@@ -83,6 +89,37 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacMatchSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacOperatorTerm
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses \OCA\OpenRegister\Service\Object\InheritFromPublicSetting
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
  */
 class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
@@ -179,7 +216,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$userManager,
 			$this->groupManager,
@@ -193,7 +230,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
 		$container->method('get')->willReturnCallback(
 			static function (string $service) use ($permissionHandler, $registerMapper) {
-				if ($service === PermissionHandler::class) {
+				if ($service === PermissionHandlerInterface::class) {
 					return $permissionHandler;
 				}
 
@@ -206,13 +243,19 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		);
 
 		$this->rbac = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 
 	}//end setUp()
@@ -421,11 +464,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		$organisation->expects($this->once())->method('applyOrganizationFilter');
 		$organisation->expects($this->never())->method('resolveOrganizationScope');
 
-		$this->searchHandler(organisation: $organisation)->buildFilteredQuery(
-			query: ['_multitenancy' => true, '_multitenancy_explicit' => true],
-			schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true),
-			tableName: 'openregister_table_1_7'
-		);
+		$this->searchHandler(organisation: $organisation)->buildFilteredQuery(query: ['_multitenancy' => true, '_multitenancy_explicit' => true], table: new MagicReadTable(schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true), tableName: 'openregister_table_1_7'));
 
 	}//end testAnExplicitListOnTheQueryBuilderPathGetsNoBranch()
 
@@ -637,7 +676,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	 * @return array<int, string> The uuids the list returns, sorted.
 	 */
 	private function visibleRows(Schema $schema, array $query = []): array {
-		$conditions = $this->searchHandler()->buildWhereConditionsSql(query: $query, schema: $schema);
+		$conditions = $this->searchHandler()->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

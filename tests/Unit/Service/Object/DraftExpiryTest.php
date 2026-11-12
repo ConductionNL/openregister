@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -25,10 +26,12 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
   * Decisions 216 and 228: one sweep for every schema, 30 days unless the schema says otherwise.
@@ -160,7 +163,11 @@ class DraftExpiryTest extends TestCase {
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
+				$permanent = $deletion->permanent;
 				$this->deletes[] = [
 					'uuid' => $uuid,
 					'register' => $register,
@@ -172,14 +179,14 @@ class DraftExpiryTest extends TestCase {
 				];
 								// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(AuditTrailMapper::class);
-				$audit->method('createAuditTrailEntry')->willReturnCallback(
+				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null): AuditTrail {
 						$this->actors[] = $actorId;
 
 						return new AuditTrail();
 					}
-				);
-				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				));
+				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				if ($uuid === 'frozen') {
 					throw new RuntimeException('This schema refuses deletes.');

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -35,6 +36,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
 
 /**
  * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
@@ -43,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatCandidate
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class ContextChatSubmissionListenerTest extends TestCase {
 	private SchemaMapper $schemaMapper;
@@ -75,11 +83,13 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		);
 
 		$this->listener = new ContextChatSubmissionListener(
-			$container,
-			$this->schemaMapper,
+			new ContextChatSubmissionServices(
+				$container,
+				$this->schemaMapper,
+				$this->userManager,
+				$this->createMock(LoggerInterface::class),
+			),
 			$this->permissionHandler,
-			$this->userManager,
-			$this->createMock(LoggerInterface::class)
 		);
 	}
 
@@ -166,16 +176,15 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		$this->permissionHandler->expects($this->once())
 			->method('hasGroupPermission')
 			->with(
-				$this->anything(),
-				'public',
-				'read',
-				null,
-				null,
-				null,
 				$this->callback(
-					static fn (?array $data): bool => ($data['@self']['owner'] ?? null) === 'alice'
-						&& ($data['@self']['schema'] ?? null) === '2'
-						&& array_key_exists('_owner', $data) === false
+					static fn (GroupRuleRequest $request): bool => $request->groupId === 'public'
+						&& $request->action === 'read'
+						&& $request->userId === null
+						&& $request->userGroup === null
+						&& $request->objectOwner === null
+						&& ($request->objectData['@self']['owner'] ?? null) === 'alice'
+						&& ($request->objectData['@self']['schema'] ?? null) === '2'
+						&& array_key_exists('_owner', $request->objectData) === false
 				)
 			)
 			->willReturn(false);

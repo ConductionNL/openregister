@@ -45,20 +45,51 @@ final class ExampleSetTaskDates {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	public static function refusal(array $data): string {
+		$refusal = self::formatRefusal(data: $data);
+		if ($refusal === '') {
+			$refusal = self::expiryRefusal(data: $data);
+		}
+
+		if ($refusal === '') {
+			$refusal = self::createdAtRefusal(data: $data);
+		}
+
+		return $refusal;
+	}//end refusal()
+
+	/**
+	 * A due, expiry, completion, claim or creation date that is set but is not a date.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private static function formatRefusal(array $data): string {
 		foreach (['dueAt', 'expiresAt', 'completedAt', 'claimedAt', 'createdAt'] as $field) {
 			if (isset($data[$field]) === true && self::moment(value: $data[$field]) === null) {
 				return $field.' "'.(string) $data[$field].'" is not a date';
 			}
 		}
 
+		return '';
+	}//end formatRefusal()
+
+	/**
+	 * An expiry before the due date.
+	 *
+	 * @param array<string, mixed> $data The filled task fields, their dates already checked.
+	 *
+	 * @return string
+	 */
+	private static function expiryRefusal(array $data): string {
 		if (isset($data['dueAt'], $data['expiresAt']) === true
 			&& self::moment(value: $data['expiresAt']) < self::moment(value: $data['dueAt'])
 		) {
 			return 'expiresAt lies before dueAt: a task that dies before it is due is a configuration error';
 		}
 
-		return self::createdAtRefusal(data: $data);
-	}//end refusal()
+		return '';
+	}//end expiryRefusal()
 
 	/**
 	 * A creation moment in the future, or a claim or completion before it.
@@ -79,6 +110,18 @@ final class ExampleSetTaskDates {
 			return 'createdAt "'.(string) $data['createdAt'].'" lies in the future';
 		}
 
+		return self::beforeCreatedRefusal(data: $data, created: $created);
+	}//end createdAtRefusal()
+
+	/**
+	 * A claim or completion before the task was created.
+	 *
+	 * @param array<string, mixed> $data    The filled task fields, their dates already checked.
+	 * @param DateTime             $created The moment the task was created.
+	 *
+	 * @return string
+	 */
+	private static function beforeCreatedRefusal(array $data, DateTime $created): string {
 		foreach (['claimedAt', 'completedAt'] as $field) {
 			$moment = self::moment(value: ($data[$field] ?? null));
 			if ($moment !== null && $moment < $created) {
@@ -87,7 +130,7 @@ final class ExampleSetTaskDates {
 		}
 
 		return '';
-	}//end createdAtRefusal()
+	}//end beforeCreatedRefusal()
 
 	/**
 	 * A date or date-time value as a moment, or null.
@@ -99,15 +142,6 @@ final class ExampleSetTaskDates {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	public static function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		$moment = date_create($value);
-		if ($moment === false) {
-			return null;
-		}
-
-		return $moment;
+		return ExampleSetDateValue::moment(value: $value);
 	}//end moment()
 }//end class

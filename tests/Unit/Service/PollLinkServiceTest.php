@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\PollLinkMapper;
@@ -70,9 +71,11 @@ class PollLinkServiceTest extends TestCase {
 		$this->service = new PollLinkService(
 			$this->mapper,
 			$this->db,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}
 

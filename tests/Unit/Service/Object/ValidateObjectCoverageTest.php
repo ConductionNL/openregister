@@ -22,6 +22,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -83,12 +86,9 @@ class ValidateObjectCoverageTest extends TestCase {
 			->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}
 
@@ -159,31 +159,31 @@ class ValidateObjectCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeNull(): void {
-		$this->assertSame('null', $this->invokeMethod('getValueType', [null]));
+		$this->assertSame('null', (new ValidationErrorMessages())->valueType(null));
 	}
 
 	public function testGetValueTypeBool(): void {
-		$this->assertSame('boolean', $this->invokeMethod('getValueType', [true]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(true));
 	}
 
 	public function testGetValueTypeInteger(): void {
-		$this->assertSame('integer', $this->invokeMethod('getValueType', [42]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(42));
 	}
 
 	public function testGetValueTypeFloat(): void {
-		$this->assertSame('number', $this->invokeMethod('getValueType', [3.14]));
+		$this->assertSame('number', (new ValidationErrorMessages())->valueType(3.14));
 	}
 
 	public function testGetValueTypeString(): void {
-		$this->assertSame('string', $this->invokeMethod('getValueType', ['hello']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType('hello'));
 	}
 
 	public function testGetValueTypeArray(): void {
-		$this->assertSame('array', $this->invokeMethod('getValueType', [[1, 2]]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType([1, 2]));
 	}
 
 	public function testGetValueTypeObject(): void {
-		$this->assertSame('object', $this->invokeMethod('getValueType', [new stdClass()]));
+		$this->assertSame('object', (new ValidationErrorMessages())->valueType(new stdClass()));
 	}
 
 	// =========================================================================
@@ -602,6 +602,9 @@ class ValidateObjectCoverageTest extends TestCase {
 
 		$result = $this->handler->resolveSchema($uri);
 		$this->assertIsString($result);
+		$decoded = json_decode($result, true);
+		$this->assertSame('Test Schema', $decoded['title']);
+		$this->assertSame('object', $decoded['type']);
 	}
 
 	public function testResolveSchemaFileSchemaPath(): void {
@@ -746,6 +749,8 @@ class ValidateObjectCoverageTest extends TestCase {
 		// Array items should be UUID pattern
 		$items = $resultSchema->properties->children->items ?? null;
 		$this->assertNotNull($items);
+		// The self-reference is cut: the items no longer point at the schema itself.
+		$this->assertObjectNotHasProperty('$ref', $items);
 	}
 
 	public function testTransformSchemaForValidationSelfRefArrayItemsWithInversedBy(): void {

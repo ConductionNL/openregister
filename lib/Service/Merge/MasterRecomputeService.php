@@ -50,13 +50,15 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Recompute a reverse-FK master's golden record by re-persisting it.
  *
  * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
-class MasterRecomputeService {
+class MasterRecomputeService implements MasterRecomputeInterface {
 	/**
 	 * Wire collaborators.
 	 *
@@ -112,9 +114,10 @@ class MasterRecomputeService {
 			$master->setObject(MergeService::normaliseRoundTripDates(data: ($master->getObject() ?? [])));
 			$this->objectService->saveObject(
 				object: $master,
-				register: $master->getRegister(),
-				schema: $master->getSchema(),
-				uuid: $master->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $master->getRegister(), schema: $master->getSchema()),
+					uuid: $master->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

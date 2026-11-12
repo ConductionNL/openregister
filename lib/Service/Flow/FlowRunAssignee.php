@@ -145,50 +145,41 @@ class FlowRunAssignee {
 			return '';
 		}
 
-		$nodeId = trim((string)$nodeId);
-		if ($nodeId !== '') {
-			$slot = ($slots[$nodeId] ?? null);
-			if (is_array($slot) === true && isset($slot['askedAt']) === true) {
-				// The addressed node is asking; ITS record decides, including
-				// an empty one — an unassigned step is deliberately open.
-				return ($slot['assignee'] ?? '');
-			}
+		$addressed = self::askingSlotAt(slots: $slots, nodeId: trim((string)$nodeId));
+		if ($addressed !== null) {
+			// The addressed node is asking; ITS record decides, including
+			// an empty one — an unassigned step is deliberately open.
+			return ($addressed['assignee'] ?? '');
 		}
 
-		foreach ($slots as $slot) {
-			if (is_array($slot) === false) {
-				continue;
-			}
-
-			if (isset($slot['askedAt']) === false) {
-				continue;
-			}
-
-			$assignee = ($slot['assignee'] ?? '');
-			if ($this->isUnassigned(value: $assignee) === false) {
-				return $assignee;
-			}
-		}
-
-		return '';
+		return $this->firstAssignedAssignee(slots: $slots);
 	}//end recordedValueFor()
 
 	/**
 	 * Whether this user may answer the step the run is waiting on.
 	 *
-	 * @param FlowRun     $run The suspended run.
-	 * @param string|null $uid The acting user, or null when there is no session.
-	 * @param string|null $nodeId The node the answer addresses, when the caller
-	 *                            knows it — see {@see recordedFor()} for how
-	 *                            addressing narrows and never loosens.
+	 * @param FlowRun   $run    The suspended run.
+	 * @param RunSignal $signal The answer: its acting user (none when there is no session) and the node it
+	 *                          addresses, when the caller knows it — see {@see recordedFor()} for how addressing
+	 *                          narrows and never loosens. Its payload plays no part.
 	 *
 	 * @return boolean True when the answer may be accepted.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	public function mayAnswer(FlowRun $run, ?string $uid, ?string $nodeId = null): bool {
-		$recorded = $this->recordedValueFor(run: $run, nodeId: $nodeId);
+	public function mayAnswer(FlowRun $run, RunSignal $signal): bool {
+		return $this->recordedMayAnswer(recorded: $this->recordedValueFor(run: $run, nodeId: $signal->nodeId), uid: $signal->actor());
+	}//end mayAnswer()
 
+	/**
+	 * Whether `$uid` may answer a step whose recorded assignee is `$recorded`.
+	 *
+	 * @param mixed       $recorded The recorded assignee: a bare string, a typed reference (list), or empty.
+	 * @param string|null $uid      The answering user.
+	 *
+	 * @return bool True when the step is unassigned or `$uid` holds the assignment.
+	 */
+	private function recordedMayAnswer(mixed $recorded, ?string $uid): bool {
 		// Unassigned is deliberately open — see the class docblock. This is the
 		// one branch that must NOT be tightened without changing the spec.
 		if ($this->isUnassigned(value: $recorded) === true) {
@@ -196,11 +187,10 @@ class FlowRunAssignee {
 		}
 
 		// Fail CLOSED: an assigned decision is never anonymous.
-		if ($uid === null || trim($uid) === '') {
+		$actor = self::answeringActor(uid: $uid);
+		if ($actor === null) {
 			return false;
 		}
-
-		$actor = trim($uid);
 
 		// 🔴 A BARE STRING KEEPS ITS OLD, WIDER MEANING: uid OR group. Today's
 		// guard tries uid equality and then group membership, so a stored
@@ -218,7 +208,7 @@ class FlowRunAssignee {
 		// on every answer: whoever holds the post today may answer, and whoever
 		// held it in March may not.
 		return $this->matchesTypedReference(actor: $actor, recorded: $recorded);
-	}//end mayAnswer()
+	}//end recordedMayAnswer()
 
 	/**
 	 * Whether nothing was recorded, in either spelling.
@@ -245,6 +235,60 @@ class FlowRunAssignee {
 	}//end isUnassigned()
 
 	/**
+	 * The slot of the addressed node, when that node is asking.
+	 *
+	 * @param array<mixed> $slots  The run's resume slots.
+	 * @param string       $nodeId The addressed node, '' when none.
+	 *
+	 * @return array<string, mixed>|null The asking slot, or null when there is none to decide.
+	 */
+	private static function askingSlotAt(array $slots, string $nodeId): ?array {
+		if ($nodeId === '') {
+			return null;
+		}
+
+		$slot = ($slots[$nodeId] ?? null);
+		if (self::isAsking(slot: $slot) === true) {
+			return $slot;
+		}
+
+		return null;
+	}//end askingSlotAt()
+
+	/**
+	 * Whether a slot entry is a slot that has asked its question.
+	 *
+	 * @param mixed $slot The slot entry.
+	 *
+	 * @return bool
+	 */
+	private static function isAsking(mixed $slot): bool {
+		return (is_array($slot) === true && isset($slot['askedAt']) === true);
+	}//end isAsking()
+
+	/**
+	 * The run-level rule: the first asking slot that names somebody.
+	 *
+	 * @param array<mixed> $slots The run's resume slots.
+	 *
+	 * @return mixed The recorded assignee, or '' when every asking slot is unassigned.
+	 */
+	private function firstAssignedAssignee(array $slots): mixed {
+		foreach ($slots as $slot) {
+			if (self::isAsking(slot: $slot) === false) {
+				continue;
+			}
+
+			$assignee = ($slot['assignee'] ?? '');
+			if ($this->isUnassigned(value: $assignee) === false) {
+				return $assignee;
+			}
+		}
+
+		return '';
+	}//end firstAssignedAssignee()
+
+	/**
 	 * The pre-typed reading: uid equality, then group membership.
 	 *
 	 * Kept exactly as it was, deliberately. Every stored flow on every instance
@@ -267,6 +311,21 @@ class FlowRunAssignee {
 		// rather than inferred from a passing suite.
 		return ($this->groupManager !== null && $this->groupManager->isInGroup($actor, $assignee) === true);
 	}//end matchesLegacyString()
+
+	/**
+	 * The answering user, trimmed, or null when there is none to hold an assignment.
+	 *
+	 * @param string|null $uid The answering user.
+	 *
+	 * @return string|null The actor, or null for a missing, empty or blank uid.
+	 */
+	private static function answeringActor(?string $uid): ?string {
+		if ($uid === null || trim($uid) === '') {
+			return null;
+		}
+
+		return trim($uid);
+	}//end answeringActor()
 
 	/**
 	 * The typed reading: whoever the reference means, right now.
