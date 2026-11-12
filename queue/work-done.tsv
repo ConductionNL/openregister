@@ -538,5 +538,6 @@ fix:shillinq:2798:0c5a2c5e	no fix needed: gate artifact (same as 2796). Head 0c5
 cover:pipelinq:f67520ec:171f9533	PR #3562: 15 tests over 6 untested logic classes (Gdpr, SearchConsole, Mdm, Payment), unit suite 5773->5788 (same 1 inherited failure)	session-20261112T205847-2f6d1ca4	2026-11-12T21:55:13Z
 cover:openregister:7350e3ef:js2802b6bc	PR #10043: 15 tests for RegistersIndex handlers, dir lines 72.0->80.5%	session-20261112T212851-01e91591	2026-11-12T21:55:28Z
 cover:hermiq:755cdfe7:60c2c265	PR #1597: 13 tests for MetricsController, LlmEndpointProbe, SkillBundleAnswers; suite 3536 -> 3549, no new failures	session-20261112T200015-391c2792	2026-11-12T21:55:56Z
+cover:pipelinq:f67520ec:95d5249b	already done: lib/Service/Portal at 85.83% statements (pcov, phpunit-unit.xml; target 85); largest gap PortalTenantService 80 lines; no PR	session-20261112T202437-4020bd95	2026-11-12T21:55:54Z
 verify:integriq:3402:dc83efb3	8 GREEN (3402-3409, tests-only), 3410 BLOCK (response headers/error format change on many API paths + /api/v1 route aliases); 0 new failures	session-20261112T202914-c73e3765	2026-11-12T21:56:20Z
 fix:shillinq:2799:f20e31cc	fixed BLOCK: problem details only on /api/v1, legacy errors unchanged; pushed ca07f8d0, REVERIFY	session-20261112T184502-4ecd6072	2026-11-12T21:56:30Z
