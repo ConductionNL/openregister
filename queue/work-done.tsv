@@ -278,3 +278,4 @@ verify:shillinq:2796:1f5d6d5b	GREEN 2796, 2797, 2798; 8919 PHP + 1331 vitest, 0 
 fix:buildiq:1440:b7d26e4b	merged development in, dockerimage restored; new head b5d1297d23	session-20261112T184508-711de18c	2026-11-12T20:35:32Z
 cover:dossiq:6ca0231e:d1bf7ebd	PR #6140: PauseReasonReader 0->100% (8 tests); PauseStep is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:35:45Z
 cover:dossiq:6ca0231e:52aafbe5	PR #6143: 16 tests for LhsRecommendationStore + value objects, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:36:18Z
+cover:dossiq:6ca0231e:774c5470	PR #6142: 9 tests for CaseTimeline, StatusMoveEntry, TermEventEntry; Timeline dir lines 219/219; suite 11976->11985, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:36:19Z
