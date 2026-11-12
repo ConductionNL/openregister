@@ -125,6 +125,7 @@ buildiq	1456	b29d7e5d82e1348218c05e8f747d7025e533b8b8	RED	worker-53	GATE RED che
 decidiq	2032	ac8fa9b72f828967e20ba26d93ca542ea041f32c	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2033	b1a9355280e80339e868bab9c5a1ffc450409ec5	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1437	4938b7b7fc344d3d5049575edc93858951e13619	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+learniq	2178	e552757d146297796dab04d73c1dec67e4882929	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1450	7acddd265e8ea3bae368b51611120772cfd6e146	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1451	5fbc2a41016c399ccfe7027342df231104b1d01d	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1452	4e914f253aa8b7f0464ebfa5ef64ed70d977b22d	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
@@ -134,6 +135,7 @@ buildiq	1453	03fe7e03015ec81f7d953731ff1ee01fd45da46f	RED	worker-53	GATE RED che
 buildiq	1454	7d559fbc8d6c3485fa9ffa887a7f1f9264085719	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 decidiq	2036	d77499cf20c51c5815f62b1354e34aa27f4089eb	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1455	50d05dfc8c15867a67dccca0605f52a536e655b4	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+learniq	2179	31ebc6c0904a38d60703156b4e064e70dcfc353e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1456	b29d7e5d82e1348218c05e8f747d7025e533b8b8	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 decidiq	2037	77cda0a805f8d8812daaee61369f5f005ec76db6	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2038	86bd2ced4683e2ee5bdbae9f9f5eec4f11242718	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
