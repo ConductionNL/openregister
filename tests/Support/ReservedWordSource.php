@@ -65,6 +65,19 @@ class ReservedWordSource {
 	private const MINIMUM_WORDS = 200;
 
 	/**
+	 * A list longer than this is a parser that lost its way too: the lexers know
+	 * about 700 keywords, so a result near that means no keyword was found
+	 * reachable from the identifier rule and every one counts as reserved.
+	 */
+	private const MAXIMUM_WORDS = 400;
+
+	/**
+	 * Words that neither engine reserves in any series. One of them in a list
+	 * means the identifier rule was not followed, not that the server changed.
+	 */
+	private const NEVER_RESERVED = ['status', 'date'];
+
+	/**
 	 * Set once a download fails, so a network that is down costs one timeout, not one per file.
 	 */
 	private static bool $offline = false;
@@ -166,16 +179,43 @@ class ReservedWordSource {
 			return null;
 		}
 
-		$words = self::parse(engine: $engine, lexer: $lexer, grammar: $grammar);
-		if (count($words) < self::MINIMUM_WORDS || in_array('select', $words, true) === false) {
-			throw new RuntimeException(
-				'The '.$engine.' '.$series.' sources were downloaded but yielded only '.count($words).' reserved words; '
-				.'the layout of sql/lex.h or sql/sql_yacc.yy has changed, so ReservedWordSource::parse() needs an update.'
-			);
-		}
+		$words = self::parse(engine: $engine, lexer: $lexer, grammar: $grammar, series: $series);
+		self::assertPlausible(
+			words: $words,
+			label: 'The '.$engine.' '.$series.' sources',
+			hint: 'the layout of sql/lex.h or sql/sql_yacc.yy has changed, so ReservedWordSource::parse() needs an update.'
+		);
 
 		return $words;
 	}//end fetch()
+
+	/**
+	 * Refuses a list that no server can have, so a parser that lost its way says so.
+	 *
+	 * @param string[] $words The words.
+	 * @param string   $label What the list came from, for the message.
+	 * @param string   $hint  What to do about it, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the list is too short, too long, lacks `select` or holds a word no engine reserves.
+	 */
+	private static function assertPlausible(array $words, string $label, string $hint): void {
+		$problem = null;
+		if (count($words) < self::MINIMUM_WORDS) {
+			$problem = 'only '.count($words).' reserved words (at least '.self::MINIMUM_WORDS.' expected)';
+		} else if (count($words) > self::MAXIMUM_WORDS) {
+			$problem = count($words).' reserved words (at most '.self::MAXIMUM_WORDS.' expected), so almost every keyword counts as reserved';
+		} else if (in_array('select', $words, true) === false) {
+			$problem = 'no `select` among its reserved words';
+		} else if (array_intersect(self::NEVER_RESERVED, $words) !== []) {
+			$problem = 'the word(s) '.implode(', ', array_intersect(self::NEVER_RESERVED, $words)).' that no series reserves';
+		}
+
+		if ($problem !== null) {
+			throw new RuntimeException($label.' yielded '.$problem.'; '.$hint);
+		}
+	}//end assertPlausible()
 
 	/**
 	 * The reserved words in one pair of source files.
@@ -183,13 +223,17 @@ class ReservedWordSource {
 	 * @param string $engine  The engine.
 	 * @param string $lexer   The contents of sql/lex.h.
 	 * @param string $grammar The contents of sql/sql_yacc.yy.
+	 * @param string $series  The series or tag the files belong to, for the error message.
 	 *
 	 * @return string[] Lower-case words, sorted.
+	 *
+	 * @throws RuntimeException When the identifier rule, or a rule it uses, is not in the grammar.
 	 */
-	public static function parse(string $engine, string $lexer, string $grammar): array {
+	public static function parse(string $engine, string $lexer, string $grammar, string $series=''): array {
 		$allowed = self::identifierTokens(
 			rules: self::grammarRules(grammar: $grammar),
-			start: self::SOURCES[$engine]['identifier']
+			start: self::SOURCES[$engine]['identifier'],
+			label: trim($engine.' '.$series)
 		);
 
 		$words = [];
@@ -238,12 +282,26 @@ class ReservedWordSource {
 	/**
 	 * The grammar tokens an identifier may be spelled as, from the identifier rule down.
 	 *
+	 * Rule names are lower case and tokens upper case in both grammars, so a lower
+	 * case symbol with no rule of its own means the grammar was renamed under us:
+	 * treating it as a token would silently shrink the set of allowed identifiers.
+	 *
 	 * @param array<string, string[][]> $rules The grammar, rule name => alternatives => symbols.
 	 * @param string                    $start The rule that lists the keywords usable as an identifier.
+	 * @param string                    $label The engine and series, for the error message.
 	 *
 	 * @return array<string, true> The token names.
+	 *
+	 * @throws RuntimeException When $start, or a rule reachable from it, is not defined.
 	 */
-	private static function identifierTokens(array $rules, string $start): array {
+	private static function identifierTokens(array $rules, string $start, string $label): array {
+		if (isset($rules[$start]) === false) {
+			throw new RuntimeException(
+				'The '.$label.' grammar has no rule `'.$start.'`; sql/sql_yacc.yy was changed, '
+				.'so ReservedWordSource::SOURCES and parse() need an update.'
+			);
+		}
+
 		$tokens = [];
 		$seen   = [];
 		$queue  = [$start];
@@ -254,10 +312,15 @@ class ReservedWordSource {
 			}
 
 			$seen[$rule] = true;
-			foreach ($rules[$rule] ?? [] as $alternative) {
+			foreach ($rules[$rule] as $alternative) {
 				foreach ($alternative as $symbol) {
 					if (isset($rules[$symbol]) === true) {
 						$queue[] = $symbol;
+					} else if (preg_match('/^[a-z]/', $symbol) === 1) {
+						throw new RuntimeException(
+							'The '.$label.' grammar rule `'.$rule.'` uses `'.$symbol.'`, which has no rule; '
+							.'sql/sql_yacc.yy was changed, so ReservedWordSource::parse() needs an update.'
+						);
 					} else {
 						$tokens[$symbol] = true;
 					}
@@ -511,9 +574,11 @@ class ReservedWordSource {
 			}
 		}
 
-		if (count($words) < self::MINIMUM_WORDS) {
-			throw new RuntimeException('Snapshot '.$path.' lists only '.count($words).' words; run tests/Unit/Migration/fixtures/update-reserved-words.php.');
-		}
+		self::assertPlausible(
+			words: $words,
+			label: 'Snapshot '.$path,
+			hint: 'run tests/Unit/Migration/fixtures/update-reserved-words.php.'
+		);
 
 		return $words;
 	}//end readSnapshot()
