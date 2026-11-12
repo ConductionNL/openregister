@@ -40,6 +40,7 @@ class MiddlewareRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			expected: [
+				'OCA\OpenRegister\Middleware\ProblemDetailsMiddleware',
 				'OCA\OpenRegister\Middleware\LanguageMiddleware',
 				'OCA\OpenRegister\Middleware\TenantQuotaMiddleware',
 				'OCA\OpenRegister\Middleware\OasValidationMiddleware',
