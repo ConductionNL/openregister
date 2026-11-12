@@ -994,3 +994,4 @@ cover:integriq:9b0f5894m2367:js872d5d33	failed: lang=js but lib/Broker/ holds on
 cover:integriq:9b0f5894m2367:js6daf52ad	failed: lang=js but lib/Outbound/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:59:05Z
 cover:integriq:9b0f5894m2367:jsb89b25f9	PR #3421: 9 tests for SafeXml (dir already ~99% covered); suite 7111->7120, 2 inherited network errors, 1 timing-dependent golden failure also red without the change	session-20261112T231633-96ffe7b8	2026-11-12T23:59:25Z
 cover:integriq:9b0f5894m2367:jsd91b4ca5	PR #3422: 8 PHPUnit tests (dir is PHP) for CtiSourceResolver and MappedPayload, no new failures	session-20261112T224529-41d77a96	2026-11-12T23:59:27Z
+cover:integriq:9b0f5894m2367:jsa64a0bdb	failed: lang=js but dirs=lib/Service/Tables/ holds only PHP classes; no JS to cover (task row malformed)	session-20261112T234655-599f9c9a	2026-11-12T23:59:48Z
