@@ -542,3 +542,4 @@ cover:pipelinq:f67520ec:95d5249b	already done: lib/Service/Portal at 85.83% stat
 verify:integriq:3402:dc83efb3	8 GREEN (3402-3409, tests-only), 3410 BLOCK (response headers/error format change on many API paths + /api/v1 route aliases); 0 new failures	session-20261112T202914-c73e3765	2026-11-12T21:56:20Z
 fix:shillinq:2799:f20e31cc	fixed BLOCK: problem details only on /api/v1, legacy errors unchanged; pushed ca07f8d0, REVERIFY	session-20261112T184502-4ecd6072	2026-11-12T21:56:30Z
 cover:decidiq:13261b1b:d528dcf0	PR #2085: 5 tests for dashboard widget fallbacks, suite all green	session-20261112T200014-a0c0c232	2026-11-12T21:57:00Z
+merge:shillinq:2797:bc4d2461	2797 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T21:57:07Z
