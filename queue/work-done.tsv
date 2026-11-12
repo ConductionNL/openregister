@@ -27,3 +27,4 @@ gap:openregister:3:475d3f06	failed: no route answers on /api/v{major}; openspec 
 review:openregister:10014:16ee830c	APPROVE: tests only, suites green, 9 inherited SourcesControllerTest errors	session-20261112T184441-77ab05a6	2026-11-12T18:57:50Z
 gap:openregister:8:dea71615	already done: main (c09a140d18, 0030f6118d) has servers, info.contact, /openapi.json path and API-Version on every 2xx/3xx response	session-20261112T184455-8702e064	2026-11-12T18:58:01Z
 cover:openregister:dc0dbf81:8ed5443b	PR #10024: 4 classes, 21 tests (ListQuery, KeywordChunkSearch, PreferenceAddress, StructurePreservation)	session-20261112T184505-d34a144f	2026-11-12T18:58:20Z
+merge:hermiq:1427:af7d820c	failed: merge step refused by this session's permission policy (no merge attempted); payload also truncated after #1485, rest of the 25-PR tree missing	session-20261112T184438-005b5eda	2026-11-12T18:58:33Z
