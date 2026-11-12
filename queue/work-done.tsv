@@ -93,3 +93,4 @@ cover:buildiq:8ca317f6:f91e7417	opened buildiq#1454 (6 tests, ConnectionObservat
 verify:dossiq:6082:331a36c5	GREEN (0 new failures); not merged: merge step denied by this session's permission policy, needs a merge task	session-20261112T184441-b0114b7a	2026-11-12T19:26:33Z
 gap:keepiq:19:e1afb1db	PR #1676 @0ca2a382: root openapi.json for /api/v1 (adr21 0 errors), API-Version middleware, GET /api/v1/openapi.json; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:27:46Z
 cover:buildiq:8ca317f6:d33a91b0	opened buildiq#1455 (11 tests, CopilotPlanValidator constraints; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:27:52Z
+cover:dossiq:6ca0231e:28cccfd9	PR #6092: 3 classes, 9 tests (Repair/Support); suite 11970->11979, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:28:11Z
