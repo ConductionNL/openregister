@@ -476,3 +476,4 @@ merge:buildiq:1437:bee6449f	failed: tree contains heads/PRs authored by this wor
 cover:pipelinq:f67520ec:js4570fd16	PR #3551: 4 POS views, 32 vitest tests; src/views/pos stmts 73.2%->88.3%	session-20261112T200016-345024b4	2026-11-12T21:39:44Z
 cover:integriq:9b0f5894:js38aa7730	PR #3408 (20 tests, handlers lines 82.5%->100%)	session-20261112T184505-d34a144f	2026-11-12T21:39:48Z
 verify:dossiq:6160:ee1a3a36	9 GREEN (6160-6166, 6172, 6173), tests-only; phpunit 12517 and vitest 6249, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:40:16Z
+verify:stackiq:1764:44510e77	GREEN 1764 1765 1766 1767 1768 1769 1770 1771 1772; 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:40:47Z
