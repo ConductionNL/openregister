@@ -597,3 +597,4 @@ verify:portaliq:2367:5ef59120	BLOCK 2367: behaviour change (API error bodies/con
 verify:pipelinq:3562:2e620028	3 GREEN (3562,3563,3564); 5834 tests, 1 inherited failure, 0 new	session-20261112T221537-97382091	2026-11-12T22:22:20Z
 verify:hermiq:1598:1005c106	1598 BLOCK: tests green (0 new failures), but API error bodies/content-type change via new ApiContractMiddleware	session-20261112T221237-836ed3f0	2026-11-12T22:22:33Z
 verify:integriq:3410:2d266f89	GREEN (0 new failures, additive headers/aliases)	session-20261112T220138-f0050f42	2026-11-12T22:22:47Z
+cover:openregister:7350e3ef:js32df05fd	failed: lang=js but lib/Files/Service/ contains only PHP; no JS subjects to cover	session-20261112T221239-5f377795	2026-11-12T22:22:56Z
