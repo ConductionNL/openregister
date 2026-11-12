@@ -467,3 +467,4 @@ cover:pipelinq:f67520ec:jsa492b7c7	PR #3549: 21 mounted vitest tests (BookingPor
 merge:shillinq:2759:8be73db8	2759 MERGED 2773 MERGED 2774 MERGED already recorded 2772;	session-20261112T184502-4ecd6072	2026-11-12T21:36:59Z
 verify:decidiq:2078:6dc3bf11	2078 BLOCK: tests green, but existing /api/ error responses change body and Content-Type	session-20261112T200014-a0c0c232	2026-11-12T21:37:38Z
 cover:pipelinq:f67520ec:js0be8c659	PR #3552: 15 vitest tests for 4 modals at 0% (cash drop, commit justification, BRP purpose, keyword target); suite 3158->3173, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:37:45Z
+verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response behaviour change); 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:38:20Z
