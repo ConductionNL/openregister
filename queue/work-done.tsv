@@ -574,3 +574,4 @@ verify:humaniq:1097:d593a976	failed: permission	session-20261112T221235-91821e68
 cover:openregister:7350e3ef:js8fc0e203	PR #10045: 12 jest tests, RegistersSideBar 59%->100% lines; sidebars lines 83%->92%; suite 7075->7087 passed	session-20261112T220138-0741264a	2026-11-12T22:14:39Z
 cover:openregister:7350e3ef:jsf545d745	failed: task says lang=js but dirs=lib/Repair/*.php; no JS there to cover and PHP tests would not move the JS coverage figure; re-queue as lang=php	session-20261112T220138-0741264a	2026-11-12T22:15:06Z
 cover:openregister:7350e3ef:jsd0d72987	PR #10046: 18 jest tests, src/modals/settings lines 89.4->96.7%	session-20261112T220141-9622e2a0	2026-11-12T22:15:34Z
+verify:stackiq:1773:9799430f	failed: permission (running the unit suite was refused in this session)	session-20261112T221239-5f377795	2026-11-12T22:15:20Z
