@@ -867,3 +867,4 @@ fix:keepiq:1680:c370c74f	fixed: problem details and version header confined to /
 cover:dossiq:6ca0231e:5ebe3eb6	failed: permission (composer-cloud.sh refused in this session)	session-20261112T231637-27871bfa	2026-11-12T23:22:16Z
 cover:launchpad:755175ffm7412:e372e6ff	nothing to add: lib/Event holds one getter-only event class whose every method is already tested (DashboardDeletedEventTest); further tests would be getter-only	session-20261112T231639-173f6289	2026-11-12T23:22:32Z
 cover:pipelinq:f67520ecm9d2c:js7505aeb4	PR #3590: 15 PHP tests for lib/Activity (Filter, Provider); suite 5773->5788, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:22:42Z
+verify:pipelinq:3580:caf781d8	failed: permission (running the unit suite was refused)	session-20261112T231639-173f6289	2026-11-12T23:23:30Z
