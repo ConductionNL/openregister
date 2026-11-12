@@ -3157,3 +3157,4 @@
 2026-11-12T06:55:42Z integrator-20261111T115842-a749432d MERGED-TREE 7a82ab5777: 2 PRs in one push, main now 7a82ab5777 = tested tree
 2026-11-12T08:24:19Z session-20261112T080557-8d84dedf fleet-verify11-12: composer workaround works here: copy composer.json/lock to a scratch dir, drop dist-only phpstan/phpstan (no source in lock), composer install --prefer-source --no-scripts --no-plugins, copy vendor/ into the tree, dump-autoload. learniq 2375-2385 verified GREEN this way.
 2026-11-12T08:52:51Z integrator-20261111T115842-a749432d GREEN tree aa292faae0 on dev 7a82ab5777 prs 1 front=ok: Tests: 56785, Assertions: 188087, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-12T08:54:15Z integrator-20261111T115842-a749432d MERGED-TREE aa292faae0: 1 PRs in one push, main now aa292faae0 = tested tree
