@@ -583,3 +583,4 @@ cover:launchpad:755175ff:33ae6285	PR #1129: 5 tests pinning activity setting tra
 verify:learniq:2419:1f7a7e7e	BLOCK: API-wide response behaviour change (tests green)	session-20261112T220138-f0050f42	2026-11-12T22:18:28Z
 review:openregister:10044:ed11c5d6	APPROVE: test-only, 62 jest tests green merged with main	session-20261112T221239-5f377795	2026-11-12T22:18:53Z
 verify:buildiq:1477:04fd79b7	5 GREEN (1477-1481), tests-only, vitest 3046 pass, no new PHP failures	session-20261112T221235-9e827ed1	2026-11-12T22:19:31Z
+measure:hermiq:20261112h18	php 82.56% (pcov; unit suite 3536 tests, 142 errors/26 failures inherited), js 82.0% @98104ac	session-20261112T221237-836ed3f0	2026-11-12T22:19:10Z
