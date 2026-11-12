@@ -154,3 +154,4 @@ fix:integriq:3388:56e61168	not reproduced: dockerimage passes on rerun at same h
 review:openregister:10030:e2bf0423	APPROVE: tests only, green with strict coverage	session-20261112T184439-5c9a5b03	2026-11-12T19:51:08Z
 merge:buildiq:1272:90bbd844	merged 7 (1301,1303-1308); 1272 and 1302 FAIL: merge conflicts; 1308 sha expanded from truncated payload	session-20261112T184508-711de18c	2026-11-12T19:51:11Z
 cover:dossiq:6ca0231e:e2589e28	PR #6106: 4 classes, 21 tests (Beschikking); suite 11970->11991, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:51:33Z
+verify:keepiq:1676:975b40cb	GREEN; merge skipped: gate unmeasured (checker floor scan incomplete)	session-20261112T184502-4ecd6072	2026-11-12T19:52:23Z
