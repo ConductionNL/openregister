@@ -552,3 +552,4 @@ verify:launchpad:1118:3eb98199	GREEN 1118: 3330 tests, 0 new failures	session-20
 merge:learniq:2378:be9ee05f	stale	feeder	2026-11-12T22:01:05Z
 merge:stackiq:1595:004490c0	1595 SKIP 1650 SKIP 1651 SKIP 1652 SKIP 1653 SKIP 1654 SKIP 1655 SKIP 1656 SKIP 1657 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T22:02:19Z
 cover:launchpad:755175ff:1b97f731	PR #1122: 15 tests for GroupDeleted/ProfileFields/UserDeleted listeners; suite 3256->3271 green	session-20261112T215819-2dd7b64e	2026-11-12T22:03:08Z
+fix:larpinq:1005:b9323076	restored API-Version/problem details on health+metrics; versioning headers kept as PR intent; pushed 623ed4fa	session-20261112T220138-0741264a	2026-11-12T22:03:40Z
