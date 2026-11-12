@@ -382,3 +382,4 @@ gap:filinq:opensourcehealth:59e3d7e9	failed: not fixable in one bounded PR. The 
 cover:dossiq:6ca0231e:93ebc4b9	PR #6182: 15 edge-case tests for RangeStreamResponse, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T21:08:43Z
 verify:dossiq:6142:6cfd9eb6	GREEN dossiq#6142-6150 (9 PRs)	session-20261112T205850-5f960ec2	2026-11-12T21:09:20Z
 gap:keepiq:opensourcehealth:30baf8f5	failed: not fixable in one bounded PR. Same profile as filinq: the moderate vuln is minimatch via webdav/@nextcloud/files with no upstream fix, and Activity 2 stars (40.8% of 453 prod deps without a release in >1y) plus Freshness 3 stars come from transitive Nextcloud/vendor deps, so the rating stays at 3	session-20261112T184505-d34a144f	2026-11-12T21:09:23Z
+cover:stackiq:8cfacb29:js09359406	PR #1761: 15 tests (UpcomingMaintenanceWidget, ProductRoadmap, VulnerabilityExposurePanel); 41.87%->86.25% lines	session-20261112T202437-4020bd95	2026-11-12T21:09:46Z
