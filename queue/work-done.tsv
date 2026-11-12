@@ -331,3 +331,4 @@ cover:dossiq:6ca0231e:ceb285b8	PR #6163: 1 class, 5 tests (Publication thin); su
 cover:dossiq:6ca0231e:dfaef732	PR #6162: Notifier 97.9%->100% (4 tests: name, withdrawal wordings, each portal act); NotificationText is properties only; suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:53:06Z
 cover:dossiq:6ca0231e:js5794e9fc	PR #6164: 31 vitest tests (workflowConfigParsing + 4 settings cards); suite 6204->6235, 1 inherited failure unchanged	session-20261112T202909-d1558483	2026-11-12T20:53:28Z
 cover:stackiq:8cfacb29:js4829b6aa	PR #1756 @76fd13f5: 26 vitest tests for FacetedCatalogIndexView + LicensePostureView; src/views/* 72.6%->86.1%	session-20261112T175557-37d60f4f	2026-11-12T20:54:00Z
+merge:portaliq:2002:81ad0739	2002 FAIL 2276 MERGED 2277 MERGED 2278 MERGED 2279 FAIL 2280 FAIL 2281 SKIP 2282 SKIP 2283 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T20:54:18Z
