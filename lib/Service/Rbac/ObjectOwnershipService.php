@@ -56,6 +56,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -165,11 +166,80 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			);
 		}
 
+		if ($cascade === true) {
+			$this->requireMayEditFamily(record: $record);
+		}
+
 		return $this->transfer(
 			record: $record,
 			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
 		);
 	}//end claim()
+
+	/**
+	 * Require that the caller may edit every child a claim cascade would carry.
+	 *
+	 * Walks the same family the cascade moves (records that reference the parent
+	 * and share its owner, up to the depth cap) before anything is written, so a
+	 * refused child fails the whole claim instead of leaving half a family moved.
+	 *
+	 * @param OwnedRecord $record The record being claimed.
+	 *
+	 * @throws NotAuthorizedException When the rules refuse the caller the edit of any child.
+	 *
+	 * @return void
+	 */
+	private function requireMayEditFamily(OwnedRecord $record): void {
+		$rootUuid = $record->object->getUuid();
+		$owner = $record->previousOwner;
+		if ($this->isCascadable(uuid: $rootUuid, previousOwner: $owner) === false) {
+			return;
+		}
+
+		$seen = [(string)$rootUuid => true];
+		$frontier = [[(string)$rootUuid, $record->depth]];
+		while ($frontier !== []) {
+			[$uuid, $depth] = array_shift($frontier);
+			if ($depth >= self::MAX_CASCADE_DEPTH) {
+				continue;
+			}
+
+			foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+				$child = $this->wholeChild(child: $candidate);
+				$childUuid = $child?->getUuid();
+				if ($child === null || $childUuid === null || isset($seen[$childUuid]) === true || $child->getOwner() !== $owner) {
+					continue;
+				}
+
+				$seen[$childUuid] = true;
+				$this->requireMayEditChild(child: $child);
+				$frontier[] = [$childUuid, ($depth + 1)];
+			}
+		}
+	}//end requireMayEditFamily()
+
+	/**
+	 * Require that the caller may edit one child of a claim cascade.
+	 *
+	 * @param ObjectEntity $child The child.
+	 *
+	 * @throws NotAuthorizedException When the child's schema cannot be read or the rules refuse the edit.
+	 *
+	 * @return void
+	 */
+	private function requireMayEditChild(ObjectEntity $child): void {
+		try {
+			$schema = $this->sources->lookup->schemaMapper->find((int)$child->getSchema());
+		} catch (Throwable $e) {
+			$schema = null;
+		}
+
+		if ($schema === null || $this->mayEdit(schema: $schema, object: $child) === false) {
+			throw new NotAuthorizedException(
+				message: 'Only somebody who may edit every related record can take ownership of this record with its related records'
+			);
+		}
+	}//end requireMayEditChild()
 
 	/**
 	 * Assign one record to a named owner.
@@ -582,8 +652,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$cascade = new OwnershipCascade(parent: $parent, handover: $handover);
 		$outcomes = [];
-		foreach ($this->childCandidates(uuid: $uuid) as $child) {
-			if ($handover->carries(child: $child, previousOwner: $previousOwner) === false) {
+		foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+			$child = $this->wholeChild(child: $candidate);
+			if ($child === null || $handover->carries(child: $child, previousOwner: $previousOwner) === false) {
 				continue;
 			}
 
@@ -626,6 +697,40 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return [];
 		}
 	}//end childCandidates()
+
+	/**
+	 * The child as stored, read again when the relation lookup returned only some of its columns.
+	 *
+	 * The relation lookup answers partial rows without an owner, so the shared-owner
+	 * test would never hold for them. The read applies the caller's access rules: a
+	 * child the caller may not read is skipped.
+	 *
+	 * @param ObjectEntity $child The candidate from the relation lookup.
+	 *
+	 * @return ObjectEntity|null The whole child, or null when it cannot be read (logged).
+	 */
+	private function wholeChild(ObjectEntity $child): ?ObjectEntity {
+		if (($child instanceof PartialObjectEntity) === false) {
+			return $child;
+		}
+
+		try {
+			$found = $this->sources->lookup->magicMapper->findAcrossAllSources(identifier: (string)$child->getUuid());
+		} catch (Throwable $e) {
+			$this->log->logger->warning(
+				message: '[ObjectOwnershipService] Could not read a child record',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $child->getUuid(), 'exception' => get_class($e)]
+			);
+			return null;
+		}
+
+		$object = ($found['object'] ?? null);
+		if (($object instanceof ObjectEntity) === false || ($object instanceof PartialObjectEntity) === true) {
+			return null;
+		}
+
+		return $object;
+	}//end wholeChild()
 
 	/**
 	 * Carry a handover to one child, or null when that failed (logged).
