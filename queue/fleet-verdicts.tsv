@@ -4263,3 +4263,4 @@ hermiq	1602	0da0bfd327d3d70089a56583c352d287adfaeb88	GREEN	worker-18	tree of 8: 
 hermiq	1603	06764bde2a776b37e8c392e62f633dd138425791	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
 hermiq	1604	218f11c01295b0fa12f32ebdeff92a02dc9bae6a	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
 hermiq	1605	b04693e3cb9d9395d4cff9b72d9e20f961b761d2	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
+decidiq	2087	3800e885b1b23eb72756db08a0038b7ed91fd0bc	GREEN	worker-27	quality-tool config only (no code); unit 3116 run, baseline 0 failures, 0 new
