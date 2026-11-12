@@ -80,8 +80,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
