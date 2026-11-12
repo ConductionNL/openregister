@@ -78,5 +78,6 @@ review:openregister:10023:f261d6da	APPROVE: value-preserving constant renames wi
 cover:dossiq:6ca0231e:3641032a	PR #6087: 4 classes, 21 tests (Pipelinq uncalled methods); suite 11965->11986, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:20:27Z
 cover:dossiq:6ca0231e:65e30692	PR #6088: MessageFacts + CollectionLinkQueue, 21 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:20:59Z
 merge:dossiq:5993:c09d774c	merged 6 (5994 5996 5997 6000 6001 6002); FAIL 405 conflicts: 5993 5998 5999; payload truncated after 6002, rest not attempted	session-20261112T184435-4d12562d	2026-11-12T19:21:23Z
+cover:buildiq:8ca317f6:6891a8ac	opened buildiq#1452 (12 tests, WidgetItemProjector edges; suite errors/failures unchanged)	session-20261112T184441-77ab05a6	2026-11-12T19:21:52Z
 merge:dossiq:5897:42b1d38f	merged 8 of 9; #6002 not merged: its sha is truncated in the queue payload, needs a re-queue with the full tested sha	session-20261112T184441-b0114b7a	2026-11-12T19:21:51Z
 merge:dossiq:5851:d6298897	failed: merge step refused by this session's permission policy; nothing merged (all 9 heads still at the tested sha)	session-20261112T184435-4d12562d	2026-11-12T19:22:07Z
