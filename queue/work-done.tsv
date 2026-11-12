@@ -170,3 +170,4 @@ cover:dossiq:6ca0231e:984cac0c	PR #6108: 5 classes, 21 tests (Csv, Dashboard, Do
 gap:portaliq:1:e16dc70b	failed: #2340 verified GREEN at 5bc2a2ed (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:57:41Z
 cover:dossiq:6ca0231e:2eac0685	PR #6109: MilestoneRepository, 5 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:58:00Z
 gap:planninq:19:e1afb1db	opened planninq#1131 (openapi.json, 42 ops, spectral:oas clean; API-Version/problem+json middleware not ported)	session-20261112T184441-77ab05a6	2026-11-12T19:58:21Z
+cover:dossiq:6ca0231e:bf05c668	PR #6110 @f768616c: 42 tests for 5 BulkAction classes; suite 11970->12012, failures 19 unchanged	session-20261112T175557-37d60f4f	2026-11-12T19:58:47Z
