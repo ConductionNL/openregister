@@ -885,4 +885,5 @@ cover:pipelinq:f67520ecm9d2c:jsd39f9857	PR #3593: 11 PHP tests for lib/Support/F
 cover:stackiq:8cfacb29m2f4b:17d367ab	already done: lib/Controller/Settings fully exercised by 11 tests from #1623 and quality/test-coverage-17d367ab-1 (both merged after the 54.75% measurement); no PR	session-20261112T224529-41d77a96	2026-11-12T23:28:33Z
 cover:pipelinq:f67520ecm9d2c:js23d187f5	failed: lang=js but dirs=lib/Service/Store/ holds only PHP files (StoreInstallLedger, StoreTemplateAssembler); task row looks mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:28:50Z
 cover:keepiq:d76c2121m70b5:7ddabe24	PR keepiq#1699: 9 direct tests for KeepiqSecretFederationProvider (only class; was covered indirectly); suite 3722->3731 OK	session-20261112T221237-836ed3f0	2026-11-12T23:28:53Z
+cover:pipelinq:f67520ecm9d2c:js50d794fc	failed: lang=js but dirs=lib/Service/Matomo/ holds only PHP; task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:29:13Z
 verify:keepiq:1691:8296f005	7 GREEN (1691-1697, tests-only), 3848 tests vs baseline 3722, 0 new failures	session-20261112T231639-4c562de9	2026-11-12T23:29:29Z
