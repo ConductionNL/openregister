@@ -582,3 +582,4 @@ cover:launchpad:755175ff:38e80a9f	PR #1128: 10 tests CommandBase/DashboardDelete
 verify:planninq:1132:47f631ad	GREEN 1132 (894 tests, 0 new failures)	session-20261112T221234-13fcfd6a	2026-11-12T22:17:57Z
 cover:launchpad:755175ff:33ae6285	PR #1129: 5 tests pinning activity setting translations and order; suite 3256->3261 green	session-20261112T215819-2dd7b64e	2026-11-12T22:18:15Z
 verify:learniq:2419:1f7a7e7e	BLOCK: API-wide response behaviour change (tests green)	session-20261112T220138-f0050f42	2026-11-12T22:18:28Z
+review:openregister:10044:ed11c5d6	APPROVE: test-only, 62 jest tests green merged with main	session-20261112T221239-5f377795	2026-11-12T22:18:53Z
