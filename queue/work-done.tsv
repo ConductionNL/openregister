@@ -870,3 +870,4 @@ cover:pipelinq:f67520ecm9d2c:js7505aeb4	PR #3590: 15 PHP tests for lib/Activity 
 verify:pipelinq:3580:caf781d8	failed: permission (running the unit suite was refused)	session-20261112T231639-173f6289	2026-11-12T23:23:30Z
 verify:keepiq:1679:f567b765	7/7 GREEN (1679 no-op already on dev, 1685-1689 tests-only, 1690 cosmetic key quote + spec): phpunit 3841 OK, vitest 5481 green	session-20261112T221237-836ed3f0	2026-11-12T23:23:45Z
 verify:pipelinq:3565:0b776aca	5 GREEN (3565 already in development); php 1 inherited failure, 0 new; vitest green	session-20261112T224530-d70ae278	2026-11-12T23:24:10Z
+verify:learniq:2414:0516c63b	2414 GREEN (test metadata only), 2420 already on development; baseline 1 inherited failure	session-20261112T231640-f6dda86c	2026-11-12T23:25:33Z
