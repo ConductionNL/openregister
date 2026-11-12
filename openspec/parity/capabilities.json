@@ -10644,7 +10644,7 @@
    "feature": "record-collaboration",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrObjectKoppelingen"
    }
   },
   {
@@ -10720,7 +10720,7 @@
    "feature": "file-attachments",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrEntiteiten"
    }
   },
   {
@@ -10788,7 +10788,7 @@
    "feature": "sign-in-and-accounts",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrBeheerinstellingen"
    }
   },
   {
@@ -10986,7 +10986,7 @@
    "feature": "record-editing",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrObject"
    }
   }
  ],
