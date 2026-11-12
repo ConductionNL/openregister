@@ -953,3 +953,4 @@ cover:integriq:9b0f5894m2367:js36cf9f12	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:jse7ac1785	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:02Z
 cover:integriq:9b0f5894m2367:jsf191f1e9	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:11Z
 cover:integriq:9b0f5894m2367:jsc5021ae5	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:20Z
+cover:integriq:9b0f5894m2367:js6dc9019f	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:52:29Z
