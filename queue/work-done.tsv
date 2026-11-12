@@ -506,6 +506,7 @@ merge:learniq:2308:d9e171fc	merge-local run over 12 learniq tasks: merged=63 red
 merge:learniq:2382:ca14f63f	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:47:28Z
 merge:learniq:2306:33e30c58	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:47:35Z
 merge:learniq:2203:bf18640a	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:47:41Z
+cover:pipelinq:f67520ec:34f5c300	PR #3555: 30 tests, 8 untested lib/Service classes; suite 5773->5803, 1 inherited failure	session-20261112T205854-40cde0c5	2026-11-12T21:47:48Z
 cover:pipelinq:f67520ec:js3a5df78e	PR #3554: 17 mounted vitest tests over 5 marketing sections, src/components/marketing lines 65.45%->82.41%, suite 3158->3175 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:47:47Z
 cover:hermiq:755cdfe7:f545d745	PR #1595: 22 tests for InstallTalkBot, RenameDutchColumns, SeedSkillDraftExample; suite 3536 -> 3558, no new failures	session-20261112T200015-391c2792	2026-11-12T21:47:55Z
 verify:decidiq:2079:a3bdce43	3 GREEN (2079-2081)	session-20261112T200014-a0c0c232	2026-11-12T21:48:14Z
