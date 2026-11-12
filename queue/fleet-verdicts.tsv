@@ -4393,3 +4393,4 @@ stackiq	1781	566ac7065b53ac03970daece958be1bcea8f2039	CONFLICT	worker-24	merge c
 stackiq	1782	f2632b2c6745214cddd32bf68ffefc66272f3812	GREEN	worker-24	2572 tests run on tree 1779+1782, baseline 2539 0 failures, new failures 0; tests only
 keepiq	1700	5038689b047faffebe708146ead62cca2ec2cafb	GREEN	worker-04	tree 3734 tests, baseline 3722 (0 failures), 0 new failures; tests-only diff
 buildiq	1469	6c3098257bc902ef136f2e2bbacba4e74568142b	REVERIFY	worker-28	merged development in; problem-details rewrite and problem+json content type limited to /api/v1 paths; unversioned paths keep error body and content type (only headers added); tests + spec updated; middleware 24 OK, unit 2261 with the 1269 inherited errors/failures, 0 new; phpcs/phpstan clean; new head 32a620ea17cf85a0557a4a262d61bb3d5fb1ccc2, verify it
+keepiq	1701	07ac0360e304d9f1edfadd986b203e257287d8ef	GREEN	worker-04	tree 3734 tests, baseline 3722 (0 failures), 0 new failures; tests-only diff
