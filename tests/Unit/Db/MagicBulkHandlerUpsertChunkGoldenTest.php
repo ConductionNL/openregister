@@ -43,6 +43,7 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUpsertChunkRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/magic-bulk-upsert-chunk-golden.json';

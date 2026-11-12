@@ -51,6 +51,15 @@
             "type": "string"
         }
     ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": ["pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"]
+            }
+        }
+    ],
     "item": [
         {
             "name": "Setup: Create register",

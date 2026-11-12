@@ -283,7 +283,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 				$found = match (true) {
 					$_rbac === false && $_multitenancy === false => true,
 					$_rbac === false && $_multitenancy === true => in_array($this->visibleTo, ['caller', 'organisation', 'lifted'], true),
-					default => $this->visibleTo === 'caller',
+					default => in_array($this->visibleTo, ['caller', 'readAcross'], true),
 				};
 				if ($found === true) {
 					return $this->stored;
@@ -352,6 +352,55 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
 	public function testARowTheCallerCanReadIsAnOrdinaryUpdate(): void {
 		$this->visibleTo = 'caller';
+
+		$this->checkSave();
+
+		$this->assertSame(['uuid-b'], $this->organisationChecks);
+	}
+
+	/**
+	 * Use the planners' schema with these update rules.
+	 *
+	 * @param array<int, mixed> $update The update rules.
+	 *
+	 * @return void
+	 */
+	private function updateRules(array $update): void {
+		$schema = new Schema();
+		$schema->setId(681);
+		$schema->setTitle('Planned time entry');
+		$schema->setAuthorization(['create' => ['planners'], 'update' => $update, 'read' => ['planners']]);
+		$this->objectService->setSchema($schema);
+	}//end updateRules()
+
+	public function testAnotherOrganisationsRowTheCallerReadsIsRefusedWithoutAMarkedUpdateRule(): void {
+		$this->visibleTo = 'readAcross';
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->expectExceptionMessage('You may not change this object.');
+		$this->checkSave();
+	}
+
+	public function testAMarkedUpdateRuleReachesAnotherOrganisationsRowTheCallerReads(): void {
+		$this->visibleTo = 'readAcross';
+		$this->updateRules(update: [['group' => 'planners', 'crossOrganisation' => true]]);
+
+		$this->checkSave();
+
+		$this->assertSame(['uuid-b'], $this->organisationChecks);
+	}
+
+	public function testAMarkedUpdateRuleOfAnotherGroupDoesNotReachTheRow(): void {
+		$this->visibleTo = 'readAcross';
+		$this->updateRules(update: ['planners', ['group' => 'central-team', 'crossOrganisation' => true]]);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->checkSave();
+	}
+
+	public function testARowWithoutOrganisationTheCallerReadsIsLeftToTheUpdateRule(): void {
+		$this->visibleTo = 'readAcross';
+		$this->stored->setOrganisation(null);
 
 		$this->checkSave();
 

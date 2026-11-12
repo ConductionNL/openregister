@@ -34,6 +34,11 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\TranslationMapper
  * @uses \OCA\OpenRegister\Db\Translation
+ * @uses \OCA\OpenRegister\Db\TranslationBackfillScope
+ * @uses \OCA\OpenRegister\Db\TranslationEdit
+ * @uses \OCA\OpenRegister\Db\TranslationFilter
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Db\Translation\LanguageCoverageCheck
  *
  * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
  */

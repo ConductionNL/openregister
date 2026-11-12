@@ -21,59 +21,25 @@
 			<!-- Provider Selection (Two Columns) -->
 			<div class="providers-grid">
 				<!-- Embedding Provider -->
-				<div class="provider-column">
-					<h3>{{ t('openregister', 'Embedding Provider') }}</h3>
-					<p class="section-description">
-						{{
-							t(
-								'openregister',
-								'For vector embeddings and semantic search',
-							)
-						}}
-					</p>
-
-					<NcSelect
-						v-model="selectedEmbeddingProvider"
-						:options="embeddingProviderOptions"
-						label="name"
-						:inputLabel="t('openregister', 'Embedding Provider')"
-						:placeholder="t('openregister', 'Select provider')"
-						@update:modelValue="handleEmbeddingProviderChange">
-						<template #option="{ name, description }">
-							<div class="provider-option">
-								<strong>{{ name }}</strong>
-								<small>{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmProviderSelect
+					v-model="selectedEmbeddingProvider"
+					:options="embeddingProviderOptions"
+					:title="t('openregister', 'Embedding Provider')"
+					:description="
+						t('openregister', 'For vector embeddings and semantic search')
+					"
+					:inputLabel="t('openregister', 'Embedding Provider')"
+					@update:modelValue="handleEmbeddingProviderChange" />
 
 				<!-- Chat Provider -->
-				<div class="provider-column">
-					<h3>{{ t('openregister', 'Chat Provider (RAG)') }}</h3>
-					<p class="section-description">
-						{{
-							t(
-								'openregister',
-								'For chat and retrieval-augmented generation',
-							)
-						}}
-					</p>
-
-					<NcSelect
-						v-model="selectedChatProvider"
-						:options="chatProviderOptions"
-						label="name"
-						:inputLabel="t('openregister', 'Chat Provider')"
-						:placeholder="t('openregister', 'Select provider')">
-						<template #option="{ name, description }">
-							<div class="provider-option">
-								<strong>{{ name }}</strong>
-								<small>{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmProviderSelect
+					v-model="selectedChatProvider"
+					:options="chatProviderOptions"
+					:title="t('openregister', 'Chat Provider (RAG)')"
+					:description="
+						t('openregister', 'For chat and retrieval-augmented generation')
+					"
+					:inputLabel="t('openregister', 'Chat Provider')" />
 			</div>
 
 			<!-- Embedding Provider Configuration -->
@@ -426,6 +392,7 @@ import LlmApiKeyField from './llm/LlmApiKeyField.vue'
 import LlmModelSelect from './llm/LlmModelSelect.vue'
 import LlmOllamaModelSelect from './llm/LlmOllamaModelSelect.vue'
 import LlmOllamaUrlField from './llm/LlmOllamaUrlField.vue'
+import LlmProviderSelect from './llm/LlmProviderSelect.vue'
 import SettingsSaveActions from './SettingsSaveActions.vue'
 import { freshState } from '../../services/initialState.js'
 import {
@@ -520,6 +487,7 @@ export default {
 		LlmModelSelect,
 		LlmOllamaModelSelect,
 		LlmOllamaUrlField,
+		LlmProviderSelect,
 		SettingsSaveActions,
 	},
 
@@ -958,25 +926,14 @@ export default {
 	margin-bottom: 32px;
 }
 
-.provider-column,
 .config-section {
+	margin-bottom: 32px;
+
 	h3 {
 		margin: 0 0 8px 0;
 		font-size: 16px;
 		font-weight: 600;
 	}
-}
-
-.provider-column {
-	.section-description {
-		margin: 0 0 16px 0;
-		color: var(--color-text-maxcontrast);
-		font-size: 13px;
-	}
-}
-
-.config-section {
-	margin-bottom: 32px;
 
 	.section-description {
 		margin: 0 0 16px 0;
@@ -987,7 +944,6 @@ export default {
 
 @include form-group;
 
-.provider-option,
 .model-option {
 	@include stacked-select-option;
 }

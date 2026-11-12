@@ -35,6 +35,12 @@ use PHPUnit\Framework\TestCase;
  * Tests for {@see TaskInboxCriteria::assigneeNames()}.
  *
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
  */
 final class TaskInboxCriteriaNamesTest extends TestCase {
 

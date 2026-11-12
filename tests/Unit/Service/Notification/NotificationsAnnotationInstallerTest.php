@@ -8,6 +8,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -59,7 +61,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 			});
 		$this->webhookMapper->expects($this->never())->method('updateFromArray');
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 
 		$this->assertSame('or-notif-meeting-meetingClosed', $captured['name']);
@@ -101,7 +103,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 				return new Webhook();
 			});
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 
 		$this->assertSame(42, $captured['id']);
@@ -121,7 +123,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 		$this->webhookMapper->expects($this->never())->method('createFromArray');
 		$this->webhookMapper->expects($this->never())->method('updateFromArray');
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 	}
 
@@ -141,7 +143,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 		$this->webhookMapper->expects($this->never())->method('createFromArray');
 		$this->webhookMapper->expects($this->never())->method('updateFromArray');
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 	}
 
@@ -159,7 +161,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 
 		$this->webhookMapper->expects($this->never())->method('createFromArray');
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 	}
 
@@ -191,7 +193,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 		$this->webhookMapper->expects($this->once())->method('createFromArray')->willReturn(new Webhook());
 		$this->webhookMapper->expects($this->once())->method('updateFromArray')->willReturn(new Webhook());
 
-		$installer = new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger);
+		$installer = new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class));
 		$installer->installSchema($schema);
 		$installer->installSchema($schema);
 	}
@@ -220,7 +222,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 		$this->webhookMapper->expects($this->once())->method('createFromArray')->willReturn(new Webhook());
 		$this->webhookMapper->expects($this->never())->method('updateFromArray');
 
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 	}
 
@@ -241,7 +243,7 @@ class NotificationsAnnotationInstallerTest extends TestCase {
 
 		// Must not bubble — schema save shouldn't fail because of webhook
 		// provisioning errors. The warning log is the audit trail.
-		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger))
+		(new NotificationsAnnotationInstaller($this->webhookMapper, $this->logger, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 			->installSchema($schema);
 	}
 

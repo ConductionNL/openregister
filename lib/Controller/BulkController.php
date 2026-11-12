@@ -316,7 +316,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk delete result
 	 *
@@ -714,7 +713,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk save operation results
 	 *
@@ -844,7 +842,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with schema delete result
 	 *
@@ -990,7 +987,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier (ID or slug).
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with deletion result.
 	 *
@@ -1059,7 +1055,6 @@ class BulkController extends Controller {
 	 * @param string $register The register identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with register delete result
 	 *
@@ -1131,7 +1126,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with validation result
 	 *

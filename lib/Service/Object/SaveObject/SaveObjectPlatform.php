@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IDBConnection;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -40,6 +41,7 @@ final class SaveObjectPlatform {
 	 * @param IURLGenerator     $urlGenerator    URL generator service.
 	 * @param LoggerInterface   $logger          Logger.
 	 * @param ?IEventDispatcher $eventDispatcher Event dispatcher (reference events).
+	 * @param ?IDBConnection    $db              Connection a save that writes nested objects runs its transaction on.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -48,6 +50,7 @@ final class SaveObjectPlatform {
 		public readonly IURLGenerator $urlGenerator,
 		public readonly LoggerInterface $logger,
 		public readonly ?IEventDispatcher $eventDispatcher = null,
+		public readonly ?IDBConnection $db = null,
 	) {
 	}//end __construct()
 }//end class

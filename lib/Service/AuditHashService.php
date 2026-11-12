@@ -4,7 +4,8 @@
  * Service for cryptographic hash chaining on audit trail entries.
  *
  * Provides SHA-256 hash computation, chain verification, and genesis hash management
- * for the immutable audit trail system.
+ * for the audit trail. The chain is unkeyed: it shows an entry changed without its
+ * successors being rehashed, not that whoever can write the table did not rechain it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

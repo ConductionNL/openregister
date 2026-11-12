@@ -1161,13 +1161,15 @@ export default {
 	font-size: 1.1rem;
 }
 
-.summary-grid {
+.summary-grid,
+.config-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	gap: 0.75rem;
 }
 
-.summary-item {
+.summary-item,
+.config-item {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -1178,7 +1180,8 @@ export default {
 	font-size: 0.9rem;
 }
 
-.summary-label {
+.summary-label,
+.config-label {
 	color: var(--color-text-maxcontrast);
 	font-weight: 500;
 }
@@ -1335,28 +1338,6 @@ export default {
 	margin: 0 0 1rem 0;
 	color: var(--color-text);
 	font-size: 1.1rem;
-}
-
-.config-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 0.75rem;
-}
-
-.config-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 0.75rem;
-	background-color: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	font-size: 0.9rem;
-}
-
-.config-label {
-	color: var(--color-text-maxcontrast);
-	font-weight: 500;
 }
 
 .config-value {

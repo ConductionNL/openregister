@@ -299,6 +299,7 @@ test.describe('register-i18n — register language management UI', () => {
 							'Content-Type': 'application/json',
 							Accept: 'application/json',
 							Authorization: `Basic ${Buffer.from('admin:admin').toString('base64')}`,
+							'OCS-APIRequest': 'true',
 						},
 						data: {
 							title: `${RUN_PREFIX} i18n Register`,

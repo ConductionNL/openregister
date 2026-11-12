@@ -231,8 +231,6 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with bulk extraction result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
@@ -303,8 +301,6 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
@@ -350,8 +346,6 @@ class FileTextController extends Controller {
 	 * @param int $fileId Nextcloud file ID to anonymize
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with anonymization result
 	 *
@@ -692,7 +686,6 @@ class FileTextController extends Controller {
 	 * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */

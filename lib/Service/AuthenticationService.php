@@ -545,21 +545,22 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	/**
 	 * Generate a signed JWT token.
 	 *
-	 * @param array       $payload   The JWT payload
-	 * @param JWK         $jwk       The signing key
-	 * @param string      $algorithm The signing algorithm
-	 * @param string|null $x5t       Optional certificate thumbprint
+	 * @param array $payload       The JWT payload
+	 * @param array $configuration The auth configuration: algorithm, secret and optional x5t thumbprint
 	 *
 	 * @return string The compact-serialized JWT string.
 	 *
+	 * @throws BadRequestException If the algorithm is not supported.
+	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
-		$jwsBuilder = $this->jwsBuilder();
-		$jws = $jwsBuilder
+	private function generateJWT(array $payload, array $configuration): string {
+		$jwk = $this->getJWK(configuration: $configuration);
+		$header = $this->jwtHeader(algorithm: $configuration['algorithm'], x5t: ($configuration['x5t'] ?? null));
+		$jws = $this->jwsBuilder()
 			->create()
 			->withPayload(json_encode(value: $payload))
-			->addSignature($jwk, $this->jwtHeader(algorithm: $algorithm, x5t: $x5t))
+			->addSignature($jwk, $header)
 			->build();
 
 		return (new CompactSerializer())->serialize($jws, 0);
@@ -580,13 +581,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_JWT, configuration: $configuration);
 
 		$payload = $this->getJWTPayload(configuration: $configuration);
-		$jwk = $this->getJWK(configuration: $configuration);
 
-		return $this->generateJWT(
-			payload: $payload,
-			jwk: $jwk,
-			algorithm: $configuration['algorithm'],
-			x5t: ($configuration['x5t'] ?? null)
-		);
+		return $this->generateJWT(payload: $payload, configuration: $configuration);
 	}//end fetchJWTToken()
 }//end class

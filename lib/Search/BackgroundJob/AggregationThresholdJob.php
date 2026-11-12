@@ -42,6 +42,9 @@ use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
+use Symfony\Component\Uid\Uuid;
+
 
 /**
  * Deferred threshold-notification evaluation under the forwarded actor.
@@ -86,6 +89,25 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
+		$evaluate = fn () => $this->evaluateEntries(context: $context);
+		if ($this->evaluation->processAudit === null) {
+			$evaluate();
+			return;
+		}
+
+		$this->evaluation->processAudit->run(run: new RevealingProcess(process: 'aggregation', runId: Uuid::v4()->toRfc4122()), operation: $evaluate);
+	}//end runDeferred()
+
+	/**
+	 * Evaluate thresholds for every live entry's schema; per-entry failures are logged.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function evaluateEntries(DeferredListenerContext $context): void {
 		foreach ($this->liveEntries(context: $context, resolver: $this->evaluation->resolver) as $entry => $object) {
 			try {
 				$schema = $this->evaluation->schemaMapper->find((string)($entry['schema'] ?? ''));
@@ -103,5 +125,5 @@ class AggregationThresholdJob extends ActorForwardedJob {
 				);
 			}
 		}//end foreach
-	}//end runDeferred()
+	}//end evaluateEntries()
 }//end class

@@ -32,6 +32,20 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
  * class stays its own.
  */
 interface CalendarFeedTokenServiceInterface {
+	/**
+	 * App config key: the lifetime, in seconds, of a token minted without one; 0 means no expiry.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_TTL_KEY = 'calendar_feed_token_ttl_seconds';
+
+	/**
+	 * The lifetime of a token minted without one, when the app config does not set it: 365 days.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_TTL_SECONDS = 31536000;
+
 
 	/**
 	 * Every token one principal owns.
@@ -58,7 +72,7 @@ interface CalendarFeedTokenServiceInterface {
 	 *
 	 * @param string            $userId     The principal the token will name.
 	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
-	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null or less than one takes the configured default.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *

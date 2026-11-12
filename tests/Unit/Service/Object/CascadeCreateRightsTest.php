@@ -229,6 +229,49 @@ class CascadeCreateRightsTest extends TestCase {
 		);
 	}//end cascadeNote()
 
+	/**
+	 * A stored note owned by `alice` whose schema lets only editors update.
+	 *
+	 * @param SaveObject $handler The save handler, whose schema cache receives that schema.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function guardedTarget(SaveObject $handler): ObjectEntity {
+		$guarded = self::note();
+		$guarded->setAuthorization(['update' => ['editors'], 'read' => ['authenticated']]);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $guarded]);
+
+		$target = new ObjectEntity();
+		$target->setUuid('t-1');
+		$target->setRegister('10');
+		$target->setSchema('2');
+		$target->setOwner('alice');
+
+		return $target;
+	}//end guardedTarget()
+
+	public function testARelatedObjectTheCallerMayNotUpdateIsRefused(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+
+		$this->expectException(NotAuthorizedException::class);
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+	}
+
+	public function testARelatedObjectTheCallerMayUpdatePasses(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
+
+	public function testAnEnclosingSaveWithRbacOffSkipsTheRelatedUpdateCheck(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+		$handler->enterCascadeScope(_rbac: false);
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
+
 	public function testANestedObjectTheCallerMayNotCreateIsRefused(): void {
 		$handler = $this->saveHandler(permissions: $this->permissions());
 

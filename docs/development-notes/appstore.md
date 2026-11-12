@@ -56,15 +56,15 @@ OpenRegister provides an API endpoint to invalidate the app store cache:
 
 ```bash
 # Invalidate the main apps.json cache (default)
-curl -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore"
+curl -H 'OCS-APIRequest: true' -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore"
 
 # Invalidate a specific cache type
-curl -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore" \
+curl -H 'OCS-APIRequest: true' -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore" \
   -H "Content-Type: application/json" \
   -d '{"type": "apps"}'
 
 # Invalidate all app store caches (apps, categories, discover)
-curl -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore" \
+curl -H 'OCS-APIRequest: true' -X DELETE "https://your-nextcloud/apps/openregister/api/settings/cache/appstore" \
   -H "Content-Type: application/json" \
   -d '{"type": "all"}'
 ```

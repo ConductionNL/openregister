@@ -162,7 +162,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function skeletonFromZaaktype(?array $zaaktype = null): JSONResponse {
 		return $this->guard(
 			action: function () use ($zaaktype): array {
@@ -206,7 +205,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(
 		string $objectUuid,
 		?int $register = null,
@@ -249,7 +247,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function evaluate(string $objectUuid): JSONResponse {
 		return $this->guard(action: fn (): array => $this->plans->evaluate(objectUuid: $objectUuid, uid: $this->uid()));
 	}//end evaluate()
@@ -287,7 +284,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function attach(string $objectUuid): JSONResponse {
 		try {
 			$data = $this->adHocFields(read: new ActionParameters(params: $this->request->getParams()));
@@ -366,7 +362,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function complete(string $objectUuid, ?string $result = null): JSONResponse {
 		return $this->guard(
 			action: function () use ($objectUuid, $result): array {
@@ -389,7 +384,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $objectUuid): JSONResponse {
 		return $this->guard(action: fn (): array => ['deleted' => $this->plans->deletePlan(objectUuid: $objectUuid, uid: $this->uid())]);
 	}//end destroy()
@@ -406,7 +400,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function transition(string $uuid, ?string $to = null, ?string $reason = null): JSONResponse {
 		$command = new CaseTransitionCommand(itemUuid: $uuid, to: $to, reason: $reason);
 
@@ -445,7 +438,6 @@ class CaseController extends Controller {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function enable(string $uuid): JSONResponse {
 		return $this->guard(action: fn (): array => $this->plans->enableDiscretionary(itemUuid: $uuid, uid: $this->uid())->jsonSerialize());
 	}//end enable()

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\TextExtraction;
 
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCP\Http\Client\IClientService;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -38,6 +39,7 @@ final class EntityRecognitionBackends {
 	 * @param SettingsServiceInterface    $settingsService             Settings service.
 	 * @param AnonymiserRequestInterface $anonymisationBackendService Backend state + ExApp client.
 	 * @param ContainerInterface|null     $container                   App container, consulted lazily for the object mapper.
+	 * @param IClientService|null         $clientService               Nextcloud HTTP client for the analyze calls; without one no call is made.
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
 	 */
@@ -45,6 +47,7 @@ final class EntityRecognitionBackends {
 		public readonly SettingsServiceInterface $settingsService,
 		public readonly AnonymiserRequestInterface $anonymisationBackendService,
 		public readonly ?ContainerInterface $container = null,
+		public readonly ?IClientService $clientService = null,
 	) {
 	}//end __construct()
 }//end class

@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the page and the total over the type-and-state predicate, with their parameters.
  *
  * @covers \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class CaseItemMapperTypeAndStateGoldenTest extends TestCase {
 

@@ -253,6 +253,24 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 		$this->assertSame([[true, true], [true, true]], $this->reads);
 	}
 
+	public function testANonAdminPutReadsWithRbacAndMultitenancy(): void {
+		$this->sends(['amount' => 1]);
+
+		$result = $this->controller()->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame([[true, true]], $this->reads);
+		$this->assertSame([], $this->saves, 'PUT saved an object the caller may not read');
+	}
+
+	public function testAnAdministratorPutStillReadsUnscoped(): void {
+		$this->sends(['amount' => 1]);
+
+		$this->controller(isAdmin: true)->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame([[false, false]], $this->reads);
+	}
+
 	public function testAnAdministratorStillReadsUnscoped(): void {
 		$this->sends(['amount' => 1]);
 

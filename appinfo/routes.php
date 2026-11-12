@@ -45,6 +45,8 @@ return [
         // segment and is registered next to `providers`, before the `{id}` routes,
         // so a future `GET /api/credentials/{id}` cannot swallow it.
         ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        // Organisation picker of the organisation-credential form. A LITERAL, like shared-with-me.
+        ['name' => 'credentialOrganisation#index', 'url' => '/api/credentials/organisations',     'verb' => 'GET'],
         ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
@@ -1752,6 +1754,8 @@ return [
         // a version it has not moved to yet.
         ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
         ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        // The root OpenAPI document, public (NL API Design Rules, /core/publish-openapi).
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         [
             'name'         => 'apiSurface#contract',
             'url'          => '/api/versions/{version}/oas',
@@ -2017,6 +2021,7 @@ return [
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
+		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
 		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
 		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],

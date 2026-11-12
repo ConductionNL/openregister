@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * Tests for {@see FlowRun::jsonSerialize()}.
  *
  * @covers \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowRunSerialisationTest extends TestCase {
 

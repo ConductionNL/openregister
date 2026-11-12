@@ -39,6 +39,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\CalendarFeedTokenMapperInterface;
+use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 
@@ -64,11 +65,13 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 * @param CalendarFeedTokenMapperInterface $mapper The token store.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the subscribable link.
+	 * @param IAppConfig|null $appConfig The default token lifetime; without it the built-in default applies.
 	 */
 	public function __construct(
 		private readonly CalendarFeedTokenMapperInterface $mapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 
 	}//end __construct()
@@ -88,7 +91,7 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 *
 	 * @param string            $userId     The principal the token will name.
 	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
-	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null or less than one takes the configured default.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *
@@ -112,34 +115,52 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function mintToken(FeedTokenMint $mint): array {
-		$draft = $this->stampedDraft(mint: $mint);
+		$token = $this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
+		$draft = $this->stampedDraft(mint: $mint, token: $token);
 
 		$saved = $this->mapper->insert($draft);
 		$data  = $saved->jsonSerialize();
-		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());
+
+		// The only time the token itself is handed out: the store keeps its hash.
+		$data['token'] = $token;
+		$data['url'] = $this->feedUrl(token: $token);
 
 		return $data;
 	}//end mintToken()
 
 	/**
+	 * The stored form of a token: its SHA-256, so a read of the table yields no usable token.
+	 *
+	 * @param string $token The opaque token.
+	 *
+	 * @return string The hex digest.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public static function storedForm(string $token): string {
+		return hash('sha256', $token);
+	}//end storedForm()
+
+	/**
 	 * The mint's draft token, stamped with a fresh secret, its principal and scope, and its lifetime from now.
 	 *
-	 * @param FeedTokenMint $mint The draft, the principal and the lifetime.
+	 * @param FeedTokenMint $mint  The draft, the principal and the lifetime.
+	 * @param string        $token The fresh token; its hash is stored.
 	 *
 	 * @return CalendarFeedToken The stamped draft, not yet saved.
 	 */
-	private function stampedDraft(FeedTokenMint $mint): CalendarFeedToken {
+	private function stampedDraft(FeedTokenMint $mint, string $token): CalendarFeedToken {
 		$draft     = $mint->draft;
 		$scopeType = self::scopeTypeOf(draft: $draft);
 		$scopeId   = self::scopeIdOf(draft: $draft);
 		$userId    = self::principalOf(userId: $mint->userId);
 		$now       = new DateTime();
-		$draft->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
+		$draft->setToken(self::storedForm(token: $token));
 		$draft->setUserId($userId);
 		$draft->setScopeType($scopeType);
 		$draft->setScopeId($scopeId);
 		$draft->setCreatedAt($now);
-		$draft->setExpiresAt(self::expiryOf(now: $now, ttlSeconds: $mint->ttlSeconds));
+		$draft->setExpiresAt(self::expiryOf(now: $now, ttlSeconds: $this->lifetimeOf(ttlSeconds: $mint->ttlSeconds)));
 		$draft->setRevokedAt(null);
 		$draft->setLastReadAt(null);
 
@@ -207,6 +228,30 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	}//end principalOf()
 
 	/**
+	 * The lifetime of a token: the one asked for, or else the configured default.
+	 *
+	 * @param int|null $ttlSeconds The lifetime asked for; null or less than one asks for the default.
+	 *
+	 * @return int|null Seconds until expiry, or null when the configured default is no expiry.
+	 */
+	private function lifetimeOf(?int $ttlSeconds): ?int {
+		if ($ttlSeconds !== null && $ttlSeconds > 0) {
+			return $ttlSeconds;
+		}
+
+		$default = self::DEFAULT_TTL_SECONDS;
+		if ($this->appConfig !== null) {
+			$default = $this->appConfig->getValueInt('openregister', self::DEFAULT_TTL_KEY, self::DEFAULT_TTL_SECONDS);
+		}
+
+		if ($default <= 0) {
+			return null;
+		}
+
+		return $default;
+	}//end lifetimeOf()
+
+	/**
 	 * When a token minted now expires.
 	 *
 	 * @param DateTime $now        The minting moment.
@@ -240,7 +285,7 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 			return null;
 		}
 
-		$row = $this->mapper->findByToken(token: $token);
+		$row = $this->mapper->findByToken(token: self::storedForm(token: $token));
 		if ($row === null || $row->isLive() === false) {
 			return null;
 		}
@@ -306,7 +351,10 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 	 *
 	 * @param string $userId The principal whose tokens to list.
 	 *
-	 * @return array<int, array<string, mixed>> The serialised tokens, with their URLs.
+	 * The token itself is not stored, so neither it nor its URL can be listed;
+	 * the holder received both when the token was minted.
+	 *
+	 * @return array<int, array<string, mixed>> The serialised tokens, without token or URL.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
@@ -319,7 +367,8 @@ class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 		$rows = [];
 		foreach ($this->mapper->findByUser(userId: $userId) as $row) {
 			$data = $row->jsonSerialize();
-			$data['url'] = $this->feedUrl(token: (string)$row->getToken());
+			$data['token'] = null;
+			$data['url'] = null;
 			$rows[] = $data;
 		}
 

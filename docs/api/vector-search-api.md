@@ -31,7 +31,7 @@ Find documents by meaning using vector similarity.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/semantic?query=budget+planning&limit=5&threshold=0.75' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/semantic?query=budget+planning&limit=5&threshold=0.75' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -120,7 +120,7 @@ Combines keyword (SOLR) and semantic (vector) search for best results.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/hybrid?query=Amsterdam+projects&limit=10&semanticWeight=0.6&keywordWeight=0.4' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/hybrid?query=Amsterdam+projects&limit=10&semanticWeight=0.6&keywordWeight=0.4' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -201,7 +201,7 @@ Generate and store embedding for a specific object.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/123/vectorize?provider=openai' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/123/vectorize?provider=openai' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -255,7 +255,7 @@ Vectorize multiple objects in batch (efficient for large datasets).
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/bulk' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/bulk' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -336,7 +336,7 @@ Retrieve stats about vectorized content.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/stats' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/stats' \
   -u admin:admin
 ```
 
@@ -404,7 +404,7 @@ Send a message to the AI assistant and get a RAG-powered response.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/chat/send' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/chat/send' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -466,7 +466,7 @@ Retrieve conversation history for the current user.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/chat/history?limit=20' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/chat/history?limit=20' \
   -u admin:admin
 ```
 
@@ -500,7 +500,7 @@ Delete all conversation history for the current user.
 
 **Request Example**:
 ```bash
-curl -X DELETE 'http://nextcloud.local/apps/openregister/api/chat/history' \
+curl -H 'OCS-APIRequest: true' -X DELETE 'http://nextcloud.local/apps/openregister/api/chat/history' \
   -u admin:admin
 ```
 
@@ -530,7 +530,7 @@ Submit feedback (thumbs up/down) for an AI response.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/chat/feedback' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/chat/feedback' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{"messageId": 42, "feedback": "positive"}'

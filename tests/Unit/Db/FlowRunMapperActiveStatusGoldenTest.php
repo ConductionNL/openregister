@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  * Golden active-status and staleness queries of FlowRunMapper.
  *
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunSubjectScope
  */
 final class FlowRunMapperActiveStatusGoldenTest extends TestCase {
 	use RecordsQueries;

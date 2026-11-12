@@ -33,6 +33,9 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses   \OCA\OpenRegister\Event\ObjectDeletingEvent
  * @uses   \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectDelete
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class MagicMapperAssertDeletableTest extends TestCase {
 

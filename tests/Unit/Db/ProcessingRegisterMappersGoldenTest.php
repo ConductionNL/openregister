@@ -35,6 +35,10 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\ProcessingPurposeMapper
  * @covers \OCA\OpenRegister\Db\VerwerkingsactiviteitMapper
+ * @uses \OCA\OpenRegister\Db\LinkColumn
+ * @uses \OCA\OpenRegister\Db\NewRowStamps
+ * @uses \OCA\OpenRegister\Db\ProcessingPurpose
+ * @uses \OCA\OpenRegister\Db\Verwerkingsactiviteit
  */
 final class ProcessingRegisterMappersGoldenTest extends TestCase {
 	use RecordsQueries;

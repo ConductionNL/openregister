@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\RecordTemplateMapper
  * @covers \OCA\OpenRegister\Db\ObjectReadStateMapper
  * @covers \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class MapperQueryStepsGoldenTest extends TestCase {
 	use RecordsQueries;

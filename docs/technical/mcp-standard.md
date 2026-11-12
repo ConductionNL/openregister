@@ -16,7 +16,7 @@ Requires Nextcloud Basic Auth. All requests use JSON-RPC 2.0 over HTTP.
 ### 1. Initialize a Session
 
 ```bash
-curl -s -u admin:admin -X POST \
+curl -H 'OCS-APIRequest: true' -s -u admin:admin -X POST \
   http://localhost:8080/index.php/apps/openregister/api/mcp \
   -H "Content-Type: application/json" \
   -d '{
@@ -36,7 +36,7 @@ Response includes a `Mcp-Session-Id` header. Use it for all subsequent requests.
 ### 2. List Tools
 
 ```bash
-curl -s -u admin:admin -X POST \
+curl -H 'OCS-APIRequest: true' -s -u admin:admin -X POST \
   http://localhost:8080/index.php/apps/openregister/api/mcp \
   -H "Content-Type: application/json" \
   -H "Mcp-Session-Id: <session-id>" \
@@ -46,7 +46,7 @@ curl -s -u admin:admin -X POST \
 ### 3. Call a Tool
 
 ```bash
-curl -s -u admin:admin -X POST \
+curl -H 'OCS-APIRequest: true' -s -u admin:admin -X POST \
   http://localhost:8080/index.php/apps/openregister/api/mcp \
   -H "Content-Type: application/json" \
   -H "Mcp-Session-Id: <session-id>" \

@@ -43,6 +43,11 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Db\ObjectReadStateMapper
  * @covers \OCA\OpenRegister\Db\EmailLinkMapper
+ * @uses \OCA\OpenRegister\Db\EmailLink
+ * @uses \OCA\OpenRegister\Db\MailMessageKey
+ * @uses \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Db\ObjectReadState\ReadStateScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class ReadStateAndEmailLinkMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

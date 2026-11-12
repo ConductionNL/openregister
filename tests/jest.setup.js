@@ -12,6 +12,11 @@ globalThis.OC = globalThis.OC || {
 
 globalThis.OCA = globalThis.OCA || {}
 
+// @nextcloud/auth reads the request token from the page head, as Nextcloud renders it.
+if (typeof document !== 'undefined') {
+	document.head.dataset.requesttoken = 'test-request-token'
+}
+
 if (!globalThis.fetch) {
 	globalThis.fetch = jest.fn()
 }

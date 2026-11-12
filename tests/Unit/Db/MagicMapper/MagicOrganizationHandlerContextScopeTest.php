@@ -41,6 +41,10 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MagicOrganizationHandlerContextScopeTest extends TestCase {
 

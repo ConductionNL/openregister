@@ -32,6 +32,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
  */
 final class PurposeBoundTablesTest extends TestCase {
 

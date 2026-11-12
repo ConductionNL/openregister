@@ -41,6 +41,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class MagicFacetHandlerUuidLabelsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/facet-uuid-labels-golden.json';

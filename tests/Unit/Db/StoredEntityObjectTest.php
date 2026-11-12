@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Db\AccessLink
  * @covers \OCA\OpenRegister\Files\Service\NoteService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
  */
 class StoredEntityObjectTest extends TestCase
 {
