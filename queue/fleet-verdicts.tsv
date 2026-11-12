@@ -4020,6 +4020,7 @@ buildiq	1445	b639bf561301333c124705a1ba46cfa476015021	RED	worker-53:merge-gate	G
 buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 dossiq	6117	90f6df25c414d28b60e443a96dbd779d0e810588	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6118	68cd0970fb06d635b6f8ffdb6b8e7084419ac8f7	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
+portaliq	2366	73507c851ce140193ee14da32104322221caff7e	REVERIFY	worker-35	lockfile resynced with npm install --package-lock-only (restores @nextcloud/vue nested pinia@4.1.0); npm ci passes, audit unchanged (crit 0, high 1); sbom regenerated; new head 7406159f36b6d214dc1498388a0bf472170aca33, verify it
 dossiq	6119	9305ba0ab56e28f2c257c82ecaeddfe1c20c8344	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6120	80efd1f45c7635d2047391507f278ae9ab8edbf2	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6121	030bf714014167598b36dfbb23c46fcdd47553c7	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
@@ -4028,3 +4029,4 @@ dossiq	6123	ce87e15f3e5eead0345903552bc29f7b36293135	GREEN	worker-33	tree 12133 
 dossiq	6124	130261d42ad5c34507538565d6fe4b9b808f58c1	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6125	8880b44187a733d49fe1981e7ca032d2d241381f	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 thematiq	1661	329da1dbf7ef62bfe2edda1c96e58e249c5341df	GREEN	worker-39	phpunit 2833 (baseline 1 inherited failure MigrateOverrideValueTypesTest), vitest 1554 passed; new failures 0; constant/selector renames, same values
+buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
