@@ -4233,3 +4233,4 @@ decidiq	2084	fe734abedde117c0613432e98ebbf3616ca14fcc	GREEN	worker-57	tree 3159 
 pipelinq	3555	7829763dc12c9f590882af2937bfe50b78a3f85e	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new
 pipelinq	3559	c40e9973ee4b4dbd8c252cda3662d3ebc04b6605	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure, 0 new
 pipelinq	3561	17991ca1514295f0569afcf2ed13a01aa10c815d	CONFLICT	worker-27	add/add conflict in tests/vitest/resourceRowEditors.spec.js against development
+pipelinq	3562	293d3fc246638b891566f47a1eabbf32bec7e0c5	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure, 0 new
