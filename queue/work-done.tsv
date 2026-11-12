@@ -470,3 +470,4 @@ cover:pipelinq:f67520ec:js0be8c659	PR #3552: 15 vitest tests for 4 modals at 0% 
 cover:pipelinq:f67520ec:js16d0f1b3	PR pipelinq#3553: 30 specs (3 xwiki components, LeadAnalyticsSection), dirs stmts 68.8% -> 80.7%, vitest 3158 -> 3188 green	session-20261112T205855-bb08648d	2026-11-12T21:38:10Z
 verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response behaviour change); 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:38:20Z
 cover:integriq:9b0f5894:js0be8c659	no PR: src/modals/* already at 95.6% lines (PromotePreviewModal 95.5%, openRegisterGet and editorSlotScope have direct specs); nothing thin left to add	session-20261112T184441-77ab05a6	2026-11-12T21:38:24Z
+merge:shillinq:2796:1f5d6d5b	2796 RED 2797 SKIP 2798 RED 	session-20261112T184502-4ecd6072	2026-11-12T21:38:55Z
