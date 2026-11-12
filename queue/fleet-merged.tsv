@@ -10,3 +10,4 @@ dossiq	5909	51df02c53316b17932fbf0f6e7e2ab92d025044e	MERGED	worker-45	GATE OK sb
 dossiq	5761	26692be68b449e5884107ce3235344a7d5d31760	FAIL	worker-38	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 dossiq	5932	1d94d0fc7f8e16e5ac4783faafc6a349a308ce36	RED	worker-45	GATE RED checker floor: dockerimage: pass -> fail
 dossiq	5845	f978eca2992f851c4dfa18860b1db0a2a12d0a58	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5962	2472452477059a13acc859fe482d451333704226	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold
