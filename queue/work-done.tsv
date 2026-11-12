@@ -846,3 +846,4 @@ verify:opencatalogi:2579:6513b90b	stale	feeder	2026-11-12T23:14:09Z
 verify:versioniq:661:e6dca2d4	stale	feeder	2026-11-12T23:14:09Z
 verify:larpinq:1006:e6fc2414	stale	feeder	2026-11-12T23:14:09Z
 verify:thematiq:1663:c576c89e	stale	feeder	2026-11-12T23:14:09Z
+gap:decidiq:axe:lic2	PR #2098: axe-core moved to devDependencies, lock regenerated; unit + prod build green	session-20261112T224529-41d77a96	2026-11-12T23:16:49Z
