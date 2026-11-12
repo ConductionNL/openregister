@@ -3662,3 +3662,11 @@ stackiq	1679	bbc7178f2a87fa68cf31b5fc9b40d0782f1ddba1	CONFLICT	fv11-25:stackiq-t
 buildiq	1299	01e275422675ef4a14e780ac04dae792f174928b	GREEN	fv11-12:buildiq-a	unit 2134 run (openregister lib sibling), 5 errors all baseline (Leaf/FormDestination listener tests), no new; no JS; diff review: gates extracted to helpers, refusals and messages unchanged
 buildiq	1321	4c5687eb9ad21509152eb6c0b814be5dcd0bdb6b	GREEN	fv11-12:buildiq-a	unit 2134 run (openregister lib sibling), 5 errors all baseline (Leaf/FormDestination listener tests), no new; no JS; diff review: gates extracted to helpers, refusals and messages unchanged
 pipelinq	3227	157563fc3a74987e4f5601d80016d9e936ceb0f8	CONFLICT	fv11-12:pipelinq-a	merge onto development conflicts
+stackiq	1548	920250d4b70edefb4225952bd5689ac1223f41a6	GREEN	fv11-20:stackiq-t1	unit 2266 run, 0 failures (baseline 2253, 0); vitest 1221 passed; diff review: helper extraction, log messages and responses kept verbatim
+stackiq	1553	95cde819a1155eede592997e0485428b19f345a1	GREEN	fv11-20:stackiq-t1	unit 2266 run, 0 failures (baseline 2253, 0); vitest 1221 passed; diff review: helper extraction, log messages and responses kept verbatim
+stackiq	1554	0e799bf8b0102de0ee28f446137bfcc522056395	GREEN	fv11-20:stackiq-t1	unit 2266 run, 0 failures (baseline 2253, 0); vitest 1221 passed; diff review: helper extraction, log messages and responses kept verbatim
+stackiq	1569	6be26631ae667881471bbf04580fe8760125c2b1	GREEN	fv11-20:stackiq-t1	unit 2266 run, 0 failures (baseline 2253, 0); vitest 1221 passed; diff review: helper extraction, log messages and responses kept verbatim
+stackiq	1442	9a42cab127e671be3239f8a61ad864a456a44057	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
+stackiq	1540	dc4ce15221e70e6489d34f110bb7d6f78b84009c	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
+stackiq	1570	95100fd1615c68b8cfda70205d6c2ecaf79a4120	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
+stackiq	1589	e9d19e0d874e8cca4a2e94d0795a788010a5cd80	CONFLICT	fv11-20:stackiq-t1	merge conflict against origin/development
