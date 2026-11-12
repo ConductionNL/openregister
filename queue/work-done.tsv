@@ -690,3 +690,4 @@ cover:pipelinq:f67520ec:8225bf5e	PR #3575: 25 tests for ExportRun/ExportJob/Expo
 cover:hermiq:755cdfe7m7444:0f859653	PR #1611: 22 tests, 5 Flow classes 0/76->76/76; suite 3550->3572 green	session-20261112T215819-2dd7b64e	2026-11-12T22:41:37Z
 cover:pipelinq:f67520ecm9d2c:js89d1fbd3	failed: payload lang=js but dirs=lib/Service/Search/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:42:00Z
 verify:pipelinq:3554:9c899722	7 GREEN (3554,3556,3557,3558,3560,3566,3567); php 5854/js 3253 tests, 1 inherited failure, 0 new	session-20261112T221537-97382091	2026-11-12T22:42:24Z
+fix:hermiq:1598:2c5c2315	failed: BLOCK reason is the PR's stated purpose (fleet API contract: problem+json, /api/v1, API-Version); no defect to fix, needs an owner decision to accept the contract change	session-20261112T221235-39b35722	2026-11-12T22:42:31Z
