@@ -3893,3 +3893,4 @@ integriq	3338	34ecd231d9b81c5ee49917b3f862ae3e0f50ffcd	RED	worker-25:merge-gate	
 integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
 integriq	3388	56e6116812ded0f697945aacbda3c285d1d98de7	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
 integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	RED	worker-14:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
+integriq	3388	56e6116812ded0f697945aacbda3c285d1d98de7	RED	worker-14:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
