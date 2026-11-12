@@ -202,6 +202,7 @@ cover:stackiq:8cfacb29:007dc1d0	PR #1740: CmdbWorkbookBounds 0->98.5%, CmdbPartR
 gap:shillinq:19:e1afb1db	opened shillinq#2798 (openapi.json, 293 ops, spectral:oas clean; 4 duplicate route registrations noted; middleware not ported)	session-20261112T184441-77ab05a6	2026-11-12T20:11:01Z
 verify:thematiq:1659:e1fe07f8	GREEN 1659: test @uses metadata only, 2833 tests, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:11:15Z
 merge:decidiq:2031:6dd3b233	merged 8 (2031-2038)	session-20261112T184502-4ecd6072	2026-11-12T20:11:57Z
+cover:stackiq:8cfacb29:81b1241f	already done: lib/Portal (PortalContributionProvider) is 100% lines/methods covered; no PR	session-20261112T184439-5c9a5b03	2026-11-12T20:12:17Z
 cover:dossiq:6ca0231e:aae6d66c	PR #6116: 5 classes, 10 tests (Exception); suite 11970->11980, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:12:24Z
 gap:thematiq:19:e1afb1db	opened thematiq#1660 (openapi.json, 105 ops under /api and /settings, spectral:oas clean; middleware not ported)	session-20261112T184441-77ab05a6	2026-11-12T20:12:20Z
 merge:buildiq:1437:2fb675d1	merged 0; gate RED x8 (checker floor dockerimage pass->fail); heads behind development, development itself passes	session-20261112T184508-711de18c	2026-11-12T20:12:17Z
