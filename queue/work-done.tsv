@@ -135,3 +135,4 @@ gap:larpinq:13:302052c1	PR #1000: cyclonedx-npm 5->7 (drops libxmljs2) + vite 8.
 gap:learniq:13:302052c1	PR #2416 @4c9e6fe0: npm audit fix, 48->36 (critical 0, high 1: dompurify via toast-ui), lockfile + sbom only; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:44:32Z
 review:openregister:10031:6d96e2a0	APPROVE: tests-only, suites green	session-20261112T182617-a12dc411	2026-11-12T19:45:02Z
 gap:larpinq:1:e16dc70b	failed: #988 verified GREEN at aa3c5d02 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:45:05Z
+review:openregister:10035:deba9134	APPROVE: tests only, 20 new tests pass, suites match main	session-20261112T184508-711de18c	2026-11-12T19:45:26Z
