@@ -4227,6 +4227,7 @@ buildiq	1478	c6f2e6daadbc1dcd05d35e56d41aac40d21fe6eb	GREEN	worker-47	tests-only
 buildiq	1479	311eb4b6995540267fcb36cdd023c1b72301340e	GREEN	worker-47	tests-only JS PR; vitest 3046/3046 pass on 5-PR tree; PHP unit 2234 run, baseline 1270 inherited (openregister contract stubs), no new failures
 buildiq	1480	f2bae4840c0d13f801cd2ddbdb692e1d008a509b	GREEN	worker-47	tests-only JS PR; vitest 3046/3046 pass on 5-PR tree; PHP unit 2234 run, baseline 1270 inherited (openregister contract stubs), no new failures
 buildiq	1481	35e2db59ab65f1001b78ec20a97ed4493999619f	GREEN	worker-47	tests-only JS PR; vitest 3046/3046 pass on 5-PR tree; PHP unit 2234 run, baseline 1270 inherited (openregister contract stubs), no new failures
+launchpad	1122	d8cb5009938f0e30ad45a9930ebf6ed710264146	GREEN	worker-26	3303 tests run on 4-PR tree (baseline 3256, all pass), 0 new failures; tests-only, 3 new test files
 pipelinq	3555	7829763dc12c9f590882af2937bfe50b78a3f85e	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new
 pipelinq	3559	c40e9973ee4b4dbd8c252cda3662d3ebc04b6605	GREEN	worker-27	tests-only; unit 5830 run, baseline 1 failure, 0 new
 pipelinq	3561	17991ca1514295f0569afcf2ed13a01aa10c815d	CONFLICT	worker-27	add/add conflict in tests/vitest/resourceRowEditors.spec.js against development
