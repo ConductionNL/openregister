@@ -864,3 +864,4 @@ verify:launchpad:1121:8548b6df	failed: permission (running the unit suite was re
 verify:dossiq:6185:8f60c29c	failed: permission (composer-cloud.sh refused); PR only edits an analysis yaml	session-20261112T231637-27871bfa	2026-11-12T23:21:23Z
 verify:filinq:1973:5f23a39e	1975 GREEN (php 5318 OK, vitest 450 OK); 1973 already on development, no verdict	session-20261112T231645-3f0591a5	2026-11-12T23:21:45Z
 fix:keepiq:1680:c370c74f	fixed: problem details and version header confined to /api/v1/; unversioned answers unchanged; new head 2abefb9d, REVERIFY recorded	session-20261112T231639-4c562de9	2026-11-12T23:22:01Z
+cover:dossiq:6ca0231e:5ebe3eb6	failed: permission (composer-cloud.sh refused in this session)	session-20261112T231637-27871bfa	2026-11-12T23:22:16Z
