@@ -4037,3 +4037,4 @@ stackiq	1740	e8e3674ad1a58d6abaa5631e871862f05af10d38	GREEN	worker-39	tree witho
 stackiq	1741	599abaeac9fa045eda7dee3b072f45a4387bce92	GREEN	worker-39	tree without 1738: phpunit 2362 ok (phpunit baseline 2334 ok); new failures 0; tests only
 dossiq	6125	8880b44187a733d49fe1981e7ca032d2d241381f	GREEN	worker-48	tree of 9: 12087 tests, baseline 11976 with 19 inherited failures, 0 new failures; tests-only diff
 dossiq	6126	42bbf385f12e8ce5a8148f19f2afc0df481db894	GREEN	worker-48	tree of 9: 12087 tests, baseline 11976 with 19 inherited failures, 0 new failures; tests-only diff
+dossiq	6127	84c207888830f289006e2e101e62104f55734eb6	GREEN	worker-48	tree of 9: 12087 tests, baseline 11976 with 19 inherited failures, 0 new failures; tests-only diff
