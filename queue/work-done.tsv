@@ -640,3 +640,4 @@ cover:hermiq:755cdfe7:65e30692	PR #1606: 12 tests for IntakeService/IntakeSettin
 cover:pipelinq:f67520ec:8f8dca30	PR #3569: ExportRunService+ExportJobService to 100%, Export dir 81.6->94.8% (26 tests)	session-20261112T221234-13fcfd6a	2026-11-12T22:31:40Z
 cover:pipelinq:f67520ecm9d2c:js09cc8f24	failed: payload lang=js but dirs=lib/Service/Cti/ holds only PHP (0 js/ts files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:32:05Z
 cover:pipelinq:f67520ec:38e80a9f	PR #3570: 12 tests, lib/Command/*.php all 100%; suite 5773->5785, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:32:03Z
+cover:decidiq:13261b1b:3d4b295b	PR #2094: RegisterFragmentMerger 10 tests, suite 3116->3126 green	session-20261112T221237-c40cb74c	2026-11-12T22:32:11Z
