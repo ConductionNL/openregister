@@ -434,3 +434,4 @@ cover:integriq:9b0f5894:js0023cfc7	PR #3400: 14 vitest tests for EditMappingRule
 verify:dossiq:6151:e9fa35ad	6151 BLOCK (API error bodies and routes change); 6152-6159 GREEN tests-only; tree 12564 tests, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:26:06Z
 cover:buildiq:8ca317f6:js3f3bfe56	PR #1474: 4 vitest tests for ncDashboard boot and settings entry; src/*.js statements 131/174 -> 143/174; suite 2962 -> 2966 passing	session-20261112T200018-e68ecbf8	2026-11-12T21:26:22Z
 cover:pipelinq:f67520ec:js5794e9fc	PR #3547: 25 mounted vitest tests over 5 settings sections, src/views/settings lines 72.27%->78.05%, suite 3158->3183 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:27:25Z
+cover:buildiq:8ca317f6:js06645759	PR buildiq#1475: 37 vitest tests for runtimeAttachments, SaveCancelActions, VirtualAppsActions; suite 2962 -> 2999 passed	session-20261112T205850-5f960ec2	2026-11-12T21:27:41Z
