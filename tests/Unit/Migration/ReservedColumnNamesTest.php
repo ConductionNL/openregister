@@ -12,12 +12,15 @@
  * whatever Doctrine version runs the test.
  *
  * The lists come from the upstream server sources, one per series
- * (ReservedWordSource::SOURCES), so a new point release or a word a coming
- * series reserves is picked up without an edit. The snapshots in fixtures/ are
- * always merged into those lists, so a word upstream stops reserving stays
- * checked until the snapshot is regenerated, and when a download fails the
- * snapshot alone is used: the test never needs network. A word upstream starts
- * to reserve that a migration already uses fails this test; rename the column in a new migration
+ * (ReservedWordSource::SOURCES): the branch head is read live, so a word a new
+ * point release reserves is picked up without an edit. A branch head is only the
+ * newest point release, so the snapshots in fixtures/ hold the union over the head
+ * and every release tag of the series; they are always merged into the live list
+ * and are the only source for the older point releases. A word upstream stops
+ * reserving therefore stays checked until the snapshot is regenerated, and when a
+ * download fails the snapshot alone is used: the test never needs network.
+ * A word upstream starts to reserve that a migration already uses fails this
+ * test; rename the column in a new migration
  * or, for a column that is already released, add the word to ALREADY_IN_USE.
  * The development branches (`main`, `trunk`; ReservedWordSource::SOURCES marks
  * them) are not a gate: a word only they reserve is reported as an incomplete
@@ -242,14 +245,25 @@ class ReservedColumnNamesTest extends TestCase {
 	/**
 	 * The lists hold the words they must, so the check above can catch the word that broke MariaDB.
 	 *
-	 * ROW_NUMBER is reserved on MariaDB 11.0 to 11.3 and MySQL 8, SELECT on every series,
+	 * ROW_NUMBER is reserved on MariaDB from 10.7 on and on MySQL 8, SELECT on every series,
 	 * and WINDOW on MySQL 8 (MariaDB lets it through as a column name).
+	 *
+	 * The MariaDB 10.11 and 11.4 branch heads stopped listing ROW_NUMBER while every
+	 * released 10.11.x and 11.4.x still reserves it, so for those series (and 11.8,
+	 * whose releases reserve it as well) only the snapshot's release history
+	 * holds the word. A snapshot regenerated from branch heads alone would fail here.
 	 *
 	 * @return void
 	 */
 	public function testTheListsHoldTheWordsThatMustBeReserved(): void {
-		$this->assertContains('row_number', self::reservedWords(engine: 'mariadb', series: '11.3'));
-		$this->assertContains('row_number', self::reservedWords(engine: 'mysql', series: '8.0'));
+		foreach (['10.11', '11.3', '11.4', '11.8'] as $series) {
+			$this->assertContains('row_number', self::reservedWords(engine: 'mariadb', series: $series), 'mariadb '.$series);
+		}
+
+		foreach (['8.0', '8.4'] as $series) {
+			$this->assertContains('row_number', self::reservedWords(engine: 'mysql', series: $series), 'mysql '.$series);
+		}
+
 		$this->assertContains('window', self::reservedWords(engine: 'mysql', series: '8.0'));
 		$this->assertNotContains('row_number', self::ALREADY_IN_USE);
 

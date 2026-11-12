@@ -11,10 +11,12 @@
  * cannot reach. This class downloads both files for a branch of the upstream
  * repository and derives the words that way. The committed snapshot
  * (`fixtures/reserved-words-<engine>-<series>.txt`) is always part of the
- * result: words() is the online list merged with the snapshot, and the snapshot
- * alone when the download fails, so a test that uses it stays deterministic
- * without network. A word upstream stops reserving therefore stays in the list
- * until the snapshot is regenerated.
+ * result: words() is the live branch head merged with the snapshot, and the
+ * snapshot alone when the download fails, so a test that uses it stays
+ * deterministic without network. The snapshot of a released series is the union
+ * over the head and every release tag of the series, which the live head cannot
+ * give: it is the only source for the older point releases. A word upstream stops
+ * reserving therefore stays in the list until the snapshot is regenerated.
  * `fixtures/update-reserved-words.php` rewrites the snapshots from the same code.
  *
  * Environment: RESERVED_WORDS_BASE_URL replaces https://raw.githubusercontent.com
@@ -41,12 +43,23 @@ class ReservedWordSource {
 	/**
 	 * The upstream repository per engine, and the branch per supported series.
 	 *
-	 * Branches, not tags, so a new point release and the words the next series
-	 * adds are picked up without an edit here. `appinfo/info.xml` asks for MySQL
-	 * 8.0 or newer and docs/installation.md for MariaDB 10.5 or newer; the other
-	 * MariaDB series are the long-term releases Nextcloud 32 to 35 run on, plus
-	 * 11.3: MariaDB 11.0 to 11.3 reserve ROW_NUMBER, the word that broke the
-	 * import preview migration (#4909).
+	 * The test reads the branch head of each series, so the words a new point
+	 * release adds are picked up without an edit here. A branch head is only the
+	 * newest point release though, and upstream also un-reserves words: the 10.11
+	 * and 11.4 heads no longer list ROW_NUMBER while every released 10.11.x and
+	 * 11.4.x does. So the snapshot of a released series is the union over the
+	 * branch head and every release tag of that series (`releaseTags()`, written by
+	 * `fixtures/update-reserved-words.php`) and is always merged into what the test
+	 * checks; it is the only place the older point releases are covered. A release
+	 * tag is `<tagPrefix><series>.<n>`; `firstRelease` names the first <n> whose
+	 * sources the parser can read (MySQL 8.0.0 to 8.0.4 are development milestones
+	 * with another lex.h layout, 8.0.11 is the first general-availability release).
+	 *
+	 * `appinfo/info.xml` asks for MySQL 8.0 or newer and docs/installation.md for
+	 * MariaDB 10.5 or newer; the other MariaDB series are the long-term releases
+	 * Nextcloud 32 to 35 run on, plus 11.3: MariaDB reserves ROW_NUMBER from 10.7 on
+	 * (before that it is a function name only, `sql_functions[]` in lex.h), the word
+	 * that broke the import preview migration (#4909).
 	 *
 	 * `development` names the series that are not released: `main` and `trunk`
 	 * hold the words a coming series may reserve. A word only they reserve is a
@@ -54,16 +67,20 @@ class ReservedWordSource {
 	 */
 	public const SOURCES = [
 		'mariadb' => [
-			'repository'  => 'MariaDB/server',
-			'series'      => ['10.5', '10.6', '10.11', '11.3', '11.4', '11.8', 'main'],
-			'development' => ['main'],
-			'identifier'  => 'keyword_ident',
+			'repository'   => 'MariaDB/server',
+			'tagPrefix'    => 'mariadb-',
+			'firstRelease' => [],
+			'series'       => ['10.5', '10.6', '10.11', '11.3', '11.4', '11.8', 'main'],
+			'development'  => ['main'],
+			'identifier'   => 'keyword_ident',
 		],
 		'mysql'   => [
-			'repository'  => 'mysql/mysql-server',
-			'series'      => ['8.0', '8.4', 'trunk'],
-			'development' => ['trunk'],
-			'identifier'  => 'ident_keyword',
+			'repository'   => 'mysql/mysql-server',
+			'tagPrefix'    => 'mysql-',
+			'firstRelease' => ['8.0' => 11],
+			'series'       => ['8.0', '8.4', 'trunk'],
+			'development'  => ['trunk'],
+			'identifier'   => 'ident_keyword',
 		],
 	];
 
@@ -217,6 +234,98 @@ class ReservedWordSource {
 
 		return $words;
 	}//end fetch()
+
+	/**
+	 * The release tags of one released series, oldest first: `<tagPrefix><series>.<n>`.
+	 *
+	 * Used by the refresh script, never by the test. Pre-release and vendor tags
+	 * (`mysql-8.0.37-fc40`, `mysql-cluster-*`, `*-labs-*`) do not match.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $series A released series, not a development branch.
+	 *
+	 * @return string[]
+	 *
+	 * @throws RuntimeException When the GitHub API refuses the listing or the series has no tags.
+	 */
+	public static function releaseTags(string $engine, string $series): array {
+		$source  = self::SOURCES[$engine];
+		$base    = getenv('RESERVED_WORDS_API_URL');
+		$base    = (is_string($base) === true && $base !== '') ? $base : 'https://api.github.com';
+		$stem    = $source['tagPrefix'].$series;
+		$pattern = '/^'.preg_quote($stem, '/').'\.\d+$/';
+		$tags    = [];
+		for ($page = 1; $page <= 20; $page++) {
+			$url      = rtrim($base, '/').'/repos/'.$source['repository'].'/git/matching-refs/tags/'.$stem.'.?per_page=100&page='.$page;
+			$response = self::request(url: $url);
+			if ($response['status'] !== 200) {
+				throw new RuntimeException(
+					'Listing the '.$engine.' '.$series.' tags failed: HTTP '.$response['status'].' from '.$url
+					.(in_array($response['status'], [403, 429], true) ? '; the GitHub API rate limit is reached, set GITHUB_TOKEN' : '')
+					.(($response['error'] !== '') ? ' ('.$response['error'].')' : '')
+				);
+			}
+
+			$refs = json_decode($response['body'], true);
+			foreach (is_array($refs) ? $refs : [] as $ref) {
+				$tag = substr((string) ($ref['ref'] ?? ''), strlen('refs/tags/'));
+				$point = (int) substr($tag, (strlen($stem) + 1));
+				if (preg_match($pattern, $tag) === 1 && $point >= ($source['firstRelease'][$series] ?? 0)) {
+					$tags[] = $tag;
+				}
+			}
+
+			if (is_array($refs) === false || count($refs) < 100) {
+				break;
+			}
+		}
+
+		if ($tags === []) {
+			throw new RuntimeException('No release tag '.$stem.'.<n> exists; the tag naming of '.$source['repository'].' changed, so ReservedWordSource::SOURCES needs an update.');
+		}
+
+		usort($tags, 'strnatcmp');
+
+		return $tags;
+	}//end releaseTags()
+
+	/**
+	 * The words one release tag reserves, kept in a cache directory so an interrupted refresh resumes.
+	 *
+	 * A tag never changes, so its words are cached for good (RESERVED_WORDS_CACHE, default
+	 * a directory in the system temp dir). Used by the refresh script, never by the test.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $tag    The release tag.
+	 *
+	 * @return string[]
+	 *
+	 * @throws RuntimeException When the sources of the tag cannot be downloaded or no longer parse.
+	 */
+	public static function releaseWords(string $engine, string $tag): array {
+		$dir = getenv('RESERVED_WORDS_CACHE');
+		$dir = (is_string($dir) === true && $dir !== '') ? $dir : sys_get_temp_dir().'/reserved-words-cache';
+		if (is_dir($dir) === false) {
+			mkdir($dir, 0777, true);
+		}
+
+		$file = $dir.'/'.$engine.'-'.$tag.'.txt';
+		if (is_file($file) === true) {
+			$cached = file($file, (FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+			if ($cached !== false) {
+				return $cached;
+			}
+		}
+
+		$words = self::fetch(engine: $engine, series: $tag);
+		if ($words === null) {
+			throw new RuntimeException('Could not download the '.$engine.' '.$tag.' sources: '.(self::$offlineReason ?? 'unknown reason').'. Run the script again to resume; finished tags are cached in '.$dir.'.');
+		}
+
+		file_put_contents($file, implode("\n", $words)."\n");
+
+		return $words;
+	}//end releaseWords()
 
 	/**
 	 * Refuses a list that no server can have, so a parser that lost its way says so.
@@ -560,19 +669,7 @@ class ReservedWordSource {
 			return null;
 		}
 
-		$handle = curl_init($url);
-		curl_setopt_array(
-			$handle,
-			[
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_CONNECTTIMEOUT => 5,
-				CURLOPT_TIMEOUT        => 20,
-				CURLOPT_FOLLOWLOCATION => false,
-			]
-		);
-		$body   = curl_exec($handle);
-		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-		$error  = curl_error($handle);
+		['status' => $status, 'body' => $body, 'error' => $error] = self::request(url: $url);
 
 		if ($status === 404 || ($status >= 300 && $status < 400)) {
 			throw new RuntimeException(
@@ -581,13 +678,52 @@ class ReservedWordSource {
 			);
 		}
 
-		if (is_string($body) === false || $body === '' || $status !== 200) {
+		if ($body === '' || $status !== 200) {
 			self::$offlineReason = ($status === 0) ? 'no answer from '.$url.' ('.($error !== '' ? $error : 'connection failed').')' : 'HTTP '.$status.' from '.$url;
 			return null;
 		}
 
 		return $body;
 	}//end download()
+
+	/**
+	 * One GET request, redirects not followed.
+	 *
+	 * A GITHUB_TOKEN in the environment is sent to GitHub's own hosts only, to
+	 * lift the unauthenticated rate limit; a mirror in RESERVED_WORDS_BASE_URL never sees it.
+	 *
+	 * @param string $url The URL.
+	 *
+	 * @return array{status: int, body: string, error: string} Status 0 when nothing answered.
+	 */
+	private static function request(string $url): array {
+		$headers = [];
+		$token   = getenv('GITHUB_TOKEN');
+		$host    = parse_url($url, PHP_URL_HOST);
+		if (is_string($token) === true && $token !== '' && in_array($host, ['api.github.com', 'raw.githubusercontent.com'], true) === true) {
+			$headers[] = 'Authorization: Bearer '.$token;
+		}
+
+		$handle = curl_init($url);
+		curl_setopt_array(
+			$handle,
+			[
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_CONNECTTIMEOUT => 5,
+				CURLOPT_TIMEOUT        => 20,
+				CURLOPT_FOLLOWLOCATION => false,
+				CURLOPT_USERAGENT      => 'openregister-reserved-words',
+				CURLOPT_HTTPHEADER     => $headers,
+			]
+		);
+		$body = curl_exec($handle);
+
+		return [
+			'status' => (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE),
+			'body'   => is_string($body) ? $body : '',
+			'error'  => curl_error($handle),
+		];
+	}//end request()
 
 	/**
 	 * The words in one committed snapshot.
