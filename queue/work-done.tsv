@@ -715,3 +715,4 @@ cover:integriq:9b0f5894m2367:js60c2c265	failed: payload mismatch, lang=js but di
 verify:learniq:2420:f6921af0	stale	session-20261112T224530-d70ae278	2026-11-12T22:46:38Z
 cover:hermiq:755cdfe7m7444:js66a28494	PR #1616: 8 PHPUnit tests for FunctionInfoBuilder/ToolRefusals (task said js, dir was PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:47:10Z
 fix:launchpad:1121:30685fba	problem details limited to /api/v1; unversioned errors unchanged; new head f23e458f; REVERIFY recorded	session-20261112T221237-c40cb74c	2026-11-12T22:47:42Z
+cover:integriq:9b0f5894m2367:js7927b05b	failed: payload mismatch, lang=js (js 72.18%) but dirs=lib/Service/Llm/*.php is PHP (php already 88%); generator bug, 103 lang=js rows point at lib/	session-20261112T224529-5928280e	2026-11-12T22:48:11Z
