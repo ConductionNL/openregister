@@ -4240,3 +4240,4 @@ launchpad	1124	a29edd79c80712606cf441b4f41c1242f02b02eb	GREEN	worker-26	3303 tes
 launchpad	1125	3cd1a863d81d8ef16b8f692cfefdccbd3aa99519	GREEN	worker-26	3303 tests run on 4-PR tree (baseline 3256, all pass), 0 new failures; tests-only, 1 new test file
 decidiq	2085	f1b82c46223e2cb12b66f59e730faaf42daeeb5a	GREEN	worker-57	tree 3159 tests, baseline 3109/0 fail, new failures 0; tests-only
 decidiq	2086	bfe84b3d7e136239a2f3097bc56c8e09d8fac426	GREEN	worker-57	tree 3159 tests, baseline 3109/0 fail, new failures 0; tests-only
+hermiq	1598	2c5c2315988da5467f6200e75927373fe2803ef7	BLOCK	worker-18	unit 3561 run vs baseline 3536 (142E/26F inherited), 0 new failures; behaviour change: new middleware rewrites every API error JSON body (adds type/title/status/detail, reorders keys) and sets Content-Type application/problem+json, adds API-Version/Deprecation/Link headers on all /api/ responses
