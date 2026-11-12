@@ -606,3 +606,4 @@ cover:openregister:7350e3ef:js0b640b77	failed: lang=js but lib/Service/ObjectSou
 cover:openregister:7350e3ef:jse5d2a780	failed: lang=js but dirs=lib/Service/Rbac/*.php is PHP; task row malformed	session-20261112T220138-f0050f42	2026-11-12T22:23:47Z
 verify:keepiq:1678:aae43ca2	GREEN keepiq#1678: 3763 tests, 0 new failures	session-20261112T221530-7c794770	2026-11-12T22:23:57Z
 measure:dossiq:20261112h18	failed: permission	session-20261112T221235-91821e68	2026-11-12T22:24:11Z
+cover:openregister:7350e3ef:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:24:00Z
