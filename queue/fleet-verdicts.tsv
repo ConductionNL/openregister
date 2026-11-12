@@ -3994,3 +3994,4 @@ buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	GREEN	worker-53	tree of 8:
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	GREEN	worker-53	tree of 8: 2310 tests run, baseline 2234 with 6 inherited failures, 0 new failures; tests/docs only
 buildiq	1440	b7d26e4b238d6db80c4397af549bb2e9f34c6de0	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1441	39c17463d3ff95c3f462e8825b7a3eb7ade5361d	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+portaliq	2366	73507c851ce140193ee14da32104322221caff7e	RED	worker-33	npm ci fails on PR head and on tree (lockfile out of sync with package.json: Missing pinia@4.1.0, nested under @nextcloud/vue, removed by this lockfile); development npm ci OK; PHP 4483 OK unchanged
