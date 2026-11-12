@@ -48,6 +48,15 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\RelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\RelationTypeLookup
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsCollaboration
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsObjectLookup
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsRecords
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class RelationsControllerA24GoldenTest extends TestCase {
 	use RegistersContainerServices;

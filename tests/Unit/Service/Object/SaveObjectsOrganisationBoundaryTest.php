@@ -151,6 +151,18 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 	private bool $admin = false;
 
 	/**
+	 * The schema's update rules.
+	 *
+	 * @var array<int, mixed>
+	 */
+	private array $updateRules = ['planners'];
+
+	/**
+	 * The stored row's organisation.
+	 */
+	private ?string $storedOrganisation = 'org-b';
+
+	/**
 	 * The rows the organisation scope was asked about, and the caller-scoped reads.
 	 *
 	 * @var array<int, string>
@@ -200,7 +212,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 
 		$stored = new ObjectEntity();
 		$stored->setUuid(self::FOREIGN);
-		$stored->setOrganisation('org-b');
+		$stored->setOrganisation($this->storedOrganisation);
 		$stored->setOwner('bob');
 		$stored->setObject(['title' => 'B']);
 		$stored->setStatus($this->storedStatus);
@@ -272,7 +284,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$schema->setId(681);
 		$schema->setSlug('planned');
 		$schema->setTitle('planned');
-		$schema->setAuthorization(['create' => ['planners'], 'update' => ['planners'], 'read' => ['planners']]);
+		$schema->setAuthorization(['create' => ['planners'], 'update' => $this->updateRules, 'read' => ['planners']]);
 		return $schema;
 	}//end schema()
 
@@ -323,7 +335,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 
 		$this->assertSame([], $out['passed']);
 		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($out['invalid']));
-		$this->assertSame(['hold '.self::FOREIGN.' org-b', 'find '.json_encode([self::FOREIGN, 10, 681, true, true])], $this->calls);
+		$this->assertSame(['hold '.self::FOREIGN.' org-b'], $this->calls);
 	}
 
 	public function testTheRowIsRefusedWhicheverIdentityKeyNamesIt(): void {
@@ -338,7 +350,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN, 'organisation' => 'org-a', 'owner' => 'alice'], 'organisation' => 'org-a', 'title' => 'overwritten']);
 
 		$this->assertSame([], $out['passed']);
-		$this->assertSame(['hold '.self::FOREIGN.' org-b', 'find '.json_encode([self::FOREIGN, 10, 681, true, true])], $this->calls);
+		$this->assertSame(['hold '.self::FOREIGN.' org-b'], $this->calls);
 	}
 
 	public function testARowInsideTheCallersOrganisationsIsLeftToTheUpdateRule(): void {
@@ -350,8 +362,44 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$this->assertSame(['hold '.self::FOREIGN.' org-b'], $this->calls);
 	}
 
-	public function testARowTheCallerReadsIsLeftToTheUpdateRule(): void {
+	public function testAnotherOrganisationsRowTheCallerReadsIsRefusedWithoutAMarkedUpdateRule(): void {
 		$this->readable = true;
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
+
+		$this->assertSame([], $out['passed']);
+		$this->assertSame(['Permission denied for action create on schema planned'], self::reasons($out['invalid']));
+	}
+
+	public function testAMarkedUpdateRuleReachesAnotherOrganisationsRowTheCallerReads(): void {
+		$this->readable = true;
+		$this->updateRules = [['group' => 'planners', 'crossOrganisation' => true]];
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
+
+		$this->assertCount(1, $out['passed']);
+	}
+
+	public function testAMarkedUpdateRuleOfAnotherGroupDoesNotReachTheRow(): void {
+		$this->readable = true;
+		$this->updateRules = ['planners', ['group' => 'central-team', 'crossOrganisation' => true]];
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
+
+		$this->assertSame([], $out['passed']);
+	}
+
+	public function testAMarkedUpdateRuleStillNeedsTheCallerToReadTheRow(): void {
+		$this->updateRules = [['group' => 'planners', 'crossOrganisation' => true]];
+
+		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
+
+		$this->assertSame([], $out['passed']);
+	}
+
+	public function testARowWithoutOrganisationTheCallerReadsIsLeftToTheUpdateRule(): void {
+		$this->readable = true;
+		$this->storedOrganisation = null;
 
 		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'changed']);
 
@@ -359,6 +407,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 	}
 
 	public function testAReadableOwnRowWhoseSlugIsTheStoredUuidDoesNotCountAsReadingIt(): void {
+		$this->updateRules = [['group' => 'planners', 'crossOrganisation' => true]];
 		$this->readable = 'other';
 
 		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']);
@@ -368,6 +417,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 	}
 
 	public function testAReadableOwnRowWhoseIdIsTheStoredNumericUuidDoesNotCountAsReadingIt(): void {
+		$this->updateRules = [['group' => 'planners', 'crossOrganisation' => true]];
 		$this->readable = 'other';
 		$this->prefetchFails = true;
 
@@ -424,6 +474,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 	}
 
 	public function testAReadThatFailsRefusesTheRow(): void {
+		$this->updateRules = [['group' => 'planners', 'crossOrganisation' => true]];
 		$this->readable = 'throws';
 
 		$out = $this->safeguard(row: ['@self' => ['uuid' => self::FOREIGN], 'title' => 'overwritten']);

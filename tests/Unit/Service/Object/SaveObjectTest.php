@@ -3393,7 +3393,7 @@ class SaveObjectTest extends TestCase {
 
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['saveObject'])
+			->onlyMethods(['saveObject', 'assertMayUpdateRelated'])
 			->getMock();
 		$saved = [];
 		$handler->method('saveObject')->willReturnCallback(
@@ -3406,7 +3406,8 @@ class SaveObjectTest extends TestCase {
 			objects: $mapper,
 			saver: $handler,
 			lookups: new SaveLookups(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class)),
-			urls: $this->createMock(IURLGenerator::class)
+			urls: $this->createMock(IURLGenerator::class),
+			guard: $handler
 		);
 		$method = new \ReflectionMethod(InverseWriteBack::class, 'writeToTarget');
 		$method->invoke($writeBack, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);

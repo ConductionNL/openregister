@@ -27,6 +27,7 @@ use ReflectionProperty;
  * Golden hydration for ObjectEntity.
  *
  * @covers \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
  */
 final class ObjectEntityHydrateGoldenTest extends TestCase {
 
