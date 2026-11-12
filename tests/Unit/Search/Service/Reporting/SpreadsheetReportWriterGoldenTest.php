@@ -40,6 +40,9 @@ use PHPUnit\Framework\TestCase;
  * fixtures/spreadsheet-report-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportContent
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWidgetEntry
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
  */
 class SpreadsheetReportWriterGoldenTest extends TestCase {
 

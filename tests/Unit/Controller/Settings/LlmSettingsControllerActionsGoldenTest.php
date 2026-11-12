@@ -51,6 +51,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe
  */
 class LlmSettingsControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/llm-actions-golden.json';

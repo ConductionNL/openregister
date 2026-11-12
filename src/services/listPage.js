@@ -8,6 +8,8 @@
  * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
+import { withRequestToken } from './requestToken.js'
+
 /**
  * Append each `{ field: direction }` pair as a `sort` and an `order` parameter.
  *
@@ -180,13 +182,13 @@ export async function importAnswer(response) {
  * @spec exclude Shared request step of thin API passthroughs.
  */
 export function sendJson(endpoint, request) {
-	return fetch(endpoint, {
+	return fetch(endpoint, withRequestToken({
 		method: request.method,
 		headers: {
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify(request.body),
-	})
+	}))
 }
 
 /**

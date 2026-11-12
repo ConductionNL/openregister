@@ -27,6 +27,7 @@ jest.mock('vue-material-design-icons/Refresh.vue', () => ({ __esModule: true, de
 jest.mock('../../dialogs/Dialogs.vue', () => ({ __esModule: true, default: { name: 'Dialogs', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/ApiTokenConfiguration.vue', () => ({ __esModule: true, default: { name: 'ApiTokenConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/CacheManagement.vue', () => ({ __esModule: true, default: { name: 'CacheManagement', props: ['pushStatus'], render: () => null } }))
+jest.mock('./sections/EdepotHostKeyConfiguration.vue', () => ({ __esModule: true, default: { name: 'EdepotHostKeyConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FileConfiguration.vue', () => ({ __esModule: true, default: { name: 'FileConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FlowConfiguration.vue', () => ({ __esModule: true, default: { name: 'FlowConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/LlmConfiguration.vue', () => ({ __esModule: true, default: { name: 'LlmConfiguration', props: ['pushStatus'], render: () => null } }))

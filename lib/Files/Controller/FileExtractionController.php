@@ -384,8 +384,6 @@ class FileExtractionController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing extraction result
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|404|500,
 	 *     array{
@@ -431,8 +429,6 @@ class FileExtractionController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing file discovery results
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
 	 *     array{success: false, error: string}|array{
@@ -477,8 +473,6 @@ class FileExtractionController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing batch extraction results
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
 	 *     array{success: false, error: string}|array{
@@ -517,8 +511,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing retry operation results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
@@ -598,8 +590,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing cleanup operation results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
@@ -682,8 +672,6 @@ class FileExtractionController extends Controller {
 	 * Supports serial and parallel processing modes.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with vectorization result
 	 *

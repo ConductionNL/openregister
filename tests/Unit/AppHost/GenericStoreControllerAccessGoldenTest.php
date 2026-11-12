@@ -42,6 +42,14 @@ use RuntimeException;
  * and which collaborators are reached before the refusal.
  *
  * @covers \OCA\OpenRegister\AppHost\Controller\GenericStoreController
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  */
 class GenericStoreControllerAccessGoldenTest extends TestCase
 {

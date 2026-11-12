@@ -151,7 +151,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse JSON response with the created email link
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -170,7 +169,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -482,7 +480,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse The answer.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: ReplyThreadService keeps only objects the
 	 *   caller can read through ObjectService::find() with RBAC and multitenancy on.

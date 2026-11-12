@@ -48,6 +48,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Notification\DelegationConsentRenderer
  * @covers \OCA\OpenRegister\Notification\ConsentPromptDraft
  * @covers \OCA\OpenRegister\Notification\DisplayNames
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TemplateRendering
  */
 class NotifierRenderGoldenTest extends TestCase {
 

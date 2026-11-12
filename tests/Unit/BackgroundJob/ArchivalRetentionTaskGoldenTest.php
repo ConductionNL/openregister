@@ -53,6 +53,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Archival\AnnotatedRow
+ * @uses \OCA\OpenRegister\Service\Archival\IndexedRule
+ * @uses \OCA\OpenRegister\Service\Archival\RetentionEvaluatorFactory
  */
 class ArchivalRetentionTaskGoldenTest extends TestCase
 {
