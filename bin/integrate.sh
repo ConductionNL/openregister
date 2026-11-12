@@ -16,6 +16,9 @@
 #                                 the first PR whose merge lowers it is auto-parked; a PR that changes
 #                                 composer.lock or package-lock.json without a matching sbom.cdx.json is
 #                                 auto-parked too (bin/regen-sbom.sh --check, a copy of hydra scripts/regen-sbom.sh)
+#                                 The tree must also hold the checker floor (.checker-floor.json committed on
+#                                 main, checker_floor.py from ConductionNL/.github): the first PR whose merge makes
+#                                 a criterion or the score worse is auto-parked; a scan that cannot run is NORESULT.
 #   integrate.sh merge            merges each PR of a GREEN tree; exit 5 when main or a head moved
 #   integrate.sh finish           releases the lease
 # Exit codes: 0 ok, 1 nothing to do / lease held, 4 no result, 5 rebuild needed, 6 stop and report.
@@ -355,6 +358,58 @@ floor_gate() {
 	echo AUTOPARK > "$RUN/verdict"; say "AUTOPARK openregister#$n floor: ${drops:-lowered}"; exit 5
 }
 
+# The checker floor tool: checker_floor.py from the .github clone at FLOOR_REF when it ships one, else from
+# CHECKER_FLOOR_BRANCH (default feat/checker-floor) until that is merged, copied next to its scoring file.
+checker_tool() {
+	local d=$W/dotgithub side=$W/checker-floor-tool b=${CHECKER_FLOOR_BRANCH:-feat/checker-floor} f
+	floor_tool > /dev/null || return 1
+	if git -C "$d" ls-files --error-unmatch hydra-gates/scripts/lib/checker_floor.py > /dev/null 2>&1; then
+		echo "$d/hydra-gates/scripts/lib/checker_floor.py"; return 0
+	fi
+	mkdir -p "$side"
+	git -C "$d" fetch -q --depth 1 origin "$b" || return 1
+	for f in checker_floor.py checker_scoring.json; do
+		git -C "$d" show "FETCH_HEAD:hydra-gates/scripts/lib/$f" > "$side/$f" || return 1
+	done
+	echo "$side/checker_floor.py"
+}
+
+# checker_at TOOL COMMIT: checker_floor compare of COMMIT against main ($D0), output in $RUN/checker.out.
+# 0 holds, 1 worse, 3 no floor file, 4 improved, anything else no result.
+checker_at() {
+	local tree=$W/checker-tree
+	rm -rf "$tree"
+	git clone -q --shared --no-checkout "$C" "$tree" && git -C "$tree" checkout -q --detach "$2" || return 9
+	python3 "$1" compare "$tree" --base-ref "$D0" > "$RUN/checker.out" 2>&1
+}
+
+# A green tree that makes the checker floor worse parks the first PR whose merge does (binary search over the
+# tree's merge commits, each scanned once and cached by commit) and exits 5 for a rebuild without it.
+checker_gate() {
+	local tool rc lo hi mid n head worse commits=()
+	tool=$(checker_tool) || { say "NORESULT tree $T10: the checker floor tool is unavailable"; st_log "NORESULT tree $T10: checker floor tool unavailable"; echo NORESULT > "$RUN/verdict"; exit 4; }
+	checker_at "$tool" "$T"; rc=$?
+	case "$rc" in 0|3|4) say "CHECKER tree $T10: $(tail -1 "$RUN/checker.out")"; return 0 ;; esac
+	[ "$rc" -eq 1 ] || { say "NORESULT tree $T10: checker floor not measured (exit $rc): $(tail -1 "$RUN/checker.out")"; st_log "NORESULT tree $T10: checker floor not measured (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4; }
+	mapfile -t commits < <(cut -f5 "$W/tree.tsv")
+	lo=0; hi=$(( ${#commits[@]} - 1 ))
+	while [ "$lo" -lt "$hi" ]; do
+		mid=$(( (lo + hi) / 2 ))
+		checker_at "$tool" "${commits[$mid]}"; rc=$?
+		case "$rc" in
+			1) hi=$mid ;;
+			0|3|4) lo=$((mid + 1)) ;;
+			*) say "NORESULT tree $T10: checker floor not measured at ${commits[$mid]:0:10} (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4 ;;
+		esac
+	done
+	checker_at "$tool" "${commits[$hi]}"
+	read -r n head < <(awk -F'\t' -v i=$((hi + 1)) 'NR == i { print $1, $2 }' "$W/tree.tsv")
+	worse=$(grep -E '^ *WORSE ' "$RUN/checker.out" | sed -E 's/^ *WORSE //' | paste -sd';')
+	st_append parked.txt "$(echo "openregister#$n $head auto-park: checker floor: ${worse:-worse}" | cut -c1-300)"
+	st_log "AUTOPARK openregister#$n ${head:0:8} checker floor: ${worse:-worse} (tree $T10)"
+	echo AUTOPARK > "$RUN/verdict"; say "AUTOPARK openregister#$n checker floor: ${worse:-worse}"; exit 5
+}
+
 # sbom_park N HEAD REASON: auto-park PR N and exit 5 for a rebuild without it.
 sbom_park() {
 	st_append parked.txt "$(echo "openregister#$1 $2 auto-park: $3" | cut -c1-300)"
@@ -406,6 +461,7 @@ phase_verdict() {
 	if [ "${f:-0}" = 0 ] && [ "${e:-0}" = 0 ] && [ "$front" != red ]; then
 		sbom_gate
 		floor_gate
+		checker_gate
 		echo GREEN > "$RUN/verdict"
 		python3 "$BIN/batch_tools.py" times "$C" "$RUN/class-times.json" >/dev/null && [ -s "$RUN/class-times.json" ] && st_put cache/class-times.json "$RUN/class-times.json"
 		st_log "GREEN tree $T10 on dev ${D0:0:10} prs $N front=$front: $line"
