@@ -233,3 +233,8 @@ learniq	2370	9a90adf1c9ceca41a099082529122cf7a5e5935a	MERGED	merge-local	GATE OK
 learniq	2371	cb2fce4c8216a5436d7e67421c6368e29dcd7c4b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2279	82caccf35d1776202eb97cc8e01ba15ead73b26a	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 portaliq	2280	c7c72ff46eba126783663ec874dcf0ac1b2f5273	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+portaliq	2281	dd1912a93a69d729cabf98c1cb7d3f31871a754b	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
+learniq	2372	259b4cf843262eee661a2b73aea4caed79674806	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2282	967a054bb8c4a02b82172a588692b995e10a233a	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
+learniq	2373	0f270d248dff72a6b5757dec010243e5452cfb68	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2283	0950556641930abbff9b0fc968db20847c30a92d	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
