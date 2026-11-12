@@ -697,3 +697,4 @@ fix:hermiq:1598:2c5c2315	failed: BLOCK reason is the PR's stated purpose (fleet 
 cover:openregister:7350e3ef:js46c41077	failed: payload lang=js but dirs lib/AppHost/Store/ is PHP; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:42:56Z
 cover:openregister:7350e3ef:jsca31eff3	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:42:59Z
 cover:openregister:7350e3ef:js8858fbd3	failed: payload lang=js but dirs lib/Service/Sync/ is PHP; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:43:45Z
+cover:pipelinq:f67520ecm9d2c:js95d5249b	failed: lang=js but dirs=lib/Service/Portal/ contains only PHP (no JS subject); PHP side covered by PR #3572	session-20261112T221537-97382091	2026-11-12T22:43:44Z
