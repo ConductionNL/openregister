@@ -700,4 +700,5 @@ cover:openregister:7350e3ef:jsca31eff3	failed: row inconsistent: lang=js but dir
 cover:openregister:7350e3ef:js8858fbd3	failed: payload lang=js but dirs lib/Service/Sync/ is PHP; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:43:45Z
 cover:pipelinq:f67520ecm9d2c:js95d5249b	failed: lang=js but dirs=lib/Service/Portal/ contains only PHP (no JS subject); PHP side covered by PR #3572	session-20261112T221537-97382091	2026-11-12T22:43:44Z
 cover:hermiq:755cdfe7m7444:9d3a1784	PR #1612: 9 tests, BackgroundJob 136/222->221/222; suite 3550->3559 green	session-20261112T215819-2dd7b64e	2026-11-12T22:44:06Z
+cover:pipelinq:f67520ec:jsea7197ec	PR pipelinq#3576: 27 vitest tests, src/utils branches 91.3->94.4%; suite 3164->3191 passing	session-20261112T221235-9e827ed1	2026-11-12T22:44:28Z
 cover:hermiq:755cdfe7m7444:jsdfaef732	PR #1613: 19 PHPUnit tests for Notifier (task said js, dir was PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:44:31Z
