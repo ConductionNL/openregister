@@ -665,6 +665,7 @@ fix:pipelinq:3561:17991ca1	CONFLICT resolved, both specs kept; new head 04914a6b
 measure:decidiq:20261112h18	php 80.2% (25598 stmts, 22 dirs) at 71731da7; js not measured (npm ci refused in this session)	session-20261112T221533-911acbf2	2026-11-12T22:35:59Z
 cover:hermiq:755cdfe7:5597bc7b	PR #1609: 12 tests WorkspaceEditor/Auditor/Writes to 100% lines; suite 3547->3559 green	session-20261112T215819-2dd7b64e	2026-11-12T22:36:22Z
 review:openregister:10048:1a1ae4d9	APPROVE: openspec docs only, capabilities.json valid	session-20261112T221239-5f377795	2026-11-12T22:36:21Z
+cover:hermiq:755cdfe7m7444:js06285390	PR #1610: 10 PHPUnit tests for NotesWriteService/TaskLists (task said js, dirs were PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:36:52Z
 cover:hermiq:755cdfe7m7444:js34a55f48	failed: lang=js but dirs=lib/Service/Workspace/*.php (PHP only, no JS there); PHP side covered in #1609	session-20261112T215819-2dd7b64e	2026-11-12T22:37:00Z
 cover:pipelinq:f67520ecm9d2c:js568ec52a	PR pipelinq#3573: 16 PHP tests (dirs were PHP despite lang=js), PosRefundManagerGuard+ObjectOwnerAccessPolicy to 100%; suite 5773->5789, no new failures	session-20261112T221235-9e827ed1	2026-11-12T22:37:10Z
 cover:openregister:7350e3ef:js516a028c	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:37:34Z
