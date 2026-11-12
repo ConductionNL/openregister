@@ -4330,4 +4330,5 @@ learniq	2414	17d4c32f7f99055907db99de8965e032899697ec	GREEN	worker-56	6100 tests
 learniq	2420	5ba39ce64d73a7ab7666afc630951aec5b4a56d4	GREEN	worker-56	already merged into development (eebfb096); merge was a no-op, 0 new failures
 integriq	3419	9eed4afa70843c8583eab85d4a34a9ddd4f45d98	GREEN	worker-28	phpunit 7118 (baseline 7110 with 3 inherited: 2 CallServiceTest errors, 1 golden failure), 0 new; tests only
 buildiq	1484	cd81acf9695c6cb39ae307f67d7ce8283e06a310	GREEN	worker-28	phpunit 2260 (baseline 2234 with 1269 inherited errors/failures), 0 new; tests only, php -l clean
+stackiq	1778	b55e8c1b1c37fd9a68073fd5ecb463634542e038	GREEN	worker-32	2471 tests run (baseline 2458, +13 new), 0 new failures; tests only
 portaliq	2370	5ff6f0c9f3e7b71faf9988c939c67d5474a1e060	GREEN	worker-56	4501 PHP tests run, baseline OK (89 skipped), 0 new failures; touched node tests 9/9 pass; template-to-DOMParser parse of sanitised markdown, same serialised output
