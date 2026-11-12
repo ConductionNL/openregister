@@ -283,3 +283,4 @@ portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	worker-19	GATE UNMEA
 portaliq	2291	8fe586371275533b6962854c4473825a9f7d2d63	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2292	814d045880bcf3686999bc017ecc374c034ab037	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2322	4da12973073960b3ca44dbf45adf9600874a0f96	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2293	722b516f0697a9485b367cae7876476e4acfcdb7	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
