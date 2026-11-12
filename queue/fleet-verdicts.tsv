@@ -4021,3 +4021,4 @@ dossiq	6117	90f6df25c414d28b60e443a96dbd779d0e810588	GREEN	worker-33	tree 12133 
 dossiq	6118	68cd0970fb06d635b6f8ffdb6b8e7084419ac8f7	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 portaliq	2366	73507c851ce140193ee14da32104322221caff7e	REVERIFY	worker-35	lockfile resynced with npm install --package-lock-only (restores @nextcloud/vue nested pinia@4.1.0); npm ci passes, audit unchanged (crit 0, high 1); sbom regenerated; new head 7406159f36b6d214dc1498388a0bf472170aca33, verify it
 dossiq	6119	9305ba0ab56e28f2c257c82ecaeddfe1c20c8344	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
+dossiq	6120	80efd1f45c7635d2047391507f278ae9ab8edbf2	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
