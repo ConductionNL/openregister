@@ -71,6 +71,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataPassesEveryFieldThrough(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn([
 			'description' => 'a scanned invoice',
 			'category' => 'finance',
@@ -103,6 +104,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataLeavesAbsentFieldsAlone(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn(['category' => 'finance']);
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
@@ -121,6 +123,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataClearsOnAnEmptyString(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn(['description' => '']);
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
@@ -1368,6 +1371,7 @@ class FilesControllerTest extends TestCase {
 	// ==================== update() Tests ====================
 
 	public function testUpdateSuccess(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1386,6 +1390,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateMetadataOnly(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1414,6 +1419,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateGeneralException(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1432,6 +1438,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateNoTagsProvided(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 

@@ -630,7 +630,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -975,7 +974,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -998,7 +996,6 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse HTTP 405 Method Not Allowed
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
 	 *   performs no object read or write, so there is no per-object resource to guard.
@@ -1017,8 +1014,6 @@ class AuditTrailController extends Controller {
 	 *
 	 * Admin-only at the framework level (no @NoAdminRequired). Body
 	 * `requireAdmin()` stays as defence-in-depth.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response confirming clear or error
 	 *

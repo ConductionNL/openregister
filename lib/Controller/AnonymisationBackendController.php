@@ -105,8 +105,6 @@ class AnonymisationBackendController extends Controller {
 	 * `requireAdmin()` body check remains as defense-in-depth (returns a
 	 * JSON 403 rather than the framework's default response).
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The serialised ProbeResult, 400 for an invalid method, or 403 for non-admins.
 	 *
 	 * @psalm-return JSONResponse<200|400|403, array, array<never, never>>

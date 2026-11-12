@@ -1,4 +1,15 @@
 {
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+        ]
+      }
+    }
+  ],
   "info": {
     "_postman_id": "or-t27-timetrackerlinks-analyticslinks-2026-11-09",
     "name": "OpenRegister API: integration links, calendar feeds, access links, vocabulary, relations, object state, bulk and bulk jobs",

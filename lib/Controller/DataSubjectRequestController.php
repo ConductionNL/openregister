@@ -132,7 +132,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::rectify loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); an unauthorised or absent id yields 404 and the write
 	 *   is re-scoped with the same flags.
@@ -164,7 +163,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: each discovered object is loaded via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); unauthorised loads are excluded and saveObject
 	 *   re-enforces _rbac + _multitenancy.
@@ -197,7 +195,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setRestriction loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
 	 *
@@ -231,7 +228,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setObjection loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
 	 *

@@ -165,7 +165,6 @@ class SurvivorshipController extends Controller {
 	 * @return JSONResponse JSON response with the recomputed object.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
 	 *

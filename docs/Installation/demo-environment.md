@@ -80,11 +80,11 @@ Check content instead:
 # The app answers. Note the credentials: an app page requires a login, so the
 # SAME request without -u returns 401, which is not a broken demo — measured
 # on a booted demo while writing this page.
-curl -s -o /dev/null -w '%{http_code}\n' -u admin:admin -L "http://localhost:8601/apps/openregister/"
+curl -H 'OCS-APIRequest: true' -s -o /dev/null -w '%{http_code}\n' -u admin:admin -L "http://localhost:8601/apps/openregister/"
 
 # OpenRegister has registers — an empty list means the configuration
 # was never imported, which is not the same as "nothing configured yet"
-curl -s -u admin:admin "http://localhost:8601/apps/openregister/api/registers" | head -c 300
+curl -H 'OCS-APIRequest: true' -s -u admin:admin "http://localhost:8601/apps/openregister/api/registers" | head -c 300
 ```
 
 ## Changing the defaults

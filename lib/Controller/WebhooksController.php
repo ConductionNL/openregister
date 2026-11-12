@@ -658,12 +658,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// Webhooks let the holder direct outbound HTTP from the server,
 		// so write access is admin-only (wave-3 C10).
@@ -738,12 +735,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		// Webhook reconfiguration is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -795,8 +789,6 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     204,
 	 *     null,
@@ -810,7 +802,6 @@ class WebhooksController extends Controller {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		// Webhook deletion is admin-only (wave-3 C10).
 		if ($this->isCurrentUserAdmin() === false) {
@@ -859,12 +850,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function preview(): JSONResponse {
 		// A mapping can read any field of the event, so the preview is as
 		// privileged as editing the webhook.
@@ -920,12 +908,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(int $id): JSONResponse {
 		// The /test endpoint actually fires an outbound HTTP request to the
 		// configured URL, so it triggers the same SSRF surface as a normal
@@ -1258,12 +1243,9 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(int $logId): JSONResponse {
 		// The retry() endpoint re-fires an outbound webhook delivery, so it
 		// shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).

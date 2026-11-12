@@ -187,7 +187,7 @@ describe('schema store requests', () => {
 		const store = useSchemaStore()
 		const first = await store.uploadSchema({ url: 'x' })
 		expect(fetchMock.mock.calls[0]).toEqual([`${BASE}/upload`, {
-			method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'x' }),
+			method: 'POST', headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' }, body: JSON.stringify({ url: 'x' }),
 		}])
 		expect(first.data.title).toBe('Up')
 		const second = await store.uploadSchema({ url: 'y' })

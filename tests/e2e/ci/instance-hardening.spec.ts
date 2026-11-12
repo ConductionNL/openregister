@@ -206,6 +206,7 @@ test.describe('The fresh sign-in, and the statement', () => {
 		// principal here is a full administrator, and it is still refused.
 		const context = await browser.newContext({
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,
@@ -236,6 +237,7 @@ test.describe('The fresh sign-in, and the statement', () => {
 	test('a wrong password elevates nothing', async ({ browser }) => {
 		const context = await browser.newContext({
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,

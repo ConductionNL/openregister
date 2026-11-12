@@ -345,8 +345,6 @@ class DashboardController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with calculation results
 	 *
 	 * @psalm-return JSONResponse<200|403|500,
