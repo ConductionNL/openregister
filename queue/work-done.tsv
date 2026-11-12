@@ -727,6 +727,7 @@ cover:integriq:9b0f5894m2367:js7927b05b	failed: payload mismatch, lang=js (js 72
 verify:launchpad:1126:556a77a6	failed: permission (1127 head moved: 4471e7e2 != 16fb3d88)	session-20261112T221235-91821e68	2026-11-12T22:48:36Z
 cover:integriq:9b0f5894m2367:js34a55f48	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:48:37Z
 verify:humaniq:1097:4d54e9c7	1097 BLOCK (contract middleware changes existing error responses; suite green 3788); 1098 skipped: head moved to 1cb193ab	session-20261112T224530-a1180ad3	2026-11-12T22:48:45Z
+cover:pipelinq:f67520ec:jsccb0cd24	PR #3578: 16 vitest tests for export list row actions (Destinations 5->84%, Runs 6->78%, Jobs 48->87%); 3164->3180 passing	session-20261112T221520-70f29253	2026-11-12T22:48:49Z
 verify:opencatalogi:2579:2b7defff	stale	session-20261112T224530-d70ae278	2026-11-12T22:48:51Z
 review:openregister:10052:4ec5c7aa	APPROVE: test-only, 46 jest tests pass merged with main, eslint clean	session-20261112T224535-bdffbbbc	2026-11-12T22:48:55Z
 cover:integriq:9b0f5894m2367:js06285390	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:12Z
