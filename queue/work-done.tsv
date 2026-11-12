@@ -784,3 +784,4 @@ cover:hermiq:755cdfe7m7444:b97b9aec	PR hermiq#1622: 9 tests, Approval bridge/ver
 cover:hermiq:755cdfe7:05cc1463	PR #1623: 16 tests for TalkApprovalBinding, TalkAgentBinding; suite 3561->3577, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:59:18Z
 cover:pipelinq:f67520ecm9d2c:9cd6879c	already done: 7 dirs at >=83.6% per class, 15 uncovered lines total (EventReminderService 83.6%, LeadRelatedSummary 92.7%, rest 100%); no PR	session-20261112T221234-13fcfd6a	2026-11-12T22:59:41Z
 verify:keepiq:1680:595a89b5	BLOCK keepiq#1680: tests green (3747), but changes all API error response bodies/content type and route table	session-20261112T221530-7c794770	2026-11-12T22:59:52Z
+cover:integriq:9b0f5894m2367:jsf91e7417	failed: dirs=lib/Service/Connection/ does not exist in integriq development (no history) and lang=js targets a PHP path; malformed task	session-20261112T224530-a1180ad3	2026-11-12T22:59:58Z
