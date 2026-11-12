@@ -1,0 +1,620 @@
+{
+ "app": "integriq",
+ "commit": "22489fd5bb10dc6b822291a00bc6b974d47b540a",
+ "measured_at": "2026-11-12T22:25:42Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 0.0,
+  "statements": 64340,
+  "covered": 0,
+  "dirs": {
+   "lib/Adapters/": [
+    152,
+    0
+   ],
+   "lib/Adapters/Berichtenbox/": [
+    401,
+    0
+   ],
+   "lib/Adapters/Digikoppeling/": [
+    315,
+    0
+   ],
+   "lib/Adapters/LearningMaterial/": [
+    418,
+    0
+   ],
+   "lib/Adapters/Lvs/": [
+    30,
+    0
+   ],
+   "lib/Adapters/Oso/": [
+    26,
+    0
+   ],
+   "lib/Adapters/Pdok/": [
+    355,
+    0
+   ],
+   "lib/Adapters/Rod/": [
+    2,
+    0
+   ],
+   "lib/Adapters/Roster/": [
+    4,
+    0
+   ],
+   "lib/Adapters/Slo/": [
+    745,
+    0
+   ],
+   "lib/Adapters/Swv/": [
+    10,
+    0
+   ],
+   "lib/Adapters/UwlrEduV/": [
+    28,
+    0
+   ],
+   "lib/Adapters/Verzuimloket/": [
+    2,
+    0
+   ],
+   "lib/AppInfo/": [
+    205,
+    0
+   ],
+   "lib/Auth/": [
+    11,
+    0
+   ],
+   "lib/Auth/Idp/": [
+    591,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    907,
+    0
+   ],
+   "lib/BackgroundJob/ExchangeRate/": [
+    144,
+    0
+   ],
+   "lib/Bridge/": [
+    66,
+    0
+   ],
+   "lib/Broker/": [
+    112,
+    0
+   ],
+   "lib/Broker/Transport/": [
+    244,
+    0
+   ],
+   "lib/Command/": [
+    901,
+    0
+   ],
+   "lib/Connectors/": [
+    276,
+    0
+   ],
+   "lib/Controller/": [
+    6409,
+    0
+   ],
+   "lib/Db/": [
+    187,
+    0
+   ],
+   "lib/Directory/": [
+    600,
+    0
+   ],
+   "lib/Event/": [
+    424,
+    0
+   ],
+   "lib/EventListener/": [
+    1377,
+    0
+   ],
+   "lib/Exception/": [
+    55,
+    0
+   ],
+   "lib/Expression/": [
+    115,
+    0
+   ],
+   "lib/Expression/Source/": [
+    37,
+    0
+   ],
+   "lib/Flow/": [
+    2514,
+    0
+   ],
+   "lib/Gateway/": [
+    333,
+    0
+   ],
+   "lib/Gateway/Adapter/": [
+    80,
+    0
+   ],
+   "lib/Intake/": [
+    438,
+    0
+   ],
+   "lib/Intake/Adapter/": [
+    372,
+    0
+   ],
+   "lib/Kernel/": [
+    17,
+    0
+   ],
+   "lib/Mcp/": [
+    205,
+    0
+   ],
+   "lib/Middleware/": [
+    47,
+    0
+   ],
+   "lib/Notification/": [
+    125,
+    0
+   ],
+   "lib/Observability/": [
+    224,
+    0
+   ],
+   "lib/Observability/Otel/": [
+    276,
+    0
+   ],
+   "lib/Outbound/": [
+    580,
+    0
+   ],
+   "lib/Outbound/Call/": [
+    698,
+    0
+   ],
+   "lib/Outbound/Identity/": [
+    1250,
+    0
+   ],
+   "lib/PropertySource/": [
+    257,
+    0
+   ],
+   "lib/PropertySource/Exception/": [
+    23,
+    0
+   ],
+   "lib/PropertySource/Provider/": [
+    229,
+    0
+   ],
+   "lib/Repair/": [
+    1271,
+    0
+   ],
+   "lib/Rule/": [
+    121,
+    0
+   ],
+   "lib/Rule/Plugin/": [
+    38,
+    0
+   ],
+   "lib/Sections/": [
+    16,
+    0
+   ],
+   "lib/Service/": [
+    22704,
+    0
+   ],
+   "lib/Service/Adapter/": [
+    49,
+    0
+   ],
+   "lib/Service/Adapter/DataInfra/": [
+    84,
+    0
+   ],
+   "lib/Service/Adapter/DocumentCms/": [
+    57,
+    0
+   ],
+   "lib/Service/Adapter/EndpointWorkspace/": [
+    73,
+    0
+   ],
+   "lib/Service/Adapter/Saas/": [
+    165,
+    0
+   ],
+   "lib/Service/AgentTools/": [
+    166,
+    0
+   ],
+   "lib/Service/Broker/": [
+    12,
+    0
+   ],
+   "lib/Service/Call/": [
+    1,
+    0
+   ],
+   "lib/Service/Cardfeed/": [
+    70,
+    0
+   ],
+   "lib/Service/CaseSystem/": [
+    437,
+    0
+   ],
+   "lib/Service/Catalog/": [
+    44,
+    0
+   ],
+   "lib/Service/ConfigurationHandlers/": [
+    364,
+    0
+   ],
+   "lib/Service/Consumer/": [
+    158,
+    0
+   ],
+   "lib/Service/Datasource/": [
+    107,
+    0
+   ],
+   "lib/Service/DigitalPost/": [
+    753,
+    0
+   ],
+   "lib/Service/DocumentGeneration/": [
+    449,
+    0
+   ],
+   "lib/Service/Dso/": [
+    762,
+    0
+   ],
+   "lib/Service/Event/": [
+    32,
+    0
+   ],
+   "lib/Service/Exchange/": [
+    968,
+    0
+   ],
+   "lib/Service/Forms/": [
+    162,
+    0
+   ],
+   "lib/Service/Fsc/": [
+    189,
+    0
+   ],
+   "lib/Service/Helper/": [
+    291,
+    0
+   ],
+   "lib/Service/Intake/": [
+    332,
+    0
+   ],
+   "lib/Service/Integration/": [
+    136,
+    0
+   ],
+   "lib/Service/IwmoIjw/": [
+    228,
+    0
+   ],
+   "lib/Service/Job/": [
+    166,
+    0
+   ],
+   "lib/Service/Kiss/": [
+    551,
+    0
+   ],
+   "lib/Service/Lti/": [
+    1344,
+    0
+   ],
+   "lib/Service/Mail/": [
+    692,
+    0
+   ],
+   "lib/Service/Mail/Transport/": [
+    185,
+    0
+   ],
+   "lib/Service/MessageValidation/": [
+    364,
+    0
+   ],
+   "lib/Service/Migration/": [
+    370,
+    0
+   ],
+   "lib/Service/Mtls/": [
+    166,
+    0
+   ],
+   "lib/Service/Objecten/": [
+    700,
+    0
+   ],
+   "lib/Service/OpenFormulieren/": [
+    93,
+    0
+   ],
+   "lib/Service/Oso/": [
+    150,
+    0
+   ],
+   "lib/Service/Otel/": [
+    25,
+    0
+   ],
+   "lib/Service/Ownership/": [
+    192,
+    0
+   ],
+   "lib/Service/Payment/": [
+    118,
+    0
+   ],
+   "lib/Service/Peppol/": [
+    78,
+    0
+   ],
+   "lib/Service/Portal/": [
+    50,
+    0
+   ],
+   "lib/Service/Psd2/": [
+    138,
+    0
+   ],
+   "lib/Service/RateLimit/": [
+    100,
+    0
+   ],
+   "lib/Service/Recipients/": [
+    116,
+    0
+   ],
+   "lib/Service/Registry/": [
+    290,
+    0
+   ],
+   "lib/Service/Rod/": [
+    182,
+    0
+   ],
+   "lib/Service/Scope/": [
+    71,
+    0
+   ],
+   "lib/Service/Security/": [
+    1045,
+    0
+   ],
+   "lib/Service/Sms/": [
+    214,
+    0
+   ],
+   "lib/Service/Stuf/": [
+    116,
+    0
+   ],
+   "lib/Service/StufZkn/": [
+    1950,
+    0
+   ],
+   "lib/Service/Subscriptions/": [
+    82,
+    0
+   ],
+   "lib/Service/Synchronization/": [
+    173,
+    0
+   ],
+   "lib/Service/Tables/": [
+    283,
+    0
+   ],
+   "lib/Service/UwlrEduV/": [
+    112,
+    0
+   ],
+   "lib/Service/Verzuimloket/": [
+    92,
+    0
+   ],
+   "lib/Service/Zgw/": [
+    218,
+    0
+   ],
+   "lib/Service/ZgwVersion/": [
+    68,
+    0
+   ],
+   "lib/Settings/": [
+    15,
+    0
+   ],
+   "lib/SetupCheck/": [
+    98,
+    0
+   ],
+   "lib/Sources/": [
+    36,
+    0
+   ],
+   "lib/Sources/Lvs/": [
+    27,
+    0
+   ],
+   "lib/Sources/Pdok/": [
+    151,
+    0
+   ],
+   "lib/Sources/Roster/": [
+    166,
+    0
+   ],
+   "lib/Sources/Swv/": [
+    17,
+    0
+   ],
+   "lib/Twig/": [
+    141,
+    0
+   ],
+   "lib/Util/": [
+    8,
+    0
+   ],
+   "lib/WorkflowEngine/": [
+    131,
+    0
+   ]
+  }
+ },
+ "js": {
+  "pct": 72.18,
+  "statements": 5687,
+  "covered": 4105,
+  "dirs": {
+   "src/": [
+    10,
+    10
+   ],
+   "src/components/": [
+    218,
+    199
+   ],
+   "src/components/Approvals/": [
+    36,
+    30
+   ],
+   "src/components/callLog/": [
+    19,
+    7
+   ],
+   "src/components/mapping/": [
+    231,
+    105
+   ],
+   "src/dialogs/": [
+    522,
+    402
+   ],
+   "src/handlers/": [
+    80,
+    66
+   ],
+   "src/integration/": [
+    51,
+    51
+   ],
+   "src/mixins/": [
+    263,
+    263
+   ],
+   "src/modals/": [
+    91,
+    87
+   ],
+   "src/modals/CallLog/": [
+    187,
+    170
+   ],
+   "src/modals/Endpoint/": [
+    1,
+    1
+   ],
+   "src/modals/EventDelivery/": [
+    24,
+    22
+   ],
+   "src/modals/EventSubscription/": [
+    219,
+    123
+   ],
+   "src/modals/Migration/": [
+    99,
+    78
+   ],
+   "src/modals/NotificatiesAbonnement/": [
+    71,
+    28
+   ],
+   "src/modals/Rule/": [
+    77,
+    57
+   ],
+   "src/modals/Subscription/": [
+    44,
+    22
+   ],
+   "src/modals/Synchronization/": [
+    24,
+    22
+   ],
+   "src/modals/v2/": [
+    1083,
+    849
+   ],
+   "src/store/": [
+    31,
+    31
+   ],
+   "src/views/Approvals/": [
+    75,
+    68
+   ],
+   "src/views/EventDelivery/": [
+    43,
+    36
+   ],
+   "src/views/Migration/": [
+    42,
+    40
+   ],
+   "src/views/Rule/": [
+    290,
+    89
+   ],
+   "src/views/Rule/actionForms/": [
+    421,
+    143
+   ],
+   "src/views/Synchronization/": [
+    874,
+    695
+   ],
+   "src/views/admin/": [
+    422,
+    319
+   ],
+   "src/views/wrappers/": [
+    139,
+    92
+   ]
+  }
+ }
+}
