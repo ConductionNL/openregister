@@ -4082,3 +4082,4 @@ stackiq	1751	5af9cad65724ef8f4d7b3a4d9648c179c6e8310b	GREEN	worker-22	phpunit 23
 stackiq	1752	02fcfa3c6f8ba080f9c37329de6abca3afc76b2c	GREEN	worker-22	phpunit 2353 run (baseline 2334 OK), vitest 1593 pass, 0 new failures
 stackiq	1753	24470d7d104315ab5081826a313a844601d4eda4	GREEN	worker-22	phpunit 2353 run (baseline 2334 OK), vitest 1593 pass, 0 new failures
 pipelinq	3545	5b1ec40301641e8104da0a648a7444ad272c9ae7	BLOCK	worker-30	unit 5798 run, baseline 5773 w/ 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; behaviour change: new middleware rewrites every API error body and Content-Type to problem+json and adds Deprecation/Link headers on all unversioned API routes, needs owner sign-off
+buildiq	1462	ef9670952a0430c589140306a3e17698a0ce54b2	GREEN	worker-25	tests-only JS specs; vitest 2976/2976 passed on tree; PHP unit unchanged (2234, 1269 inherited)
