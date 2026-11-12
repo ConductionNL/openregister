@@ -2814,12 +2814,15 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Record form src/modals/object/ViewObject.vue getPropertyInputComponent delegates to src/services/propertyEditor.js editorFor: enum/oneOf -> NcSelect of the declared values, file -> file picker (readFileAsDataUri, the data URI the save path stores), translatable -> TranslationFieldEditor per register language; booleans and dates as before. Tests src/services/propertyEditor.spec.js.",
     "spec": "openspec/specs/objects-crud",
-    "requirement": "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor"
+    "requirement": [
+     "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor",
+     "openspec/changes/capability-rows-verified-a/specs/objects-crud :: The record form gives a date a date picker and a yes or no field a switch, and checks an email or web address on save"
+    ]
    },
    "reachedOn": "/schemas/:id and /objects (edit dialog)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "No enum select editor in the record form.",
+   "note": "Email and URL fields are plain text inputs; their format is checked on save.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "yes",
@@ -3011,7 +3014,7 @@
    "reachedOn": "API only: GET /api/schemas/{id}/changelog",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Edits go live immediately; there is no unpublished draft of a schema. Corrections round 8 (2026-09-28): schema changes that arrive through a configuration or app import get no version bump and no changelog entry, openregister#4102; rating kept because partial already reflects the missing draft state, and edits through the schema API are still versioned.",
+   "note": "A schema edit can be held as a draft and published later. Corrections round 8 (2026-09-28): schema changes that arrive through a configuration or app import get no version bump and no changelog entry, openregister#4102.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -3354,7 +3357,7 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); src/views/object/MapView.vue:61 states it has no route or importer; GeoJsonGeometryValidator has no caller in lib",
+    "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); the map view src/views/object/MapView.vue was removed in 6fe5ff563d, so there is no map screen; GeoJsonGeometryValidator has no caller in lib",
     "change": "geometry-on-a-map",
     "requirement": "openspec/specs/geo-metadata-kaart :: Schema properties MUST support geospatial data types"
    },
@@ -3396,7 +3399,7 @@
    "reachedOn": "/tables (saved views)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "A saved view is a stored query, not a record type other features can reference.",
+   "note": "A schema backed by a saved view is a read-only record type; writes answer 405.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -3505,7 +3508,7 @@
    "reachedOn": "/tables (record modal Properties tab)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Cell editing exists in the record modal's property table, not in the records list.",
+   "note": "Cell editing in the records list covers text, numbers and choice lists; dates, files and translations stay in the record form.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -3568,7 +3571,7 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar with the renderer and API done: lib/Db/View.php presentation column, lib/Service/ViewService.php:210 validates it, GET /api/views/{id}/kanban appinfo/routes.php:1820 -> lib/Controller/ViewsController.php:916, board drawn by src/views/search/SearchIndex.vue:730 CnObjectKanban when presentation.viewType is kanban (:229). No screen writes presentation: src/modals/view/EditView.vue and the save form in src/sidebars/search/SearchSideBar.vue carry no viewType.",
+    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar with the renderer and API done: lib/Search/Db/View.php presentation column, lib/Search/Service/ViewService.php:210 validates it, GET /api/views/{id}/kanban appinfo/routes.php:1820 -> lib/Search/Controller/ViewsController.php:916, board drawn by src/views/search/SearchIndex.vue:730 CnObjectKanban when presentation.viewType is kanban (:229). No screen writes presentation: src/modals/view/EditView.vue and the save form in src/sidebars/search/SearchSideBar.vue carry no viewType.",
     "change": "saved-view-presentation-picker",
     "readOn": "2026-10-07",
     "requirement": "openspec/specs/saved-search-views :: Kanban columns and cards (REQ-VIEW-KANBAN-02)"
@@ -3604,7 +3607,7 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar: GET /api/views/{id}/calendar appinfo/routes.php:1821 -> lib/Controller/ViewsController.php:978, drawn by src/views/search/SearchIndex.vue:747 CnObjectCalendar when presentation.viewType is calendar. No screen writes presentation (src/modals/view/EditView.vue, src/sidebars/search/SearchSideBar.vue). ICS feed remains.",
+    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar: GET /api/views/{id}/calendar appinfo/routes.php:1821 -> lib/Search/Controller/ViewsController.php:978, drawn by src/views/search/SearchIndex.vue:747 CnObjectCalendar when presentation.viewType is calendar. No screen writes presentation (src/modals/view/EditView.vue, src/sidebars/search/SearchSideBar.vue). ICS feed remains.",
     "change": "saved-view-presentation-picker",
     "readOn": "2026-10-07",
     "requirement": "openspec/specs/saved-search-views :: Calendar plots objects by a date field over a range (REQ-VIEW-CAL-04)",
@@ -3641,14 +3644,14 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: GET /api/integrations/maps/overviews/{register}/{schema}/points appinfo/routes.php:1010 -> lib/Controller/MapsOverviewController.php:148. src/views/object/MapView.vue exists but git grep MapView in src finds no importer; no manifest page.",
+    "evidence": "API: GET /api/integrations/maps/overviews/{register}/{schema}/points appinfo/routes.php:1010 -> lib/Search/Controller/MapsOverviewController.php:148. The unused src/views/object/MapView.vue was removed in 6fe5ff563d; no manifest page.",
     "change": "geometry-on-a-map",
     "requirement": "openspec/specs/geo-metadata-kaart :: Objects MUST be visualizable on a map widget"
    },
    "reachedOn": "API only: GET /api/integrations/maps/overviews/{register}/{schema}/points",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "MapView.vue is dead: no page or component mounts it.",
+   "note": "No map screen: the unused MapView.vue was removed in 6fe5ff563d.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -4066,7 +4069,7 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Change archived 2026-10-05-object-watchers, backend only: PUT/DELETE .../watch appinfo/routes.php:142 -> lib/Controller/ObjectWatchersController.php:98,129; watchers list :160; notify when a schema rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:160; _watching lens lib/Service/Object/SearchQueryHandler.php:197. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
+    "evidence": "Change archived 2026-10-05-object-watchers, backend only: PUT/DELETE .../watch appinfo/routes.php:142 -> lib/Notifications/Controller/ObjectWatchersController.php:98,129; watchers list :160; notify when a schema rule names {\"watchers\": true} lib/Notifications/Service/Notification/NotificationRecipientResolver.php:160; _watching lens lib/Service/Object/SearchQueryHandler.php:197. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
     "readOn": "2026-10-07",
     "requirement": "openspec/specs/object-interactions :: A user can watch an object they may read"
@@ -4140,7 +4143,8 @@
     "change": "or-form-and-journey-registry",
     "requirement": [
      "openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md :: Anonymous submission MUST be throttled and MUST stamp no ownership",
-     "openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md :: A journey MUST declare steps, branching, writes and access"
+     "openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md :: A journey MUST declare steps, branching, writes and access",
+     "openspec/changes/capability-rows-verified-a/specs/form-and-journey-registry :: An outsider fills in a published form and a record is created"
     ],
     "plan": [
      "draft-owner-activation-and-lifetime",
@@ -4223,13 +4227,17 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Negotiation and projection as before (LanguageMiddleware, RenderObject resolveTranslationsForRows); the record form now edits a translatable field with src/components/i18n/TranslationFieldEditor.vue, one input per register language (ViewObject.vue registerLanguages).",
     "spec": "openspec/specs/objects-crud",
-    "requirement": "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor",
+    "requirement": [
+     "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor",
+     "openspec/specs/register-i18n :: The API MUST support language negotiation via Accept-Language header @e2e exclude REST API language negotiation — covered by Newman",
+     "openspec/specs/register-i18n :: Objects MUST store translations per translatable property as language-keyed JSON @e2e exclude backend storage format — covered by PHPUnit"
+    ],
     "plan": "modelling-field-names-per-language"
    },
    "reachedOn": "API (Accept-Language) and /registers sidebar for languages; no per-field language editor",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Readers get their language, but editors can only enter language variants as raw JSON or via the translations API.",
+   "note": "Readers get their language; editors fill one input per register language in the record form.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
@@ -4436,7 +4444,7 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples",
+    "evidence": "GraphiQL explorer lib/Search/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples",
     "change": "api-explorer-in-the-app",
     "requirement": "openspec/changes/api-explorer-in-the-app/specs/graphql-api/spec.md :: REQ-APIX-001 The API can be tried from inside the app"
    },
@@ -4727,7 +4735,10 @@
     "owner": "ConductionNL/openregister",
     "evidence": "SSE lib/Notifications/Controller/GraphQLSubscriptionController.php:80 route appinfo/routes.php:1994; fed by GraphQLSubscriptionListener registered lib/AppInfo/Application.php:3568-3570; notify_push via NotifyPushListener :3573 (soft-fail without notify_push)",
     "spec": "openspec/specs/realtime-updates",
-    "requirement": "openspec/specs/realtime-updates :: The system MUST provide a dedicated SSE endpoint for object change events",
+    "requirement": [
+     "openspec/specs/graphql-api :: GraphQL MUST support subscriptions for real-time updates via SSE",
+     "openspec/specs/realtime-updates :: The system MUST emit per-object push events on every lifecycle event"
+    ],
     "plan": "adopt-live-updates-ui"
    },
    "reachedOn": "API only: GET /api/graphql/subscribe (SSE)",
@@ -5112,7 +5123,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/VectorizationService.php:468 semanticSearch via lib/Controller/SettingsController.php:1007 route appinfo/routes.php:357 (no NoAdminRequired, so admin-only); users get it only indirectly through chat RAG lib/Service/Chat/ContextRetrievalHandler.php:216"
+    "evidence": "lib/Search/Service/VectorizationService.php:468 semanticSearch via lib/Controller/SettingsController.php:1007 route appinfo/routes.php:357 (no NoAdminRequired, so admin-only); users get it only indirectly through chat RAG lib/Mcp/Service/Chat/ContextRetrievalHandler.php:216"
    },
    "reachedOn": "API only (admin): GET /api/settings/search/semantic",
    "provider": "openregister",
@@ -5230,7 +5241,7 @@
    "reachedOn": "/tables (share with everyone only)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "The 'Share with Groups' picker in EditView.vue is silently dropped by the backend.",
+   "note": "A saved view is shared with a group in read or write mode.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -5296,7 +5307,7 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. src/views/object/MapView.vue is imported by nothing, so no map screen",
+    "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. The unused src/views/object/MapView.vue was removed in 6fe5ff563d, so no map screen",
     "change": "geometry-on-a-map",
     "requirement": "openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart :: REQ-GEOMAP-002 Records with a geometry can be seen and searched on a map"
    },
@@ -5441,7 +5452,8 @@
     "requirement": [
      "openspec/specs/search-trail-recording :: A configurable recording mode admin setting controls which searches are recorded",
      "openspec/specs/zoeken-filteren :: Saved searches and search trails",
-     "openspec/specs/zoeken-filteren :: Search-trail analytics dashboard"
+     "openspec/specs/zoeken-filteren :: Search-trail analytics dashboard",
+     "openspec/changes/capability-rows-verified-a/specs/search-trail-recording :: The search trail picks out the searches that found nothing"
     ]
    },
    "reachedOn": "/search-trails",
