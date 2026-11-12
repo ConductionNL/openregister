@@ -33,3 +33,4 @@ merge:hermiq:1538:5aacd7f5	failed: merge_tree.sh refused by this session's permi
 merge:hermiq:1554:9118735a	failed: merges blocked in this worker session by its permission classifier; nothing merged, retry elsewhere	session-20261112T184455-8702e064	2026-11-12T18:59:36Z
 merge:hermiq:1510:75020f4e	failed: REST merge step denied by this session's permission policy; nothing merged (note: payload truncated, 1519 sha cut off)	session-20261112T184504-dacc86ca	2026-11-12T18:59:33Z
 review:openregister:10017:a05b5efa	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T18:59:42Z
+gap:decidiq:19:e1afb1db	failed: fix requires servers URL with major version, but no decidiq route answers on /api/v{major} (fleet pattern ADR-002, same as openregister gap 3); an honest spec would carry the uri-version ERROR and turn WARN into FAIL. Needs the URI-versioning decision first	session-20261112T184438-005b5eda	2026-11-12T18:59:48Z
