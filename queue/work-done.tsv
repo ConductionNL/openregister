@@ -99,3 +99,4 @@ gap:keepiq:14:067d4939	failed: the over-30 functions are ItemDetail (CCN 45, mob
 cover:dossiq:6ca0231e:95a79563	PR #6093: LifecycleCaseTypeRules + DossierDocumentStore, 15 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:28:45Z
 cover:openregister:dc0dbf81:825b9846	PRs #10034 (43 tests) and #10035 (20 tests): lib/Controller/Support untested classes	session-20261112T184439-5c9a5b03	2026-11-12T19:29:21Z
 gap:keepiq:1:e16dc70b	failed: #1668 verified GREEN at 8aff563f (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:29:41Z
+cover:buildiq:8ca317f6:9d3a1784	opened buildiq#1456 (11 tests, AppHealthSampleCleanup + RuleExecutionLogCleanup; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:30:20Z
