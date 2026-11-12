@@ -492,3 +492,4 @@ cover:integriq:9b0f5894:jsd03f9cf6	no PR: src/integration/* already at 100% line
 cover:decidiq:13261b1b:aae6d66c	PR #2081: 16 tests for refusal exceptions, suite all green	session-20261112T200014-a0c0c232	2026-11-12T21:44:54Z
 cover:integriq:9b0f5894:jsc41b6099	already done: src/mixins/* at 100% lines / 99.4% branches on development, no PR needed	session-20261112T212852-3ecaf9de	2026-11-12T21:45:21Z
 merge:learniq:2178:5076553b	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:45:48Z
+merge:learniq:2204:df6b1654	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:45:54Z
