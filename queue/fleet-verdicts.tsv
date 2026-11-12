@@ -4264,3 +4264,10 @@ hermiq	1603	06764bde2a776b37e8c392e62f633dd138425791	GREEN	worker-18	tree of 8: 
 hermiq	1604	218f11c01295b0fa12f32ebdeff92a02dc9bae6a	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
 hermiq	1605	b04693e3cb9d9395d4cff9b72d9e20f961b761d2	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
 decidiq	2087	3800e885b1b23eb72756db08a0038b7ed91fd0bc	GREEN	worker-27	quality-tool config only (no code); unit 3116 run, baseline 0 failures, 0 new
+pipelinq	3554	7fb879a84818ee67da7510de73726ab6817a902c	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3556	4511de9c98ded81f727d40a304e05e96170ec6cb	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3557	a01ac3a8bb3ef718734b6c5531ac99053364c1f4	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3558	09e1ee8fa11f667544eeb21e0392ece79e3fa39e	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3560	b0521429a8d5dc587f92ece0942476e3ad845717	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3566	cfe01e1c176d4bba7fcc4a756cdc1b939e1b171a	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
+pipelinq	3567	bcddbbdb5eb78675624b6c1e4f8cd861b03b1948	GREEN	worker-05	php 5854 tests (baseline 5773), js 3253 (baseline 3164); 1 inherited failure CrmPrivilegeRefusalGoldenTest, 0 new; tests only
