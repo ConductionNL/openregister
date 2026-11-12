@@ -67,6 +67,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Exception\ReferentialIntegrityException
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDeleteRoute
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerCanDeleteScopeTest extends TestCase {
 

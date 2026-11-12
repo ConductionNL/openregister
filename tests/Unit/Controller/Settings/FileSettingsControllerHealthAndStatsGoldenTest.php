@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  * Golden health check results and zeroed extraction statistics.
  *
  * @covers \OCA\OpenRegister\Files\Controller\Settings\FileSettingsController
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe
  */
 final class FileSettingsControllerHealthAndStatsGoldenTest extends TestCase {
 

@@ -42,6 +42,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
  */
 class BulkControllerWholeTableDeleteTest extends TestCase {
 

@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices
  */
 class FederatedConfigControllerDiscoverGateTest extends TestCase {
 

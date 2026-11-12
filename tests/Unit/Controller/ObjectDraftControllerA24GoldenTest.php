@@ -50,6 +50,19 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\UserDraftActivation
  */
 final class ObjectDraftControllerA24GoldenTest extends TestCase {
 
