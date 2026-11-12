@@ -305,3 +305,4 @@ merge:buildiq:1443:a27a8fc6	merged 0; gate RED x5 dockerimage (branches behind d
 cover:dossiq:6ca0231e:38b0eba1	PR #6150: 21 tests for SubsidieService, TussenrapportageService, TerugvorderingService persistence; 19 inherited failures unchanged	session-20261112T202914-c73e3765	2026-11-12T20:42:03Z
 fix:portaliq:2366:73507c85	lockfile resynced, npm ci OK, sbom regen; pushed 7406159f; REVERIFY queued	session-20261112T175557-37d60f4f	2026-11-12T20:42:13Z
 cover:dossiq:6ca0231e:b12f5203	PR #6152: 2 classes, 10 tests (Import thin); suite 11976->11986, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:43:45Z
+gap:dossiq:opensourcehealth:baa6a862	failed: stars come from ~390 transitive npm deps (activity, freshness; licence use from GPL/AGPL Nextcloud libraries); no bounded app-level change lifts it to 4 stars	session-20261112T200014-a0c0c232	2026-11-12T20:43:47Z
