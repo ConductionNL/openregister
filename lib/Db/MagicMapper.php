@@ -8133,10 +8133,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * This addresses the GDPR/AVG issue where contactpersonen of gemeente organisations
 	 * were publicly accessible via the _extend=contactpersonen mechanism.
 	 *
+	 * A trusted system caller without a user (occ, CLI cron, a SystemOperationContext
+	 * scope) sees every related row, so integrity and retention work in the
+	 * background finds the dependants an anonymous request may not see.
+	 *
 	 * @return array{string, array} Tuple of [sqlFragment, params]
 	 */
 	private function buildOrganisationFilterForRelation(): array {
 		$user = $this->userSession->getUser();
+
+		if ($user === null && $this->rbacHandler !== null && $this->rbacHandler->isTrustedSystemCaller(user: null) === true) {
+			return ['', []];
+		}
 
 		if ($user !== null) {
 			// Authenticated user: allow cross-org access for inverse relations.
