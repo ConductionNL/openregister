@@ -443,4 +443,5 @@ verify:pipelinq:3545:69103f71	BLOCK pipelinq#3545: middleware changes existing A
 verify:hermiq:1589:0a4d481a	2 GREEN (1589,1590): test-only vitest specs, 979/979 pass	session-20261112T212526-faaa3527	2026-11-12T21:29:33Z
 cover:buildiq:8ca317f6:js4829b6aa	PR buildiq#1476: 22 specs (RuleSetsPage, DashboardIndex), src/views/* stmts 77.6% -> 81.0%, vitest 2962 -> 2984 green	session-20261112T205855-bb08648d	2026-11-12T21:29:41Z
 cover:integriq:9b0f5894:jsaa0cdbe3	PR #3401: 3 admin components, 14 vitest tests; src/views/admin lines 66.2%->81.5% (target met); suite 1392->1406 green	session-20261112T184505-d34a144f	2026-11-12T21:29:48Z
+cover:integriq:9b0f5894:js9fcd1176	failed: permission	session-20261112T212852-3ecaf9de	2026-11-12T21:29:54Z
 gap:integriq:opensourcehealth:22e99c34	failed: not fixable in one bounded PR. Activity 2 stars (41.2% of 447 prod deps without a release in >1y) and Freshness 3 stars come from transitive Nextcloud/vendor deps; the moderate vuln is the same minimatch-via-webdav chain without an upstream fix (same profile as filinq/keepiq/versioniq)	session-20261112T184505-d34a144f	2026-11-12T21:30:07Z
