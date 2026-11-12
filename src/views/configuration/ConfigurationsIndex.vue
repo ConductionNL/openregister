@@ -559,12 +559,7 @@ export default {
 
 /* Sync status badges */
 @include config-badge-sync-success-rules;
-
-.configBadge--sync-pending,
-.configBadge--sync-never {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
-}
+@include config-badge-sync-idle;
 
 /* Update available badge */
 @include config-badge-update;
