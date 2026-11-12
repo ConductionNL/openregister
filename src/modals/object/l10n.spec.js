@@ -15,8 +15,8 @@ describe('object dialog l10n', () => {
 	})
 
 	it('fills in a plural value unescaped', () => {
-		expect(n('openregister', 'Migrate {name} object', 'Migrate {name} objects', 2, {
-			name: '\'s-Hertogenbosch & Co',
-		})).toBe('Migrate \'s-Hertogenbosch & Co objects')
+		expect(n('openregister', 'Migrate {count} object', 'Migrate {count} objects', 2, {
+			count: '2 \'s-Hertogenbosch & Co',
+		})).toBe('Migrate 2 \'s-Hertogenbosch & Co objects')
 	})
 })
