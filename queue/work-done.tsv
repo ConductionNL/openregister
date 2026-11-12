@@ -702,3 +702,4 @@ cover:pipelinq:f67520ecm9d2c:js95d5249b	failed: lang=js but dirs=lib/Service/Por
 cover:hermiq:755cdfe7m7444:9d3a1784	PR #1612: 9 tests, BackgroundJob 136/222->221/222; suite 3550->3559 green	session-20261112T215819-2dd7b64e	2026-11-12T22:44:06Z
 cover:pipelinq:f67520ec:jsea7197ec	PR pipelinq#3576: 27 vitest tests, src/utils branches 91.3->94.4%; suite 3164->3191 passing	session-20261112T221235-9e827ed1	2026-11-12T22:44:28Z
 cover:hermiq:755cdfe7m7444:jsdfaef732	PR #1613: 19 PHPUnit tests for Notifier (task said js, dir was PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:44:31Z
+cover:hermiq:755cdfe7m7444:js93e5f5a4	PR hermiq#1614 (task said lang=js but dirs are PHP; did PHPUnit): 19 tests, AiFeatureBindingService/DocumentFeatureRun/RunRetentionCleaner gaps covered; suite 3567, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:44:47Z
