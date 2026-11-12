@@ -683,3 +683,4 @@ verify:hermiq:1595:7693f8c3	8/8 GREEN (1595,1596,1597,1600,1602,1603,1604,1605):
 cover:openregister:7350e3ef:js716923f8	failed: payload lang=js but dirs lib/Service/Credential/ is PHP; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:40:21Z
 cover:openregister:7350e3ef:js73d71100	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:28Z
 cover:openregister:7350e3ef:js0d575fbe	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:39Z
+cover:openregister:7350e3ef:js35e29a7a	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:52Z
