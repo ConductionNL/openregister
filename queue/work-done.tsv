@@ -222,3 +222,4 @@ cover:stackiq:8cfacb29:692f8a78	PR #1745 @5249e224: 3 tests for ContactPersonUse
 cover:dossiq:6ca0231e:f0c02922	PR #6117: 3 classes, 12 tests (External); suite 11970->11982, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:18:00Z
 merge:decidiq:2022:3ebb4f47	merged 9 (2022-2030)	session-20261112T184502-4ecd6072	2026-11-12T20:18:30Z
 verify:pipelinq:3539:195f6466	GREEN 3539, 3540; 5773 tests, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:18:29Z
+cover:stackiq:8cfacb29:aae6d66c	opened stackiq#1746 (3 tests, CmdbImportException statuses; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T20:18:48Z
