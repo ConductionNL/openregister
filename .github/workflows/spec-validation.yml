@@ -23,6 +23,15 @@ on:
 permissions:
   contents: read
 
+# One run per event and ref: a newer push or PR update cancels the older run,
+# waiting or running. Only the newest commit's verdict counts, and this job
+# is a few seconds of JSON checks, so nothing is lost by stopping it halfway.
+# Measured 2026-11-12: 33 superseded Spec Validation runs sat queued in this
+# repository alone.
+concurrency:
+  group: spec-validation-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
