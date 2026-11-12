@@ -65,3 +65,4 @@ gap:dossiq:9:7d352ecb	PR #6082: renamed MoneyConfigKeys::PAYOUT_CALLBACK_SECRET 
 cover:buildiq:8ca317f6:0d8702e3	PR #1449: template SettingsService + FlowSeedService branches, 18 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:12:11Z
 gap:hermiq:9:7d352ecb	PR #1585: 4 token/secret-named constants renamed (public ones keep deprecated aliases), values unchanged; related tests = baseline. Not re-measured (checker unavailable)	session-20261112T184455-8702e064	2026-11-12T19:13:13Z
 gap:filinq:1:e16dc70b	failed: #1954 verified GREEN at 81785f51 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:14:04Z
+review:openregister:10024:244e8a4e	APPROVE: tests only, 21 tests green	session-20261112T175557-37d60f4f	2026-11-12T19:14:21Z
