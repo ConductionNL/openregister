@@ -7207,6 +7207,66 @@
    }
   },
   {
+   "id": "auto-trigger-calendar",
+   "area": "automation",
+   "name": "Start an automation at a date held on a record, such as a month before a contract ends.",
+   "source": "spec-triage-2026-11-12",
+   "openregister": "no",
+   "built": {
+    "state": "specified",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Not built: the engine offers only the object, schedule and manual trigger nodes (lib/Service/Flow/Nodes/TriggerManualNode.php and its siblings); decided on 12 Nov 2026 (decision 399), specified in the open change.",
+    "change": "flow-calendar-and-webhook-triggers",
+    "plan": "flow-calendar-and-webhook-triggers",
+    "readOn": "2026-11-12",
+    "requirement": "openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine :: A calendar trigger starts a flow at a date held on a record"
+   },
+   "reachedOn": "Not reached yet: the flow editor trigger palette once built",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the openregister closing round (12 Nov 2026, decision 399). Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "feature": "automation-flows",
+   "screen": {
+    "canvas": "design-system",
+    "board": null
+   }
+  },
+  {
+   "id": "auto-trigger-webhook",
+   "area": "automation",
+   "name": "Start an automation when another system calls a web address.",
+   "source": "spec-triage-2026-11-12",
+   "openregister": "no",
+   "built": {
+    "state": "specified",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Not built: the engine offers only the object, schedule and manual trigger nodes (lib/Service/Flow/Nodes/TriggerManualNode.php and its siblings); decided on 12 Nov 2026 (decision 399), specified in the open change.",
+    "change": "flow-calendar-and-webhook-triggers",
+    "plan": "flow-calendar-and-webhook-triggers",
+    "readOn": "2026-11-12",
+    "requirement": "openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine :: An incoming-webhook trigger starts a flow from a signed call by another system"
+   },
+   "reachedOn": "Not reached yet: the flow editor trigger palette once built",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the openregister closing round (12 Nov 2026, decision 399). Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown",
+   "feature": "automation-flows",
+   "screen": {
+    "canvas": "design-system",
+    "board": null
+   }
+  },
+  {
    "id": "auto-bpmn",
    "area": "automation",
    "name": "Model a process in BPMN and run it on records.",
