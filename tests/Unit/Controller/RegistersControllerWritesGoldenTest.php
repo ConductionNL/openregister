@@ -71,6 +71,11 @@ use OCA\OpenRegister\Service\AuthorizationChange;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
  * @uses \OCA\OpenRegister\Exception\DatabaseConstraintException
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\AuthorizationChange
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Exception\DatabaseConstraintMessages
  */
 class RegistersControllerWritesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-writes-golden.json';

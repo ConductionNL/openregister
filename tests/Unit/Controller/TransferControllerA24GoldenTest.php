@@ -129,9 +129,9 @@ class TransferControllerA24GoldenTest extends TestCase {
 		$expected = [
 			'index' => true,
 			'show' => true,
-			'approve' => true,
-			'reject' => true,
-			'create' => true,
+			'approve' => false,
+			'reject' => false,
+			'create' => false,
 		];
 		$actual = [];
 		$class = new ReflectionClass(TransferController::class);

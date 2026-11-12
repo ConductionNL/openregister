@@ -39,6 +39,13 @@ use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
  * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob
  * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationBatch
  * @uses   \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\BackgroundJob\ChunkAsVectorSource
+ * @uses \OCA\OpenRegister\Files\Db\FileSourceOrder
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
  */
 class ChunkVectorizationJobGoldenTest extends TestCase
 {

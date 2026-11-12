@@ -34,6 +34,8 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Throwable;
@@ -70,10 +72,12 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	 *
 	 * @param FlowRunMapperInterface $mapper    Persists a run that cannot proceed.
 	 * @param FlowExecution          $execution Resolves the flow and its subject, executes the run and logs.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per pass, that the run revealed audited values.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
 		FlowExecution $execution,
+		private readonly ?ProcessRevealAuditInterface $processAudit = null,
 	) {
 		$this->runner    = $execution->runner;
 		$this->resolvers = $execution->resolvers;
@@ -131,14 +135,19 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 			// its payload instead of an object: a non-object trigger (a file, a
 			// user) puts what it is about under `payload` on the run context, and
 			// that becomes the first item, so the flow reads a file's path or a
-			// user's id exactly as it would an object's fields.
+			// user's id exactly as it would an object's fields. A subject that
+			// named an object but could not be re-resolved (a deletion) takes the
+			// same path, on the same payload slot.
 			$seed = null;
 			$payload = (array)(($run->getContext() ?? [])['payload'] ?? []);
-			if ($this->hasSubject(run: $run) === false && $payload !== []) {
+			if ($this->walksPayload(pass: $pass) === true && $payload !== []) {
 				$seed = [FlowItems::item(json: $payload)];
 			}
 
-			return $this->runner->executePass(pass: $pass, origin: new FlowRunOrigin(items: $seed));
+			return $this->asRevealingProcess(
+				run: $run,
+				operation: fn (): FlowRun => $this->runner->executePass(pass: $pass, origin: new FlowRunOrigin(items: $seed))
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunAdvancer] Failed to advance a run',
@@ -194,11 +203,32 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 		}
 
 		// A resumed walk reads its items from the run, never from a seed.
-		return $this->runner->advanceBranch(
-			pass: $pass,
-			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
+		return $this->asRevealingProcess(
+			run: $run,
+			operation: fn (): FlowRun => $this->runner->advanceBranch(
+				pass: $pass,
+				advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
+			)
 		);
 	}//end advanceStream()
+
+	/**
+	 * Run one pass of a flow run as a revealing process named after the run.
+	 *
+	 * @param FlowRun  $run       The run.
+	 * @param callable $operation The pass.
+	 *
+	 * @return FlowRun The run after the pass.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function asRevealingProcess(FlowRun $run, callable $operation): FlowRun {
+		if ($this->processAudit === null) {
+			return $operation();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'flow', runId: (string)$run->getUuid()), operation: $operation);
+	}//end asRevealingProcess()
 
 	/**
 	 * Whether the run names a subject object.
@@ -212,6 +242,26 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	private function hasSubject(FlowRun $run): bool {
 		return trim((string)$run->getSubjectUuid()) !== '';
 	}//end hasSubject()
+
+	/**
+	 * Whether the pass walks the run's payload instead of an object.
+	 *
+	 * True for a subjectless run, and for an object.deleted run whose subject
+	 * could not be re-resolved and so walks a bare holder (see resolvedPass()).
+	 *
+	 * @param FlowRunPass $pass The pass.
+	 *
+	 * @return bool
+	 */
+	private function walksPayload(FlowRunPass $pass): bool {
+		if ($this->hasSubject(run: $pass->run) === false) {
+			return true;
+		}
+
+		return $pass->run->hasDeletedSubjectSnapshot() === true
+			&& $pass->subject instanceof stdClass
+			&& get_object_vars($pass->subject) === [];
+	}//end walksPayload()
 
 	/**
 	 * The run's flow and subject as a pass, or why the run cannot proceed.
@@ -240,6 +290,13 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 					id: (string)$run->getSubjectUuid()
 				)
 			);
+
+			// An object.deleted run can never re-resolve its subject; it walks
+			// the snapshot under `payload` instead (see FlowRun::hasDeletedSubjectSnapshot()).
+			// Every other unresolved subject still fails the run.
+			if ($subject === null && $run->hasDeletedSubjectSnapshot() === true) {
+				$subject = new stdClass();
+			}
 
 			if ($subject === null) {
 				return sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid());

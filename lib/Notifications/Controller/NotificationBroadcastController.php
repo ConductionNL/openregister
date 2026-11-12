@@ -123,8 +123,6 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
-	 *
-	 * @NoCSRFRequired
 	 */
 	public function create(): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -209,8 +207,6 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
-	 *
-	 * @NoCSRFRequired
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -259,7 +255,6 @@ class NotificationBroadcastController extends Controller {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 */
 	public function acknowledge(string $uuid): JSONResponse {
 		$userId = $this->resolveUserId();

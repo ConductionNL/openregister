@@ -20,6 +20,10 @@ use PHPUnit\Framework\TestCase;
  * An unknown configuration key is dropped in silence; these two must not be.
  *
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 class SchemaFormConfigurationTest extends TestCase {
 

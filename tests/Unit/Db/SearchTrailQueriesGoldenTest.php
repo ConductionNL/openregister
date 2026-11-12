@@ -36,6 +36,12 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Db\SearchTrailMapper
  * @uses   \OCA\OpenRegister\Db\SearchTrail
+ * @uses \OCA\OpenRegister\Db\SearchTrailCriteria
+ * @uses \OCA\OpenRegister\Db\SearchTrail\CreatedRange
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailFilterRun
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailPage
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailStatistics
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class SearchTrailQueriesGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

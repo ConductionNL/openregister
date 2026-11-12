@@ -47,6 +47,16 @@ use Psr\Log\LoggerInterface;
  * set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Calendar\RegisterCalendar
+ * @uses \OCA\OpenRegister\Calendar\CalendarDefinition
+ * @uses \OCA\OpenRegister\Calendar\CalendarSearchQuery
+ * @uses \OCA\OpenRegister\Calendar\RegisterCalendarSources
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RegisterCalendarSearchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/register-calendar-search-golden.json';

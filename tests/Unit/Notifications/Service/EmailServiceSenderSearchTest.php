@@ -54,6 +54,7 @@ use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses   \OCA\OpenRegister\Db\Schema\LinkedTypesRule
+ * @uses \OCA\OpenRegister\Notifications\Service\EmailLinkRequest
  */
 final class EmailServiceSenderSearchTest extends TestCase {
 	use RecordingQueryBuilderTrait;

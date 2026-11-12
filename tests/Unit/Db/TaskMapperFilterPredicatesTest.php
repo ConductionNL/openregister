@@ -42,6 +42,13 @@ use ReflectionMethod;
  * Ordered predicate log of applyFilters() and applyBlockedExclusion().
  *
  * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
  */
 class TaskMapperFilterPredicatesTest extends TestCase {
 	use FluentQueryBuilderTrait;

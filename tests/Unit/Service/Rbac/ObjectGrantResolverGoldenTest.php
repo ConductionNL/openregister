@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableReaderInterface;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
@@ -65,6 +66,17 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 	 * @var string[]
 	 */
 	private array $calls = [];
+
+	/**
+	 * Stored folder node id per object uuid; an absent uuid has no stored row.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $folders = [
+		self::UUID_A => 1001,
+		self::UUID_B => 1002,
+		self::UUID_C => 1003,
+	];
 
 	/**
 	 * A logger that records level and message.
@@ -107,6 +119,7 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 	 * @param mixed             $verbs       Raw verbs attribute.
 	 * @param mixed             $inheritable Raw inheritable attribute.
 	 * @param string            $nodeType    Node type.
+	 * @param integer|null      $nodeId      Shared node id; null for the folder stored for an object of that name.
 	 *
 	 * @return IShare The share.
 	 */
@@ -115,7 +128,8 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 		int $permissions,
 		mixed $verbs = null,
 		mixed $inheritable = null,
-		string $nodeType = 'folder'
+		string $nodeType = 'folder',
+		?int $nodeId = null
 	): IShare {
 		$node = $this->createMock(Node::class);
 		$node->method('getName')->willReturn($name);
@@ -136,6 +150,7 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 		$share->method('getNode')->willReturn($node);
 		$share->method('getPermissions')->willReturn($permissions);
 		$share->method('getAttributes')->willReturn($attributes);
+		$share->method('getNodeId')->willReturn($nodeId ?? ($this->folders[$name] ?? crc32($name)));
 		return $share;
 	}//end share()
 
@@ -157,8 +172,19 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 			}
 		);
 
-		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($manager);
+		$folders = $this->folders;
+		$objects = $this->createMock(originalClassName: MagicCrossTableReaderInterface::class);
+		$objects->method('findFolderIdsByUuids')->willReturnCallback(
+			static fn (array $uuids): array => array_intersect_key($folders, array_flip($uuids))
+		);
+
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id) => match ($id) {
+				IManager::class => $manager,
+				default => $objects,
+			}
+		);
 
 		return new ObjectGrantResolver($this->logger(), $container, $hierarchy);
 	}//end resolver()
@@ -327,7 +353,9 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 	public function testPagingAndTheBound(): void {
 		$full = [];
 		for ($i = 0; $i < 100; $i++) {
-			$full[] = $this->share(sprintf('aaaaaaaa-aaaa-4aaa-8aaa-%012d', $i), Constants::PERMISSION_READ);
+			$uuid = sprintf('aaaaaaaa-aaaa-4aaa-8aaa-%012d', $i);
+			$this->folders[$uuid] = (2000 + $i);
+			$full[] = $this->share(name: $uuid, permissions: Constants::PERMISSION_READ);
 		}
 
 		// USER: one full page, then a short one with UUID_B. GROUP: always full -> bound.
@@ -418,4 +446,91 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 		// Memoised: expand() called once.
 		$resolver->grantedObjectUuids('carol');
 	}//end testHierarchySeedsExcludeLocalGrants()
+
+	/**
+	 * A folder that only carries an object's uuid as its name grants nothing:
+	 * the share must be on the folder stored for that object.
+	 *
+	 * @return void
+	 */
+	public function testAShareOnAnotherFolderWithTheObjectsNameGrantsNothing(): void {
+		$read   = Constants::PERMISSION_READ;
+		$byType = [
+			IShare::TYPE_USER => [
+				$this->share(name: self::UUID_A, permissions: $read),
+				$this->share(name: self::UUID_B, permissions: Constants::PERMISSION_ALL, verbs: ['use'], nodeId: 4242),
+			],
+			IShare::TYPE_GROUP => [
+				$this->share(name: self::UUID_C, permissions: Constants::PERMISSION_ALL, nodeId: 4343),
+			],
+		];
+
+		$resolver = $this->resolver(sharesFor: static fn (int $type): array => ($byType[$type] ?? []));
+
+		$this->assertSame(expected: [self::UUID_A => $read], actual: $resolver->grantedObjectUuids(userId: 'mallory'));
+		$this->assertFalse(condition: $resolver->isGranted(lookup: new GrantLookup(userId: 'mallory', objectUuid: self::UUID_B)));
+		$this->assertFalse(condition: $resolver->isGranted(lookup: new GrantLookup(userId: 'mallory', objectUuid: self::UUID_C)));
+		$this->assertFalse(
+			condition: $resolver->grantCarriesVerb(lookup: new GrantLookup(userId: 'mallory', objectUuid: self::UUID_B), verb: 'use')
+		);
+		$this->assertFalse(
+			condition: $resolver->isGranted(lookup: new GrantLookup(userId: 'mallory', objectUuid: self::UUID_A), action: 'update')
+		);
+	}//end testAShareOnAnotherFolderWithTheObjectsNameGrantsNothing()
+
+	/**
+	 * A share naming an object that has no stored row grants nothing.
+	 *
+	 * @return void
+	 */
+	public function testAShareNamingNoStoredObjectGrantsNothing(): void {
+		unset($this->folders[self::UUID_B]);
+		$byType = [
+			IShare::TYPE_USER => [$this->share(name: self::UUID_B, permissions: Constants::PERMISSION_READ, nodeId: 1002)],
+		];
+
+		$resolver = $this->resolver(sharesFor: static fn (int $type): array => ($byType[$type] ?? []));
+
+		$this->assertSame(expected: [], actual: $resolver->grantedObjectUuids(userId: 'alice'));
+	}//end testAShareNamingNoStoredObjectGrantsNothing()
+
+	/**
+	 * When the stored folders cannot be read, no share grants anything.
+	 *
+	 * @return void
+	 */
+	public function testUnreadableStoredFoldersFailClosed(): void {
+		$byType  = [IShare::TYPE_USER => [$this->share(name: self::UUID_A, permissions: Constants::PERMISSION_ALL)]];
+		$manager = $this->createMock(originalClassName: IManager::class);
+		$manager->method('getSharedWith')->willReturnCallback(
+			static fn (string $userId, int $type): array => ($byType[$type] ?? [])
+		);
+
+		$objects = $this->createMock(originalClassName: MagicCrossTableReaderInterface::class);
+		$objects->method('findFolderIdsByUuids')->willThrowException(new RuntimeException(message: 'db down'));
+		$readers = ['throws' => $objects, 'wrongType' => new \stdClass()];
+
+		foreach ($readers as $mode => $reader) {
+			$this->logLines = [];
+			$container      = $this->createMock(originalClassName: ContainerInterface::class);
+			$container->method('get')->willReturnCallback(
+				static fn (string $id) => match ($id) {
+					IManager::class => $manager,
+					default => $reader,
+				}
+			);
+
+			$resolver = new ObjectGrantResolver(logger: $this->logger(), container: $container);
+			$this->assertSame(expected: [], actual: $resolver->grantedObjectUuids(userId: 'alice'), message: $mode);
+			$this->assertFalse(
+				condition: $resolver->isGranted(lookup: new GrantLookup(userId: 'alice', objectUuid: self::UUID_A)),
+				message: $mode
+			);
+			$this->assertSame(
+				expected: ['error [ObjectGrantResolver] Could not read the stored object folders; treating the caller as holding no grants'],
+				actual: $this->logLines,
+				message: $mode
+			);
+		}
+	}//end testUnreadableStoredFoldersFailClosed()
 }//end class

@@ -31,6 +31,10 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
  * the result rows, and the hybrid envelope built from them.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KnnStatement
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\RankedResults
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
  */
 final class VectorSearchKnnQueryGoldenTest extends TestCase {
 

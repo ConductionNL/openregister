@@ -54,6 +54,8 @@ use PHPUnit\Framework\TestCase;
  * Organisation scoping on the federated-share queries a local session reaches.
  *
  * @covers \OCA\OpenRegister\Db\FederatedShareMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class FederatedShareMapperTenancyTest extends TestCase {
 

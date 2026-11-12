@@ -48,6 +48,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiVersionMiddlewareTest extends TestCase {
 

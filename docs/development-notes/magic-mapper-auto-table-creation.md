@@ -105,7 +105,7 @@ During initial import, the `compliancy` schema's data was saved to blob storage 
 
 2. **Re-import compliancy data:**
    ```bash
-   curl -X POST 'http://localhost/apps/openregister/api/registers/5/import' \
+   curl -H 'OCS-APIRequest: true' -X POST 'http://localhost/apps/openregister/api/registers/5/import' \
      -F 'schema=42' \
      -F 'file=@compliancy.csv' \
      -F 'validation=false'
@@ -220,7 +220,7 @@ $this->registerMapper->update($register);
 ### Configuration Update via API
 
 ```bash
-curl -X PUT 'http://localhost/apps/openregister/api/registers/5' \
+curl -H 'OCS-APIRequest: true' -X PUT 'http://localhost/apps/openregister/api/registers/5' \
   -H 'Content-Type: application/json' \
   -u 'admin:admin' \
   -d '{

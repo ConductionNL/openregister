@@ -438,6 +438,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
 import TransferMessages from './TransferMessages.vue'
+import { withRequestToken } from '../../services/requestToken.js'
 import selectedObjectsDialog, {
 	refreshObjectLists,
 } from './selectedObjectsDialog.js'
@@ -451,13 +452,13 @@ import { failedTransfer } from './transferResult.js'
  * @throws {Error} With the server's error when the migration is refused
  */
 async function postMigration(request) {
-	const response = await fetch('/index.php/apps/openregister/api/migrate', {
+	const response = await fetch('/index.php/apps/openregister/api/migrate', withRequestToken({
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify(request),
-	})
+	}))
 
 	const result = await response.json().catch(() => ({}))
 	if (!response.ok) {

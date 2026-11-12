@@ -51,6 +51,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowSemanticVersion
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Repair\FlowVersionNumbering
+ * @uses \OCA\OpenRegister\Repair\Support\EveryFlow
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphDiff
  */
 final class BackfillFlowSemanticVersionsTest extends TestCase {
 

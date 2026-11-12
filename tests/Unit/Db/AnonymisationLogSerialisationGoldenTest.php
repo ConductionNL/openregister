@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden serialised shape of an anonymisation log entry.
  *
  * @covers \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class AnonymisationLogSerialisationGoldenTest extends TestCase {
 

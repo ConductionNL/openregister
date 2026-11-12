@@ -58,7 +58,16 @@ class FileSettingsHandler {
 	 *
 	 * @var string
 	 */
-	public const OPENANONYMISER_PASSWORD_KEY = 'openAnonymiserPassword';
+	public const OPENANONYMISER_CREDENTIAL_FIELD = 'openAnonymiserPassword';
+
+	/**
+	 * Former name of OPENANONYMISER_CREDENTIAL_FIELD, kept for existing callers.
+	 *
+	 * @deprecated Use OPENANONYMISER_CREDENTIAL_FIELD.
+	 *
+	 * @var string
+	 */
+	public const OPENANONYMISER_PASSWORD_KEY = self::OPENANONYMISER_CREDENTIAL_FIELD;
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
@@ -163,7 +172,7 @@ class FileSettingsHandler {
 			$fileSettings['batchSize'] = $this->boundedBatchSize(batchSize: $fileSettings['batchSize']);
 		}
 
-		unset($fileSettings[self::OPENANONYMISER_PASSWORD_KEY]);
+		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
 		$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
@@ -231,7 +240,7 @@ class FileSettingsHandler {
 	 * @return void
 	 */
 	private function storeRecorded(array $fileConfig, array $fileData): void {
-		$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
+		$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_CREDENTIAL_FIELD];
 		$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
 		$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
 		$this->storeOpenAnonymiserPassword(fileData: $fileData);
@@ -318,7 +327,7 @@ class FileSettingsHandler {
 	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
 	 */
 	public function getOpenAnonymiserPassword(): string {
-		return $this->appConfig->getValueString(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY, '');
+		return $this->appConfig->getValueString(Application::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD, '');
 	}//end getOpenAnonymiserPassword()
 
 	/**
@@ -342,13 +351,13 @@ class FileSettingsHandler {
 	 * @return void
 	 */
 	private function storeOpenAnonymiserPassword(array $fileData): void {
-		if (array_key_exists(self::OPENANONYMISER_PASSWORD_KEY, $fileData) === false
-			|| is_string($fileData[self::OPENANONYMISER_PASSWORD_KEY]) === false
+		if (array_key_exists(self::OPENANONYMISER_CREDENTIAL_FIELD, $fileData) === false
+			|| is_string($fileData[self::OPENANONYMISER_CREDENTIAL_FIELD]) === false
 		) {
 			return;
 		}
 
-		$this->writeOpenAnonymiserPassword(password: $fileData[self::OPENANONYMISER_PASSWORD_KEY]);
+		$this->writeOpenAnonymiserPassword(password: $fileData[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 	}//end storeOpenAnonymiserPassword()
 
 	/**
@@ -360,13 +369,13 @@ class FileSettingsHandler {
 	 */
 	private function writeOpenAnonymiserPassword(string $password): void {
 		if ($password === '') {
-			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY);
+			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD);
 			return;
 		}
 
 		$this->appConfig->setValueString(
 			Application::APP_ID,
-			self::OPENANONYMISER_PASSWORD_KEY,
+			self::OPENANONYMISER_CREDENTIAL_FIELD,
 			$password,
 			sensitive: true
 		);

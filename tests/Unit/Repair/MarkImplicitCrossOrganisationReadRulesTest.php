@@ -38,6 +38,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Repair\SchemaListing
  */
 final class MarkImplicitCrossOrganisationReadRulesTest extends TestCase {
 	/**

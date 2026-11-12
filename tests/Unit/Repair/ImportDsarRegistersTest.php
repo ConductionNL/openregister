@@ -36,6 +36,7 @@ use RuntimeException;
  * malformed or failing descriptor is skipped with a warning and never stops the other.
  *
  * @covers \OCA\OpenRegister\Repair\ImportDsarRegisters
+ * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 final class ImportDsarRegistersTest extends TestCase {
 

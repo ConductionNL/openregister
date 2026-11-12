@@ -36,6 +36,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationQueryTrait
  * @uses   \OCA\OpenRegister\Notifications\Db\NotificationDedupeState
  * @uses   \OCA\OpenRegister\Notifications\Db\NotificationDedupeKey
+ * @uses \OCA\OpenRegister\Notifications\Db\DedupeSighting
  */
 final class NotificationDedupeStateMapperTest extends TestCase {
 	use RecordingQueryBuilderTrait;

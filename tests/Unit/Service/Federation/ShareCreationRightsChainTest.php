@@ -136,7 +136,7 @@ class ShareCreationRightsChainTest extends TestCase {
 		$random = $this->createMock(ISecureRandom::class);
 		$random->method('generate')->willReturn(str_repeat('t', 48));
 
-		return new FederationShareService($mapper, $grantor, $random, $this->createMock(LoggerInterface::class));
+		return new FederationShareService($mapper, $grantor, $random, $this->createMock(LoggerInterface::class), $this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class));
 	}
 
 	private function assertRefused(FederationShareService $service, array $params): void {

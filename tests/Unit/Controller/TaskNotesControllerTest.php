@@ -62,6 +62,12 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskNotesControllerFactory;
  *
  * @covers \OCA\OpenRegister\Controller\TaskNotesController
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Controller\Support\TaskLeafGuard
+ * @uses \OCA\OpenRegister\Controller\Support\TaskNotesControllerServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit
  */
 class TaskNotesControllerTest extends TestCase {
 

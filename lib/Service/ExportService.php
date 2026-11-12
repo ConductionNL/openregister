@@ -51,7 +51,11 @@ use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -153,6 +157,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per export, that it revealed audited values.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -164,6 +169,7 @@ class ExportService implements ObjectExporterInterface {
 		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
+		private readonly ?ProcessRevealAuditInterface $processAudit = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -267,7 +273,7 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
 		}
 
-		$writer = new Csv($this->spreadsheetFor(request: $request));
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
 
 		ob_start();
 		$writer->save('php://output');
@@ -645,7 +651,7 @@ class ExportService implements ObjectExporterInterface {
 		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
 
 		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . '1', value: $header);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
 		return $spreadsheet;
@@ -683,7 +689,7 @@ class ExportService implements ObjectExporterInterface {
 	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
 	 */
 	public function templateCsvFor(ExportRequest $request): string {
-		$writer = new Csv($this->templateSpreadsheetFor(request: $request));
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->templateSpreadsheetFor(request: $request)));
 		$writer->setUseBOM(true);
 
 		ob_start();
@@ -737,7 +743,7 @@ class ExportService implements ObjectExporterInterface {
 
 		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . '1', value: $header);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
 		$objects = $this->fetchObjectsForExport(request: $request);
@@ -829,14 +835,12 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters[$metaField] = $value;
 		}
 
-		// Check if multitenancy was explicitly requested via _multi parameter.
-		$multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
-		$multitenancy = true;
-		if (isset($filters['_multi']) === true) {
-			$multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
-		} elseif (isset($filters['multi']) === true) {
-			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
-		}
+		// `_multi` may narrow an export to the organisation for anyone, but only
+		// an administrator may lift the organisation boundary with it.
+		$isAdmin = $this->isUserAdmin(user: $request->currentUser);
+		$multitenancy = (self::requestedMultitenancy(filters: $filters) === true || $isAdmin === false);
+		$multiExplicitlySet = (isset($filters['_multi']) || isset($filters['multi']))
+			&& ($isAdmin === true || self::requestedMultitenancy(filters: $filters) === true);
 
 		// `_ids` (a list or a comma-separated string) narrows the export to the
 		// selected objects; RBAC and multitenancy still apply to each.
@@ -857,7 +861,7 @@ class ExportService implements ObjectExporterInterface {
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;
 
-		return $this->objectService->searchObjects(
+		$search = fn (): array => $this->objectService->searchObjects(
 			query: $query,
 			_rbac: true,
 			// Apply RBAC filtering.
@@ -866,8 +870,33 @@ class ExportService implements ObjectExporterInterface {
 			ids: $selectedIds,
 			uses: null
 		);
+
+		if ($this->processAudit === null) {
+			return $search();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
 	}//end fetchObjectsForExport()
 
+
+	/**
+	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return bool
+	 */
+	private static function requestedMultitenancy(array $filters): bool {
+		if (isset($filters['_multi']) === true) {
+			return filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		if (isset($filters['multi']) === true) {
+			return filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		return true;
+	}//end requestedMultitenancy()
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).
@@ -996,7 +1025,7 @@ class ExportService implements ObjectExporterInterface {
 		$row = self::FIRST_DATA_ROW;
 		foreach ($table->objects as $object) {
 			foreach ($this->rowValues(table: $table, object: $object) as $col => $value) {
-				$sheet->setCellValue(coordinate: $col . $row, value: $value);
+				SpreadsheetCell::set(sheet: $sheet, coordinate: $col . $row, value: $value);
 			}
 
 			$row++;

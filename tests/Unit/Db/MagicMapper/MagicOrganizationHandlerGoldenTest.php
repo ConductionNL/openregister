@@ -58,6 +58,16 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition
  * @covers \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership
  * @covers \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationlessAdmission
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MagicOrganizationHandlerGoldenTest extends TestCase {
 

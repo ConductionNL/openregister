@@ -33,6 +33,27 @@ use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
  *
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ToolInvocation
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedSearchPage
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedToolCall
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationDigest
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationOutcome
+ * @uses \OCA\OpenRegister\Mcp\AttributeToolScanner
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
+ * @uses \OCA\OpenRegister\Mcp\ToolScanSubject
  */
 class ToolInvocationAuditGoldenTest extends TestCase
 {

@@ -40,6 +40,9 @@ use Throwable;
  * Pins every call run() makes on the mapper, the service and the logger.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\ImportPreviewRunner
+ * @uses \OCA\OpenRegister\Db\ImportPreview
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Import\ImportCommit
  */
 class ImportPreviewRunnerGoldenTest extends TestCase {
 

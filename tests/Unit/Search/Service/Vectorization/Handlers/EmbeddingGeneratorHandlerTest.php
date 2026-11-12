@@ -40,6 +40,7 @@ use ReflectionProperty;
  * that records every request it receives.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\FireworksEmbeddingGenerator
  */
 class EmbeddingGeneratorHandlerTest extends TestCase
 {

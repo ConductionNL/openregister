@@ -161,7 +161,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->createEvent(...));
 	}//end create()
@@ -177,7 +176,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function link(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->linkEvent(...));
 	}//end link()
@@ -194,7 +192,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function unlink(string $uuid, string $eventUid): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -221,7 +218,6 @@ class TaskEventsController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $eventId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,

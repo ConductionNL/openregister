@@ -69,6 +69,13 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Db\LockTerms
  */
 class ObjectsControllerPatchReadScopeTest extends TestCase {
 
@@ -251,6 +258,24 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 		$this->controller()->postPatch('1', '2', 'uuid-b', $this->objectService);
 
 		$this->assertSame([[true, true], [true, true]], $this->reads);
+	}
+
+	public function testANonAdminPutReadsWithRbacAndMultitenancy(): void {
+		$this->sends(['amount' => 1]);
+
+		$result = $this->controller()->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame([[true, true]], $this->reads);
+		$this->assertSame([], $this->saves, 'PUT saved an object the caller may not read');
+	}
+
+	public function testAnAdministratorPutStillReadsUnscoped(): void {
+		$this->sends(['amount' => 1]);
+
+		$this->controller(isAdmin: true)->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame([[false, false]], $this->reads);
 	}
 
 	public function testAnAdministratorStillReadsUnscoped(): void {

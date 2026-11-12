@@ -18,6 +18,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
           "if (!pm.collectionVariables.get('admin_user')) {",
           "  pm.collectionVariables.set('admin_user', pm.collectionVariables.get('username') || pm.environment.get('username') || 'admin');",
           "}",

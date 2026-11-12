@@ -85,6 +85,30 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Tenancy\EntityRbacTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
+ * @uses \OCA\OpenRegister\Service\Relation\DeclaredProperty
+ * @uses \OCA\OpenRegister\Service\Rules\ExpressionDefaultDeclarations
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

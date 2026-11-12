@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\JsonFieldsTrait
  * @covers \OCA\OpenRegister\Db\HydrateEmptyJsonAsNullTrait
  * @covers \OCA\OpenRegister\Db\HydrateBySettersTrait
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class EntityHydrationGoldenTest extends TestCase {
 

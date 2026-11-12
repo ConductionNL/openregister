@@ -71,7 +71,7 @@ describe('organisation store requests', () => {
 		const fetchMock = mockFetch({ [`GET ${BASE}/active`]: reply({ activeOrganisation: { uuid: 'act', name: 'Act' } }) })
 		const store = useOrganisationStore()
 		const result = await store.getActiveOrganisation()
-		expect(fetchMock).toHaveBeenCalledWith(`${BASE}/active`, { method: 'GET' })
+		expect(fetchMock).toHaveBeenCalledWith(`${BASE}/active`, { method: 'GET', headers: { requesttoken: 'test-request-token' } })
 		expect(result.uuid).toBe('act')
 		expect(store.activeOrganisation).toBeInstanceOf(Organisation)
 		expect(store.activeOrganisation.uuid).toBe('act')
@@ -113,7 +113,7 @@ describe('organisation store requests', () => {
 		const fetchMock = mockFetch({ [`POST ${BASE}/u1/set-active`]: reply({ activeOrganisation: { uuid: 'u1', name: 'One' } }) })
 		const store = useOrganisationStore()
 		const { data } = await store.setActiveOrganisationById('u1')
-		expect(fetchMock).toHaveBeenNthCalledWith(1, `${BASE}/u1/set-active`, { method: 'POST' })
+		expect(fetchMock).toHaveBeenNthCalledWith(1, `${BASE}/u1/set-active`, { method: 'POST', headers: { requesttoken: 'test-request-token' } })
 		expect(fetchMock).toHaveBeenNthCalledWith(2, BASE, { method: 'GET' })
 		expect(data.activeOrganisation.uuid).toBe('u1')
 		expect(store.activeOrganisation.uuid).toBe('u1')
@@ -137,7 +137,7 @@ describe('organisation store requests', () => {
 		const { data } = await useOrganisationStore().joinOrganisation('u1', 'alice')
 		expect(fetchMock.mock.calls[0][1]).toEqual({
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 			body: JSON.stringify({ userId: 'alice' }),
 		})
 		expect(data).toEqual({ ok: 1 })
@@ -185,7 +185,7 @@ describe('organisation store requests', () => {
 		const fetchMock = mockFetch({ [`DELETE ${BASE}/u9`]: res })
 		const { response } = await useOrganisationStore().deleteOrganisation({ uuid: 'u9' })
 		expect(response).toBe(res)
-		expect(fetchMock).toHaveBeenCalledWith(`${BASE}/u9`, { method: 'DELETE' })
+		expect(fetchMock).toHaveBeenCalledWith(`${BASE}/u9`, { method: 'DELETE', headers: { requesttoken: 'test-request-token' } })
 		expect(fetchMock).toHaveBeenCalledWith(BASE, { method: 'GET' })
 	})
 
@@ -195,7 +195,7 @@ describe('organisation store requests', () => {
 		const { data } = await store.createOrganisation({ name: 'New' })
 		expect(fetchMock.mock.calls[0]).toEqual([BASE, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 			body: JSON.stringify({ name: 'New' }),
 		}])
 		expect(data.uuid).toBe('n1')

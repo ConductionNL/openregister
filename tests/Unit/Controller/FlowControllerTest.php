@@ -69,6 +69,17 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\FlowRunRefused
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnDiagramLayout
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport
+ * @uses \OCA\OpenRegister\Db\Flow\FlowJson
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnExportDiagram
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnExportDocument
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnExportElements
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnExportGraph
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnExportGraphBuilder
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnImportPass
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnReading
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
  */
 class FlowControllerTest extends TestCase {
 

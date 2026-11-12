@@ -57,6 +57,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup
  */
 class MagicMapperCrossTableScanGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

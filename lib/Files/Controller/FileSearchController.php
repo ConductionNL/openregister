@@ -99,7 +99,6 @@ class FileSearchController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt No caller-supplied id: free-text semantic search over the file vector index;
 	 *   takes a query string, not an object or file id.
 	 *
@@ -178,8 +177,6 @@ class FileSearchController extends Controller {
 	 * service response with a wrong outer-key count (or#277).
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with hybrid search results or error
 	 *

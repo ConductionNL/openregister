@@ -59,6 +59,11 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectsExtensions
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
  */
 class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-version-conflict-golden.json';

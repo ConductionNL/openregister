@@ -144,6 +144,67 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
+ * @uses \OCA\OpenRegister\Service\Relation\DeclaredProperty
+ * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
+ * @uses \OCA\OpenRegister\Service\Relation\ExposureDeclaration
+ * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses \OCA\OpenRegister\Service\Rules\ExpressionDefaultDeclarations
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Db\RegisterMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\EntityRbacTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidators
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredTrigger
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidators
+ * @uses \OCA\OpenRegister\Search\Service\SearchAnnotationValidators
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Archival\MdtoMappingEntry
+ * @uses \OCA\OpenRegister\Service\Archival\MdtoMappingRun
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffAnnotationEntry
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffKindBinding
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffKindContract
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffMappingChecks
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffSuccessUpdateChecks
+ * @uses \OCA\OpenRegister\Service\Hinge\DeclaredLens
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateDeclarationScope
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionBody
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionExecution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionIdentity
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionOffer
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionPresentation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionRunPolicy
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyFields
+ * @uses \OCA\OpenRegister\Service\Quality\MasterDataAnnotationValidators
+ * @uses \OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyCollision
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantDeclaration
+ * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowRun
+ * @uses \OCA\OpenRegister\Service\Rbac\MatrixShape
+ * @uses \OCA\OpenRegister\Service\Rules\DependentValueDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
+ * @uses \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

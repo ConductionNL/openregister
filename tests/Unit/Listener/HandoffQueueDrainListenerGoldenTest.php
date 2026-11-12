@@ -38,6 +38,9 @@ use RuntimeException;
  * Pins the drain calls and every log line for each trigger and summary shape.
  *
  * @covers \OCA\OpenRegister\Listener\HandoffQueueDrainListener
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  */
 class HandoffQueueDrainListenerGoldenTest extends TestCase {
 

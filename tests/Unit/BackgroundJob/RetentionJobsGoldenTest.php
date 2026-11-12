@@ -40,6 +40,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\BackgroundJob\AbstractRetentionJob
  * @covers \OCA\OpenRegister\BackgroundJob\AvgRetentionJob
  * @covers \OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob
+ * @uses \OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime
  */
 class RetentionJobsGoldenTest extends TestCase {
 	private const AVG_SUMMARY = ['evaluatedActivities' => 5, 'skippedActivities' => 1, 'objectsErased' => 3, 'objectsWithheld' => 2];

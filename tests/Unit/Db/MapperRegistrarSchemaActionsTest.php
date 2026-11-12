@@ -59,6 +59,20 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\MapperWiring
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionBody
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionExecution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionIdentity
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionOffer
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionPresentation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionRunPolicy
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
  */
 class MapperRegistrarSchemaActionsTest extends TestCase {
 

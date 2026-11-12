@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation for SearchTrail.
  *
  * @covers \OCA\OpenRegister\Db\SearchTrail
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class SearchTrailSerialisationGoldenTest extends TestCase {
 

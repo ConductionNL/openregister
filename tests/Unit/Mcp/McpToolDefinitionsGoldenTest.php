@@ -25,6 +25,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AbstractBuiltInToolProvider
  */
 class McpToolDefinitionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/mcp-tool-definitions-golden.json';

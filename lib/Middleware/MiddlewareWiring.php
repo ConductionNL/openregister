@@ -42,6 +42,11 @@ final class MiddlewareWiring {
 	 * @return void
 	 */
 	public static function register(IRegistrationContext $context): void {
+		// Serves the API's JSON errors as RFC 9457 problem details. Registered
+		// FIRST because Nextcloud runs afterController in reverse order, so it
+		// sees the final response of every other middleware.
+		$context->registerMiddleware(ProblemDetailsMiddleware::class);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 

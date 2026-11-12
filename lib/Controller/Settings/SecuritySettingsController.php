@@ -75,8 +75,6 @@ class SecuritySettingsController extends Controller {
 	 * This method allows administrators to unblock an IP that has been
 	 * temporarily blocked due to suspicious activity.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -95,8 +93,6 @@ class SecuritySettingsController extends Controller {
 	 * This method allows administrators to unblock a user account that has been
 	 * temporarily locked due to too many failed login attempts.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -114,8 +110,6 @@ class SecuritySettingsController extends Controller {
 	 *
 	 * This method allows administrators to unblock both an IP and user
 	 * in a single request.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *

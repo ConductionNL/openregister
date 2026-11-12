@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Repair\ReportUnpublishedSchedules
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
  */
 class ReportUnpublishedSchedulesTest extends TestCase {
 	/**

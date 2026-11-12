@@ -65,6 +65,18 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 #[UsesClass(\OCA\OpenRegister\Service\OrganisationContext::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\DraftStatusPolicy::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Rbac\RuleColumns::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacAccessCall::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacMatchSql::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\AuthorizationColumn::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\GrantedRows::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\McpScope::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\RbacCollaborators::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\RbacFallbacks::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable::class)]
 class SystemOperationReadScopeTest extends TestCase {
 
 	/**

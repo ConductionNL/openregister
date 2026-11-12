@@ -71,6 +71,28 @@ use OCA\OpenRegister\Service\File\FileRename;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileObjectRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Event\AbstractObjectFileEvent
+ * @uses \OCA\OpenRegister\Exception\ObjectFileAccessDeniedException
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Files\Db\File
+ * @uses \OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler
+ * @uses \OCA\OpenRegister\Files\Service\File\PreviewSize
+ * @uses \OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter
+ * @uses \OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest
+ * @uses \OCA\OpenRegister\Files\Service\Integration\TalkChatExporter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\File\FileBatchRequest
+ * @uses \OCA\OpenRegister\Service\File\FileMetadataChange
+ * @uses \OCA\OpenRegister\Service\File\FileOverwrite
+ * @uses \OCA\OpenRegister\Service\File\FileRename
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Support\ContentDisposition
  */
 class FilesControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-actions-golden.json';
@@ -493,6 +515,7 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			$folder = $this->createMock(Folder::class);
 			$folder->method('getById')->willReturn($this->nodesInFolder());
+			$folder->method('getFirstNodeById')->willReturn(($this->nodesInFolder()[0] ?? null));
 			return $folder;
 		});
 		return $root;

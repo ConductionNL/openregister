@@ -50,7 +50,7 @@ class BundleSigner {
 	/**
 	 * App-config key holding this instance's base64 Ed25519 secret key.
 	 */
-	private const SECRET_KEY = 'federated_config_signing_secret';
+	private const SIGNING_CONFIG_NAME = 'federated_config_signing_secret';
 
 	/**
 	 * App-config key holding the comma-separated base64 public keys this org
@@ -199,7 +199,7 @@ class BundleSigner {
 	 * @return string The raw secret key bytes.
 	 */
 	private function secretKey(): string {
-		$stored = $this->appConfig->getValueString(self::APP_ID, self::SECRET_KEY, '');
+		$stored = $this->appConfig->getValueString(self::APP_ID, self::SIGNING_CONFIG_NAME, '');
 		if ($stored !== '') {
 			$decoded = base64_decode($stored, true);
 			if ($decoded !== false && strlen($decoded) === SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
@@ -211,7 +211,7 @@ class BundleSigner {
 		// never leaves app config; only the derived public key is ever shared.
 		$keypair = sodium_crypto_sign_keypair();
 		$secret = sodium_crypto_sign_secretkey($keypair);
-		$this->appConfig->setValueString(self::APP_ID, self::SECRET_KEY, base64_encode($secret), sensitive: true);
+		$this->appConfig->setValueString(self::APP_ID, self::SIGNING_CONFIG_NAME, base64_encode($secret), sensitive: true);
 
 		return $secret;
 	}//end secretKey()

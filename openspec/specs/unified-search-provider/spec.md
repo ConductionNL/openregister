@@ -25,6 +25,7 @@ place, and returns labeled, excerpted, paginated results.
 @e2e exclude The unified-search surface is rendered entirely by Nextcloud's own top-bar search chrome (no OpenRegister Vue component); the provider is a server-side OCP\Search\IProvider. Its observable behaviour is covered by PHPUnit (tests/Unit/Search/ObjectsProviderTest.php) and by Newman against the OCS search endpoint (tests/integration/openregister-unified-search.postman_collection.json), per the Playwright-UI-only / Newman-for-API rule.
 
 ## Requirements
+
 ### Requirement: OpenRegister MUST be the single fleet-wide unified search provider for register objects
 
 OpenRegister MUST register exactly one `OCP\Search\IProvider`
@@ -46,14 +47,18 @@ deep-link registry instead.
 
 ### Requirement: Search results MUST respect OR RBAC, tenant isolation, and the published predicate
 
-The provider MUST delegate to
-`ObjectService::searchObjectsPaginated(query, _rbac: true,
-_multitenancy: true)` and MUST NOT apply a weaker (or duplicate)
-access filter of its own. The result set MUST contain only objects the
-searching user may read: objects granted via RBAC scopes, plus objects
-readable through the published predicate (`@self.published` set and in
-the past, `@self.depublished` unset or in the future). Soft-deleted
-objects MUST never be returned.
+The provider MUST execute cross-schema unified search over the
+OpenRegister magic tables themselves (no secondary/denormalised index,
+and no Solr/Elasticsearch), and MUST delegate access control to the
+existing OR search pipeline by querying with `_rbac: true` and
+`_multitenancy: true`. It MUST NOT apply a weaker (or duplicate) access
+filter of its own. The result set MUST contain only objects the searching
+user may read: objects granted via RBAC scopes, plus objects readable
+through the published predicate (`@self.published` set and in the past,
+`@self.depublished` unset or in the future), scoped to the user's active
+organisation. Soft-deleted objects MUST never be returned. The
+batched-fan-out, merge, sort, and pagination layer MUST only re-merge
+rows the pipeline already authorised — it MUST NOT widen the result set.
 
 #### Scenario: User only sees objects they may read
 - GIVEN user `alice` has an RBAC read grant on schema `client` but not on schema `salary`
@@ -64,7 +69,7 @@ objects MUST never be returned.
 
 #### Scenario: Published objects are findable without an explicit grant
 - GIVEN user `bob` has no RBAC grant on schema `publication`
-- AND a `publication` object matching `subsidieregeling` has `@self.published` in the past and no `depublished`
+- AND a `publication` object matching `subsidieregeling` has `@self.published` in the past and no `@self.depublished`
 - WHEN `bob` searches for `subsidieregeling`
 - THEN the published object IS in the results
 
@@ -243,6 +248,76 @@ security applies to excerpt content.
 - THEN the excerpt MUST NOT reveal the hidden field's content
 - AND the excerpt falls back per the summary/description chain
 
+### Requirement: The unified-search provider MUST search extracted file text
+
+`ObjectsProvider` SHALL pass `_content_search: true` to
+`searchObjectsPaginated()`, so a `_search` term matches text extracted from
+attached files as well as object fields. Results SHALL be the owning OBJECT,
+never a bare chunk.
+
+#### Scenario: A term found only inside an attached file returns its object
+
+- **GIVEN** an object whose own fields do not contain a term, with an attached
+  file whose extracted text does
+- **WHEN** an entitled user searches Nextcloud for that term
+- **THEN** the owning object is returned, with its deep-link URL, title and
+  icon
+- **AND** the same search BEFORE this change returns nothing — asserted, so the
+  test measures the change rather than the fixture
+
+#### Scenario: Object-field matches are unaffected
+
+- **GIVEN** the searches that worked before this change
+- **THEN** they return the same objects, in the same order
+- **NOTE** content search widens a result set. A change that reorders or drops
+  existing hits is a regression in the fleet's main search bar, and would be
+  noticed as "search got worse" rather than as this change
+
+#### Scenario: A user gets no file-text hit from an object they may not read
+
+- **GIVEN** an attached file on an object outside the user's RBAC or tenant
+  scope
+- **THEN** its text produces no result
+- **AND** an entitled user searching the same term DOES get it — both in one
+  test, because a content search that matched nothing at all would satisfy the
+  refusal by itself
+
+### Requirement: Excerpts MUST continue to derive from the rendered object
+
+An excerpt SHALL be derived from the object as rendered for that user, not
+from chunk text. Field-level redaction SHALL therefore apply to excerpts
+unchanged.
+
+#### Scenario: A redacted field does not appear in an excerpt via file text
+
+- **GIVEN** a user redacted out of a field, and an attached file whose
+  extracted text contains that field's value
+- **WHEN** the object is returned as a content-search hit
+- **THEN** the excerpt does not contain the redacted value
+- **NOTE** this is the one way this change could turn a widened search into a
+  disclosure: the object stays correctly filtered while the excerpt leaks
+
+### Requirement: Content search MUST be bounded and measured
+
+The provider SHALL bound the chunk-candidate set and SHALL NOT issue an
+unbounded keyword pass. The latency cost SHALL be measured before and after.
+
+#### Scenario: The candidate set is capped
+
+- **GIVEN** a term matching a very large number of chunks
+- **THEN** the provider returns within its declared bound rather than scanning
+  the corpus
+
+#### Scenario: The cost is recorded, not assumed
+
+- **GIVEN** a representative corpus
+- **WHEN** the same query set runs with and without `_content_search`
+- **THEN** both latencies are recorded in the change
+- **AND** the comparison is like-for-like — same corpus, same warm/cold state,
+  same query set. A single run against a warm cache is not a measurement, and
+  this provider runs in the global search bar where regressions are felt by
+  every user at once
+
 ### Requirement: The provider MUST paginate results with a cursor
 
 The provider MUST read the query limit (capped at 25 per page) and the
@@ -266,3 +341,65 @@ the next-offset cursor when a full page was returned, or
 - WHEN the first page is handled
 - THEN all 10 entries are returned as a complete (non-paginated) result
 
+### Requirement: Cross-schema search MUST resolve each schema's owning register correctly
+
+For a cross-schema search the provider/mapper MUST pair every searchable
+schema with its OWN owning register — the register whose `getSchemas()`
+contains that schema id — by building a `schema_id → register` map across
+all candidate registers. It MUST NOT fall back to an arbitrary register
+(e.g. `reset($registers)`) when no register filter is supplied. The query
+for each schema MUST target that schema's real magic table
+`oc_openregister_table_{register}_{schema}`. A schema whose owning
+register cannot be resolved, or whose magic table does not exist, MUST be
+skipped (logged), not fail the whole search. The cross-schema path MUST be
+reached even when the query carries only a searchable-schema set and no
+register filter.
+
+#### Scenario: Object links to its real register, not a fallback
+- GIVEN schema `case` belongs to register `case-management` (not the first-loaded register)
+- AND a `case` object matches the term
+- WHEN a user with the right to read it searches for that term
+- THEN the result is found in `case-management`'s magic table
+- AND the result links to the `case-management` register/route, not a fallback register
+
+#### Scenario: Schema-only query (no register filter) still searches cross-schema
+- GIVEN the provider passes the searchable-schema set with no register filter
+- WHEN a user searches for a matching term
+- THEN the cross-schema path executes and returns matches across schemas
+
+#### Scenario: Schema with a missing table is skipped, not fatal
+- GIVEN one searchable schema has no corresponding magic table
+- WHEN a cross-schema search runs
+- THEN that schema is skipped and logged
+- AND results from the other searchable schemas are still returned
+
+### Requirement: Cross-schema search MUST use bounded, batched fan-out that stays under database limits
+
+The cross-schema search MUST split the resolved (register, schema) pairs
+into batches small enough that each batch's `UNION` statement stays under
+the database's limits (target-list column count, `IN`-list size, and
+statement-size / UNION-arm count). Each batch MUST be executed, then the
+per-batch result sets MUST be merged, sorted by relevance/score with a
+stable tiebreaker, and paginated (offset/limit) in PHP across all batches.
+Only schemas flagged `searchable = true` whose magic table exists MUST be
+included. The search MUST NOT issue a single `UNION` over all searchable
+tables when that would exceed a database limit.
+
+#### Scenario: Very high searchable-schema count does not trip DB limits
+- GIVEN an instance with more than 1000 searchable schemas
+- AND an object matching `bestemmingsplan` exists in one of them
+- WHEN a user with the right to read it searches for `bestemmingsplan`
+- THEN the object is returned
+- AND the query does not raise the 1664-column (`54011`) or >1000-expression `IN` errors
+
+#### Scenario: Results are ordered and paginated across batches
+- GIVEN matching objects exist across schemas spread over multiple batches
+- WHEN the first page of results is requested
+- THEN the page contains the top-ranked matches across all batches in relevance order
+- AND requesting the next page continues without duplicating earlier entries
+
+#### Scenario: Only searchable schemas with an existing table are queried
+- GIVEN schema `internal-note` has `searchable = false`
+- AND schema `ghost` is searchable but has no magic table
+- WHEN a cross-schema search runs
+- THEN neither `internal-note` nor `ghost` contributes a UNION arm

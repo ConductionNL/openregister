@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Db\Support\SecretAtRest;
+
 
 /**
  * The wiring behind MapperRegistrar.
@@ -142,7 +144,11 @@ final class MapperWiring {
 				userSession: $container->get('OCP\IUserSession'),
 				groupManager: $container->get('OCP\IGroupManager')
 			),
-			appConfig: $container->get('OCP\IAppConfig')
+			appConfig: $container->get('OCP\IAppConfig'),
+			secrets: new SecretAtRest(
+				crypto: $container->get('OCP\Security\ICrypto'),
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
 	}//end webhookMapper()
 

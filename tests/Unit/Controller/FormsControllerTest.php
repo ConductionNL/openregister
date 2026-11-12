@@ -54,6 +54,9 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * @uses \OCA\OpenRegister\Controller\Support\FormsControllerServices
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmission
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
+ * @uses \OCA\OpenRegister\Service\Form\FormDestination
  */
 class FormsControllerTest extends TestCase {
 
@@ -270,6 +273,29 @@ class FormsControllerTest extends TestCase {
 
 		$this->assertSame(404, $this->controller->validate()->getStatus());
 	}//end testValidateAgainstAnUnknownSchemaIsA404()
+
+	/**
+	 * Validate looks the destination up within the author's organisation and RBAC,
+	 * so a schema of another organisation answers as an unknown one.
+	 */
+	public function testValidateLooksTheSchemaUpWithinTheAuthorsOrganisation(): void {
+		$this->params = ['mapping' => [], 'destination' => ['schema' => 'elsewhere']];
+		$asked = [];
+		$this->schemas->method('find')->willReturnCallback(
+			static function (string|int $id, ?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true) use (&$asked): Schema {
+				$asked = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy];
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('not in this organisation');
+				}
+
+				return new Schema();
+			}
+		);
+		$this->validator->expects($this->never())->method('validate');
+
+		$this->assertSame(404, $this->controller->validate()->getStatus());
+		$this->assertSame(['rbac' => true, 'multitenancy' => true], $asked);
+	}//end testValidateLooksTheSchemaUpWithinTheAuthorsOrganisation()
 
 	/**
 	 * An upload is checked against the property of the form's destination and answers a token.

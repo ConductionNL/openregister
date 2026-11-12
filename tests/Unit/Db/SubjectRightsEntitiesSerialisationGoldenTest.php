@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Db\ErasurePreview
  * @covers \OCA\OpenRegister\Db\SubjectExport
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class SubjectRightsEntitiesSerialisationGoldenTest extends TestCase {
 

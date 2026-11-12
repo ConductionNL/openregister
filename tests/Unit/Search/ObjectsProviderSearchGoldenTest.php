@@ -40,6 +40,13 @@ use Psr\Log\AbstractLogger;
  * @uses   \OCA\OpenRegister\Search\SearchScopes
  * @uses   \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
  * @uses   \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\ObjectsProviderOutput
+ * @uses \OCA\OpenRegister\Search\SearchScopeTargets
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchHit
  */
 class ObjectsProviderSearchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-provider-search-golden.json';

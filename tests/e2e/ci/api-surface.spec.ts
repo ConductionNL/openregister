@@ -29,7 +29,8 @@
  */
 import type { APIRequestContext } from '@playwright/test'
 
-import { expect, test } from '@playwright/test'
+import { expect, request as pwRequest, test } from '@playwright/test'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const CAPABILITIES = '/index.php/apps/openregister/api/capabilities'
 const VERSIONS = '/index.php/apps/openregister/api/versions'
@@ -59,10 +60,19 @@ test.describe('The published contract', () => {
 		).toBeGreaterThan(0)
 	})
 
-	test('the unauthenticated answer names no register and no schema', async ({
-		request,
-	}) => {
-		const body = await (await request.get(CAPABILITIES)).json()
+	test('the unauthenticated answer names no register and no schema', async () => {
+		// A context of its own, with no Authorization header. The suite signs
+		// every request context in as the administrator (playwright.config.ts),
+		// and a bare newContext() inherits that too: only replacing the headers
+		// with an empty set makes the call anonymous.
+		const anonymous = await pwRequest.newContext({
+			baseURL: resolveBaseUrl(),
+			extraHTTPHeaders: {},
+		})
+		const response = await anonymous.get(CAPABILITIES)
+		expect(response.status(), 'the capabilities read is public').toBe(200)
+		const body = await response.json()
+		await anonymous.dispose()
 
 		expect(
 			body.features,

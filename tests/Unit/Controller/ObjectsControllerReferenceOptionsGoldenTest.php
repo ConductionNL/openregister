@@ -57,6 +57,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
  * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader
  * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaders
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferencePick
  */
 class ObjectsControllerReferenceOptionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-reference-options-golden.json';

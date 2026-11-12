@@ -33,6 +33,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class EntityRelationFileEntitiesGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -28,6 +28,10 @@ use ReflectionMethod;
  * order of the cold probe.
  *
  * @covers \OCA\OpenRegister\Mcp\PerAppMcpProviderProbe
+ * @uses \OCA\OpenRegister\Mcp\InstalledApps
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryCacheEntry
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpProviderCandidate
  */
 class PerAppMcpProviderProbeGoldenTest extends TestCase
 {

@@ -30,9 +30,12 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -58,10 +61,14 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
 	 * @param DefinitionWriteRightsInterface $rights       The rights of the signed-in user
+	 * @param AuthorizationAuditService      $audit        Logs authorization changes, as the schema routes do
+	 * @param LoggerInterface                $logger       Notes an audit entry that could not be written
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DefinitionWriteRightsInterface $rights,
+		private readonly AuthorizationAuditService $audit,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -172,7 +179,8 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 			throw new RuntimeException('Only administrators may create schemas');
 		}
 
-		$schema = $this->schemaMapper->createFromArray(object: $this->checkedBody(data: $arguments['data'], old: null));
+		$body = $this->checkedBody(data: $this->withoutInternalKeys(data: $arguments['data']), old: null);
+		$schema = $this->schemaMapper->createFromArray(object: $body);
 		return $schema->jsonSerialize();
 	}//end createSchema()
 
@@ -188,14 +196,56 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 		$this->requireParam(arguments: $arguments, param: 'data');
 		$stored = $this->manageableSchema(id: $arguments['id']);
 		$this->refuseOrphanCleanupChange(schema: $stored, document: $arguments['data']);
-		$data = $this->checkedBody(data: $arguments['data'], old: $stored->getAuthorization());
+		$before = $stored->getAuthorization();
+		$data = $this->checkedBody(data: $this->withoutInternalKeys(data: $arguments['data']), old: $before);
 		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$schema = $this->schemaMapper->updateFromArray(
 			id: $arguments['id'],
 			object: $data
 		);
+		if (array_key_exists('authorization', $data) === true) {
+			$this->auditAuthorizationChange(schema: $schema, before: $before);
+		}
+
 		return $schema->jsonSerialize();
 	}//end updateSchema()
+
+	/**
+	 * Log a change to a schema's authorization; a failing audit never breaks the update.
+	 *
+	 * @param Schema     $schema The updated schema.
+	 * @param array|null $before The authorization before the update.
+	 *
+	 * @return void
+	 */
+	private function auditAuthorizationChange(Schema $schema, ?array $before): void {
+		try {
+			$this->audit->recordSchemaChange(
+				change: new AuthorizationChange(
+					entityId: (int)$schema->getId(),
+					entityTitle: $schema->getTitle() ?? '',
+					before: $before,
+					after: $schema->getAuthorization()
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasToolProvider] Schema authorization change not written to the audit trail',
+				context: ['schemaId' => $schema->getId(), 'exception' => $e->getMessage()]
+			);
+		}
+	}//end auditAuthorizationChange()
+
+	/**
+	 * The fields without internal parameters, those starting with '_', as the REST routes drop them.
+	 *
+	 * @param array<string, mixed> $data The fields as given.
+	 *
+	 * @return array<string, mixed> The fields to write.
+	 */
+	private function withoutInternalKeys(array $data): array {
+		return array_filter($data, static fn ($key): bool => str_starts_with((string)$key, '_') === false, ARRAY_FILTER_USE_KEY);
+	}//end withoutInternalKeys()
 
 	/**
 	 * Refuse a non-administrator's change of `orphanCleanup`, as the schema routes do.

@@ -36,6 +36,11 @@ use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
  * Driven through ApiCallRecorder::recordCall, the mapper's one caller.
  *
  * @covers \OCA\OpenRegister\Db\ApiCallRecordMapper
+ * @uses \OCA\OpenRegister\Db\ApiCallKey
+ * @uses \OCA\OpenRegister\Db\ApiCallKeys
+ * @uses \OCA\OpenRegister\Db\ApiCallRecord
+ * @uses \OCA\OpenRegister\Service\ApiCaller\ApiCallObservation
+ * @uses \OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder
  */
 final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 

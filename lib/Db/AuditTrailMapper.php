@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
@@ -267,6 +268,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	private function applyElevation(AuditTrail $auditTrail): void {
 		$elevation = AuditTrailCollaborators::elevationAttribution(
+			registerId: $auditTrail->getRegister(),
 			schemaId: $auditTrail->getSchema(),
 			verb: (string)$auditTrail->getAction()
 		);
@@ -1291,7 +1293,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$user = $this->userSession->getUser();
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
-		if ($user !== null) {
+		// A write inside a system operation is the system's, whoever's request started it.
+		if ($user !== null && SystemOperationContext::isActive() === false) {
 			$auditTrail->setUser($user->getUID());
 			$auditTrail->setUserName($user->getDisplayName());
 		}
@@ -1494,11 +1497,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * and `action` (string). Rows are built through the exact same
 	 * {@see buildEntry()} logic as {@see createAuditTrail()} so their content
 	 * is identical, but they are persisted with one multi-row INSERT per chunk of
-	 * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
-	 * chunk the rows are sealed into the SHA-256 hash chain in a single batched
-	 * pass ({@see AuditHashService::sealRows()}). Sealing stays fail-soft exactly
-	 * like the single-row path: a sealing hiccup logs and leaves rows unhashed
-	 * rather than losing the audit records.
+	 * 100 instead of one INSERT per row. The rows are inserted unsealed: the
+	 * audit seal sweep (AuditSealJob) is the only sealer, so the hash chain
+	 * cannot fork between concurrent writers.
 	 *
 	 * @param array $entries Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
 	 *                       'cascadeContext' => ?array] entries built through {@see buildEntry()}, and/or

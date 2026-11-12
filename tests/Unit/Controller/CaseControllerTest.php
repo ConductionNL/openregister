@@ -65,6 +65,17 @@ use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Controller\Support\CasePlanRequest
+ * @uses \OCA\OpenRegister\Controller\Support\CaseTransitionCommand
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Case\CaseAdHocRequest
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Service\Case\CaseCompletion
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemTransition
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanCreation
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanProvenance
  */
 class CaseControllerTest extends TestCase {
 
@@ -159,7 +170,8 @@ class CaseControllerTest extends TestCase {
 			$target = $reflection->getMethod($method);
 			$this->assertTrue($target->isPublic());
 			$this->assertNotEmpty($target->getAttributes(NoAdminRequired::class), "$method declares its posture");
-			$this->assertNotEmpty($target->getAttributes(NoCSRFRequired::class), "$method decides CSRF explicitly");
+			$isRead = strtoupper((string)($route['verb'] ?? 'GET')) === 'GET';
+			$this->assertSame($isRead, $target->getAttributes(NoCSRFRequired::class) !== [], "$method: only reads skip the request token");
 			$this->assertStringStartsWith('/api/cases', (string)$route['url']);
 		}
 

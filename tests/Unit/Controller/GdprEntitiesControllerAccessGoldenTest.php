@@ -100,8 +100,8 @@ class GdprEntitiesControllerAccessGoldenTest extends TestCase {
 		return [
 			'admin, foreign row' => [['uid' => 'admin', 'admin' => true, 'rowOrg' => 'org-b', 'allowed' => true]],
 			'admin, row without organisation' => [['uid' => 'admin', 'admin' => true, 'rowOrg' => '', 'allowed' => true]],
-			'member, own row' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => 'org-a', 'allowed' => true]],
-			'member, row of second own organisation' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => 'org-c', 'allowed' => true]],
+			'member, row of the active organisation' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => 'org-a', 'allowed' => true]],
+			'member, row of another own organisation' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => 'org-c', 'allowed' => false]],
 			'member, foreign row' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => 'org-b', 'allowed' => false]],
 			'member, row without organisation' => [['uid' => 'bob', 'admin' => false, 'rowOrg' => '', 'allowed' => false]],
 		];
@@ -386,6 +386,7 @@ class GdprEntitiesControllerAccessGoldenTest extends TestCase {
 
 		$organisationService = $this->createMock(OrganisationService::class);
 		$organisationService->method('getUserOrganisations')->willReturn($orgs);
+		$organisationService->method('getActiveOrganisation')->willReturn($orgs[0] ?? null);
 
 		$visibility = $this->createMock(DecisionVisibility::class);
 		$visibility->method('presentAll')->willReturnCallback(

@@ -1,0 +1,86 @@
+# gitleaks configuration: the default rules, plus allowlists for findings that
+# are not secrets. Each allowlist names the rule, the files and the exact value
+# (condition AND), so a new value in the same file is still reported.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "curl examples with the default logins of the local development containers (admin:admin, user1:user1, user2:user2)."
+targetRules = ["curl-auth-user"]
+regexTarget = "secret"
+regexes = [
+  '''^['"]?(admin:admin|user1:user1|user2:user2)['"]?$''',
+  '''^"\$\{ADMIN_USER:-admin\}:\$\{ADMIN_PASSWORD:-admin\}"$''',
+]
+
+[[allowlists]]
+description = "Specification examples: the placeholder payment key sk_live_abc123xyz789."
+condition = "AND"
+targetRules = ["stripe-access-token"]
+regexTarget = "secret"
+regexes = ['''^sk_live_abc123xyz789$''']
+paths = ['''(^|/)openspec/(changes/archive/[^/]+/)?specs/data-sync-harvesting/spec\.md$''']
+
+[[allowlists]]
+description = "Documentation example: a sample UUID used as a facet bucket key."
+condition = "AND"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^f47ac10b-58cc-4372-a567-0e02b2c3d479$''']
+paths = ['''(^|/)docs/Features/faceting\.md$''']
+
+[[allowlists]]
+description = "Postman collection: a variable name, not a value."
+condition = "AND"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^nc2DefaultCatalogId$''']
+paths = ['''(^|/)tests/federation/federation-tests\.postman_collection\.json$''']
+
+[[allowlists]]
+description = "Golden fixture: zaaktype phase keys are human-readable slugs."
+condition = "AND"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^fase-[0-9]-[a-z-]+$''']
+paths = ['''(^|/)tests/Unit/Service/Case/fixtures/zaaktype-skeleton-golden\.json$''']
+
+[[allowlists]]
+description = "Content scan tests: AWS's documented-style dummy key AKIAABCDEFGHIJKLMNOP, the input the scanner must detect."
+condition = "AND"
+targetRules = ["aws-access-token"]
+regexTarget = "secret"
+regexes = ['''^AKIAABCDEFGHIJKLMNOP$''']
+paths = [
+  '''(^|/)tests/Unit/Service/ContentScanService(Log|Golden)Test\.php$''',
+  '''(^|/)tests/Unit/Service/fixtures/content-scan-golden\.json$''',
+]
+
+[[allowlists]]
+description = "Log redactor test: the public jwt.io example token, the input the redactor must mask."
+condition = "AND"
+targetRules = ["jwt"]
+regexTarget = "secret"
+regexes = ['''^eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk$''']
+paths = ['''(^|/)tests/Unit/Service/TenantLogRedactorTest\.php$''']
+
+[[allowlists]]
+description = "Unit test fixtures: made-up tokens and signing secrets that exist only inside the tests."
+condition = "AND"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = [
+  '''^ghp_valid123$''',
+  '''^my-test-secret-key-for-jwt-hs(256|384|512)$''',
+  '''^refusal-test-secret-0123456789$''',
+  '''^abc123-this-is-the-secret$''',
+  '''^sk-1234567890abcdef$''',
+]
+paths = [
+  '''(^|/)tests/Unit/Controller/UserSettingsControllerTest\.php$''',
+  '''(^|/)tests/Unit/Service/AuthorizationServiceTest\.php$''',
+  '''(^|/)tests/Unit/Service/Portal/PortalSubjectAssertionRefusalTest\.php$''',
+  '''(^|/)tests/Unit/Service/TenantLogRedactorTest\.php$''',
+  '''(^|/)tests/Unit/Service/SettingsServiceTest\.php$''',
+]

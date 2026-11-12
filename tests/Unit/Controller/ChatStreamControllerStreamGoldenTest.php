@@ -123,6 +123,8 @@ class GoldenChatStreamController extends ChatStreamController {
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamChat
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamPlatform
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels
  */
 class ChatStreamControllerStreamGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/chat-stream-golden.json';

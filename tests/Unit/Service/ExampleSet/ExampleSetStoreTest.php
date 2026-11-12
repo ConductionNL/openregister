@@ -49,6 +49,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Db\Schema
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDraft
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  */
 class ExampleSetStoreTest extends TestCase {
 	/**
@@ -304,5 +306,79 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertSame('', $store->assignOwner(id: 'besluit-1', owner: 'pieter'));
 		$this->assertSame('not found', $store->assignOwner(id: 'gone', owner: 'pieter'));
 		$this->assertSame([true, true], $system);
+	}
+
+	/**
+	 * A draft declaration is written in status draft for its scoped owner and is not part of the validated data.
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testADraftIsWrittenInStatusDraftForItsScopedOwner(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('setRegister')->willReturnSelf();
+		$objects->method('setSchema')->willReturnSelf();
+		$objects->method('getSchema')->willReturn(42);
+		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
+		$saved = $this->createMock(ObjectEntity::class);
+		$saved->method('jsonSerialize')->willReturn(['@self' => ['id' => 'draft-1']]);
+		$sent = [];
+		$objects->expects($this->once())->method('saveObject')->willReturnCallback(
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options) use (&$sent, $saved): ObjectEntity {
+				$sent = ['object' => $object, 'owner' => $options->actor->owner];
+				return $saved;
+			}
+		);
+
+		$validator = $this->createMock(ValidateObject::class);
+		$validator->expects($this->once())
+			->method('validateWithPlannedAccounts')
+			->with(['title' => 'Verlichting'], $this->anything())
+			->willReturn(new ValidationResult(null));
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $objects,
+			ValidateObject::class => $validator,
+		});
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+		$data  = ['title' => 'Verlichting', '@self' => ['status' => 'draft', 'owner' => 'portal:sanne.devries']];
+
+		$this->assertSame([], $store->refusalsFor(table: new RegisterSchemaRef(register: 'dossiq', schema: 'case'), check: new ObjectCheck(object: $data)));
+		$this->assertSame(['id' => 'draft-1', 'error' => ''], $store->create(register: 'dossiq', schema: 'case', data: $data));
+		$this->assertSame(['title' => 'Verlichting', '@self' => ['status' => 'draft']], $sent['object']);
+		$this->assertSame('portal:sanne.devries', $sent['owner']);
+	}
+
+	/**
+	 * A faulty draft declaration, or a draft that also names a cast owner, is refused and nothing is written.
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testAFaultyDraftDeclarationIsRefusedAndNothingIsWritten(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->never())->method('saveObject');
+		$store = $this->storeOver(objects: $objects);
+
+		$cases = [
+			'@self status may only be "draft"' => ['status' => 'published'],
+			'status and owner only'            => ['status' => 'draft', 'owner' => 'portal:x', 'locked' => true],
+			'is "<scope>:<reference>"'         => ['status' => 'draft', 'owner' => 'sanne'],
+			'draft owner "Portal:x"'           => ['status' => 'draft', 'owner' => 'Portal:x'],
+		];
+		foreach ($cases as $reason => $self) {
+			$refusal = $store->refusalsFor(table: new RegisterSchemaRef(register: 'dossiq', schema: 'case'), check: new ObjectCheck(object: ['title' => 'T', '@self' => $self]));
+			$this->assertCount(1, $refusal);
+			$this->assertStringContainsString($reason, $refusal[0]);
+			$created = $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'T', '@self' => $self]);
+			$this->assertStringContainsString($reason, $created['error']);
+		}
+
+		$both = $store->create(
+			register: 'dossiq',
+			schema: 'case',
+			data: ['title' => 'T', '@self' => ['status' => 'draft', 'owner' => 'portal:sanne.devries']],
+			owner: 'pieter'
+		);
+		$this->assertStringContainsString('may not also name an owner from the cast', $both['error']);
 	}
 }
