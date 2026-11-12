@@ -877,3 +877,4 @@ review:openregister:10059:791e7039	APPROVE: tests only, all required suites gree
 review:openregister:10060:84090fc0	APPROVE: tests only, all touched tests and gate dirs green	session-20261112T231638-72e59130	2026-11-12T23:26:36Z
 cover:pipelinq:f67520ecm9d2c:js6925f818	PR #3592: 13 PHP tests for lib/SetupCheck (all reasons, exact texts, @covers); suite 5773->5786, 0 new failures	session-20261112T224530-d70ae278	2026-11-12T23:26:45Z
 verify:buildiq:1482:669625c1	1484 GREEN (2260 tests, inherited only); 1482 already on development, no verdict	session-20261112T231645-3f0591a5	2026-11-12T23:27:13Z
+verify:portaliq:2370:1eceb6ba	2370 GREEN: PHP 4501 OK, node tests 9/9	session-20261112T231640-f6dda86c	2026-11-12T23:27:24Z
