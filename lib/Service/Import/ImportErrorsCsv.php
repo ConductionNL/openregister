@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
+
 /**
  * The error file of an import.
  *
@@ -108,7 +110,7 @@ class ImportErrorsCsv {
 		fwrite($stream, "\xEF\xBB\xBF");
 		fputcsv($stream, self::HEADERS);
 		foreach ($rows as $row) {
-			fputcsv($stream, $row);
+			fputcsv($stream, SpreadsheetCell::csvRow(row: $row));
 		}
 
 		rewind($stream);

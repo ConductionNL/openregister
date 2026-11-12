@@ -35,6 +35,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\ProcessingLogMapper
  * @covers \OCA\OpenRegister\Db\ProcessingLogEntry
  * @uses   \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

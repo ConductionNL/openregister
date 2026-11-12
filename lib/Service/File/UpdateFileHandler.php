@@ -252,33 +252,39 @@ class UpdateFileHandler {
 	}//end findFile()
 
 	/**
-	 * Find a file by its ID, first in the object's folder, then in the user folder.
+	 * Find a file by its ID: in the object's folder when an object is given, else in the user folder.
 	 *
 	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object whose folder is searched first
+	 * @param ObjectEntity|null $object The object whose folder holds the file
 	 *
 	 * @return Node The file
 	 *
-	 * @throws Exception When no file has this ID
+	 * @throws Exception When no file has this ID, or the object's folder does not hold it
 	 */
 	private function findFileById(int $fileId, ?ObjectEntity $object): Node {
 		$this->note(level: 'debug', message: "File ID provided: $fileId");
-		return ($this->findInObjectById(fileId: $fileId, object: $object) ?? $this->findInUserFolderById(fileId: $fileId));
+		if ($object === null) {
+			return $this->findInUserFolderById(fileId: $fileId);
+		}
+
+		$file = $this->findInObjectById(fileId: $fileId, object: $object);
+		if ($file === null) {
+			$this->note(level: 'error', message: "No file with ID $fileId in the object's folder");
+			throw new Exception("File with ID $fileId does not exist in the object's folder");
+		}
+
+		return $file;
 	}//end findFileById()
 
 	/**
 	 * Find a file by its ID through the read handler, in the object's folder.
 	 *
-	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object, or null to skip this lookup
+	 * @param int          $fileId The file ID
+	 * @param ObjectEntity $object The object
 	 *
-	 * @return Node|null The file, or null when there is no object or it has no such file
+	 * @return Node|null The file, or null when the object has no such file
 	 */
-	private function findInObjectById(int $fileId, ?ObjectEntity $object): ?Node {
-		if ($object === null) {
-			return null;
-		}
-
+	private function findInObjectById(int $fileId, ObjectEntity $object): ?Node {
 		$file = $this->locator->readFileHandler->getFile(object: $object, file: $fileId);
 		if ($file !== null) {
 			$this->noteFound(where: 'Found file by ID in object folder', file: $file);

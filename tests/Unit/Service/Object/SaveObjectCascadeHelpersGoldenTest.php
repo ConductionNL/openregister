@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Recorded on the code before the identifier test and the orphan scope were extracted; orphan cleanup of pointers later dropped.
@@ -91,12 +92,12 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->trace[] = ['save', $register, $schema, $data, $uuid];
 				$saved = new ObjectEntity();
 				$saved->setUuid('33333333-3333-3333-3333-333333333333');
 				return $saved;
-			}
+			})
 		);
 
 		$mapper = $this->createMock(MagicMapper::class);

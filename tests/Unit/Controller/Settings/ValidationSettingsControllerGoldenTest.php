@@ -50,6 +50,8 @@ use TypeError;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\ValidationSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\MassValidationRequest
  */
 class ValidationSettingsControllerGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/validation-settings-golden.json';

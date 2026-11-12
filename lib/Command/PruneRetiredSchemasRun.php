@@ -58,6 +58,13 @@ final class PruneRetiredSchemasRun {
 	public int $missing = 0;
 
 	/**
+	 * Registers that still list a removed schema because their update failed.
+	 *
+	 * @var integer
+	 */
+	public int $notUnlinked = 0;
+
+	/**
 	 * Hold the operator's choices for this run.
 	 *
 	 * @param string                 $appId    The owning application id.

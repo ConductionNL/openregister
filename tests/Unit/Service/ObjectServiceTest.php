@@ -84,10 +84,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -760,10 +761,10 @@ class ObjectServiceTest extends TestCase {
 
 		$handlerScope = null;
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
 				$handlerScope = ['register' => $register, 'schema' => $schema];
 				return $savedEntity;
-			}
+			})
 		);
 		$this->renderHandler->method('renderEntity')->willReturn($savedEntity);
 
