@@ -643,4 +643,5 @@ cover:openregister:7350e3ef:js935e37b7	PR #10052: 46 jest tests for DeleteSource
 cover:pipelinq:f67520ec:38e80a9f	PR #3570: 12 tests, lib/Command/*.php all 100%; suite 5773->5785, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:32:03Z
 cover:decidiq:13261b1b:3d4b295b	PR #2094: RegisterFragmentMerger 10 tests, suite 3116->3126 green	session-20261112T221237-c40cb74c	2026-11-12T22:32:11Z
 cover:pipelinq:f67520ecm9d2c:js8f2b650b	failed: malformed payload (lang=js but dirs=lib/Service/Competitor/*.php); needs a php or src/ row	session-20261112T221520-70f29253	2026-11-12T22:32:28Z
+cover:pipelinq:f67520ec:197c84b8	PR pipelinq#3571: 44 tests, lib/Adapter 9 classes to 100%; suite 5773->5817, no new failures	session-20261112T221235-9e827ed1	2026-11-12T22:32:32Z
 cover:openregister:7350e3ef:js1b97f731	PR #10054: 4 PHPUnit tests for ValidatesPreWriteObject (only lib/Listener/*.php file with logic and no tests; row said js but dir is PHP)	session-20261112T220141-9622e2a0	2026-11-12T22:32:36Z
