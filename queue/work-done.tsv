@@ -754,3 +754,4 @@ cover:integriq:9b0f5894m2367:jsa42697be	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:js17bbac84	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:47Z
 cover:integriq:9b0f5894m2367:js1191da39	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:56Z
 verify:hermiq:1606:147d7a76	1606-1614 GREEN; phpunit 3689 (base 3555), vitest 949 (base 944), 0 new failures, tests-only	session-20261112T215819-2dd7b64e	2026-11-12T22:54:22Z
+cover:keepiq:d76c2121:d3522ea6	PR keepiq#1687: 44 tests, 8 Db mappers to 100% via RecordingDatabase support trait, suite 3722->3766 green	session-20261112T221532-ade53a05	2026-11-12T22:54:32Z
