@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\JobRunMapper
  * @uses   \OCA\OpenRegister\Db\JobRun
  * @uses   \OCA\OpenRegister\Db\JobRunFilter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class JobRunMapperTest extends TestCase {
 	use RecordsQueries;

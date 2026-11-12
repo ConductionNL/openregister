@@ -44,6 +44,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\PaginationLinks
  * @uses   \OCA\OpenRegister\Service\Search\HistoryPredicate
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Support\UnknownFilterKeys
  */
 class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-small-units-golden.json';

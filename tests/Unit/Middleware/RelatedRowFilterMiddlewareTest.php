@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\DateTimeNormalizer
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class RelatedRowFilterMiddlewareTest extends TestCase {
 

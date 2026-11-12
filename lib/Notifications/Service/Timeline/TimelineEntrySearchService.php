@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
@@ -215,10 +216,9 @@ class TimelineEntrySearchService {
 		try {
 			$object = $this->objects->find(
 				id: $objectUuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false,
-				_audit: false
+				_multitenancy: true
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

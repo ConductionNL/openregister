@@ -29,6 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -113,7 +117,9 @@ class NotesProvider extends CoreIntegrationProvider {
 	private function notesPage(string $objectId, array $filters): array {
 		$limit = (int)($filters['_limit'] ?? 50);
 		$offset = (int)($filters['_page'] ?? 0) * $limit;
-		return $this->noteService->getNotesForObject(objectUuid: $objectId, limit: $limit, offset: max(0, $offset));
+		return $this->noteService->listNotes(
+			query: new ObjectNotesQuery(objectUuid: $objectId, page: new ListQuery(limit: $limit, offset: max(0, $offset)))
+		);
 	}//end notesPage()
 
 	/**
@@ -135,7 +141,7 @@ class NotesProvider extends CoreIntegrationProvider {
 	 */
 	public function create(ObjectRef $ref, array $payload): array {
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->createNote(objectUuid: $ref->id, message: $message);
+		return $this->noteService->createNote(draft: new NoteDraft(objectUuid: $ref->id, message: $message));
 	}//end create()
 
 	/**
@@ -152,7 +158,7 @@ class NotesProvider extends CoreIntegrationProvider {
 	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		$this->noteService->requireNoteOf(objectUuid: $ref->id, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
+		return $this->noteService->editNote(noteId: (int)$entityId, edit: new NoteEdit(message: $message));
 	}//end update()
 
 	/**

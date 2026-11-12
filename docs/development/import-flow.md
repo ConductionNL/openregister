@@ -180,14 +180,14 @@ The legacy behaviour, when `publish=1` was set during import (now a no-op + depr
 
 ```bash
 # CSV Import with metadata mapping
-curl -X POST \
+curl -H 'OCS-APIRequest: true' -X POST \
   -F 'file=@data.csv' \
   -F 'publish=1' \
   -F 'validation=1' \
   'http://localhost/index.php/apps/openregister/api/registers/{registerId}/import?schemaId={schemaId}'
 
 # Excel Import with multiple schemas
-curl -X POST \
+curl -H 'OCS-APIRequest: true' -X POST \
   -F 'file=@data.xlsx' \
   -F 'publish=1' \
   'http://localhost/index.php/apps/openregister/api/registers/{registerId}/import'

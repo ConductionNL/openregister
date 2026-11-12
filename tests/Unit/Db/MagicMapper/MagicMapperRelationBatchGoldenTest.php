@@ -49,6 +49,10 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LinkedEntityRef
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RelationBatchLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class MagicMapperRelationBatchGoldenTest extends TestCase {
 

@@ -14,6 +14,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Organisation;
@@ -151,6 +154,64 @@ class OrganisationServiceContextTest extends TestCase {
 		$this->assertNull($service->findContextOrganisation(uuid: 'org-x'));
 		$this->assertSame('org-a', $first?->getUuid());
 	}//end testTheContextOrganisationIsLookedUpOncePerUuid()
+
+	public function testAnInactiveContextOrganisationIsNoOrganisation(): void {
+		$inactive = new Organisation();
+		$inactive->setUuid('org-off');
+		$inactive->setActive(false);
+
+		$this->assertNull($this->serviceFinding(organisations: ['org-off' => $inactive])->findContextOrganisation(uuid: 'org-off'));
+	}//end testAnInactiveContextOrganisationIsNoOrganisation()
+
+	public function testAMergedAwayContextOrganisationAnswersWithItsSurvivor(): void {
+		$merged = new Organisation();
+		$merged->setUuid('org-old');
+		$merged->setMergedInto('org-new');
+		$survivor = new Organisation();
+		$survivor->setUuid('org-new');
+
+		$mapper = $this->createMock(OrganisationMapper::class);
+		$mapper->method('findByUuid')->willReturn($merged);
+		$mapper->method('findByUuidFollowingMerge')->with('org-old')->willReturn($survivor);
+
+		$this->assertSame('org-new', $this->serviceOver(mapper: $mapper)->findContextOrganisation(uuid: 'org-old')?->getUuid());
+	}//end testAMergedAwayContextOrganisationAnswersWithItsSurvivor()
+
+	/**
+	 * A service whose mapper finds the given organisations by uuid.
+	 *
+	 * @param array<string, Organisation> $organisations The organisations by uuid.
+	 *
+	 * @return OrganisationService The service.
+	 */
+	private function serviceFinding(array $organisations): OrganisationService {
+		$mapper = $this->createMock(OrganisationMapper::class);
+		$mapper->method('findByUuid')->willReturnCallback(
+			static fn (string $uuid): Organisation => ($organisations[$uuid] ?? throw new DoesNotExistException('no such organisation'))
+		);
+
+		return $this->serviceOver(mapper: $mapper);
+	}//end serviceFinding()
+
+	/**
+	 * A service over the given mapper, with no one signed in.
+	 *
+	 * @param OrganisationMapper $mapper The mapper.
+	 *
+	 * @return OrganisationService The service.
+	 */
+	private function serviceOver(OrganisationMapper $mapper): OrganisationService {
+		return new OrganisationService(
+			$mapper,
+			$this->createMock(IUserSession::class),
+			$this->session,
+			$this->createMock(IConfig::class),
+			$this->createMock(IAppConfig::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(LoggerInterface::class)
+		);
+	}//end serviceOver()
 
 	public function testOutsideAContextAnAnonymousCallerHasNoOrganisation(): void {
 		$mapper = $this->createMock(OrganisationMapper::class);

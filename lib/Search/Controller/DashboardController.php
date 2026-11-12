@@ -30,7 +30,6 @@ use OCA\OpenRegister\Search\Controller\Support\DashboardControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
@@ -149,11 +148,6 @@ class DashboardController extends Controller {
 			params: []
 		);
 
-		// Configure Content Security Policy to allow API connections.
-		// This is necessary for the frontend to make API calls.
-		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedConnectDomain('*');
-		$response->setContentSecurityPolicy($csp);
 
 		// Return successful template response.
 		return $response;
@@ -344,8 +338,6 @@ class DashboardController extends Controller {
 	 * @param int|null $schemaId Optional schema ID to filter calculations by
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with calculation results
 	 *
