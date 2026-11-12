@@ -759,3 +759,4 @@ cover:integriq:9b0f5894m2367:js9910e837	failed: payload mismatch, lang=js but di
 cover:keepiq:d76c2121:dfaef732	PR #1688: +4 tests KeepiqNotifier link fallbacks; lib/Notification 388->394/396 (rest unreachable)	session-20261112T223908-abd0da4a	2026-11-12T22:55:07Z
 cover:integriq:9b0f5894m2367:jsd825828c	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:12Z
 cover:integriq:9b0f5894m2367:js716923f8	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:23Z
+cover:integriq:9b0f5894m2367:jsb97b9aec	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:55:32Z
