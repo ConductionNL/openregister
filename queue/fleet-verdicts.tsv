@@ -4188,3 +4188,4 @@ pipelinq	3550	adedf75098af94ad6b54998311186cb4b0526df1	GREEN	worker-25	PHP unit 
 pipelinq	3551	7b78b024740628f232b879859712a5cea656c957	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
 pipelinq	3552	99d72b1dc2d7b50647d157e095e70df261f17e3a	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
 pipelinq	3553	251eba3f9230230ca4f3c699d078c78df9591125	GREEN	worker-25	PHP unit 5773 on tree, baseline 5773 (1 inherited failure), 0 new; vitest 3283/3283 passed; tests only
+integriq	3402	a666bdbcc5acf58f2a6469a865a82649aac85857	GREEN	worker-48	php unit 7125 tests, baseline 7110 with 3 inherited failures, 0 new; vitest 1602 green; tests-only diff
