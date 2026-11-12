@@ -808,6 +808,7 @@ cover:pipelinq:f67520ecm9d2c:jsf3231970	failed: malformed payload (lang=js but d
 cover:integriq:9b0f5894m2367:js1b97f731	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:02:53Z
 cover:keepiq:d76c2121:34763eb4	PR #1691: 19 tests, VaultKeyProof edges + OcsRefusal (3722->3741 OK)	session-20261112T221532-752808b3	2026-11-12T23:02:52Z
 cover:integriq:9b0f5894m2367:jsd81d2d49	failed: permission (npm ci refused in this session; note lang=js names a lib/ PHP dir)	session-20261112T221533-911acbf2	2026-11-12T23:03:08Z
+cover:pipelinq:f67520ecm9d2c:js0798b7cf	failed: payload lang=js but dirs=lib/Service/PosCart/ holds only PHP; no JS to cover (queue generator mislabels PHP dirs as js)	session-20261112T224531-d3b6ae48	2026-11-12T23:03:22Z
 cover:integriq:9b0f5894m2367:js6f346b68	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:03:19Z
 cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
 cover:keepiq:d76c2121:f91e7417	failed: permission (running the PHP unit suite is refused in this session)	session-20261112T221239-5f377795	2026-11-12T23:03:42Z
