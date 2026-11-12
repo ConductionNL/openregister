@@ -204,6 +204,7 @@ portaliq	2319	eefb63fccec1a850ec9bcc027e82332774d37310	MERGED	worker-19	GATE OK 
 portaliq	2320	0e8025baeb5ed1f689792572e5fda8989df695f5	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2212	398ae5713f0b227613d1af86bda5bd8c8f8d00c8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1443	898d3f708e79f14ed5c5a0ac20f9461711cf6025	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+portaliq	2321	70d0cf324fafb3d09eeee893b67b7ca0478c71a1	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1444	fbabc84d705a66d75e6254698269a7d9cce7d673	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1445	b639bf561301333c124705a1ba46cfa476015021	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 82
 buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
