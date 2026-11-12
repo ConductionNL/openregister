@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
+use OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use Psr\Container\ContainerInterface;
@@ -61,6 +62,13 @@ class ConditionMatcher {
 	 * @var RecordMetadataConditions
 	 */
 	private readonly RecordMetadataConditions $metadataConditions;
+
+	/**
+	 * Refuses conditions on properties the record's schema does not declare.
+	 *
+	 * @var UndeclaredPropertyConditions
+	 */
+	private readonly UndeclaredPropertyConditions $undeclaredProperties;
 
 	/**
 	 * Supported `$user.<property>` dot-path tokens.
@@ -150,6 +158,7 @@ class ConditionMatcher {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->metadataConditions = new RecordMetadataConditions(logger: $logger);
+		$this->undeclaredProperties = new UndeclaredPropertyConditions(container: $container, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -182,7 +191,8 @@ class ConditionMatcher {
 	}//end objectMatchesConditions()
 
 	/**
-	 * Whether a match clause names record metadata that no record carries
+	 * Whether a match clause names record metadata that no record carries, or a
+	 * property the record's schema does not declare
 	 *
 	 * Such a condition can never match a record, so every caller fails closed
 	 * on it: {@see objectMatchesConditions()} answers false, so an allow grants
@@ -197,7 +207,8 @@ class ConditionMatcher {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function namesUnknownMetadata(array $match, array $object = []): bool {
-		return $this->metadataConditions->refuses(match: $match, object: $object);
+		return $this->metadataConditions->refuses(match: $match, object: $object)
+			|| $this->undeclaredProperties->refuses(match: $match, object: $object);
 	}//end namesUnknownMetadata()
 
 	/**
