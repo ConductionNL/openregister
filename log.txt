@@ -3238,3 +3238,4 @@
 2026-11-12T19:16:31Z integrator-20261111T115842-a749432d CONFLICT-DEV #10015 846b4821
 2026-11-12T19:24:59Z integrator-20261111T115842-a749432d RED tree 6d7276fddc prs 19 front=ok: Tests: 57685, Assertions: 191153, Errors: 3, Failures: 5, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Service\Configuration\ConfigurationServiceRegistrarTest::testRegistersTheServicesI;OCA\OpenRegister\Tests\Unit\Service\Configuration\ConfigurationServiceRegistrarWiringTest::testEveryFactoryAsk
 2026-11-12T19:39:55Z session-20261112T192858-53ba298b worker-29 released merge:learniq:2178:5076553b unrun: merge step denied by session permission policy
+2026-11-12T19:41:43Z integrator-20261111T115842-a749432d GREEN tree e3613c9da3 on dev 2ce39f7e19 prs 18 front=ok: Tests: 57680, Assertions: 191122, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
