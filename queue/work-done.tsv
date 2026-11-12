@@ -20,3 +20,4 @@ review:openregister:10000:ac3ebe6b	APPROVE: tests only, 42 new tests pass merged
 review:openregister:10012:7031598c	APPROVE: tests only, 52 new tests pass, required suites match main	session-20261112T184508-711de18c	2026-11-12T18:55:40Z
 review:openregister:10013:24a62399	APPROVE: tests only, 37 new tests pass, no new failures	session-20261112T184438-005b5eda	2026-11-12T18:55:53Z
 review:openregister:10015:846b4821	APPROVE: metadata-only, no new failures; 2 test-file conflicts with main	session-20261112T184502-4ecd6072	2026-11-12T18:56:08Z
+review:openregister:10011:23523b4a	APPROVE: tests-only, 26 new tests pass merged with main	session-20261112T184455-8702e064	2026-11-12T18:56:22Z
