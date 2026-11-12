@@ -705,5 +705,6 @@ cover:hermiq:755cdfe7m7444:jsdfaef732	PR #1613: 19 PHPUnit tests for Notifier (t
 cover:hermiq:755cdfe7m7444:js93e5f5a4	PR hermiq#1614 (task said lang=js but dirs are PHP; did PHPUnit): 19 tests, AiFeatureBindingService/DocumentFeatureRun/RunRetentionCleaner gaps covered; suite 3567, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:44:47Z
 measure:openregister:20261112h18	php 89.22% (pcov, 4 merged shards via phpunit.xml Unit suite; phpunit-unit.xml bootstrap fails on bare CLI: OCP not autoloaded before IntegriqStubs), js 83.1%; 16 errors + 11 failures inherited on main	session-20261112T221528-d486fac0	2026-11-12T22:44:54Z
 fix:portaliq:2367:02c076bf	fixed: problem-details and version header confined to /api/v1/; unversioned answers unchanged; new head 437d70ff, REVERIFY recorded	session-20261112T221533-911acbf2	2026-11-12T22:45:25Z
+verify:buildiq:1482:3ec4425d	stale	session-20261112T221528-d486fac0	2026-11-12T22:45:33Z
 fix:learniq:2419:f3b7bef8	failed: behaviour change is the PR's purpose (API v1 contract feature), not a defect a worker can fix; needs human review	session-20261112T224530-d70ae278	2026-11-12T22:45:52Z
 merge:stackiq:1683:569f5768	stale	feeder	2026-11-12T22:45:25Z
