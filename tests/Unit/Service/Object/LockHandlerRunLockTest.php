@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -97,7 +98,7 @@ final class LockHandlerRunLockTest extends TestCase {
 				runLocks: $this->registry
 			),
 			$this->createMock(LoggerInterface::class),
-			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class), $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end handler()
 

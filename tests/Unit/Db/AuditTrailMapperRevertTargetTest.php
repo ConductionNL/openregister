@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -27,6 +28,9 @@ use Psr\Container\ContainerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\RevertOptions
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditTrailMapperRevertTargetTest extends TestCase {
 
@@ -76,7 +80,7 @@ class AuditTrailMapperRevertTargetTest extends TestCase {
 		$objects->expects($this->never())->method('find');
 		$checked = self::object(uuid: 'checked-uuid');
 
-		$reverted = $this->mapper(objects: $objects)->revertObject(identifier: $checked);
+		$reverted = $this->mapper(objects: $objects)->revertObjectWith(identifier: $checked, options: new RevertOptions());
 
 		$this->assertSame(['checked-uuid'], $this->trailReads);
 		$this->assertSame('checked-uuid', $reverted->getUuid());
@@ -89,7 +93,7 @@ class AuditTrailMapperRevertTargetTest extends TestCase {
 		$objects = $this->createMock(MagicMapper::class);
 		$objects->expects($this->once())->method('find')->with('11')->willReturn(self::object(uuid: 'found-uuid'));
 
-		$reverted = $this->mapper(objects: $objects)->revertObject(identifier: '11', overwriteVersion: true);
+		$reverted = $this->mapper(objects: $objects)->revertObjectWith(identifier: '11', options: new RevertOptions(overwriteVersion: true));
 
 		$this->assertSame(['found-uuid'], $this->trailReads);
 		$this->assertSame('1.0.4', $reverted->getVersion());

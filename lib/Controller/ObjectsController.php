@@ -89,6 +89,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
@@ -101,6 +102,8 @@ use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Service\Object\MoveAddress;
+use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
@@ -148,6 +151,10 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
@@ -1938,8 +1945,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
@@ -2218,7 +2223,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2924,10 +2928,7 @@ class ObjectsController extends Controller {
 	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $ask->id,
-			files: false,
-			register: $ask->register,
-			schema: $ask->schema,
-			_render: false
+			options: new ObjectFindOptions(register: $ask->register, schema: $ask->schema, render: false)
 		));
 	}//end storedForOptions()
 
@@ -3070,13 +3071,9 @@ class ObjectsController extends Controller {
 	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $show->id,
-			_extend: $read->extend,
-			files: false,
-			register: $show->path[0],
-			schema: $show->path[1],
+			options: new ObjectFindOptions(register: $show->path[0], schema: $show->path[1], extend: $read->extend, render: false),
 			_rbac: $read->scoped,
-			_multitenancy: $read->scoped,
-			_render: false
+			_multitenancy: $read->scoped
 		);
 	}//end foundForShow()
 
@@ -3270,10 +3267,7 @@ class ObjectsController extends Controller {
 	private function silentPatchRead(ObjectUpdate $patch): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $patch->target->id,
-			_extend: [],
-			files: false,
-			register: $patch->target->resolved['registerEntity'],
-			schema: $patch->target->resolved['schemaEntity'],
+			options: new ObjectFindOptions(register: $patch->target->resolved['registerEntity'], schema: $patch->target->resolved['schemaEntity']),
 			_rbac: $patch->caller->scoped,
 			_multitenancy: $patch->caller->scoped
 		);
@@ -3329,8 +3323,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse JSON response with created object
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @PublicPage
 	 *
@@ -3646,7 +3638,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$this->objectService->unlockObject($objectEntity->getUuid());
+			$this->objectService->unlockObject(request: new UnlockRequest(identifier: $objectEntity->getUuid()));
 		} catch (\Exception $e) {
 			// The write succeeded, so a failed release is not the caller's
 			// problem and must not turn a 200 into an error. The entity keeps
@@ -3719,8 +3711,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @PublicPage
 	 *
@@ -3826,10 +3816,7 @@ class ObjectsController extends Controller {
 	private function silentlyRead(ObjectUpdate $update): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $update->target->id,
-			_extend: [],
-			files: false,
-			register: $update->target->resolved['register'],
-			schema: $update->target->resolved['schema'],
+			options: new ObjectFindOptions(register: $update->target->resolved['register'], schema: $update->target->resolved['schema']),
 			_rbac: $update->caller->scoped,
 			_multitenancy: $update->caller->scoped
 		);
@@ -3971,8 +3958,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse A JSON response containing the updated object
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @PublicPage
 	 *
@@ -4155,8 +4140,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4224,7 +4207,6 @@ class ObjectsController extends Controller {
 	 * @throws \Exception
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4268,9 +4250,10 @@ class ObjectsController extends Controller {
 		// It also meant the URL's scope was never enforced: an object could
 		// be deleted through a register/schema it does not belong to.
 		$deleteResult = $route->objectService->deleteObject(
-			uuid: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			deletion: new ObjectDeletion(
+				uuid: $route->id,
+				target: new ObjectFindTarget(register: $route->register, schema: $route->schema)
+			),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		);
@@ -4495,8 +4478,7 @@ class ObjectsController extends Controller {
 		$scoped = ($this->isCurrentUserAdmin() === false);
 		$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 			id: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		));
@@ -4943,8 +4925,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function lock(string $register, string $schema, string $id): JSONResponse {
@@ -4979,9 +4959,7 @@ class ObjectsController extends Controller {
 		$data = $this->request->getParams();
 
 		$lockResult = $this->objectService->lockObject(
-			identifier: $id,
-			process: ($data['process'] ?? null),
-			duration: self::lockDuration(data: $data)
+			request: new LockRequest(identifier: $id, process: ($data['process'] ?? null), duration: self::lockDuration(data: $data))
 		);
 
 		// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
@@ -5023,8 +5001,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function unlock(string $register, string $schema, string $id): JSONResponse {
@@ -5043,7 +5019,7 @@ class ObjectsController extends Controller {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$released = $this->objectService->unlockObject($id);
+			$released = $this->objectService->unlockObject(request: new UnlockRequest(identifier: $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {
@@ -5142,7 +5118,6 @@ class ObjectsController extends Controller {
 	 * @return JSONResponse The per-probe answers, or a 4xx.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt the probe names no object id; the guard is in
 	 *       CrossRegisterExistenceService::probe(), which sends every probe
@@ -5246,13 +5221,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 
-		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->move(
-			object: $object,
-			sourceRegister: $ends['from']['register'],
-			sourceSchema: $ends['from']['schema'],
-			targetRegister: $ends['to']['register'],
-			targetSchema: $ends['to']['schema'],
-			actor: $this->userSession->getUser()->getUID(),
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $ends['from']['register'], schema: $ends['from']['schema']),
+				target: new MoveAddress(register: $ends['to']['register'], schema: $ends['to']['schema']),
+				actor: $this->userSession->getUser()->getUID()
+			)
 		);
 
 		return self::moveResponse(outcome: $outcome);
@@ -5800,7 +5775,7 @@ class ObjectsController extends Controller {
 	 */
 	private function jsonExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToJson(
-			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
@@ -5844,7 +5819,7 @@ class ObjectsController extends Controller {
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
 		$rowCount = $this->services->transfer->exportService->countExportRows(
-			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
+			request: $this->callerExportRequest(export: $export),
 		);
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()
@@ -6142,8 +6117,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with merge result or error
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -6265,8 +6238,6 @@ class ObjectsController extends Controller {
 	 * @param ObjectOperationsInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with migration result or error
 	 *
@@ -6490,8 +6461,6 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-suppress NoValue
 	 *
 	 * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
@@ -6552,7 +6521,6 @@ class ObjectsController extends Controller {
 	 * to the schema definition and updating metadata like name, description, etc.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with validation results
 	 *
@@ -7151,12 +7119,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $ref->id,
-				files: false,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false),
 				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
+				_multitenancy: $rbac
 			));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $ref->id);

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -66,6 +67,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Exception\ReferentialIntegrityException
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDeleteRoute
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerCanDeleteScopeTest extends TestCase {
 
@@ -111,7 +119,8 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($stored): ObjectEntity {
+			function (...$args) use ($stored): ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$this->reads[] = [$_rbac, $_multitenancy];
 				if ($this->inScope === true || ($_rbac === false && $_multitenancy === false)) {
 					return $stored;

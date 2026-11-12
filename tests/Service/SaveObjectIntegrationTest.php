@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for SaveObject handler
@@ -67,7 +68,7 @@ class SaveObjectIntegrationTest extends TestCase {
 		// Clean up objects first (they reference schemas/registers).
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}

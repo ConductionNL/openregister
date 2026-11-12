@@ -1,4 +1,15 @@
 {
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+        ]
+      }
+    }
+  ],
   "info": {
     "_postman_id": "or-upsert-on-key-2026-10-04",
     "name": "OpenRegister Upsert On A Declared Key",

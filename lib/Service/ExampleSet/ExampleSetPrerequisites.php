@@ -115,9 +115,8 @@ class ExampleSetPrerequisites {
 	 */
 	private function ensureRegisters(array $plan, array &$record): array {
 		$result = ['refusals' => [], 'outcome' => []];
-		foreach ((array) ($plan['requires'] ?? []) as $slug => $required) {
-			$register = $this->required(plan: $plan, slug: (string) $slug, required: $required);
-			$why      = $this->ensureRegister(register: $register, record: $record);
+		foreach ($this->requiredRegisters(plan: $plan) as $register) {
+			$why = $this->ensureRegister(register: $register, record: $record);
 			$result['outcome'][$register->slug] = $this->outcomeOf(why: $why);
 			if ($why !== null && $why !== '') {
 				$result['refusals'][] = 'register "'.$register->slug.'" is required and could not be imported from OpenRegister\'s descriptor: '.$why;
@@ -128,21 +127,24 @@ class ExampleSetPrerequisites {
 	}//end ensureRegisters()
 
 	/**
-	 * One register the plan requires.
+	 * The registers the plan requires, each with how it requires it (`{mock?: bool}`).
 	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param string               $slug     The register's slug.
-	 * @param mixed                $required How the plan requires it (`{mock?: bool}`).
+	 * @param array<string, mixed> $plan The plan.
 	 *
-	 * @return ExampleSetRequiredRegister
+	 * @return array<int, ExampleSetRequiredRegister>
 	 */
-	private function required(array $plan, string $slug, mixed $required): ExampleSetRequiredRegister {
-		return new ExampleSetRequiredRegister(
-			set: (string) ($plan['set'] ?? ''),
-			slug: $slug,
-			mock: (($required['mock'] ?? false) === true)
-		);
-	}//end required()
+	private function requiredRegisters(array $plan): array {
+		$registers = [];
+		foreach ((array) ($plan['requires'] ?? []) as $slug => $required) {
+			$registers[] = new ExampleSetRequiredRegister(
+				set: (string) ($plan['set'] ?? ''),
+				slug: (string) $slug,
+				mock: (($required['mock'] ?? false) === true)
+			);
+		}
+
+		return $registers;
+	}//end requiredRegisters()
 
 	/**
 	 * Import one required register when it needs it, and record the import.

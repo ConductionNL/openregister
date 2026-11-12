@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * Unit tests for ObjectEntity TMLO field
  *
  * @covers \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
  */
 class ObjectEntityTmloTest extends TestCase {
 

@@ -427,6 +427,33 @@ class PropertyVocabularyTest extends TestCase {
 	}//end testTheKeysTheFleetAlreadyWritesAreHeld()
 
 	/**
+	 * The labels the export renderer reads beside an enum save.
+	 *
+	 * `ExportValueRenderer::enumLabel()` renders an enum value through
+	 * `enumNames`, or `enumLabels`, parallel to `enum`. The strict key check
+	 * refused both, so the only way to give an export its labels was refused
+	 * at schema save: the same shape as `authorization` above, a key the model
+	 * acts on and the layer drops.
+	 *
+	 * @return void
+	 */
+	public function testTheEnumLabelsTheExportReadsSave(): void {
+		foreach (['enumNames', 'enumLabels'] as $key) {
+			$this->assertTrue(
+				condition: $this->validator->validateProperty(
+					property: [
+						'type' => 'string',
+						'enum' => ['open', 'closed'],
+						$key => ['Open', 'Gesloten'],
+					],
+					path: '/status'
+				),
+				message: "'{$key}' is read by the export renderer and the schema save refuses it"
+			);
+		}
+	}//end testTheEnumLabelsTheExportReadsSave()
+
+	/**
 	 * A property authorization saves, because the model reads it back.
 	 *
 	 * The control the test above cannot give: publishing a key and refusing it

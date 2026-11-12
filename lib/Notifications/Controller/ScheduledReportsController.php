@@ -202,12 +202,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -244,12 +242,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -291,12 +287,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -331,12 +325,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function runNow(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {

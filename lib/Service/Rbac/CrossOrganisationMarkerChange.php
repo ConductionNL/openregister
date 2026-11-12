@@ -84,6 +84,10 @@ final class CrossOrganisationMarkerChange implements CrossOrganisationMarkerChan
 	 * canonical JSON text with the keys above it, at any depth (action rules
 	 * and matrix rows alike). List positions are left out: reordering moves nothing.
 	 *
+	 * Below the top level, the scalar values beside each key on the way down are
+	 * part of the text too, so a marked matrix row whose matrix `field` changes
+	 * counts as new: the row then reads another property.
+	 *
 	 * @param mixed  $block An authorization block or a part of one.
 	 * @param string $path  The associative keys above the block.
 	 *
@@ -99,10 +103,15 @@ final class CrossOrganisationMarkerChange implements CrossOrganisationMarkerChan
 			$found[] = $path.(string)json_encode($this->canonical(value: $block));
 		}
 
+		$context = '';
+		if ($path !== '' && array_is_list($block) === false) {
+			$context = (string)json_encode($this->canonical(value: array_filter($block, static fn (mixed $value): bool => is_array($value) === false)));
+		}
+
 		foreach ($block as $key => $value) {
 			$below = $path;
 			if (is_string($key) === true) {
-				$below = $path.json_encode($key).'/';
+				$below = $path.$context.json_encode($key).'/';
 			}
 
 			array_push($found, ...$this->markedRules(block: $value, path: $below));
