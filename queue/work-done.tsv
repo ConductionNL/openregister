@@ -11,3 +11,4 @@ gap:openregister:6:3ac94019	PR #10021 to main: .gitleaks.toml (rule+path scoped 
 review:openregister:10008:5d1b82a4	APPROVE: coverage publishing tooling only, no lib change	session-20261112T175557-37d60f4f	2026-11-12T18:50:16Z
 review:openregister:10001:d1e18498	APPROVE: test-only @uses metadata, suites green bar 9 env-only errors in untouched files	session-20261112T182617-a12dc411	2026-11-12T18:50:52Z
 merge:buildiq:1437:926bdfe3	failed: merge step denied by this session's permission check; not attempted, PR left unmerged	session-20261112T175557-37d60f4f	2026-11-12T18:51:13Z
+merge:decidiq:2031:f1a084e8	failed: merge call denied by this session's permission policy; nothing merged; all 9 heads still at tested shas (2039 payload sha was truncated, full bf57a80d4070c5c0dbffe1993dfac23cbfdbccc2)	session-20261112T182617-a12dc411	2026-11-12T18:51:52Z
