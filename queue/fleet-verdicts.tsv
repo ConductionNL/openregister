@@ -4301,3 +4301,4 @@ pipelinq	3561	04914a6b79f5a6c349f09a3fe96933176ede3a3c	GREEN	worker-58	unit 5925
 pipelinq	3569	73076f8deef9d9e5e9d6de4c4196a6f029b36901	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
 pipelinq	3570	f8b261f8303f77c83e453f132ec5f029121fbd75	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
 pipelinq	3571	12b3fb6c6269a15b9101711f83ece824848228eb	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3572	b2cfd1332d80a0cd7b1d4ca66c18c156694aa14a	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
