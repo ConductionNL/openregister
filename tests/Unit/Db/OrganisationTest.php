@@ -545,6 +545,23 @@ class OrganisationTest extends TestCase {
 		$this->assertNull($quota['groups']);
 	}
 
+	/**
+	 * The quota carries the user limit and the object limit with the schema it counts.
+	 *
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	public function testJsonSerializeQuotaCarriesUsersAndObjects(): void {
+		$this->organisation->setUserQuota(50);
+		$this->organisation->setObjectQuota(5000);
+		$this->organisation->setObjectQuotaSchema('case');
+
+		$quota = $this->organisation->jsonSerialize()['quota'];
+
+		$this->assertSame(50, $quota['users']);
+		$this->assertSame(5000, $quota['objects']);
+		$this->assertSame('case', $quota['objectsSchema']);
+	}
+
 	public function testJsonSerializeUsageStructure(): void {
 		$this->organisation->addUser('user1');
 		$this->organisation->addUser('user2');
@@ -553,9 +570,9 @@ class OrganisationTest extends TestCase {
 		$json = $this->organisation->jsonSerialize();
 		$usage = $json['usage'];
 
-		$this->assertSame(0, $usage['storage']);
-		$this->assertSame(0, $usage['bandwidth']);
-		$this->assertSame(0, $usage['requests']);
+		$this->assertNull(actual: $usage['storage']);
+		$this->assertNull(actual: $usage['bandwidth']);
+		$this->assertNull(actual: $usage['requests']);
 		$this->assertSame(2, $usage['users']);
 		$this->assertSame(3, $usage['groups']);
 	}

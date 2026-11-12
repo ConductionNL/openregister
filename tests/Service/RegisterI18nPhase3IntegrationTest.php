@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +38,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * @group DB
@@ -149,10 +151,7 @@ class RegisterI18nPhase3IntegrationTest extends TestCase {
 
 		$admin = \OC::$server->get(IUserManager::class)->get('admin');
 		$csv = $this->exportService->exportToCsv(
-			register: $this->testRegister,
-			schema: $this->testSchema,
-			filters: [],
-			currentUser: $admin
+			request: new ObjectExportRequest(register: $this->testRegister, schema: $this->testSchema, currentUser: $admin),
 		);
 
 		$this->assertNotEmpty($csv);
@@ -184,10 +183,7 @@ class RegisterI18nPhase3IntegrationTest extends TestCase {
 
 		$admin = \OC::$server->get(IUserManager::class)->get('admin');
 		$csv = $this->exportService->exportToCsv(
-			register: $this->testRegister,
-			schema: $this->testSchema,
-			filters: [],
-			currentUser: $admin
+			request: new ObjectExportRequest(register: $this->testRegister, schema: $this->testSchema, currentUser: $admin),
 		);
 
 		$this->assertStringContainsString('Hoi wereld', $csv);
@@ -255,8 +251,7 @@ class RegisterI18nPhase3IntegrationTest extends TestCase {
 				'body' => ['nl' => 'Tekst', 'en' => 'Body'],
 				'plain' => 'untranslated',
 			],
-			schema: $this->testSchema,
-			register: $this->testRegister
+			scope: new TranslationScope($this->testSchema, $this->testRegister)
 		);
 
 		$this->assertSame('Hi', $rendered['title']);
@@ -279,10 +274,7 @@ class RegisterI18nPhase3IntegrationTest extends TestCase {
 		try {
 			$admin = \OC::$server->get(IUserManager::class)->get('admin');
 			$csv = $this->exportService->exportToCsv(
-				register: $bareRegister,
-				schema: $this->testSchema,
-				filters: [],
-				currentUser: $admin
+				request: new ObjectExportRequest(register: $bareRegister, schema: $this->testSchema, currentUser: $admin),
 			);
 			$headerRow = explode("\n", $csv)[0];
 

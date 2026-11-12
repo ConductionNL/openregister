@@ -24,7 +24,7 @@ namespace Unit\Service\Calculation;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -214,6 +214,59 @@ class DateAddTest extends TestCase {
 		$this->assertNull($result);
 
 	}//end testUnparseableDateReturnsNull()
+
+	/**
+	 * A string that names only a timezone is no date.
+	 *
+	 * @dataProvider timezoneOnlyStrings
+	 *
+	 * @param string $value The date operand.
+	 *
+	 * @return void
+	 */
+	public function testTimezoneOnlyStringReturnsNull(string $value): void {
+		$this->assertNull($this->eval->evaluate([], ['dateAdd' => ['date' => $value, 'amount' => 1, 'unit' => 'days']]));
+
+	}//end testTimezoneOnlyStringReturnsNull()
+
+	/**
+	 * Strings PHP reads as the current moment in a timezone.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function timezoneOnlyStrings(): array {
+		return ['single letter' => ['x'], 'abbreviation' => ['CET'], 'identifier' => ['Europe/Amsterdam']];
+
+	}//end timezoneOnlyStrings()
+
+	/**
+	 * A date or time with a timezone, and a relative date, stay dates.
+	 *
+	 * @dataProvider datesWithoutTheirOwnDay
+	 *
+	 * @param string $value The date operand.
+	 *
+	 * @return void
+	 */
+	public function testDatesWithATimezoneOrRelativeWordStayDates(string $value): void {
+		$this->assertNotNull($this->eval->evaluate([], ['dateAdd' => ['date' => $value, 'amount' => 1, 'unit' => 'days']]));
+
+	}//end testDatesWithATimezoneOrRelativeWordStayDates()
+
+	/**
+	 * Strings that stay valid dates.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function datesWithoutTheirOwnDay(): array {
+		return [
+			'date and zone' => ['2026-01-01 CET'],
+			'time and zone' => ['12:00 UTC'],
+			'relative' => ['tomorrow'],
+			'now' => ['now'],
+		];
+
+	}//end datesWithoutTheirOwnDay()
 
 	/**
 	 * Bad unit → returns null (no interval can be built).

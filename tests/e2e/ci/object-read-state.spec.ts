@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * OBJECT READ STATE — end to end, through the HTTP API a real client uses.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/object-read-state/specs/` is archived into
+ * once `openspec/changes/archive/2026-10-05-object-read-state/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e object-read-state::a-change-makes-an-object-unread-for-the-other-reader

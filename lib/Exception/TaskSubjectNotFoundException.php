@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use RuntimeException;
  * be. A 403 here would be that oracle: it would separate "this object is not
  * yours" from "this object is not there".
  *
- * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
  */
 class TaskSubjectNotFoundException extends RuntimeException {
 }//end class

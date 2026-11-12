@@ -14,6 +14,6 @@ Implement the requirements defined in the spec using OpenRegister's existing ser
 - `tests/performance/`
 - `tests/performance/performance-test-collection.json`
 - `tests/postman/`
-- `tests/postman/openregister-crud-tests.postman_collection.json`
-- `tests/postman/openregister-graphql-tests.postman_collection.json`
-- `tests/postman/openregister-relations-tests.postman_collection.json`
+- `tests/integration/openregister-crud-tests.postman_collection.json`
+- `tests/integration/openregister-graphql-tests.postman_collection.json`
+- `tests/integration/openregister-relations-tests.postman_collection.json`

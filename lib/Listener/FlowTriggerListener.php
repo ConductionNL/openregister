@@ -5,7 +5,7 @@
  *
  * The object-lifecycle triggers: when an OpenRegister object is created,
  * updated, deleted, locked, unlocked, reverted or changes state, this hands the
- * event to {@see FlowTriggerService}, which queues a run for every flow wired to
+ * event to {@see FlowTriggerServiceInterface}, which queues a run for every flow wired to
  * it. Each is one line in the event map here; the mechanism is written once.
  *
  * The lock/revert/state triggers were declared in the event catalog from the
@@ -44,8 +44,8 @@ use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowTriggerService;
-use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -57,16 +57,31 @@ use OCP\IUserSession;
  */
 class FlowTriggerListener implements IEventListener {
 	/**
+	 * The trigger id each object event class is wired to, checked in this order.
+	 *
+	 * @var array<class-string<Event>, string>
+	 */
+	private const EVENT_IDS = [
+		ObjectCreatedEvent::class => 'object.created',
+		ObjectUpdatedEvent::class => 'object.updated',
+		ObjectDeletedEvent::class => 'object.deleted',
+		ObjectLockedEvent::class => 'object.locked',
+		ObjectUnlockedEvent::class => 'object.unlocked',
+		ObjectRevertedEvent::class => 'object.reverted',
+		ObjectTransitionedEvent::class => 'object.transitioned',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param FlowTriggerServiceInterface $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
-	 * @param FlowTriggerSlugs $slugs Turns the object's numeric ids into the slugs triggers match on.
+	 * @param FlowTriggerSlugsInterface $slugs Turns the object's numeric ids into the slugs triggers match on.
 	 */
 	public function __construct(
-		private readonly FlowTriggerService $triggers,
+		private readonly FlowTriggerServiceInterface $triggers,
 		private readonly IUserSession $userSession,
-		private readonly FlowTriggerSlugs $slugs,
+		private readonly FlowTriggerSlugsInterface $slugs,
 	) {
 
 	}//end __construct()
@@ -97,11 +112,20 @@ class FlowTriggerListener implements IEventListener {
 			return;
 		}
 
+		$this->fireObjectTrigger(event: $event, eventId: $eventId);
+	}//end handle()
+
+	/**
+	 * Fire an object event as its trigger, against the object's register and schema slugs.
+	 *
+	 * @param Event  $event   The object event.
+	 * @param string $eventId The trigger id flows are wired to.
+	 *
+	 * @return void
+	 */
+	private function fireObjectTrigger(Event $event, string $eventId): void {
 		$object = $event->getObject();
-		$user = null;
-		if ($this->userSession->getUser() !== null) {
-			$user = $this->userSession->getUser()->getUID();
-		}
+		$user = $this->callerUid();
 
 		// 🔴 SLUGS, NOT THE OBJECT'S NUMERIC IDS. The trigger index and the
 		// flow trigger columns both hold slugs (`dossiq`/`case`) — an imported
@@ -121,8 +145,21 @@ class FlowTriggerListener implements IEventListener {
 			user: $user,
 			context: $this->contextFor(event: $event)
 		);
+	}//end fireObjectTrigger()
 
-	}//end handle()
+	/**
+	 * The acting user's uid; null when nobody is signed in.
+	 *
+	 * @return string|null
+	 */
+	private function callerUid(): ?string {
+		$user = null;
+		if ($this->userSession->getUser() !== null) {
+			$user = $this->userSession->getUser()->getUID();
+		}
+
+		return $user;
+	}//end callerUid()
 
 	/**
 	 * Fire a terminal plan-item transition as its catalog trigger.
@@ -139,7 +176,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function fireCaseItemTrigger(CaseItemTransitionedEvent $event): void {
 		$trigger = $event->getCatalogTrigger();
@@ -168,14 +205,29 @@ class FlowTriggerListener implements IEventListener {
 	 * A state change is the one lifecycle event that is *about* a change rather
 	 * than a moment: which action ran and the places it moved between are what a
 	 * flow wired to "an object changes state" needs to branch on, so they are
-	 * put on the run context where the flow's conditions can read them. Every
-	 * other lifecycle event adds nothing beyond its subject.
+	 * put on the run context where the flow's conditions can read them.
+	 *
+	 * A deletion is the one lifecycle event whose SUBJECT CANNOT BE RE-RESOLVED.
+	 * Every run — inline or queued — re-reads its subject by uuid before any
+	 * node executes ({@see \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::advance()}),
+	 * and a deleted object is, by definition, never there to find: the delete
+	 * already happened by the time ANY run reaches it, so a flow wired to
+	 * `object.deleted` failed with "Subject ... no longer exists" on every
+	 * firing, unconditionally — not a bug in the flow, a gap in what the trigger
+	 * handed the run. The object's last-known state travels under `payload`
+	 * instead, the same slot a subjectless trigger (a file, a user) already
+	 * seeds its first item from, so the advancer's existing fallback picks it up
+	 * with no new mechanism.
+	 *
+	 * Every other lifecycle event adds nothing beyond its subject — the object
+	 * still exists, so a flow that needs more than its uuid already has a
+	 * resolvable subject to read it from.
 	 *
 	 * @param Event $event The dispatched event.
 	 *
-	 * @return array<string, string> The extra context, empty for most events.
+	 * @return array<string, mixed> The extra context, empty for most events.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function contextFor(Event $event): array {
 		if ($event instanceof ObjectTransitionedEvent) {
@@ -195,6 +247,10 @@ class FlowTriggerListener implements IEventListener {
 			];
 		}
 
+		if ($event instanceof ObjectDeletedEvent) {
+			return ['payload' => $event->getObject()->jsonSerialize()];
+		}
+
 		return [];
 	}//end contextFor()
 
@@ -208,32 +264,10 @@ class FlowTriggerListener implements IEventListener {
 	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	private function eventIdFor(Event $event): ?string {
-		if ($event instanceof ObjectCreatedEvent) {
-			return 'object.created';
-		}
-
-		if ($event instanceof ObjectUpdatedEvent) {
-			return 'object.updated';
-		}
-
-		if ($event instanceof ObjectDeletedEvent) {
-			return 'object.deleted';
-		}
-
-		if ($event instanceof ObjectLockedEvent) {
-			return 'object.locked';
-		}
-
-		if ($event instanceof ObjectUnlockedEvent) {
-			return 'object.unlocked';
-		}
-
-		if ($event instanceof ObjectRevertedEvent) {
-			return 'object.reverted';
-		}
-
-		if ($event instanceof ObjectTransitionedEvent) {
-			return 'object.transitioned';
+		foreach (self::EVENT_IDS as $class => $eventId) {
+			if ($event instanceof $class) {
+				return $eventId;
+			}
 		}
 
 		return null;

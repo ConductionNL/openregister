@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
-use OCA\OpenRegister\Service\WebPush\WebPushService;
+use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
+use OCA\OpenRegister\Notifications\Service\WebPush\WebPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +16,7 @@ use Psr\Log\LoggerInterface;
  * to WebPushService::deliver() with a built payload, skips on a missing uid,
  * and swallows delivery failures (best-effort, never escalates).
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushDispatchJobTest extends TestCase {
 	private WebPushService&MockObject $webPushService;

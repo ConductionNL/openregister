@@ -25,8 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -41,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ContactMatchingService {
+class ContactMatchingService implements ContactMatcherInterface {
 
 	/**
 	 * Cache TTL in seconds.
@@ -109,27 +110,6 @@ class ContactMatchingService {
 	];
 
 	/**
-	 * The object service for searching entities.
-	 *
-	 * @var ObjectService
-	 */
-	private readonly ObjectService $objectService;
-
-	/**
-	 * The schema mapper for schema lookups.
-	 *
-	 * @var SchemaMapper
-	 */
-	private readonly SchemaMapper $schemaMapper;
-
-	/**
-	 * The register mapper for register lookups.
-	 *
-	 * @var RegisterMapper
-	 */
-	private readonly RegisterMapper $registerMapper;
-
-	/**
 	 * The distributed cache instance.
 	 *
 	 * @var ICache|null
@@ -137,45 +117,42 @@ class ContactMatchingService {
 	private readonly ?ICache $cache;
 
 	/**
-	 * Logger for debugging.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for ContactMatchingService.
 	 *
-	 * @param ObjectService $objectService The object service
-	 * @param SchemaMapper $schemaMapper The schema mapper
-	 * @param RegisterMapper $registerMapper The register mapper
+	 * @param ObjectOperationsInterface $objectService The object service
+	 * @param ContactMatchingMappers $mappers The schema and register mappers
 	 * @param ICacheFactory $cacheFactory The cache factory
 	 * @param LoggerInterface $logger The logger
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ObjectService $objectService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly ContactMatchingMappers $mappers,
 		ICacheFactory $cacheFactory,
-		LoggerInterface $logger,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectService = $objectService;
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->logger = $logger;
+		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
+	}//end __construct()
 
+	/**
+	 * The distributed contact-match cache, or null when it cannot be created.
+	 *
+	 * @param ICacheFactory $cacheFactory Cache factory.
+	 *
+	 * @return ICache|null The cache, or null (matching then runs uncached).
+	 */
+	private function openCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_contacts');
+			return $cacheFactory->createDistributed('openregister_contacts');
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				'[ContactMatching] Failed to create cache: {error}',
 				['error' => $e->getMessage()]
 			);
-			$this->cache = null;
+			return null;
 		}
-	}//end __construct()
+	}//end openCache()
 
 	/**
 	 * Match a contact by email address (highest confidence).
@@ -206,36 +183,19 @@ class ContactMatchingService {
 		$email = strtolower(trim($email));
 		$cacheKey = 'or_contact_match_email_' . hash('sha256', $email);
 
-		// Check cache first.
-		if ($this->cache !== null) {
-			$cached = $this->cache->get($cacheKey);
-			if ($cached !== null) {
-				$results = json_decode($cached, true);
-				if (is_array($results) === true) {
-					return array_map(
-						static function (array $match): array {
-							$match['cached'] = true;
-							return $match;
-						},
-						$results
-					);
-				}
-			}
+		$cached = $this->cachedMatches(cacheKey: $cacheKey);
+		if ($cached !== null) {
+			return $cached;
 		}
 
 		// Search across all registers and schemas.
 		$results = $this->searchAndFilter(
-			searchTerm: $email,
-			propertyPatterns: self::EMAIL_PROPERTY_PATTERNS,
-			matchType: 'email',
-			confidence: 1.0,
-			exactMatch: true
+			query: (new ContactMatchQuery(searchTerm: $email, matchType: 'email'))
+				->withScoring(confidence: 1.0, exactMatch: true)
+				->withPatterns(propertyPatterns: self::EMAIL_PROPERTY_PATTERNS)
 		);
 
-		// Cache results.
-		if ($this->cache !== null) {
-			$this->cache->set($cacheKey, json_encode($results), self::CACHE_TTL);
-		}
+		$this->cacheMatches(cacheKey: $cacheKey, results: $results);
 
 		return $results;
 	}//end matchByEmail()
@@ -264,21 +224,9 @@ class ContactMatchingService {
 		$name = trim($name);
 		$cacheKey = 'or_contact_match_name_' . hash('sha256', strtolower($name));
 
-		// Check cache first.
-		if ($this->cache !== null) {
-			$cached = $this->cache->get($cacheKey);
-			if ($cached !== null) {
-				$results = json_decode($cached, true);
-				if (is_array($results) === true) {
-					return array_map(
-						static function (array $match): array {
-							$match['cached'] = true;
-							return $match;
-						},
-						$results
-					);
-				}
-			}
+		$cached = $this->cachedMatches(cacheKey: $cacheKey);
+		if ($cached !== null) {
+			return $cached;
 		}
 
 		$nameParts = array_filter(
@@ -289,16 +237,9 @@ class ContactMatchingService {
 		);
 
 		// Search for the full name.
-		$results = $this->searchAndFilterByName(
-			searchTerm: $name,
-			nameParts: array_values($nameParts),
-			propertyPatterns: self::NAME_PROPERTY_PATTERNS
-		);
+		$results = $this->searchAndFilterByName(searchTerm: $name, nameParts: array_values($nameParts));
 
-		// Cache results.
-		if ($this->cache !== null) {
-			$this->cache->set($cacheKey, json_encode($results), self::CACHE_TTL);
-		}
+		$this->cacheMatches(cacheKey: $cacheKey, results: $results);
 
 		return $results;
 	}//end matchByName()
@@ -327,36 +268,21 @@ class ContactMatchingService {
 		$organization = trim($organization);
 		$cacheKey = 'or_contact_match_org_' . hash('sha256', strtolower($organization));
 
-		// Check cache first.
-		if ($this->cache !== null) {
-			$cached = $this->cache->get($cacheKey);
-			if ($cached !== null) {
-				$results = json_decode($cached, true);
-				if (is_array($results) === true) {
-					return array_map(
-						static function (array $match): array {
-							$match['cached'] = true;
-							return $match;
-						},
-						$results
-					);
-				}
-			}
+		$cached = $this->cachedMatches(cacheKey: $cacheKey);
+		if ($cached !== null) {
+			return $cached;
 		}
 
 		$results = $this->searchAndFilter(
-			searchTerm: $organization,
-			propertyPatterns: array_merge(self::ORG_PROPERTY_PATTERNS, ['naam', 'name']),
-			matchType: 'organization',
-			confidence: 0.5,
-			exactMatch: false,
-			schemaFilter: self::ORG_SCHEMA_PATTERNS
+			query: (new ContactMatchQuery(searchTerm: $organization, matchType: 'organization'))
+				->withScoring(confidence: 0.5, exactMatch: false)
+				->withPatterns(
+					propertyPatterns: array_merge(self::ORG_PROPERTY_PATTERNS, ['naam', 'name']),
+					schemaFilter: self::ORG_SCHEMA_PATTERNS
+				)
 		);
 
-		// Cache results.
-		if ($this->cache !== null) {
-			$this->cache->set($cacheKey, json_encode($results), self::CACHE_TTL);
-		}
+		$this->cacheMatches(cacheKey: $cacheKey, results: $results);
 
 		return $results;
 	}//end matchByOrganization()
@@ -367,71 +293,65 @@ class ContactMatchingService {
 	 * Calls matchByEmail first, then matchByName and matchByOrganization if provided.
 	 * Deduplicates by object UUID, keeping the highest confidence match.
 	 *
-	 * @param string $email The email address (required)
-	 * @param string|null $name The display name (optional)
-	 * @param string|null $organization The organization name (optional)
+	 * @param ContactDetails $contact The email address (required), display name and organization name (optional).
 	 *
 	 * @return array Combined, deduplicated match results sorted by confidence
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function matchContact(
-		string $email,
-		?string $name = null,
-		?string $organization = null,
-	): array {
-		$allMatches = [];
+	public function matchContact(ContactDetails $contact): array {
+		// Email matching (highest confidence), then name (medium), then organization (lowest).
+		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $contact->email));
+		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $contact->name);
+		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $contact->organization);
 
-		// Email matching (highest confidence).
-		$emailMatches = $this->matchByEmail(email: $email);
-		foreach ($emailMatches as $match) {
-			$uuid = $match['uuid'] ?? '';
-			if ($uuid !== '') {
-				$allMatches[$uuid] = $match;
-			}
+		return $this->byConfidence(matches: $allMatches);
+	}//end matchContact()
+
+	/**
+	 * Merge in the name matches, when a name is given.
+	 *
+	 * @param array<string,array<string,mixed>> $allMatches The matches so far, keyed by uuid.
+	 * @param string|null                       $name       The display name.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function withNameMatches(array $allMatches, ?string $name): array {
+		if (($name ?? '') === '') {
+			return $allMatches;
 		}
 
-		// Name matching (medium confidence).
-		if ($name !== null && $name !== '') {
-			$nameMatches = $this->matchByName(name: $name);
-			foreach ($nameMatches as $match) {
-				$uuid = $match['uuid'] ?? '';
-				if ($uuid === '') {
-					continue;
-				}
+		return $this->keepStrongest(allMatches: $allMatches, matches: $this->matchByName(name: $name));
+	}//end withNameMatches()
 
-				// Keep highest confidence.
-				if (isset($allMatches[$uuid]) === false
-					|| $match['confidence'] > $allMatches[$uuid]['confidence']
-				) {
-					$allMatches[$uuid] = $match;
-				}
-			}
+	/**
+	 * Merge in the organization matches, when an organization is given.
+	 *
+	 * @param array<string,array<string,mixed>> $allMatches   The matches so far, keyed by uuid.
+	 * @param string|null                       $organization The organization name.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function withOrganizationMatches(array $allMatches, ?string $organization): array {
+		if (($organization ?? '') === '') {
+			return $allMatches;
 		}
 
-		// Organization matching (lowest confidence).
-		if ($organization !== null && $organization !== '') {
-			$orgMatches = $this->matchByOrganization(organization: $organization);
-			foreach ($orgMatches as $match) {
-				$uuid = $match['uuid'] ?? '';
-				if ($uuid === '') {
-					continue;
-				}
+		return $this->keepStrongest(
+			allMatches: $allMatches,
+			matches: $this->matchByOrganization(organization: $organization)
+		);
+	}//end withOrganizationMatches()
 
-				// Keep highest confidence.
-				if (isset($allMatches[$uuid]) === false
-					|| $match['confidence'] > $allMatches[$uuid]['confidence']
-				) {
-					$allMatches[$uuid] = $match;
-				}
-			}
-		}
-
-		// Sort by confidence descending.
-		$results = array_values($allMatches);
+	/**
+	 * The matches as a list, sorted by confidence descending.
+	 *
+	 * @param array<string,array<string,mixed>> $matches The matches keyed by uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function byConfidence(array $matches): array {
+		$results = array_values($matches);
 		usort(
 			$results,
 			static function (array $a, array $b): int {
@@ -440,7 +360,26 @@ class ContactMatchingService {
 		);
 
 		return $results;
-	}//end matchContact()
+	}//end byConfidence()
+
+	/**
+	 * Key matches by their uuid, dropping those without one; a later match with the same uuid wins.
+	 *
+	 * @param array<int,array<string,mixed>> $matches The matches.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function byUuid(array $matches): array {
+		$byUuid = [];
+		foreach ($matches as $match) {
+			$uuid = $match['uuid'] ?? '';
+			if ($uuid !== '') {
+				$byUuid[$uuid] = $match;
+			}
+		}
+
+		return $byUuid;
+	}//end byUuid()
 
 	/**
 	 * Get related object counts grouped by schema title.
@@ -503,24 +442,45 @@ class ContactMatchingService {
 		}
 
 		foreach ($object as $key => $value) {
-			if (is_string($value) === false || empty($value) === true) {
-				continue;
-			}
-
-			$keyLower = strtolower((string)$key);
-			$isEmailProperty = false;
-			foreach (self::EMAIL_PROPERTY_PATTERNS as $pattern) {
-				if (str_contains($keyLower, $pattern) === true) {
-					$isEmailProperty = true;
-					break;
-				}
-			}
-
-			if ($isEmailProperty === true && filter_var($value, FILTER_VALIDATE_EMAIL) !== false) {
-				$this->invalidateCache(email: $value);
-			}
+			$this->invalidateForProperty(key: $key, value: $value);
 		}
 	}//end invalidateCacheForObject()
+
+	/**
+	 * Invalidate the cached matches of one property's value when it is an email in an email-like property.
+	 *
+	 * @param int|string $key   The property name.
+	 * @param mixed      $value The property value.
+	 *
+	 * @return void
+	 */
+	private function invalidateForProperty(int|string $key, mixed $value): void {
+		if (is_string($value) === false || empty($value) === true) {
+			return;
+		}
+
+		if ($this->isEmailProperty(key: $key) === true && filter_var($value, FILTER_VALIDATE_EMAIL) !== false) {
+			$this->invalidateCache(email: $value);
+		}
+	}//end invalidateForProperty()
+
+	/**
+	 * Whether a property name looks like an email field.
+	 *
+	 * @param int|string $key The property name.
+	 *
+	 * @return bool
+	 */
+	private function isEmailProperty(int|string $key): bool {
+		$keyLower = strtolower((string)$key);
+		foreach (self::EMAIL_PROPERTY_PATTERNS as $pattern) {
+			if (str_contains($keyLower, $pattern) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isEmailProperty()
 
 	/**
 	 * Per-request cache for the contact-linked-schemas check.
@@ -544,7 +504,7 @@ class ContactMatchingService {
 		}
 
 		try {
-			$schemas = $this->schemaMapper->findAll(_multitenancy: false);
+			$schemas = $this->mappers->schemaMapper->findAll(_multitenancy: false);
 			foreach ($schemas as $schema) {
 				$linkedTypes = $schema->getLinkedTypes();
 				if (in_array('contact', $linkedTypes, true) === true) {
@@ -559,28 +519,84 @@ class ContactMatchingService {
 	}//end hasContactLinkedSchemas()
 
 	/**
-	 * Search objects and filter by property patterns.
+	 * Merge matches into a uuid-keyed set, keeping the higher confidence per uuid.
 	 *
-	 * @param string $searchTerm The term to search for.
-	 * @param array $propertyPatterns Property name patterns to match.
-	 * @param string $matchType The match type label.
-	 * @param float $confidence The confidence score.
-	 * @param bool $exactMatch Whether to require exact value match.
-	 * @param array|null $schemaFilter Optional schema name patterns to restrict results.
+	 * @param array<string, array> $allMatches Matches so far, by uuid.
+	 * @param array<int, array>    $matches    New matches; those without a uuid are skipped.
 	 *
-	 * @return array The filtered match results.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @return array<string, array> The merged set.
 	 */
-	private function searchAndFilter(
-		string $searchTerm,
-		array $propertyPatterns,
-		string $matchType,
-		float $confidence,
-		bool $exactMatch = true,
-		?array $schemaFilter = null,
-	): array {
+	private function keepStrongest(array $allMatches, array $matches): array {
+		foreach ($matches as $match) {
+			$uuid = $match['uuid'] ?? '';
+			if ($uuid === '') {
+				continue;
+			}
+
+			if (isset($allMatches[$uuid]) === false
+				|| $match['confidence'] > $allMatches[$uuid]['confidence']
+			) {
+				$allMatches[$uuid] = $match;
+			}
+		}
+
+		return $allMatches;
+	}//end keepStrongest()
+
+	/**
+	 * Cached matches for a key, each marked as cached; null on a miss or without a cache.
+	 *
+	 * @param string $cacheKey The cache key.
+	 *
+	 * @return array|null
+	 */
+	private function cachedMatches(string $cacheKey): ?array {
+		if ($this->cache === null) {
+			return null;
+		}
+
+		$cached = $this->cache->get($cacheKey);
+		if ($cached === null) {
+			return null;
+		}
+
+		$results = json_decode($cached, true);
+		if (is_array($results) === false) {
+			return null;
+		}
+
+		return array_map(
+			static function (array $match): array {
+				$match['cached'] = true;
+				return $match;
+			},
+			$results
+		);
+	}//end cachedMatches()
+
+	/**
+	 * Store matches under a key for CACHE_TTL seconds, when a cache is available.
+	 *
+	 * @param string $cacheKey The cache key.
+	 * @param array  $results  The matches.
+	 *
+	 * @return void
+	 */
+	private function cacheMatches(string $cacheKey, array $results): void {
+		if ($this->cache !== null) {
+			$this->cache->set($cacheKey, json_encode($results), self::CACHE_TTL);
+		}
+	}//end cacheMatches()
+
+	/**
+	 * Full-text search results for a term; empty when the search fails, the failure logged.
+	 *
+	 * @param string $searchTerm     The term to search for.
+	 * @param string $failureMessage The log message on failure, with an {error} placeholder.
+	 *
+	 * @return array The search results.
+	 */
+	private function searchResults(string $searchTerm, string $failureMessage): array {
 		try {
 			$searchResults = $this->objectService->searchObjects(
 				query: ['_search' => $searchTerm],
@@ -588,10 +604,7 @@ class ContactMatchingService {
 				_multitenancy: true
 			);
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				'[ContactMatching] Search failed: {error}',
-				['error' => $e->getMessage()]
-			);
+			$this->logger->warning($failureMessage, ['error' => $e->getMessage()]);
 			return [];
 		}
 
@@ -599,181 +612,75 @@ class ContactMatchingService {
 			return [];
 		}
 
+		return $searchResults;
+	}//end searchResults()
+
+	/**
+	 * Search objects and keep those in an accepted schema with a matching property.
+	 *
+	 * @param ContactMatchQuery $query The search.
+	 *
+	 * @return array The filtered match results.
+	 */
+	private function searchAndFilter(ContactMatchQuery $query): array {
 		$matches = [];
-		foreach ($searchResults as $result) {
-			if (is_array($result) === false) {
-				continue;
+		foreach ($this->searchResults(searchTerm: $query->searchTerm, failureMessage: '[ContactMatching] Search failed: {error}') as $result) {
+			if (is_array($result) === true && $query->acceptsSchema(result: $result) === true
+				&& $query->matchesProperty(result: $result) === true
+			) {
+				$matches[] = $this->formatMatch(result: $result, query: $query);
 			}
-
-			// Apply schema filter if provided.
-			if ($schemaFilter !== null) {
-				$schemaName = strtolower($result['schema']['title'] ?? $result['schema']['name'] ?? '');
-				$matchesSchema = false;
-				foreach ($schemaFilter as $pattern) {
-					if (str_contains($schemaName, strtolower($pattern)) === true) {
-						$matchesSchema = true;
-						break;
-					}
-				}
-
-				if ($matchesSchema === false) {
-					continue;
-				}
-			}
-
-			// Check if the search term appears in the right property type.
-			$hasMatch = $this->hasMatchingProperty(
-				result: $result,
-				searchTerm: $searchTerm,
-				propertyPatterns: $propertyPatterns,
-				exactMatch: $exactMatch
-			);
-			if ($hasMatch === true) {
-				$matches[] = $this->formatMatch(result: $result, matchType: $matchType, confidence: $confidence);
-			}
-		}//end foreach
+		}
 
 		return $matches;
 	}//end searchAndFilter()
 
 	/**
-	 * Search and filter by name with confidence scoring.
+	 * Search and filter by name with confidence scoring: 0.7 when every name part
+	 * appears in a name-like property, 0.4 when some do.
 	 *
 	 * @param string $searchTerm The full name to search for
-	 * @param array $nameParts The name parts for partial matching
-	 * @param array $propertyPatterns Property name patterns to match
+	 * @param array  $nameParts  The name parts for partial matching
 	 *
 	 * @return array The filtered match results with confidence scores
 	 */
-	private function searchAndFilterByName(
-		string $searchTerm,
-		array $nameParts,
-		array $propertyPatterns,
-	): array {
-		try {
-			$searchResults = $this->objectService->searchObjects(
-				query: ['_search' => $searchTerm],
-				_rbac: true,
-				_multitenancy: true
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				'[ContactMatching] Name search failed: {error}',
-				['error' => $e->getMessage()]
-			);
-			return [];
-		}
-
-		if (is_array($searchResults) === false) {
-			return [];
-		}
-
+	private function searchAndFilterByName(string $searchTerm, array $nameParts): array {
 		$matches = [];
-		foreach ($searchResults as $result) {
+		foreach ($this->searchResults(searchTerm: $searchTerm, failureMessage: '[ContactMatching] Name search failed: {error}') as $result) {
 			if (is_array($result) === false) {
 				continue;
 			}
 
-			$matchedParts = $this->countMatchingNameParts(
-				result: $result,
-				nameParts: $nameParts,
-				propertyPatterns: $propertyPatterns
-			);
-			$totalParts = count($nameParts);
-
+			$matchedParts = $this->countMatchingNameParts(result: $result, nameParts: $nameParts);
 			if ($matchedParts === 0) {
 				continue;
 			}
 
-			// Full match = 0.7, partial = 0.4.
 			$confidence = 0.4;
-			if ($matchedParts === $totalParts) {
+			if ($matchedParts === count($nameParts)) {
 				$confidence = 0.7;
 			}
 
-			$matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
+			$query = (new ContactMatchQuery(searchTerm: $searchTerm, matchType: 'name'))
+				->withScoring(confidence: $confidence, exactMatch: false);
+			$matches[] = $this->formatMatch(result: $result, query: $query);
 		}//end foreach
 
 		return $matches;
 	}//end searchAndFilterByName()
 
 	/**
-	 * Check if an object has a matching property.
-	 *
-	 * @param array $result The search result object
-	 * @param string $searchTerm The value to look for
-	 * @param array $propertyPatterns Property name patterns
-	 * @param bool $exactMatch Whether to require exact match
-	 *
-	 * @return bool True if a matching property is found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function hasMatchingProperty(
-		array $result,
-		string $searchTerm,
-		array $propertyPatterns,
-		bool $exactMatch,
-	): bool {
-		foreach ($result as $key => $value) {
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$keyLower = strtolower((string)$key);
-			foreach ($propertyPatterns as $pattern) {
-				if (str_contains($keyLower, strtolower($pattern)) === false) {
-					continue;
-				}
-
-				if ($exactMatch === true && strtolower($value) === strtolower($searchTerm)) {
-					return true;
-				}
-
-				if ($exactMatch === false
-					&& (stripos($value, $searchTerm) !== false || stripos($searchTerm, $value) !== false)
-				) {
-					return true;
-				}
-			}
-		}//end foreach
-
-		return false;
-	}//end hasMatchingProperty()
-
-	/**
 	 * Count how many name parts appear in name-like properties.
 	 *
-	 * @param array $result The search result object
+	 * @param array $result    The search result object
 	 * @param array $nameParts The name parts to look for
-	 * @param array $propertyPatterns Property name patterns
 	 *
 	 * @return int Number of name parts that match
 	 */
-	private function countMatchingNameParts(
-		array $result,
-		array $nameParts,
-		array $propertyPatterns,
-	): int {
+	private function countMatchingNameParts(array $result, array $nameParts): int {
 		$matchedParts = 0;
-		$concatenatedValues = '';
+		$concatenatedValues = $this->nameValues(result: $result);
 
-		// Collect all name-like property values.
-		foreach ($result as $key => $value) {
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$keyLower = strtolower((string)$key);
-			foreach ($propertyPatterns as $pattern) {
-				if (str_contains($keyLower, strtolower($pattern)) === true) {
-					$concatenatedValues .= ' ' . strtolower($value);
-					break;
-				}
-			}
-		}
-
-		// Check each name part.
 		foreach ($nameParts as $part) {
 			if (stripos($concatenatedValues, strtolower($part)) !== false) {
 				$matchedParts++;
@@ -784,50 +691,133 @@ class ContactMatchingService {
 	}//end countMatchingNameParts()
 
 	/**
+	 * The lower-cased string values of all name-like properties, each prefixed by a space.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return string
+	 */
+	private function nameValues(array $result): string {
+		$concatenatedValues = '';
+
+		// Collect all name-like property values.
+		foreach ($result as $key => $value) {
+			if (is_string($value) === false) {
+				continue;
+			}
+
+			if ($this->isNameProperty(key: $key) === true) {
+				$concatenatedValues .= ' ' . strtolower($value);
+			}
+		}
+
+		return $concatenatedValues;
+	}//end nameValues()
+
+	/**
+	 * Whether a property name looks like a name field.
+	 *
+	 * @param int|string $key The property name.
+	 *
+	 * @return bool
+	 */
+	private function isNameProperty(int|string $key): bool {
+		$keyLower = strtolower((string)$key);
+		foreach (self::NAME_PROPERTY_PATTERNS as $pattern) {
+			if (str_contains($keyLower, strtolower($pattern)) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isNameProperty()
+
+	/**
 	 * Format a search result into a match array.
 	 *
-	 * @param array $result The search result object
-	 * @param string $matchType The match type (email, name, organization)
-	 * @param float $confidence The confidence score
+	 * @param array             $result The search result object
+	 * @param ContactMatchQuery $query  The search, for the match type and confidence
 	 *
 	 * @return array The formatted match
 	 */
-	private function formatMatch(array $result, string $matchType, float $confidence): array {
-		$schemaInfo = [];
-		$registerInfo = [];
-
+	private function formatMatch(array $result, ContactMatchQuery $query): array {
 		// Extract schema info.
-		if (isset($result['@self']['schema']) === true) {
-			$schemaId = (int)$result['@self']['schema'];
-			try {
-				$schema = $this->schemaMapper->find($schemaId);
-				$schemaInfo = [
-					'id' => $schemaId,
-					'title' => $schema->getTitle() ?? $schema->getName() ?? 'Unknown',
-				];
-			} catch (\Exception $e) {
-				$schemaInfo = ['id' => $schemaId, 'title' => 'Unknown'];
-			}
-		}
+		$schemaInfo = $this->schemaInfo(result: $result);
 
 		// Extract register info.
-		if (isset($result['@self']['register']) === true) {
-			$registerId = (int)$result['@self']['register'];
-			try {
-				$register = $this->registerMapper->find($registerId);
-				$registerInfo = [
-					'id' => $registerId,
-					'title' => $register->getTitle() ?? $register->getName() ?? 'Unknown',
-				];
-			} catch (\Exception $e) {
-				$registerInfo = ['id' => $registerId, 'title' => 'Unknown'];
-			}
-		}
+		$registerInfo = $this->registerInfo(result: $result);
 
 		// Determine a title for the matched object.
 		$title = $result['title'] ?? $result['naam'] ?? $result['name'] ?? $result['@self']['uuid'] ?? 'Unknown';
 
-		// Build properties subset (exclude metadata).
+		return [
+			'uuid' => $result['@self']['uuid'] ?? $result['uuid'] ?? '',
+			'register' => $registerInfo,
+			'schema' => $schemaInfo,
+			'title' => $title,
+			'matchType' => $query->matchType,
+			'confidence' => $query->confidence(),
+			'properties' => $this->scalarProperties(result: $result),
+			'cached' => false,
+		];
+	}//end formatMatch()
+
+	/**
+	 * The id and title of the result's schema; none when it has no schema.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function schemaInfo(array $result): array {
+		if (isset($result['@self']['schema']) === false) {
+			return [];
+		}
+
+		$schemaId = (int)$result['@self']['schema'];
+		try {
+			$schema = $this->mappers->schemaMapper->find($schemaId);
+			return [
+				'id' => $schemaId,
+				'title' => $schema->getTitle() ?? $schema->getName() ?? 'Unknown',
+			];
+		} catch (\Exception $e) {
+			return ['id' => $schemaId, 'title' => 'Unknown'];
+		}
+	}//end schemaInfo()
+
+	/**
+	 * The id and title of the result's register; none when it has no register.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function registerInfo(array $result): array {
+		if (isset($result['@self']['register']) === false) {
+			return [];
+		}
+
+		$registerId = (int)$result['@self']['register'];
+		try {
+			$register = $this->mappers->registerMapper->find($registerId);
+			return [
+				'id' => $registerId,
+				'title' => $register->getTitle() ?? $register->getName() ?? 'Unknown',
+			];
+		} catch (\Exception $e) {
+			return ['id' => $registerId, 'title' => 'Unknown'];
+		}
+	}//end registerInfo()
+
+	/**
+	 * The scalar properties of a result, without metadata (`@`/`_` prefixed) keys.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function scalarProperties(array $result): array {
 		$properties = [];
 		foreach ($result as $key => $value) {
 			if (str_starts_with($key, '@') === true || str_starts_with($key, '_') === true) {
@@ -839,15 +829,6 @@ class ContactMatchingService {
 			}
 		}
 
-		return [
-			'uuid' => $result['@self']['uuid'] ?? $result['uuid'] ?? '',
-			'register' => $registerInfo,
-			'schema' => $schemaInfo,
-			'title' => $title,
-			'matchType' => $matchType,
-			'confidence' => $confidence,
-			'properties' => $properties,
-			'cached' => false,
-		];
-	}//end formatMatch()
+		return $properties;
+	}//end scalarProperties()
 }//end class

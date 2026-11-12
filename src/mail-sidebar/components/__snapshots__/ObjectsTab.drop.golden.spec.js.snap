@@ -1,0 +1,393 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on full, failed 1`] = `
+{
+  "log": [
+    [
+      "upload",
+      {
+        "id": "a1",
+        "name": "invoice.pdf",
+      },
+      {
+        "objectId": "o1",
+        "register": 1,
+        "schema": 2,
+      },
+      "u1",
+    ],
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(quota)",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on full, uploaded 1`] = `
+{
+  "log": [
+    [
+      "upload",
+      {
+        "id": "a1",
+        "name": "invoice.pdf",
+      },
+      {
+        "objectId": "o1",
+        "register": 1,
+        "schema": 2,
+      },
+      "u1",
+    ],
+    [
+      "showSuccess",
+      "Attachment added to name:One",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noId, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noId, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noRegister, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noRegister, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noSchema, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on noSchema, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on schemaAndUuid, failed 1`] = `
+{
+  "log": [
+    [
+      "upload",
+      {
+        "id": "a1",
+        "name": "invoice.pdf",
+      },
+      {
+        "objectId": "u2",
+        "register": 1,
+        "schema": 3,
+      },
+      "u2",
+    ],
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(quota)",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops attachment on schemaAndUuid, uploaded 1`] = `
+{
+  "log": [
+    [
+      "upload",
+      {
+        "id": "a1",
+        "name": "invoice.pdf",
+      },
+      {
+        "objectId": "u2",
+        "register": 1,
+        "schema": 3,
+      },
+      "u2",
+    ],
+    [
+      "showSuccess",
+      "Attachment added to name:Two",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on full, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(Expected property name or '}' in JSON at position 1 (line 1 column 2))",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on full, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(Expected property name or '}' in JSON at position 1 (line 1 column 2))",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noId, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noId, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noRegister, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noRegister, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noSchema, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on noSchema, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Object metadata incomplete for file upload",
+    ],
+  ],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on schemaAndUuid, failed 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(Expected property name or '}' in JSON at position 1 (line 1 column 2))",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops broken on schemaAndUuid, uploaded 1`] = `
+{
+  "log": [
+    [
+      "showError",
+      "Failed to add attachment",
+    ],
+    [
+      "console.error",
+      "[ObjectsTab] Attachment drop upload failed:",
+      "Error(Expected property name or '}' in JSON at position 1 (line 1 column 2))",
+    ],
+  ],
+  "uploadingObjectUuid": null,
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on full, failed 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on full, uploaded 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noId, failed 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noId, uploaded 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noRegister, failed 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noRegister, uploaded 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noSchema, failed 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on noSchema, uploaded 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on schemaAndUuid, failed 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;
+
+exports[`ObjectsTab.onAttachmentDrop (golden) drops none on schemaAndUuid, uploaded 1`] = `
+{
+  "log": [],
+  "uploadingObjectUuid": "idle",
+}
+`;

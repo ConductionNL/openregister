@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -28,7 +29,7 @@ class AnnotationNotifierTest extends TestCase {
 		parent::setUp();
 		$this->factory = $this->createMock(IFactory::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->notifier = new AnnotationNotifier($this->factory, $this->urlGenerator);
+		$this->notifier = new AnnotationNotifier($this->factory, new ObjectDeepLinks($this->urlGenerator));
 	}
 
 	public function testGetId(): void {
@@ -65,6 +66,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -79,11 +81,11 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		// Custom _text is shown verbatim; a deep-link action is added.
 		$notification->expects($this->once())->method('setParsedSubject')->with('Nieuwe lead: Acme')->willReturnSelf();
-		$notification->expects($this->once())->method('addAction');
+		$notification->expects($this->once())->method('addParsedAction');
 
 		$result = $this->notifier->prepare($notification, 'nl');
 		$this->assertSame($notification, $result);
@@ -100,6 +102,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -115,7 +118,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		$notification->expects($this->once())->method('setParsedMessage')->with('Open in OpenTalk.')->willReturnSelf();
@@ -134,6 +137,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -148,7 +152,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		$notification->expects($this->never())->method('setParsedMessage');
@@ -169,6 +173,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -184,11 +189,52 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		$notification->expects($this->once())
 			->method('setParsedSubject')
 			->with('Object "Acme" created in register "Leads"')
+			->willReturnSelf();
+
+		$this->notifier->prepare($notification, 'en');
+	}
+	/**
+	 * Without a register name the canonical subject names the object only,
+	 * never the register id.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
+	 */
+	public function testCanonicalSubjectWithoutRegisterNameNamesTheObjectOnly(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->with('openregister', 'en')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('object_updated');
+		$notification->method('getSubjectParameters')->willReturn([
+			'objectTitle' => 'Gemeente Demo',
+			'registerId' => '20',
+			'schemaId' => '28',
+			'objectUuid' => 'uuid-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
+
+		$notification->expects($this->once())
+			->method('setParsedSubject')
+			->with('Object "Gemeente Demo" updated')
 			->willReturnSelf();
 
 		$this->notifier->prepare($notification, 'en');

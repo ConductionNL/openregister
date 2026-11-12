@@ -22,21 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
- * Resolves a macro action against the schema's own declarations.
- *
- * 🔴 READ FROM THE DECLARATIONS, NEVER FROM THE REQUEST. A caller naming an
- * action the schema does not bind gets null here and a refusal from the
- * endpoint, not a flow of their choosing. Keeping that lookup in one object
- * is what stops a second, laxer one appearing beside it.
- *
- * @SuppressWarnings(PHPMD.StaticAccess) `MacroActionBinding::parse()` and
- * `FlowNextHint::declared()` are the two named readers phpmd.xml already
- * excepts by name: both are stateless declaration readers with no
- * collaborators, and several call paths must reach the same answer.
+ * Reads what a macro run needs from its flows and schemas: the stored flow a
+ * schema declares by name, the changes a finished run made and the `next`
+ * hint it ends with.
  *
  * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
  */
@@ -45,58 +39,155 @@ class MacroActionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemas Loads a schema by id or slug.
-	 * @param FlowService  $flows   Reads the bound flow, for its `next` hint.
+	 * @param SchemaMapperInterface $schemas   Loads a schema by id or slug.
+	 * @param FlowService           $flows     Reads a flow, for its nodes and `next` hint.
+	 * @param FlowMapperInterface|null       $flowStore Finds a flow a schema declares by name.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly FlowService $flows,
+		private readonly ?FlowMapperInterface $flowStore = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * The macro binding a schema declares for this action.
+	 * What a finished macro run changed, for its audit entry.
 	 *
-	 * Read from the DECLARATIONS, never from what the request asked for: a
-	 * caller naming an action the schema does not bind gets a refusal, not a
-	 * flow of their choosing.
+	 * @param FlowRun $run      The run.
+	 * @param string  $flowUuid The flow it ran.
 	 *
-	 * @param Schema $schema The subject's schema.
-	 * @param string $action The action.
+	 * @return array<int, array{step: string, kind: string}> The changes.
 	 *
-	 * @return MacroActionBinding|null The binding.
-	 *
-	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
-	public function bindingFor(Schema $schema, string $action): ?MacroActionBinding {
-		foreach (MacroActionBinding::parse(configuration: ($schema->getConfiguration() ?? [])) as $binding) {
-			if ($binding->action === $action) {
-				return $binding;
+	public function changesOf(FlowRun $run, string $flowUuid): array {
+		return (new MacroRunChanges())->fromLog(log: ($run->getLog() ?? []), nodes: $this->nodesOf(flowUuid: $flowUuid));
+	}//end changesOf()
+
+	/**
+	 * The nodes of a flow, or none when it cannot be read.
+	 *
+	 * @param string $flowUuid The flow.
+	 *
+	 * @return array<int, mixed> The nodes.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 */
+	public function nodesOf(string $flowUuid): array {
+		try {
+			return ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []);
+		} catch (\Throwable) {
+			return [];
+		}
+	}//end nodesOf()
+
+	/**
+	 * The uuid of the stored flow a schema's `x-openregister-flows` declaration
+	 * of this name became, or null when none is stored.
+	 *
+	 * @param Schema $schema The declaring schema.
+	 * @param string $name   The declared flow's name.
+	 *
+	 * @return string|null The uuid.
+	 *
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public function declaredFlowUuid(Schema $schema, string $name): ?string {
+		if ($this->flowStore === null) {
+			return null;
+		}
+
+		$flow = $this->flowStore->findDeclared(name: $name, schemaSlug: (string)$schema->getSlug());
+		if ($flow === null || (string)$flow->getUuid() === '') {
+			return null;
+		}
+
+		return (string)$flow->getUuid();
+	}//end declaredFlowUuid()
+
+	/**
+	 * The EFFECTIVE `next` hint of a finished run.
+	 *
+	 * The end node the run reached wins when it declares a hint; an end node
+	 * that declares nothing is silence, and the manual trigger's hint stands.
+	 * The reached end node is the last end-node step in the run's log.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param FlowRun $run      The run.
+	 *
+	 * @return string One of FlowNextHint::HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
+	 */
+	public function nextForRun(string $flowUuid, FlowRun $run): string {
+		try {
+			$nodes = ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []);
+		} catch (\Throwable) {
+			return FlowNextHint::STAY;
+		}
+
+		return FlowNextHint::effective(nodes: $nodes, endNode: $this->endNodeReached(nodes: $nodes, run: $run));
+	}//end nextForRun()
+
+	/**
+	 * The end node the run reached: the node named by the last end-node step
+	 * in its log, or null when there is none.
+	 *
+	 * @param array<int, mixed> $nodes The flow's nodes.
+	 * @param FlowRun           $run   The run.
+	 *
+	 * @return array<string, mixed>|null The end node.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
+	 */
+	private function endNodeReached(array $nodes, FlowRun $run): ?array {
+		$reached = $this->reachedEndId(run: $run);
+		if ($reached === null) {
+			return null;
+		}
+
+		return self::nodeWithId(nodes: $nodes, id: $reached);
+	}//end endNodeReached()
+
+	/**
+	 * The first node with this id.
+	 *
+	 * @param array<int, mixed> $nodes The flow's nodes.
+	 * @param string            $id    The id.
+	 *
+	 * @return array<string, mixed>|null The node, or null when none has the id.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
+	 */
+	private static function nodeWithId(array $nodes, string $id): ?array {
+		foreach ($nodes as $node) {
+			if (is_array($node) === true && (string)($node['id'] ?? '') === $id) {
+				return $node;
 			}
 		}
 
 		return null;
-	}//end bindingFor()
+	}//end nodeWithId()
 
 	/**
-	 * The `next` hint the flow declares.
+	 * The id of the end node in the last end-node step of the run's log.
 	 *
-	 * @param string $flowUuid The flow.
+	 * @param FlowRun $run The run.
 	 *
-	 * @return string One of FlowNextHint::HINTS.
+	 * @return string|null The id, or null when the run reached no end node.
 	 *
-	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
 	 */
-	public function nextFor(string $flowUuid): string {
-		try {
-			return FlowNextHint::declared(nodes: ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []));
-		} catch (\Throwable) {
-			// A hint nobody can read is `stay`, which is what happened before
-			// hints existed and is the only answer that cannot move somebody
-			// somewhere they did not ask to go.
-			return FlowNextHint::STAY;
+	private function reachedEndId(FlowRun $run): ?string {
+		$reached = null;
+		foreach (($run->getLog() ?? []) as $entry) {
+			if (is_array($entry) === true && (string)($entry['type'] ?? '') === FlowNextHint::END_NODE) {
+				$reached = (string)($entry['transition'] ?? '');
+			}
 		}
-	}//end nextFor()
+
+		return $reached;
+	}//end reachedEndId()
 
 	/**
 	 * Load a schema by id or slug.

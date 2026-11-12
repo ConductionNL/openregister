@@ -4,111 +4,95 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteObject'"
 		:name="
 			'Delete '
 			+ (objectStore.objectItem?.['@self']?.schema?.title
 				? objectStore.objectItem['@self'].schema.title + ' — '
 				: '')
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
+			+ (objectName(objectStore.objectItem) || 'Object')
 		"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="
+			n(
+				'openregister',
+				'Object successfully deleted',
+				'Objects successfully deleted',
+				1,
+			)
+		"
+		:closeLabel="success === null ? 'Cancel' : 'Close'"
+		confirmLabel="Delete"
+		@cancel="closeDialog"
+		@confirm="deleteObject()">
 		<p v-if="success === null">
 			Do you want to permanently delete
 			<span v-if="objectStore.objectItem?.['@self']?.schema?.title"
 				>{{ objectStore.objectItem['@self'].schema.title.toLowerCase() }}
 			</span>
-			<b>{{
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-			}}</b
+			<b>{{ objectName(objectStore.objectItem) }}</b
 			>? This action cannot be undone.
 		</p>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>
-				{{
-					n(
-						'openregister',
-						'Object successfully deleted',
-						'Objects successfully deleted',
-						1,
-					)
-				}}
-			</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="deleteObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { objectName as nameOf } from './objectName.js'
+
+/**
+ * Where an object lives: its register, schema and id.
+ *
+ * @param {object|null} item The object
+ * @return {{register: *, schema: *, id: *}} Its address
+ * @throws {Error} When the object lacks its register, schema or id
+ */
+function objectAddress(item) {
+	const self = item?.['@self']
+	const register = self?.register
+	const schema = self?.schema
+	const id = self?.id
+
+	if (!register || !schema || !id) {
+		throw new Error(
+			'Object is missing required metadata (register, schema, or id)',
+		)
+	}
+	return { register, schema, id }
+}
+
+/**
+ * The object type and id of an object, registering the type with the store
+ * when it does not know it yet.
+ *
+ * @param {object|null} item The object to delete
+ * @return {{type: string, id: string}} Its type slug and id
+ * @throws {Error} When the object lacks its register, schema or id
+ */
+function registeredObjectType(item) {
+	const { register, schema, id } = objectAddress(item)
+	const type = objectStore.createObjectTypeSlug(register, schema)
+	if (!objectStore.objectTypes.includes(type)) {
+		objectStore.registerObjectType(type, schema, register)
+	}
+	return { type, id }
+}
 
 export default {
 	name: 'DeleteObject',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: null,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(null)],
 
 	methods: {
-		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.error = false
-		},
-
+		objectName: nameOf,
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to objectStore.deleteObject (lifecycle owned elsewhere).
 		 */
@@ -116,37 +100,34 @@ export default {
 			this.loading = true
 
 			try {
-				const self = objectStore.objectItem?.['@self']
-				const register = self?.register
-				const schema = self?.schema
-				const id = self?.id
-
-				if (!register || !schema || !id) {
-					throw new Error(
-						'Object is missing required metadata (register, schema, or id)',
-					)
-				}
-
-				const type = objectStore.createObjectTypeSlug(register, schema)
-				if (!objectStore.objectTypes.includes(type)) {
-					objectStore.registerObjectType(type, schema, register)
-				}
-
+				const { type, id } = registeredObjectType(objectStore.objectItem)
 				const success = await objectStore.deleteObject(type, id)
-				this.success = success
-				this.error = success
-					? false
-					: objectStore.errors?.[type] || 'Failed to delete object'
-				if (success) {
-					objectStore.refetchSearchCollection()
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				}
+				this.showDeleteOutcome(success, type)
 			} catch (error) {
 				this.success = false
 				this.error =
 					error.message || 'An error occurred while deleting the object'
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Show whether the delete went through; on success refresh the list
+		 * and close the dialog after a moment.
+		 *
+		 * @param {boolean} success Whether the store deleted the object
+		 * @param {string} type The object type slug the delete went to
+		 * @return {void}
+		 */
+		showDeleteOutcome(success, type) {
+			this.success = success
+			this.error = success
+				? false
+				: objectStore.errors?.[type] || 'Failed to delete object'
+			if (success) {
+				objectStore.refetchSearchCollection()
+				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 			}
 		},
 	},

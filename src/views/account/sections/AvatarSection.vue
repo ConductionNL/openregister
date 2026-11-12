@@ -25,11 +25,7 @@
 					style="display: none"
 					@change="uploadAvatar" />
 			</div>
-			<p
-				v-if="message"
-				:class="{ section__error: isError, section__success: !isError }">
-				{{ message }}
-			</p>
+			<SectionStatus :message="message" :isError="isError" />
 		</div>
 	</div>
 </template>
@@ -39,16 +35,19 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAvatar, NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'AvatarSection',
-	components: { NcAvatar, NcButton },
+	components: { NcAvatar, NcButton, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			userId: '',
 			canChangeAvatar: true,
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -65,7 +64,7 @@ export default {
 			)
 			this.userId = data?.uid || ''
 			this.canChangeAvatar = data?.backendCapabilities?.avatar ?? true
-		} catch (e) {
+		} catch {
 			// Default to showing the section.
 		}
 	},
@@ -102,13 +101,9 @@ export default {
 					data,
 					{ headers: { 'Content-Type': file.type } },
 				)
-				this.message = t('openregister', 'Avatar updated successfully')
-				this.isError = false
+				this.setStatus(t('openregister', 'Avatar updated successfully'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to upload avatar')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to upload avatar'))
 			}
 		},
 
@@ -124,40 +119,21 @@ export default {
 				await axios.delete(
 					generateUrl('/apps/openregister/api/user/me/avatar'),
 				)
-				this.message = t('openregister', 'Avatar removed')
-				this.isError = false
+				this.setStatus(t('openregister', 'Avatar removed'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to remove avatar')
-				this.isError = true
+				this.setStatusError(e, t('openregister', 'Failed to remove avatar'))
 			}
 		},
 	},
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
 
-.section__disabled {
-	color: var(--color-text-maxcontrast);
-	font-style: italic;
-}
+@include section;
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
-
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-disabled-rules;
 
 .avatar-section {
 	display: flex;

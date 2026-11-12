@@ -20,7 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
+use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
+use OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -39,7 +43,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
-use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * The list predicate and the single-object verdict agree on a malformed `match`.
@@ -72,20 +78,40 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 		$conditionMatcher->method('resolveDynamicValue')->willReturnArgument(0);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
 			)
 		);
 	}//end handler()
+
+	/**
+	 * The QueryBuilder `match` compiler the list query uses; dynamic tokens resolve to themselves.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return RbacQueryMatch
+	 */
+	private function queryMatch(IQueryBuilder $qb): RbacQueryMatch {
+		$conditionMatcher = $this->createMock(ConditionMatcher::class);
+		$conditionMatcher->method('resolveDynamicValue')->willReturnArgument(0);
+
+		return new RbacQueryMatch($qb, new RbacMatchSql($conditionMatcher, new RbacSqlDialect($this->createMock(ContainerInterface::class), new NullLogger())));
+	}//end queryMatch()
 
 	/**
 	 * The list predicate for a read rule with this match.
@@ -97,9 +123,16 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	private function listPredicateFor(array $match): string {
 		$schema = new Schema();
 		$schema->setId(681);
+		$schema->setProperties(
+			[
+				'status'  => ['type' => 'string'],
+				'project' => ['type' => 'string'],
+				'age'     => ['type' => 'integer'],
+			]
+		);
 		$schema->setAuthorization(['read' => [['group' => 'members', 'match' => $match]]]);
 
-		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
+		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 't', action: 'read'));
 	}//end listPredicateFor()
 
 	/**
@@ -110,7 +143,7 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	public function testAnUnknownOperatorBesideAValidPropertyDenies(): void {
 		$predicate = $this->listPredicateFor(['status' => 'open', 'project' => ['$lookup' => ['from' => 'project']]]);
 
-		$this->assertStringContainsString("t.status = 'open'", $predicate);
+		$this->assertStringContainsString("t.`status` = 'open'", $predicate);
 		$this->assertStringContainsString('1 = 0', $predicate, 'The unknown operator must make the rule unsatisfiable on the list, as it is on find.');
 	}//end testAnUnknownOperatorBesideAValidPropertyDenies()
 
@@ -134,8 +167,8 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 	public function testEveryOperatorOfAPropertyIsApplied(): void {
 		$predicate = $this->listPredicateFor(['age' => ['$gte' => 18, '$lt' => 65]]);
 
-		$this->assertStringContainsString('t.age >= 18', $predicate);
-		$this->assertStringContainsString('t.age < 65', $predicate);
+		$this->assertStringContainsString('t.`age` >= 18', $predicate);
+		$this->assertStringContainsString('t.`age` < 65', $predicate);
 	}//end testEveryOperatorOfAPropertyIsApplied()
 
 	/**
@@ -193,17 +226,15 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 			}
 		);
 
-		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildOperatorCondition');
-		$method->setAccessible(true);
-		$handler = $this->handler();
+		$match = $this->queryMatch($qb);
 
-		$this->assertSame($composite, $method->invoke($handler, $qb, 'age', ['$gte' => 18, '$lt' => 65]));
+		$this->assertSame($composite, $match->operatorConditions('age', ['$gte' => 18, '$lt' => 65]));
 		$this->assertSame('AND(gte(t.age,:18) ; lt(t.age,:65))', end($calls));
 
-		$this->assertSame($composite, $method->invoke($handler, $qb, 'status', ['$eq' => 'open', '$lookup' => ['from' => 'project']]));
+		$this->assertSame($composite, $match->operatorConditions('status', ['$eq' => 'open', '$lookup' => ['from' => 'project']]));
 		$this->assertSame('AND(eq(t.status,:"open") ; eq(:1,:0))', end($calls));
 
-		$this->assertSame('eq(:1,:0)', $method->invoke($handler, $qb, 'project', ['$in' => ['from' => 'project']]));
-		$this->assertSame('isNotNull(t.phase)', $method->invoke($handler, $qb, 'phase', ['$nin' => []]));
+		$this->assertSame('eq(:1,:0)', $match->operatorConditions('project', ['$in' => ['from' => 'project']]));
+		$this->assertSame('isNotNull(t.phase)', $match->operatorConditions('phase', ['$nin' => []]));
 	}//end testTheQueryBuilderPathAppliesEveryOperatorAndDeniesAnUnknownOne()
 }//end class

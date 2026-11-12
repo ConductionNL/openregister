@@ -56,6 +56,8 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
 class PropertySemanticReferenceValidator {
+	use PropertyReferenceValidationTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -88,90 +90,46 @@ class PropertySemanticReferenceValidator {
 	 *   (Requirement: A property can reference a semantic type)
 	 */
 	public function validate(array $property, ?string $propertyName = null): void {
-		if (array_key_exists('referenceSemanticType', $property) === false) {
-			return;
-		}
-
-		$value = $property['referenceSemanticType'];
+		$value = ($property['referenceSemanticType'] ?? null);
 		if ($value === null) {
 			return;
 		}
 
-		if (is_string($value) === false || $value === '') {
-			throw new InvalidArgumentException(
-				$this->formatError(
-					propertyName: $propertyName,
-					key: 'referenceSemanticType',
-					detail: 'must be a non-empty string'
-				)
-			);
-		}
-
-		if ($this->jsonLd->isAbsoluteIri(value: $value) === false) {
-			throw new InvalidArgumentException(
-				$this->formatError(
-					propertyName: $propertyName,
-					key: 'referenceSemanticType',
-					detail: sprintf("must be an absolute IRI, got '%s'", $value)
-				)
-			);
-		}
-
-		// Optional provider hint — string when present.
-		if (array_key_exists('referenceSemanticApp', $property) === true) {
-			$appHint = $property['referenceSemanticApp'];
-			if ($appHint !== null && is_string($appHint) === false) {
-				throw new InvalidArgumentException(
-					$this->formatError(
-						propertyName: $propertyName,
-						key: 'referenceSemanticApp',
-						detail: 'must be a string when present'
-					)
-				);
-			}
-		}
+		$problem = ($this->semanticTypeProblem(value: $value) ?? $this->appHintProblem(appHint: ($property['referenceSemanticApp'] ?? null)));
+		$this->refuse(propertyName: $propertyName, problem: $problem);
 	}//end validate()
 
 	/**
-	 * Validate every property in a schema's `properties` map.
+	 * What is wrong with a non-null `referenceSemanticType`, if anything.
 	 *
-	 * @param array<string,array<string,mixed>> $properties Property map.
+	 * @param mixed $value The declared value.
 	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException On the first invalid property.
-	 *
-	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
-	 *   (Requirement: A property can reference a semantic type)
+	 * @return string|null The problem, or null when it is an absolute IRI.
 	 */
-	public function validateAll(array $properties): void {
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === true) {
-				$resolvedName = null;
-				if (is_string($name) === true) {
-					$resolvedName = $name;
-				}
-
-				$this->validate(property: $definition, propertyName: $resolvedName);
-			}
+	private function semanticTypeProblem(mixed $value): ?string {
+		if (is_string($value) === false || $value === '') {
+			return 'referenceSemanticType must be a non-empty string';
 		}
-	}//end validateAll()
+
+		if ($this->jsonLd->isAbsoluteIri(value: $value) === false) {
+			return sprintf("referenceSemanticType must be an absolute IRI, got '%s'", $value);
+		}
+
+		return null;
+	}//end semanticTypeProblem()
 
 	/**
-	 * Build the standard error-message prefix.
+	 * What is wrong with the optional `referenceSemanticApp` provider hint, if anything.
 	 *
-	 * @param string|null $propertyName Property name (or null for schema-level).
-	 * @param string $key The offending keyword.
-	 * @param string $detail Specific failure detail.
+	 * @param mixed $appHint The declared hint (null when absent).
 	 *
-	 * @return string
+	 * @return string|null The problem, or null when absent or a string.
 	 */
-	private function formatError(?string $propertyName, string $key, string $detail): string {
-		$prefix = $key;
-		if ($propertyName !== null) {
-			$prefix = sprintf("Property '%s' %s", $propertyName, $key);
+	private function appHintProblem(mixed $appHint): ?string {
+		if ($appHint !== null && is_string($appHint) === false) {
+			return 'referenceSemanticApp must be a string when present';
 		}
 
-		return sprintf('%s %s', $prefix, $detail);
-	}//end formatError()
+		return null;
+	}//end appHintProblem()
 }//end class

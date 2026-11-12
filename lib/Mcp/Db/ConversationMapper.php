@@ -1,0 +1,479 @@
+<?php
+
+/**
+ * OpenRegister Conversation Mapper
+ *
+ * This file contains the ConversationMapper class for database operations on conversations.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Mapper
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
+namespace OCA\OpenRegister\Mcp\Db;
+
+use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
+use OCA\OpenRegister\Event\ConversationCreatedEvent;
+use OCA\OpenRegister\Event\ConversationDeletedEvent;
+use OCA\OpenRegister\Event\ConversationUpdatedEvent;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IDBConnection;
+use OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope;
+
+/**
+ * ConversationMapper handles database operations for Conversation entities
+ *
+ * Mapper for Conversation entities to handle database operations.
+ * Extends QBMapper to provide standard CRUD operations with event dispatching.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ *
+ * @template-extends QBMapper<Conversation>
+ * @method Conversation insert(Entity $entity)
+ * @method Conversation update(Entity $entity)
+ * @method Conversation insertOrUpdate(Entity $entity)
+ * @method Conversation delete(Entity $entity)
+ * @method Conversation find(int|string $id)
+ * @method Conversation findEntity(IQueryBuilder $query)
+ * @method Conversation[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method list<Conversation> findEntities(IQueryBuilder $query)
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ */
+class ConversationMapper extends QBMapper implements ConversationMapperInterface {
+
+	/**
+	 * Event dispatcher for dispatching conversation events
+	 *
+	 * Used to dispatch ConversationCreatedEvent, ConversationUpdatedEvent,
+	 * and ConversationDeletedEvent for event-driven architecture.
+	 *
+	 * @var IEventDispatcher Event dispatcher instance
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Constructor
+	 *
+	 * Initializes mapper with database connection and event dispatcher.
+	 * Calls parent constructor to set up base mapper functionality.
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher for conversation lifecycle events
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IDBConnection $db,
+		IEventDispatcher $eventDispatcher,
+	) {
+		// Call parent constructor to initialize base mapper with table name and entity class.
+		parent::__construct(db: $db, tableName: 'openregister_conversations', entityClass: Conversation::class);
+
+		// Store event dispatcher for use in CRUD operations.
+		$this->eventDispatcher = $eventDispatcher;
+	}//end __construct()
+
+	/**
+	 * Insert a new conversation entity
+	 *
+	 * Inserts conversation entity into database with automatic UUID and timestamp
+	 * generation. Dispatches ConversationCreatedEvent after successful insertion.
+	 *
+	 * @param Entity $entity The conversation entity to insert
+	 *
+	 * @return Conversation The inserted conversation entity with database-generated ID
+	 */
+	public function insert(Entity $entity): Conversation {
+		if ($entity instanceof Conversation) {
+			// Step 1: Ensure UUID is set (generate if missing or empty).
+			$uuid = $entity->getUuid();
+			if (($uuid === null || $uuid === '') || trim($uuid) === '') {
+				$newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+				$entity->setUuid($newUuid);
+			}
+
+			// Step 2: Set created timestamp if not already set.
+			if ($entity->getCreated() === null) {
+				$entity->setCreated(new DateTime());
+			}
+
+			// Step 3: Set updated timestamp if not already set.
+			if ($entity->getUpdated() === null) {
+				$entity->setUpdated(new DateTime());
+			}
+		}
+
+		// Step 4: Insert entity into database using parent method.
+		$entity = parent::insert(entity: $entity);
+
+		// Step 5: Dispatch creation event for event-driven architecture.
+		// Listeners can react to conversation creation (e.g., notifications, logging).
+		$this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent(conversation: $entity));
+
+		return $entity;
+	}//end insert()
+
+	/**
+	 * Update a conversation entity
+	 *
+	 * Updates conversation entity in database with automatic updated timestamp.
+	 * Dispatches ConversationUpdatedEvent with both old and new entity states.
+	 *
+	 * @param Entity $entity The conversation entity to update
+	 *
+	 * @return Conversation The updated conversation entity
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If conversation not found
+	 */
+	public function update(Entity $entity): Conversation {
+		// Step 1: Get old state before update for event payload.
+		// This allows listeners to compare old and new values.
+		$oldEntity = $this->find(id: $entity->getId());
+
+		if ($entity instanceof Conversation) {
+			// Step 2: Always update the updated timestamp to current time.
+			$entity->setUpdated(new DateTime());
+		}
+
+		// Step 3: Update entity in database using parent method.
+		$entity = parent::update(entity: $entity);
+
+		// Step 4: Dispatch update event with old and new entity states.
+		// Listeners can react to conversation updates (e.g., cache invalidation, notifications).
+		$this->eventDispatcher->dispatchTyped(
+			new ConversationUpdatedEvent(
+				newConversation: $entity,
+				oldConversation: $oldEntity
+			)
+		);
+
+		return $entity;
+	}//end update()
+
+	/**
+	 * Delete a conversation entity
+	 *
+	 * @param Entity $entity The conversation entity to delete
+	 *
+	 * @return Conversation The deleted conversation entity
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 */
+	public function delete(Entity $entity): Conversation {
+		$entity = parent::delete(entity: $entity);
+
+		// Dispatch deletion event.
+		$this->eventDispatcher->dispatchTyped(new ConversationDeletedEvent(conversation: $entity));
+
+		return $entity;
+	}//end delete()
+
+	/**
+	 * Find a conversation by its ID
+	 *
+	 * @param int $id Conversation ID
+	 *
+	 * @return Conversation The conversation entity
+	 *
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 */
+	public function find(int $id): Conversation {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->tableName)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+
+		return $this->findEntity(query: $qb);
+	}//end find()
+
+	/**
+	 * Find a conversation by its UUID
+	 *
+	 * @param string $uuid Conversation UUID
+	 *
+	 * @return Conversation The conversation entity
+	 *
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 */
+	public function findByUuid(string $uuid): Conversation {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from($this->tableName)
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
+
+		return $this->findEntity(query: $qb);
+	}//end findByUuid()
+
+	/**
+	 * Find one page of a user's conversations, newest first.
+	 *
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
+	 * @param ListQuery         $page  The limit and offset.
+	 *
+	 * @return Conversation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
+	 */
+	public function findByUser(ConversationScope $scope, ListQuery $page): array {
+		$qb = $this->db->getQueryBuilder();
+		$this->inOrganisation(qb: $this->owned(qb: $qb->select('*'), userId: $scope->userId), organisation: $scope->organisation);
+		$this->liveUnless(qb: $qb, includeDeleted: $scope->includeDeleted)->orderBy('updated', 'DESC')->setMaxResults($page->limitOrNull())->setFirstResult($page->offset ?? 0);
+		return $this->findEntities(query: $qb);
+	}//end findByUser()
+
+	/**
+	 * Find one page of a user's soft-deleted conversations (archive)
+	 *
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
+	 * @param ListQuery         $page  The limit and offset.
+	 *
+	 * @return Conversation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
+	 */
+	public function findDeletedByUser(ConversationScope $scope, ListQuery $page): array {
+		$qb = $this->db->getQueryBuilder();
+		$this->owned(qb: $qb->select('*'), userId: $scope->userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
+		$this->inOrganisation(qb: $qb, organisation: $scope->organisation)->orderBy('deleted_at', 'DESC')->setMaxResults($page->limitOrNull())->setFirstResult($page->offset ?? 0);
+		return $this->findEntities(query: $qb);
+	}//end findDeletedByUser()
+
+	/**
+	 * Find the live conversation titles of a user-agent pair that start with a wanted title
+	 *
+	 * Used to check for duplicate conversation names and generate unique titles: the
+	 * wanted title itself and its numbered variants all match.
+	 *
+	 * @param TitleClaim $claim The wanted title and the user-agent pair.
+	 *
+	 * @return array Array of matching conversation titles
+	 *
+	 * @psalm-return list<mixed>
+	 */
+	public function findTitlesByUserAgent(TitleClaim $claim): array {
+		$qb = $this->db->getQueryBuilder();
+		$this->owned(qb: $qb->select('title'), userId: $claim->userId)
+			->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($claim->agentId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->like('title', $qb->createNamedParameter($claim->baseTitle . '%', IQueryBuilder::PARAM_STR)));
+		return $this->titlesOf(qb: $this->liveUnless(qb: $qb, includeDeleted: false));
+	}//end findTitlesByUserAgent()
+
+	/**
+	 * The non-null titles a title query returns.
+	 *
+	 * @param IQueryBuilder $qb The query selecting `title`.
+	 *
+	 * @return array The titles.
+	 *
+	 * @psalm-return list<mixed>
+	 */
+	private function titlesOf(IQueryBuilder $qb): array {
+		$result = $qb->executeQuery();
+		$titles = [];
+
+		while (($row = $result->fetch()) !== false) {
+			if ($row['title'] !== null) {
+				$titles[] = $row['title'];
+			}
+		}
+
+		$result->closeCursor();
+
+		return $titles;
+	}//end titlesOf()
+
+	/**
+	 * Count conversations for a user
+	 *
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
+	 *
+	 * @return int Total count
+	 */
+	public function countByUser(ConversationScope $scope): int {
+		$qb = $this->db->getQueryBuilder();
+		$this->inOrganisation(qb: $this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $scope->userId), organisation: $scope->organisation);
+		return $this->countOf(qb: $this->liveUnless(qb: $qb, includeDeleted: $scope->includeDeleted));
+	}//end countByUser()
+
+	/**
+	 * Count soft-deleted conversations for a user (archived)
+	 *
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
+	 *
+	 * @return int Count of archived conversations
+	 */
+	public function countDeletedByUser(ConversationScope $scope): int {
+		$qb = $this->db->getQueryBuilder();
+		$this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $scope->userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
+		return $this->countOf(qb: $this->inOrganisation(qb: $qb, organisation: $scope->organisation));
+	}//end countDeletedByUser()
+
+	/**
+	 * Restrict a query to one user's conversations.
+	 *
+	 * @param IQueryBuilder $qb     The query, with its select already set.
+	 * @param string        $userId The owning user.
+	 *
+	 * @return IQueryBuilder The same query.
+	 */
+	private function owned(IQueryBuilder $qb, string $userId): IQueryBuilder {
+		$qb->from($this->tableName)
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
+
+		return $qb;
+	}//end owned()
+
+	/**
+	 * Restrict a query to one organisation, when one is given.
+	 *
+	 * @param IQueryBuilder $qb           The query.
+	 * @param string|null   $organisation The organisation UUID, or null for every organisation.
+	 *
+	 * @return IQueryBuilder The same query.
+	 */
+	private function inOrganisation(IQueryBuilder $qb, ?string $organisation): IQueryBuilder {
+		if ($organisation !== null) {
+			$qb->andWhere(
+				$qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR))
+			);
+		}
+
+		return $qb;
+	}//end inOrganisation()
+
+	/**
+	 * Exclude soft-deleted conversations unless they are asked for.
+	 *
+	 * @param IQueryBuilder $qb             The query.
+	 * @param bool          $includeDeleted Whether soft-deleted conversations stay in.
+	 *
+	 * @return IQueryBuilder The same query.
+	 */
+	private function liveUnless(IQueryBuilder $qb, bool $includeDeleted): IQueryBuilder {
+		if ($includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('deleted_at'));
+		}
+
+		return $qb;
+	}//end liveUnless()
+
+	/**
+	 * Run a count query.
+	 *
+	 * @param IQueryBuilder $qb The query selecting one count.
+	 *
+	 * @return int The count.
+	 */
+	private function countOf(IQueryBuilder $qb): int {
+		$result = $qb->executeQuery();
+		$count = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countOf()
+
+	/**
+	 * Soft delete a conversation
+	 *
+	 * @param int $id Conversation ID
+	 *
+	 * @return Conversation The updated conversation entity
+	 *
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 */
+	public function softDelete(int $id): Conversation {
+		$conversation = $this->find(id: $id);
+		$conversation->softDelete();
+		$conversation->setUpdated(new DateTime());
+
+		return $this->update(entity: $conversation);
+	}//end softDelete()
+
+	/**
+	 * Restore a soft-deleted conversation
+	 *
+	 * @param int $id Conversation ID
+	 *
+	 * @return Conversation The updated conversation entity
+	 *
+	 * @throws DoesNotExistException
+	 * @throws MultipleObjectsReturnedException
+	 */
+	public function restore(int $id): Conversation {
+		$conversation = $this->find(id: $id);
+		$conversation->restore();
+		$conversation->setUpdated(new DateTime());
+
+		return $this->update(entity: $conversation);
+	}//end restore()
+
+	/**
+	 * Check if user can access a conversation
+	 *
+	 * Access rules:
+	 * - User must be the owner of the conversation
+	 * - Conversation must belong to the user's current organisation (if provided)
+	 *
+	 * @param Conversation      $conversation Conversation entity
+	 * @param ConversationScope $scope        The user and, optionally, their current organisation.
+	 *
+	 * @return bool True if user can access
+	 */
+	public function canUserAccessConversation(Entity $conversation, ConversationScope $scope): bool {
+		// The owner only, and, when an organisation is given, only inside it.
+		return $conversation->getUserId() === $scope->userId
+			&& ($scope->organisation === null || $conversation->getOrganisation() === $scope->organisation);
+	}//end canUserAccessConversation()
+
+	/**
+	 * Check if user can modify a conversation
+	 *
+	 * Modification rules:
+	 * - User must be the owner of the conversation
+	 *
+	 * @param Conversation $conversation Conversation entity
+	 * @param string $userId User ID
+	 *
+	 * @return bool True if user can modify
+	 */
+	public function canUserModifyConversation(Entity $conversation, string $userId): bool {
+		return $conversation->getUserId() === $userId;
+	}//end canUserModifyConversation()
+}//end class

@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Exception;
 /**
  * Raised when a reversibility declaration is refused at schema save time.
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 final class ReversibilityDeclarationException extends Exception {
 
@@ -45,7 +45,7 @@ final class ReversibilityDeclarationException extends Exception {
 	 *
 	 * @param array<int, array{code: string, message: string}> $errors The refusals.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(private readonly array $errors) {
 		$messages = array_map(
@@ -61,7 +61,7 @@ final class ReversibilityDeclarationException extends Exception {
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getErrors(): array {
 		return $this->errors;

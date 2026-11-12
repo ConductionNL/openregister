@@ -30,7 +30,7 @@ VectorizationService (Generic Core)
 
 ### 1. VectorizationService
 
-**Location:** `lib/Service/VectorizationService.php`
+**Location:** `lib/Search/Service/VectorizationService.php`
 
 **Responsibilities:**
 - Batch processing with error handling

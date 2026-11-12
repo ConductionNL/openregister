@@ -11,11 +11,17 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -62,7 +68,7 @@ class RecordingDispatcher implements FlowStepDispatcher {
 		foreach ($items as $index => $item) {
 			$json = (array)($item['json'] ?? []);
 			$json['ranBy'] = $name;
-			$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;
@@ -88,10 +94,7 @@ class FlowEngineTest extends TestCase {
 	private function runFlow(array $flow, ?FlowStepDispatcher $dispatcher = null): array {
 		$dispatcher ??= new RecordingDispatcher();
 		return $this->engine->run(
-			$flow,
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher))
 		);
 	}//end runFlow()
 
@@ -157,6 +160,19 @@ class FlowEngineTest extends TestCase {
 		}
 	}//end testEachStepIsTracedInTheRunLog()
 
+	public function testEveryStepEntryCarriesWhenItStarted(): void {
+		$before = microtime(true);
+		$result = $this->runFlow($this->linearFlow(), new RecordingDispatcher(failOn: 'second'));
+
+		$this->assertCount(2, $result['log']);
+		foreach ($result['log'] as $entry) {
+			$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+00:00$/', $entry['startedAt']);
+			$this->assertGreaterThanOrEqual((int)floor($before), (new \DateTimeImmutable($entry['startedAt']))->getTimestamp());
+		}
+
+		$this->assertLessThanOrEqual($result['log'][1]['startedAt'], $result['log'][0]['startedAt']);
+	}//end testEveryStepEntryCarriesWhenItStarted()
+
 	public function testItemsAreThreadedFromEachStepIntoTheNext(): void {
 		$dispatcher = new RecordingDispatcher();
 		$result = $this->runFlow($this->linearFlow(), $dispatcher);
@@ -190,9 +206,9 @@ class FlowEngineTest extends TestCase {
 				}
 
 				return [
-					FlowItems::item(json: ['n' => 1], binary: [], fromItemIndex: 0),
-					FlowItems::item(json: ['n' => 2], binary: [], fromItemIndex: 0),
-					FlowItems::item(json: ['n' => 3], binary: [], fromItemIndex: 0),
+					FlowItems::item(json: ['n' => 1], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
+					FlowItems::item(json: ['n' => 2], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
+					FlowItems::item(json: ['n' => 3], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
 				];
 			}//end dispatch()
 		};
@@ -390,17 +406,15 @@ class FlowEngineTest extends TestCase {
 		$pinned = [FlowItems::item(json: ['pinned' => true])];
 
 		$result = $this->engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher,
-			['pins' => ['first' => $pinned]]
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher))->withContext(context: ['pins' => ['first' => $pinned]])
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
 		// Only 'second' ran — 'first' was served from the pin.
 		$this->assertSame(['second'], $dispatcher->dispatched);
 		$this->assertSame('pinned', $result['log'][0]['status']);
+		$this->assertSame(0, $result['log'][0]['durationMs']);
+		$this->assertArrayHasKey('startedAt', $result['log'][0]);
 		// The next step saw the pinned output, not a re-execution.
 		$this->assertTrue($dispatcher->seenItems['second'][0]['json']['pinned']);
 	}//end testAPinnedStepIsNotExecutedAndItsOutputIsUsed()
@@ -422,11 +436,7 @@ class FlowEngineTest extends TestCase {
 
 		$dispatcher = new RecordingDispatcher();
 		$result = $this->engine->run(
-			$flow,
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher,
-			['pins' => ['first' => [FlowItems::item(json: ['source' => 'run-pin'])]]]
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher))->withContext(context: ['pins' => ['first' => [FlowItems::item(json: ['source' => 'run-pin'])]]])
 		);
 
 		// The run's pin wins over the flow's own.
@@ -438,11 +448,7 @@ class FlowEngineTest extends TestCase {
 		// API) and carry on with its stored output.
 		$dispatcher = new RecordingDispatcher(failOn: 'first');
 		$result = $this->engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher,
-			['pins' => ['first' => [FlowItems::item(json: ['ok' => true])]]]
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher))->withContext(context: ['pins' => ['first' => [FlowItems::item(json: ['ok' => true])]]])
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -467,9 +473,7 @@ class FlowEngineTest extends TestCase {
 					$n = (int)($item['json']['n'] ?? 0);
 					$out[] = FlowItems::item(
 						json: $item['json'],
-						binary: [],
-						fromItemIndex: $i,
-						output: ($n > 5 ? 'high' : 'low')
+						options: new FlowItemOptions(binary: [], fromItemIndex: $i, output: ($n > 5 ? 'high' : 'low'))
 					);
 				}
 
@@ -501,12 +505,10 @@ class FlowEngineTest extends TestCase {
 		];
 
 		$result = $this->engine->run(
-			$flow,
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$router,
-			[],
-			$seed
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $router)),
+			origin: new FlowRunOrigin(
+				items: $seed
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -551,13 +553,11 @@ class FlowEngineTest extends TestCase {
 		$seed = [FlowItems::item(json: ['from' => 'run-from-here'])];
 
 		$result = $this->engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher,
-			[],
-			$seed,
-			'second'
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher)),
+			origin: new FlowRunOrigin(
+				items: $seed,
+				startAt: 'second'
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -568,13 +568,10 @@ class FlowEngineTest extends TestCase {
 
 	public function testRunFromAnUnknownNodeFailsLoudly(): void {
 		$result = $this->engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			new RecordingDispatcher(),
-			[],
-			null,
-			'no-such-node'
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: new RecordingDispatcher())),
+			origin: new FlowRunOrigin(
+				startAt: 'no-such-node'
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
@@ -583,13 +580,10 @@ class FlowEngineTest extends TestCase {
 	public function testAnEmptyStartAtIsIgnoredAndTheFlowRunsFromItsStart(): void {
 		$dispatcher = new RecordingDispatcher();
 		$result = $this->engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			$dispatcher,
-			[],
-			null,
-			''
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher)),
+			origin: new FlowRunOrigin(
+				startAt: ''
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -615,7 +609,7 @@ class FlowEngineTest extends TestCase {
 			}//end dispatch()
 		};
 
-		$this->engine->run($flow, new MethodMarkingStore(false, 'marking'), new FlowSubject(), $dispatcher);
+		$this->engine->run(start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher)));
 
 		$this->assertSame('email', $dispatcher->steps[0]['type']);
 		$this->assertSame('abc-123', $dispatcher->steps[0]['configRef']);

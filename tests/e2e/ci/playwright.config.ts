@@ -341,6 +341,19 @@ export default defineConfig({
 		// piece of instance state the file writes — the `objectArchiveRetention`
 		// setting — is read first and written back at the end of the same test.
 		'archival-retention.spec.ts',
+
+		// Admitted 2026-10-05. The first executed browser test for seven manifest
+		// pages: EntitiesIndex, OperationsConsoleIndex and the five data quality
+		// pages. Their only screenshots sit under visual/**, which this config
+		// does not collect, so CI had never opened them.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: it seeds nothing and needs no occ, docker or seed data.
+		//      Each page is asserted in the state it draws on a fresh instance.
+		//   2. Non-mutating: it navigates and reads, and writes nothing.
+		//   3. No conditional asserts: every assertion is unconditional.
+		//   4. No test.skip at all.
+		'spec-coverage/quality-and-operations-pages.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
@@ -387,11 +400,19 @@ export default defineConfig({
 	use: {
 		baseURL: resolveBaseUrl(),
 		extraHTTPHeaders: {
+			'OCS-APIRequest': 'true',
 			Authorization: `Basic ${Buffer.from(
 				`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${
 					process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 				}`,
 			).toString('base64')}`,
+			// How a basic-auth client tells Nextcloud it is an API client and
+			// not a browser form. Without it every route that does not carry
+			// #[NoCSRFRequired] (the settings declarations, the destruction
+			// lists, the calculation trial, every write the app guards) answers
+			// 412 before the controller runs, and the spec fails on the
+			// framework rather than on the behaviour it is about.
+			'OCS-APIRequest': 'true',
 		},
 		// `retain-on-failure`, not `on-first-retry`. With `retries: 1` a FLAKE is
 		// exactly the case where attempt 1 fails and attempt 2 passes — and

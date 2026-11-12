@@ -1,0 +1,3 @@
+- [x] 1.1 ExampleSetCollectivesStore (collective, page, pageExists, deletePage, deleteCollective) over Collectives' own services and Teams
+- [x] 1.2 ExampleSetCollectivesPages part, wired in EngineKinds, Catalogue and Record
+- [x] 1.3 tests (ExampleSetCollectivesPagesTest)

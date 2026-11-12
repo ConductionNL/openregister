@@ -34,7 +34,9 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Mirrors status and result onto the anchoring object.
@@ -46,10 +48,10 @@ class CaseBusinessStateWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The ordinary object write path.
+	 * @param ObjectOperationsInterface $objects The ordinary object write path.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 
 	}//end __construct()
@@ -139,10 +141,11 @@ class CaseBusinessStateWriter {
 	 */
 	private function patch(CaseItem $item, array $data): void {
 		$this->objects->patchObject(
-			objectId: (string)$item->getObjectUuid(),
-			data: $data,
-			register: $item->getRegisterId(),
-			schema: $item->getSchemaId(),
+			patch: new ObjectPatch(
+				objectId: (string)$item->getObjectUuid(),
+				data: $data,
+				target: new ObjectFindTarget(register: $item->getRegisterId(), schema: $item->getSchemaId())
+			),
 			_rbac: false
 		);
 	}//end patch()

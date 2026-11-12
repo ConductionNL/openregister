@@ -30,13 +30,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Container\ContainerInterface;
 
 /**
  * Listener that evicts aggregation caches on object lifecycle changes.
@@ -44,17 +47,25 @@ use OCP\EventDispatcher\IEventListener;
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class AggregationCacheInvalidationListener implements IEventListener {
+	use WrittenObjectOfEvent;
+
 	/**
 	 * Wire the aggregation cache used for evictions.
 	 *
-	 * @param AggregationCache $cache Cache holding aggregation read-models.
+	 * The mappers are resolved from the container when an event arrives, not
+	 * injected, because RegisterMapper and MagicMapper reach each other at
+	 * construction time.
+	 *
+	 * @param AggregationCacheInterface $cache Cache holding aggregation read-models.
+	 * @param ContainerInterface|null $container Resolves the register and schema mappers for slug lookup.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function __construct(
-		private readonly AggregationCache $cache,
+		private readonly AggregationCacheInterface $cache,
+		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -66,47 +77,73 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
+	 * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
 	 */
 	public function handle(Event $event): void {
 		$object = $this->extractObject(event: $event);
-		if ($object === null) {
-			return;
+		if ($object !== null) {
+			$this->evictFor(object: $object);
 		}
-
-		$this->cache->evictForSchema(
-			registerSlug: (string)$object->getRegister(),
-			schemaSlug: (string)$object->getSchema()
-		);
 	}//end handle()
 
 	/**
-	 * Resolve the underlying object for any of the supported event types.
+	 * Evict the aggregations of the object's register and schema.
 	 *
-	 * @param Event $event Inbound dispatcher event.
+	 * @param ObjectEntity $object The written object.
 	 *
-	 * @return ObjectEntity|null Object instance, or null when not resolvable.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
+	 * @return void
 	 */
-	private function extractObject(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectTransitionedEvent) {
-			return $event->getObject();
+	private function evictFor(ObjectEntity $object): void {
+		// An object carries its register and schema as ids ("20", "34"), while
+		// AggregationCache keys its entries and version counters by slug
+		// ("pipelinq", "leadProduct"). Evicting by id bumped a counter nothing
+		// reads, so a write never evicted and counts stayed stale for the TTL.
+		$this->cache->evictForSchema(
+			registerSlug: $this->slugOf(reference: (string)$object->getRegister(), mapperClass: RegisterMapperInterface::class),
+			schemaSlug: $this->slugOf(reference: (string)$object->getSchema(), mapperClass: SchemaMapperInterface::class)
+		);
+	}//end evictFor()
+
+	/**
+	 * The slug for a register or schema reference, as AggregationCache keys it.
+	 *
+	 * A reference that is not numeric is taken to be a slug already. When the
+	 * lookup fails the reference is returned unchanged.
+	 *
+	 * @param string $reference The id or slug stored on the object.
+	 * @param string $mapperClass RegisterMapperInterface::class or SchemaMapperInterface::class.
+	 *
+	 * @return string The slug.
+	 *
+	 * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
+	 */
+	private function slugOf(string $reference, string $mapperClass): string {
+		if ($this->container === null || is_numeric($reference) === false) {
+			return $reference;
 		}
 
-		if (method_exists($event, 'getObject') === true) {
-			$obj = $event->getObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
+		$slug = $this->lookupSlug(reference: $reference, mapperClass: $mapperClass);
+		if (is_string($slug) === false || $slug === '') {
+			return $reference;
 		}
 
-		if (method_exists($event, 'getNewObject') === true) {
-			$obj = $event->getNewObject();
-			if ($obj instanceof ObjectEntity) {
-				return $obj;
-			}
-		}
+		return $slug;
+	}//end slugOf()
 
-		return null;
-	}//end extractObject()
+	/**
+	 * The slug of the register or schema with this numeric id, or null when the lookup fails.
+	 *
+	 * @param string $reference The numeric id stored on the object.
+	 * @param string $mapperClass RegisterMapperInterface::class or SchemaMapperInterface::class.
+	 *
+	 * @return mixed The slug as the entity holds it, or null.
+	 */
+	private function lookupSlug(string $reference, string $mapperClass): mixed {
+		try {
+			// Both mappers take named rbac and multitenancy flags on find().
+			return $this->container->get($mapperClass)->find(id: (int)$reference, _rbac: false, _multitenancy: false)->getSlug();
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end lookupSlug()
 }//end class

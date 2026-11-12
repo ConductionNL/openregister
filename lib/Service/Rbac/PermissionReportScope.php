@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,23 +29,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Resolves the entities a permission report runs over.
  */
-class PermissionReportScope {
+class PermissionReportScope implements PermissionReportScopeInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup.
-	 * @param SchemaMapper   $schemaMapper   Schema lookup.
+	 * @param RegisterMapperInterface $registerMapper Register lookup.
+	 * @param SchemaMapperInterface   $schemaMapper   Schema lookup.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -56,7 +56,7 @@ class PermissionReportScope {
 	 *
 	 * @return Register[] The registers, empty when the filter matches nothing.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function registers(?string $filter): array {
 		try {
@@ -81,7 +81,7 @@ class PermissionReportScope {
 	 *
 	 * @return Schema[] The schemas, empty when the filter matches nothing.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function schemas(?string $filter): array {
 		try {

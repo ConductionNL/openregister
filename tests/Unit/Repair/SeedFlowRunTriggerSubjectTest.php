@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -29,8 +29,11 @@ declare(strict_types=1);
 namespace Unit\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -43,6 +46,10 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunSubjects
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunFilter
+ * @uses \OCA\OpenRegister\Db\FlowRunListing
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectClaim
  */
 final class SeedFlowRunTriggerSubjectTest extends TestCase {
 
@@ -105,18 +112,14 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 			$container->method('get')->willThrowException(new RuntimeException('no such table'));
 		} else {
 			$mapper = $this->createMock(FlowRunMapper::class);
-			// ⚠️ THE REAL SIGNATURE IS (flowId, status, limit, offset, ...).
-			// Taking the first two arguments as (limit, offset) reads null for
-			// both, which pins the page index at 0 and loops forever — a hang,
-			// not a failure. The step calls it with NAMED arguments, so only
-			// the double can get this wrong.
+			// ⚠️ THE PAGE IS THE LISTING'S limit AND offset. Reading them from
+			// anywhere else pins the page index at 0 and loops forever — a
+			// hang, not a failure — so the double reads them from the listing.
 			$mapper->method('findAllRuns')->willReturnCallback(
-				function (
-					?string $flowId = null,
-					?string $status = null,
-					int $limit = 50,
-					int $offset = 0
-				) use ($pages): array {
+				function (FlowRunListing $listing, FlowRunViewer $viewer) use ($pages): array {
+					$this->assertNull($viewer->requesterUid);
+					$limit = $listing->limit;
+					$offset = $listing->offset;
 					$this->pages[] = [$limit, $offset];
 					$index = 0;
 					if ($limit > 0) {
@@ -139,7 +142,8 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 
 		return new SeedFlowRunTriggerSubject(
 			$container,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			new FlowRunSubjects()
 		);
 	}//end step()
 
@@ -270,7 +274,7 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($mapperThrows);
 
-		(new SeedFlowRunTriggerSubject($container, $this->createMock(LoggerInterface::class)))
+		(new SeedFlowRunTriggerSubject($container, $this->createMock(LoggerInterface::class), new FlowRunSubjects()))
 			->run($this->upgradeOutput());
 
 		$this->assertCount(1, $this->stored, 'the run after the bad one is still seeded');

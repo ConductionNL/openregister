@@ -20,7 +20,7 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  * @link     https://www.OpenRegister.nl
  *
- * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;

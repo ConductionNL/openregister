@@ -3,7 +3,7 @@
 namespace Unit\Repair;
 
 use OCA\OpenRegister\Repair\RegisterRiskLevelMetadata;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use PHPUnit\Framework\MockObject\MockObject;

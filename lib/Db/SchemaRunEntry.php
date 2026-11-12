@@ -50,6 +50,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SchemaRunEntry extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Outcome constants.
@@ -126,72 +129,4 @@ class SchemaRunEntry extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'preData', type: 'json');
 
 	}//end __construct()
-
-	/**
-	 * The field names registered with the 'json' type.
-	 *
-	 * @return array<int, string> The json-typed field names.
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * Without this, SchemaRunEntryMapper's `$entity->hydrate()` call hit
-	 * Entity::__call and threw "hydrate does not exist", so every per-object
-	 * migration entry write failed.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised entry.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'runId' => $this->runId,
-			'objectUuid' => $this->objectUuid,
-			'outcome' => $this->outcome,
-			'message' => $this->message,
-			'preVersion' => $this->preVersion,
-			'postVersion' => $this->postVersion,
-			'preData' => $this->preData,
-		];
-
-	}//end jsonSerialize()
 }//end class

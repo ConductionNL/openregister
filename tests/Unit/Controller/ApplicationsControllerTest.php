@@ -8,6 +8,7 @@ use OCA\OpenRegister\Controller\ApplicationsController;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Service\ApplicationService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApplicationsControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
@@ -30,8 +31,7 @@ class ApplicationsControllerTest extends TestCase {
 		$this->applicationMapper = $this->createMock(ApplicationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ApplicationsController(
-			'openregister',
+		$this->controller = ApplicationsControllerFactory::create(
 			$this->request,
 			$this->applicationService,
 			$this->applicationMapper,
@@ -42,6 +42,8 @@ class ApplicationsControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	public function testIndexSuccess(): void {

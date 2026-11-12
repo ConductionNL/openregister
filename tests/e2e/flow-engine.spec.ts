@@ -26,7 +26,12 @@ import * as path from 'path'
 // Routes are imported by COMPONENT NAME (see tests/e2e/_page-routes.ts): the
 // binding records which page host each route mounts, which a bare path string
 // cannot say. Also what makes this suite legible to gate-26.
-import { FlowDetailPage, FlowsIndex } from './_page-routes.ts'
+import {
+	FlowDetailPage,
+	FlowOverviewPage,
+	FlowRunPage,
+	FlowsIndex,
+} from './_page-routes.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '.auth/admin.json')
 
@@ -642,6 +647,111 @@ test.describe('the Flows page', () => {
 	// The session is for `page`; the API headers are for the `request` calls
 	// that set the fixtures up, which would otherwise trip the CSRF check.
 	test.use({ storageState: STORAGE_STATE, extraHTTPHeaders: { ...API_HEADERS } })
+
+	/**
+	 * The journey the overview and run pages exist for: a row in the list
+	 * opens the overview, the overview lists the run, and the run has a page
+	 * of its own that names its steps. A failed run names the step it stopped
+	 * at, which is what the old sidebar run view never did.
+	 *
+	 * @spec openspec/specs/flow-and-run-detail-pages/spec.md
+	 */
+	test('a row opens the overview, and a run opens its own page', async ({
+		page,
+		request,
+	}) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} journey`,
+			nodes: [
+				{
+					id: 'start',
+					type: 'openregister.set-fields',
+					config: { fields: { touched: RUN_ID } },
+				},
+				{
+					id: 'middle',
+					type: 'openregister.set-fields',
+					config: { fields: { second: RUN_ID } },
+					exit: true,
+				},
+			],
+			edges: [{ id: 'first', from: 'start', to: 'middle' }],
+		})
+
+		// Synchronous test run, as in 'running a flow': a queued run only walks
+		// when cron fires.
+		const ran = await request.post('/apps/openregister/api/flow-runs/test', {
+			data: { flowId: flow.id },
+		})
+		expect(ran.status(), await ran.text()).toBe(200)
+		const run = await ran.json()
+		expect(run.status).toBe('completed')
+
+		await page.goto(`/apps/openregister${FlowsIndex}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await page
+			.locator('tr', { hasText: `${RUN_ID} journey` })
+			.first()
+			.click({ timeout: 15000 })
+
+		await expect(page).toHaveURL(new RegExp(`${FlowOverviewPage(flow.id)}`), {
+			timeout: 15000,
+		})
+		await expect(page.getByTestId('flow-overview-name')).toHaveText(
+			`${RUN_ID} journey`,
+			{ timeout: 15000 },
+		)
+		const runs = page.getByTestId('flow-overview-runs')
+		await expect(runs.locator('a').first()).toBeVisible({ timeout: 15000 })
+
+		await runs.locator('a').first().click()
+		await expect(page).toHaveURL(new RegExp(FlowRunPage(run.uuid)), {
+			timeout: 15000,
+		})
+		await expect(page.getByTestId('run-detail-title')).toContainText(
+			`${RUN_ID} journey`,
+			{ timeout: 15000 },
+		)
+		await expect(page.getByTestId('run-detail-status')).toContainText(
+			'Completed',
+		)
+		// The node's catalogue name, not its type id: the page names steps the
+		// way the editor's palette does.
+		await expect(page.getByTestId('run-detail-steps')).toContainText(
+			'Edit fields',
+		)
+		await expect(page.getByTestId('run-detail-failure')).toHaveCount(0)
+	})
+
+	test('a failed run names the step it stopped at', async ({ page, request }) => {
+		const flow = await createFlow(request, {
+			name: `${RUN_ID} failing`,
+			nodes: [
+				{ id: 'start', type: 'set-fields', config: {} },
+				{ id: 'middle', type: 'openregister.end', config: {} },
+			],
+			edges: [{ id: 'first', from: 'start', to: 'middle' }],
+		})
+
+		const ran = await request.post('/apps/openregister/api/flow-runs/test', {
+			data: { flowId: flow.id },
+		})
+		expect(ran.status()).toBe(200)
+		const run = await ran.json()
+		expect(run.status).not.toBe('completed')
+
+		await page.goto(`/apps/openregister${FlowRunPage(run.uuid)}`, {
+			waitUntil: 'domcontentloaded',
+		})
+		await expect(page.getByTestId('run-detail-failure')).toContainText(
+			'Stopped at step 1',
+			{ timeout: 15000 },
+		)
+		await expect(page.getByTestId('run-detail-failure')).toContainText(
+			'set-fields',
+		)
+	})
 
 	test('lists flows and opens one', async ({ page, request }) => {
 		// A flow WITH a step, so the detail page has something only this flow

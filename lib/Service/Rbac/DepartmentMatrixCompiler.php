@@ -51,6 +51,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+
 /**
  * Compiles an `authorization.matrix` block into conditional scopes.
  *
@@ -78,11 +81,12 @@ class DepartmentMatrixCompiler {
 	 * The canonical five plus `handle`, which is not canonical and is resolved
 	 * by the existing custom-verb voting. A verb outside this set is refused at
 	 * save rather than dropped: a row granting `handel` would compile to
-	 * nothing and read, in the grid, as a right somebody has.
+	 * nothing and read, in the grid, as a right somebody has. The three file
+	 * verbs grant what may be done with the object's files.
 	 *
 	 * @var string[]
 	 */
-	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle'];
+	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle', 'readFiles', 'addFiles', 'deleteFiles'];
 
 	/**
 	 * The verb `handle` falls back to when no voter claims it.
@@ -91,86 +95,223 @@ class DepartmentMatrixCompiler {
 	 */
 	public const HANDLE_FALLBACK = 'update';
 
+	/**
+	 * Reads a row's `where`.
+	 *
+	 * @var MatrixRowWhere
+	 */
+	private readonly MatrixRowWhere $where;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param MatrixRowWhere|null $where           Reads a row's `where`; a fresh one when null.
+	 * @param array<int, string>  $declaredActions The actions the schema declares itself, which a row may grant too.
+	 */
+	public function __construct(?MatrixRowWhere $where = null, private readonly array $declaredActions = []) {
+		$this->where = ($where ?? new MatrixRowWhere());
+	}//end __construct()
+
 
 	/**
 	 * Compile a matrix into authorization rules, by action.
 	 *
+	 * A row's `where` is copied into the rule's `match` beside the field
+	 * condition, so it is one more AND-ed key of an ordinary conditional scope
+	 * and both evaluators read it as they read any other. A row past its
+	 * `until` compiles to nothing.
+	 *
+	 * `until` is read against the real clock; compileAt() takes the moment.
+	 *
+	 * @param array<string, mixed> $matrix    The declared matrix.
+	 * @param string[]             $ownValues The caller's own field values, for `$self`.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function compile(array $matrix, array $ownValues): array {
+		return $this->compileAt(matrix: $matrix, caller: new MatrixCaller(ownValues: $ownValues, now: new DateTimeImmutable()));
+	}//end compile()
+
+	/**
+	 * Compile a matrix into authorization rules for a caller at a moment.
+	 *
 	 * @param array<string, mixed> $matrix The declared matrix.
-	 * @param string[] $ownValues The caller's own field values, for `$self`.
+	 * @param MatrixCaller         $caller The caller's own field values and the moment `until` is read against.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
-	public function compile(array $matrix, array $ownValues): array {
-		$field = trim((string)($matrix['field'] ?? ''));
-		$rows = ($matrix['rows'] ?? null);
-		if ($field === '' || is_array($rows) === false) {
+	public function compileAt(array $matrix, MatrixCaller $caller): array {
+		$run = new MatrixCompileRun(caller: $caller, field: trim((string)($matrix['field'] ?? '')));
+		return $this->compileRows(rows: ($matrix['rows'] ?? null), run: $run);
+	}//end compileAt()
+
+	/**
+	 * Gather the rows by action and group, then emit one rule per scope.
+	 *
+	 * A matrix without a field or without a row list compiles to nothing.
+	 *
+	 * @param mixed            $rows The declared rows.
+	 * @param MatrixCompileRun $run  The caller's own values, the field and the moment.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>> Rules per action.
+	 */
+	private function compileRows(mixed $rows, MatrixCompileRun $run): array {
+		if ($run->field === '' || is_array($rows) === false) {
 			return [];
 		}
 
-		$byActionGroup = $this->gatherByActionGroup(rows: $rows, ownValues: $ownValues);
+		$this->gatherByActionGroup(rows: $rows, run: $run);
 
+		return $this->rulesFrom(gathered: $run->gathered, field: $run->field);
+	}//end compileRows()
+
+	/**
+	 * One rule per gathered scope, its values sorted, keyed by action.
+	 *
+	 * @param array<string, array<string, array>> $gathered Action => key => scope.
+	 * @param string                              $field    The record field the matrix matches on.
+	 *
+	 * @return array<string, array<int, array>> Action => rules.
+	 */
+	private function rulesFrom(array $gathered, string $field): array {
 		$compiled = [];
-		foreach ($byActionGroup as $action => $groups) {
-			foreach ($groups as $group => $values) {
+		foreach ($gathered as $action => $scopes) {
+			foreach ($scopes as $scope) {
+				$values = $scope['values'];
 				sort($values);
-				$compiled[$action][] = [
-					'group' => $group,
-					'match' => [$field => ['$in' => $values]],
-				];
+				$compiled[$action][] = array_merge(
+					[
+						'group' => $scope['group'],
+						'match' => array_merge([$field => ['$in' => $values]], $scope['where']),
+					],
+					$scope['marker']
+				);
 			}
 		}
 
 		return $compiled;
-	}//end compile()
+	}//end rulesFrom()
 
 	/**
-	 * Gather the declared values per action and per group.
+	 * Gather the declared values per action, group and `where`.
 	 *
-	 * Values are gathered PER (action, group) and only then turned into one
-	 * rule, which is what D-1's "rows sharing a group merge into one scope"
-	 * asks for. Emitting a rule per row would work and would put four
-	 * predicates in an OR where one `$in` belongs.
+	 * Values are gathered PER (action, group, where) and only then turned into
+	 * one rule, which is what D-1's "rows sharing a group merge into one scope"
+	 * asks for. Rows with a different `where` stay separate scopes: merging
+	 * them would widen one row's condition to the other's values.
 	 *
-	 * @param array<int|string, mixed> $rows      The declared rows.
-	 * @param string[]                 $ownValues The caller's own field values, for `$self`.
+	 * @param array<int|string, mixed> $rows The declared rows.
+	 * @param MatrixCompileRun         $run  The caller's own values, the field and the moment; collects the scopes.
 	 *
-	 * @return array<string, array<string, array<int, string>>> Values by action, then group.
+	 * @return void
+	 *         Scopes by action, keyed by group and `where`.
 	 *
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
-	private function gatherByActionGroup(array $rows, array $ownValues): array {
-		$byActionGroup = [];
-
+	private function gatherByActionGroup(array $rows, MatrixCompileRun $run): void {
 		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				continue;
+			$scope = $this->scopeOf(row: $row, run: $run);
+			if ($scope !== null) {
+				$this->gather(run: $run, scope: [...$scope, 'actions' => $this->actionsOf(row: $row)]);
 			}
-
-			$group = trim((string)($row['group'] ?? ''));
-			if ($group === '') {
-				continue;
-			}
-
-			$values = $this->valuesOf(row: $row, ownValues: $ownValues);
-			if (empty($values) === true) {
-				// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
-				// dropped by the SQL builder and the rule becomes an
-				// unconditional grant to the group.
-				continue;
-			}
-
-			foreach ($this->actionsOf(row: $row) as $action) {
-				$existing = ($byActionGroup[$action][$group] ?? []);
-				$byActionGroup[$action][$group] = array_values(
-					array_unique(array_merge($existing, $values))
-				);
-			}
-		}//end foreach
-
-		return $byActionGroup;
+		}
 	}//end gatherByActionGroup()
+
+	/**
+	 * The scope one row compiles to, or null when the row is dropped.
+	 *
+	 * @param mixed            $row One matrix row.
+	 * @param MatrixCompileRun $run The caller's own values, the field and the moment.
+	 *
+	 * @return array{group: string, where: array, marker: array, values: array}|null The scope.
+	 */
+	private function scopeOf(mixed $row, MatrixCompileRun $run): array|null {
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$group = trim((string)($row['group'] ?? ''));
+		if ($group === '' || $this->hasLapsed(row: $row, now: $run->caller->now) === true) {
+			return null;
+		}
+
+		$scope = $this->conditionedScope(row: $row, run: $run);
+		if ($scope === null) {
+			return null;
+		}
+
+		return ['group' => $group, ...$scope];
+	}//end scopeOf()
+
+	/**
+	 * Whether a row carries an `until` that has passed.
+	 *
+	 * @param array             $row The row.
+	 * @param DateTimeInterface $now The moment it is read against.
+	 *
+	 * @return bool True when the row no longer answers.
+	 */
+	private function hasLapsed(array $row, DateTimeInterface $now): bool {
+		return array_key_exists(GrantConstraints::UNTIL_KEY, $row) === true
+			&& (new GrantConstraints())->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], point: new ConstraintPoint(area: [], now: $now)) === false;
+	}//end hasLapsed()
+
+	/**
+	 * A live row's scope: its `where`, values and marker, or null when either is unusable.
+	 *
+	 * @param array            $row The row.
+	 * @param MatrixCompileRun $run The caller's own values and the field the matrix matches on.
+	 *
+	 * @return array{where: array, marker: array, values: array}|null The scope, without its group.
+	 */
+	private function conditionedScope(array $row, MatrixCompileRun $run): array|null {
+		$where = $this->where->conditionsOf(row: $row, field: $run->field);
+		if ($where === null) {
+			return null;
+		}
+
+		$values = $this->valuesOf(row: $row, ownValues: $run->caller->ownValues);
+		if (empty($values) === true) {
+			// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
+			// dropped by the SQL builder and the rule becomes an
+			// unconditional grant to the group.
+			return null;
+		}
+
+		return [
+			'where' => $where,
+			'marker' => (new ReadRuleTenancy())->markerOf(rule: $row),
+			'values' => $values,
+		];
+	}//end conditionedScope()
+
+	/**
+	 * Add one scope under each of its actions, merging values with an equal group, where and marker.
+	 *
+	 * @param MatrixCompileRun $run   The run whose gathered scopes take this one.
+	 * @param array            $scope The scope, with the row's `actions`.
+	 *
+	 * @return void
+	 */
+	private function gather(MatrixCompileRun $run, array $scope): void {
+		$key = $scope['group'] . "\0" . json_encode($scope['where']) . "\0" . json_encode($scope['marker']);
+		foreach ($scope['actions'] as $action) {
+			$existing = ($run->gathered[$action][$key]['values'] ?? []);
+			$run->gathered[$action][$key] = [
+				'group' => $scope['group'],
+				'where' => $scope['where'],
+				'marker' => $scope['marker'],
+				'values' => array_values(array_unique(array_merge($existing, $scope['values']))),
+			];
+		}
+	}//end gather()
+
+
 
 	/**
 	 * Merge compiled rules into an authorization block.
@@ -203,19 +344,35 @@ class DepartmentMatrixCompiler {
 		unset($merged[self::KEY]);
 
 		foreach ($compiled as $action => $rules) {
-			$existing = ($merged[$action] ?? []);
-			if (is_array($existing) === false) {
-				$existing = [];
-			}
-
-			$merged[$action] = array_merge(array_values($existing), $rules);
+			$merged[$action] = array_merge($this->existingRules(block: $merged, action: $action), $rules);
 		}
 
 		return $merged;
 	}//end merge()
 
 	/**
+	 * The rules a block already holds for an action, as a list; none when it holds no list.
+	 *
+	 * @param array      $block  The block.
+	 * @param int|string $action The action.
+	 *
+	 * @return array<int, mixed> The rules.
+	 */
+	private function existingRules(array $block, int|string $action): array {
+		$existing = ($block[$action] ?? []);
+		if (is_array($existing) === false) {
+			return [];
+		}
+
+		return array_values($existing);
+	}//end existingRules()
+
+	/**
 	 * The caller's own values, from a group-prefix user source.
+	 *
+	 * `groups: true` adds every group id the caller holds, unprefixed, so
+	 * `$self` on a group-id field means "a group I am in". Both may be
+	 * declared; the union is used.
 	 *
 	 * @param array<string, mixed>|null $source The declared user source.
 	 * @param string[] $userGroups The caller's Nextcloud groups.
@@ -225,11 +382,30 @@ class DepartmentMatrixCompiler {
 	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
 	 */
 	public function valuesFromGroups(?array $source, array $userGroups): array {
-		$prefix = trim((string)($source['groupPrefix'] ?? ''));
-		if ($prefix === '') {
-			return [];
+		$values = [];
+		if (($source['groups'] ?? false) === true) {
+			$values = array_map('strval', $userGroups);
 		}
 
+		$prefix = trim((string)($source['groupPrefix'] ?? ''));
+		if ($prefix === '') {
+			return array_values(array_unique($values));
+		}
+
+		$values = array_merge($values, $this->valuesAfterPrefix(userGroups: $userGroups, prefix: $prefix));
+
+		return array_values(array_unique($values));
+	}//end valuesFromGroups()
+
+	/**
+	 * What follows the prefix in each of the caller's groups that carries it.
+	 *
+	 * @param array<int, mixed> $userGroups The caller's groups.
+	 * @param string            $prefix     The non-empty prefix.
+	 *
+	 * @return array<int, string> The values, in group order.
+	 */
+	private function valuesAfterPrefix(array $userGroups, string $prefix): array {
 		$values = [];
 		foreach ($userGroups as $group) {
 			$group = (string)$group;
@@ -241,8 +417,8 @@ class DepartmentMatrixCompiler {
 			}
 		}
 
-		return array_values(array_unique($values));
-	}//end valuesFromGroups()
+		return $values;
+	}//end valuesAfterPrefix()
 
 	/**
 	 * The verb a matrix action enforces as.
@@ -280,17 +456,8 @@ class DepartmentMatrixCompiler {
 	 * @return string[] The values.
 	 */
 	private function valuesOf(array $row, array $ownValues): array {
-		$declared = ($row['value'] ?? ($row['values'] ?? null));
-		if (is_string($declared) === true) {
-			$declared = [$declared];
-		}
-
-		if (is_array($declared) === false) {
-			return [];
-		}
-
 		$values = [];
-		foreach ($declared as $value) {
+		foreach ($this->declaredValues(row: $row) as $value) {
 			$value = trim((string)$value);
 			if ($value === '') {
 				continue;
@@ -308,6 +475,26 @@ class DepartmentMatrixCompiler {
 	}//end valuesOf()
 
 	/**
+	 * The values a row declares under `value` (preferred) or `values`, as a list.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return array<int, mixed> The declared values, empty when none are readable.
+	 */
+	private function declaredValues(array $row): array {
+		$declared = ($row['value'] ?? ($row['values'] ?? null));
+		if (is_string($declared) === true) {
+			return [$declared];
+		}
+
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		return $declared;
+	}//end declaredValues()
+
+	/**
 	 * The actions one row grants, resolved.
 	 *
 	 * @param array<string, mixed> $row The row.
@@ -323,7 +510,7 @@ class DepartmentMatrixCompiler {
 		$actions = [];
 		foreach ($declared as $action) {
 			$action = trim((string)$action);
-			if (in_array($action, self::ACTIONS, true) === false) {
+			if (in_array($action, self::ACTIONS, true) === false && in_array($action, $this->declaredActions, true) === false) {
 				continue;
 			}
 

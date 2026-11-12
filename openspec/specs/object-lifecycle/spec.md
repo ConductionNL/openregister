@@ -12,6 +12,7 @@ retrofit: true
 - `fk-graph-lifecycle-transitions` — adds declarative FK-scoped graph transition mode (in-progress)
 - `lifecycle-declarative-conditions` — adds an optional declarative JSONLogic `condition` (plus a `message`) on a lifecycle transition, refusing the save with `lifecycle-condition-unmet` when it does not hold; malformed conditions are rejected at schema-save time (in-progress)
 - `lifecycle-auto-transitions`: lets a transition declare `autoWhen` (a JSONLogic rule) and `executionMode` (`sync` by default, or `async`), so OpenRegister fires it through the named-transition engine after a write, bounded by a loop cap; malformed or graph-mode declarations are refused at schema-save time (in-progress)
+- `object-slugs-configurable-and-unique` — `objectSlugField` / `objectSlugSuffix` persist through schema save, import and the schema editor; object slugs are unique per register + schema (a collision saves the object without a slug and logs both uuids, or appends a UTC date-time suffix when opted in), frozen once set, applied identically in bulk save; a duplicated slug answers 409 on lookup; `occ openregister:backfill-slugs` fills missing slugs (a set slug is never rewritten) and reports existing duplicates (archived 2026-11-05: `openspec/changes/archive/2026-11-05-object-slugs-configurable-and-unique/`)
 
 ## Purpose
 
@@ -60,7 +61,6 @@ The `ValidateObject` and `ValidationHandler` MUST check all object field values 
 - **GIVEN** object `abc-123` was previously fetched and cached
 - **WHEN** a second request for `abc-123` arrives within the cache TTL
 - **THEN** the response MUST be served from cache without a database query
-- **AND** `PerformanceHandler` metrics MUST record a cache hit
 
 #### Scenario: Save invalidates cache
 - **GIVEN** object `abc-123` is in cache
@@ -242,7 +242,10 @@ register+schema, or `ObjectService::searchObjectsPaginated()` otherwise. Unless
 ID, resolve them to entities via `resolveRegisterSchemaIds()`, and return the
 single object honoring the request's extend and field-filter parameters. If the
 register or schema cannot be resolved, the response MUST be HTTP 404 with a
-`message` body.
+`message` body. If the object identifier matches more than one object in the
+resolved register and schema (an ambiguous slug), the response MUST be HTTP 409
+with a JSON body naming the identifier as ambiguous, and neither object MUST be
+returned.
 
 #### Scenario: Show resolves slugs and returns the object
 - **GIVEN** an existing object addressed by `{register}/{schema}/{id}` using slugs
@@ -254,6 +257,12 @@ register or schema cannot be resolved, the response MUST be HTTP 404 with a
 - **GIVEN** a request whose register or schema does not exist
 - **WHEN** `resolveRegisterSchemaIds()` throws `RegisterNotFoundException` or `SchemaNotFoundException`
 - **THEN** the response MUST be HTTP 404 with a `message` body
+
+#### Scenario: Show on an ambiguous object slug returns 409
+- **GIVEN** two objects in the resolved register and schema that both hold the requested slug
+- **WHEN** `show()` is called with that slug as `{id}`
+- **THEN** the response MUST be HTTP 409 with a JSON body naming the identifier as ambiguous
+- **AND** the response MUST NOT contain either object or their uuids
 
 ### Requirement: The object patch endpoint MUST merge with stored data and map domain errors to status codes
 
@@ -381,7 +390,7 @@ match the audit logs MUST be returned as a paginated envelope.
 
 `ObjectsController::validate()` MUST require `register` and `schema` parameters
 (HTTP 400 if absent), accept optional `limit`/`offset` for chunked processing,
-delegate to `ObjectService::validateAndSaveObjectsBySchema()`, and return a
+delegate to `ObjectService::validateAndSaveTable()`, and return a
 `{success, message, statistics, pagination, errors}` envelope. Failures MUST
 return HTTP 500 with `success: false`. `ObjectsController::clearBlob()` is a
 retired endpoint that MUST return a static success envelope reporting zero
@@ -405,7 +414,7 @@ deletions and that blob storage has been retired in favor of magic tables.
 ### Requirement: REQ-006 The facade MUST resolve register, schema, and object context with cached lookup
 MUST resolve register, schema, and object context from an entity, numeric ID, UUID, or slug into request-scoped state, using cached-entity lookup for numeric IDs and bypassing access checks when deriving context from an already-accessible object.
 
-`ObjectService::setRegister()`, `setSchema()`, and `setObject()` MUST accept an entity, a numeric ID, a UUID, or a slug and resolve it to the corresponding entity stored as request-scoped context. Numeric-ID lookups MUST go through the cached-entity path (`PerformanceHandler::getCachedEntities`) with a direct mapper `find()` fallback when the cache misses. When context is being derived from an already-accessible object, resolution MUST bypass RBAC and multi-tenancy checks (`_rbac: false`, `_multitenancy: false`), because access to the object already implies access to its register and schema. A `setSchema()` lookup that fails MUST propagate the `DoesNotExistException` unwrapped so the framework returns a 404 rather than a generic 500. `setObject()` MUST route through the magic-table mapper when register and schema context are already set.
+`ObjectService::setRegister()`, `setSchema()`, and `setObject()` MUST accept an entity, a numeric ID, a UUID, or a slug and resolve it to the corresponding entity stored as request-scoped context. Numeric-ID lookups MUST go through the cached-entity path with a direct mapper `find()` fallback when the cache misses. When context is being derived from an already-accessible object, resolution MUST bypass RBAC and multi-tenancy checks (`_rbac: false`, `_multitenancy: false`), because access to the object already implies access to its register and schema. A `setSchema()` lookup that fails MUST propagate the `DoesNotExistException` unwrapped so the framework returns a 404 rather than a generic 500. `setObject()` MUST route through the magic-table mapper when register and schema context are already set.
 
 #### Scenario: Numeric register ID resolved via cache
 - **GIVEN** `setRegister(42)` is called with a numeric ID
@@ -450,10 +459,11 @@ MUST perform facade-level save orchestration in a fixed order — context, norma
 - **THEN** "always" defaults MUST be applied and date values normalized before validation executes
 - **AND** validation MUST see the corrected values
 
-#### Scenario: Auto-generated UUID marked as create
-- **GIVEN** a payload submitted without a UUID
-- **WHEN** the cascade step assigns a UUID
-- **THEN** the facade MUST set `@self._autoGeneratedUuid` to true so the save handler treats it as a CREATE
+#### Scenario: A write is a create only when no stored row answers to its UUID
+- **GIVEN** a save with a UUID, given by the caller or assigned by the cascade step
+- **WHEN** the save handler decides between create and update
+- **THEN** it MUST look the UUID up, and take the update path when a stored row answers to it
+- **AND** nothing in the payload MUST change that decision
 
 ### Requirement: REQ-009 The facade MUST block writes to transferred and append-only objects
 MUST reject updates to objects whose retention archiefstatus is `overgebracht` (transferred to the e-Depot) and reject updates to append-only schemas, while still allowing inserts on append-only schemas.
@@ -1440,6 +1450,1967 @@ transition payload SHALL select the system path.
 - **WHEN** the source under `lib/` is searched for calls to `transitionAsSystem()`
 - **THEN** none is found under `lib/Controller`
 - @e2e exclude {structural assertion, covered by TransitionEngineAsSystemTest}
+
+### Requirement: A transition MAY declare `inputs[]` bounding the payload it accepts
+
+A schema's `x-openregister-lifecycle.transitions[<action>]` MAY declare an
+`inputs` array whose entries name a property of that schema and whether it is
+required: `inputs: [{"field": "<propertyName>", "required": true|false}]`.
+
+OpenRegister MUST enforce that declaration as an ALLOWLIST when a transition
+is applied with a payload:
+
+- A payload key the transition does not declare MUST be REJECTED. A
+  transition that declares no `inputs` therefore accepts NO payload at all —
+  which is the existing behaviour of every transition in the fleet and MUST
+  remain so, so that opting in is explicit and no schema changes behaviour by
+  this requirement being written down.
+- A declared `required` input that is absent from the payload, or supplied as
+  an empty string, MUST be REJECTED.
+- Accepted values MUST be merged into the object write that carries the
+  transition, so ordinary save-path schema validation and read-only
+  enforcement apply to them exactly as to any other object write. OpenRegister
+  MUST NOT validate an accepted value only against the `inputs` declaration:
+  the declaration says which fields may be supplied, and the schema says what
+  a legal value is.
+- The accepted values and the lifecycle field change MUST land in ONE save, so
+  a caller cannot observe an object whose values were written while its state
+  change was refused, or the reverse.
+
+A rejection MUST carry the offending field names in a machine-readable form
+alongside the human message, and MUST distinguish an undeclared key from a
+missing required input. A malformed payload is a client error and MUST be
+reported as one, distinctly from a transition that is refused from the current
+state and from one the caller is not authorized to take.
+
+Declaring `inputs` MUST NOT change which transitions are available, who may
+take them, or what any existing declared guard, authorization gate or
+`actions[]` entry does.
+
+#### Scenario: A transition with no declared inputs rejects a payload
+- **GIVEN** a schema whose `approve` transition declares no `inputs`
+- **WHEN** the transition is applied with a payload containing one field
+- **THEN** the call MUST be rejected naming that field as undeclared
+- **AND** the object's lifecycle field MUST be unchanged
+
+#### Scenario: A declared required input is enforced
+- **GIVEN** a `reject` transition declaring `inputs: [{"field": "reason", "required": true}]`
+- **WHEN** the transition is applied with an empty payload
+- **THEN** the call MUST be rejected naming `reason` as a missing required input
+- **AND** the response MUST carry that field name machine-readably
+
+#### Scenario: An accepted value is still validated by the schema
+- **GIVEN** a `reject` transition declaring `reason` as an input, where the
+  schema constrains `reason` to an enumerated set
+- **WHEN** the transition is applied with a `reason` outside that set
+- **THEN** the save-path validation MUST refuse the write
+- **AND** the object's lifecycle field MUST be unchanged
+
+#### Scenario: An accepted value cannot overwrite a read-only property
+- **GIVEN** a transition declaring an input naming a property the schema marks
+  read-only
+- **WHEN** the transition is applied supplying that property
+- **THEN** the read-only enforcement on the save path MUST apply exactly as it
+  does to any other object write
+
+### Requirement: The available-actions response MUST publish each action's declared inputs
+
+Every action returned by the available-actions endpoint MUST carry the
+declared `inputs` for that transition — the field names and their required
+flags — so a client can present the payload the transition expects without
+reading the schema.
+
+An action whose transition declares no inputs MUST carry an EMPTY inputs list
+rather than omitting the key. Absent and empty MUST NOT be the same value on
+this response: empty is the positive statement "this transition accepts no
+payload", which is exactly what the allowlist enforces, and a client must be
+able to read it as such rather than infer it from silence.
+
+This MUST hold for actions derived from a static transition map and for
+actions derived at runtime from a graph block, so a client's handling of the
+response does not have to know which mode a schema uses.
+
+The endpoint's existing per-action keys MUST be unchanged, and the existing
+read-permission check that gates the response MUST be unchanged: publishing
+what a transition accepts MUST NOT be reachable by a caller who may not read
+the object.
+
+#### Scenario: A declaring transition publishes its fields
+- **GIVEN** a schema whose `reject` transition declares two inputs, one required
+- **AND** an object in a state from which `reject` is available
+- **WHEN** the available-actions endpoint is called for that object
+- **THEN** the `reject` action MUST carry both field names with their required flags
+
+#### Scenario: A non-declaring transition publishes an empty list
+- **GIVEN** a transition declaring no `inputs`
+- **WHEN** the available-actions endpoint is called
+- **THEN** that action MUST carry an empty inputs list
+- **AND** the key MUST be present
+
+#### Scenario: A caller without read permission still learns nothing
+- **GIVEN** a user without read permission on an object
+- **WHEN** they call the available-actions endpoint for it
+- **THEN** the call MUST be refused
+- **AND** no field name from any transition MUST appear in the response
+
+### Requirement: A lifecycle transition MAY fire automatically when its `autoWhen` rule holds after a write
+
+A transition declared in `x-openregister-lifecycle.transitions` MAY carry an optional `autoWhen`, whose
+value is a JSONLogic rule object. After an object is created or updated through the object save path,
+OpenRegister SHALL look for a transition whose `from` contains the object's current lifecycle value and
+whose `autoWhen` holds for the object as written. When exactly one such transition exists, OpenRegister
+SHALL fire it as a named transition, exactly as `POST /api/objects/{id}/transition` would with that
+transition's name and no payload.
+
+A transition whose `to` equals the object's current lifecycle value SHALL NOT fire automatically, because
+the move would change nothing and would repeat on every write.
+
+A transition WITHOUT an `autoWhen` key SHALL behave exactly as before and SHALL never fire on its own.
+The key is additive and never required.
+
+A write made inside a system operation (a configuration import, a repair step, seeding) dispatches no
+object events, and SHALL therefore fire no automatic transition. Seeding is not a user action, and an
+automatic move on seed data has no one to act as.
+
+#### Scenario: An automatic transition fires after an update and the response carries the new state
+- **GIVEN** a transition `beslissen` with `from: ["in-behandeling"]`, `to: "besloten"` and `autoWhen: { "!!": { "var": "object.motivering" } }`
+- **AND** an object in state `in-behandeling` without a `motivering`
+- **WHEN** the object is updated through an ordinary object save that sets a non-empty `motivering`
+- **THEN** the response to that save MUST carry the lifecycle value `besloten`
+- **AND** a fresh read of the object MUST return `besloten`
+
+#### Scenario: An automatic transition fires after a create
+- **GIVEN** the same transition and a schema whose declared `initial` state is `in-behandeling`
+- **WHEN** an object is created carrying a non-empty `motivering`
+- **THEN** the response to the create MUST carry the lifecycle value `besloten`
+
+#### Scenario: An automatic transition does not fire while its rule does not hold
+- **GIVEN** the same transition
+- **WHEN** an object in state `in-behandeling` is updated without a `motivering`
+- **THEN** the response MUST carry the lifecycle value `in-behandeling`
+- **AND** no transition MUST be applied
+
+#### Scenario: A transition without autoWhen never fires automatically
+@e2e exclude regression guard on an unchanged path, covered by the existing lifecycle PHPUnit suite
+- **GIVEN** a transition declaring no `autoWhen`
+- **WHEN** an object in its `from` state is saved
+- **THEN** no transition MUST be applied and the lifecycle value MUST be unchanged
+
+#### Scenario: A move to the current value is never fired
+@e2e exclude candidate selection is internal, covered by PHPUnit
+- **GIVEN** a transition whose `from` contains its own `to`, such as `from: ["ontvangen", "in-behandeling"]`, `to: "in-behandeling"`, with an `autoWhen` that holds
+- **WHEN** an object in state `in-behandeling` is saved
+- **THEN** that transition MUST NOT fire
+
+#### Scenario: A write inside a system operation fires no automatic transition
+@e2e exclude system operations have no HTTP surface, covered by PHPUnit
+- **GIVEN** a transition whose `autoWhen` holds
+- **WHEN** the object is written inside a system operation
+- **THEN** no automatic transition MUST be applied
+
+### Requirement: An automatic transition MUST obey every gate a manual transition obeys
+
+An automatic transition SHALL be applied through the same path as a named transition, so every rule
+that can refuse a manual transition SHALL be able to refuse the automatic one, in the same order: the
+object `update` permission, the `from` check, the `authorization` list, the `condition`, the `requires`
+guard, and any approval-chain gate. When the transition is applied, its declared `actions[]` SHALL run
+exactly as they do for a manual transition.
+
+When any of those gates refuses the automatic transition, OpenRegister SHALL NOT apply it, SHALL leave
+the object in the state the triggering write left it in, and SHALL log the refusal at warning level
+naming the schema, the object, the transition and the refusal code. The refusal SHALL NOT be retried,
+SHALL NOT be surfaced to the caller as an error, and SHALL NOT affect the triggering write. A later
+write that finds the rule still holding SHALL try again.
+
+A transition declaring a required input cannot be fired automatically, because an automatic move
+carries no payload. That declaration is refused at schema-save time; see the validation requirement.
+
+#### Scenario: An automatic transition refused by its condition leaves the triggering write intact
+- **GIVEN** a transition with an `autoWhen` that holds and a `condition` that does not hold
+- **WHEN** an object in its `from` state is saved with other field changes
+- **THEN** the save MUST succeed and its field changes MUST be stored
+- **AND** the response MUST carry the unchanged lifecycle value
+- **AND** no transition MUST be applied
+
+#### Scenario: An automatic transition refused by its authorization list is not applied
+@e2e exclude needs a second non-admin principal per run, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list naming a group the saving user is not in
+- **WHEN** that user saves the object
+- **THEN** the save MUST succeed and the transition MUST NOT be applied
+- **AND** a warning MUST be logged carrying the code `lifecycle-transition-unauthorized`
+
+#### Scenario: A denying guard stops the automatic transition
+@e2e exclude guard resolution is backend wiring, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and a `requires` guard that denies
+- **WHEN** the object is saved
+- **THEN** the transition MUST NOT be applied and a warning MUST be logged carrying the code `lifecycle-guard-denied`
+
+#### Scenario: An automatic transition runs its declared actions
+@e2e exclude action handlers are backend wiring, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and a declared `actions[]` entry
+- **WHEN** the automatic transition is applied
+- **THEN** that action MUST run exactly as it runs for the same transition fired by name
+
+### Requirement: A sync automatic transition MUST be applied after the triggering write completes and MUST NOT unwind it
+
+A `sync` automatic transition SHALL be applied in the same request as the write that triggered it, and
+SHALL be applied only after that write is complete: after its object row, its audit row, and any
+follow-up write the same save makes to the same object. It SHALL be applied before the response is
+produced, so the response of the triggering request SHALL carry the lifecycle value the automatic
+transition reached. This holds for both routes that write an object: an ordinary object save, and a
+named transition whose save makes a further automatic transition hold.
+
+The triggering write SHALL NOT be unwound, failed or delayed in its commit by anything the automatic
+transition does. An exception raised while applying it SHALL be caught and logged at warning level; the
+triggering request SHALL answer as it would have without the automatic transition.
+
+For a named transition that triggers an automatic one, the `ObjectTransitionedEvent` of the named
+transition SHALL be dispatched before that of the automatic transition, so a listener sees the moves in
+the order they happened.
+
+#### Scenario: The named-transition route returns the state an automatic transition reached
+- **GIVEN** a manual transition `indienen` from `concept` to `ingediend`, and a transition `beoordelen` from `ingediend` to `in-beoordeling` whose `autoWhen` holds
+- **WHEN** `POST /api/objects/{id}/transition` is called with action `indienen`
+- **THEN** the response MUST carry the lifecycle value `in-beoordeling`
+
+#### Scenario: The triggering write's audit row precedes the automatic one
+@e2e exclude audit ordering is a backend invariant, covered by PHPUnit
+- **GIVEN** a save that makes an automatic transition hold
+- **WHEN** both writes have been applied
+- **THEN** the audit row of the triggering save MUST precede the audit row of the automatic transition
+
+#### Scenario: A save that also writes file properties keeps the automatic move
+@e2e exclude the stale second write is internal to the save pipeline, covered by PHPUnit
+- **GIVEN** a save carrying a file property that makes an automatic transition hold
+- **WHEN** the save and the automatic transition have been applied
+- **THEN** the stored lifecycle value MUST be the one the automatic transition reached
+
+#### Scenario: The named transition's event precedes the automatic transition's event
+@e2e exclude event order is a backend invariant, covered by PHPUnit
+- **GIVEN** a named transition whose save makes an automatic transition hold
+- **WHEN** both have been applied
+- **THEN** `ObjectTransitionedEvent` for the named transition MUST be dispatched before `ObjectTransitionedEvent` for the automatic one
+
+#### Scenario: An exception while applying an automatic transition does not fail the request
+@e2e exclude provoking an engine exception needs a broken fixture, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds, whose application raises an exception
+- **WHEN** the object is saved
+- **THEN** the save MUST answer with the status it would have had without the automatic transition
+- **AND** the exception MUST be logged at warning level naming the transition
+
+### Requirement: `executionMode` selects sync or async, using the flow engine's two values
+
+@e2e exclude background job execution is not browser-observable, covered by PHPUnit
+
+A transition declaring `autoWhen` MAY also declare `executionMode`. Its value SHALL be exactly one of the
+two values the flow engine already defines for the same question, `sync` and `async`, and OpenRegister
+SHALL compare against those definitions rather than spelling the strings anew. When `executionMode` is
+absent, the transition SHALL run `sync`.
+
+An `async` automatic transition SHALL be decided at the moment its `sync` counterpart would be applied,
+using the same document, and SHALL then be queued and applied off-request. The queued move SHALL be
+applied only when the object has not been written since the decision. When it has, the queued move
+SHALL be dropped silently, because the newer write made its own decision.
+
+A write made outside any request-scoped save, such as a bulk save, a deferred create event or a revert,
+has no point at which a `sync` move can be applied after the write completes and before a response. Its
+automatic transitions SHALL be queued as `async`, whatever their declared mode.
+
+When the instance's listener-deferral kill switch is set to run deferred work inline, an `async`
+automatic transition decided inside a request-scoped save SHALL be applied where a `sync` one would be.
+A move decided outside a request-scoped save SHALL still be queued, because there is no safe inline
+point for it.
+
+#### Scenario: An absent executionMode runs sync
+- **GIVEN** a transition declaring `autoWhen` and no `executionMode`
+- **WHEN** its rule holds after a save
+- **THEN** it MUST be applied before the response is produced
+
+#### Scenario: An async automatic transition is applied off-request
+- **GIVEN** a transition declaring `autoWhen` and `executionMode: "async"` whose rule holds after a save
+- **WHEN** the save's response is produced
+- **THEN** the response MUST carry the unchanged lifecycle value
+- **AND** once the queued move is processed, the object MUST carry the transition's `to` value
+
+#### Scenario: A queued move is dropped when the object changed in between
+- **GIVEN** a queued `async` automatic transition
+- **AND** a later write to the same object before the queue is processed
+- **WHEN** the queued move is processed
+- **THEN** it MUST NOT be applied
+
+#### Scenario: A write outside a request-scoped save queues its automatic transitions
+- **GIVEN** a `sync` transition whose rule holds after a bulk save
+- **WHEN** the bulk save completes
+- **THEN** the automatic transition MUST be queued and applied off-request
+
+#### Scenario: An unrecognised stored executionMode does not fire
+- **GIVEN** a stored transition whose `executionMode` is neither `sync` nor `async`
+- **WHEN** its rule holds after a save
+- **THEN** it MUST NOT fire and a warning MUST be logged naming the transition
+
+### Requirement: Automatic transitions MUST be bounded by a loop cap that logs its breach
+
+An automatic transition's own write is a write, so it can make another automatic transition hold. A
+pass is the work started by one write and everything it triggers automatically. Within a pass,
+OpenRegister SHALL keep applying automatic transitions one at a time, re-deciding after each, until no
+rule holds or the pass is cut.
+
+A pass SHALL be cut, for the object concerned, when either limit is reached:
+
+- **Revisit.** A move whose `to` is a state the object already occupied in this pass, including the
+  state it started in, SHALL NOT be made.
+- **Ceiling.** At most 10 automatic transitions SHALL be applied to one object in one pass.
+
+A cut SHALL be logged at error level, naming the schema, the object, the limit reached and the sequence
+of transitions applied so far. The cut SHALL NOT raise an exception and SHALL NOT recurse. The ceiling
+is a fixed constant of the engine and SHALL NOT be configurable per schema or per instance.
+
+A pass SHALL survive an `async` hop: a queued move SHALL carry the pass's count and visited states, and
+the job applying it SHALL continue the same pass rather than start a new one. A loop SHALL NOT escape
+the cap by crossing into a background job.
+
+#### Scenario: A chain of automatic transitions continues in the same pass
+- **GIVEN** transitions `a` from `stap-1` to `stap-2` and `b` from `stap-2` to `stap-3`, both `sync` with an `autoWhen` that holds
+- **WHEN** an object in `stap-1` is saved
+- **THEN** the response MUST carry the lifecycle value `stap-3`
+
+#### Scenario: A ping-pong between two states stops at the first revisit
+- **GIVEN** a transition from `heen` to `terug` and a transition from `terug` to `heen`, both with an `autoWhen` that always holds
+- **WHEN** an object in `heen` is saved
+- **THEN** exactly one automatic transition MUST be applied
+- **AND** the response MUST carry the lifecycle value `terug`
+
+#### Scenario: A chain longer than the ceiling stops at ten moves
+- **GIVEN** twelve states `s0` to `s11` and eleven transitions each moving one state forward, all with an `autoWhen` that always holds
+- **WHEN** an object in `s0` is saved
+- **THEN** exactly ten automatic transitions MUST be applied
+- **AND** the response MUST carry the lifecycle value `s10`
+
+#### Scenario: A cut is logged at error level with the chain
+@e2e exclude log output is not browser-observable, covered by PHPUnit
+- **GIVEN** a pass cut by either limit
+- **WHEN** the cut happens
+- **THEN** one error-level log line MUST name the schema, the object, the limit and the transitions applied
+
+#### Scenario: The count travels with an async hop
+@e2e exclude background job execution, covered by PHPUnit
+- **GIVEN** an `async` automatic transition queued after nine automatic transitions in one pass
+- **WHEN** the job applies it and a further rule holds
+- **THEN** the job MUST apply at most one more move and then cut the pass
+
+### Requirement: The `autoWhen` document is the condition document, read when the move is decided
+
+@e2e exclude document construction is internal, covered by PHPUnit
+
+An `autoWhen` SHALL be evaluated against the same four top-level keys a transition `condition` reads,
+and against no others:
+
+- `object`: the object as the triggering write stored it, so its lifecycle field holds the transition's
+  `from` value;
+- `previous`: the object as it was before the triggering write, or an empty object when that write
+  created it;
+- `user`: the identity the automatic transition acts as, as `uid` and `groups`, with an empty string and
+  an empty list when there is none;
+- `transition`: the candidate transition, as `action`, `from` (the current value) and `to`.
+
+The keys are shared with `condition` and their meaning differs in one place an author must know: in an
+`autoWhen`, `object` holds the state being LEFT, whereas in a `condition` it holds the state being
+ENTERED. An `autoWhen` is decided once per candidate per step of the pass, after the triggering write
+is complete, so it reads computed fields and defaults as stored.
+
+A reference to a key the document does not carry SHALL resolve to null. An expression that cannot be
+evaluated SHALL count as not holding, so an unevaluable rule never moves an object.
+
+#### Scenario: The rule reads the object as stored
+- **GIVEN** an `autoWhen` referencing `object.motivering`
+- **WHEN** it is evaluated after a save that stored a `motivering`
+- **THEN** the reference MUST resolve to the stored value
+
+#### Scenario: The previous state is empty after a create
+- **GIVEN** an `autoWhen` referencing `previous.status`
+- **WHEN** it is evaluated after the object was created
+- **THEN** the reference MUST resolve to null
+
+#### Scenario: The transition key names the candidate
+- **GIVEN** a candidate transition `beslissen` from `in-behandeling` to `besloten`
+- **WHEN** its `autoWhen` is evaluated
+- **THEN** `transition.action`, `transition.from` and `transition.to` MUST resolve to `beslissen`, `in-behandeling` and `besloten`
+
+#### Scenario: An unevaluable rule does not move the object
+- **GIVEN** a stored `autoWhen` that cannot be evaluated for the object at hand
+- **WHEN** the object is saved
+- **THEN** the transition MUST NOT fire
+
+### Requirement: An ambiguous or shadowed automatic transition MUST NOT fire
+
+@e2e exclude candidate selection is internal, covered by PHPUnit
+
+When more than one transition whose `from` contains the current value has an `autoWhen` that holds,
+OpenRegister SHALL fire none of them and SHALL log a warning naming every candidate. Declaration order
+SHALL NOT be used to choose, because it is not preserved by every database Nextcloud supports.
+
+A transition SHALL NOT fire automatically when an earlier-declared transition has the same `to` and a
+`from` that also contains the current value. The save path identifies a transition by its from and to
+values and takes the first match, so it would enforce the earlier transition's gates and run its
+actions, not the automatic transition's. OpenRegister SHALL log a warning naming both transitions.
+
+#### Scenario: Two rules that hold at once fire nothing
+- **GIVEN** two transitions from `ontvangen`, each with an `autoWhen` that holds
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** neither transition MUST be applied
+- **AND** one warning MUST name both transitions
+
+#### Scenario: One rule that holds beside one that does not fires
+- **GIVEN** two transitions from `ontvangen`, of which only one has an `autoWhen` that holds
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** exactly that transition MUST be applied
+
+#### Scenario: A shadowed automatic transition does not fire
+- **GIVEN** a transition `toewijzen` from `ontvangen` to `in-behandeling` with an `autoWhen` that holds
+- **AND** an earlier-declared transition `starten` from `ontvangen` to `in-behandeling`
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** `toewijzen` MUST NOT fire
+- **AND** a warning MUST name both transitions
+
+### Requirement: An automatic transition acts as the caller whose write triggered it
+
+@e2e exclude identity plumbing, covered by PHPUnit
+
+A `sync` automatic transition SHALL act as the identity that made the triggering write. Its
+`authorization` list, its object `update` permission, the `user` key of its `condition` and `autoWhen`,
+its guard's user id and its audit row SHALL all see that identity.
+
+An `async` automatic transition SHALL carry that identity into the queued move and act as it when
+applied. When the identity no longer resolves to an account, or resolves to a disabled one, the queued
+move SHALL NOT be applied and a warning SHALL be logged.
+
+An automatic transition SHALL NEVER act as a system principal or run with elevated rights. When the
+triggering write had no identity, such as a CLI command without a session, the automatic transition
+SHALL act as no one, and any gate that requires an identity SHALL refuse it.
+
+#### Scenario: A sync move is authorized as the saving user
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list naming group `behandelaars`
+- **WHEN** a member of `behandelaars` saves the object
+- **THEN** the transition MUST be applied and its audit row MUST name that user
+
+#### Scenario: A queued move acts as the captured user
+- **GIVEN** an `async` automatic transition decided on a save by user `behandelaar-1`
+- **WHEN** the queued move is applied
+- **THEN** it MUST be authorized and audited as `behandelaar-1`
+
+#### Scenario: A queued move for a disabled account is not applied
+- **GIVEN** an `async` automatic transition decided on a save by a user who is disabled before the move is processed
+- **WHEN** the queued move is processed
+- **THEN** it MUST NOT be applied and a warning MUST be logged
+
+#### Scenario: A session-less write gets no elevated automatic move
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list
+- **WHEN** the object is saved by a caller with no session
+- **THEN** the automatic transition MUST be refused and MUST NOT be applied
+
+### Requirement: An automatic transition MUST be recorded as automatic
+
+@e2e exclude event and audit fields are backend contracts, covered by PHPUnit
+
+The `ObjectTransitionedEvent` of an automatic transition SHALL say it was automatic; the event for a
+manual transition SHALL say it was not. The flag SHALL be additive and default to not automatic, so
+every existing listener and dispatcher is unaffected. A flow triggered by the transition SHALL see the
+flag on its run context beside `action`, `from` and `to`.
+
+The audit row of an automatic transition SHALL identify the move as automatic and name the transition,
+while attributing it to the identity it acted as. An auditor SHALL be able to tell a move a user asked
+for from a move a rule made on that user's write.
+
+#### Scenario: The transition event carries the automatic flag
+- **GIVEN** an automatic transition that is applied
+- **WHEN** its `ObjectTransitionedEvent` is dispatched
+- **THEN** the event MUST report that the transition was automatic
+- **AND** the event for the same transition fired by name MUST report that it was not
+
+#### Scenario: A flow sees the automatic flag
+- **GIVEN** a flow wired to the object state-change trigger
+- **WHEN** an automatic transition fires it
+- **THEN** the run context MUST carry the automatic flag
+
+#### Scenario: The audit row marks the automatic move
+- **GIVEN** an automatic transition that is applied on a save by user `behandelaar-1`
+- **WHEN** its audit row is read
+- **THEN** the row MUST identify the move as automatic, name the transition, and name `behandelaar-1`
+
+### Requirement: A malformed or unsupported automatic transition MUST be refused at schema-save time
+
+@e2e exclude schema-save validation, covered by PHPUnit
+
+At schema-save time OpenRegister SHALL validate every transition that declares `autoWhen` or
+`executionMode`, and SHALL refuse the schema save, not merely warn, when any of these holds:
+
+- `autoWhen` is not a non-empty JSONLogic rule object, or is a rule object the expression engine cannot
+  validate: code `lifecycle-autowhen-malformed`. A scalar, including `true` and a string in the
+  `@self.<field> == '<value>'` form an `actions[]` entry uses, SHALL be refused with this code, because
+  a scalar evaluates as a truthy literal and would fire on every write from that state.
+- `executionMode` is present and is not exactly `sync` or `async`: code
+  `lifecycle-execution-mode-malformed`. Case variants SHALL be refused, not normalised.
+- A transition declaring `autoWhen` also declares an `inputs` entry with `required: true`: code
+  `lifecycle-autowhen-requires-input`, because an automatic move carries no payload and would be refused
+  on every attempt.
+- A graph-mode `graph` block carries `autoWhen`: code `lifecycle-autowhen-graph-unsupported`, stating
+  that graph-mode automatic transitions are not supported while graph-mode moves are unenforced on the
+  ordinary save path.
+
+Each error SHALL name the schema and the offending transition. These errors SHALL refuse the save
+exactly as `lifecycle-condition-malformed` does. Every other lifecycle error SHALL keep its existing
+advisory treatment.
+
+At runtime the evaluation SHALL NOT trust save-time validation: a stored `autoWhen` that is present but
+not a non-empty rule object SHALL count as not holding and SHALL be logged at warning level.
+
+Every test covering this requirement and the loop cap SHALL be proven to fail against a deliberately
+broken guard before it is accepted.
+
+#### Scenario: A scalar autoWhen is refused
+- **GIVEN** a transition declaring `autoWhen: true`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed` naming the transition
+
+#### Scenario: An action-dialect string is refused as autoWhen
+- **GIVEN** a transition declaring `autoWhen: "@self.motivering != ''"`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed`
+- **AND** the message MUST point the author at the JSONLogic rule-object form
+
+#### Scenario: An unknown operator is refused
+- **GIVEN** a transition declaring an `autoWhen` rule object with an operator the expression engine does not know
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed`
+
+#### Scenario: An unknown executionMode is refused
+- **GIVEN** a transition declaring `executionMode: "background"`, and another declaring `executionMode: "SYNC"`
+- **WHEN** the schema is saved
+- **THEN** each MUST be refused with code `lifecycle-execution-mode-malformed`
+
+#### Scenario: An automatic transition with a required input is refused
+- **GIVEN** a transition declaring `autoWhen` and `inputs: [{ "field": "motivering", "required": true }]`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-requires-input`
+
+#### Scenario: autoWhen on a graph block is refused
+- **GIVEN** an annotation declaring a `graph` block that carries `autoWhen`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-graph-unsupported`
+
+#### Scenario: A well-formed declaration passes
+- **GIVEN** a transition declaring `autoWhen: { "!!": { "var": "object.motivering" } }` and `executionMode: "async"`
+- **WHEN** the schema is saved
+- **THEN** no automatic-transition error MUST be returned and the annotation's other rules MUST be unaffected
+
+#### Scenario: A malformed message stays advisory
+- **GIVEN** a transition declaring a valid `autoWhen` and a malformed `message`
+- **WHEN** the schema is saved
+- **THEN** the save MUST succeed with the existing `lifecycle-message-malformed` warning
+
+#### Scenario: A stored malformed autoWhen does not fire
+- **GIVEN** a stored transition whose `autoWhen` is a scalar, written by a path that skipped validation
+- **WHEN** an object in its `from` state is saved
+- **THEN** the transition MUST NOT fire and a warning MUST be logged
+
+#### Scenario: The validation and cap tests are proven to fail first
+- **GIVEN** the PHPUnit tests for this requirement and for the loop cap
+- **WHEN** the scalar refusal, the revisit rule and the ceiling are each deliberately removed
+- **THEN** the test guarding each MUST fail for that reason before it is restored
+
+### Requirement: A lifecycle transition MAY declare a declarative condition that gates it
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A transition declared in `x-openregister-lifecycle.transitions` MAY carry an
+optional `condition`, whose value is a JSONLogic rule object, and an optional
+`message`. A `message` SHALL be either a non-empty string or a per-locale map
+(`{"nl": "…", "en": "…"}`, optionally carrying `defaultLocale`), which is the
+same shape `x-openregister-notifications` already uses for its `subject` and
+`message`. Per ADR-007 a map SHOULD declare at least `nl` and `en`.
+
+When a matched transition declares a `condition`, OpenRegister SHALL evaluate it
+on the `ObjectService::saveObject()` path before the write. When the condition
+holds, the transition SHALL proceed exactly as it does without one. When the
+condition does not hold, the save SHALL be refused with the structured error
+code `lifecycle-condition-unmet`, the lifecycle field SHALL NOT be mutated, and
+no object write SHALL occur.
+
+The refusal SHALL carry the transition's `message` when one is declared. A
+string `message` SHALL be used verbatim. A map `message` SHALL be resolved to
+the caller's language as reported by `IL10N::getLanguageCode()`, falling back to
+the map's `defaultLocale`, then to `en`, then to the first declared locale. The
+language SHALL come from `IL10N` rather than from `Accept-Language` negotiation,
+so the message follows the user's configured language. An author's `message` SHALL pass through
+untouched and SHALL NOT be translated by the engine. When a transition declares
+no `message`, the refusal SHALL carry the engine's own generic message naming
+the transition action and the lifecycle field, and that message SHALL be
+translated through the app's translation layer. The refusal SHALL NOT expose the
+expression itself to the caller.
+
+The gate SHALL be reached by BOTH transition routes, because both converge on
+the same save path: the named-action route (`POST /api/objects/{id}/transition`)
+and a direct edit of the lifecycle field through an ordinary object save. A
+transition WITHOUT a `condition` key SHALL behave exactly as before; the key is
+additive and never required.
+
+#### Scenario: A condition that holds lets the transition through
+- **GIVEN** a transition `beslissen` with `from: ["in-behandeling"], to: "besloten"` and `condition: { "!!": { "var": "object.motivering" } }`
+- **AND** an object whose `motivering` is a non-empty string
+- **WHEN** the object's lifecycle field is saved as `besloten`
+- **THEN** the transition MUST be applied and no condition error MUST be raised
+
+#### Scenario: A condition that does not hold refuses the save
+- **GIVEN** the same transition
+- **AND** an object whose `motivering` is absent or empty
+- **WHEN** the transition is attempted
+- **THEN** the save MUST be refused with the structured error code `lifecycle-condition-unmet`
+- **AND** the lifecycle field MUST retain its previous value
+- **AND** no object write MUST occur
+
+#### Scenario: The declared message is what the caller sees
+- **GIVEN** a transition declaring `message: "Een besluit vereist een motivering."` whose condition does not hold
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry that message verbatim
+- **AND** the refusal MUST NOT contain the JSONLogic expression
+
+#### Scenario: A per-locale message is resolved to the caller's language
+- **GIVEN** a transition declaring `message: { "nl": "Een besluit vereist een motivering.", "en": "A decision requires a motivation." }` whose condition does not hold
+- **AND** a caller whose language is `nl`
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry the `nl` string verbatim
+- **AND** the same refusal for a caller whose language is `de`, which the map does not declare, MUST fall back to `defaultLocale` when declared, otherwise to `en`, otherwise to the first declared locale
+
+#### Scenario: A refused condition without a message still names the transition
+- **GIVEN** a transition declaring a `condition` and no `message` whose condition does not hold
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-condition-unmet` and the engine's generic message naming the transition action and the lifecycle field
+- **AND** that generic message MUST be produced through the app's translation layer, not as an untranslated literal
+
+#### Scenario: The named-action route is gated identically to a direct field edit
+- **GIVEN** a transition whose condition does not hold
+- **WHEN** the transition is requested through `POST /api/objects/{id}/transition`
+- **THEN** the request MUST be answered with HTTP 422 and the code `lifecycle-condition-unmet`
+- **AND** the same attempt made by editing the lifecycle field through an ordinary object save MUST be refused with the same code
+
+#### Scenario: A transition without a condition is unaffected
+- **GIVEN** a transition declaring no `condition` key
+- **WHEN** an otherwise valid transition is attempted
+- **THEN** no condition MUST be evaluated and the transition MUST proceed
+
+### Requirement: The condition data document exposes the object, its previous state, the caller and the transition
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A lifecycle condition SHALL be evaluated against a data document with exactly
+four top-level keys:
+
+- `object`: the object data as it would be written, including the new lifecycle
+  field value;
+- `previous`: the stored object data as it is before the write, including the
+  old lifecycle field value;
+- `user`: the acting caller, as `uid` (an empty string when there is no session
+  user) and `groups` (the caller's Nextcloud group ids, an empty list when there
+  is no session user);
+- `transition`: the matched transition, as `action` (its declared name), `from`
+  (the old lifecycle value) and `to` (the new lifecycle value).
+
+The document SHALL NOT carry the flow engine's `json`, `binary`, `itemIndex`,
+`itemCount`, `context` or `subject` keys: a schema author writing a lifecycle
+rule is looking at an object, not at a flow item. A reference to a key that the
+document does not carry SHALL resolve to null and therefore refuse the
+transition, per the fail-closed rule below.
+
+#### Scenario: A condition reads a field of the object being written
+- **GIVEN** a condition `{ "!!": { "var": "object.motivering" } }`
+- **WHEN** the transition is evaluated for an object carrying a non-empty `motivering`
+- **THEN** the condition MUST hold
+
+#### Scenario: A condition compares the new value against the previous one
+- **GIVEN** a condition referencing `previous.bedrag` and `object.bedrag`
+- **WHEN** the transition is evaluated
+- **THEN** `previous.bedrag` MUST resolve to the stored value and `object.bedrag` to the value being written
+
+#### Scenario: A condition reads the caller's group membership
+- **GIVEN** a condition `{ "in": ["vergunningverleners", { "var": "user.groups" }] }`
+- **AND** a caller belonging to that Nextcloud group
+- **WHEN** the transition is evaluated
+- **THEN** the condition MUST hold
+- **AND** for a caller with no session, `user.uid` MUST be an empty string and `user.groups` MUST be an empty list
+
+#### Scenario: A condition reads the matched transition
+- **GIVEN** a condition referencing `transition.action`, `transition.from` and `transition.to`
+- **WHEN** the transition `beslissen` moves `in-behandeling` to `besloten`
+- **THEN** those keys MUST resolve to `beslissen`, `in-behandeling` and `besloten` respectively
+
+#### Scenario: A flow-shaped reference does not resolve
+- **GIVEN** a condition referencing `json.motivering`
+- **WHEN** the transition is evaluated
+- **THEN** the reference MUST resolve to null and the transition MUST be refused with `lifecycle-condition-unmet`
+
+### Requirement: The condition is evaluated after the authorization gate and before the requires guard
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+For a matched transition, OpenRegister SHALL evaluate the declarative gates in a
+fixed order: the `authorization` list first, then the `condition`, then the
+`requires` guard. A failure at any stage SHALL refuse the save immediately and
+SHALL NOT evaluate any later stage.
+
+The ordering is normative, not incidental. A `requires` guard is app code that
+may read external state, write a log line or take a lock, so a caller whose
+precondition is not met MUST be refused before any such side channel runs, for
+the same reason `authorization` is already evaluated before `requires`.
+
+#### Scenario: An unauthorized caller is refused before the condition runs
+- **GIVEN** a transition declaring both a non-empty `authorization` list and a `condition`
+- **AND** a caller who satisfies neither
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-transition-unauthorized`
+- **AND** the condition MUST NOT be evaluated
+
+#### Scenario: An unmet condition is refused before the guard is resolved
+- **GIVEN** a transition declaring both a `condition` that does not hold and a `requires` guard tag
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-condition-unmet`
+- **AND** the guard MUST NOT be resolved and its `check()` MUST NOT be invoked
+
+#### Scenario: A met condition still runs the guard
+- **GIVEN** a transition declaring a `condition` that holds and a `requires` guard that denies
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-guard-denied` with the guard's message
+
+### Requirement: A malformed condition MUST be refused at schema-save time and MUST never fail open at runtime
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+An expression that cannot be evaluated is treated as FALSE by OpenRegister's
+expression engine. For a blocking condition, that turns an author's typo into a
+permanent, silent, unexplained refusal of that transition, with no error raised
+anywhere and nothing in the schema to look at. The engine MUST therefore refuse
+such an expression at the moment it is authored.
+
+At schema-save time, when a transition declares a `condition`, OpenRegister
+SHALL validate it and SHALL return the structured error `lifecycle-condition-malformed`
+when it is not a well-formed expression, naming the offending transition. A
+transition-level `condition` SHALL be a JSONLogic rule object; a scalar,
+including a string in the `@self.<field> == '<value>'` form that a transition's
+`actions[]` entries use, SHALL be refused with the same code, because such a
+string would evaluate as a truthy literal and silently authorize every
+transition it was meant to gate. When a
+transition declares a `message` that is neither a non-empty string nor a
+per-locale map carrying at least one locale key with a non-empty string value,
+OpenRegister SHALL return `lifecycle-message-malformed`; a `defaultLocale` that
+names a locale the map does not declare SHALL be refused with the same code.
+Every malformed `message` shape SHALL return that one code, so an author has a
+single canonical error to look up, exactly as the notification dialect returns
+one code for a broken body template. Both errors SHALL be
+collected and returned alongside the annotation's other validation errors rather
+than thrown, and SHALL cause the schema save to be refused, exactly as every
+other lifecycle annotation error does.
+
+At runtime the evaluation SHALL be fail-closed: an expression that cannot be
+evaluated SHALL refuse the transition with `lifecycle-condition-unmet` and SHALL
+NOT allow it. Save-time validation is what keeps that runtime rule from ever
+firing on a stored schema; it is not a substitute for it.
+
+Every test covering this requirement SHALL be proven to fail against a
+deliberately broken condition before it is accepted. A test that asserts only
+the passing case is green whether or not the engine refuses malformed
+expressions, and therefore proves nothing about this requirement.
+
+#### Scenario: A malformed condition is refused when the schema is saved
+- **GIVEN** a transition declaring a `condition` that is not a well-formed expression, such as an unknown operator
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with an error carrying code `lifecycle-condition-malformed` and naming the transition
+- **AND** the malformed expression MUST NOT be stored
+
+#### Scenario: A well-formed condition passes save-time validation
+- **GIVEN** a transition declaring `condition: { "!!": { "var": "object.motivering" } }`
+- **WHEN** the schema is saved
+- **THEN** no condition error MUST be returned
+- **AND** the annotation's other validation rules MUST be unaffected
+
+#### Scenario: An action-dialect condition string on a transition is refused
+- **GIVEN** a transition declaring `condition: "@self.settlementMode == 'reimbursable'"`, the string form used by an action envelope one level deeper
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with `lifecycle-condition-malformed` naming the transition
+- **AND** the message MUST point the author at the JSONLogic rule-object form
+- **AND** the `condition` an entry of `actions[]` declares MUST keep its existing string dialect and its existing behaviour, unchanged
+
+#### Scenario: A malformed message is refused at schema-save time
+- **GIVEN** a transition declaring a `message` that is a number, an empty string, an empty map, a map whose only values are empty strings, or a map whose `defaultLocale` names an undeclared locale
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with an error carrying code `lifecycle-message-malformed`
+
+#### Scenario: Both message shapes pass save-time validation
+- **GIVEN** one transition declaring `message: "Een besluit vereist een motivering."` and another declaring `message: { "nl": "…", "en": "…" }`
+- **WHEN** the schema is saved
+- **THEN** neither MUST produce a `lifecycle-message-malformed` error
+
+#### Scenario: A condition that cannot be evaluated at runtime refuses the transition
+- **GIVEN** a stored transition whose condition cannot be evaluated for the object at hand
+- **WHEN** the transition is attempted
+- **THEN** the save MUST be refused with `lifecycle-condition-unmet`
+- **AND** the transition MUST NOT be applied
+
+#### Scenario: The malformed-condition test is proven to fail before it is accepted
+- **GIVEN** the PHPUnit test asserting that a malformed condition is refused at schema-save time
+- **WHEN** the validation of the `condition` key is deliberately removed
+- **THEN** that test MUST fail
+- **AND** the same MUST hold for the runtime fail-closed test when the refusal is deliberately inverted
+
+### Requirement: A condition on a graph-mode lifecycle MUST be refused, not partially enforced
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A graph-mode lifecycle declares a `graph` block and no `transitions` map, so
+there is no per-transition object on which to declare a `condition`. The only
+available shape is a `condition` (and `message`) on the `graph` block itself,
+applying to every move the graph derives.
+
+That shape SHALL NOT be enforced in this change, and OpenRegister SHALL refuse
+it: when an annotation declares a `graph` block carrying a `condition`, the
+schema save SHALL be refused with the structured error code
+`lifecycle-condition-graph-unsupported`, naming the schema and stating that
+graph-mode conditions are not yet enforced.
+
+The refusal is the requirement, and the reason is enforcement coverage. A
+graph-mode move is validated only inside `TransitionEngine`, which derives the
+candidate set and rejects anything outside it. On the ordinary save path there
+is no graph enforcement at all: `LifecycleValidationListener` reads
+`transitions`, finds it empty for a graph-mode annotation, and returns without
+validating anything. A condition accepted on the `graph` block could therefore
+only ever hold on the named-action route and would be silently absent when the
+same lifecycle field is written directly. A gate that holds on one route and not
+the other is worse than no gate, because the author believes the state is
+unreachable. OpenRegister already takes this posture for a declared action that
+resolves to no handler: it fails loudly rather than skipping silently.
+
+This requirement SHALL be replaced by the enforcing behaviour once graph-mode
+moves are validated on the ordinary save path. Until then the refusal keeps the
+gap visible to the author who would otherwise depend on it.
+
+#### Scenario: A condition on a graph block is refused at schema-save time
+- **GIVEN** an annotation declaring a `graph` block that carries a `condition`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-condition-graph-unsupported`
+- **AND** the message MUST state that graph-mode conditions are not yet enforced
+
+#### Scenario: A graph-mode annotation without a condition is unaffected
+- **GIVEN** an annotation declaring a `graph` block and no `condition`
+- **WHEN** the schema is saved
+- **THEN** it MUST validate exactly as it does today, with no new error
+
+#### Scenario: A static transition condition is unaffected by graph-mode refusal
+- **GIVEN** a schema declaring both a non-empty `transitions` map with a `condition` and a `graph` block with no `condition`
+- **WHEN** the schema is saved
+- **THEN** no `lifecycle-condition-graph-unsupported` error MUST be raised
+- **AND** the static transition's condition MUST be validated and enforced as specified above
+
+### Requirement: A named transition MUST be judged by its own declaration, not by a same-pair twin
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+When a caller performs a transition by name through `TransitionEngine`, the
+lifecycle listeners MUST gate and act on THAT transition: its `authorization`,
+`condition`, `requires` and `actions`. This holds even when an earlier declared
+transition shares the same `from` and `to` values. `TransitionEngine` SHALL
+declare the action on a shared, request-scoped context for the duration of its
+save and SHALL release it afterwards, including when the save fails. A declared
+action SHALL be honoured only when it genuinely moves the old value to the new
+one; it MUST NEVER make an otherwise undeclared move legal. A direct edit of
+the lifecycle field, which names no action, SHALL keep resolving to the first
+declared transition matching the values.
+
+#### Scenario: A named action is gated by its own condition
+- **GIVEN** transitions `openen` and `beslissen`, both from `in-behandeling` to `besloten`, declared in that order, where only `beslissen` declares a condition
+- **WHEN** `beslissen` is performed by name and its condition does not hold
+- **THEN** the save MUST be refused with `lifecycle-condition-unmet` naming `beslissen`
+
+#### Scenario: A direct edit keeps first-match resolution
+- **GIVEN** the same two transitions
+- **WHEN** the lifecycle field is edited directly from `in-behandeling` to `besloten`
+- **THEN** the edit MUST be resolved as `openen` and pass
+
+#### Scenario: A declared action cannot legalise a move
+- **GIVEN** a declared action whose `to` differs from the attempted new value
+- **WHEN** the change is resolved
+- **THEN** the declaration MUST be ignored and resolution MUST fall back to matching by value
+
+#### Scenario: The declaration does not outlive the save
+- **GIVEN** a named transition whose save throws
+- **WHEN** the exception leaves `TransitionEngine`
+- **THEN** no action MUST remain declared for that object
+
+### Requirement: Bulk delete MUST batch-resolve object scopes with a single cross-table lookup
+
+`ObjectService::deleteObjects()` SHALL resolve the entity (and thereby the
+register/schema scope) of every permission-filtered UUID with ONE batched
+cross-magic-table lookup (soft-deleted rows included) before deleting, and SHALL
+pass each pre-resolved entity together with its concrete Register and Schema
+entities into the delete handler so no per-object cross-table re-scan runs.
+
+Identifiers the uuid-based batch lookup cannot resolve (numeric ids, slugs, URIs,
+rows deleted concurrently) SHALL fall back to the legacy per-uuid resolution and
+delete-handler call, preserving prior behaviour including per-pair cache
+invalidation and skip-on-error semantics. Referential-integrity enforcement
+(RESTRICT, CASCADE, SET_NULL, SET_DEFAULT) remains per object.
+
+#### Scenario: Batch-resolved UUIDs skip the per-object lookup
+- **GIVEN** a bulk delete of N objects whose UUIDs all resolve in the batched lookup
+- **WHEN** `deleteObjects()` runs
+- **THEN** exactly one cross-magic-table lookup is issued for all N UUIDs
+- **AND** the delete handler receives each pre-resolved entity with concrete
+  register/schema entities and performs no additional lookup for it
+- **AND** each distinct (register, schema) pair is materialised as entities at most once
+
+#### Scenario: Batch misses keep the legacy pipeline
+- **GIVEN** a bulk delete where one identifier is a slug the uuid-based batch cannot match
+- **WHEN** `deleteObjects()` runs
+- **THEN** that identifier is resolved and deleted through the unchanged legacy
+  per-uuid path
+- **AND** a RESTRICT block on any object skips only that object and the bulk
+  operation continues
+
+### Requirement: Legacy cascade deletion MUST batch each level's targets
+
+`DeleteObject::cascadeDeleteObjects()` SHALL collect all ids referenced by
+`cascade: true` schema properties first, resolve them with ONE batched
+cross-table lookup, and soft-delete the resolved targets with one
+`UPDATE ... WHERE uuid IN (...)` statement per magic table (per-row deletion
+metadata bound via a parameterised CASE expression) and ONE multi-row audit
+INSERT — instead of feeding each id through the full per-object delete pipeline.
+
+Per-object semantics SHALL be preserved: an object-updating event is dispatched
+per target before the write (a hook stopping propagation skips that target; a
+hook modifying the payload routes that target through the full-row save), an
+object-updated event is dispatched per target after the write, caches are
+invalidated per object, and cascade children remain sub-deletions that never
+cascade further. Unresolved ids and total batch-write failures fall back to the
+legacy per-id pipeline. Soft delete remains the only cascade disposition.
+
+#### Scenario: Cascade children are soft-deleted with batched statements
+- **GIVEN** a root object whose schema has a `cascade: true` array property
+  referencing M children stored in one magic table
+- **WHEN** the root object is deleted
+- **THEN** the children are resolved with one batched lookup and soft-deleted with
+  one UPDATE statement carrying per-child deletion metadata
+- **AND** M per-object updating and updated events are dispatched
+- **AND** M audit rows are persisted with one multi-row INSERT
+
+#### Scenario: Hook rejection skips only the rejected child
+- **GIVEN** a cascade where a pre-update hook stops propagation for one child
+- **WHEN** the batched soft delete runs
+- **THEN** that child is not soft-deleted and receives no updated event
+- **AND** the remaining children are soft-deleted normally
+
+#### Scenario: Batch failure falls back to the per-id pipeline
+- **GIVEN** the batched soft-delete write fails entirely
+- **WHEN** the cascade continues
+- **THEN** every collected id is retried through the legacy per-id delete pipeline
+
+### Requirement: Relation detection MUST only record genuine references in @self.relations
+
+A string value MUST be recorded in `@self.relations` ONLY when it is a genuine reference to another object, as the save/import pipeline scans each string property.
+A string value qualifies as a genuine reference when EITHER of the following holds: (a) the value
+matches a reference pattern — a canonical UUID (8-4-4-4-12 hex), a prefixed-UUID (e.g. `id-<uuid>`,
+`ref-<uuid>`), or a value accepted by URL validation; OR (b) the schema property that holds the value
+explicitly declares it a reference — i.e. the property has `type: object`, a `format` of `uuid`,
+`uri`, or `url`, or carries a `$ref` / `inversedBy` declaration. Schema-declared detection is
+authoritative and MUST take precedence over pattern matching.
+
+The pipeline MUST NOT record a string as a relation purely because it is long and contains a hyphen
+or underscore. Ordinary scalar values — dates, enum/code values, and business identifiers — that do
+not match a reference pattern and are not held by a schema-declared reference property MUST NOT be
+recorded in `@self.relations`. This rule MUST be applied identically wherever relation scanning
+occurs in the save/import pipeline, so behavior cannot diverge between the single-save, bulk, and
+cascade code paths.
+
+This requirement governs only the derived `@self.relations` map. It does NOT change which schema
+properties exist, the save pipeline ordering, aggregation, lifecycle transitions, or notification
+declarations.
+
+#### Scenario: Canonical UUID value is recorded as a relation
+- **WHEN** an object property holds the string `00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations` with the UUID value
+
+#### Scenario: Prefixed-UUID value is recorded as a relation
+- **WHEN** an object property holds the string `id-00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: URL value is recorded as a relation
+- **WHEN** an object property holds the string `https://example.com/api/objects/00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: Schema-declared reference property records its value even without a UUID pattern
+- **GIVEN** a schema property declared with `type: object` (or `format: uuid`/`uri`/`url`, or a `$ref`/`inversedBy`)
+- **WHEN** an object holds a string value for that property
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: Date scalar is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds the string `2026-05-20`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Enum/code value is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds the string `bank_transfer`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Business identifier is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds a hyphenated business identifier such as `DEMO-F-2026-04-02` or `demo-administration`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Detection rule is consistent across single, bulk, and cascade paths
+- **GIVEN** the same object payload saved through the single-object path, the bulk path, and the relation-cascade path
+- **WHEN** relation scanning runs in each path
+- **THEN** every path MUST produce the same `@self.relations` set for that payload
+
+### Requirement: A magic table missing metadata columns heals itself on first use (REQ-MTH-001)
+
+When a request first uses an existing magic table, OpenRegister SHALL check
+that the table carries every metadata column (`_archived`, `_frozen`,
+`_status` and the rest of the declared list) and SHALL add the ones it lacks
+before the table is queried. The check SHALL NOT depend on an app upgrade or
+a repair step having run. After the first use the answer SHALL come from a
+per-process memo, and across requests from the distributed cache under a key
+that changes when the metadata column list changes, so a complete table costs
+no schema query per request. Two requests adding the same column at once
+SHALL both succeed.
+
+#### Scenario: a list of a table without `_archived` succeeds
+
+- **GIVEN** a magic table that has every metadata column except `_archived`, `_frozen` and `_status`
+- **WHEN** a user lists the objects of its schema
+- **THEN** the three columns are added to the table
+- **AND** the list answers with the table's objects instead of an SQL error
+- @e2e exclude {needs a table altered underneath the app; covered by the SQLite unit test through existsTableForRegisterSchema()}
+
+#### Scenario: a complete table is not inspected on every request
+
+- **GIVEN** a table that was found complete
+- **WHEN** it is used again in the same process, or in another request within the cache lifetime
+- **THEN** no information_schema query is made for it
+- @e2e exclude {query counts are not observable from a browser; covered by unit tests}
+
+#### Scenario: two requests add the same column
+
+- **GIVEN** two requests that both find `_archived` missing
+- **WHEN** both try to add it
+- **THEN** neither fails and no warning is logged
+- @e2e exclude {a race cannot be staged from a browser; covered by unit tests}
+
+### Requirement: A table that cannot be healed degrades quietly (REQ-MTH-002)
+
+When a missing metadata column cannot be added, OpenRegister SHALL log one
+warning naming the table and the remedy, SHALL NOT log it again on every
+request while the table stays degraded, and SHALL leave the missing column
+out of the archive and draft predicates for that table. A table without
+`_archived` holds no archived row, so the default list SHALL show all its
+rows and the archived-only lens SHALL show none.
+
+#### Scenario: no permission to alter
+
+- **GIVEN** a table without `_archived` and a database user that may not alter it
+- **WHEN** its objects are listed three times
+- **THEN** one warning is logged
+- **AND** each list answers with the table's rows
+- @e2e exclude {needs a database user without ALTER; covered by unit tests}
+
+### Requirement: Reconcile reports and repairs missing metadata columns (REQ-MTH-003)
+
+`occ openregister:tables:reconcile` SHALL report every physical magic table
+that lacks metadata columns, including tables whose schema no register lists,
+and with `--apply` SHALL add them, without maintenance mode. `--register`
+SHALL limit both passes to that register's tables. A metadata column SHALL be
+reported once, not again by the property pass.
+
+#### Scenario: an orphaned table is reported and repaired
+
+- **GIVEN** a magic table lacking `_archived` whose schema no register lists
+- **WHEN** an administrator runs the command without `--apply`
+- **THEN** the output names the table and `_archived` and the exit code is 0
+- **AND** with `--apply` the column is added and the summary counts the table as repaired
+- @e2e exclude {occ command; covered by unit tests}
+
+### Requirement: The upgrade step and reconcile share the healer (REQ-MTH-004)
+
+The `AddObjectStateColumns` repair step, the reconcile command and the request
+path SHALL decide which columns a table lacks, and add them, through the same
+helper, so the three cannot disagree. The repair step SHALL walk every physical
+magic table and SHALL NOT abort the upgrade when one table cannot be altered.
+
+#### Scenario: the upgrade step heals an orphaned table
+
+- **GIVEN** a magic table lacking `_archived` whose schema no register lists
+- **WHEN** the app is upgraded
+- **THEN** the repair step adds the column
+- @e2e exclude {repair step runs on upgrade; covered by unit tests}
+
+### Requirement: A transition input MAY say how its value is asked for
+
+A declared or provider-published transition input MAY carry a `label` (the
+words beside the field) and `options` (a list of `{value, label}` to pick
+from). The available-actions response SHALL carry both through on that input,
+in every lifecycle mode, so a provider can publish the choices that hold for
+the record at hand.
+
+An option without a non-empty text or integer `value` SHALL be dropped. An
+option without a `label` SHALL be labelled by its value. An input that declares
+neither key SHALL be published as `{field, required}` exactly as before.
+
+Both keys are presentation only. They MUST NOT change which keys the transition
+accepts, and the posted value SHALL be validated by whoever writes it.
+
+#### Scenario: A provider publishes the choices for this record
+- **GIVEN** a provider that answers an action whose input declares `label` and two `options`
+- **WHEN** the available-actions endpoint is called
+- **THEN** that input MUST carry the `label` and both options as `{value, label}`
+
+#### Scenario: Malformed options are dropped
+- **GIVEN** an input whose `options` include an entry without a value
+- **WHEN** the available-actions endpoint is called
+- **THEN** that entry MUST NOT be published
+- **AND** an option without a label MUST be labelled by its value
+
+#### Scenario: An input declaring neither key is unchanged
+- **GIVEN** an input declaring only `field` and `required`
+- **WHEN** the available-actions endpoint is called
+- **THEN** that input MUST be published as `{field, required}` with no other key
+
+### Requirement: A bulk save applies property authorization per row
+
+Each row of a bulk save SHALL be decided by the same property authorization as a single save: a row writing a value
+the caller may not write SHALL be refused, naming the properties; on an update, a stored property the row omits and
+the caller may not read or update SHALL be carried forward. Unchanged values SHALL pass.
+
+#### Scenario: A bulk row writes a protected property
+- **GIVEN** `restricted` is writable only by group `service`, and a member of `staff` may update the object
+- **WHEN** the staff member bulk-saves a row setting `restricted: false`
+- **THEN** the row is refused into `invalid`, naming `restricted`, and is not written
+
+#### Scenario: A bulk row omits a protected property
+- **WHEN** the staff member bulk-saves the row without `restricted`
+- **THEN** the stored `restricted` is kept
+
+### Requirement: The mixed-schema bulk route checks every schema its rows name
+
+`/api/bulk/{register}/0/save` SHALL refuse the batch with 403 when a row names a schema the caller may not manage,
+or a schema that cannot be resolved.
+
+#### Scenario: A row names a schema the caller may not manage
+- **WHEN** a non-admin posts a mixed-schema batch whose row names schema `document` without a manage rule for them
+- **THEN** the answer is 403 naming `document` and nothing is saved
+
+### Requirement: A system operation may stamp a readOnly property
+
+On update, a changed value of a `readOnly: true` property SHALL be refused, except inside a `SystemOperationContext`.
+`immutable: true` SHALL be enforced inside a `SystemOperationContext` too.
+
+#### Scenario: A client update to a readOnly property is refused
+- **GIVEN** a case whose `paymentState` is `readOnly: true` and stored as null
+- **WHEN** a user updates the case with `paymentState: "paid"`
+- **THEN** the update is refused with a validation error naming `paymentState`
+
+#### Scenario: A system operation stamps it
+- **WHEN** the same update runs inside `SystemOperationContext::run()`
+- **THEN** the update is not refused
+
+### Requirement: Every write path evaluates the declared rules (REQ-REO-004)
+
+Rule evaluation SHALL happen in the save pipeline, so that object create,
+object update, object patch, import, a flow node write and a bulk job
+write all reach it. The system SHALL carry a test enumerating the write
+paths and asserting that each one reaches the evaluator, so that a write
+path added later without an entry fails.
+
+#### Scenario: an imported object is subject to the same rules
+
+- **GIVEN** a schema whose state `closed` requires `outcome`
+- **WHEN** an import creates an object in state `closed` without `outcome`
+- **THEN** the import records that row as refused, naming `outcome`
+- **AND** the object is not created
+
+#### Scenario: a new write path without an entry fails the test
+
+- **GIVEN** the enumerated write paths and their assertions
+- **WHEN** a write path is added that bypasses the save pipeline
+- **THEN** the enumeration test fails and names the path
+- @e2e exclude {test-suite invariant, covered by the enumeration unit test}
+
+### Requirement: A property's allowed values may follow another property (REQ-REO-005)
+
+A property MAY declare that its allowed values follow from the value of
+another property of the same object, administered as a table of pairs
+rather than as one rule per pair. Schema save SHALL refuse a table naming
+a property the schema does not declare or a value the controlling property
+cannot take. On object save a value outside the pairs allowed by the
+controlling value SHALL be refused with 422, naming both properties.
+
+#### Scenario: a dependent value outside the table is refused
+
+- **GIVEN** `resultaat` whose allowed values follow `zaaktype`, and a table pairing `bezwaar` with `gegrond` and `ongegrond`
+- **WHEN** an object with `zaaktype: bezwaar` is saved with `resultaat: verleend`
+- **THEN** the save fails with 422 naming `resultaat` and `zaaktype`
+
+#### Scenario: a table naming an unknown property is refused at schema save
+
+- **GIVEN** a table whose controlling property is not declared by the schema
+- **WHEN** the schema is saved
+- **THEN** the save fails with 422 naming the missing property
+- @e2e exclude {validator, covered by unit tests}
+
+### Requirement: A property default may be an expression (REQ-REO-006)
+
+A property's default MAY be a JSON-AST expression instead of a literal,
+evaluated on create in the same evaluator as a declared calculation. An
+expression that cannot be evaluated SHALL refuse the create and name the
+property, never fall back to an empty value.
+
+#### Scenario: a default is derived on create
+
+- **GIVEN** a property `uiterlijkeDatum` whose default adds six weeks to `ontvangstdatum`
+- **WHEN** an object is created with `ontvangstdatum` set and no `uiterlijkeDatum`
+- **THEN** `uiterlijkeDatum` is six weeks later
+
+#### Scenario: an unevaluable default refuses the create
+
+- **GIVEN** the same property and a create without `ontvangstdatum`
+- **WHEN** the object is created
+- **THEN** the create fails and the message names `uiterlijkeDatum`
+- @e2e exclude {evaluator behaviour, covered by unit tests}
+
+### Requirement: Schema configuration MUST accept and persist the object-slug keys
+
+`Schema::validateConfigurationArray()` MUST accept `objectSlugField` as a string
+configuration key, with the same rules as `objectNameField` (a string, `null`, or an
+empty string that is stored as `null`). It MUST accept `objectSlugSuffix` as a boolean
+configuration key, with the same rules as the other boolean keys (`true`, `false` or
+`null`). Both keys MUST survive a schema save through the API and a configuration
+import, because both paths go through `Schema::setConfiguration()`. An invalid value
+for either key MUST drop only that key and keep the rest of the configuration, per the
+per-key isolation that already applies to every configuration key. Both keys are
+optional, and an absent `objectSlugSuffix` MUST behave as `false`.
+
+#### Scenario: Schema save keeps objectSlugField and objectSlugSuffix
+- **GIVEN** a schema save payload whose `configuration` holds `objectSlugField: "title"` and `objectSlugSuffix: true`
+- **WHEN** the schema is saved through the schemas API
+- **THEN** the stored configuration MUST contain `objectSlugField: "title"` and `objectSlugSuffix: true`
+- **AND** a subsequent GET of the schema MUST return both keys
+
+#### Scenario: Configuration import keeps objectSlugField
+- **GIVEN** a configuration file whose schema declares `configuration.objectSlugField: "title"`
+- **WHEN** the configuration is imported
+- **THEN** the imported schema MUST carry `objectSlugField: "title"`
+
+#### Scenario: An invalid objectSlugSuffix drops only that key
+- **GIVEN** a schema save payload with `objectSlugField: "title"` and `objectSlugSuffix: "yes"`
+- **WHEN** the schema is saved
+- **THEN** `objectSlugSuffix` MUST be dropped
+- **AND** `objectSlugField` and every other configuration key MUST be kept
+
+#### Scenario: An empty objectSlugField switches slugs off
+- **GIVEN** a schema save payload with `objectSlugField: ""`
+- **WHEN** the schema is saved
+- **THEN** the stored `objectSlugField` MUST be `null`
+
+### Requirement: An object slug MUST come only from the configured slug field and MUST NOT be written into the object data
+
+For a schema with `objectSlugField`, the slug candidate of an object MUST be the value
+at that field path, converted by the single slugify routine
+(`MetadataHydrationHandler::createSlug()`: lower case, spaces and underscores to
+hyphens, characters other than `a-z`, `0-9` and `-` removed, repeated hyphens
+collapsed, leading and trailing hyphens trimmed). When the field is absent or empty the
+candidate MUST be `null` and the object MUST get no slug. There MUST be no fallback to
+`name`, `title`, `label` or the schema title. The reserved value `@schema.name` is the
+one other source a schema MAY choose (Robert Zondervan, 2026-10-26: a choice, not a
+fallback): the candidate is then `<schema slug>-<object name>`, the object name being
+the value of the schema's `objectNameField`, slugified on its own; a schema without a
+slug contributes its slugified title. Without an `objectNameField`, without a name value,
+with a name that slugifies to nothing (only punctuation or non-Latin letters) or without
+a schema slug and title the candidate MUST be `null`; the schema part alone is never a
+slug. Any candidate is cut to the width of the slug column without a trailing hyphen. The save pipeline MUST NOT add a `slug` key to the object
+data. The slug is entity metadata only, so it never appears in `@self.relations` and
+never causes a magic-mapper "Discarding … slug" warning.
+
+#### Scenario: Slug derived from the configured field
+- **GIVEN** a schema with `objectSlugField: "title"` and no object holding slug `hello-world` in its register and schema
+- **WHEN** an object with `title: "Hello World"` is created
+- **THEN** the object's `@self.slug` MUST be `hello-world`
+
+#### Scenario: The schema-name source builds the slug from schema slug and object name
+- **GIVEN** a schema with slug `convenanten`, `objectSlugField: "@schema.name"` and `objectNameField: "title"`
+- **WHEN** an object with `title: "Hello World"` is created
+- **THEN** the object's `@self.slug` MUST be `convenanten-hello-world`
+- **AND** an object without a `title` value MUST get no slug
+- **AND** an object whose `title` is `"!!!"` MUST get no slug, not `convenanten`
+
+#### Scenario: Empty source field gives no slug
+- **GIVEN** a schema with `objectSlugField: "title"`
+- **WHEN** an object without a `title` value is created
+- **THEN** the object's `@self.slug` MUST be `null`
+- **AND** no fallback field or schema title MUST be used
+
+#### Scenario: The slug is not stored as object data
+- **GIVEN** a schema with `objectSlugField: "title"` that does not declare a `slug` property
+- **WHEN** an object with `title: "Hello World"` is created and then updated
+- **THEN** the object data MUST NOT contain a `slug` key
+- **AND** `@self.relations` MUST NOT contain a `slug` entry
+- **AND** no "Discarding … slug" warning MUST be logged
+
+### Requirement: Object slugs MUST be unique within a register and schema, and a colliding slug MUST NOT be written
+
+For a schema with `objectSlugField`, a slug MUST be held by at most one live
+(not soft-deleted) object within the same register and schema, as far as the save
+pipeline can enforce it. Before a slug is written, the pipeline MUST check whether
+another live object in that register and schema holds it. The check MUST exclude the
+object being saved, and MUST ignore the caller's RBAC and multitenancy scope, because
+uniqueness does not depend on who saves. When `objectSlugSuffix` is not `true` and the
+slug is taken, the object MUST be saved without a slug, the save MUST succeed, and a
+warning MUST be logged that names the register, the schema, the slug, the uuid of the
+object saved without it and the uuid of the object holding it. The same slug MAY exist
+in a different schema or a different register. A soft-deleted object MUST NOT hold its
+slug for this check. The same rules MUST apply when a soft-deleted object is restored,
+when an object is moved or migrated to another register or schema (its slug is checked
+against the target's live holders), and when a configuration's seed data creates an
+object: a slug another live object holds by then MUST NOT be written, so the object is
+restored, moved (or seeded) without a slug, or with the suffixed slug when
+`objectSlugSuffix` is `true`, and the collision warning MUST be logged. A seed object's
+client slug is its explicit `slug` only; its title MUST NOT be used as one, so a seed
+without a `slug` gets the slug of the schema's configured source, as through the API.
+
+#### Scenario: Second object with the same source value is saved without a slug
+- **GIVEN** a schema with `objectSlugField: "title"` and `objectSlugSuffix` absent
+- **AND** object A with `title: "Hello World"` holds slug `hello-world`
+- **WHEN** object B with `title: "Hello World"` is created in the same register and schema
+- **THEN** the save of B MUST succeed
+- **AND** B's `@self.slug` MUST be `null`
+- **AND** A's `@self.slug` MUST still be `hello-world`
+- **AND** one warning MUST be logged naming the register, the schema, slug `hello-world`, B's uuid and A's uuid
+
+#### Scenario: The same slug in another schema is not a collision
+- **GIVEN** object A holds slug `hello-world` in register R and schema S1
+- **WHEN** an object with `title: "Hello World"` is created in register R and schema S2, which also sets `objectSlugField: "title"`
+- **THEN** the new object's `@self.slug` MUST be `hello-world`
+- **AND** no collision warning MUST be logged
+
+#### Scenario: A soft-deleted holder does not block the slug
+- **GIVEN** object A holding slug `hello-world` has been soft-deleted
+- **WHEN** object B with `title: "Hello World"` is created in the same register and schema
+- **THEN** B's `@self.slug` MUST be `hello-world`
+
+#### Scenario: Restoring an object whose slug was handed on
+- **GIVEN** object A held slug `hello-world` and was soft-deleted
+- **AND** object B with `title: "Hello World"` was then saved and took `hello-world`
+- **WHEN** A is restored
+- **THEN** A MUST be live again without a slug (with `hello-world-<YYYYMMDDHHMMSS>` when `objectSlugSuffix` is `true`)
+- **AND** B MUST still hold `hello-world`, as the only live holder
+- **AND** one warning MUST be logged naming the register, the schema, the slug, A's uuid and B's uuid
+
+### Requirement: `objectSlugSuffix` MUST append a UTC date-time suffix to a colliding slug
+
+The pipeline MUST write `<slug>-<YYYYMMDDHHMMSS>` (UTC, time of the save) instead of
+the slug candidate when the schema sets `objectSlugSuffix: true` and the candidate is
+held by another live object in the same register and schema. When that value is also
+taken, the object MUST be saved without a slug and the collision warning MUST be
+logged. A candidate that does not collide MUST be written without a suffix. The base
+slug MUST be truncated so the suffixed value fits the 255-character slug column.
+Without `objectSlugSuffix: true` no suffix is ever appended, so slugs are reproducible.
+
+#### Scenario: Suffix on collision
+- **GIVEN** a schema with `objectSlugField: "title"` and `objectSlugSuffix: true`
+- **AND** object A holds slug `hello-world`
+- **WHEN** object B with `title: "Hello World"` is created at the UTC time 2026-01-02 03:04:05
+- **THEN** B's `@self.slug` MUST be `hello-world-20260102030405`
+
+#### Scenario: No suffix without a collision
+- **GIVEN** a schema with `objectSlugField: "title"` and `objectSlugSuffix: true`
+- **AND** no object holds slug `hello-world`
+- **WHEN** an object with `title: "Hello World"` is created
+- **THEN** its `@self.slug` MUST be `hello-world`
+
+#### Scenario: Default off gives reproducible slugs
+- **GIVEN** a schema with `objectSlugField: "title"` and no `objectSlugSuffix` key
+- **WHEN** an object with `title: "Hello World"` is created and no other object holds `hello-world`
+- **THEN** its `@self.slug` MUST be exactly `hello-world`, with no suffix
+
+### Requirement: An object slug once set MUST NOT be changed by a later save
+
+A save MUST keep the slug of an object that already holds a non-empty slug, for a
+schema with `objectSlugField`, whatever the payload contains: a changed source field, a
+different client-supplied slug, or a payload without any slug. Only an object without a
+slug gets one at save time. A set slug never changes afterwards, also not when
+`objectSlugField` is switched: the switch applies to objects that have no slug yet, and
+the backfill command has no rewrite mode (Robert Zondervan, 2026-10-23).
+
+#### Scenario: Renaming the source field keeps the slug
+- **GIVEN** a schema with `objectSlugField: "title"` and object A holding slug `hello-world`
+- **WHEN** A is updated with `title: "Hello World Renamed"`
+- **THEN** A's `@self.slug` MUST still be `hello-world`
+
+#### Scenario: Updating another field keeps the slug
+- **GIVEN** object A holding slug `hello-world`
+- **WHEN** A is updated with a change to a field other than the slug field
+- **THEN** A's `@self.slug` MUST still be `hello-world`
+
+#### Scenario: An object without a slug gets one at its next save
+- **GIVEN** a schema with `objectSlugField: "title"` and object A whose `@self.slug` is `null` while its `title` is `"Hello World"`
+- **AND** no live object in the register and schema holds `hello-world`
+- **WHEN** A is saved
+- **THEN** A's `@self.slug` MUST be `hello-world`
+
+### Requirement: A slug freed by deleting its holder MUST go to the next object that saves without a slug
+
+An object that was left without a slug MUST receive it on its next save once the
+object holding that slug is deleted (soft or hard), through the ordinary
+"only an object without a slug gets one" rule. The delete itself MUST NOT change any
+other object.
+
+#### Scenario: The waiting object takes the freed slug on its next save
+- **GIVEN** object A holds slug `hello-world` and object B with `title: "Hello World"` was saved without a slug
+- **WHEN** A is deleted
+- **AND** B is saved again
+- **THEN** B's `@self.slug` MUST be `hello-world`
+
+#### Scenario: The delete itself changes no other object
+- **GIVEN** object A holds slug `hello-world` and object B was saved without a slug
+- **WHEN** A is deleted
+- **THEN** B's `@self.slug` MUST still be `null` until B is saved
+
+### Requirement: A client-supplied slug MUST follow the same uniqueness and freeze rules
+
+A slug a client sends in `@self.slug` or as top-level `slug` MUST stay accepted, so
+integrations that set their own slugs keep working. For a schema with
+`objectSlugField`, such a slug MUST take the place of the generated candidate and MUST
+pass the same rules: it is written only when the object has no slug yet, it is subject
+to the uniqueness check and to `objectSlugSuffix`, and a collision leaves the object
+without a slug and logs the collision warning. A client-supplied slug that differs from
+an existing frozen slug MUST be ignored and logged as a warning; the save MUST NOT fail.
+The value MUST be normalised exactly like a generated slug (lower case, spaces and `_` become `-`, every other character outside `a-z0-9` and `-` is dropped without transliteration, at most 255 characters), so `Hello` and `hello` are one slug and `Zaak_2026-0042` is stored as `zaak-2026-0042`; a client slug that normalises to nothing MUST be treated as not sent and the slug then comes from `objectSlugField`. A frozen object MUST compare the normalised client slug with its stored slug, so re-sending the same slug in another case or format is not logged as ignored. Single and bulk save MUST compare slugs case-insensitively, so a collation that matches `Hello` to a stored `hello` cannot let both be written.
+
+#### Scenario: A client slug that differs only in case collides in a bulk save
+- **GIVEN** a schema with `objectSlugField: "title"` and object A holding `hello`
+- **WHEN** a bulk save contains a new object with `@self.slug: "Hello"`
+- **THEN** the new object MUST be saved without a slug and the collision warning MUST name A
+
+#### Scenario: A free client slug is accepted on a new object
+- **GIVEN** a schema with `objectSlugField: "title"` and no object holding `my-own-slug`
+- **WHEN** an object is created with `@self.slug: "my-own-slug"` and `title: "Hello World"`
+- **THEN** its `@self.slug` MUST be `my-own-slug`
+
+#### Scenario: A colliding client slug is not written
+- **GIVEN** object A holds slug `my-own-slug`
+- **WHEN** object B is created in the same register and schema with `@self.slug: "my-own-slug"`
+- **THEN** the save of B MUST succeed with `@self.slug` `null`
+- **AND** the collision warning MUST name both uuids
+
+#### Scenario: A client slug cannot overwrite a frozen slug
+- **GIVEN** object A holds slug `hello-world`
+- **WHEN** A is updated with `@self.slug: "something-else"`
+- **THEN** A's `@self.slug` MUST still be `hello-world`
+- **AND** a warning MUST be logged that the client slug was ignored because the slug is frozen
+
+### Requirement: Bulk save MUST apply the same slug rules as a single save
+
+`SaveObjects` MUST produce, for the same input and the same existing data, the same
+slugs as a sequence of single saves in batch order. Concretely: the candidate comes
+only from `objectSlugField` or a client-supplied slug; uniqueness is checked against
+live objects in the register and schema and against slugs assigned earlier in the same
+batch; a collision leaves the object without a slug and logs the collision warning, or
+applies `objectSlugSuffix`; and a bulk update of an object that already holds a slug
+keeps it. The existence check MUST be batched per register and schema, not run once per
+object (ADR-009).
+
+#### Scenario: Two objects with the same title in one batch
+- **GIVEN** a schema with `objectSlugField: "title"` and no object holding `bulk-item`
+- **WHEN** a bulk save creates two objects with `title: "Bulk Item"`
+- **THEN** the first object in batch order MUST get slug `bulk-item`
+- **AND** the second MUST be saved without a slug
+- **AND** one collision warning MUST name both uuids
+
+#### Scenario: Bulk create against an existing holder
+- **GIVEN** object A holds slug `bulk-item`
+- **WHEN** a bulk save creates an object with `title: "Bulk Item"` in the same register and schema
+- **THEN** the new object MUST be saved without a slug
+- **AND** A MUST keep `bulk-item`
+
+#### Scenario: Bulk update keeps a frozen slug
+- **GIVEN** object A holds slug `bulk-item`
+- **WHEN** a bulk save updates A with `title: "Renamed Item"`
+- **THEN** A's `@self.slug` MUST still be `bulk-item`
+
+### Requirement: A slug lookup that matches more than one object in a register and schema MUST be refused as ambiguous
+
+A lookup by identifier within one register and schema MUST match the object's numeric
+id, uuid, slug or uri. When it matches more than one live row
+(`MagicMapper::findInRegisterSchemaTable()`) and no single row is matched by its id or
+uuid, it MUST throw `MultipleObjectsReturnedException` and MUST NOT return either
+object. Before throwing, it MUST log a warning naming the register, the schema,
+the identifier and the uuids of the matching rows. The answer to such a lookup MUST be
+HTTP 409 with a JSON body that says the identifier is ambiguous, on every route that
+resolves an object identifier through `ObjectService::find()` or `findSilent()`
+(show, update, patch, destroy, canDelete, lock, unlock, move, the presence routes,
+downloadFiles, referencedBy, geoFeatures, referenceOptions and the other `{id}` routes
+of `ObjectsController`, the relations route of `RelationsController` and the object
+history route `…/{id}/audit-trails` of `AuditTrailController`), each keeping its other
+error codes. The body MUST NOT list the matching uuids. The history route MUST look the
+object up within the register and schema of the route, deleted objects included, so an
+identifier of this register and schema never answers with another schema's history; only
+when the register or schema itself no longer resolves does it fall back to the cross-table
+lookup. The uses and used sub-routes MUST answer the same 409 instead of an empty list.
+The files listing `…/{id}/files` MUST list the files of the object its read check resolved
+within the register and schema, never of a cross-table lookup of the raw identifier; a
+slug held by two objects answers 404 there, the answer that route gives every refused read
+(file-actions REQ-OFOA-002), and it MUST NOT list either object's files.
+
+#### Scenario: The history route is scoped to the register and schema
+- **GIVEN** object A with slug `hello-world` in register 28 / schema 68 and an older object with slug `hello-world` in schema 63
+- **WHEN** `GET /api/objects/28/68/hello-world/audit-trails` is requested by an administrator
+- **THEN** the response MUST list A's history only
+- **AND** `GET /api/objects/28/68/dubbel/audit-trails`, where two objects of 28/68 hold `dubbel`, MUST be HTTP 409 with `"error": "ambiguous-identifier"`
+
+#### Scenario: The files and relations of a slug are those of this schema's object
+- **GIVEN** object A with slug `hello-world` in register 28 / schema 68 holding one file, and objects D and E of 28/68 both holding slug `dubbel`
+- **WHEN** `GET /api/objects/28/68/hello-world/files` is requested by a reader of A
+- **THEN** the response MUST list A's file
+- **AND** `GET /api/objects/28/68/dubbel/uses` and `…/dubbel/used` MUST be HTTP 409 with `"error": "ambiguous-identifier"`
+- **AND** `GET /api/objects/28/68/dubbel/files` MUST be HTTP 404 and list no file
+
+An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
+slug that equals another object's id (`2024`) or uuid does not make that object
+unreachable. Only a canonical non-negative integer (digits only, no leading zero, such as `2024`)
+is an object id; `007`, `7.0`, `1e3` and `7 ` are never read as an id, so they can only
+match a slug, uuid or uri. Only when no single row is matched by its id or uuid,
+because several rows hold the slug, is the identifier ambiguous. The lookup reads at
+most 50 rows, rows matched by id or uuid first and the rest in id order, and a result cut
+by that limit stays ambiguous.
+
+#### Scenario: Pre-existing duplicate slug answers 409
+- **GIVEN** objects A and B in the same register and schema both hold slug `hello-world` from before this change
+- **WHEN** `GET /api/objects/{register}/{schema}/hello-world` is requested
+- **THEN** the response MUST be HTTP 409 with a JSON body naming the identifier as ambiguous
+- **AND** neither object MUST be returned
+- **AND** one warning MUST be logged naming the register, the schema, `hello-world` and the uuids of A and B
+
+#### Scenario: A numeric slug does not mask the object with that id
+- **GIVEN** object A holds slug `2024` and object B has numeric id 2024
+- **WHEN** `GET /api/objects/{register}/{schema}/2024` is requested
+- **THEN** the response MUST be HTTP 200 with object B
+
+#### Scenario: A uuid-shaped slug does not mask the object with that uuid
+- **GIVEN** object A holds a slug equal to the uuid of object B
+- **WHEN** `GET /api/objects/{register}/{schema}/<that uuid>` is requested
+- **THEN** the response MUST be HTTP 200 with object B
+
+#### Scenario: A zero-padded number is a slug, not an id
+- **GIVEN** object A holds slug `007` and object B has numeric id 7
+- **WHEN** `GET /api/objects/{register}/{schema}/007` is requested
+- **THEN** the response MUST be HTTP 200 with object A
+- **AND** `GET .../7` MUST return object B
+
+#### Scenario: Several slug holders stay ambiguous, also beyond the row limit
+- **GIVEN** 60 objects hold slug `hello-world` and none has that id or uuid
+- **WHEN** the slug is requested on any route that resolves an identifier, such as `GET .../hello-world/files/download` or `POST .../hello-world/move`
+- **THEN** the response MUST be HTTP 409 and MUST NOT name any uuid
+
+#### Scenario: A unique slug still resolves
+- **GIVEN** only object A holds slug `hello-world` in its register and schema
+- **WHEN** `GET /api/objects/{register}/{schema}/hello-world` is requested
+- **THEN** the response MUST be HTTP 200 with object A
+
+### Requirement: `occ openregister:backfill-slugs` MUST fill missing slugs idempotently and MUST NOT silently change duplicates
+
+OpenRegister MUST provide `occ openregister:backfill-slugs <register> <schema>`, where
+each argument accepts an id, uuid or slug. The command MUST refuse, with a non-zero exit
+code and a message, a schema without `objectSlugField`. It MUST give a slug to every
+live object that has none, oldest object first (by `_created`, then `_id`), applying
+the same candidate, uniqueness and suffix rules as a save. It MUST NOT change an object
+that already holds a slug, also not after `objectSlugField` was switched: the command
+has no option that rewrites set slugs (Robert Zondervan, 2026-10-23). It MUST report
+every slug that more than one live object holds before the run, as a log warning and a
+console line naming the slug and the uuids, and MUST leave those duplicates unchanged.
+With `--dry-run` it MUST report what it would change without writing. The command MUST
+be idempotent: a second run changes nothing. It writes the slug column directly, in
+transactions of at most 500 rows, and each write applies only when the row still has no
+slug (a row a save gave a slug meanwhile is skipped and logged). It does not bump the
+object version, does not write a per-object audit-trail entry and does not dispatch
+object events. Instead, every run that is not a dry run and changes at least one slug
+MUST write one audit-trail entry (`slug.backfill.fill`, on the register and schema)
+that lists the objects whose slug it set as uuid, old slug (null) and new slug. The
+entry lists at most the first 1,000 changes and carries the total (`changesTotal`) and
+`truncated`; the full list of a larger run MUST be written to the log. The entry is
+hash-chained and cannot be redacted afterwards, so it MUST copy nothing but uuid, old
+slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry
+(the console summary still reports it). When the entry cannot be inserted, the run logs
+an error line with the changes instead, and the slugs already written stay.
+
+#### Scenario: The backfill fills only empty slugs
+- **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
+- **WHEN** `occ openregister:backfill-slugs <register> <schema>` runs
+- **THEN** B's slug MUST be `b-title`
+- **AND** A's slug MUST still be `a-title`
+
+#### Scenario: Second run changes nothing
+- **GIVEN** the backfill has run once on a register and schema
+- **WHEN** it runs again
+- **THEN** it MUST report zero assigned objects
+
+#### Scenario: Existing duplicates are logged, not changed
+- **GIVEN** objects A and B in the same register and schema both hold slug `hello-world`
+- **WHEN** the backfill runs
+- **THEN** both MUST still hold `hello-world`
+- **AND** the output and the log MUST name `hello-world` with the uuids of A and B
+
+#### Scenario: A switched slug field leaves set slugs alone
+- **GIVEN** a schema whose `objectSlugField` was switched from `kenmerk` to `title`
+- **AND** object A with `kenmerk: "K-1"`, `title: "Hello World"` and slug `k-1`, and object B with `title: "Second"` and no slug
+- **WHEN** `occ openregister:backfill-slugs <register> <schema>` runs
+- **THEN** A's slug MUST still be `k-1`
+- **AND** B's slug MUST be `second`
+- **AND** the command MUST NOT offer an option that rewrites A's slug
+
+#### Scenario: A run leaves one audit-trail entry
+- **GIVEN** a run that gives objects A and B their first slug
+- **WHEN** the run finishes
+- **THEN** exactly one audit-trail entry MUST exist for it, listing A and B with old and new slug
+- **AND** no object's version MUST have changed
+- **AND** a `--dry-run` MUST write no entry
+
+#### Scenario: A large run keeps the entry bounded
+- **GIVEN** a run that assigns 2,500 slugs
+- **WHEN** the run finishes
+- **THEN** the audit-trail entry MUST list 1,000 changes, carry `changesTotal` 2500 and `truncated` true
+- **AND** the full list MUST be in the log, in parts of at most 1,000
+
+#### Scenario: A run that changes nothing writes no audit-trail entry
+- **GIVEN** a run in which every object without a slug wants a slug that is taken
+- **WHEN** the run finishes
+- **THEN** no audit-trail entry MUST be written
+
+#### Scenario: Dry run writes nothing
+- **GIVEN** an object without a slug in a schema with `objectSlugField`
+- **WHEN** the backfill runs with `--dry-run`
+- **THEN** the output MUST list the slug it would assign
+- **AND** the object MUST still have no slug
+
+#### Scenario: A schema without objectSlugField is refused
+- **GIVEN** a schema without `objectSlugField`
+- **WHEN** the backfill runs for it
+- **THEN** the command MUST exit non-zero with a message naming the missing configuration
+- **AND** no object MUST be changed
+
+### Requirement: The schema editor MUST let an administrator configure the slug field and the suffix
+
+The schema editor's configuration tab MUST offer an "Object slug field" dropdown whose
+options are the schema's properties, next to the existing object name, description,
+image and summary field dropdowns. It MUST also offer a switch for `objectSlugSuffix`
+that is disabled while no slug field is chosen. Both values MUST round-trip through a
+save of the schema. Clearing the dropdown MUST store `objectSlugField` as `null`. Every
+new user-visible string MUST be wrapped for translation and present in the translation
+catalogue of the app that renders it.
+
+#### Scenario: Choosing a slug field persists it
+- **GIVEN** a schema with properties `title` and `kenmerk`
+- **WHEN** an administrator picks `kenmerk` in "Object slug field" and saves the schema
+- **THEN** the stored configuration MUST contain `objectSlugField: "kenmerk"`
+- **AND** reopening the editor MUST show `kenmerk` selected
+
+#### Scenario: The suffix switch needs a slug field
+- **GIVEN** a schema without `objectSlugField`
+- **WHEN** the configuration tab is opened
+- **THEN** the `objectSlugSuffix` switch MUST be disabled
+
+### Requirement: The object-slug rules MUST be backwards compatible
+
+The new rules are opt-in through `objectSlugField`, and the change MUST preserve the
+following behaviour. Each item MUST have its own automated test.
+
+- BC1: a schema without `objectSlugField` behaves as before. No slug is generated, and
+  no uniqueness check, freeze or slug warning applies. A client-supplied slug is stored
+  as before.
+- BC2: existing slugs are left as they are, including duplicates and `-<timestamp>`
+  variants. There is no migration, no unique index on the slug column, and no write on
+  upgrade.
+- BC3: lookups by uuid and by numeric id behave as before.
+- BC4: the new configuration keys are optional. A schema or export without them behaves
+  as before.
+- BC5: a client-supplied `@self.slug` or `slug` stays accepted.
+- BC6: bulk and single save give the same result for the same input.
+
+#### Scenario: BC1 — a schema without objectSlugField stays slugless
+- **GIVEN** a schema without `objectSlugField`
+- **WHEN** two objects with `title: "Hello World"` are created and one is renamed
+- **THEN** both MUST have `@self.slug` `null`
+- **AND** no slug collision or freeze warning MUST be logged
+
+#### Scenario: BC1 — a client slug on a schema without objectSlugField is stored as before
+- **GIVEN** a schema without `objectSlugField` and object A created with `@self.slug: "first"`
+- **WHEN** A is updated with `@self.slug: "second"`
+- **THEN** A's `@self.slug` MUST be `second`, as before this change
+
+#### Scenario: BC2 — existing duplicate and timestamp slugs survive a save
+- **GIVEN** objects A and B both holding slug `hello-world` and object C holding `hello-world-renamed-1700000000`, all saved before this change
+- **WHEN** each of A, B and C is saved again without other changes
+- **THEN** A and B MUST still hold `hello-world` and C MUST still hold `hello-world-renamed-1700000000`
+
+#### Scenario: BC3 — uuid and numeric id lookups are unchanged
+- **GIVEN** objects A and B both holding slug `hello-world`
+- **WHEN** A is requested by its uuid and B by its numeric id
+- **THEN** each request MUST return that object with HTTP 200
+
+#### Scenario: BC4 — a schema export without the new keys imports unchanged
+- **GIVEN** a schema export whose configuration has `objectNameField` but neither `objectSlugField` nor `objectSlugSuffix`
+- **WHEN** it is imported
+- **THEN** the imported configuration MUST equal the exported one
+- **AND** objects saved in it MUST behave as before this change
+
+#### Scenario: BC5 — integrations can still send a slug
+- **GIVEN** a schema with `objectSlugField: "title"` and no object holding `integration-slug`
+- **WHEN** an integration creates an object with top-level `slug: "integration-slug"`
+- **THEN** its `@self.slug` MUST be `integration-slug`
+
+#### Scenario: BC6 — bulk and single give the same slugs
+- **GIVEN** two identical, empty registers with the same schema setting `objectSlugField: "title"`
+- **WHEN** the same three objects, two of them titled `"Same"`, are saved one by one in the first and in one bulk save in the second
+- **THEN** the resulting slug of each object MUST be the same in both registers
+
+### Requirement: Whether a bulk write fires the save events is configured per schema
+
+The system SHALL read a `fireEventsOnBulkWrites` boolean from the schema's
+`configuration`, then from the register's `configuration`, then from the app
+config value `fire_events_on_bulk_writes` (`true` or `false`). The first
+explicit value SHALL decide. When none is set, the events SHALL fire for a
+schema that declares `x-openregister-lifecycle` and SHALL NOT fire for any
+other schema. A schema SHALL keep `fireEventsOnBulkWrites` through a save of
+its configuration.
+
+#### Scenario: a schema without a lifecycle keeps today's bulk behaviour
+
+- **GIVEN** a schema with no `fireEventsOnBulkWrites`, no lifecycle, and nothing set on its register or the instance
+- **WHEN** a caller bulk-saves rows to it
+- **THEN** no pre-save event is dispatched and every permitted row is written
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testASchemaWithoutTheSettingFiresNothing`}
+
+#### Scenario: a lifecycle schema fires the events without a setting
+
+- **GIVEN** a schema that declares `x-openregister-lifecycle` and no `fireEventsOnBulkWrites` anywhere
+- **WHEN** the policy is asked whether a bulk write to it fires the events
+- **THEN** the answer is yes
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testALifecycleSchemaFiresByDefault`}
+
+#### Scenario: the schema value beats the register and the instance
+
+- **GIVEN** the instance value `true`, the register value `true`, and the schema value `false`
+- **WHEN** the policy is asked for that schema
+- **THEN** the answer is no
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testTheSchemaValueWins` and its register and instance siblings}
+
+#### Scenario: the setting survives a schema save
+
+- **WHEN** a schema is saved with `configuration.fireEventsOnBulkWrites: true`
+- **THEN** reading the schema back returns `fireEventsOnBulkWrites: true`
+- @e2e exclude {entity round trip; covered by `BulkWriteEventsTest::testTheSchemaKeepsTheSetting`}
+
+### Requirement: A bulk write with events on runs each row's pre-save event and refuses only the stopped row
+
+When the events are on for a row's schema, `SaveObjects::saveObjects()` SHALL
+dispatch `ObjectCreatingEvent` for a row that creates and `ObjectUpdatingEvent`
+for a row that updates, with the stored object as the old object. The event
+SHALL run after the row's permission, property and validation checks and
+before anything is written. A stopped event SHALL refuse that row into
+`invalid` with the hook's message and the row's position, and the other rows
+SHALL be written. Data a hook sets on the object or through
+`setModifiedData()` SHALL be written. After the write, each row SHALL
+dispatch its created or updated event, unless a `SystemOperationContext` is
+active. This covers every caller of `saveObjects()`: `POST
+/api/bulk/{register}/{schema}/save`, the CSV and Excel import, the import
+preview and the flow `ObjectWriteNode`.
+
+#### Scenario: a guard refuses one row of a bulk update
+
+- **GIVEN** a schema with `fireEventsOnBulkWrites: true` and a listener that stops `ObjectUpdatingEvent` when the new status is `in-deliberation`
+- **WHEN** a caller bulk-saves two stored objects, one moving to `in-deliberation` and one moving to `closed`
+- **THEN** the first is in `invalid` with the listener's message and its position, and only the second is written
+- @e2e exclude {needs an app guard listener; covered by `BulkWriteEventsTest::testAStoppedUpdateRefusesOnlyThatRow`, which fails on development}
+
+#### Scenario: a hook fills in a value on a bulk create
+
+- **GIVEN** the events on and a listener on `ObjectCreatingEvent` that sets `number` through `setModifiedData()`
+- **WHEN** a caller bulk-creates a row without `number`
+- **THEN** the written row carries the listener's `number`, and the created event follows the write
+- @e2e exclude {needs a test listener; covered by `BulkWriteEventsTest::testACreatingHookValueIsWritten`}
+
+#### Scenario: events off writes as before
+
+- **GIVEN** a schema with `fireEventsOnBulkWrites: false` and the same stopping listener
+- **WHEN** the caller sends the same batch
+- **THEN** both rows are written and no pre-save event is dispatched
+- @e2e exclude {covered by `BulkWriteEventsTest::testEventsOffWritesEveryRow`}
+
+### Requirement: A bulk row is screened against the register and schema it is written to
+
+When the caller of `SaveObjects::saveObjects()` names a register, every row
+SHALL be screened against that register, whatever its `@self.register` says,
+because the writer stores the row in that register's table. The same SHALL
+hold for a schema the caller names. `@self.register` and `@self.schema` SHALL
+decide only when the caller names none (mixed-schema mode). The create or
+update decision, the permission, appendOnly and draft checks, and the
+bulk-write events setting SHALL all use the register and schema the row is
+written to.
+
+#### Scenario: a row names another register for a stored object
+
+- **GIVEN** a stored object in register 3, a route naming register 3, and a guard on its update
+- **WHEN** a bulk row for that object carries `@self.register: 9`
+- **THEN** the row is screened as an update in register 3, the guard refuses it, and nothing is written
+- @e2e exclude {needs an app guard listener; covered by `BulkWriteEventsTest::testARowNamingAnotherRegisterIsScreenedAgainstTheRoute` and `testAnotherRegistersSettingDoesNotDecide`}
+
+#### Scenario: a row names its own schema in a call that names another
+
+- **GIVEN** a call naming schema 7, and a caller who may not create in schema 7
+- **WHEN** a row carries `@self.schema: 8`
+- **THEN** the row is refused for schema 7, the schema it would be written to
+- @e2e exclude {covered by the `row names its own schema` case of `SaveObjectsBulkSafeguardsGoldenTest`; the `mixed batch row names its schema` case pins that `@self.schema` still decides without a call schema}
+
+### Requirement: A refused create over a taken identifier is judged as an update
+
+When a creating hook refuses a create, the caller did not ask to fail on a
+taken identifier, and the identifier names a live stored row, the system
+SHALL write it as an update of that row through `ObjectUpdatingEvent`, so
+the update guards decide. When the identifier is free, names a soft-deleted
+row, or the caller asked to fail, the system SHALL throw the creating refusal
+and write nothing. Data a refusing hook set SHALL NOT be written.
+
+#### Scenario: a client re-posts an existing object in a later state
+
+- **GIVEN** a stored object in `open`, and a creating hook that refuses any state but the initial one
+- **WHEN** a create with the same identifier and status `archived` is written
+- **THEN** it is written as an update: the events are `ObjectCreatingEvent`, `ObjectUpdatingEvent` and `ObjectUpdatedEvent`, with the stored `open` object as the old one
+- @e2e exclude {needs a concurrent or repeated writer; covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate`}
+
+#### Scenario: a refused create of a free identifier
+
+- **WHEN** the same create targets an identifier that is not stored
+- **THEN** it is refused with the creating hook's message and nothing is written
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOfAFreeIdentifierStaysRefused` and `testARefusedClaimStaysRefused`}
+
+#### Scenario: a refused create over a soft-deleted object
+
+- **GIVEN** a soft-deleted object and a creating hook that refuses the create
+- **WHEN** a create with the same identifier is written
+- **THEN** it is refused with the creating hook's message, the object stays deleted, and nothing is written
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverASoftDeletedRowStaysRefused`}
+
+#### Scenario: the row is deleted between the check and the update
+
+- **GIVEN** a live stored object when a refused create checks it, which is soft-deleted before the update is written
+- **WHEN** the update path reads the row again
+- **THEN** the creating refusal is thrown and nothing is written
+- @e2e exclude {needs a concurrent delete; covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate`}
+
+#### Scenario: a listener deletes the row while the update runs
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that soft-deletes or hard-deletes that row
+- **WHEN** the update is written
+- **THEN** the write changes only a row whose `_deleted` is empty and never inserts, so nothing is written and the creating refusal is thrown; a lost claim without a refusal is written as before
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow`, `...HardDeletesItsRow`, `testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow` and `MagicMapperLiveRowWriteTest`}
+
+#### Scenario: a write of the same object runs inside the update's listener
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that writes the same object again
+- **WHEN** the nested write finishes and the row is then soft-deleted before the outer update is written
+- **THEN** the outer update still changes only a live row, so nothing is written and the creating refusal is thrown; the nested write is conditional only when it is itself a refused create
+- @e2e exclude {covered by `MagicMapperRefusedCreateComposedTest::testNestedRefusedCreateSameUuidThenSoftDelete` and `testNestedPlainWriteSameUuidIsUnconditional`}
+
+### Requirement: A create written as an update is announced as an update
+
+When a create finds its identifier taken and is written as an update of the
+stored row, the system SHALL dispatch `ObjectUpdatedEvent` with the stored
+row as the old object, and SHALL NOT dispatch `ObjectCreatedEvent` for it.
+
+#### Scenario: a create whose identifier is taken
+
+- **GIVEN** a stored object in status `open`
+- **WHEN** a create with the same identifier and status `closed` is written as an update
+- **THEN** the events are `ObjectCreatingEvent`, `ObjectUpdatingEvent` and `ObjectUpdatedEvent`, and the updated event's old object is `open`
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertAnnouncesAnUpdateNotACreate`}
+
+#### Scenario: a create that wins
+
+- **WHEN** a create claims a free identifier
+- **THEN** the events are `ObjectCreatingEvent` and `ObjectCreatedEvent`, also after an earlier insert on the same mapper replaced a row, and also when a listener on its creating event ran an insert that replaced a row
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAWonInsertAnnouncesACreate`, `testAnInsertAfterALostOneAnnouncesACreateAgain` and `testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate`}
+
+### Requirement: A save over a stored row the caller cannot see is judged as an update of it
+
+When a save with RBAC on names a uuid that is stored but hidden from the
+caller, the system SHALL require both the schema's create rule on the
+incoming data and the update rule against the stored row (its owner and the
+row). A uuid that is not stored SHALL be judged by the create rule alone.
+With RBAC off the stored row SHALL NOT be looked up.
+
+#### Scenario: a caller writes over a row they cannot read
+
+- **GIVEN** an object owned by `agent` that `mallory` cannot read
+- **WHEN** `mallory` saves to its uuid
+- **THEN** the save is checked with action `create` on the incoming data and with action `update` against owner `agent` and the stored row, and is refused when either refuses
+- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate` and `testAStoredRowTheCallerMayNotUpdateIsNotWritten`}
+
+### Requirement: A seed object is inserted once
+
+A seed object SHALL be inserted once: through the routing mapper when one is
+set, else through the object entity mapper.
+
+#### Scenario: a configuration with seed data and a routing mapper
+
+- **WHEN** a seed object is imported while a routing mapper is set
+- **THEN** the routing mapper inserts it once and the object entity mapper does not
+- @e2e exclude {covered by `ImportHandlerSeedMetadataKeysTest::testARoutingMapperWritesTheSeedOnce`}
+
+### Requirement: A create that finds its identifier taken runs the update guard
+
+When a single create finds its identifier already taken by the time it
+writes, and the caller did not ask to fail in that case, the system SHALL
+dispatch `ObjectUpdatingEvent` with the stored object as the old object
+before it updates the row. A stopped event SHALL throw `HookStoppedException`,
+and the row SHALL stay as stored. A caller that asked to fail SHALL get
+`ObjectExistsException`, and no update event SHALL run.
+
+#### Scenario: a concurrent create would move a stored object past its guard
+
+- **GIVEN** a stored object in status `open` and a listener that stops an update into `in-deliberation`
+- **WHEN** a create with the same identifier and status `in-deliberation` reaches the table
+- **THEN** the create throws `HookStoppedException` and the stored row is not written again
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertRunsTheUpdateGuard`}
+
+#### Scenario: a create the guard allows becomes an update
+
+- **GIVEN** the same stored object
+- **WHEN** a create with the same identifier and status `closed` reaches the table
+- **THEN** `ObjectUpdatingEvent` carries the stored `open` object as the old one, the row is updated, and the returned object has the stored id
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertTheGuardAllowsIsWrittenAsAnUpdate`}
+
+#### Scenario: a claim still refuses
+
+- **WHEN** a create that asked to fail finds its identifier taken
+- **THEN** it throws `ObjectExistsException` and only `ObjectCreatingEvent` was dispatched
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAnInsertThatMustNotUpdateStillRefuses`}
+
+### Requirement: A save over a soft-deleted object is judged against the stored object
+
+When a save with RBAC on names the uuid of a soft-deleted object, the system
+SHALL judge it as it judges a save over any stored row the caller cannot
+see: by the create rule on the incoming data and by the update rule against
+the stored object.
+
+#### Scenario: a caller saves over a soft-deleted object
+
+- **GIVEN** a soft-deleted object owned by `agent`
+- **WHEN** `mallory` saves to its uuid
+- **THEN** the save is checked with action `create` and with action `update` against owner `agent` and the stored object
+- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testASoftDeletedRowIsJudgedAgainstTheStoredObject`}
 
 ## Cross-References
 - **rbac-scopes** — RBAC checks are applied by `PermissionHandler` at the start of every pipeline stage

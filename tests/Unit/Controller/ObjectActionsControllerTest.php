@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Unit tests for invoking a declared macro action on one object.
+ * Unit tests for the object-actions endpoints: list, selection list, run, run on a selection.
  *
- * The authorisation is the point: the action's own right must be checked BEFORE
- * anything is queued, because a run started and then refused inside has already
- * written.
+ * The refusal order and the three bodies are pinned in ObjectActionRunnerTest;
+ * these pin what the controller itself decides: which object, which inputs,
+ * and which actions a selection may run.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -15,21 +15,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectActionsController;
-use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Flow\FlowNextHint;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
-use OCP\IUser;
-use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -38,11 +42,19 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private ObjectService&MockObject $objects;
 
-	private SchemaMapper&MockObject $schemas;
+	private MacroActionResolver&MockObject $macros;
 
-	private PermissionHandler&MockObject $permissions;
+	private ObjectActionList&MockObject $list;
 
-	private FlowService&MockObject $flows;
+	private ObjectActionRunner&MockObject $runner;
+
+	private ObjectActionHistory&MockObject $history;
+
+	private ObjectActionBulk&MockObject $bulk;
+
+	private IRequest&MockObject $request;
+
+	private LoggerInterface&MockObject $logger;
 
 	private ObjectActionsController $controller;
 
@@ -50,51 +62,45 @@ class ObjectActionsControllerTest extends TestCase {
 		parent::setUp();
 
 		$this->objects = $this->createMock(ObjectService::class);
-		$this->schemas = $this->createMock(SchemaMapper::class);
-		$this->permissions = $this->createMock(PermissionHandler::class);
-		$this->flows = $this->createMock(FlowService::class);
+		$this->macros = $this->createMock(MacroActionResolver::class);
+		$this->list = $this->createMock(ObjectActionList::class);
+		$this->runner = $this->createMock(ObjectActionRunner::class);
+		$this->history = $this->createMock(ObjectActionHistory::class);
+		$this->bulk = $this->createMock(ObjectActionBulk::class);
+		$this->request = $this->createMock(IRequest::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('anna');
-		$session = $this->createMock(IUserSession::class);
-		$session->method('getUser')->willReturn($user);
-
-		// The REAL resolver over the same two doubles the controller used to
-		// take directly. It reads the schema's own declarations, and a double
-		// of it would answer whatever a test asked for — including a binding
-		// the schema never declared, which is the refusal these tests exist
-		// to pin.
-		$this->controller = new ObjectActionsController(
-			'openregister',
-			$this->createMock(IRequest::class),
+		$this->controller = ObjectActionsControllerFactory::create(
+			$this->request,
 			$this->objects,
-			new MacroActionResolver(schemas: $this->schemas, flows: $this->flows),
-			$this->permissions,
-			$this->flows,
-			$session,
-			$this->createMock(LoggerInterface::class)
+			$this->macros,
+			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			$this->list,
+			$this->runner,
+			$this->history,
+			$this->bulk,
+			$this->logger
 		);
 	}//end setUp()
 
 	/**
-	 * A real Schema carrying one macro binding: Entity getters are magic and a
-	 * mock cannot answer getConfiguration().
-	 *
-	 * @param array $declaration The declared action.
+	 * A schema with `assign-to-me` on bulk and `publish` not on bulk.
 	 *
 	 * @return Schema
 	 */
-	private function schema(array $declaration = ['macro' => true, 'flow' => 'flow-1']): Schema {
+	private function schema(): Schema {
 		$schema = new Schema();
-		$schema->setSlug('zaak');
-		$schema->setTitle('Zaak');
+		$schema->setSlug('ticket');
 		$schema->setConfiguration(
 			[
 				'x-openregister-action' => [
-					'close-and-notify' => array_merge(
-						['name' => 'Close and notify', 'description' => 'Close it and tell them.'],
-						$declaration
-					),
+					'assign-to-me' => [
+						'name' => 'Assign to me',
+						'description' => 'Take it.',
+						'surfaces' => ['row', 'bulk'],
+						'steps' => [['type' => 'openregister.set-fields', 'config' => ['set' => ['assignee' => 'x']]]],
+					],
+					'publish' => ['name' => 'Publish', 'description' => 'x', 'steps' => [['type' => 'openregister.set-fields']]],
 				],
 			]
 		);
@@ -102,181 +108,160 @@ class ObjectActionsControllerTest extends TestCase {
 	}//end schema()
 
 	/**
-	 * The object the macro runs against.
+	 * An object.
+	 *
+	 * @param string $uuid The uuid.
 	 *
 	 * @return ObjectEntity
 	 */
-	private function object(): ObjectEntity {
+	private function object(string $uuid = 'obj-1'): ObjectEntity {
 		$object = new ObjectEntity();
-		$object->setUuid('obj-1');
+		$object->setUuid($uuid);
 		$object->setSchema('5');
-		$object->setRegister('3');
-		$object->setOwner('bob');
 		return $object;
 	}//end object()
 
 	/**
-	 * A finished run.
+	 * Request parameters.
 	 *
-	 * @return FlowRun
-	 */
-	private function finishedRun(): FlowRun {
-		$run = new FlowRun();
-		$run->setUuid('run-9');
-		$run->setStatus('completed');
-		return $run;
-	}//end finishedRun()
-
-	/**
-	 * The happy path: the run's id, its outcome and the hint.
+	 * @param array $params The parameters.
 	 *
 	 * @return void
 	 */
-	public function testAnAuthorisedMacroRunsAndAnswersTheRunAndTheHint(): void {
-		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->flows->method('run')->willReturn($this->finishedRun());
-
-		$flow = new Flow();
-		$flow->setNodes([['type' => FlowNextHint::MANUAL_TRIGGER, 'config' => ['next' => 'next']]]);
-		$this->flows->method('find')->willReturn($flow);
-
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
-
-		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertSame(
-			['run' => 'run-9', 'outcome' => 'completed', 'action' => 'close-and-notify', 'next' => 'next'],
-			$response->getData()
+	private function params(array $params): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($params[$key] ?? $default)
 		);
-	}//end testAnAuthorisedMacroRunsAndAnswersTheRunAndTheHint()
+	}//end params()
 
-	/**
-	 * A caller without the action's right is refused, and NOTHING is queued.
-	 *
-	 * Paired with the happy path on purpose: a controller that refused
-	 * everything would pass this test on its own.
-	 *
-	 * @return void
-	 */
-	public function testACallerWithoutTheActionsRightQueuesNothing(): void {
-		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->permissions->method('hasPermission')->willReturn(false);
-		$this->flows->expects($this->never())->method('run');
-
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
-
-		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
-	}//end testACallerWithoutTheActionsRightQueuesNothing()
-
-	/**
-	 * The right is checked on the ACTION the caller named, not on `update`.
-	 *
-	 * Checking a CRUD verb instead would let anyone who may edit a case run
-	 * every macro bound to it, which is the whole point of declaring an action.
-	 *
-	 * @return void
-	 */
-	public function testTheRightCheckedIsTheActionsOwn(): void {
-		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->flows->method('run')->willReturn($this->finishedRun());
-		$this->flows->method('find')->willReturn(new Flow());
-
-		$seen = null;
-		$this->permissions->method('hasPermission')->willReturnCallback(
-			function (Schema $schema, string $action) use (&$seen): bool {
-				$seen = $action;
-				return true;
-			}
-		);
-
-		$this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
-
-		$this->assertSame('close-and-notify', $seen);
-	}//end testTheRightCheckedIsTheActionsOwn()
-
-	/**
-	 * An action the schema does not bind to a flow is a 404, and runs nothing.
-	 *
-	 * The caller does not get to name the flow: the binding is the schema's.
-	 *
-	 * @return void
-	 */
-	public function testAnActionWithNoBindingRunsNothing(): void {
-		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->flows->expects($this->never())->method('run');
-
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'some-other-action');
-
-		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-	}//end testAnActionWithNoBindingRunsNothing()
-
-	/**
-	 * A declaration that names a flow without `macro: true` is not a binding.
-	 *
-	 * @return void
-	 */
-	public function testAFlowWithoutMacroTrueIsNotInvokable(): void {
-		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema(['flow' => 'flow-1']));
-		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->flows->expects($this->never())->method('run');
-
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
-
-		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-	}//end testAFlowWithoutMacroTrueIsNotInvokable()
-
-	/**
-	 * A missing object is a 404 before any permission is consulted.
-	 *
-	 * @return void
-	 */
-	public function testAMissingObjectIsNotFound(): void {
+	public function testTheListOfAMissingObjectIs404(): void {
 		$this->objects->method('find')->willReturn(null);
-		$this->permissions->expects($this->never())->method('hasPermission');
 
-		$response = $this->controller->invoke('zaken', 'zaak', 'gone', 'close-and-notify');
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->index('r', 'ticket', 'gone')->getStatus());
+	}//end testTheListOfAMissingObjectIs404()
 
-		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-	}//end testAMissingObjectIsNotFound()
-
-	/**
-	 * A flow that refuses answers 422 with its reason, not a 500.
-	 *
-	 * @return void
-	 */
-	public function testARefusedRunAnswersItsReason(): void {
+	public function testTheListWithoutReadIs403(): void {
 		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->flows->method('run')->willThrowException(new \RuntimeException('step 3 dead-ends'));
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->list->method('forObject')->willThrowException(new NotAuthorizedException('no'));
 
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->index('r', 'ticket', 'obj-1')->getStatus());
+	}//end testTheListWithoutReadIs403()
 
-		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
-		$this->assertSame('step 3 dead-ends', $response->getData()['error']);
-	}//end testARefusedRunAnswersItsReason()
-
-	/**
-	 * A hint nobody can read is `stay`: the one answer that cannot move
-	 * somebody somewhere they did not ask to go.
-	 *
-	 * @return void
-	 */
-	public function testAnUnreadableHintIsStay(): void {
+	public function testTheListAnswersTheActions(): void {
 		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema());
-		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->flows->method('run')->willReturn($this->finishedRun());
-		$this->flows->method('find')->willThrowException(new \RuntimeException('gone'));
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->list->method('forObject')->willReturn([['key' => 'publish']]);
 
-		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
+		$response = $this->controller->index('r', 'ticket', 'obj-1');
 
-		$this->assertSame(FlowNextHint::STAY, $response->getData()['next']);
-	}//end testAnUnreadableHintIsStay()
+		$this->assertSame(['actions' => [['key' => 'publish']]], $response->getData());
+	}//end testTheListAnswersTheActions()
+
+	public function testInputsReachTheRunnerWithTheSubjectAsNamed(): void {
+		$this->params(['inputs' => ['from' => '2026-11-01']]);
+		$this->objects->method('find')->willReturn($this->object());
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->runner->expects($this->once())->method('run')
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'ticket']), new ObjectActionRequest('publish', ['from' => '2026-11-01']))
+			->willReturn(['status' => Http::STATUS_ACCEPTED, 'body' => ['status' => 'queued']]);
+
+		$response = $this->controller->invoke('r', 'ticket', 'obj-1', 'publish');
+
+		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+	}//end testInputsReachTheRunnerWithTheSubjectAsNamed()
+
+	public function testInputsThatAreNotAnObjectAre400(): void {
+		$this->params(['inputs' => 'from=today']);
+		$this->runner->expects($this->never())->method('run');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->invoke('r', 'ticket', 'obj-1', 'publish')->getStatus());
+	}//end testInputsThatAreNotAnObjectAre400()
+
+	public function testAnActionNotOfferedOnBulkIsRefusedForASelection(): void {
+		$this->params(['ids' => ['a', 'b']]);
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->runner->expects($this->never())->method('run');
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'publish');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('"publish"', $response->getData()['error']);
+	}//end testAnActionNotOfferedOnBulkIsRefusedForASelection()
+
+	public function testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection(): void {
+		$this->params(['ids' => ['a']]);
+		$broken = $this->createMock(Schema::class);
+		$broken->method('getConfiguration')->willThrowException(new \RuntimeException('unreadable configuration'));
+		$this->macros->method('loadSchema')->willReturn($broken);
+		$this->runner->expects($this->never())->method('run');
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->anything(),
+			$this->callback(static fn (array $context): bool => ($context['message'] ?? null) === 'unreadable configuration')
+		);
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection()
+
+	public function testASelectionRunsEachObjectThroughTheSinglePath(): void {
+		$this->params(['ids' => ['a', 'b', 'a'], 'inputs' => []]);
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->objects->method('find')->willReturnCallback(fn (string $id) => $this->object($id));
+		$this->runner->expects($this->exactly(2))->method('run')->willReturnOnConsecutiveCalls(
+			['status' => Http::STATUS_OK, 'body' => ['run' => 'r1', 'outcome' => 'completed']],
+			['status' => Http::STATUS_FORBIDDEN, 'body' => ['error' => 'You may not perform "assign-to-me" on this object.']]
+		);
+
+		$data = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me')->getData();
+
+		$this->assertSame(['succeeded' => 1, 'failed' => 1], $data['summary']);
+		$this->assertSame('list', $data['next']);
+	}//end testASelectionRunsEachObjectThroughTheSinglePath()
+
+	public function testTheHistoryAnswersTheRunsAndNeedsRead(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->history->method('forObject')->willReturnOnConsecutiveCalls(
+			[['action' => 'hold']],
+			$this->throwException(new NotAuthorizedException('no'))
+		);
+
+		$this->assertSame(['results' => [['action' => 'hold']]], $this->controller->history('r', 'ticket', 'obj-1')->getData());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->history('r', 'ticket', 'obj-1')->getStatus());
+	}//end testTheHistoryAnswersTheRunsAndNeedsRead()
+
+	public function testASelectionOf250BecomesAPreviewedJob(): void {
+		$ids = array_map(static fn (int $n): string => 't-' . $n, range(1, 250));
+		$this->params(['ids' => $ids, 'inputs' => []]);
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$job = new BulkJob();
+		$job->setId(42);
+		$job->setTotal(250);
+		$this->bulk->expects($this->once())->method('start')
+			->with(
+				$this->callback(
+					static fn (ObjectActionSelection $selection): bool => $selection->register === 'r'
+						&& $selection->schemaRef === 'ticket'
+						&& $selection->ids === $ids
+				),
+				new ObjectActionRequest('assign-to-me', [])
+			)
+			->willReturn($job);
+		$this->runner->expects($this->never())->method('run');
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+		$this->assertSame(250, $response->getData()['job']['total']);
+		$this->assertSame('/api/bulk-jobs/42/commit', $response->getData()['links']['commit']);
+	}//end testASelectionOf250BecomesAPreviewedJob()
+
+	public function testTheSelectionListComesFromTheSchemaNamed(): void {
+		$this->macros->method('loadSchema')->with('ticket')->willReturn($this->schema());
+		$this->list->expects($this->once())->method('forSelection')->with($this->anything(), 'r')->willReturn([['key' => 'assign-to-me']]);
+
+		$this->assertSame(['actions' => [['key' => 'assign-to-me']]], $this->controller->selection('r', 'ticket')->getData());
+	}//end testTheSelectionListComesFromTheSchemaNamed()
 }//end class

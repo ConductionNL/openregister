@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ class Version1Date20260907170000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The updated schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

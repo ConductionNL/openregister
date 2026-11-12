@@ -84,6 +84,21 @@ import { NcButton, NcSelect } from '@nextcloud/vue'
  * @license EUPL-1.2
  * @version 1.0.0
  */
+/**
+ * The page numbers from first to last, both included.
+ *
+ * @param {number} first The first page number
+ * @param {number} last The last page number
+ * @return {Array<number>} The page numbers
+ */
+function pageRange(first, last) {
+	const pages = []
+	for (let i = first; i <= last; i++) {
+		pages.push(i)
+	}
+	return pages
+}
+
 export default {
 	name: 'PaginationComponent',
 	components: {
@@ -191,42 +206,20 @@ export default {
 		visiblePages() {
 			const current = this.currentPage
 			const total = this.totalPages
-			const pages = []
-
 			if (total <= 7) {
 				// Show all pages if 7 or fewer
-				for (let i = 1; i <= total; i++) {
-					pages.push(i)
-				}
-			} else {
-				// Always show first page
-				pages.push(1)
-
-				if (current <= 4) {
-					// Current page is near the beginning
-					for (let i = 2; i <= 5; i++) {
-						pages.push(i)
-					}
-					pages.push('...')
-					pages.push(total)
-				} else if (current >= total - 3) {
-					// Current page is near the end
-					pages.push('...')
-					for (let i = total - 4; i <= total; i++) {
-						pages.push(i)
-					}
-				} else {
-					// Current page is in the middle
-					pages.push('...')
-					for (let i = current - 1; i <= current + 1; i++) {
-						pages.push(i)
-					}
-					pages.push('...')
-					pages.push(total)
-				}
+				return pageRange(1, total)
 			}
-
-			return pages
+			if (current <= 4) {
+				// Current page is near the beginning
+				return [1, ...pageRange(2, 5), '...', total]
+			}
+			if (current >= total - 3) {
+				// Current page is near the end
+				return [1, '...', ...pageRange(total - 4, total)]
+			}
+			// Current page is in the middle
+			return [1, '...', ...pageRange(current - 1, current + 1), '...', total]
 		},
 	},
 

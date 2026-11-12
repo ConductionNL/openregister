@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 class AggregationAnnotationValidatorTest extends TestCase {

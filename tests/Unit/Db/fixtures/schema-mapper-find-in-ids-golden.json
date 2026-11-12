@@ -1,0 +1,96 @@
+{
+    "numeric in set": {
+        "found": 7,
+        "queries": [
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 andWhere(in(id, :p4, NULL))",
+            "#1 executeQuery()",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 expr.in(id, :p4, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = 7, 2",
+            "#1 param :p2 = 7, 2",
+            "#1 param :p3 = 7, 1",
+            "#1 param :p4 = [7,9], 101",
+            "#1 select(*)",
+            "#1 setMaxResults(1)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])"
+        ]
+    },
+    "int in set": {
+        "found": 7,
+        "queries": [
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 andWhere(in(id, :p4, NULL))",
+            "#1 executeQuery()",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 expr.in(id, :p4, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = 7, 2",
+            "#1 param :p2 = 7, 2",
+            "#1 param :p3 = 7, 1",
+            "#1 param :p4 = [7], 101",
+            "#1 select(*)",
+            "#1 setMaxResults(1)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])"
+        ]
+    },
+    "slug in set": {
+        "found": 7,
+        "queries": [
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 andWhere(in(id, :p3, NULL))",
+            "#1 executeQuery()",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 expr.in(id, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = Seven-Slug, 2",
+            "#1 param :p2 = seven-slug, 2",
+            "#1 param :p3 = [7,9], 101",
+            "#1 select(*)",
+            "#1 setMaxResults(1)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))"
+        ]
+    },
+    "no match": {
+        "found": null,
+        "queries": [
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 andWhere(in(id, :p3, NULL))",
+            "#1 executeQuery()",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 expr.in(id, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = other, 2",
+            "#1 param :p2 = other, 2",
+            "#1 param :p3 = [7], 101",
+            "#1 select(*)",
+            "#1 setMaxResults(1)",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))"
+        ]
+    },
+    "empty set": {
+        "found": null,
+        "queries": []
+    }
+}

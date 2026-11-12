@@ -18,6 +18,12 @@
  * every assertion is refused: an unconfigured verifier that admitted would
  * be the fail-open this class exists to prevent.
  *
+ * Both values are read through `IAppConfig::getValueString()`. Portaliq
+ * stores its secret SENSITIVE (encrypted at rest), and only IAppConfig
+ * decrypts it; the legacy `IConfig::getAppValue()` returns the ciphertext,
+ * and every HMAC check then failed (401 on every portal action, 13-14 Oct
+ * 2026).
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -38,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Portal;
 
 use OCA\OpenRegister\Exception\PortalSubjectException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IRequest;
 
 /**
@@ -46,7 +52,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
  */
-class PortalSubjectAssertion {
+class PortalSubjectAssertion implements PortalSubjectAssertionInterface {
 
 	/**
 	 * The header the assertion travels in.
@@ -60,7 +66,16 @@ class PortalSubjectAssertion {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'portal_assertion_secret';
+	public const ASSERTION_CONFIG_NAME = 'portal_assertion_secret';
+
+	/**
+	 * Former name of ASSERTION_CONFIG_NAME, kept for existing callers.
+	 *
+	 * @deprecated Use ASSERTION_CONFIG_NAME.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_SECRET = self::ASSERTION_CONFIG_NAME;
 
 	/**
 	 * The issuer portaliq stamps.
@@ -79,10 +94,10 @@ class PortalSubjectAssertion {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig $config Where the shared secret is read from.
+	 * @param IAppConfig $config Where the shared secret is read from (sensitive values come back decrypted).
 	 */
 	public function __construct(
-		private readonly IConfig $config,
+		private readonly IAppConfig $config,
 	) {
 
 	}//end __construct()
@@ -150,24 +165,49 @@ class PortalSubjectAssertion {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion.');
 		}
 
-		[$headerPart, $claimsPart, $signaturePart] = $parts;
-		$header = json_decode($this->b64UrlDecode(encoded: $headerPart), true);
-		if (is_array($header) === false || ($header['alg'] ?? '') !== 'HS256') {
-			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unsupported assertion algorithm.');
-		}
+		$this->assertHs256(headerPart: $parts[0]);
+		$this->assertSigned(parts: $parts, secret: $secret);
 
-		$expected = $this->b64UrlEncode(bytes: hash_hmac('sha256', $headerPart . '.' . $claimsPart, $secret, true));
-		if (hash_equals($expected, $signaturePart) === false) {
-			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Assertion signature does not verify.');
-		}
-
-		$claims = json_decode($this->b64UrlDecode(encoded: $claimsPart), true);
+		$claims = json_decode($this->b64UrlDecode(encoded: $parts[1]), true);
 		if (is_array($claims) === false) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion claims.');
 		}
 
 		return $claims;
 	}//end verifiedClaims()
+
+	/**
+	 * Refuse an assertion whose header does not declare HS256.
+	 *
+	 * @param string $headerPart The encoded header.
+	 *
+	 * @return void
+	 *
+	 * @throws PortalSubjectException When the header is unreadable or names another algorithm.
+	 */
+	private function assertHs256(string $headerPart): void {
+		$header = json_decode($this->b64UrlDecode(encoded: $headerPart), true);
+		if (is_array($header) === false || ($header['alg'] ?? '') !== 'HS256') {
+			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unsupported assertion algorithm.');
+		}
+	}//end assertHs256()
+
+	/**
+	 * Refuse an assertion whose signature does not verify against the secret.
+	 *
+	 * @param array<int, string> $parts  The header, claims and signature parts.
+	 * @param string             $secret The shared secret.
+	 *
+	 * @return void
+	 *
+	 * @throws PortalSubjectException When the signature does not verify.
+	 */
+	private function assertSigned(array $parts, string $secret): void {
+		$expected = $this->b64UrlEncode(bytes: hash_hmac('sha256', $parts[0] . '.' . $parts[1], $secret, true));
+		if (hash_equals($expected, $parts[2]) === false) {
+			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Assertion signature does not verify.');
+		}
+	}//end assertSigned()
 
 	/**
 	 * The subject a verified claim set asserts, refused on any wrong claim.
@@ -179,6 +219,21 @@ class PortalSubjectAssertion {
 	 * @throws PortalSubjectException When the issuer, use, expiry or subject is wrong.
 	 */
 	private function subjectOf(array $claims): PortalSubject {
+		self::assertUsable(claims: $claims);
+
+		return new PortalSubject(subjectRef: self::subjectRefOf(claims: $claims), claims: self::subjectClaims(claims: $claims));
+	}//end subjectOf()
+
+	/**
+	 * Refuse claims from another issuer, for another use, or past (or without) their expiry.
+	 *
+	 * @param array<string, mixed> $claims The verified claims.
+	 *
+	 * @return void
+	 *
+	 * @throws PortalSubjectException When the issuer, use or expiry is wrong.
+	 */
+	private static function assertUsable(array $claims): void {
 		if (($claims['iss'] ?? '') !== self::ISSUER) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unexpected assertion issuer.');
 		}
@@ -192,33 +247,59 @@ class PortalSubjectAssertion {
 		if (isset($claims['exp']) === false || (int)$claims['exp'] < time()) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_EXPIRED, message: 'Assertion expired or carries no expiry.');
 		}
+	}//end assertUsable()
 
+	/**
+	 * The subject the claims name, trimmed.
+	 *
+	 * @param array<string, mixed> $claims The verified claims.
+	 *
+	 * @return string The subject reference.
+	 *
+	 * @throws PortalSubjectException When the claims name no subject.
+	 */
+	private static function subjectRefOf(array $claims): string {
 		$subjectRef = trim((string)($claims['sub'] ?? ''));
 		if ($subjectRef === '') {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Assertion names no subject.');
 		}
 
-		return new PortalSubject(
-			subjectRef: $subjectRef,
+		return $subjectRef;
+	}//end subjectRefOf()
+
+	/**
+	 * The audience, organisation, trust and id the claims carry, trimmed.
+	 *
+	 * @param array<string, mixed> $claims The verified claims.
+	 *
+	 * @return PortalSubjectClaims The claims.
+	 */
+	private static function subjectClaims(array $claims): PortalSubjectClaims {
+		return new PortalSubjectClaims(
 			audience: trim((string)($claims['audience'] ?? '')),
 			organisation: trim((string)($claims['organisation'] ?? '')),
 			trust: trim((string)($claims['trust'] ?? '')),
 			jti: trim((string)($claims['jti'] ?? ''))
 		);
-	}//end subjectOf()
+	}//end subjectClaims()
 
 	/**
 	 * The shared secret: OpenRegister's own key, else portaliq's.
 	 *
+	 * Read through IAppConfig, non-lazy as stored, so a sensitive value
+	 * comes back decrypted.
+	 *
 	 * @return string The secret, or '' when neither is set.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
 	private function secret(): string {
-		$own = trim((string)$this->config->getAppValue('openregister', self::CONFIG_SECRET, ''));
+		$own = trim($this->config->getValueString('openregister', self::ASSERTION_CONFIG_NAME, '', lazy: false));
 		if ($own !== '') {
 			return $own;
 		}
 
-		return trim((string)$this->config->getAppValue('portaliq', 'jwt_signing_secret', ''));
+		return trim($this->config->getValueString('portaliq', 'jwt_signing_secret', '', lazy: false));
 	}//end secret()
 
 	/**

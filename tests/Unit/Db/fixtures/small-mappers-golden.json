@@ -1,0 +1,498 @@
+{
+    "record: first run passes": {
+        "result": {
+            "id": 0,
+            "ruleId": "r:s:k",
+            "schemaSlug": "slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "pass",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": [
+                "ruleId",
+                "schemaSlug",
+                "lastRun",
+                "lastVerdict",
+                "id"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_rule_summaries)",
+            "#2 param :p2 = r:s:k, 2",
+            "#2 setValue(rule_id, :p2)",
+            "#2 param :p3 = slug, 2",
+            "#2 setValue(schema_slug, :p3)",
+            "#2 param :p4 = DateTime, datetime",
+            "#2 setValue(last_run, :p4)",
+            "#2 param :p5 = pass, 2",
+            "#2 setValue(last_verdict, :p5)",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: first run fails with error": {
+        "result": {
+            "id": 0,
+            "ruleId": "r:s:k",
+            "schemaSlug": "slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "fail",
+            "lastError": "boom",
+            "lastErrorAt": "2026-03-04 05:06:07",
+            "updated": [
+                "ruleId",
+                "schemaSlug",
+                "lastRun",
+                "lastVerdict",
+                "lastError",
+                "lastErrorAt",
+                "id"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_rule_summaries)",
+            "#2 param :p2 = r:s:k, 2",
+            "#2 setValue(rule_id, :p2)",
+            "#2 param :p3 = slug, 2",
+            "#2 setValue(schema_slug, :p3)",
+            "#2 param :p4 = DateTime, datetime",
+            "#2 setValue(last_run, :p4)",
+            "#2 param :p5 = fail, 2",
+            "#2 setValue(last_verdict, :p5)",
+            "#2 param :p6 = boom, 2",
+            "#2 setValue(last_error, :p6)",
+            "#2 param :p7 = DateTime, datetime",
+            "#2 setValue(last_error_at, :p7)",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: first run with empty error": {
+        "result": {
+            "id": 0,
+            "ruleId": "r:s:k",
+            "schemaSlug": "slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "fail",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": [
+                "ruleId",
+                "schemaSlug",
+                "lastRun",
+                "lastVerdict",
+                "id"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_rule_summaries)",
+            "#2 param :p2 = r:s:k, 2",
+            "#2 setValue(rule_id, :p2)",
+            "#2 param :p3 = slug, 2",
+            "#2 setValue(schema_slug, :p3)",
+            "#2 param :p4 = DateTime, datetime",
+            "#2 setValue(last_run, :p4)",
+            "#2 param :p5 = fail, 2",
+            "#2 setValue(last_verdict, :p5)",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: same verdict within throttle": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "old-slug",
+            "lastRun": "2026-03-04 05:06:00",
+            "lastVerdict": "pass",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": []
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "record: same verdict within throttle, empty error": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "old-slug",
+            "lastRun": "2026-03-04 05:06:00",
+            "lastVerdict": "pass",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": []
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "record: same verdict within throttle, error": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "new-slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "pass",
+            "lastError": "boom",
+            "lastErrorAt": "2026-03-04 05:06:07",
+            "updated": [
+                "schemaSlug",
+                "lastRun",
+                "lastError",
+                "lastErrorAt"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_rule_summaries, NULL)",
+            "#2 param :p2 = new-slug, 2",
+            "#2 set(schema_slug, :p2)",
+            "#2 param :p3 = DateTime, datetime",
+            "#2 set(last_run, :p3)",
+            "#2 param :p4 = boom, 2",
+            "#2 set(last_error, :p4)",
+            "#2 param :p5 = DateTime, datetime",
+            "#2 set(last_error_at, :p5)",
+            "#2 param :p6 = 9, 1",
+            "#2 expr.eq(id, :p6, NULL)",
+            "#2 where(eq(id, :p6, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: same verdict after throttle": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "new-slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "pass",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": [
+                "schemaSlug",
+                "lastRun"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_rule_summaries, NULL)",
+            "#2 param :p2 = new-slug, 2",
+            "#2 set(schema_slug, :p2)",
+            "#2 param :p3 = DateTime, datetime",
+            "#2 set(last_run, :p3)",
+            "#2 param :p4 = 9, 1",
+            "#2 expr.eq(id, :p4, NULL)",
+            "#2 where(eq(id, :p4, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: verdict changed": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "new-slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "fail",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": [
+                "schemaSlug",
+                "lastRun",
+                "lastVerdict"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_rule_summaries, NULL)",
+            "#2 param :p2 = new-slug, 2",
+            "#2 set(schema_slug, :p2)",
+            "#2 param :p3 = DateTime, datetime",
+            "#2 set(last_run, :p3)",
+            "#2 param :p4 = fail, 2",
+            "#2 set(last_verdict, :p4)",
+            "#2 param :p5 = 9, 1",
+            "#2 expr.eq(id, :p5, NULL)",
+            "#2 where(eq(id, :p5, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "record: never run before": {
+        "result": {
+            "id": 9,
+            "ruleId": "r:s:k",
+            "schemaSlug": "new-slug",
+            "lastRun": "2026-03-04 05:06:07",
+            "lastVerdict": "pass",
+            "lastError": null,
+            "lastErrorAt": null,
+            "updated": [
+                "schemaSlug",
+                "lastRun"
+            ]
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_summaries, NULL)",
+            "#1 param :p1 = r:s:k, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_rule_summaries, NULL)",
+            "#2 param :p2 = new-slug, 2",
+            "#2 set(schema_slug, :p2)",
+            "#2 param :p3 = DateTime, datetime",
+            "#2 set(last_run, :p3)",
+            "#2 param :p4 = 9, 1",
+            "#2 expr.eq(id, :p4, NULL)",
+            "#2 where(eq(id, :p4, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "contact role null, found": {
+        "result": 4,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 expr.isNull(role)",
+            "#1 andWhere(isNull(role))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role null, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 expr.isNull(role)",
+            "#1 andWhere(isNull(role))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role empty, found": {
+        "result": 4,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 expr.isNull(role)",
+            "#1 andWhere(isNull(role))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role empty, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 expr.isNull(role)",
+            "#1 andWhere(isNull(role))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role owner, found": {
+        "result": 4,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 param :p3 = owner, 2",
+            "#1 expr.eq(role, :p3, NULL)",
+            "#1 andWhere(eq(role, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role owner, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 param :p3 = owner, 2",
+            "#1 expr.eq(role, :p3, NULL)",
+            "#1 andWhere(eq(role, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role zero, found": {
+        "result": 4,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 param :p3 = 0, 2",
+            "#1 expr.eq(role, :p3, NULL)",
+            "#1 andWhere(eq(role, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "contact role zero, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = c-1, 2",
+            "#1 expr.eq(contact_uid, :p2, NULL)",
+            "#1 andWhere(eq(contact_uid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 param :p3 = 0, 2",
+            "#1 expr.eq(role, :p3, NULL)",
+            "#1 andWhere(eq(role, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint logs none": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 param :p1 = [3,4], 101",
+            "#1 expr.in(endpoint_id, :p1, NULL)",
+            "#1 where(in(endpoint_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint logs limit": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 param :p1 = [3,4], 101",
+            "#1 expr.in(endpoint_id, :p1, NULL)",
+            "#1 where(in(endpoint_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint logs offset": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 param :p1 = [3,4], 101",
+            "#1 expr.in(endpoint_id, :p1, NULL)",
+            "#1 where(in(endpoint_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint logs both": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 param :p1 = [3,4], 101",
+            "#1 expr.in(endpoint_id, :p1, NULL)",
+            "#1 where(in(endpoint_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint logs without endpoints": {
+        "result": [],
+        "queries": []
+    }
+}

@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
  */
 
 declare(strict_types=1);

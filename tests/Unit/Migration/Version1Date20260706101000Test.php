@@ -16,7 +16,7 @@ declare(strict_types=1);
  * @package  OCA\OpenRegister\Tests\Unit\Migration
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#7.5
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#7.5
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;

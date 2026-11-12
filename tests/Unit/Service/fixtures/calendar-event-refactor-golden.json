@@ -1,0 +1,762 @@
+{
+    "all events": {
+        "return": {
+            "results": [
+                {
+                    "id": "i.ics",
+                    "uid": "i",
+                    "calendarId": "5",
+                    "summary": "S i",
+                    "dtstart": "2025-12-31T09:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "c.ics",
+                    "uid": "c",
+                    "calendarId": "3",
+                    "summary": "S c",
+                    "dtstart": "2026-01-10T08:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-1x",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "b.ics",
+                    "uid": "b",
+                    "calendarId": "3",
+                    "summary": "S b",
+                    "dtstart": "2026-01-10T09:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-2",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "a.ics",
+                    "uid": "a",
+                    "calendarId": "3",
+                    "summary": "S a",
+                    "dtstart": "2026-02-10T09:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "b1.ics",
+                    "uid": "b1",
+                    "calendarId": "1",
+                    "summary": "S b1",
+                    "dtstart": "2026-03-01T09:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "mention.ics",
+                    "uid": "m",
+                    "calendarId": "3",
+                    "summary": "",
+                    "dtstart": null,
+                    "dtend": null,
+                    "location": null,
+                    "description": "about obj-1",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null
+                }
+            ],
+            "total": 6
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                1
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "getCalendarObjects",
+                5
+            ]
+        ]
+    },
+    "all events, no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 0,
+        "calls": []
+    },
+    "all events, offset beyond": {
+        "return": {
+            "results": [],
+            "total": 6
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                1
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "getCalendarObjects",
+                5
+            ]
+        ]
+    },
+    "all events, paged": {
+        "return": {
+            "results": [
+                {
+                    "id": "c.ics",
+                    "uid": "c",
+                    "calendarId": "3",
+                    "summary": "S c",
+                    "dtstart": "2026-01-10T08:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-1x",
+                    "registerId": 3,
+                    "schemaId": 4
+                },
+                {
+                    "id": "b.ics",
+                    "uid": "b",
+                    "calendarId": "3",
+                    "summary": "S b",
+                    "dtstart": "2026-01-10T09:00:00+00:00",
+                    "dtend": null,
+                    "location": null,
+                    "description": "",
+                    "attendees": [],
+                    "status": null,
+                    "objectUuid": "obj-2",
+                    "registerId": 3,
+                    "schemaId": 4
+                }
+            ],
+            "total": 6
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                1
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "getCalendarObjects",
+                5
+            ]
+        ]
+    },
+    "create attendees not list": {
+        "return": {
+            "id": "<UID>.ics",
+            "uid": "<UID>",
+            "calendarId": "3",
+            "summary": "S",
+            "dtstart": "2026-03-01T00:00:00+00:00",
+            "dtend": null,
+            "location": null,
+            "description": "",
+            "attendees": [],
+            "status": null,
+            "objectUuid": "o",
+            "registerId": 1,
+            "schemaId": 2
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "createCalendarObject",
+                3,
+                "<UID>.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenRegister//Events//EN\r\nBEGIN:VEVENT\r\nUID:<UID>\r\nDTSTAMP:<NOW>\r\nSUMMARY:S\r\nDTSTART:20260301T000000Z\r\nX-OPENREGISTER-REGISTER:1\r\nX-OPENREGISTER-SCHEMA:2\r\nX-OPENREGISTER-OBJECT:o\r\nLINK;LINKREL=\"related\";LABEL=\"T\";VALUE=URI:/apps/openregister/api/objects/1/2/o\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "create bad end": {
+        "exception": "thrown",
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ]
+        ]
+    },
+    "create full": {
+        "return": {
+            "id": "<UID>.ics",
+            "uid": "<UID>",
+            "calendarId": "3",
+            "summary": "Hoorzitting; a,b\\c\nnext",
+            "dtstart": "2026-03-01T09:00:00+00:00",
+            "dtend": "2026-03-01T10:30:00+00:00",
+            "location": "Zaal, 2",
+            "description": "Met de aanvrager",
+            "attendees": [
+                "a@example.org",
+                "b@example.org"
+            ],
+            "status": null,
+            "objectUuid": "obj-9",
+            "registerId": 3,
+            "schemaId": 4
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "createCalendarObject",
+                3,
+                "<UID>.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenRegister//Events//EN\r\nBEGIN:VEVENT\r\nUID:<UID>\r\nDTSTAMP:<NOW>\r\nSUMMARY:Hoorzitting\\; a\\,b\\\\c\\nnext\r\nDTSTART:20260301T090000Z\r\nDTEND:20260301T103000Z\r\nLOCATION:Zaal\\, 2\r\nDESCRIPTION:Met de aanvrager\r\nATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:a@example.org\r\nATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:b@example.org\r\nX-OPENREGISTER-REGISTER:3\r\nX-OPENREGISTER-SCHEMA:4\r\nX-OPENREGISTER-OBJECT:obj-9\r\nLINK;LINKREL=\"related\";LABEL=\"Zaak\\; 1\\, \"a\"\";VALUE=URI:/apps/openregister/api/objects/3/4/obj-9\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "create minimal": {
+        "return": {
+            "id": "<UID>.ics",
+            "uid": "<UID>",
+            "calendarId": "3",
+            "summary": "Untitled event",
+            "dtstart": "2026-03-01T09:00:00+00:00",
+            "dtend": null,
+            "location": null,
+            "description": "",
+            "attendees": [],
+            "status": null,
+            "objectUuid": "obj-9",
+            "registerId": 3,
+            "schemaId": 4
+        },
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "setUserValue",
+                "alice",
+                "openregister",
+                "events_calendar_uri",
+                "personal",
+                null
+            ],
+            [
+                "createCalendarObject",
+                3,
+                "<UID>.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenRegister//Events//EN\r\nBEGIN:VEVENT\r\nUID:<UID>\r\nDTSTAMP:<NOW>\r\nSUMMARY:Untitled event\r\nDTSTART:20260301T090000Z\r\nX-OPENREGISTER-REGISTER:3\r\nX-OPENREGISTER-SCHEMA:4\r\nX-OPENREGISTER-OBJECT:obj-9\r\nLINK;LINKREL=\"related\";LABEL=\"T\";VALUE=URI:/apps/openregister/api/objects/3/4/obj-9\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "create no start": {
+        "exception": "Exception",
+        "message": "Event start time (dtstart) is required: a calendar event without DTSTART cannot be displayed or deleted by any client.",
+        "code": 0,
+        "calls": []
+    },
+    "events for object, no personal": {
+        "return": [
+            {
+                "id": "x.ics",
+                "uid": "x",
+                "calendarId": "5",
+                "summary": "S x",
+                "dtstart": "2026-01-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/index.php/apps/calendar/edit/L25jL3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9pdGVyL3guaWNz"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "setUserValue",
+                "alice",
+                "openregister",
+                "events_calendar_uri",
+                "iter",
+                null
+            ],
+            [
+                "getCalendarObjects",
+                5
+            ]
+        ]
+    },
+    "events for object, no pin": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "3",
+                "summary": "S a",
+                "dtstart": "2026-02-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/index.php/apps/calendar/edit/L25jL3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9wZXJzb25hbC9hLmljcw%3D%3D"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "setUserValue",
+                "alice",
+                "openregister",
+                "events_calendar_uri",
+                "personal",
+                null
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ]
+        ]
+    },
+    "events for object, no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 0,
+        "calls": []
+    },
+    "events for object, no vevent calendar": {
+        "exception": "Exception",
+        "message": "No VEVENT-supporting calendar found for user alice",
+        "code": 0,
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ]
+        ]
+    },
+    "events for object, pinned iter": {
+        "return": [
+            {
+                "id": "i.ics",
+                "uid": "i",
+                "calendarId": "5",
+                "summary": "S i",
+                "dtstart": "2025-12-31T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/index.php/apps/calendar/edit/L25jL3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9pdGVyL2kuaWNz"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                5
+            ]
+        ]
+    },
+    "events for object, route empty": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "3",
+                "summary": "S a",
+                "dtstart": "2026-02-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ]
+        ]
+    },
+    "events for object, route throws": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "3",
+                "summary": "S a",
+                "dtstart": "2026-02-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ]
+        ]
+    },
+    "events for object, stale pin": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "3",
+                "summary": "S a",
+                "dtstart": "2026-02-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/index.php/apps/calendar/edit/L25jL3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9wZXJzb25hbC9hLmljcw%3D%3D"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "info",
+                "Pinned calendar URI tasks no longer resolves for user alice; reselecting",
+                []
+            ],
+            [
+                "setUserValue",
+                "alice",
+                "openregister",
+                "events_calendar_uri",
+                "personal",
+                null
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ]
+        ]
+    },
+    "events for object, unknown pin": {
+        "return": [
+            {
+                "id": "b.ics",
+                "uid": "b",
+                "calendarId": "3",
+                "summary": "S b",
+                "dtstart": "2026-01-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-2",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/index.php/apps/calendar/edit/L25jL3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9wZXJzb25hbC9iLmljcw%3D%3D"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "info",
+                "Pinned calendar URI nope no longer resolves for user alice; reselecting",
+                []
+            ],
+            [
+                "setUserValue",
+                "alice",
+                "openregister",
+                "events_calendar_uri",
+                "personal",
+                null
+            ],
+            [
+                "warning",
+                "Failed to persist calendar URI pin: db down",
+                {
+                    "userId": "alice",
+                    "uri": "personal"
+                }
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ]
+        ]
+    },
+    "events for object, webroot": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "3",
+                "summary": "S a",
+                "dtstart": "2026-02-10T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "url": "/apps/calendar/edit/L3JlbW90ZS5waHAvZGF2L2NhbGVuZGFycy9hbGljZS9wZXJzb25hbC9hLmljcw%3D%3D"
+            }
+        ],
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ]
+        ]
+    },
+    "link event": {
+        "return": {
+            "id": "b.ics",
+            "uid": "b",
+            "calendarId": "3",
+            "summary": "S b",
+            "dtstart": "2026-01-10T09:00:00+00:00",
+            "dtend": null,
+            "location": null,
+            "description": "",
+            "attendees": [],
+            "status": null,
+            "objectUuid": "obj-2",
+            "registerId": 3,
+            "schemaId": 4
+        },
+        "calls": [
+            [
+                "updateCalendarObject",
+                3,
+                "b.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//t//t//EN\r\nBEGIN:VEVENT\r\nUID:b\r\nDTSTAMP:<NOW>\r\nDTSTART:20260110T090000Z\r\nSUMMARY:S b\r\nX-OPENREGISTER-OBJECT:obj-2\r\nX-OPENREGISTER-OBJECT:obj-7\r\nX-OPENREGISTER-REGISTER:3\r\nX-OPENREGISTER-REGISTER:7\r\nX-OPENREGISTER-SCHEMA:4\r\nX-OPENREGISTER-SCHEMA:8\r\nLINK;LINKREL=related;LABEL=x;VALUE=URI:/apps/openregister/api/objects/3/4/o\r\n bj-2\r\nLINK;VALUE=URI:https://elsewhere.example/a\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "link missing": {
+        "exception": "Exception",
+        "message": "Calendar event not found",
+        "code": 0,
+        "calls": []
+    },
+    "link todo": {
+        "exception": "Exception",
+        "message": "Calendar object is not a VEVENT",
+        "code": 0,
+        "calls": []
+    },
+    "unlink event": {
+        "return": null,
+        "calls": [
+            [
+                "updateCalendarObject",
+                3,
+                "a.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//t//t//EN\r\nBEGIN:VEVENT\r\nUID:a\r\nDTSTAMP:<NOW>\r\nDTSTART:20260210T090000Z\r\nSUMMARY:S a\r\nLINK;VALUE=URI:https://elsewhere.example/a\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "unlink for object": {
+        "return": null,
+        "calls": [
+            [
+                "getCalendarsForUser",
+                "principals/users/alice"
+            ],
+            [
+                "getCalendarObjects",
+                3
+            ],
+            [
+                "warning",
+                "Failed to parse calendar event: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "updateCalendarObject",
+                3,
+                "a.ics",
+                "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//t//t//EN\r\nBEGIN:VEVENT\r\nUID:a\r\nDTSTAMP:<NOW>\r\nDTSTART:20260210T090000Z\r\nSUMMARY:S a\r\nLINK;VALUE=URI:https://elsewhere.example/a\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+            ]
+        ]
+    },
+    "unlink missing": {
+        "exception": "Exception",
+        "message": "Calendar event not found",
+        "code": 0,
+        "calls": []
+    },
+    "unlink todo": {
+        "exception": "Exception",
+        "message": "Calendar object is not a VEVENT",
+        "code": 0,
+        "calls": []
+    }
+}

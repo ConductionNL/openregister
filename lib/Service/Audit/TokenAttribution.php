@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -52,9 +52,9 @@ use Throwable;
  * canonical form, so a token added after the insert would sit outside the hash
  * the row is later given.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class TokenAttribution {
+class TokenAttribution implements TokenAttributionInterface {
 	/**
 	 * Keys that would each be a stored request or response payload.
 	 *
@@ -97,26 +97,11 @@ class TokenAttribution {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(TokenContext::class);
-		} catch (Throwable $contextUnavailable) {
-			return;
-		}
-
-		if (($context instanceof TokenContext) === false) {
-			return;
-		}
-
-		try {
-			$identity = $context->identity();
-		} catch (Throwable $resolutionFailed) {
-			return;
-		}
-
-		if ($identity === null || $identity->isAttributable() === false) {
+		$identity = $this->attributableIdentity();
+		if ($identity === null) {
 			return;
 		}
 
@@ -124,10 +109,36 @@ class TokenAttribution {
 
 		// Merge rather than replace: the purpose attribution and an MCP tool
 		// invocation both already write here, and neither may be erased.
-		$summary = ($auditTrail->getResultSummary() ?? []);
-		$summary['token'] = $identity->toArray();
-		$auditTrail->setResultSummary($summary);
+		(new AuditRowAttribution())->mergeIntoSummary(auditTrail: $auditTrail, entries: ['token' => $identity->toArray()]);
 	}//end apply()
+
+	/**
+	 * The calling token, when the request-scoped context resolves it and it can be attributed.
+	 *
+	 * Fail-soft: a context that cannot be resolved, or a resolution that throws, attributes nothing.
+	 *
+	 * @return TokenIdentity|null The identity, or null.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function attributableIdentity(): ?TokenIdentity {
+		$context = (new AuditRowAttribution())->requestContext(container: $this->container, class: TokenContext::class);
+		if ($context === null) {
+			return null;
+		}
+
+		try {
+			$identity = $context->identity();
+		} catch (Throwable $resolutionFailed) {
+			return null;
+		}
+
+		if ($identity === null || $identity->isAttributable() === false) {
+			return null;
+		}
+
+		return $identity;
+	}//end attributableIdentity()
 
 	/**
 	 * Whether a row carries a stored request or response payload.
@@ -141,7 +152,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when a payload key is present anywhere in the summary.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function carriesPayload(AuditTrail $auditTrail): bool {
 		return self::hasPayloadKey(value: ($auditTrail->getResultSummary() ?? []));
@@ -158,7 +169,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when a payload key is present.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private static function hasPayloadKey(mixed $value): bool {
 		if (is_array($value) === false) {
@@ -190,7 +201,7 @@ class TokenAttribution {
 	 *
 	 * @return bool True when the column and the sealed copy name different consumers.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function disagrees(AuditTrail $auditTrail): bool {
 		$summary = ($auditTrail->getResultSummary() ?? []);

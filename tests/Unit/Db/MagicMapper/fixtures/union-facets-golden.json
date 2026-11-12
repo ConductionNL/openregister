@@ -1,0 +1,522 @@
+{
+    "empty config": {
+        "events": [],
+        "facets": []
+    },
+    "no facets key": {
+        "events": [],
+        "facets": []
+    },
+    "metadata terms and dates": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "year",
+                    "buckets": []
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month",
+                    "buckets": []
+                },
+                "owner": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "@self.register",
+                    "@self.created",
+                    "@self.updated",
+                    "@self.owner",
+                    "@self.odd"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "metadata config not an array": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": []
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "property facets": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "title": "Naam"
+            },
+            "birthDate": {
+                "type": "date_histogram",
+                "interval": "month",
+                "buckets": [],
+                "title": "Born"
+            },
+            "odd": {
+                "title": "Odd"
+            },
+            "plain": {
+                "type": "terms",
+                "buckets": []
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name",
+                    "birthDate",
+                    "odd",
+                    "plain",
+                    "weird"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "withheld property": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": []
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "string config": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": []
+            },
+            "birthDate": {
+                "type": "terms",
+                "buckets": []
+            },
+            "@self": [],
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name",
+                    "birthDate"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "list config": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": []
+            },
+            "@self": [],
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "no tables": {
+        "events": [],
+        "facets": []
+    },
+    "metadata date on an existing column": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            },
+            {
+                "query": "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT DATE_FORMAT(_created, '%Y-%m') as date_key, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE _created IS NOT NULL GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            },
+            {
+                "log": "warning",
+                "message": "[MagicFacetHandler] UNION date histogram failed",
+                "context": {
+                    "field": "_created",
+                    "error": "no data"
+                }
+            }
+        ],
+        "facets": {
+            "@self": {
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month",
+                    "buckets": []
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "@self.created"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "property date on an existing column": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            },
+            {
+                "query": "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT DATE_FORMAT(birth_date, '%Y') as date_key, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE birth_date IS NOT NULL GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            },
+            {
+                "log": "warning",
+                "message": "[MagicFacetHandler] UNION date histogram failed",
+                "context": {
+                    "field": "birth_date",
+                    "error": "no data"
+                }
+            }
+        ],
+        "facets": {
+            "birthDate": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": []
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "birthDate"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "property terms on an existing column": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            },
+            {
+                "query": "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT CAST(name AS CHAR) as facet_value, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE 1=1 GROUP BY CAST(name AS CHAR) ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            },
+            {
+                "log": "warning",
+                "message": "[MagicFacetHandler] UNION facet query failed",
+                "context": {
+                    "field": "name",
+                    "error": "no data",
+                    "sql": "SELECT facet_value, SUM(cnt) as doc_count FROM (\nSELECT CAST(name AS CHAR) as facet_value, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE 1=1 GROUP BY CAST(name AS CHAR)\n) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+                }
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                },
+                "title": "N"
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "metadata terms on existing columns": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_8"
+                ]
+            },
+            {
+                "columns of": [
+                    "oc_openregister_table_3_9"
+                ]
+            },
+            {
+                "query": "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT CAST(_owner AS CHAR) as facet_value, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE 1=1 GROUP BY CAST(_owner AS CHAR) ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            },
+            {
+                "log": "warning",
+                "message": "[MagicFacetHandler] UNION facet query failed",
+                "context": {
+                    "field": "_owner",
+                    "error": "no data",
+                    "sql": "SELECT facet_value, SUM(cnt) as doc_count FROM (\nSELECT CAST(_owner AS CHAR) as facet_value, COUNT(*) as cnt FROM oc_openregister_table_3_7 WHERE 1=1 GROUP BY CAST(_owner AS CHAR)\n) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+                }
+            }
+        ],
+        "facets": {
+            "@self": {
+                "owner": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "@self.owner"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "unknown type on an existing column": {
+        "events": [],
+        "facets": {
+            "_metrics": {
+                "total_ms": "T",
+                "table_count": 3,
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    }
+}

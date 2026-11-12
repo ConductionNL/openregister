@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -38,11 +38,10 @@ namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\IUser;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The built-in inverse of a reversible bulk job.
@@ -52,21 +51,7 @@ use Psr\Log\LoggerInterface;
  * __construct exists so an outcome cannot be built without saying which of
  * the four it is.
  */
-class RestorePriorValuesAction implements ReversibleBulkActionInterface {
-
-	/**
-	 * The action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:restore-prior-values';
-
-	/**
-	 * The parameter naming the job being undone.
-	 *
-	 * @var string
-	 */
-	public const PARAM_JOB = 'reversesJobId';
+class RestorePriorValuesAction implements ReversibleBulkActionInterface, RestorePriorValuesActionInterface {
 
 	/**
 	 * How long a reversal itself stays undoable, in seconds.
@@ -92,14 +77,12 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMemberMapper $memberMapper  The original job's outcomes.
-	 * @param ObjectService       $objectService The object write path.
-	 * @param LoggerInterface     $logger        Logger.
+	 * @param BulkJobMemberMapperInterface $memberMapper The original job's outcomes.
+	 * @param BulkObjectAccess             $access       The object write path and the log.
 	 */
 	public function __construct(
-		private readonly BulkJobMemberMapper $memberMapper,
-		private readonly ObjectService $objectService,
-		private readonly LoggerInterface $logger,
+		private readonly BulkJobMemberMapperInterface $memberMapper,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -108,7 +91,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -119,7 +102,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Undo a bulk action';
@@ -130,7 +113,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Writes back what an earlier job changed. An object somebody has edited since is left alone and reported by name.';
@@ -141,7 +124,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return true;
@@ -156,7 +139,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return array<int, string> No guards.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getGuards(): array {
 		return [];
@@ -171,7 +154,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @throws InvalidArgumentException When the job being undone is not named.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$jobId = ($parameters[self::PARAM_JOB] ?? null);
@@ -188,7 +171,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return int The window, in seconds.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getReversalWindow(): int {
 		return self::REVERSAL_WINDOW;
@@ -202,7 +185,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>} The plan.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function reversalPlanFor(ObjectEntity $object, array $parameters): array {
 		$restore = $this->restoreValuesFor(object: $object, parameters: $parameters);
@@ -222,74 +205,82 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	/**
 	 * Rehearse or make the restoring write.
 	 *
-	 * @param ObjectEntity         $object     The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool                 $commit     False to rehearse, true to write.
-	 * @param IUser|null           $actor      The user the job runs as.
+	 * @param BulkStep $step The member, the job being undone, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
 	 * rehearsal and the commit is the design property of D-1.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$record = $this->recordFor(object: $object, parameters: $parameters);
-
+	public function apply(BulkStep $step): BulkActionResult {
+		$record = $this->recordFor(object: $step->object, parameters: $step->parameters);
 		if ($record === null) {
 			return BulkActionResult::skipped(
 				reason: 'the job being undone never wrote this object, so there is nothing to write back'
 			);
 		}
 
-		$current = $object->getObject();
-		$restore = ($record->getPriorValues() ?? []);
-
-		// "Already back" is checked FIRST. An object somebody restored by hand
-		// also fails the changed-since test below, and reporting that one as
-		// "somebody edited this" would send its owner looking for an edit that
-		// never happened.
-		if ($this->wouldChangeNothing(restore: $restore, current: $current) === true) {
-			return BulkActionResult::skipped(reason: 'the object already carries the values it had before');
+		$skip = $this->reasonToLeave(record: $record, current: $step->object->getObject());
+		if ($skip !== null) {
+			return BulkActionResult::skipped(reason: $skip);
 		}
 
-		$changed = $this->propertiesChangedSince(record: $record, current: $current);
-
-		if ($changed !== []) {
-			return BulkActionResult::skipped(
-				reason: 'not reversible: '.implode(', ', $changed).' changed after the original job wrote it, and a '
-					.'later change is never overwritten'
-			);
-		}
-
-		if ($commit === false) {
+		if ($step->commit === false) {
 			return BulkActionResult::applied();
 		}
 
-		return $this->write(object: $object, restore: $restore, actor: $actor);
+		return $this->write(step: $step, restore: ($record->getPriorValues() ?? []));
 	}//end apply()
+
+	/**
+	 * Why the object is left as it is, or null when the prior values go back.
+	 *
+	 * "Already back" is checked FIRST. An object somebody restored by hand
+	 * also fails the changed-since test below, and reporting that one as
+	 * "somebody edited this" would send its owner looking for an edit that
+	 * never happened.
+	 *
+	 * @param BulkJobMember        $record  What the original job wrote on this object.
+	 * @param array<string, mixed> $current The object's data now.
+	 *
+	 * @return string|null The reason to skip, or null.
+	 */
+	private function reasonToLeave(BulkJobMember $record, array $current): ?string {
+		if ($this->wouldChangeNothing(restore: ($record->getPriorValues() ?? []), current: $current) === true) {
+			return 'the object already carries the values it had before';
+		}
+
+		$changed = $this->propertiesChangedSince(record: $record, current: $current);
+		if ($changed !== []) {
+			return 'not reversible: '.implode(', ', $changed).' changed after the original job wrote it, and a '
+				.'later change is never overwritten';
+		}
+
+		return null;
+	}//end reasonToLeave()
 
 	/**
 	 * Make the restoring write.
 	 *
-	 * @param ObjectEntity         $object  The object.
+	 * @param BulkStep             $step    The member and the user the job runs as.
 	 * @param array<string, mixed> $restore The values to write back.
-	 * @param IUser|null           $actor   The user the job runs as.
 	 *
 	 * @return BulkActionResult What happened.
 	 */
-	private function write(ObjectEntity $object, array $restore, ?IUser $actor): BulkActionResult {
+	private function write(BulkStep $step, array $restore): BulkActionResult {
+		$object = $step->object;
 		try {
-			$this->objectService->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $restore,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $actor
+			$this->access->objects->patchObject(
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $restore,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $step->actor
+				)
 			);
 		} catch (\Throwable $exception) {
-			$this->logger->warning(
+			$this->access->logger->warning(
 				message: '[BulkAction] Restoring the prior value failed for object',
 				context: [
 					'action' => self::ID,

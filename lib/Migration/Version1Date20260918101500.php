@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/the-engine-task-carries-a-kind/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add the task's kind column and the index the inbox filter reads.
  *
- * @spec openspec/changes/the-engine-task-carries-a-kind/specs/flow-tasks/spec.md
+ * @spec openspec/specs/flow-tasks/spec.md
  */
 class Version1Date20260918101500 extends SimpleMigrationStep {
 	/**
@@ -62,7 +62,7 @@ class Version1Date20260918101500 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper The schema, changed or not.
 	 *
-	 * @spec openspec/changes/the-engine-task-carries-a-kind/specs/flow-tasks/spec.md
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*

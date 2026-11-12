@@ -19,12 +19,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSources;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +51,8 @@ class FlowTriggerIndexPublishedTest extends TestCase {
 	private function index(?array $publishedGraph): FlowTriggerIndex {
 		$mapper = $this->createMock(FlowTriggerMapper::class);
 		$mapper->method('replaceFor')->willReturnCallback(
-			function (string $flowUuid, array $triggers, bool $enabled): int {
+			function (FlowTriggerSet $set): int {
+				[$flowUuid, $triggers, $enabled] = [$set->flowUuid, $set->triggers, $set->enabled];
 				$this->written = ['flow' => $flowUuid, 'triggers' => $triggers, 'enabled' => $enabled];
 
 				return count($triggers);
@@ -60,17 +65,14 @@ class FlowTriggerIndexPublishedTest extends TestCase {
 		// passes through unchanged — these tests are about WHICH version's
 		// nodes reach the index, not about the vocabulary they arrive in.
 		$slugs = new FlowTriggerSlugs(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
+			new SchemaCatalog($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $this->createMock(MagicMapperInterface::class)),
 			new NullLogger()
 		);
 
 		return new FlowTriggerIndex(
 			$mapper,
-			new FlowTriggerDerivation(),
-			$slugs,
-			new NullLogger(),
-			$published
+			new FlowTriggerSources(new FlowTriggerDerivation(), $slugs, $published),
+			new NullLogger()
 		);
 	}//end index()
 

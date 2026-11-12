@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -51,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/apphost-observability/spec.md#requirement-a-leaf-apps-provider-must-be-resolved-from-that-apps-own-container
  */
-class AppContainerLocator {
+class AppContainerLocator implements AppContainerFinderInterface {
 	/**
 	 * Constructor.
 	 *

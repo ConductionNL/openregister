@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -40,7 +41,56 @@ use RuntimeException;
  *
  * @link https://www.OpenRegister.nl
  */
-class ObjectRetentionHandler {
+class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, RetentionSettingsReaderInterface {
+	use SettingsSectionDefaults;
+
+	/**
+	 * The object management settings returned when none are stored, and the default of every key on update.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const OBJECT_DEFAULTS = [
+		'vectorizationEnabled' => false,
+		'vectorizeOnCreate' => true,
+		'vectorizeOnUpdate' => false,
+		'vectorizeAllViews' => true,
+		'enabledViews' => [],
+		'includeMetadata' => true,
+		'includeRelations' => true,
+		'maxNestingDepth' => 10,
+		'batchSize' => 25,
+		'autoRetry' => true,
+	];
+
+	/**
+	 * The retention settings returned when none are stored, and the default of every key on update.
+	 *
+	 * The shared retention defaults plus searchTrailRecordingMode, which says which
+	 * searches to record (all, _search or none); the default records text
+	 * searches only.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const RETENTION_DEFAULTS = self::RETENTION_PERIOD_DEFAULTS + ['searchTrailRecordingMode' => '_search'];
+
+	/**
+	 * The archival settings returned when none are stored, and the default of every key on update.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ARCHIVAL_DEFAULTS = [
+		'destructionCheckInterval' => 86400,
+		'notificationLeadDays' => 30,
+		'reviewReminderFrequency' => 'P7D',
+		'defaultExtensionPeriod' => 'P1Y',
+		'destructionBatchSize' => 50,
+		'selectielijstRegister' => null,
+		'selectielijstSchema' => null,
+		'selectielijstVersion' => null,
+		'destructionListRegister' => null,
+		'destructionListSchema' => null,
+		'archivalRegister' => null,
+	];
 
 	/**
 	 * Nextcloud configuration instance
@@ -49,27 +99,18 @@ class ObjectRetentionHandler {
 	 */
 	private IAppConfig $appConfig;
 
-	/**
-	 * Application name identifier
-	 *
-	 * @var string
-	 */
-	private string $appName;
 
 	/**
 	 * Constructor for ObjectRetentionHandler.
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
-	 * @param string $appName Application name (default: 'openregister').
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
-		string $appName = 'openregister',
 		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
-		$this->appName = $appName;
 	}//end __construct()
 
 	/**
@@ -89,40 +130,35 @@ class ObjectRetentionHandler {
 	 */
 	public function getObjectSettingsOnly(): array {
 		try {
-			$objectConfig = $this->appConfig->getValueString($this->appName, 'objectManagement', '');
-
+			$objectConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'objectManagement', '');
 			if (empty($objectConfig) === true) {
-				return [
-					'vectorizationEnabled' => false,
-					'vectorizeOnCreate' => true,
-					'vectorizeOnUpdate' => false,
-					'vectorizeAllViews' => true,
-					'enabledViews' => [],
-					'includeMetadata' => true,
-					'includeRelations' => true,
-					'maxNestingDepth' => 10,
-					'batchSize' => 25,
-					'autoRetry' => true,
-				];
+				return self::OBJECT_DEFAULTS;
 			}
 
-			$objectData = json_decode($objectConfig, true);
-			return [
-				'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-				'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
-				'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
-				'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? true),
-				'enabledViews' => $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? []),
-				'includeMetadata' => $objectData['includeMetadata'] ?? true,
-				'includeRelations' => $objectData['includeRelations'] ?? true,
-				'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
-				'batchSize' => $objectData['batchSize'] ?? 25,
-				'autoRetry' => $objectData['autoRetry'] ?? true,
-			];
+			$objectData = $this->withViewKeys(objectData: json_decode($objectConfig, true));
+			return $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to get Object Management settings: ' . $e->getMessage());
 		}//end try
 	}//end getObjectSettingsOnly()
+
+	/**
+	 * Stored object settings with the view keys read from their former schema names when unset.
+	 *
+	 * @param mixed $objectData The decoded stored settings.
+	 *
+	 * @return mixed
+	 */
+	private function withViewKeys($objectData) {
+		if (is_array($objectData) === false) {
+			return $objectData;
+		}
+
+		$objectData['vectorizeAllViews'] = $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? null);
+		$objectData['enabledViews'] = $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? null);
+
+		return $objectData;
+	}//end withViewKeys()
 
 	/**
 	 * Update object management settings
@@ -144,20 +180,8 @@ class ObjectRetentionHandler {
 	public function updateObjectSettingsOnly(array $objectData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['objectManagement']);
 		try {
-			$objectConfig = [
-				'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-				'vectorizeOnCreate' => $objectData['vectorizeOnCreate'] ?? true,
-				'vectorizeOnUpdate' => $objectData['vectorizeOnUpdate'] ?? false,
-				'vectorizeAllViews' => $objectData['vectorizeAllViews'] ?? true,
-				'enabledViews' => $objectData['enabledViews'] ?? [],
-				'includeMetadata' => $objectData['includeMetadata'] ?? true,
-				'includeRelations' => $objectData['includeRelations'] ?? true,
-				'maxNestingDepth' => $objectData['maxNestingDepth'] ?? 10,
-				'batchSize' => $objectData['batchSize'] ?? 25,
-				'autoRetry' => $objectData['autoRetry'] ?? true,
-			];
-
-			$this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+			$objectConfig = $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'objectManagement', json_encode($objectConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['objectManagement']);
 			return $objectConfig;
 		} catch (Exception $e) {
@@ -184,46 +208,16 @@ class ObjectRetentionHandler {
 	 */
 	public function getRetentionSettingsOnly(): array {
 		try {
-			$retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
-
+			$retentionConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'retention', '');
 			if (empty($retentionConfig) === true) {
-				return [
-					'objectArchiveRetention' => 31536000000,
-					// 1 year default
-					'objectDeleteRetention' => 63072000000,
-					// 2 years default
-					'searchTrailRetention' => 2592000000,
-					// 1 month default
-					'createLogRetention' => 2592000000,
-					// 1 month default
-					'readLogRetention' => 86400000,
-					// 24 hours default
-					'updateLogRetention' => 604800000,
-					// 1 week default
-					'deleteLogRetention' => 2592000000,
-					// 1 month default
-					'auditTrailsEnabled' => true,
-					// Audit trails enabled by default.
-					'searchTrailsEnabled' => true,
-					// Search trails enabled by default.
-					'searchTrailRecordingMode' => '_search',
-					// Which searches to record: all | _search | none. Default: text searches only.
-				];
-			}//end if
+				return self::RETENTION_DEFAULTS;
+			}
 
-			$retentionData = json_decode($retentionConfig, true);
-			return [
-				'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-				'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-				'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-				'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-				'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-				'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-				'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
-				'auditTrailsEnabled' => $this->convertToBoolean(value: $retentionData['auditTrailsEnabled'] ?? true),
-				'searchTrailsEnabled' => $this->convertToBoolean(value: $retentionData['searchTrailsEnabled'] ?? true),
-				'searchTrailRecordingMode' => $this->normaliseRecordingMode(value: $retentionData['searchTrailRecordingMode'] ?? '_search'),
-			];
+			$retention = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: json_decode($retentionConfig, true));
+			$retention['auditTrailsEnabled'] = $this->convertToBoolean(value: $retention['auditTrailsEnabled']);
+			$retention['searchTrailsEnabled'] = $this->convertToBoolean(value: $retention['searchTrailsEnabled']);
+			$retention['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retention['searchTrailRecordingMode']);
+			return $retention;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve Retention settings: ' . $e->getMessage());
 		}//end try
@@ -251,20 +245,10 @@ class ObjectRetentionHandler {
 	public function updateRetentionSettingsOnly(array $retentionData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['retention']);
 		try {
-			$retentionConfig = [
-				'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-				'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-				'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-				'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-				'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-				'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-				'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
-				'auditTrailsEnabled' => $retentionData['auditTrailsEnabled'] ?? true,
-				'searchTrailsEnabled' => $retentionData['searchTrailsEnabled'] ?? true,
-				'searchTrailRecordingMode' => $this->normaliseRecordingMode(value: $retentionData['searchTrailRecordingMode'] ?? '_search'),
-			];
+			$retentionConfig = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: $retentionData);
+			$retentionConfig['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retentionConfig['searchTrailRecordingMode']);
 
-			$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'retention', json_encode($retentionConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['retention']);
 			return $retentionConfig;
 		} catch (Exception $e) {
@@ -283,26 +267,12 @@ class ObjectRetentionHandler {
 	 */
 	public function getArchivalSettingsOnly(): array {
 		try {
-			$archivalConfig = $this->appConfig->getValueString($this->appName, 'archival', '');
-
+			$archivalConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'archival', '');
 			if (empty($archivalConfig) === true) {
-				return $this->getArchivalDefaults();
+				return self::ARCHIVAL_DEFAULTS;
 			}
 
-			$archivalData = json_decode($archivalConfig, true);
-			return [
-				'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
-				'notificationLeadDays' => $archivalData['notificationLeadDays'] ?? 30,
-				'reviewReminderFrequency' => $archivalData['reviewReminderFrequency'] ?? 'P7D',
-				'defaultExtensionPeriod' => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
-				'destructionBatchSize' => $archivalData['destructionBatchSize'] ?? 50,
-				'selectielijstRegister' => $archivalData['selectielijstRegister'] ?? null,
-				'selectielijstSchema' => $archivalData['selectielijstSchema'] ?? null,
-				'selectielijstVersion' => $archivalData['selectielijstVersion'] ?? null,
-				'destructionListRegister' => $archivalData['destructionListRegister'] ?? null,
-				'destructionListSchema' => $archivalData['destructionListSchema'] ?? null,
-				'archivalRegister' => $archivalData['archivalRegister'] ?? null,
-			];
+			return $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: json_decode($archivalConfig, true));
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve archival settings: ' . $e->getMessage());
 		}//end try
@@ -322,21 +292,8 @@ class ObjectRetentionHandler {
 	public function updateArchivalSettingsOnly(array $archivalData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['archival']);
 		try {
-			$archivalConfig = [
-				'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
-				'notificationLeadDays' => $archivalData['notificationLeadDays'] ?? 30,
-				'reviewReminderFrequency' => $archivalData['reviewReminderFrequency'] ?? 'P7D',
-				'defaultExtensionPeriod' => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
-				'destructionBatchSize' => $archivalData['destructionBatchSize'] ?? 50,
-				'selectielijstRegister' => $archivalData['selectielijstRegister'] ?? null,
-				'selectielijstSchema' => $archivalData['selectielijstSchema'] ?? null,
-				'selectielijstVersion' => $archivalData['selectielijstVersion'] ?? null,
-				'destructionListRegister' => $archivalData['destructionListRegister'] ?? null,
-				'destructionListSchema' => $archivalData['destructionListSchema'] ?? null,
-				'archivalRegister' => $archivalData['archivalRegister'] ?? null,
-			];
-
-			$this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
+			$archivalConfig = $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: $archivalData);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'archival', json_encode($archivalConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['archival']);
 			return $archivalConfig;
 		} catch (Exception $e) {
@@ -361,29 +318,6 @@ class ObjectRetentionHandler {
 
 		$this->changeRecorder->record(before: $before, keys: $keys);
 	}//end recordSettingsChange()
-
-	/**
-	 * Get default archival settings
-	 *
-	 * @return array Default archival configuration
-	 *
-	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
-	 */
-	private function getArchivalDefaults(): array {
-		return [
-			'destructionCheckInterval' => 86400,
-			'notificationLeadDays' => 30,
-			'reviewReminderFrequency' => 'P7D',
-			'defaultExtensionPeriod' => 'P1Y',
-			'destructionBatchSize' => 50,
-			'selectielijstRegister' => null,
-			'selectielijstSchema' => null,
-			'selectielijstVersion' => null,
-			'destructionListRegister' => null,
-			'destructionListSchema' => null,
-			'archivalRegister' => null,
-		];
-	}//end getArchivalDefaults()
 
 	/**
 	 * Get version information only

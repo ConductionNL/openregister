@@ -201,6 +201,7 @@
 <script>
 import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -223,6 +224,7 @@ import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
 import Printer from 'vue-material-design-icons/Printer.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { saveBlob } from '../../services/saveFile.js'
 import { reportsStore } from '../../store/store.js'
 
 const ICON_MAP = {
@@ -230,6 +232,38 @@ const ICON_MAP = {
 	AccountGroupOutline,
 	FileDocumentOutline,
 	DatabaseOutline,
+}
+
+/**
+ * Ask the server to render a report in a format, as a blob.
+ *
+ * @param {string} id The report id
+ * @param {string} format The export format (e.g. pdf, xlsx)
+ * @return {Promise<object>} The response; its data is the file
+ */
+function requestRender(id, format) {
+	return axios.post(
+		generateUrl(
+			`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
+		),
+		null,
+		{ params: { format }, responseType: 'blob' },
+	)
+}
+
+/**
+ * The JSON body of a failed blob request, or null when it has none.
+ *
+ * @param {object} error The axios error
+ * @return {Promise<object|null>} The parsed body
+ */
+async function jsonErrorBody(error) {
+	try {
+		return JSON.parse(await error.response?.data?.text())
+	} catch {
+		// Not a JSON error body; fall back to the generic message.
+		return null
+	}
 }
 
 export default {
@@ -339,7 +373,7 @@ export default {
 				if (this.dashboard) {
 					await this.loadWidgetData()
 				}
-			} catch (e) {
+			} catch {
 				// surfaced via store error
 			}
 		},
@@ -400,26 +434,38 @@ export default {
 			const id = this.$route.params.id
 			if (!id) return
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`,
-					),
-					null,
-					{ params: { format }, responseType: 'blob' },
-				)
+				const response = await requestRender(id, format)
 				const filename =
 					this._extractFilename(response)
 					|| `${this.dashboard?.titel || 'dashboard'}.${format}`
-				const url = URL.createObjectURL(response.data)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = filename
-				a.click()
-				URL.revokeObjectURL(url)
+				saveBlob(response.data, filename)
 			} catch (e) {
-				// eslint-disable-next-line no-console
-				console.error('[ReportView.downloadAs]', e)
+				showError(await this._downloadErrorMessage(e))
 			}
+		},
+
+		/**
+		 * The message to show when a download failed, read from the JSON error body.
+		 *
+		 * @param {object} error The axios error of a blob request.
+		 * @spec openspec/specs/export-pdf-format/spec.md
+		 * @return {Promise<string>}
+		 */
+		async _downloadErrorMessage(error) {
+			const body = await jsonErrorBody(error)
+
+			if (body?.error === 'office_server_required') {
+				return t(
+					'openregister',
+					'A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.',
+				)
+			}
+
+			return (
+				body?.message
+				|| body?.error
+				|| t('openregister', 'The report could not be downloaded.')
+			)
 		},
 
 		/**
@@ -546,7 +592,7 @@ export default {
 			if (format === 'date') {
 				try {
 					return new Date(raw).toLocaleDateString()
-				} catch (e) {
+				} catch {
 					return String(raw)
 				}
 			}
@@ -741,18 +787,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitle {
 	display: flex;

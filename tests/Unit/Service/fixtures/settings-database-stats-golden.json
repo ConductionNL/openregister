@@ -1,0 +1,324 @@
+{
+    "mysql with tables": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "sql",
+            "SELECT table_name as tablename FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE '*PREFIX*openregister_table_%'"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_a WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_b WHERE _deleted IS NULL"
+        ],
+        [
+            "log.debug",
+            "[SettingsService] Failed to query magic mapper table",
+            {
+                "table": "oc_openregister_table_b",
+                "error": "table broken"
+            }
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_c WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, (SELECT COUNT(*) FROM oc_openconnector_sources) as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "result",
+            {
+                "warnings": {
+                    "auditTrailsWithoutExpiry": 1,
+                    "searchTrailsWithoutExpiry": 2,
+                    "expiredAuditTrails": 9,
+                    "expiredSearchTrails": 10
+                },
+                "totals": {
+                    "totalObjects": 5,
+                    "totalSize": 320,
+                    "totalAuditTrails": 11,
+                    "totalSearchTrails": 12,
+                    "totalConfigurations": 3,
+                    "totalOrganisations": 4,
+                    "totalRegisters": 5,
+                    "totalSchemas": 6,
+                    "totalSources": 7,
+                    "totalWebhookLogs": 8
+                }
+            }
+        ]
+    ],
+    "postgres no tables": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "sql",
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE '*PREFIX*openregister_table_%'"
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, (SELECT COUNT(*) FROM oc_openconnector_sources) as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "result",
+            {
+                "warnings": {
+                    "auditTrailsWithoutExpiry": 1,
+                    "searchTrailsWithoutExpiry": 2,
+                    "expiredAuditTrails": 9,
+                    "expiredSearchTrails": 10
+                },
+                "totals": {
+                    "totalObjects": 0,
+                    "totalSize": 0,
+                    "totalAuditTrails": 11,
+                    "totalSearchTrails": 12,
+                    "totalConfigurations": 3,
+                    "totalOrganisations": 4,
+                    "totalRegisters": 5,
+                    "totalSchemas": 6,
+                    "totalSources": 7,
+                    "totalWebhookLogs": 8
+                }
+            }
+        ]
+    ],
+    "platform broken": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "log.warning",
+            "[SettingsService] Failed to count magic mapper objects",
+            {
+                "error": "no platform"
+            }
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, (SELECT COUNT(*) FROM oc_openconnector_sources) as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "result",
+            {
+                "warnings": {
+                    "auditTrailsWithoutExpiry": 1,
+                    "searchTrailsWithoutExpiry": 2,
+                    "expiredAuditTrails": 9,
+                    "expiredSearchTrails": 10
+                },
+                "totals": {
+                    "totalObjects": 0,
+                    "totalSize": 0,
+                    "totalAuditTrails": 11,
+                    "totalSearchTrails": 12,
+                    "totalConfigurations": 3,
+                    "totalOrganisations": 4,
+                    "totalRegisters": 5,
+                    "totalSchemas": 6,
+                    "totalSources": 7,
+                    "totalWebhookLogs": 8
+                }
+            }
+        ]
+    ],
+    "no sources table": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "sql",
+            "SELECT table_name as tablename FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE '*PREFIX*openregister_table_%'"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_a WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_b WHERE _deleted IS NULL"
+        ],
+        [
+            "log.debug",
+            "[SettingsService] Failed to query magic mapper table",
+            {
+                "table": "oc_openregister_table_b",
+                "error": "table broken"
+            }
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_c WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "log.debug",
+            "[SettingsService] openconnector_sources table does not exist - OpenConnector app not installed",
+            []
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, 0 as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "result",
+            {
+                "warnings": {
+                    "auditTrailsWithoutExpiry": 1,
+                    "searchTrailsWithoutExpiry": 2,
+                    "expiredAuditTrails": 9,
+                    "expiredSearchTrails": 10
+                },
+                "totals": {
+                    "totalObjects": 5,
+                    "totalSize": 320,
+                    "totalAuditTrails": 11,
+                    "totalSearchTrails": 12,
+                    "totalConfigurations": 3,
+                    "totalOrganisations": 4,
+                    "totalRegisters": 5,
+                    "totalSchemas": 6,
+                    "totalSources": 7,
+                    "totalWebhookLogs": 8
+                }
+            }
+        ]
+    ],
+    "partial row": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "sql",
+            "SELECT table_name as tablename FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE '*PREFIX*openregister_table_%'"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_a WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_b WHERE _deleted IS NULL"
+        ],
+        [
+            "log.debug",
+            "[SettingsService] Failed to query magic mapper table",
+            {
+                "table": "oc_openregister_table_b",
+                "error": "table broken"
+            }
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_c WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, (SELECT COUNT(*) FROM oc_openconnector_sources) as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "result",
+            {
+                "warnings": {
+                    "auditTrailsWithoutExpiry": 0,
+                    "searchTrailsWithoutExpiry": 0,
+                    "expiredAuditTrails": 0,
+                    "expiredSearchTrails": 0
+                },
+                "totals": {
+                    "totalObjects": 5,
+                    "totalSize": 320,
+                    "totalAuditTrails": 0,
+                    "totalSearchTrails": 0,
+                    "totalConfigurations": 0,
+                    "totalOrganisations": 0,
+                    "totalRegisters": 0,
+                    "totalSchemas": 2,
+                    "totalSources": 0,
+                    "totalWebhookLogs": 0
+                }
+            }
+        ]
+    ],
+    "no row": [
+        [
+            "log.info",
+            "[SettingsService] getDatabaseStats() called",
+            []
+        ],
+        [
+            "sql",
+            "SELECT table_name as tablename FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE '*PREFIX*openregister_table_%'"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_a WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_b WHERE _deleted IS NULL"
+        ],
+        [
+            "log.debug",
+            "[SettingsService] Failed to query magic mapper table",
+            {
+                "table": "oc_openregister_table_b",
+                "error": "table broken"
+            }
+        ],
+        [
+            "sql",
+            "SELECT COUNT(*) as cnt, COALESCE(SUM( CASE WHEN _size IS NOT NULL AND _size != '' THEN CAST(_size AS BIGINT) ELSE 0 END ), 0) as total_size FROM oc_openregister_table_c WHERE _deleted IS NULL"
+        ],
+        [
+            "sql",
+            "SELECT 1 FROM oc_openconnector_sources LIMIT 1"
+        ],
+        [
+            "sql",
+            "SELECT (SELECT COUNT(*) FROM oc_openregister_audit_trails) as total_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails) as total_search_trails, (SELECT COUNT(*) FROM oc_openregister_configurations) as total_configurations, (SELECT COUNT(*) FROM oc_openregister_organisations) as total_organisations, (SELECT COUNT(*) FROM oc_openregister_registers) as total_registers, (SELECT COUNT(*) FROM oc_openregister_schemas) as total_schemas, (SELECT COUNT(*) FROM oc_openconnector_sources) as total_sources, (SELECT COUNT(*) FROM oc_openregister_webhook_logs) as total_webhook_logs, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NULL) as audit_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NULL) as search_trails_without_expiry, (SELECT COUNT(*) FROM oc_openregister_audit_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails, (SELECT COUNT(*) FROM oc_openregister_search_trails WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails"
+        ],
+        [
+            "thrown",
+            "RuntimeException",
+            "Failed to fetch database statistics"
+        ]
+    ]
+}

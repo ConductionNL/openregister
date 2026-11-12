@@ -9,12 +9,12 @@
 
 ## 2. Client
 
-- [ ] 2.1 `presence(objectUuid)` in the live-updates plugin: heartbeat every 30 s, departure on unmount, reactive list from pushes.
-- [ ] 2.2 A presence avatar component in the shared runtime.
+- [ ] 2.1 `presence(objectUuid)` in the live-updates plugin: heartbeat every 30 s, departure on unmount, reactive list from pushes. (not run: a nextcloud-vue change (live-updates plugin))
+- [ ] 2.2 A presence avatar component in the shared runtime. (not run: a nextcloud-vue change (shared runtime))
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/object-presence.spec.ts`: two browser contexts on one object see each other; one closes and disappears.
+- [ ] 3.1 `tests/e2e/ci/object-presence.spec.ts`: two browser contexts on one object see each other; one closes and disappears. (not run: e2e needs two browser contexts on a live instance)
 - [x] 3.2 Unit tests for the service with a clock and for the push dedup.
 
 ## What was built

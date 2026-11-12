@@ -1,5 +1,6 @@
 <script setup>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { listDateTime } from '../../services/listDateTime.js'
 import {
 	configurationStore,
 	navigationStore,
@@ -22,19 +23,16 @@ import {
 			:showTitle="true"
 			:objects="paginatedRegisters"
 			:columns="tableColumns"
+			:sortKey="sortKey"
+			:sortOrder="sortOrder"
+			:activeFilters="activeFilters"
 			:pagination="paginationData"
 			:loading="registerStore.loading"
 			:viewMode="registerStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedRegisters"
 			:schema="registerSchema"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Register')"
 			rowKey="id"
@@ -43,6 +41,8 @@ import {
 			:refreshing="isRefreshing"
 			@create="onSaveRegister"
 			@edit="onSaveRegister"
+			@sort="onSort"
+			@filterChange="onFilterChange"
 			@refresh="handleRefresh"
 			@pageChanged="onPageChanged"
 			@pageSizeChanged="onPageSizeChanged"
@@ -50,35 +50,11 @@ import {
 			@select="onSelect"
 			@rowClick="viewRegisterDetails">
 			<!-- Custom form fields for the built-in CnFormDialog -->
-			<template #form-fields="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:modelValue="formData.title || ''"
-						:error="!!errors.title"
-						:helperText="errors.title"
-						@update:modelValue="(v) => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:modelValue="formData.slug || ''"
-						:error="!!errors.slug"
-						:helperText="errors.slug"
-						@update:modelValue="(v) => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:modelValue="formData.description || ''"
-						@update:modelValue="(v) => updateField('description', v)" />
-					<NcSelect
-						:inputLabel="t('openregister', 'Schemas')"
-						:options="schemaSelectOptions"
-						:modelValue="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:closeOnSelect="false"
-						:loading="schemasLoading"
-						@update:modelValue="
-							(vals) => updateField('schemas', vals)
-						" />
-				</div>
+			<template #form-fields="form">
+				<RegisterFormFields
+					v-bind="form"
+					:schemaOptions="schemaSelectOptions"
+					:schemasLoading="schemasLoading" />
 			</template>
 
 			<!-- Custom action items in actions bar -->
@@ -123,24 +99,9 @@ import {
 				<div class="titleContent">
 					<strong>
 						{{ row.title }}
-						<span
-							v-if="isManagedByExternalConfig(row)"
-							class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span
-							v-else-if="isManagedByLocalConfig(row)"
-							class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -157,154 +118,16 @@ import {
 				}}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{
-					row.created
-						? new Date(row.created).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.created).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{
-					row.updated
-						? new Date(row.updated).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.updated).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						:title="
-							isManagedByExternalConfig(row)
-								? t(
-										'openregister',
-										'Cannot edit: This register is managed by external configuration {title}',
-										{
-											title: getManagingConfiguration(row)
-												?.title,
-										},
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="isManagedByExternalConfig(row)"
-						@click="$refs.indexPage.openFormDialog(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('publishRegister')
-							}
-						">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Publish OAS') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('importRegister')
-							}
-						">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						{{ t('openregister', 'Import') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								viewOasDoc(row)
-							}
-						">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						{{ t('openregister', 'View API Documentation') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								downloadOas(row)
-							}
-						">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Download API Specification') }}
-					</NcActionButton>
-					<NcActionButton
-						:title="
-							row.stats?.total > 0
-								? t(
-										'openregister',
-										'Cannot delete: objects are still attached',
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="row.stats?.total > 0"
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setDialog('deleteRegister')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="viewRegisterDetails(row)">
-						<template #icon>
-							<InformationOutline :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="registerActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -314,51 +137,172 @@ import {
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
-} from '@nextcloud/vue'
+import { NcActionButton, NcAppContent } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
+import {
+	isExternalConfiguration,
+	isLocalConfiguration,
+	managedRowClass,
+} from '../../composables/managedConfiguration.js'
+import { filterRows } from '../../services/listFilter.js'
+import { sortSchemas } from '../../services/listSort.js'
+import { deleteAction, editAction } from '../../services/menuActions.js'
+import {
+	registerFormSchema,
+	registerPayload,
+	schemaOptionsOf,
+} from '../../services/registerForm.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
+import { timestampColumns } from '../indexPageOptions.js'
+
+/**
+ * How the names cache changed in size, in words.
+ *
+ * @param {number} oldSize Entries before the warmup
+ * @param {number} newSize Entries after the warmup
+ * @return {string} The translated sentence
+ */
+function cacheChangeText(oldSize, newSize) {
+	if (newSize > oldSize) {
+		return t('openregister', 'Cache grew from {old} to {new} entries.', {
+			old: oldSize,
+			new: newSize,
+		})
+	}
+	if (newSize < oldSize) {
+		return t('openregister', 'Cache shrunk from {old} to {new} entries.', {
+			old: oldSize,
+			new: newSize,
+		})
+	}
+	return t('openregister', 'Cache stayed the same at {size} entries.', {
+		size: newSize,
+	})
+}
+
+/**
+ * The toast for a successful warmup, from the endpoint's answer.
+ *
+ * @param {object} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupSuccessText(data) {
+	const oldSize = data.old_cache?.distributed_name_cache_size || 0
+	const newSize = data.new_cache?.distributed_name_cache_size || 0
+	return t(
+		'openregister',
+		'Names cache warmed up successfully: {count} names loaded in {time}. {cache}',
+		{
+			count: data.loaded_names || 0,
+			time: data.execution_time || '0ms',
+			cache: cacheChangeText(oldSize, newSize),
+		},
+	)
+}
+
+/**
+ * The toast after a warmup, from the endpoint's answer.
+ *
+ * @param {object|null} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupResultText(data) {
+	if (data && data.success) {
+		return warmupSuccessText(data)
+	}
+	return t('openregister', 'Names cache warmup completed')
+}
+
+/**
+ * Ask the server to rebuild the names cache.
+ *
+ * @return {Promise<object>} The axios response
+ */
+function postNamesWarmup() {
+	const baseUrl = window.location.origin
+	// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+	// the server rebuild the entire name cache. That route is gone
+	// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+	// maintenance action on an admin screen should have been calling.
+	const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
+	return axios.post(
+		apiUrl,
+		{},
+		{
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
+/**
+ * The reason a request failed: the server's message, else the error's own.
+ *
+ * @param {object} error The axios error
+ * @return {string} The reason
+ */
+function failureText(error) {
+	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
+ * Whether objects are still attached to a register.
+ *
+ * @param {object} register The register row
+ * @return {boolean} True while it holds objects
+ */
+function hasAttachedObjects(register) {
+	return register.stats?.total > 0
+}
+
+/**
+ * Why the delete entry is locked: '' unless objects are still attached.
+ *
+ * @param {object} register The register row
+ * @return {string} The reason
+ */
+function deleteLockReason(register) {
+	if (!hasAttachedObjects(register)) {
+		return ''
+	}
+	return t('openregister', 'Cannot delete: objects are still attached')
+}
 
 export default {
 	name: 'RegistersIndex',
 	components: {
-		NcAppContent,
-		CnIndexPage,
-		NcActions,
+		IndexRowDescription,
+		ActionMenu,
 		NcActionButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 		Upload,
 		ApiIcon,
-		Download,
-		InformationOutline,
-		CogOutline,
 		CloudUploadOutline,
+		RegisterFormFields,
+		NcAppContent,
+		CnIndexPage,
+		ManagedBadge,
 		RegisterSchemaCard,
 	},
 
 	data() {
 		return {
+			...headerListData(),
 			selectedRegisters: [],
-			isRefreshing: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
 		}
@@ -376,51 +320,43 @@ export default {
 		 * @spec exclude list-view inline form-schema definition for the register editor (computed)
 		 */
 		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
+			return registerFormSchema({
+				// Read-only, so the form leaves them out; they tell the
+				// Created and Updated header filters to filter by date.
+				created: {
+					type: 'string',
+					format: 'date-time',
+					title: t('openregister', 'Created'),
+					readOnly: true,
 				},
 
-				required: ['title', 'slug'],
-			}
+				updated: {
+					type: 'string',
+					format: 'date-time',
+					title: t('openregister', 'Updated'),
+					readOnly: true,
+				},
+			})
 		},
 
 		/**
-		 * @spec exclude list-view list filtering of synthetic rows (computed)
+		 * The registers to list: synthetic rows dropped, header filters
+		 * applied, then sorted by the clicked header when there is one.
+		 *
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		filteredRegisters() {
-			return registerStore.registerList.filter(
-				(register) =>
-					register.title !== 'System Totals'
-					&& register.title !== 'Orphaned Items',
+			const registers = filterRows(
+				registerStore.registerList.filter(
+					(register) =>
+						register.title !== 'System Totals'
+						&& register.title !== 'Orphaned Items',
+				),
+				this.activeFilters,
 			)
+			return this.sortKey
+				? sortSchemas(registers, this.sortKey, this.sortOrder)
+				: registers
 		},
 
 		/**
@@ -430,16 +366,7 @@ export default {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
 				{ key: 'schemas', label: t('openregister', 'Schemas') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 
@@ -490,10 +417,7 @@ export default {
 				configurationStore.refreshConfigurationList(),
 				schemaStore.refreshSchemaList(),
 			])
-			this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-				id: s.id,
-				label: s.title,
-			}))
+			this.schemaSelectOptions = schemaOptionsOf(schemaStore.schemaList)
 		} catch (error) {
 			console.error('Failed to load data:', error)
 		} finally {
@@ -502,6 +426,140 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => registerStore),
+
+		/**
+		 * The menu of one register.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} register - list row
+		 * @return {Array<object>}
+		 */
+		registerActions(register) {
+			const selected = (action) => () => {
+				registerStore.setRegisterItem(register)
+				action()
+			}
+			return [
+				this.lockedEdit(register),
+				...this.publishActions(selected),
+				...this.apiActions(register, selected),
+				this.lockedDelete(register, selected),
+				this.detailsAction(register),
+			]
+		},
+
+		/**
+		 * The publish and import entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		publishActions(selected) {
+			return [
+				{
+					label: t('openregister', 'Publish OAS'),
+					icon: CloudUploadOutline,
+					run: selected(() => navigationStore.setModal('publishRegister')),
+				},
+				{
+					label: t('openregister', 'Import'),
+					icon: Upload,
+					run: selected(() => navigationStore.setModal('importRegister')),
+				},
+			]
+		},
+
+		/**
+		 * The API documentation and specification entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the page.
+		 * @param {object} register - register row
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		apiActions(register, selected) {
+			return [
+				{
+					label: t('openregister', 'View API Documentation'),
+					icon: ApiIcon,
+					run: selected(() => this.viewOasDoc(register)),
+				},
+				{
+					label: t('openregister', 'Download API Specification'),
+					icon: Download,
+					run: selected(() => this.downloadOas(register)),
+				},
+			]
+		},
+
+		/**
+		 * The entry that opens the register detail page.
+		 *
+		 * @spec exclude UI plumbing — menu entry.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		detailsAction(register) {
+			return {
+				label: t('openregister', 'View Details'),
+				icon: InformationOutline,
+				run: () => this.viewRegisterDetails(register),
+			}
+		},
+
+		/**
+		 * The edit entry, locked while an external configuration manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		lockedEdit(register) {
+			const openForm = () => this.$refs.indexPage.openFormDialog(register)
+			return editAction(openForm, {
+				title: this.editLockReason(register),
+				disabled: this.isManagedByExternalConfig(register),
+			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {string}
+		 */
+		editLockReason(register) {
+			if (!this.isManagedByExternalConfig(register)) {
+				return ''
+			}
+			const title = this.getManagingConfiguration(register)?.title
+			return t(
+				'openregister',
+				'Cannot edit: This register is managed by external configuration {title}',
+				{ title },
+			)
+		},
+
+		/**
+		 * The delete entry, locked while objects are attached.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {object}
+		 */
+		lockedDelete(register, selected) {
+			const run = selected(() => navigationStore.setDialog('deleteRegister'))
+			return deleteAction(run, {
+				title: deleteLockReason(register),
+				disabled: hasAttachedObjects(register),
+			})
+		},
+
 		/**
 		 * @spec exclude list-view manual refresh plumbing
 		 */
@@ -515,7 +573,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude list-view pagination page-change handler
 		 */
 		onPageChanged(page) {
@@ -523,7 +581,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude list-view pagination page-size-change handler
 		 */
 		onPageSizeChanged(pageSize) {
@@ -531,7 +589,7 @@ export default {
 		},
 
 		/**
-		 * @param ids
+		 * @param {Array<string|number>} ids
 		 * @spec exclude list-view row-selection state setter
 		 */
 		onSelect(ids) {
@@ -539,18 +597,15 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
 		 */
 		getRowClass(register) {
-			if (this.isManagedByExternalConfig(register))
-				return 'viewTableRow--managed'
-			if (this.isManagedByLocalConfig(register)) return 'viewTableRow--local'
-			return ''
+			return managedRowClass(this.getManagingConfiguration(register))
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view lookup helper; finds the configuration managing a register
 		 */
 		getManagingConfiguration(register) {
@@ -564,61 +619,28 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view display predicate; whether a register is externally managed
 		 */
 		isManagedByExternalConfig(register) {
-			const config = this.getManagingConfiguration(register)
-			if (!config) return false
-			return (
-				(config.sourceType
-					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
-				|| config.isLocal === false
-			)
+			return isExternalConfiguration(this.getManagingConfiguration(register))
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view display predicate; whether a register is locally managed
 		 */
 		isManagedByLocalConfig(register) {
-			const config = this.getManagingConfiguration(register)
-			if (!config) return false
-			return (
-				config.sourceType === 'local'
-				|| config.sourceType === 'manual'
-				|| config.isLocal === true
-			)
+			return isLocalConfiguration(this.getManagingConfiguration(register))
 		},
 
 		/**
-		 * @param schemas
-		 * @spec exclude list-view form-control mapping helper; resolves schema ids to select options
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
-		 * @param formData
+		 * @param {object} formData
 		 * @spec exclude list-view form-submit wiring; delegates to registerStore.saveRegister (registers-management contract)
 		 */
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
+				await registerStore.saveRegister(registerPayload(formData))
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({ error: error.message })
@@ -626,7 +648,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; router-navigates to the register detail page
 		 */
 		viewRegisterDetails(register) {
@@ -635,24 +657,12 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(register)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -660,16 +670,11 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(register.id)
 		},
 
 		/**
@@ -688,85 +693,15 @@ export default {
 		 * @spec exclude list-view action; POSTs to the names-cache warmup endpoint and reports results via toast
 		 */
 		async warmupNamesCache() {
-			const baseUrl = window.location.origin
-			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
-			// the server rebuild the entire name cache. That route is gone
-			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
-			// maintenance action on an admin screen should have been calling.
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
-
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))
-
-				const response = await axios.post(
-					apiUrl,
-					{},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					const loadedCount = response.data.loaded_names || 0
-					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize =
-						response.data.old_cache?.distributed_name_cache_size || 0
-					const newCacheSize =
-						response.data.new_cache?.distributed_name_cache_size || 0
-
-					let cacheMessage = ''
-					if (newCacheSize > oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache grew from {old} to {new} entries.',
-							{
-								old: oldCacheSize,
-								new: newCacheSize,
-							},
-						)
-					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache shrunk from {old} to {new} entries.',
-							{
-								old: oldCacheSize,
-								new: newCacheSize,
-							},
-						)
-					} else {
-						cacheMessage = t(
-							'openregister',
-							'Cache stayed the same at {size} entries.',
-							{
-								size: newCacheSize,
-							},
-						)
-					}
-
-					showSuccess(
-						t(
-							'openregister',
-							'Names cache warmed up successfully: {count} names loaded in {time}. {cache}',
-							{
-								count: loadedCount,
-								time: executionTime,
-								cache: cacheMessage,
-							},
-						),
-					)
-				} else {
-					showSuccess(t('openregister', 'Names cache warmup completed'))
-				}
+				const response = await postNamesWarmup()
+				showSuccess(warmupResultText(response.data))
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
 					t('openregister', 'Failed to warmup names cache: {error}', {
-						error: errorMessage,
+						error: failureText(error),
 					}),
 				)
 			}
@@ -776,47 +711,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
+@use '../managedRowAccents.scss' as *;
 
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed registers (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
-
-/* Managed by Configuration badge */
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
-
-/* External (managed) badge - green */
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
-
-/* Local configuration badge - orange */
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-text);
-}
+@include managed-row-accents;
 </style>

@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -44,10 +49,8 @@ class MagicStatisticsHandlerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->handler = new MagicStatisticsHandler(
-			db: $this->db,
-			logger: $this->logger,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
+			catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);
@@ -96,7 +99,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -125,7 +128,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'birth_date' => '',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -154,7 +157,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '2026-04-20 14:00:00',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -185,7 +188,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '   ',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -218,4 +221,56 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'forgetMagicTableList() MUST drop the memo so the next call re-reads the catalog'
 		);
 	}//end testForgetMagicTableListClearsTheMemo()
+
+	/**
+	 * A schema property whose name starts with an underscore (shillinq's
+	 * `_meta`) has a `_meta` column. It is read as the property, not handed to
+	 * ObjectEntity as a `meta` attribute, which failed the whole row.
+	 */
+	public function testAnUnderscorePropertyIsReadAsAPropertyAndTheRowConverts(): void {
+		$schema = $this->makeSchema(
+			properties: ['code' => ['type' => 'string'], '_meta' => ['type' => 'object']]
+		);
+		$row = [
+			'_uuid' => 'test-uuid-meta',
+			'_id' => 7,
+			'_register' => 1,
+			'_schema' => 1,
+			'code' => 'R-1',
+			'_meta' => '{"source":"seeded"}',
+		];
+
+		$this->logger->expects($this->never())->method('error');
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($this->makeRegister(), $schema));
+
+		$this->assertNotNull($entity);
+		$this->assertSame('test-uuid-meta', $entity->getUuid());
+		$this->assertSame(['source' => 'seeded'], $entity->getObject()['_meta']);
+		$this->assertSame('R-1', $entity->getObject()['code']);
+	}//end testAnUnderscorePropertyIsReadAsAPropertyAndTheRowConverts()
+
+	/**
+	 * Control: a prefixed column that is neither a property nor an attribute
+	 * of ObjectEntity is skipped and noted once, and the row still converts.
+	 */
+	public function testAnUnknownMetadataColumnIsSkippedAndTheRowConverts(): void {
+		$schema = $this->makeSchema(properties: ['code' => ['type' => 'string']]);
+		$row    = [
+			'_uuid' => 'test-uuid-unknown',
+			'_id' => 8,
+			'_register' => 1,
+			'_schema' => 1,
+			'_meta' => '{"source":"seeded"}',
+			'_schema_version' => '1.2.0',
+			'code' => 'R-2',
+		];
+
+		$this->logger->expects($this->never())->method('error');
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($this->makeRegister(), $schema));
+
+		$this->assertNotNull($entity);
+		$this->assertSame('test-uuid-unknown', $entity->getUuid());
+		$this->assertSame('1.2.0', $entity->getSchemaVersion(), 'a snake_case metadata column reaches its camelCase attribute');
+		$this->assertArrayNotHasKey('_meta', $entity->getObject());
+	}//end testAnUnknownMetadataColumnIsSkippedAndTheRowConverts()
 }//end class

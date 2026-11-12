@@ -23,15 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * The one place a `_related` filter becomes SQL on a real query.
@@ -52,22 +48,40 @@ use Throwable;
 class RelatedRowQueryApplier {
 
 	/**
+	 * The alias the list path gives the outer object row, which every clause joins to.
+	 */
+	public const OUTER_ALIAS = 't';
+
+	/**
 	 * The parser, clause and lookups.
 	 *
-	 * @param SchemaMapper      $schemaMapper The schema lookup.
-	 * @param MagicTableHandler $tableHandler Resolves a register and schema to their table.
-	 * @param MagicRbacHandler  $rbacHandler  Builds the access predicate for the related rows.
-	 * @param IDBConnection     $db           The connection, read for its platform.
-	 * @param LoggerInterface   $logger       The logger.
+	 * @param RelatedRowLookups $lookups The schema lookup and the register/schema-to-table resolver.
+	 * @param IDBConnection     $db      The connection, read for its platform.
+	 * @param LoggerInterface   $logger  The logger.
+	 * @param RelatedRowAccess  $access  The access rules for the related rows (row predicate, property read
+	 *                                   rule, organisation boundary).
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicTableHandler $tableHandler,
-		private readonly MagicRbacHandler $rbacHandler,
+		private readonly RelatedRowLookups $lookups,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
+		private readonly RelatedRowAccess $access,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the caller may read a property, for a filter that names it (nested-path filters on the outer table).
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool False when it is withheld.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	public function mayReadProperty(Schema $schema, string $property): bool {
+		return $this->access->mayReadProperty(schema: $schema, property: $property);
+	}//end mayReadProperty()
 
 	/**
 	 * Narrow a query by every `_related` block it carries.
@@ -75,59 +89,153 @@ class RelatedRowQueryApplier {
 	 * Does nothing at all when there is no `_related` key, so every existing
 	 * call site is unaffected.
 	 *
-	 * @param IQueryBuilder $qb         The query being built.
-	 * @param array<mixed>  $query      The request query.
-	 * @param Register      $register   The register the related rows live in.
-	 * @param string        $outerAlias The alias of the outer object row.
+	 * @param RelatedRowFilterTarget $target The query being built, the register the related rows live in and the
+	 *                                       organisation scope of a related table.
+	 * @param array<mixed>           $query  The request query.
+	 *
+	 * The outer object row is joined as `OUTER_ALIAS`, the alias the list path gives it.
 	 *
 	 * @return int How many clauses were applied.
 	 *
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(IQueryBuilder $qb, array $query, Register $register, string $outerAlias = 't'): int {
-		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === false) {
+	public function apply(RelatedRowFilterTarget $target, array $query): int {
+		$filters = $this->filtersIn(query: $query);
+		if ($filters === []) {
 			return 0;
 		}
 
-		$filters = (new RelatedRowFilterParser())->parse($query);
-		$clause  = new RelatedRowExistsClause();
-		$engine  = $this->engine();
-		$applied = 0;
-
-		foreach (array_values($filters) as $position => $filter) {
-			$alias   = sprintf('rel%d', $position);
-			$schema  = $this->resolveSchema(name: $filter->schema);
-			$rendered = $clause->render(
-				filter: $filter,
-				engine: $engine,
-				table: $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema),
-				outerAlias: $outerAlias,
-				innerAlias: $alias,
-				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
-				// ONE. The two schemas have different authorization blocks, and
-				// reusing the outer query's predicate would decide who may read
-				// case properties by asking who may read cases.
-				accessPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
-					schema: $schema,
-					alias: $alias,
-					action: 'read'
-				),
-				parameterPrefix: $alias,
-				storage: RelatedRowExistsClause::STORAGE_COLUMNS
-			);
-
-			foreach ($rendered['parameters'] as $name => $value) {
-				$qb->setParameter($name, $value);
-			}
-
-			$qb->andWhere($qb->createFunction($rendered['sql']));
-			$applied++;
+		$engine = (new RelatedRowExistsClause())->engineFor(db: $this->db, logger: $this->logger);
+		$run    = new RelatedRowApplyRun(qb: $target->qb, register: $target->register, organisationScopeFor: $target->organisationScopeFor, engine: $engine);
+		foreach ($filters as $filter) {
+			$this->applyOne(run: $run, filter: $filter);
 		}
 
-		return $applied;
+		return $run->applied;
 	}//end apply()
+
+	/**
+	 * Narrow the run's query by one block: no row at all when its table does not exist yet.
+	 *
+	 * @param RelatedRowApplyRun $run    The query, register, scope and engine, and the count so far.
+	 * @param RelatedRowFilter   $filter The block.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the block names a schema that cannot be resolved.
+	 */
+	private function applyOne(RelatedRowApplyRun $run, RelatedRowFilter $filter): void {
+		$alias = sprintf('rel%d', $run->applied);
+		$run->applied++;
+		$schema       = $this->resolveSchema(name: $filter->schema);
+		$relatedTable = $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $run->register, schema: $schema);
+
+		if ($this->matchesNothing(run: $run, schema: $schema) === true) {
+			return;
+		}
+
+		$this->access->assertReadable(filter: $filter, schema: $schema);
+
+		$scope  = ($run->organisationScopeFor)($schema, $run->register->getId());
+		$source = new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias, scope: $scope);
+		$rendered = (new RelatedRowExistsClause())->render(filter: $filter, subquery: $this->subquery(run: $run, source: $source));
+		$this->addClause(qb: $run->qb, rendered: $rendered);
+	}//end applyOne()
+
+	/**
+	 * Narrow the run's query to no row when the schema has no table in the register yet.
+	 *
+	 * A schema that has never stored an object has no table yet, so no row can
+	 * match. Same answer the list path gives for a missing table.
+	 *
+	 * @param RelatedRowApplyRun $run    The query and register.
+	 * @param Schema             $schema The related schema.
+	 *
+	 * @return bool True when the query was narrowed to nothing.
+	 */
+	private function matchesNothing(RelatedRowApplyRun $run, Schema $schema): bool {
+		if ($this->lookups->tableHandler->existsTableForRegisterSchema(register: $run->register, schema: $schema) === true) {
+			return false;
+		}
+
+		$run->qb->andWhere($run->qb->createFunction('1 = 0'));
+		return true;
+	}//end matchesNothing()
+
+	/**
+	 * The EXISTS subquery over one related table, under that table's own access predicate.
+	 *
+	 * @param RelatedRowApplyRun $run    The query and engine.
+	 * @param RelatedRowSource   $source The related schema, its table, its alias and its organisation scope.
+	 *
+	 * @return RelatedRowSubquery
+	 */
+	private function subquery(RelatedRowApplyRun $run, RelatedRowSource $source): RelatedRowSubquery {
+		$target = new RelatedRowSqlTarget(
+			engine: $run->engine,
+			// Raw SQL gets no automatic table prefix; Nextcloud's connection
+			// replaces `*PREFIX*` with the instance's (`oc_` by default).
+			table: '*PREFIX*'.$source->tableName,
+			outerAlias: self::OUTER_ALIAS,
+			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+		);
+
+		// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER ONE.
+		// The two schemas have different authorization blocks, and reusing the
+		// outer query's predicate would decide who may read case properties by
+		// asking who may read cases.
+		$inner = new RelatedRowInnerRow(
+			alias: $source->alias,
+			accessPredicate: $this->access->predicate(qb: $run->qb, source: $source),
+			parameterPrefix: $source->alias
+		);
+
+		return new RelatedRowSubquery(target: $target, inner: $inner);
+	}//end subquery()
+
+	/**
+	 * Every `_related` and `_referenced` block in a query, inverse ones first.
+	 *
+	 * @param array<mixed> $query The request query.
+	 *
+	 * @return array<int, RelatedRowFilter> The filters.
+	 *
+	 * @throws InvalidArgumentException When a block is malformed.
+	 */
+	private function filtersIn(array $query): array {
+		$filters = [];
+		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
+			$filters = (new RelatedRowFilterParser())->parse($query);
+		}
+
+		if (array_key_exists(RelatedRowFilterParser::FORWARD_KEY, $query) === true) {
+			$filters = array_merge(
+				$filters,
+				(new RelatedRowFilterParser(key: RelatedRowFilterParser::FORWARD_KEY))->parse($query)
+			);
+		}
+
+		return $filters;
+	}//end filtersIn()
+
+	/**
+	 * Bind a rendered clause's parameters, then narrow the query by it.
+	 *
+	 * @param IQueryBuilder                                         $qb       The query being built.
+	 * @param array{sql: string, parameters: array<string, mixed>} $rendered The clause and its bindings.
+	 *
+	 * @return void
+	 */
+	private function addClause(IQueryBuilder $qb, array $rendered): void {
+		foreach ($rendered['parameters'] as $name => $value) {
+			$qb->setParameter($name, $value);
+		}
+
+		$qb->andWhere($qb->createFunction($rendered['sql']));
+	}//end addClause()
 
 	/**
 	 * Resolve the schema a block names, or refuse the whole query.
@@ -144,7 +252,7 @@ class RelatedRowQueryApplier {
 	 * @throws InvalidArgumentException When it cannot be resolved.
 	 */
 	private function resolveSchema(string $name): Schema {
-		$bySlug = $this->schemaMapper->findBySlug(slug: $name, limit: 2);
+		$bySlug = $this->lookups->schemaMapper->findBySlug(slug: $name, query: new ListQuery(limit: 2));
 		if (count($bySlug) === 1) {
 			return $bySlug[0];
 		}
@@ -160,7 +268,7 @@ class RelatedRowQueryApplier {
 
 		if (ctype_digit($name) === true) {
 			try {
-				return $this->schemaMapper->find(id: (int)$name);
+				return $this->lookups->schemaMapper->find(id: (int)$name);
 			} catch (\Throwable $e) {
 				$this->logger->debug(
 					message: '[RelatedRowQueryApplier] No schema with that id',
@@ -173,35 +281,4 @@ class RelatedRowQueryApplier {
 			sprintf('There is no schema called \'%s\' to filter related rows on.', $name)
 		);
 	}//end resolveSchema()
-
-	/**
-	 * Which engine the SQL must be written for.
-	 *
-	 * Read off the LIVE CONNECTION rather than configured separately, because a
-	 * second source of truth for the engine is a second thing that can be wrong
-	 * about it, and being wrong would surface as a syntax error in production
-	 * and nowhere else.
-	 *
-	 * The detection matches `MagicRbacHandler::isPostgres()` deliberately,
-	 * including its fallback: when the platform cannot be read, both default to
-	 * MariaDB syntax. Two different guesses would put MariaDB JSON functions
-	 * and Postgres operators in the same statement.
-	 *
-	 * @return string The engine.
-	 */
-	private function engine(): string {
-		try {
-			$platform = $this->db->getDatabasePlatform();
-			if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
-				return RelatedRowExistsClause::ENGINE_POSTGRES;
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[RelatedRowQueryApplier] Could not read the database platform; defaulting to MariaDB syntax',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
-			);
-		}
-
-		return RelatedRowExistsClause::ENGINE_MARIADB;
-	}//end engine()
 }//end class

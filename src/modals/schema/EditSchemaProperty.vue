@@ -16,7 +16,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					})
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<div v-if="success !== null" class="form-group">
 			<NcNoteCard v-if="success" type="success">
 				<p>
@@ -82,82 +82,12 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<div class="objectConfigurationTitle">
 					{{ t('openregister', 'Object Configuration:') }}
 				</div>
-				<NcSelect
-					v-model="properties.objectConfiguration.handling"
-					inputLabel="Properties Object Configuration Handling"
-					v-bind="objectConfiguration.handling" />
-				<NcSelect
-					:disabled="loading"
-					:inputLabel="t('openregister', 'Register')"
-					:label="t('openregister', 'Register')"
-					:placeholder="t('openregister', 'Select a register...')"
-					:options="availableRegisters"
-					:modelValue="properties.register"
-					@update:modelValue="handleRegisterChange($event)" />
-				<NcSelect
-					:disabled="loading || !properties.register"
-					:inputLabel="t('openregister', 'Schema reference ($ref)')"
-					:label="t('openregister', 'Schema reference ($ref)')"
-					:placeholder="t('openregister', 'Select a schema...')"
-					:options="availableSchemas"
-					:modelValue="properties.$ref"
-					@update:modelValue="handleSchemaChange($event)" />
-				<NcTextField
-					v-model="properties.objectConfiguration.queryParams"
-					:disabled="loading || !properties.$ref"
-					:label="t('openregister', 'Extra Query Parameters')"
-					placeholder="key1=value1&key2=value2"
-					:helperText="
-						t(
-							'openregister',
-							'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
-						)
-					" />
-				<NcSelect
-					:disabled="loading || !properties.$ref"
-					v-bind="inversedByOptions"
-					:inputLabel="
-						t('openregister', 'Property name of inversed relation')
-					"
-					:label="t('openregister', 'Property name of inversed relation')"
-					:modelValue="properties.inversedBy"
-					@update:modelValue="handleInversedByChange" />
-				<NcCheckboxRadioSwitch
-					v-if="properties.inversedBy"
-					v-model="properties.writeBack"
-					:disabled="loading">
-					{{ t('openregister', 'Enable write-back to target objects') }}
-				</NcCheckboxRadioSwitch>
-				<div
-					v-if="properties.inversedBy && !properties.writeBack"
-					class="helper-text">
-					{{
-						t(
-							'openregister',
-							'When enabled, saving this object will also update the target objects to include a reference back to this object.',
-						)
-					}}
-				</div>
-				<NcCheckboxRadioSwitch
-					v-if="properties.inversedBy && properties.writeBack"
-					v-model="properties.removeAfterWriteBack"
-					:disabled="loading">
-					{{ t('openregister', 'Remove property after write-back') }}
-				</NcCheckboxRadioSwitch>
-				<div
-					v-if="
-						properties.inversedBy
-						&& properties.writeBack
-						&& !properties.removeAfterWriteBack
-					"
-					class="helper-text">
-					{{
-						t(
-							'openregister',
-							'When enabled, this property will be removed from the source object after updating the target objects.',
-						)
-					}}
-				</div>
+				<SchemaRelationFields
+					v-bind="relationFieldProps"
+					:relation="properties"
+					:queryConfig="properties.objectConfiguration"
+					:registerDisabled="loading"
+					v-on="relationFieldListeners" />
 			</div>
 
 			<!-- File configuration -->
@@ -842,91 +772,12 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					<div class="objectConfigurationTitle">
 						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
-					<NcSelect
-						v-model="properties.objectConfiguration.handling"
-						inputLabel="Properties Object Configuration Handling"
-						v-bind="objectConfiguration.handling" />
-					<NcSelect
-						:disabled="loading || !properties.items.register"
-						:inputLabel="t('openregister', 'Register')"
-						:label="t('openregister', 'Register')"
-						:placeholder="t('openregister', 'Select a register...')"
-						:options="availableRegisters"
-						:modelValue="properties.items.register"
-						@update:modelValue="handleRegisterChange($event)" />
-					<NcSelect
-						:disabled="loading || !properties.items.register"
-						:inputLabel="t('openregister', 'Schema reference ($ref)')"
-						:label="t('openregister', 'Schema reference ($ref)')"
-						:placeholder="t('openregister', 'Select a schema...')"
-						:options="availableSchemas"
-						:modelValue="properties.items.$ref"
-						@update:modelValue="handleSchemaChange($event)" />
-					<NcTextField
-						v-model="properties.items.objectConfiguration.queryParams"
-						:disabled="loading || !properties.items.$ref"
-						:label="t('openregister', 'Extra Query Parameters')"
-						placeholder="key1=value1&key2=value2"
-						:helperText="
-							t(
-								'openregister',
-								'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
-							)
-						" />
-					<NcSelect
-						:disabled="loading || !properties.items.$ref"
-						v-bind="inversedByOptions"
-						:inputLabel="
-							t('openregister', 'Property name of inversed relation')
-						"
-						:label="
-							t('openregister', 'Property name of inversed relation')
-						"
-						:modelValue="properties.items.inversedBy"
-						@update:modelValue="handleInversedByChange" />
-					<NcCheckboxRadioSwitch
-						v-if="properties.items.inversedBy"
-						v-model="properties.items.writeBack"
-						:disabled="loading">
-						{{
-							t('openregister', 'Enable write-back to target objects')
-						}}
-					</NcCheckboxRadioSwitch>
-					<div
-						v-if="
-							properties.items.inversedBy
-							&& !properties.items.writeBack
-						"
-						class="helper-text">
-						{{
-							t(
-								'openregister',
-								'When enabled, saving this object will also update the target objects to include a reference back to this object.',
-							)
-						}}
-					</div>
-					<NcCheckboxRadioSwitch
-						v-if="
-							properties.items.inversedBy && properties.items.writeBack
-						"
-						v-model="properties.items.removeAfterWriteBack"
-						:disabled="loading">
-						{{ t('openregister', 'Remove property after write-back') }}
-					</NcCheckboxRadioSwitch>
-					<div
-						v-if="
-							properties.items.inversedBy
-							&& properties.items.writeBack
-							&& !properties.items.removeAfterWriteBack
-						"
-						class="helper-text">
-						{{
-							t(
-								'openregister',
-								'When enabled, this property will be removed from the source object after updating the target objects.',
-							)
-						}}
-					</div>
+					<SchemaRelationFields
+						v-bind="relationFieldProps"
+						:relation="properties.items"
+						:queryConfig="properties.items.objectConfiguration"
+						:registerDisabled="loading || !properties.items.register"
+						v-on="relationFieldListeners" />
 					<NcCheckboxRadioSwitch
 						v-model="properties.items.cascadeDelete"
 						:disabled="loading">
@@ -983,16 +834,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success !== null
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
+			<CloseCancelButton :label="success !== null ? t('openregister', 'Close') : t('openregister', 'Cancel')" @click="closeModal" />
 
 			<NcButton
 				v-if="success === null"
@@ -1041,6 +883,122 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SchemaRelationFields from './SchemaRelationFields.vue'
+import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
+import {
+	codedStoreOptions,
+	emptyCodedConfig,
+	emptyFacetConfig,
+	emptyPropertyDefinition,
+	formatSelect,
+	itemsTypeSelect,
+	propertyTypeSelect,
+	semanticRoleOptions,
+} from './schemaPropertyForm.js'
+
+/**
+ * The form's title, coded-value and semantic-role fields, with their options.
+ *
+ * @return {object} Fresh state
+ */
+function codedAndRoleState() {
+	return {
+		propertyTitle: '',
+		codedConfig: emptyCodedConfig(),
+		codedStoreOptions: codedStoreOptions(),
+		semanticRole: '',
+		semanticRoleOptions: semanticRoleOptions(),
+	}
+}
+
+/**
+ * The help texts and the concept tree a coded value picks from.
+ *
+ * @return {object} Fresh state
+ */
+function helpAndTreeState() {
+	return {
+		helpTextNl: '',
+		helpTextEn: '',
+		conceptTree: [],
+		treeLoading: false,
+		treeLoaded: false,
+		treeError: '',
+	}
+}
+
+/**
+ * Whether and how the property is offered as a search facet.
+ *
+ * @return {object} Fresh state
+ */
+function facetState() {
+	return {
+		facetableEnabled: true,
+		facetConfig: emptyFacetConfig(),
+		facetType: '',
+		facetInterval: 'month',
+		facetFormat: '',
+		facetUseDefaultRanges: true,
+		facetCustomRanges: [],
+	}
+}
+
+/**
+ * The computed value, authored in the JSON AST (computed-values-by-json-ast),
+ * its trial run and the operator catalogue it is written with.
+ *
+ * @return {object} Fresh state
+ */
+function calculationState() {
+	return {
+		calculationEnabled: false,
+		calculationType: 'string',
+		calculationExpression: '',
+		calculationSample: '{}',
+		calculationTrying: false,
+		calculationTrialValue: null,
+		calculationTrialError: '',
+		calculationDependencies: [],
+		operatorCatalogue: [],
+		operatorsLoading: false,
+	}
+}
+
+/**
+ * The property definition being edited and the type, item-type and format
+ * choices.
+ *
+ * @return {object} Fresh state
+ */
+function propertyTypeState() {
+	return {
+		properties: emptyPropertyDefinition(),
+		typeOptions: propertyTypeSelect(),
+		itemsTypeOptions: itemsTypeSelect(),
+		formatOptions: formatSelect(),
+	}
+}
+
+/**
+ * The save request's progress and outcome, and the register and schema
+ * picked for a relation.
+ *
+ * @return {object} Fresh state
+ */
+function requestState() {
+	return {
+		loading: false,
+		success: null,
+		error: false,
+		closeModalTimeout: null,
+		registerLoading: false,
+		schemaLoading: false,
+		selectedRegister: null,
+		selectedSchema: null,
+	}
+}
 
 export default {
 	name: 'EditSchemaProperty',
@@ -1055,224 +1013,17 @@ export default {
 		NcLoadingIcon,
 		NcDateTimePicker,
 		NcTextArea,
+		SchemaRelationFields,
 	},
 
 	data() {
 		return {
-			propertyTitle: '',
-			// Code list, hierarchy and lifecycle. Held apart from `properties`
-			// because the annotation is only written when a scheme is named:
-			// an empty x-openregister-concepts block on every property would
-			// read as "bound to nothing" rather than as "not a code list".
-			codedConfig: {
-				scheme: '',
-				store: 'uri',
-				branch: '',
-				maxDepth: '',
-				leafOnly: false,
-				allowDeprecated: false,
-				contextProperty: '',
-				scoreProperty: '',
-			},
-
-			codedStoreOptions: [
-				{ value: 'uri', label: 'The concept URI' },
-				{ value: 'notation', label: 'The notation' },
-			],
-
-			semanticRole: '',
-
-			semanticRoleOptions: [
-				{ value: '', label: 'Nothing in particular' },
-				{ value: 'title', label: 'The title' },
-				{ value: 'status', label: 'The status' },
-				{ value: 'assignee', label: 'The assignee' },
-				{ value: 'term', label: 'The term' },
-			],
-
-			helpTextNl: '',
-			helpTextEn: '',
-			conceptTree: [],
-			treeLoading: false,
-			treeLoaded: false,
-			treeError: '',
-			facetableEnabled: true,
-			facetConfig: {
-				aggregated: true,
-				title: '',
-				description: '',
-				order: '',
-			},
-
-			facetType: '',
-			facetInterval: 'month',
-			facetFormat: '',
-			facetUseDefaultRanges: true,
-			facetCustomRanges: [],
-			// Computed value, authored in the JSON AST (computed-values-by-json-ast).
-			calculationEnabled: false,
-			calculationType: 'string',
-			calculationExpression: '',
-			calculationSample: '{}',
-			calculationTrying: false,
-			calculationTrialValue: null,
-			calculationTrialError: '',
-			calculationDependencies: [],
-			operatorCatalogue: [],
-			operatorsLoading: false,
-			properties: {
-				description: '',
-				title: '',
-				type: 'string',
-				format: '',
-				pattern: '',
-				default: '',
-				behavior: '',
-				required: false,
-				deprecated: false,
-				visible: true,
-				hideOnCollection: false,
-				facetable: true,
-				order: 0,
-				minLength: 0,
-				maxLength: 0,
-				example: '',
-				immutable: false,
-				minimum: 0,
-				maximum: 0,
-				multipleOf: 0,
-				exclusiveMin: false,
-				exclusiveMax: false,
-				minItems: 0,
-				maxItems: 0,
-				cascadeDelete: false,
-				inversedBy: '',
-				$ref: '',
-				register: '',
-				writeBack: false,
-				removeAfterWriteBack: false,
-				items: {
-					cascadeDelete: false,
-					$ref: '',
-					type: '',
-					inversedBy: '',
-					register: '',
-					writeBack: false,
-					removeAfterWriteBack: false,
-					objectConfiguration: {
-						handling: 'nested-object',
-						schema: '',
-						queryParams: '', // Extra query parameters for items.$ref
-					},
-				},
-
-				objectConfiguration: {
-					handling: 'nested-object',
-					schema: '',
-					queryParams: '', // Extra query parameters for $ref
-				},
-
-				fileConfiguration: {
-					handling: 'ignore',
-					allowedMimeTypes: [],
-					location: '', // Initialize with empty string
-					maxSize: 0, // Initialize with 0
-				},
-
-				oneOf: [],
-			},
-
-			typeOptions: {
-				inputLabel: 'Type*',
-				multiple: false,
-				options: [
-					'string',
-					'number',
-					'integer',
-					'object',
-					'array',
-					'boolean',
-					'dictionary',
-					'file',
-					'oneOf',
-					'NcFile',
-					'NcMail',
-					'NcContact',
-					'NcNote',
-					'NcTodo',
-					'NcCalendarEvent',
-					'NcTalk',
-					'NcDeck',
-				],
-			},
-
-			itemsTypeOptions: {
-				inputLabel: 'Sub type',
-				multiple: false,
-				options: [
-					'string',
-					'number',
-					'integer',
-					'object',
-					'boolean',
-					'dictionary',
-					'file',
-					'NcFile',
-					'NcMail',
-					'NcContact',
-					'NcNote',
-					'NcTodo',
-					'NcCalendarEvent',
-					'NcTalk',
-					'NcDeck',
-				],
-			},
-
-			formatOptions: {
-				inputLabel: 'Format',
-				multiple: false,
-				options: [
-					'text',
-					'markdown',
-					'html',
-					'date-time',
-					'date',
-					'time',
-					'duration',
-					'email',
-					'idn-email',
-					'hostname',
-					'idn-hostname',
-					'ipv4',
-					'ipv6',
-					'uri',
-					'uri-reference',
-					'iri',
-					'iri-reference',
-					'uuid',
-					'uri-template',
-					'json-pointer',
-					'relative-json-pointer',
-					'regex',
-					'url',
-					'color',
-					'color-hex',
-					'color-hex-alpha',
-					'color-rgb',
-					'color-rgba',
-					'color-hsl',
-					'color-hsla',
-				],
-			},
-
-			loading: false,
-			success: null,
-			error: false,
-			closeModalTimeout: null,
-			registerLoading: false,
-			schemaLoading: false,
-			selectedRegister: null,
-			selectedSchema: null,
+			...codedAndRoleState(),
+			...helpAndTreeState(),
+			...facetState(),
+			...calculationState(),
+			...propertyTypeState(),
+			...requestState(),
 		}
 	},
 
@@ -1340,7 +1091,7 @@ export default {
 		 * choosing a branch needs to see that a value exists and is retired;
 		 * hiding it makes the tree look like it never held that term.
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		flatConceptTree() {
 			const rows = []
@@ -1366,7 +1117,7 @@ export default {
 		 * an operator the evaluator gains appears here without an edit.
 		 *
 		 * @return {Array<object>} The select options.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		operatorOptions() {
 			return this.operatorCatalogue.map((operator) => ({
@@ -1488,6 +1239,36 @@ export default {
 		/**
 		 * @spec exclude UI display helper — maps available registers to select options.
 		 */
+		/**
+		 * The props both SchemaRelationFields blocks share.
+		 *
+		 * @return {object} The props.
+		 */
+		relationFieldProps() {
+			return {
+				handlingConfig: this.properties.objectConfiguration,
+				handlingOptions: this.objectConfiguration.handling,
+				loading: this.loading,
+				registers: this.availableRegisters,
+				schemas: this.availableSchemas,
+				inversedByOptions: this.inversedByOptions,
+			}
+		},
+
+		/**
+		 * The listeners both SchemaRelationFields blocks share.
+		 *
+		 * @return {object} The listeners.
+		 */
+		relationFieldListeners() {
+			return {
+				set: this.setField,
+				registerChange: this.handleRegisterChange,
+				schemaChange: this.handleSchemaChange,
+				inversedByChange: this.handleInversedByChange,
+			}
+		},
+
 		availableRegisters() {
 			return registerStore.registerList.map((register) => ({
 				id: register.id,
@@ -1576,8 +1357,8 @@ export default {
 		schemaProperty: {
 			deep: true,
 			/**
-			 * @param newVal
-			 * @param oldVal
+			 * @param {object} newVal
+			 * @param {object} oldVal
 			 * @spec exclude UI watcher — resets type-specific form fields when the property type changes.
 			 */
 			handler(newVal, oldVal) {
@@ -1621,7 +1402,7 @@ export default {
 		 * Read the published operator catalogue and build the picker from it.
 		 *
 		 * @return {Promise<void>} Resolves once the catalogue is loaded or the read failed.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		async loadOperatorCatalogue() {
 			this.operatorsLoading = true
@@ -1646,7 +1427,7 @@ export default {
 		 *
 		 * @param {object|null} option The chosen operator option.
 		 * @return {void}
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		insertOperator(option) {
 			if (!option || !option.value) return
@@ -1660,7 +1441,7 @@ export default {
 		 * Evaluate the expression against the sample payload, without saving.
 		 *
 		 * @return {Promise<void>} Resolves once the trial answered.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		async tryCalculation() {
 			this.calculationTrying = true
@@ -1709,7 +1490,7 @@ export default {
 		 * The declaration to store on the property, or null when there is none.
 		 *
 		 * @return {object|null} The `calculation` key's value.
-		 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+		 * @spec openspec/specs/computed-fields/spec.md
 		 */
 		buildCalculationValue() {
 			if (!this.calculationEnabled || !this.calculationExpression) return null
@@ -1732,7 +1513,7 @@ export default {
 		},
 
 		/**
-		 * @param index
+		 * @param {number} index
 		 * @spec exclude Form-field binding — removes a oneOf entry by index.
 		 */
 		removeOneOfEntry(index) {
@@ -1741,7 +1522,7 @@ export default {
 		},
 
 		/**
-		 * @param option
+		 * @param {object} option
 		 * @spec exclude Form-field binding — sets the active facet type.
 		 */
 		updateFacetType(option) {
@@ -1756,7 +1537,7 @@ export default {
 		},
 
 		/**
-		 * @param index
+		 * @param {number} index
 		 * @spec exclude Form-field binding — removes a custom facet range by index.
 		 */
 		removeCustomRange(index) {
@@ -1767,123 +1548,140 @@ export default {
 		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
 		 */
 		initializeSchemaItem() {
-			if (schemaStore.schemaPropertyKey) {
-				const schemaProperty =
-					schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+			if (!schemaStore.schemaPropertyKey) return
+			const schemaProperty =
+				schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
 
-				// Hydrate the computed-value form from the stored declaration.
-				const calculation = schemaProperty.calculation
-				if (calculation && typeof calculation === 'object') {
-					this.calculationEnabled = true
-					this.calculationType = calculation.type || 'string'
-					this.calculationExpression = JSON.stringify(
-						calculation.expression ?? null,
-						null,
-						2,
-					)
+			this.hydrateCalculationState(schemaProperty.calculation)
+			this.hydrateFacetState(schemaProperty.facetable)
+
+			this.propertyTitle = schemaStore.schemaPropertyKey
+			this.hydrateCodeListState(schemaProperty)
+			this.properties = this.mergedPropertyDefinition(schemaProperty)
+		},
+
+		/**
+		 * Hydrate the computed-value form from the stored declaration.
+		 *
+		 * @param {object|undefined} calculation The stored calculation
+		 * @spec exclude Modal hydration plumbing — loads the stored calculation into the form.
+		 */
+		hydrateCalculationState(calculation) {
+			if (!calculation || typeof calculation !== 'object') return
+			this.calculationEnabled = true
+			this.calculationType = calculation.type || 'string'
+			this.calculationExpression = JSON.stringify(
+				calculation.expression ?? null,
+				null,
+				2,
+			)
+		},
+
+		/**
+		 * Initialize the facet form from the stored facetable value.
+		 *
+		 * @param {boolean|object|undefined} facetableValue The stored facetable value
+		 * @spec exclude Modal hydration plumbing — loads the stored facet settings into the form.
+		 */
+		hydrateFacetState(facetableValue) {
+			if (facetableValue === true) {
+				this.facetableEnabled = true
+				this.facetConfig = emptyFacetConfig()
+			} else if (facetableValue && typeof facetableValue === 'object') {
+				this.facetableEnabled = true
+				this.facetConfig = {
+					aggregated: facetableValue.aggregated !== false,
+					title: facetableValue.title || '',
+					description: facetableValue.description || '',
+					order:
+						facetableValue.order !== null
+						&& facetableValue.order !== undefined
+							? String(facetableValue.order)
+							: '',
 				}
-
-				// Initialize facetable state from property value.
-				const facetableValue = schemaProperty.facetable
-				if (facetableValue === true) {
-					this.facetableEnabled = true
-					this.facetConfig = {
-						aggregated: true,
-						title: '',
-						description: '',
-						order: '',
-					}
-				} else if (facetableValue && typeof facetableValue === 'object') {
-					this.facetableEnabled = true
-					this.facetConfig = {
-						aggregated: facetableValue.aggregated !== false,
-						title: facetableValue.title || '',
-						description: facetableValue.description || '',
-						order:
-							facetableValue.order != null
-								? String(facetableValue.order)
-								: '',
-					}
-					// Initialize date faceting options from config
-					if (facetableValue.type) {
-						this.facetType = facetableValue.type
-					}
-					if (facetableValue.options) {
-						this.facetInterval =
-							facetableValue.options.interval || 'month'
-						this.facetFormat = facetableValue.options.format || ''
-						this.facetUseDefaultRanges =
-							facetableValue.options.useDefaultRanges !== false
-						if (Array.isArray(facetableValue.options.ranges)) {
-							this.facetCustomRanges =
-								facetableValue.options.ranges.map((r) => ({
-									label: r.label || '',
-									from: r.from || '',
-									to: r.to || '',
-								}))
-						}
-					}
-				} else {
-					this.facetableEnabled = false
-					this.facetConfig = {
-						aggregated: true,
-						title: '',
-						description: '',
-						order: '',
-					}
+				// Initialize date faceting options from config
+				if (facetableValue.type) {
+					this.facetType = facetableValue.type
 				}
+				if (facetableValue.options) {
+					this.hydrateFacetOptions(facetableValue.options)
+				}
+			} else {
+				this.facetableEnabled = false
+				this.facetConfig = emptyFacetConfig()
+			}
+		},
 
-				this.propertyTitle = schemaStore.schemaPropertyKey
-				this.hydrateCodeListState(schemaProperty)
-				this.properties = {
-					...this.properties, // Preserve default structure
-					...schemaProperty, // Override with existing values
-					order: schemaProperty.order ?? 0,
-					minLength: schemaProperty.minLength ?? 0,
-					maxLength: schemaProperty.maxLength ?? 0,
-					minimum: schemaProperty.minimum ?? 0,
-					maximum: schemaProperty.maximum ?? 0,
-					multipleOf: schemaProperty.multipleOf ?? 0,
-					minItems: schemaProperty.minItems ?? 0,
-					maxItems: schemaProperty.maxItems ?? 0,
-					oneOf: schemaProperty.oneOf ?? [],
-					// Preserve nested configurations with existing values or defaults
+		/**
+		 * @param {object} options The stored date faceting options
+		 * @spec exclude Modal hydration plumbing — loads the stored date facet options into the form.
+		 */
+		hydrateFacetOptions(options) {
+			this.facetInterval = options.interval || 'month'
+			this.facetFormat = options.format || ''
+			this.facetUseDefaultRanges = options.useDefaultRanges !== false
+			if (Array.isArray(options.ranges)) {
+				this.facetCustomRanges = options.ranges.map((r) => ({
+					label: r.label || '',
+					from: r.from || '',
+					to: r.to || '',
+				}))
+			}
+		},
+
+		/**
+		 * The form's property definition with the stored property laid over it.
+		 *
+		 * @param {object} schemaProperty The stored property
+		 * @return {object}
+		 * @spec exclude Modal hydration plumbing — merges the stored property over the form defaults.
+		 */
+		mergedPropertyDefinition(schemaProperty) {
+			const objectConfiguration = schemaProperty.objectConfiguration
+			const items = schemaProperty.items
+			const itemsObjectConfiguration = items && items.objectConfiguration
+			return {
+				...this.properties, // Preserve default structure
+				...schemaProperty, // Override with existing values
+				order: schemaProperty.order ?? 0,
+				minLength: schemaProperty.minLength ?? 0,
+				maxLength: schemaProperty.maxLength ?? 0,
+				minimum: schemaProperty.minimum ?? 0,
+				maximum: schemaProperty.maximum ?? 0,
+				multipleOf: schemaProperty.multipleOf ?? 0,
+				minItems: schemaProperty.minItems ?? 0,
+				maxItems: schemaProperty.maxItems ?? 0,
+				oneOf: schemaProperty.oneOf ?? [],
+				// Preserve nested configurations with existing values or defaults
+				objectConfiguration: {
+					...this.properties.objectConfiguration,
+					...(objectConfiguration || {}),
+					queryParams:
+						objectConfiguration && objectConfiguration.queryParams
+							? objectConfiguration.queryParams
+							: '',
+				},
+
+				fileConfiguration: {
+					...this.properties.fileConfiguration,
+					...(schemaProperty.fileConfiguration || {}),
+				},
+
+				// Ensure items configuration is properly loaded
+				items: {
+					...this.properties.items,
+					...(items || {}),
 					objectConfiguration: {
-						...this.properties.objectConfiguration,
-						...(schemaProperty.objectConfiguration || {}),
+						...this.properties.items.objectConfiguration,
+						...(itemsObjectConfiguration || {}),
+
 						queryParams:
-							schemaProperty.objectConfiguration
-							&& schemaProperty.objectConfiguration.queryParams
-								? schemaProperty.objectConfiguration.queryParams
+							itemsObjectConfiguration
+							&& itemsObjectConfiguration.queryParams
+								? itemsObjectConfiguration.queryParams
 								: '',
 					},
-
-					fileConfiguration: {
-						...this.properties.fileConfiguration,
-						...(schemaProperty.fileConfiguration || {}),
-					},
-
-					// Ensure items configuration is properly loaded
-					items: {
-						...this.properties.items,
-						...(schemaProperty.items || {}),
-						objectConfiguration: {
-							...this.properties.items.objectConfiguration,
-							...((schemaProperty.items
-								&& schemaProperty.items.objectConfiguration)
-								|| {}),
-
-							queryParams:
-								schemaProperty.items
-								&& schemaProperty.items.objectConfiguration
-								&& schemaProperty.items.objectConfiguration
-									.queryParams
-									? schemaProperty.items.objectConfiguration
-											.queryParams
-									: '',
-						},
-					},
-				}
+				},
 			}
 		},
 
@@ -1918,7 +1716,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		hydrateCodeListState(schemaProperty) {
 			const coded = schemaProperty['x-openregister-concepts'] || {}
@@ -1963,7 +1761,7 @@ export default {
 		 *
 		 * @return {object} The annotations to merge into the property.
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		codeListAnnotations() {
 			const annotations = {}
@@ -2016,7 +1814,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+		 * @spec openspec/specs/skos-concept-registers/spec.md
 		 */
 		async loadConceptTree() {
 			const scheme = (this.codedConfig.scheme || '').trim()
@@ -2078,64 +1876,6 @@ export default {
 				]
 			}
 
-			// Compute facetable value: boolean true for defaults, config object otherwise.
-			let facetableValue = false
-			if (this.facetableEnabled) {
-				const hasDateConfig = this.isDateProperty && this.facetType
-				const hasCustomConfig =
-					!this.facetConfig.aggregated
-					|| (this.facetConfig.title && this.facetConfig.title.trim())
-					|| (this.facetConfig.description
-						&& this.facetConfig.description.trim())
-					|| (this.facetConfig.order !== ''
-						&& this.facetConfig.order != null)
-					|| hasDateConfig
-
-				if (hasCustomConfig) {
-					facetableValue = {
-						aggregated: this.facetConfig.aggregated,
-						title: this.facetConfig.title?.trim() || null,
-						description: this.facetConfig.description?.trim() || null,
-						order:
-							this.facetConfig.order !== ''
-							&& this.facetConfig.order != null
-								? parseFloat(this.facetConfig.order) || null
-								: null,
-					}
-					// Add date faceting type and options
-					if (hasDateConfig) {
-						facetableValue.type = this.facetType
-						const options = {}
-						if (this.facetType === 'date_histogram') {
-							options.interval = this.facetInterval
-							if (this.facetFormat) {
-								options.format = this.facetFormat
-							}
-						} else if (this.facetType === 'date_range') {
-							options.useDefaultRanges = this.facetUseDefaultRanges
-							if (
-								!this.facetUseDefaultRanges
-								&& this.facetCustomRanges.length > 0
-							) {
-								options.ranges = this.facetCustomRanges
-									.filter((r) => r.label)
-									.map((r) => {
-										const range = { label: r.label }
-										if (r.from) range.from = r.from
-										if (r.to) range.to = r.to
-										return range
-									})
-							}
-						}
-						if (Object.keys(options).length > 0) {
-							facetableValue.options = options
-						}
-					}
-				} else {
-					facetableValue = true
-				}
-			}
-
 			const newSchemaItem = {
 				...schemaStore.schemaItem,
 				properties: {
@@ -2144,7 +1884,7 @@ export default {
 						// create the new property with title as key
 						...this.properties,
 						...this.codeListAnnotations(),
-						facetable: facetableValue,
+						facetable: this.facetableValue(),
 						calculation: this.buildCalculationValue(),
 						// due to bad (no) support for number fields inside nextcloud/vue, parse the text to a number
 						order: parseFloat(this.properties.order) || null,
@@ -2167,18 +1907,7 @@ export default {
 			}
 
 			if (this.properties.required === false) {
-				if (
-					newSchemaItem.required
-					&& Array.isArray(newSchemaItem.required)
-				) {
-					newSchemaItem.required = newSchemaItem.required.filter(
-						(requiredProp) =>
-							requiredProp !== this.propertyTitle
-							&& (schemaStore.schemaPropertyKey
-								? requiredProp !== schemaStore.schemaPropertyKey
-								: true),
-					)
-				}
+				this.dropFromRequired(newSchemaItem)
 			}
 
 			if (!newSchemaItem?.id) {
@@ -2205,7 +1934,108 @@ export default {
 		},
 
 		/**
-		 * @param jsonInput
+		 * Remove this property, under its new and its old key, from the schema's required list.
+		 *
+		 * @param {object} newSchemaItem The schema about to be saved
+		 * @spec exclude Modal save plumbing — keeps the required list in step with the property.
+		 */
+		dropFromRequired(newSchemaItem) {
+			if (!newSchemaItem.required || !Array.isArray(newSchemaItem.required)) return
+			newSchemaItem.required = newSchemaItem.required.filter(
+				(requiredProp) =>
+					requiredProp !== this.propertyTitle
+					&& (schemaStore.schemaPropertyKey
+						? requiredProp !== schemaStore.schemaPropertyKey
+						: true),
+			)
+		},
+
+		/**
+		 * The facetable value to save: false when off, true for the defaults, a config object otherwise.
+		 *
+		 * @return {boolean|object}
+		 * @spec exclude Modal save plumbing — turns the facet form into the stored facetable value.
+		 */
+		facetableValue() {
+			if (!this.facetableEnabled) return false
+			const hasDateConfig = this.isDateProperty && this.facetType
+			if (!this.hasCustomFacetConfig() && !hasDateConfig) return true
+
+			const facetableValue = {
+				aggregated: this.facetConfig.aggregated,
+				title: this.facetConfig.title?.trim() || null,
+				description: this.facetConfig.description?.trim() || null,
+				order: this.hasFacetOrder()
+					? parseFloat(this.facetConfig.order) || null
+					: null,
+			}
+			// Add date faceting type and options
+			if (hasDateConfig) {
+				facetableValue.type = this.facetType
+				const options = this.facetDateOptions()
+				if (Object.keys(options).length > 0) {
+					facetableValue.options = options
+				}
+			}
+			return facetableValue
+		},
+
+		/**
+		 * @return {boolean} Whether the facet form differs from the defaults, date settings aside
+		 * @spec exclude Modal save plumbing — decides whether the facet needs a config object.
+		 */
+		hasCustomFacetConfig() {
+			return Boolean(
+				!this.facetConfig.aggregated
+				|| (this.facetConfig.title && this.facetConfig.title.trim())
+				|| (this.facetConfig.description
+					&& this.facetConfig.description.trim())
+				|| this.hasFacetOrder(),
+			)
+		},
+
+		/**
+		 * @return {boolean} Whether a facet order is filled in
+		 * @spec exclude Modal save plumbing — reads the facet order field.
+		 */
+		hasFacetOrder() {
+			return this.facetConfig.order !== ''
+				&& this.facetConfig.order !== null
+				&& this.facetConfig.order !== undefined
+		},
+
+		/**
+		 * @return {object} The date faceting options for the chosen facet type
+		 * @spec exclude Modal save plumbing — turns the date facet form into stored options.
+		 */
+		facetDateOptions() {
+			const options = {}
+			if (this.facetType === 'date_histogram') {
+				options.interval = this.facetInterval
+				if (this.facetFormat) {
+					options.format = this.facetFormat
+				}
+			} else if (this.facetType === 'date_range') {
+				options.useDefaultRanges = this.facetUseDefaultRanges
+				if (
+					!this.facetUseDefaultRanges
+					&& this.facetCustomRanges.length > 0
+				) {
+					options.ranges = this.facetCustomRanges
+						.filter((r) => r.label)
+						.map((r) => {
+							const range = { label: r.label }
+							if (r.from) range.from = r.from
+							if (r.to) range.to = r.to
+							return range
+						})
+				}
+			}
+			return options
+		},
+
+		/**
+		 * @param {string} jsonInput
 		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
 		 */
 		verifyJsonValidity(jsonInput) {
@@ -2213,7 +2043,7 @@ export default {
 			try {
 				JSON.parse(jsonInput)
 				return true
-			} catch (e) {
+			} catch {
 				return false
 			}
 		},
@@ -2226,15 +2056,8 @@ export default {
 			this.schemaLoading = true
 
 			try {
-				// Load registers if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
-				}
-
-				// Load schemas if not already loaded
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
-				}
+				// Load registers and schemas if not already loaded
+				await ensureRegisterAndSchemaLists()
 			} catch (error) {
 				console.error('Error loading registers and schemas:', error)
 			} finally {
@@ -2244,7 +2067,7 @@ export default {
 		},
 
 		/**
-		 * @param ref
+		 * @param {string|undefined} ref
 		 * @spec exclude UI lookup helper — resolves a schema object from a $ref string.
 		 */
 		getSchemaFromRef(ref) {
@@ -2263,7 +2086,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object|string|number} register
 		 * @spec exclude Form-field binding — sets register ref and clears dependent fields.
 		 */
 		handleRegisterChange(register) {
@@ -2275,18 +2098,13 @@ export default {
 			// Clear schema, inversedBy and query parameters when register changes
 			this.properties.$ref = ''
 			this.properties.inversedBy = ''
-			if (this.properties.objectConfiguration) {
-				this.properties.objectConfiguration.queryParams = ''
-			}
 			this.properties.items.$ref = ''
 			this.properties.items.inversedBy = ''
-			if (this.properties.items.objectConfiguration) {
-				this.properties.items.objectConfiguration.queryParams = ''
-			}
+			this.clearQueryParams()
 		},
 
 		/**
-		 * @param schema
+		 * @param {object|string|number} schema
 		 * @spec exclude Form-field binding — sets schema ref and clears dependent fields.
 		 */
 		handleSchemaChange(schema) {
@@ -2298,6 +2116,19 @@ export default {
 			// Clear inversedBy and query parameters when schema changes
 			this.properties.inversedBy = ''
 			this.properties.items.inversedBy = ''
+			this.clearQueryParams()
+		},
+
+		/**
+		 * @param {object|string} property
+		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 */
+		/**
+		 * Clear the query parameters of the property and of its items.
+		 *
+		 * @spec exclude Form-field binding — clears query params after a relation change.
+		 */
+		clearQueryParams() {
 			if (this.properties.objectConfiguration) {
 				this.properties.objectConfiguration.queryParams = ''
 			}
@@ -2307,9 +2138,17 @@ export default {
 		},
 
 		/**
-		 * @param property
-		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 * Write one field a SchemaRelationFields block changed.
+		 *
+		 * @param {object} target The object that holds the field.
+		 * @param {string} key The field.
+		 * @param {*} value Its new value.
+		 * @spec exclude Form-field binding — writes a relation field into the property form.
 		 */
+		setField(target, key, value) {
+			target[key] = value
+		},
+
 		handleInversedByChange(property) {
 			const propertyName =
 				typeof property === 'object'
@@ -2318,12 +2157,7 @@ export default {
 			this.properties.inversedBy = propertyName
 			this.properties.items.inversedBy = propertyName
 			// Clear query parameters when inversedBy changes
-			if (this.properties.objectConfiguration) {
-				this.properties.objectConfiguration.queryParams = ''
-			}
-			if (this.properties.items.objectConfiguration) {
-				this.properties.items.objectConfiguration.queryParams = ''
-			}
+			this.clearQueryParams()
 		},
 	},
 }

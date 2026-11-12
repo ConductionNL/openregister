@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 class NotificationAnnotationValidatorTest extends TestCase {
@@ -39,6 +39,35 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertContains('notification-bad-trigger', $codes);
 	}
 
+	/**
+	 * A parties rule with an unknown messageCategory is refused; a known one passes.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
+	 */
+	public function testAnUnknownMessageCategoryIsRejected(): void {
+		$rule = [
+			'trigger' => ['type' => 'updated'],
+			'recipients' => [['kind' => 'parties']],
+			'channels' => ['email'],
+			'subject' => 'Your case changed',
+		];
+
+		$codes = array_column(
+			$this->v->validate(['x-openregister-notifications' => ['x' => $rule + ['messageCategory' => 'nieuwsbrief']], 'properties' => []]),
+			'code'
+		);
+		$this->assertContains('notification-bad-message-category', $codes);
+
+		foreach ([null, 'case-update', 'besluit'] as $category) {
+			$spec = $rule;
+			if ($category !== null) {
+				$spec['messageCategory'] = $category;
+			}
+
+			$this->assertSame([], $this->v->validate(['x-openregister-notifications' => ['x' => $spec], 'properties' => []]));
+		}
+	}
+
 	public function testBadChannelIsRejected(): void {
 		$errors = $this->v->validate([
 			'x-openregister-notifications' => [
@@ -69,6 +98,44 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		]);
 		$codes = array_column($errors, 'code');
 		$this->assertContains('notification-recipient-field-unknown', $codes);
+	}
+
+	/**
+	 * An `email` recipient names a declared property, possibly followed
+	 * through references, on a rule that sends e-mail.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
+	 */
+	public function testAnEmailRecipientNeedsADeclaredFieldAndTheEmailChannel(): void {
+		$properties = ['supplierRef' => ['type' => 'string', 'format' => 'uuid', '$ref' => '#/components/schemas/supplier'], 'looseRef' => ['type' => 'string', 'format' => 'uuid'], 'blankRef' => ['type' => 'string', '$ref' => ' '], 'subject' => ['type' => 'string']];
+		$rule = static fn (array $recipient, array $channels = ['email']): array => [
+			'x-openregister-notifications' => [
+				'x' => [
+					'trigger' => ['type' => 'created'],
+					'recipients' => [$recipient],
+					'channels' => $channels,
+					'subject' => 'Nieuw bericht',
+				],
+			],
+			'properties' => $properties,
+		];
+
+		$this->assertSame([], $this->v->validate($rule(['kind' => 'email', 'field' => 'supplierRef.contactEmail'])));
+
+		$cases = [
+			'notification-recipient-field-unknown' => $rule(['kind' => 'email', 'field' => 'nope.contactEmail']),
+			'notification-recipient-email-field-missing' => $rule(['kind' => 'email']),
+			'notification-recipient-email-reference-has-no-ref' => $rule(['kind' => 'email', 'field' => 'looseRef.contactEmail']),
+			'notification-recipient-email-reference-has-no-ref (blank)' => $rule(['kind' => 'email', 'field' => 'blankRef.contactEmail']),
+			'notification-recipient-email-path-too-deep' => $rule(['kind' => 'email', 'field' => 'supplierRef.a.b.c.d']),
+			'notification-recipient-email-needs-email-channel' => $rule(['kind' => 'email', 'field' => 'supplierRef.contactEmail'], ['nc-notification']),
+		];
+		foreach ($cases as $code => $schema) {
+			$this->assertContains(explode(' ', $code)[0], array_column($this->v->validate($schema), 'code'), $code);
+		}
+
+		// An address read straight off the object goes through no reference, so it needs no `$ref`.
+		$this->assertSame([], $this->v->validate($rule(['kind' => 'email', 'field' => 'subject'])));
 	}
 
 	public function testValidNoErrors(): void {
@@ -212,6 +279,22 @@ class NotificationAnnotationValidatorTest extends TestCase {
 			'properties' => [],
 		]);
 		$this->assertSame([], $errors);
+	}
+
+	public function testWebhookChannelRefusesANonHttpUrl(): void {
+		$errors = $this->v->validate([
+			'x-openregister-notifications' => [
+				'opened' => [
+					'trigger' => ['type' => 'created'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'ftp://hooks.example.com/x'],
+					'subject' => 'x',
+				],
+			],
+			'properties' => [],
+		]);
+		$this->assertContains('notification-webhook-no-url', array_column($errors, 'code'));
 	}
 
 	public function testObjectAclRecipientRequiresPermission(): void {

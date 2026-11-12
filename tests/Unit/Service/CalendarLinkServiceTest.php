@@ -35,14 +35,17 @@ use DateTime;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -71,8 +74,7 @@ class CalendarLinkServiceTest extends TestCase {
 			$this->linkMapper,
 			$this->calendarEventService,
 			$this->calDavBackend,
-			$this->userSession,
-			$this->logger,
+			new LinkSessionRuntime($this->userSession, $this->logger)
 		);
 	}
 
@@ -120,11 +122,14 @@ class CalendarLinkServiceTest extends TestCase {
 			}))
 			->willReturnArgument(0);
 
-		// Critically: CalendarEventService::createEvent / linkEvent must NOT be called.
+		// Critically: CalendarEventService::createEvent / linkEventTo must NOT be called.
 		$this->calendarEventService->expects($this->never())->method('createEvent');
-		$this->calendarEventService->expects($this->never())->method('linkEvent');
+		$this->calendarEventService->expects($this->never())->method('linkEventTo');
 
-		$result = $this->service->linkEvent('obj-1', 1, 2, 'personal', 'ev-uid-1');
+		$result = $this->service->linkLocatedEvent(
+			target: (new LinkTarget(objectUuid: 'obj-1', registerId: 1))->inSchema(schemaId: 2),
+			key: new CalendarEventKey(calendarUri: 'personal', eventUid: 'ev-uid-1')
+		);
 		$this->assertInstanceOf(CalendarLink::class, $result);
 	}
 
@@ -157,7 +162,7 @@ class CalendarLinkServiceTest extends TestCase {
 			}))
 			->willReturnArgument(0);
 
-		$result = $this->service->createAndLinkEvent('obj-1', 1, 2, [
+		$result = $this->service->createLinkedEvent((new LinkTarget('obj-1', 1))->inSchema(2), [
 			'summary' => 'New meeting',
 			'objectTitle' => 'My object',
 		]);
@@ -200,6 +205,61 @@ class CalendarLinkServiceTest extends TestCase {
 			->with('5', 'legacy.ics');
 
 		$this->service->unlinkEvent('obj-1', 'ev-legacy');
+	}
+
+	/**
+	 * A linked event lists the people invited, with their names and answers,
+	 * read from the event itself (DqZaakTaken Afspraken "Sanne de Vries, Uitgenodigd").
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function testALinkedEventListsItsInviteesWithTheirAnswers(): void {
+		$link = new CalendarLink();
+		$link->setObjectUuid('obj-1');
+		$link->setEventUid('ev-A');
+		$link->setEventUri('a.ics');
+		$link->setCalendarUri('personal');
+		$link->setCalendarId(7);
+		$link->setSummary('Toelichting');
+		$link->setDtstart(new DateTime('2026-10-14T08:00:00Z'));
+		$this->linkMapper->method('findByObjectUuid')->willReturn([$link]);
+		$this->calendarEventService->method('getEventsForObject')->willReturn([]);
+		$ics = str_replace(
+			'LOCATION:HQ',
+			"LOCATION:HQ\r\nATTENDEE;CN=\"Sanne de Vries\";ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:sanne@demo.example",
+			$this->buildVevent('ev-A', 'Toelichting')
+		);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
+		$this->calDavBackend->method('getCalendarObject')->with(7, 'a.ics')->willReturn(['calendardata' => $ics]);
+
+		$events = $this->service->getLinkedEvents('obj-1');
+
+		$this->assertSame([['name' => 'Sanne de Vries', 'email' => 'sanne@demo.example', 'partstat' => 'needs-action']], $events[0]['attendees']);
+	}
+
+	/**
+	 * An event that cannot be read lists nobody, and the link still shows.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableLinkedEventListsNobody(): void {
+		$link = new CalendarLink();
+		$link->setObjectUuid('obj-1');
+		$link->setEventUid('ev-A');
+		$link->setEventUri('a.ics');
+		$link->setCalendarUri('personal');
+		$link->setCalendarId(7);
+		$this->linkMapper->method('findByObjectUuid')->willReturn([$link]);
+		$this->calendarEventService->method('getEventsForObject')->willReturn([]);
+		$this->calDavBackend->method('getCalendarsForUser')->willReturn([]);
+		$this->calDavBackend->method('getCalendarObject')->willReturn(null);
+
+		$events = $this->service->getLinkedEvents('obj-1');
+
+		$this->assertCount(1, $events);
+		$this->assertSame([], $events[0]['attendees']);
 	}
 
 	public function testGetLinkedEventsUnionAndDedupe(): void {

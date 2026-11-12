@@ -25,14 +25,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunEnding;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
+use OCA\OpenRegister\Service\Flow\FlowPassFiring;
+use OCA\OpenRegister\Service\Flow\ClaimPass;
+use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\Transition;
@@ -96,13 +103,8 @@ class FlowStreamWalkTest extends TestCase {
 	private function walk(?string $only = null, ?int $budget = null): FlowStreamWalk {
 		return new FlowStreamWalk(
 			run: $this->run,
-			claims: $this->claims,
-			commit: $this->commit,
-			streamMapper: $this->streams,
-			owner: 'pass-1',
-			runCap: null,
-			onlyStream: $only,
-			budget: $budget
+			parts: new FlowStreamWalkParts(claims: $this->claims, commit: $this->commit, streamMapper: $this->streams),
+			limits: new FlowStreamWalkLimits(owner: 'pass-1', runCap: null, onlyStream: $only, budget: $budget)
 		);
 	}//end walk()
 
@@ -155,12 +157,10 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->begin(marking: ['p1' => 1, 'p2' => 1, 'p3' => 1]);
 
 		$walk->exhaust(id: 'a');
-		$this->claims->method('acquire')->willReturn(null);
-		$this->assertNull($walk->claim(id: 'b', transition: 'T', places: ['p2', 'q']));
-		$this->assertTrue($walk->anyRefused());
-		$this->commit->method('park')->willReturn([]);
-		$walk->park(id: 'c', resumeAt: new DateTime('+1 hour'), reason: 'timer', claimed: ['p3'], enabled: false);
-		$this->assertTrue($walk->anyParked());
+		$this->claims->method('claim')->willReturn(null);
+		$this->assertNull($walk->claim(id: 'b', transition: new Transition('T', ['p2'], ['q'])));
+		$this->commit->method('closeStream')->willReturn([]);
+		$walk->park(halt: (new FlowStreamHalt(streamId: 'c', claimed: ['p3'], enabled: false))->because(reason: 'timer'), resumeAt: new DateTime('+1 hour'));
 
 		$this->assertNull($walk->nextStream());
 	}//end testExhaustedParkedAndRefusedStreamsLeaveTheRotation()
@@ -175,14 +175,14 @@ class FlowStreamWalkTest extends TestCase {
 		$this->assertFalse($walk->budgetSpent());
 
 		$this->commit->method('commitFiring')->willReturnCallback(
-			fn (FlowRun $run, FlowFiring $firing, string $owner): FlowFiringResult => new FlowFiringResult(
+			fn (FlowRun $run, FlowPassFiring $firing): FlowFiringResult => new FlowFiringResult(
 				marking: ['p1' => 1, 'q' => 1],
 				placeItems: [],
 				streams: [$this->row('a', '0001.0001', 'p1'), $this->row('b', '0001.0002', 'q')],
 				firings: 4
 			)
 		);
-		$walk->commitFiring(id: 'b', transition: 'T', froms: ['p2'], taken: ['q'], placeItems: ['q' => []], claimed: ['p2', 'q'], logEntry: ['status' => 'completed'], enabledAfter: false);
+		$walk->commitFiring(firing: (new FlowFiring(streamId: 'b', transition: 'T', froms: ['p2'], taken: ['q']))->withPlaceItems(placeItems: ['q' => []])->withClaimedPlaces(claimedPlaces: ['p2', 'q'])->withLogEntry(logEntry: ['status' => 'completed'], enabledAfter: false));
 
 		$this->assertTrue($walk->budgetSpent());
 		$this->assertSame('q', $walk->placeOf(id: 'b'));
@@ -193,11 +193,13 @@ class FlowStreamWalkTest extends TestCase {
 		$walk = $this->walk();
 		$walk->begin(marking: ['p1' => 1]);
 
-		$this->claims->expects($this->once())->method('acquire')
-			->with('run-1', 'a', 'T', ['p1', 'q'], 'pass-1', null)
+		$this->claims->expects($this->once())->method('claim')
+			->with(
+				$this->equalTo(new FiringClaim(runUuid: 'run-1', streamId: 'a', transition: 'T', places: ['p1', 'q'])),
+				$this->equalTo(new ClaimPass(owner: 'pass-1', runCap: null))
+			)
 			->willReturn(['p1', 'q']);
-		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: 'T', places: ['p1', 'q']));
-		$this->assertFalse($walk->anyRefused());
+		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: new Transition('T', ['p1'], ['q'])));
 
 		$this->claims->expects($this->once())->method('release')->with('run-1', ['p1', 'q']);
 		$walk->release(places: ['p1', 'q']);
@@ -209,9 +211,11 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->begin(marking: ['s' => 1]);
 
 		$captured = null;
+		$owner    = null;
 		$this->commit->method('commitFiring')->willReturnCallback(
-			function (FlowRun $run, FlowFiring $firing, string $owner) use (&$captured): FlowFiringResult {
-				$captured = $firing;
+			function (FlowRun $run, FlowPassFiring $firing) use (&$captured, &$owner): FlowFiringResult {
+				$captured = $firing->firing;
+				$owner    = $firing->owner;
 				return new FlowFiringResult(
 					marking: ['x' => 1, 'y' => 1],
 					placeItems: ['x' => [], 'y' => []],
@@ -226,23 +230,18 @@ class FlowStreamWalkTest extends TestCase {
 		);
 
 		$walk->exhaust(id: 'a');
-		$result = $walk->commitFiring(
-			id: 'a',
-			transition: 'split',
-			froms: ['s'],
-			taken: ['x', 'y'],
-			placeItems: ['x' => [['json' => 1]], 'y' => [['json' => 2]]],
-			claimed: ['s', 'x', 'y'],
-			logEntry: ['transition' => 'split', 'status' => 'completed'],
-			enabledAfter: true
-		);
+		$firing = (new FlowFiring(streamId: 'a', transition: 'split', froms: ['s'], taken: ['x', 'y']))
+			->withPlaceItems(placeItems: ['x' => [['json' => 1]], 'y' => [['json' => 2]]])
+			->withClaimedPlaces(claimedPlaces: ['s', 'x', 'y'])
+			->withLogEntry(logEntry: ['transition' => 'split', 'status' => 'completed'], enabledAfter: true);
+		$result = $walk->commitFiring(firing: $firing);
 
-		$this->assertSame('pass-1', 'pass-1');
+		$this->assertSame('pass-1', $owner, 'the commit carries the pass token as the owner');
 		$this->assertInstanceOf(FlowFiring::class, $captured);
-		$this->assertSame('0001', $captured->streamPath);
+		$this->assertSame('0001', $captured->getStreamPath());
 		$this->assertSame(['s'], $captured->froms);
 		$this->assertSame(['x', 'y'], $captured->taken);
-		$this->assertSame([['json' => 1]], $captured->itemsByPlace['x']);
+		$this->assertSame([['json' => 1]], $captured->getItemsByPlace()['x']);
 		$this->assertSame(4, $result->firings);
 		// The picture is the commit's: the carrier is gone, the children are live
 		// in ordinal order, and a commit clears the exhausted set.
@@ -255,13 +254,13 @@ class FlowStreamWalkTest extends TestCase {
 		$this->rows = [$this->row('a', '0001.0001', 'wait'), $this->row('b', '0001.0002', 'work')];
 		$walk = $this->walk();
 		$walk->begin(marking: ['wait' => 1, 'work' => 1]);
-		$this->commit->method('park')->willReturn([]);
+		$this->commit->method('closeStream')->willReturn([]);
 
 		$onWait = new Transition('wait', ['wait'], ['after-wait']);
 		$onWork = new Transition('work', ['work'], ['after-work']);
 
 		$this->assertTrue($walk->workRemains(transitions: [$onWait, $onWork]));
-		$walk->park(id: 'a', resumeAt: null, reason: 'signal', claimed: ['wait', 'after-wait'], enabled: true);
+		$walk->park(halt: (new FlowStreamHalt(streamId: 'a', claimed: ['wait', 'after-wait'], enabled: true))->because(reason: 'signal'), resumeAt: null);
 		$this->assertTrue($walk->workRemains(transitions: [$onWait, $onWork]));
 		$this->assertFalse($walk->workRemains(transitions: [$onWait]));
 	}//end testWorkRemainsIgnoresTransitionsOnlyParkedStreamsKeepEnabled()
@@ -271,12 +270,15 @@ class FlowStreamWalkTest extends TestCase {
 		$walk = $this->walk();
 		$walk->begin(marking: ['p' => 1]);
 
-		$this->commit->expects($this->once())->method('endStream')->willReturn([]);
-		$walk->endStream(id: 'a', status: FlowRun::STATUS_FAILED, error: 'boom', claimed: ['p'], enabled: false);
+		$this->commit->expects($this->once())->method('closeStream')->willReturn([]);
+		$walk->endStream(halt: (new FlowStreamHalt(streamId: 'a', claimed: ['p'], enabled: false))->because(reason: 'boom'), status: FlowRun::STATUS_FAILED);
 		$this->assertNull($walk->nextStream());
 
-		$this->commit->expects($this->once())->method('finalize')
-			->with($this->run, 'pass-1', false, FlowRun::STATUS_FAILED)
+		$this->commit->expects($this->once())->method('end')
+			->with(
+				$this->run,
+				$this->callback(static fn (FlowRunEnding $ending): bool => $ending->owner === 'pass-1' && $ending->enabled === false && $ending->forcedTerminal === FlowRun::STATUS_FAILED)
+			)
 			->willReturn(FlowRun::STATUS_FAILED);
 		$this->assertSame(FlowRun::STATUS_FAILED, $walk->finalize(enabled: false, forcedTerminal: FlowRun::STATUS_FAILED));
 	}//end testEndStreamAndFinalizeDelegateToTheCommitPath()

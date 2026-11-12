@@ -35,7 +35,9 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDraftSet>
  */
-class ConfigurationDraftSetMapper extends QBMapper {
+class ConfigurationDraftSetMapper extends QBMapper implements ConfigurationDraftSetMapperInterface {
+
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -63,12 +65,7 @@ class ConfigurationDraftSetMapper extends QBMapper {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function findByUuid(string $uuid): ConfigurationDraftSet {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 
 	}//end findByUuid()
 
@@ -98,34 +95,6 @@ class ConfigurationDraftSetMapper extends QBMapper {
 	}//end findAllSets()
 
 	/**
-	 * The open set an author already has, when they have one.
-	 *
-	 * @param string $author The author's user id.
-	 *
-	 * @return ConfigurationDraftSet|null The open set, or null.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function findOpenForAuthor(string $author): ?ConfigurationDraftSet {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('created_by', $qb->createNamedParameter($author)))
-			->andWhere(
-				$qb->expr()->eq('state', $qb->createNamedParameter(ConfigurationDraftSet::STATE_OPEN))
-			)
-			->orderBy('id', 'DESC')
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $exception) {
-			return null;
-		}
-
-	}//end findOpenForAuthor()
-
-	/**
 	 * Create a set, assigning a uuid, the open state and timestamps.
 	 *
 	 * @param array<string, mixed> $data The set values.
@@ -138,13 +107,7 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		$set = new ConfigurationDraftSet();
 		$set->hydrate($data);
 
-		if ($set->getUuid() === null) {
-			$set->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($set->getState() === null) {
-			$set->setState(ConfigurationDraftSet::STATE_OPEN);
-		}
+		$this->fillIdentity(set: $set);
 
 		$now = new DateTime();
 		if ($set->getCreated() === null) {
@@ -156,6 +119,23 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		return $this->insert(entity: $set);
 
 	}//end createFromArray()
+
+	/**
+	 * Give a new set a uuid and the open state unless it has them.
+	 *
+	 * @param ConfigurationDraftSet $set The set.
+	 *
+	 * @return void
+	 */
+	private function fillIdentity(ConfigurationDraftSet $set): void {
+		if ($set->getUuid() === null) {
+			$set->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($set->getState() === null) {
+			$set->setState(ConfigurationDraftSet::STATE_OPEN);
+		}
+	}//end fillIdentity()
 
 	/**
 	 * Persist a set, refreshing the updated timestamp.
@@ -172,27 +152,4 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		return $this->update(entity: $set);
 
 	}//end save()
-
-	/**
-	 * Count the sets in one state.
-	 *
-	 * @param string $state The state to count.
-	 *
-	 * @return integer How many sets are in that state.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function countInState(string $state): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*', 'total'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('state', $qb->createNamedParameter($state)));
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		return (int)($row['total'] ?? 0);
-
-	}//end countInState()
 }//end class

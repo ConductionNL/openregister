@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -33,9 +33,12 @@ use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCA\OpenRegister\Service\Rbac\PrincipalReach;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
+use OCA\OpenRegister\Service\Rbac\ReachSources;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -107,9 +110,9 @@ final class PrincipalReachServiceTest extends TestCase {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('permittedActionsFor')->willReturn($actions);
 		$permissions->method('provenanceFor')->willReturnCallback(
-			static function (Schema $schema, array $verbs): array {
+			static function (ProvenanceRequest $request): array {
 				$out = [];
-				foreach ($verbs as $verb) {
+				foreach ($request->actions as $verb) {
 					$out[$verb] = ['level' => 'schema', 'matched' => 'redacteuren'];
 				}
 
@@ -137,13 +140,10 @@ final class PrincipalReachServiceTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		return new PrincipalReachService(
-			$permissions,
-			$schemaMapper,
-			$store,
-			$delegations,
-			$groupManager,
-			$userManager,
-			new NullLogger()
+			permissions: $permissions,
+			sources: new ReachSources(schemaMapper: $schemaMapper, derived: $store, delegations: $delegations),
+			directory: new PrincipalDirectory(userManager: $userManager, groupManager: $groupManager),
+			logger: new NullLogger()
 		);
 	}//end service()
 
@@ -225,13 +225,10 @@ final class PrincipalReachServiceTest extends TestCase {
 		$userManager->method('userExists')->willReturn(false);
 
 		$service = new PrincipalReachService(
-			$permissions,
-			$schemaMapper,
-			$store,
-			$delegations,
-			$this->createMock(IGroupManager::class),
-			$userManager,
-			new NullLogger()
+			permissions: $permissions,
+			sources: new ReachSources(schemaMapper: $schemaMapper, derived: $store, delegations: $delegations),
+			directory: new PrincipalDirectory(userManager: $userManager, groupManager: $this->createMock(IGroupManager::class)),
+			logger: new NullLogger()
 		);
 
 		$listing = $service->listFor(self::PRINCIPAL);

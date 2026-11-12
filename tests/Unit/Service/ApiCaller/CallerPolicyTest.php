@@ -15,10 +15,13 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
+
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ApiCaller;
 
@@ -168,6 +171,20 @@ class CallerPolicyTest extends TestCase {
 		);
 		$this->assertTrue($policy->allowsAddress(principal: 'leverancier', address: '198.51.100.5'));
 	}//end testAnEmptyAddressListIsNoBinding()
+
+	public function testBlankAndNonStringAddressEntriesAreDroppedAndTheRestTrimmed(): void {
+		$policy = $this->policy(addresses: json_encode(['leverancier' => [' 203.0.113.0/24 ', '', '   ', 7, null]]));
+
+		$this->assertSame(['203.0.113.0/24'], $policy->addressesFor(principal: 'leverancier'));
+		$this->assertFalse($policy->allowsAddress(principal: 'leverancier', address: '198.51.100.5'));
+	}//end testBlankAndNonStringAddressEntriesAreDroppedAndTheRestTrimmed()
+
+	public function testAListOfOnlyBlankEntriesIsNoBinding(): void {
+		$policy = $this->policy(addresses: json_encode(['leverancier' => ['', '  ']]));
+
+		$this->assertNull($policy->addressesFor(principal: 'leverancier'));
+		$this->assertTrue($policy->allowsAddress(principal: 'leverancier', address: '198.51.100.5'));
+	}//end testAListOfOnlyBlankEntriesIsNoBinding()
 
 	public function testSeveralRangesAreAccepted(): void {
 		$policy = $this->policy(

@@ -29,39 +29,37 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
  * Re-runs the claim derivation and reports what moved.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class DerivedGrantsController extends Controller {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName App identifier.
 	 * @param IRequest          $request Active HTTP request.
-	 * @param DerivedGrantStore $store   The rules, the claims and the grants.
+	 * @param DerivedGrantStoreInterface $store   The rules, the claims and the grants.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly DerivedGrantStore $store,
+		private readonly DerivedGrantStoreInterface $store,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -75,9 +73,8 @@ class DerivedGrantsController extends Controller {
 	 *
 	 * @return JSONResponse What the re-run did.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function reapply(): JSONResponse {
 		$rules = $this->store->rules();
 

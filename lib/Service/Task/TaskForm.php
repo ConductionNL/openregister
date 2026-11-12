@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Task;
  * reader; it selects no behaviour in this class, which is what the rule is
  * actually about.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 final class TaskForm {
 
@@ -68,24 +68,43 @@ final class TaskForm {
 	public const KINDS = [self::KIND_FIELDS, self::KIND_EXTERNAL];
 
 	/**
+	 * The subject schema reference (id, uuid or slug); '' when not native.
+	 *
+	 * @var string
+	 */
+	public readonly string $schema;
+
+	/**
+	 * The lifecycle action whose inputs are the field list, or null.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $action;
+
+	/**
+	 * The inline field list, in declared order.
+	 *
+	 * @var array<int, array{field: string, required: bool}>
+	 */
+	public readonly array $fields;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string|null $kind One of KINDS, or null when the step declares no form.
-	 * @param string $schema The subject schema reference (id, uuid or slug); '' when not native.
-	 * @param string|null $action The lifecycle action whose inputs are the field list, or null.
-	 * @param array<int, array{field: string, required: bool}> $fields The inline field list, in declared order.
+	 * @param TaskFormFields $native The subject schema and its fields, for the native kind; empty otherwise.
 	 * @param int|null $formId The Nextcloud Forms form id, for the external kind.
 	 * @param bool $requireChecklist Whether every checklist item must be checked before completion.
 	 */
 	public function __construct(
 		public readonly ?string $kind,
-		public readonly string $schema = '',
-		public readonly ?string $action = null,
-		public readonly array $fields = [],
+		TaskFormFields $native = new TaskFormFields(),
 		public readonly ?int $formId = null,
 		public readonly bool $requireChecklist = false,
 	) {
-
+		$this->schema = $native->schema;
+		$this->action = $native->action;
+		$this->fields = $native->fields;
 	}//end __construct()
 
 	/**
@@ -93,7 +112,7 @@ final class TaskForm {
 	 *
 	 * @return bool True for either kind; false for outcome-and-comment completion.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function hasForm(): bool {
 		return $this->kind !== null;
@@ -104,7 +123,7 @@ final class TaskForm {
 	 *
 	 * @return bool True when fields of the subject schema are asked for.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function isNative(): bool {
 		return $this->kind === self::KIND_FIELDS;
@@ -115,7 +134,7 @@ final class TaskForm {
 	 *
 	 * @return bool True when a bound Forms form is the way to finish.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
 	public function isExternal(): bool {
 		return $this->kind === self::KIND_EXTERNAL;
@@ -126,7 +145,7 @@ final class TaskForm {
 	 *
 	 * @return array<string, mixed> The declaration, ready to store or serialise.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	public function toArray(): array {
 		return [

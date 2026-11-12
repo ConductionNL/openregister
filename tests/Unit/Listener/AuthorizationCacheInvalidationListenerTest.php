@@ -46,6 +46,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Event\RegisterUpdatedEvent
  * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\RegisterDeletedEvent
+ * @uses \OCA\OpenRegister\Event\SchemaDeletedEvent
+ * @uses \OCA\OpenRegister\Event\AbstractRegisterEvent
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
  */
 class AuthorizationCacheInvalidationListenerTest extends TestCase {
 

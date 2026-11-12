@@ -14,13 +14,16 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -31,7 +34,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\Files\Folder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -395,39 +400,12 @@ class MappersIntegrationTest extends TestCase {
 		$this->assertGreaterThanOrEqual(1, $count);
 	}
 
-	public function testChunkMapperCountUnindexed(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-
-		$count = $this->chunkMapper->countUnindexed();
-		$this->assertIsInt($count);
-		$this->assertGreaterThanOrEqual(1, $count);
-	}
-
 	public function testChunkMapperCountVectorized(): void {
 		$this->insertChunkDirectly('file', 1, 0, false, true);
 
 		$count = $this->chunkMapper->countVectorized();
 		$this->assertIsInt($count);
 		$this->assertGreaterThanOrEqual(1, $count);
-	}
-
-	public function testChunkMapperFindUnindexed(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-
-		$results = $this->chunkMapper->findUnindexed(10);
-		$this->assertIsArray($results);
-		$this->assertGreaterThanOrEqual(1, count($results));
-		foreach ($results as $chunk) {
-			$this->assertInstanceOf(Chunk::class, $chunk);
-		}
-	}
-
-	public function testChunkMapperFindUnindexedWithLimitAndOffset(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-		$this->insertChunkDirectly('file', 1, 1, false);
-
-		$results = $this->chunkMapper->findUnindexed(1, 0);
-		$this->assertCount(1, $results);
 	}
 
 	public function testChunkMapperCountFileSourceSummaries(): void {
@@ -472,7 +450,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(1));
 		$this->assertCount(1, $results);
 	}
 
@@ -481,7 +459,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, null, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(ListQuery::UNBOUNDED, 1));
 		$this->assertCount(1, $results);
 	}
 
@@ -569,7 +547,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookDirectly();
 
 		// findAll applies organisation filtering, so may return 0 if no org is active.
-		$results = $this->webhookMapper->findAll();
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded());
 		$this->assertIsArray($results);
 	}
 
@@ -577,17 +555,17 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookDirectly();
 		$this->insertWebhookDirectly();
 
-		$results = $this->webhookMapper->findAll(1);
+		$results = $this->webhookMapper->findAll(new ListQuery(limit: 1));
 		$this->assertLessThanOrEqual(1, count($results));
 	}
 
 	public function testWebhookMapperFindAllWithFilters(): void {
-		$results = $this->webhookMapper->findAll(null, null, ['enabled' => 'IS NOT NULL']);
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['enabled' => 'IS NOT NULL']));
 		$this->assertIsArray($results);
 	}
 
 	public function testWebhookMapperFindAllWithIsNullFilter(): void {
-		$results = $this->webhookMapper->findAll(null, null, ['secret' => 'IS NULL']);
+		$results = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['secret' => 'IS NULL']));
 		$this->assertIsArray($results);
 	}
 
@@ -760,8 +738,7 @@ class MappersIntegrationTest extends TestCase {
 		try {
 			$updated = $this->configurationMapper->updateSyncStatus(
 				$config->getId(),
-				'success',
-				new DateTime()
+				new ConfigurationSyncResult('success', new DateTime())
 			);
 			$this->assertSame('success', $updated->getSyncStatus());
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -808,14 +785,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$this->assertTrue($config->hasUpdateAvailable());
 		$this->assertTrue($config->isRemoteSource());
-		$this->assertFalse($config->isLocalSource());
-		$this->assertFalse($config->isManualSource());
-
-		$config->setSourceType('local');
-		$this->assertTrue($config->isLocalSource());
-
-		$config->setSourceType('manual');
-		$this->assertTrue($config->isManualSource());
 
 		$this->assertSame('Test Config', (string)$config);
 	}
@@ -825,11 +794,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$config->hydrate(['type' => 'special']);
 		$this->assertSame('Config: special', (string)$config);
-	}
-
-	public function testConfigurationEntityIsValidUuid(): void {
-		$this->assertTrue(Configuration::isValidUuid(Uuid::v4()->toRfc4122()));
-		$this->assertFalse(Configuration::isValidUuid('not-a-uuid'));
 	}
 
 	public function testConfigurationEntityGetJsonFields(): void {
@@ -893,6 +857,40 @@ class MappersIntegrationTest extends TestCase {
 		$this->assertIsArray($files);
 	}
 
+	/**
+	 * getFilesForObject() resolves purely by the object's folder/uuid
+	 * (lib/Db/FileMapper.php:555), with no schema lookup anywhere in that
+	 * path. createTestSchema() is a generic, non-publication schema
+	 * (name/status only) -- a real file attached to this object's folder must
+	 * come back exactly as it would for a publication, since nothing in
+	 * retrieval is publication-specific. Regression coverage for
+	 * opencatalogi#1991's CatalogObjectDetail Attachments widget, which relies
+	 * on that being true for every schema it serves.
+	 */
+	public function testFileMapperGetFilesForObjectReturnsARealAttachedFileRegardlessOfSchema(): void {
+		$object = $this->createTestObject();
+
+		// Same fallback as PrivateScopeParityIntegrationTest::objectFolderAsOwner():
+		// folder resolution depends on FolderManagementHandler's OpenRegister
+		// system account being wired, which some environments (including this
+		// suite's) do not fully bootstrap outside a real request.
+		try {
+			$folder = \OC::$server->get(FolderManagementHandler::class)->getObjectFolder($object);
+		} catch (\Throwable $e) {
+			$folder = null;
+		}
+
+		if (($folder instanceof Folder) === false) {
+			$this->markTestSkipped('could not resolve the object folder');
+		}
+
+		$folder->newFile('attachment.txt', 'contents');
+
+		$files = $this->fileMapper->getFilesForObject($object);
+
+		$this->assertNotEmpty($files, 'a real file attached to the object must come back');
+	}
+
 	public function testFileMapperDepublishFile(): void {
 		// Depublish a non-existent file should return 0 deleted.
 		$result = $this->fileMapper->depublishFile(999999999);
@@ -940,7 +938,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertSame(1, $stats['total'], 'a magic table created after the first call MUST be counted');
 	}
 
@@ -949,7 +947,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
@@ -959,7 +957,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics(null, $schema->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(schemaId: $schema->getId()));
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
@@ -969,16 +967,15 @@ class MappersIntegrationTest extends TestCase {
 		$this->createTestObject($register, $schema);
 
 		$stats = $this->objectMapper->getStatistics(
-			[$register->getId()],
-			[$schema->getId()]
+			new StatisticsScope(registerId: [$register->getId()], schemaId: [$schema->getId()])
 		);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
 	public function testMagicMapperStatisticsGetStatisticsWithExclude(): void {
-		$stats = $this->objectMapper->getStatistics(null, null, [
-			['register' => 999999, 'schema' => 999999],
-		]);
+		$stats = $this->objectMapper->getStatistics(
+			new StatisticsScope(exclude: [['register' => 999999, 'schema' => 999999]])
+		);
 		$this->assertIsArray($stats);
 	}
 

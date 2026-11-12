@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -58,10 +59,8 @@ class CaseAccessControlTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($officerGroup);
 
 		return new CaseAccessControl(
-			$userSession,
-			$groupManager,
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new GdprCallerMembership($userSession, $groupManager, $this->createMock(LoggerInterface::class)),
+			$appConfig
 		);
 
 	}//end build()

@@ -14,10 +14,12 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -26,11 +28,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * The bridge: provenance on creation, and the advance budget on completion.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
  */
 class FlowTaskBridgeTest extends TestCase {
 
@@ -57,9 +61,9 @@ class FlowTaskBridgeTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
 				return match ($id) {
-					FlowRunService::class => $this->runService,
+					FlowRunServiceInterface::class => $this->runService,
 					FlowRunAdvancer::class => $this->advancer,
-					FlowStreamMapper::class => $this->streams,
+					FlowStreamMapperInterface::class => $this->streams,
 					default => throw new RuntimeException('unexpected service ' . $id),
 				};
 			}
@@ -165,7 +169,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->method('import')->willReturn($this->terminalTask());
 		$this->tasks->expects($this->once())
 			->method('offer')
-			->with('t-1', ['routingStrategy' => 'or-set', 'routingFallback' => 'carol'], 'owner')
+			->with(new TaskActorRef(uuid: 't-1', actor: 'owner'), ['routingStrategy' => 'or-set', 'routingFallback' => 'carol'])
 			->willReturn($this->terminalTask());
 
 		$this->bridge->createTask(
@@ -200,6 +204,38 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $after->getStatus());
 		$this->assertNotNull($after->getResumeAt(), 'the run must be due for the worker');
 	}//end testTheDefaultBudgetParksForTheWorker()
+
+	/**
+	 * The wake carries the task's outcome bag, never an empty payload.
+	 *
+	 * A second listener on the same terminal event may signal the run with its
+	 * own payload (dossiq's ask step sends who answered). `signal()` assigns the
+	 * payload outright, so an empty one sent here erased that, and the node read
+	 * the empty signal as a missed wake. The bag is what `outcomeBagFor()`
+	 * already assembles for the items, `completedBy` included.
+	 */
+	public function testTheWakeCarriesTheOutcomeBagNotAnEmptyPayload(): void {
+		$run = $this->suspendedRun(advance: null);
+		$this->runs->method('findByUuid')->willReturn($run);
+		$task = $this->terminalTask();
+		$task->setCompletedBy('anna');
+		$payloads = [];
+		$this->runService->method('signal')->willReturnCallback(
+			static function (FlowRun $run, array $payload = []) use (&$payloads): FlowRun {
+				$payloads[] = $payload;
+				$run->setResumeAt(new DateTime());
+
+				return $run;
+			}
+		);
+
+		$this->bridge->continueRun(task: $task);
+
+		$this->assertCount(1, $payloads);
+		$this->assertNotSame([], $payloads[0], 'an empty payload overwrites what another listener signalled');
+		$this->assertSame(FlowTaskBridge::outcomeBagFor($task), $payloads[0]);
+		$this->assertSame('anna', $payloads[0]['completedBy']);
+	}//end testTheWakeCarriesTheOutcomeBagNotAnEmptyPayload()
 
 	/**
 	 * A budget of N continues THE STREAM parked on the node, for N + 1
@@ -348,7 +384,7 @@ class FlowTaskBridgeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testAHeartbeatRecoveryIsAuditedToTheTasksCompleter(): void {
 		$task = $this->terminalTask();
@@ -358,8 +394,8 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('record')
 			->willReturnCallback(
-				function (string $uuid, string $action, ?string $actor, string $reason) use (&$seen, $task): Task {
-					$seen = ['uuid' => $uuid, 'action' => $action, 'actor' => $actor, 'reason' => $reason];
+				function (TaskAuditEntry $entry) use (&$seen, $task): Task {
+					$seen = ['uuid' => $entry->uuid, 'action' => $entry->action, 'actor' => $entry->actor, 'reason' => $entry->reason];
 
 					return $task;
 				}
@@ -382,7 +418,7 @@ class FlowTaskBridgeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testAFailedRecoveryAuditIsSwallowedSoTheRecoveredRunStands(): void {
 		$task = $this->terminalTask();
@@ -408,7 +444,7 @@ class FlowTaskBridgeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testARecoveredEndingWithNoCompleterRecordsNoActor(): void {
 		$task = $this->terminalTask();
@@ -419,8 +455,8 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('record')
 			->willReturnCallback(
-				function (string $uuid, string $action, ?string $seenActor, string $reason) use (&$actor, $task): Task {
-					$actor = $seenActor;
+				function (TaskAuditEntry $entry) use (&$actor, $task): Task {
+					$actor = $entry->actor;
 
 					return $task;
 				}

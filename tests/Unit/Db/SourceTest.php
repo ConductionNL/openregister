@@ -130,12 +130,6 @@ class SourceTest extends TestCase {
 		$this->assertNull($this->source->getUuid());
 	}
 
-	// --- ManagedByConfiguration transient property ---
-
-	public function testManagedByConfigurationEntityDefaultsToNull(): void {
-		$this->assertNull($this->source->getManagedByConfigurationEntity());
-	}
-
 	// --- __toString ---
 
 	public function testToStringReturnsTitleWhenSet(): void {

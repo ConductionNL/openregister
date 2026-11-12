@@ -92,7 +92,7 @@ async function api(
  * Choose the shipped dataset, and answer with the id that was chosen.
  *
  * 🔴 THE TEST HAS TO MAKE THE DECISION IT ASSERTS AGAINST. The demo-data step
- * is a choice followed by a load step now, and the CI seed settles the optional
+ * is a cards choice whose cards load themselves, and the CI seed settles the optional
  * steps by posting `skip-demo-data` — which records "none". A load that follows
  * correctly imports nothing, so an install test that skips this arranges no
  * precondition and measures the seed instead of the app.
@@ -151,6 +151,25 @@ test.describe('ADR-111 demo data', () => {
 			Object.keys(res.json?.steps ?? {}),
 			'setup/status must report a demo-data step',
 		).toContain('demo-data')
+		// The cards load themselves (`loadAction`), so the separate load step is
+		// gone from the manifest and from the status document.
+		expect(
+			Object.keys(res.json?.steps ?? {}),
+			'the run-action load step is retired',
+		).not.toContain('load-demo-data')
+	})
+
+	test('a card that names an unknown dataset loads nothing', async ({ page }) => {
+		// The card's Load button posts `{ dataset }` to the step's loadAction.
+		const res = await api(
+			page,
+			'POST',
+			`${BASE}/api/setup/action/load-demo-data`,
+			{ dataset: 'atlantis' },
+		)
+
+		expect(res.status).toBe(400)
+		expect(res.json?.success).toBe(false)
 	})
 
 	test('installing the demo data reports HOW MUCH landed, not just success', async ({
@@ -197,12 +216,14 @@ test.describe('ADR-111 demo data', () => {
 		// The step body tells the operator it is "safe to run more than once".
 		// That sentence is a contract; this asserts the server keeps it rather
 		// than erroring or reporting failure on a second pass.
-		await pickShippedDataset(page)
+		const shipped = await pickShippedDataset(page)
 
+		// Posted the way a dataset card's Load button posts it.
 		const again = await api(
 			page,
 			'POST',
-			`${BASE}/api/setup/action/install-demo-data`,
+			`${BASE}/api/setup/action/load-demo-data`,
+			{ dataset: shipped },
 		)
 
 		expect(again.status).toBe(200)

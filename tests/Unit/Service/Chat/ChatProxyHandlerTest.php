@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/or-chat-proxy-deprecation/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-or-chat-proxy-deprecation/tasks.md
  */
 
 declare(strict_types=1);
@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyEndpoint;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -80,10 +81,12 @@ class ChatProxyHandlerTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		return new ChatProxyHandler(
+			new ChatProxyEndpoint(
+				$urlGenerator,
+				$clientService
+			),
 			$appConfig,
 			$appManager,
-			$urlGenerator,
-			$clientService,
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end makeHandler()

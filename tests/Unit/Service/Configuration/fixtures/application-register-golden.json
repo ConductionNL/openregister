@@ -1,0 +1,666 @@
+{
+    "insert": {
+        "registers": [
+            {
+                "id": 88,
+                "slug": "zaken",
+                "title": null,
+                "description": null,
+                "schemas": [
+                    21,
+                    12,
+                    22,
+                    23
+                ]
+            }
+        ],
+        "configurationRegisters": [
+            3,
+            88
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "zaken"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "register.createFromArray",
+                {
+                    "title": "Info title",
+                    "description": "Info description",
+                    "slug": "zaken",
+                    "schemas": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ],
+                    "source": "import"
+                }
+            ],
+            [
+                "log.info",
+                "[ImportHandler] Auto-Register created from x-openregister.type=application",
+                {
+                    "registerId": 88,
+                    "slug": "zaken",
+                    "schemaIds": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "configuration.update",
+                [
+                    3,
+                    88
+                ]
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                21
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                12
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                null
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                22
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create",
+                {
+                    "schema_id": 22,
+                    "schema_slug": "broken",
+                    "register_id": 88,
+                    "error": "ddl failed"
+                }
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                23
+            ]
+        ]
+    },
+    "insert-app-id-slug": {
+        "registers": [
+            {
+                "id": 5,
+                "slug": null,
+                "title": null,
+                "description": null,
+                "schemas": []
+            },
+            "not-a-register",
+            {
+                "id": 88,
+                "slug": "myapp",
+                "title": null,
+                "description": null,
+                "schemas": [
+                    21,
+                    12,
+                    22,
+                    23
+                ]
+            }
+        ],
+        "configurationRegisters": [
+            88
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "myapp"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "register.createFromArray",
+                {
+                    "title": "X title",
+                    "description": "",
+                    "slug": "myapp",
+                    "schemas": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ],
+                    "source": "import"
+                }
+            ],
+            [
+                "log.info",
+                "[ImportHandler] Auto-Register created from x-openregister.type=application",
+                {
+                    "registerId": 88,
+                    "slug": "myapp",
+                    "schemaIds": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "configuration.update",
+                [
+                    88
+                ]
+            ]
+        ]
+    },
+    "insert-no-description": {
+        "registers": [
+            {
+                "id": 88,
+                "slug": "zaken",
+                "title": null,
+                "description": null,
+                "schemas": [
+                    21,
+                    12,
+                    22,
+                    23
+                ]
+            }
+        ],
+        "configurationRegisters": [
+            77,
+            88
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "zaken"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "register.createFromArray",
+                {
+                    "title": "myapp",
+                    "description": "",
+                    "slug": "zaken",
+                    "schemas": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ],
+                    "source": "import"
+                }
+            ],
+            [
+                "log.info",
+                "[ImportHandler] Auto-Register created from x-openregister.type=application",
+                {
+                    "registerId": 88,
+                    "slug": "zaken",
+                    "schemaIds": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "configuration.update",
+                [
+                    77,
+                    88
+                ]
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                21
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                12
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                null
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                22
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create",
+                {
+                    "schema_id": 22,
+                    "schema_slug": "broken",
+                    "register_id": 88,
+                    "error": "ddl failed"
+                }
+            ],
+            [
+                "magic.ensureTable",
+                88,
+                23
+            ]
+        ]
+    },
+    "no-extension": {
+        "registers": [],
+        "configurationRegisters": [],
+        "calls": []
+    },
+    "not-application": {
+        "registers": [],
+        "configurationRegisters": [],
+        "calls": []
+    },
+    "reconcile": {
+        "registers": [
+            {
+                "id": 77,
+                "slug": "zaken",
+                "title": "Info title",
+                "description": "Info description",
+                "schemas": [
+                    12,
+                    13,
+                    14,
+                    99,
+                    21,
+                    22,
+                    23
+                ]
+            }
+        ],
+        "configurationRegisters": [
+            3,
+            77
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "zaken"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                11
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Auto-Register 'zaken': pruning shadowed schema id 11 (slug 'Zaak') in favour of app-owned id 21",
+                []
+            ],
+            [
+                "schema.find",
+                12
+            ],
+            [
+                "schema.find",
+                13
+            ],
+            [
+                "schema.find",
+                14
+            ],
+            [
+                "schema.find",
+                99
+            ],
+            [
+                "register.update",
+                {
+                    "id": 77,
+                    "slug": "zaken",
+                    "title": "Info title",
+                    "description": "Info description",
+                    "schemas": [
+                        12,
+                        13,
+                        14,
+                        99,
+                        21,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Auto-Register reconciled (idempotent re-import)",
+                {
+                    "registerId": 77,
+                    "slug": "zaken",
+                    "unionSchemaIds": [
+                        12,
+                        13,
+                        14,
+                        99,
+                        21,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "configuration.update",
+                [
+                    3,
+                    77
+                ]
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                21
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                12
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                null
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                22
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create",
+                {
+                    "schema_id": 22,
+                    "schema_slug": "broken",
+                    "register_id": 77,
+                    "error": "ddl failed"
+                }
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                23
+            ]
+        ]
+    },
+    "reconcile-no-description": {
+        "registers": [
+            {
+                "id": 77,
+                "slug": null,
+                "title": null,
+                "description": null,
+                "schemas": []
+            }
+        ],
+        "configurationRegisters": [
+            77
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "zaken"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "schema.find",
+                11
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Auto-Register 'zaken': pruning shadowed schema id 11 (slug 'Zaak') in favour of app-owned id 21",
+                []
+            ],
+            [
+                "schema.find",
+                12
+            ],
+            [
+                "schema.find",
+                13
+            ],
+            [
+                "schema.find",
+                14
+            ],
+            [
+                "schema.find",
+                99
+            ],
+            [
+                "register.update",
+                {
+                    "id": 77,
+                    "slug": "zaken",
+                    "title": "myapp",
+                    "description": "Old description",
+                    "schemas": [
+                        12,
+                        13,
+                        14,
+                        99,
+                        21,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Auto-Register reconciled (idempotent re-import)",
+                {
+                    "registerId": 77,
+                    "slug": "zaken",
+                    "unionSchemaIds": [
+                        12,
+                        13,
+                        14,
+                        99,
+                        21,
+                        22,
+                        23
+                    ]
+                }
+            ]
+        ]
+    },
+    "reconcile-no-schemas": {
+        "registers": [
+            {
+                "id": 77,
+                "slug": "zaken",
+                "title": "myapp",
+                "description": "X",
+                "schemas": [
+                    21,
+                    12,
+                    22,
+                    23
+                ]
+            }
+        ],
+        "configurationRegisters": [
+            77
+        ],
+        "calls": [
+            [
+                "register.findAll",
+                [
+                    1,
+                    0,
+                    {
+                        "slug": "zaken"
+                    },
+                    [],
+                    [],
+                    false,
+                    true
+                ]
+            ],
+            [
+                "register.update",
+                {
+                    "id": 77,
+                    "slug": "zaken",
+                    "title": "myapp",
+                    "description": "X",
+                    "schemas": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Auto-Register reconciled (idempotent re-import)",
+                {
+                    "registerId": 77,
+                    "slug": "zaken",
+                    "unionSchemaIds": [
+                        21,
+                        12,
+                        22,
+                        23
+                    ]
+                }
+            ],
+            [
+                "configuration.update",
+                [
+                    77
+                ]
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                21
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                12
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                null
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                22
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Failed to pre-create magic mapper table for schema during register auto-create",
+                {
+                    "schema_id": 22,
+                    "schema_slug": "broken",
+                    "register_id": 77,
+                    "error": "ddl failed"
+                }
+            ],
+            [
+                "magic.ensureTable",
+                77,
+                23
+            ]
+        ]
+    },
+    "slug-empty": {
+        "registers": [],
+        "configurationRegisters": [],
+        "calls": [
+            [
+                "log.warning",
+                "[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty",
+                {
+                    "appId": "myapp"
+                }
+            ]
+        ]
+    },
+    "slug-not-string": {
+        "registers": [],
+        "configurationRegisters": [],
+        "calls": [
+            [
+                "log.warning",
+                "[ImportHandler] Skipping auto-Register: x-openregister.app missing or empty",
+                {
+                    "appId": "myapp"
+                }
+            ]
+        ]
+    }
+}

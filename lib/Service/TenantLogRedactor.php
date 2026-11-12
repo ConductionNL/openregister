@@ -53,7 +53,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
-class TenantLogRedactor {
+class TenantLogRedactor implements TenantLogRedactorInterface {
 
 	/**
 	 * What replaces a redacted value.
@@ -69,6 +69,11 @@ class TenantLogRedactor {
 	 * The app config key holding the pseudonymisation salt.
 	 */
 	public const PSEUDONYM_SALT = 'tenant_log_pseudonym_salt';
+
+	/**
+	 * The salt used where none can be kept in the app config.
+	 */
+	private const FALLBACK_SALT = 'openregister-tenant-log';
 
 	/**
 	 * Context keys whose VALUE is a secret, matched case-insensitively as a substring.
@@ -241,16 +246,30 @@ class TenantLogRedactor {
 			throw new RuntimeException('log context nests deeper than the redactor reads');
 		}
 
+		if (is_array($value) === true) {
+			return $this->walkArray(value: $value, depth: $depth);
+		}
+
+		return $this->cleanLeaf(value: $value);
+
+	}//end walk()
+
+	/**
+	 * Clean one value that is not an array, redacting its text or refusing it.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed The cleaned value.
+	 *
+	 * @throws RuntimeException When the value cannot be established as clean.
+	 */
+	private function cleanLeaf(mixed $value): mixed {
 		if ($this->isPlainScalar(value: $value) === true) {
 			return $value;
 		}
 
 		if (is_string($value) === true) {
 			return $this->redactString(value: $value);
-		}
-
-		if (is_array($value) === true) {
-			return $this->walkArray(value: $value, depth: $depth);
 		}
 
 		if ($value instanceof Stringable) {
@@ -261,7 +280,7 @@ class TenantLogRedactor {
 		// class cannot read it, so it cannot say it is clean, so the line goes.
 		throw new RuntimeException('log context holds a value the redactor cannot read');
 
-	}//end walk()
+	}//end cleanLeaf()
 
 	/**
 	 * Whether a value is a scalar that carries no text to redact.
@@ -391,22 +410,36 @@ class TenantLogRedactor {
 	 */
 	private function salt(): string {
 		if ($this->appConfig === null) {
-			return 'openregister-tenant-log';
+			return self::FALLBACK_SALT;
 		}
 
 		try {
-			$salt = $this->appConfig->getValueString('openregister', self::PSEUDONYM_SALT, '');
-			if ($salt !== '') {
-				return $salt;
-			}
-
-			$salt = bin2hex(random_bytes(16));
-			$this->appConfig->setValueString('openregister', self::PSEUDONYM_SALT, $salt);
-
-			return $salt;
+			return $this->storedSalt(appConfig: $this->appConfig);
 		} catch (Throwable $e) {
-			return 'openregister-tenant-log';
+			return self::FALLBACK_SALT;
 		}
 
 	}//end salt()
+
+	/**
+	 * The salt kept in the app config, generated and stored on first use.
+	 *
+	 * @param IAppConfig $appConfig The app config.
+	 *
+	 * @return string The salt.
+	 *
+	 * @throws Throwable When the salt cannot be read, generated or stored.
+	 */
+	private function storedSalt(IAppConfig $appConfig): string {
+		$salt = $appConfig->getValueString('openregister', self::PSEUDONYM_SALT, '');
+		if ($salt !== '') {
+			return $salt;
+		}
+
+		$salt = bin2hex(random_bytes(16));
+		$appConfig->setValueString('openregister', self::PSEUDONYM_SALT, $salt);
+
+		return $salt;
+
+	}//end storedSalt()
 }//end class

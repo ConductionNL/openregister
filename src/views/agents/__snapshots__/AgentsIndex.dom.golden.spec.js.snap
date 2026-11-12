@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AgentsIndex table shows every agent with its tools, views and what may be done 1`] = `
+[
+  {
+    "headers": [
+      "t:Name",
+      "t:Tools",
+      "t:Views",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "Mine",
+        "Search, gone",
+        "Open cases",
+        "t:Edit limits",
+      ],
+      [
+        "Theirs",
+        "-",
+        "-",
+        "t:Only the agent's owner can change its limits.",
+      ],
+      [
+        "Per app",
+        "app",
+        "-",
+        "t:This agent has a grant per app. Change it through the agents API.",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`AgentsIndex table shows the empty state without agents 1`] = `"t:No agents yet | undefined"`;

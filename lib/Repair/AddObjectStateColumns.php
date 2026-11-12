@@ -17,56 +17,51 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
 
 /**
- * Repair step: give every existing magic table its archive and freeze columns.
+ * Repair step: give every existing magic table its metadata columns.
  *
- * ⚠️ THIS STEP IS NOT OPTIONAL POLISH. The default object list now carries
- * `_archived IS NULL`, and so do the count and the facet queries built from
- * the same choke point. A table that never gained the column answers that
- * WHERE clause with an SQL error, which reaches the caller as an HTTP 500 on
- * the plain list of a register — not as a missing feature.
+ * The default object list carries `_archived IS NULL`, and so do the count and
+ * the facet queries built from the same choke point. A table that never gained
+ * the column answers that WHERE clause with an SQL error.
  *
- * `MagicMapper::getMetadataColumns()` is where the two columns are declared,
- * and `addMissingColumns()` is what puts a declared-but-absent column on an
- * existing table. What neither of them is, is a thing that runs on its own:
- * `searchObjectsInRegisterSchemaTable()` checks only that the table EXISTS and
- * creates it when it does not. An already-materialised table is never
- * re-synced by a read. So the sync has to be asked for, and an upgrade is when
- * to ask.
+ * Since 14 October 2026 this step is no longer the only remedy: the request
+ * path heals a table on its first use, and `occ openregister:tables:reconcile
+ * --apply` heals every table on demand. All three use the same
+ * MagicMetadataColumnHealer, so they cannot disagree about which columns a
+ * table needs. This step stays so an upgrade leaves no table to heal later.
  *
- * Idempotent: `ensureTableForRegisterSchema()` adds only what is missing, so a
- * second run over a reconciled instance does nothing. Never throws — a schema
- * whose table cannot be reconciled is logged and the sweep continues, because
- * one unreachable table must not abort an app upgrade.
+ * It walks the PHYSICAL tables, not the register to schema links: the drift
+ * measured on 14 October sat almost entirely in tables whose schema no
+ * register listed any more (37 of 38), which a walk over the links never
+ * reaches.
+ *
+ * Idempotent, and never throws: a table that cannot be altered is logged and
+ * the sweep continues, because one table must not abort an app upgrade.
  */
 class AddObjectStateColumns implements IRepairStep {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register and schema lookups.
-	 * @param MagicMapper $magicMapper Magic-table sync.
+	 * @param MagicMapperInterface $magicMapper Magic-table discovery and the shared metadata-column healer.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -79,97 +74,74 @@ class AddObjectStateColumns implements IRepairStep {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getName(): string {
-		return 'Add the archive and freeze columns to existing object tables';
+		return 'Add the archive, freeze and lifecycle status columns to existing object tables';
 	}//end getName()
 
 	/**
-	 * Reconcile every register and schema pair.
+	 * Heal every magic table.
 	 *
 	 * @param IOutput $output Migration output handle.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
 	 */
 	public function run(IOutput $output): void {
-		$reconciled = 0;
-		$failed = 0;
+		$sweep  = new MagicTableSweepRun(step: 'AddObjectStateColumns', output: $output);
+		$tables = $sweep->listTables(magicMapper: $this->magicMapper, logger: $this->logger);
+		if ($tables === null) {
+			return;
+		}
 
+		foreach ($tables as $tableName) {
+			$this->healTable(sweep: $sweep, tableName: $tableName);
+		}
+
+		$sweep->report(checkedFor: 'their metadata columns', changedAs: 'healed');
+	}//end run()
+
+	/**
+	 * Heal one table's metadata columns and count the outcome.
+	 *
+	 * @param MagicTableSweepRun $sweep     The pass.
+	 * @param string             $tableName The magic table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+	 */
+	private function healTable(MagicTableSweepRun $sweep, string $tableName): void {
 		try {
-			$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+			$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
 		} catch (\Throwable $e) {
-			// No registers to walk is the normal state of a fresh install, and
-			// a mapper that cannot answer during an upgrade is not something
-			// this step can fix. Either way it must not stop the upgrade.
-			$this->logger->info(
-				'[AddObjectStateColumns] Could not list registers, skipping: ' . $e->getMessage()
+			$sweep->failed++;
+			$this->logger->warning(
+				'[AddObjectStateColumns] Could not read table ' . $tableName . ': ' . $e->getMessage()
 			);
 			return;
 		}
 
-		foreach ($registers as $register) {
-			if ($register instanceof Register === false) {
-				continue;
-			}
-
-			$reconciled += $this->reconcileRegister(register: $register, failed: $failed);
-		}
-
-		$output->info(
-			sprintf(
-				'Reconciled %d object table(s) for the archive and freeze columns, %d could not be read.',
-				$reconciled,
-				$failed
-			)
-		);
-	}//end run()
+		self::count(sweep: $sweep, result: $result);
+	}//end healTable()
 
 	/**
-	 * Reconcile every schema table of one register.
+	 * Count one healed table: failed when a column could not be added, healed when one was.
 	 *
-	 * @param Register $register The register to walk.
-	 * @param int $failed Running count of tables that could not be reconciled, by reference.
+	 * @param MagicTableSweepRun                         $sweep  The pass.
+	 * @param array{added: string[], failed: string[]} $result The healer's outcome for the table.
 	 *
-	 * @return int The number of tables reconciled.
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
 	 */
-	private function reconcileRegister(Register $register, int &$failed): int {
-		try {
-			$schemas = $this->registerMapper->getSchemasByRegisterId(
-				registerId: (int)$register->getId(),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Throwable $e) {
-			$failed++;
-			$this->logger->warning(
-				'[AddObjectStateColumns] Could not list schemas for register '
-				. (string)$register->getId() . ': ' . $e->getMessage()
-			);
-			return 0;
+	private static function count(MagicTableSweepRun $sweep, array $result): void {
+		if ($result['failed'] !== []) {
+			$sweep->failed++;
+			return;
 		}
 
-		$reconciled = 0;
-		foreach ($schemas as $schema) {
-			if ($schema instanceof Schema === false) {
-				continue;
-			}
-
-			try {
-				$this->magicMapper->ensureTableForRegisterSchema(
-					register: $register,
-					schema: $schema
-				);
-				$reconciled++;
-			} catch (\Throwable $e) {
-				$failed++;
-				$this->logger->warning(
-					'[AddObjectStateColumns] Could not reconcile register '
-					. (string)$register->getId() . ' schema ' . (string)$schema->getId()
-					. ': ' . $e->getMessage()
-				);
-			}//end try
-		}//end foreach
-
-		return $reconciled;
-	}//end reconcileRegister()
+		if ($result['added'] !== []) {
+			$sweep->changed++;
+		}
+	}//end count()
 }//end class

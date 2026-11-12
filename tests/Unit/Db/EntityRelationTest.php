@@ -48,6 +48,7 @@ class EntityRelationTest extends TestCase {
 		$this->assertSame('string', $fieldTypes['anonymizedValue']);
 		$this->assertSame('json', $fieldTypes['bases']);
 		$this->assertSame('boolean', $fieldTypes['skipAnonymization']);
+		$this->assertSame('string', $fieldTypes['decisionUuid']);
 		$this->assertSame('datetime', $fieldTypes['createdAt']);
 	}
 
@@ -149,7 +150,7 @@ class EntityRelationTest extends TestCase {
 			'id', 'entityId', 'chunkId', 'role', 'fileId', 'objectId',
 			'emailId', 'positionStart', 'positionEnd', 'confidence',
 			'detectionMethod', 'context', 'anonymized', 'anonymizedValue',
-			'bases', 'skipAnonymization', 'createdAt',
+			'bases', 'skipAnonymization', 'decision', 'createdAt',
 		];
 		foreach ($expectedKeys as $key) {
 			$this->assertArrayHasKey($key, $json);
@@ -174,5 +175,18 @@ class EntityRelationTest extends TestCase {
 	public function testJsonSerializeNullCreatedAt(): void {
 		$json = $this->relation->jsonSerialize();
 		$this->assertNull($json['createdAt']);
+	}
+
+	/**
+	 * A relation links its current decision by uuid and serialises the link as `decision`.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 */
+	public function testARelationLinksItsDecision(): void {
+		$this->assertNull($this->relation->jsonSerialize()['decision']);
+
+		$this->relation->setDecisionUuid('5f0c6b2e-0000-4000-8000-000000000001');
+
+		$this->assertSame('5f0c6b2e-0000-4000-8000-000000000001', $this->relation->jsonSerialize()['decision']);
 	}
 }

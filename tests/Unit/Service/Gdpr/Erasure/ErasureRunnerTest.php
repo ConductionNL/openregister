@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 
 declare(strict_types=1);
@@ -37,12 +37,18 @@ use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyer;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestructionSteps;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyGuard;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class ErasureRunnerTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -129,10 +135,10 @@ final class ErasureRunnerTest extends TestCase {
 		$subjects = $this->createMock(DataSubjectRequestService::class);
 		$subjects->method('findSubjectObjects')->willReturn($hits);
 		$subjects->method('pseudonymiseObject')->willReturnCallback(
-			function (ObjectEntity $object): ?array {
-				$this->scrubbed[] = (string)$object->getUuid();
+			function (SubjectMatch $match): ?array {
+				$this->scrubbed[] = (string)$match->object->getUuid();
 
-				return ['uuid' => $object->getUuid()];
+				return ['uuid' => $match->object->getUuid()];
 			}
 		);
 
@@ -157,8 +163,9 @@ final class ErasureRunnerTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(DestructionRecorder::class);
-		$recorder->method('record')->willReturnCallback(
-			function (ObjectEntity $object, array $scope, string $rule, array $context): array {
+		$recorder->method('recordDestruction')->willReturnCallback(
+			function (RecordDestructionCommand $command): array {
+				[$object, $scope, $rule, $context] = [$command->object, $command->scope, $command->rule, $command->context];
 				$written = array_merge(['objectUuid' => (string)$object->getUuid(), 'rule' => $rule], $context);
 				$this->records[] = $written;
 
@@ -166,18 +173,9 @@ final class ErasureRunnerTest extends TestCase {
 			}
 		);
 
-		return new ErasureRunner(
-			$previewService,
-			$store,
-			$subjects,
-			$objectMapper,
-			$this->createMock(SchemaMapper::class),
-			$destroyRight,
-			$clock,
-			$scopeService,
-			$recorder,
-			new NullLogger()
-		);
+		$destroyer = new ErasureDestroyer(new ErasureDestructionSteps(new ErasureSchemaResolver($this->createMock(SchemaMapper::class)), $scopeService, $recorder, $objectMapper), new ErasureDestroyGuard($destroyRight, $clock), new NullLogger());
+
+		return new ErasureRunner($previewService, $store, $subjects, $destroyer);
 	}//end runner()
 
 	public function testOneDestructionPathOneRecord(): void {

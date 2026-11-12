@@ -1,0 +1,269 @@
+{
+    "created and updated": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "invalidate",
+            [
+                null,
+                "bulk_save",
+                null,
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsCreated": 2,
+                    "objectsUpdated": 1
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "only updated": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "invalidate",
+            [
+                null,
+                "bulk_save",
+                null,
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsUpdated": "3"
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "nothing changed": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsCreated": 0,
+                    "objectsUpdated": 0
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "no statistics": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": [],
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "invalidation fails": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "invalidate",
+            [
+                null,
+                "bulk_save",
+                null,
+                null
+            ]
+        ],
+        [
+            "warning",
+            "[ObjectService] Bulk save cache invalidation failed",
+            {
+                "error": "cache down",
+                "totalAffected": 3,
+                "registerId": null,
+                "schemaId": null
+            }
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsCreated": 2,
+                    "objectsUpdated": 1
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "all flags": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                false,
+                false,
+                true,
+                true,
+                false
+            ]
+        ],
+        [
+            "invalidate",
+            [
+                null,
+                "bulk_save",
+                null,
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsCreated": 2,
+                    "objectsUpdated": 1
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ],
+    "one created": [
+        [
+            "bulk",
+            [
+                [
+                    {
+                        "a": 1
+                    }
+                ],
+                null,
+                null,
+                true,
+                true,
+                false,
+                false,
+                true
+            ]
+        ],
+        [
+            "invalidate",
+            [
+                null,
+                "bulk_save",
+                null,
+                null
+            ]
+        ],
+        [
+            "result",
+            {
+                "statistics": {
+                    "objectsCreated": 1
+                },
+                "saved": [
+                    "x"
+                ]
+            }
+        ]
+    ]
+}

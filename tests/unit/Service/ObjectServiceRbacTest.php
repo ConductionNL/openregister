@@ -76,6 +76,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Unit tests for ObjectService RBAC functionality
@@ -184,7 +185,7 @@ class ObjectServiceRbacTest extends TestCase {
 		$this->searchTrailService = $this->createMock(SearchTrailService::class);
 
 		// Create ObjectService with mocked dependencies.
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->deleteHandler,
 			$this->getHandler,
 			$this->saveHandler,
@@ -200,7 +201,7 @@ class ObjectServiceRbacTest extends TestCase {
 			null, // renderHandler
 			null, // publishHandler
 			null  // depublishHandler
-		);
+		));
 
 		// Create test schema.
 		$this->mockSchema = new Schema();

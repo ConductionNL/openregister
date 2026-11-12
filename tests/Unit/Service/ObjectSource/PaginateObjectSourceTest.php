@@ -35,11 +35,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSourceQuery;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -102,7 +104,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity|null Always null (unused here).
 			 */
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				return null;
 			}//end find()
 
@@ -118,7 +120,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity[] The page of objects.
 			 */
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				$limit = (int)($query['limit'] ?? $this->totalRows);
 				$offset = (int)($query['offset'] ?? 0);
 
@@ -144,7 +146,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return int The (possibly overridden) total.
 			 */
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				if ($this->countThrows === true) {
 					throw new \RuntimeException('count not supported');
 				}
@@ -295,6 +297,25 @@ class PaginateObjectSourceTest extends TestCase {
 	}//end testInconsistentCountFallsBack()
 
 	/**
+	 * A count() exactly at the end of the returned window is a real total.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testCountAtTheWindowEndIsTheTrueTotal(): void {
+		$result = $this->paginate(
+			provider: $this->stubProvider(totalRows: 120, countReturns: 100),
+			schema: $this->sourcedSchema(),
+			query: ['limit' => 50, 'offset' => 50]
+		);
+
+		$this->assertNotNull($result);
+		$this->assertSame(100, $result['total']);
+		$this->assertSame(2, $result['@self']['pages']);
+	}//end testCountAtTheWindowEndIsTheTrueTotal()
+
+	/**
 	 * The native-provider shape is preserved for an unpaginated query: the
 	 * count() equals the full result set, so a single page with the real total.
 	 *
@@ -400,7 +421,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity|null Always null.
 			 */
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				$this->touched = true;
 
 				return null;
@@ -416,7 +437,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return array Always empty.
 			 */
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				$this->touched = true;
 
 				return [];
@@ -432,7 +453,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return int Always zero.
 			 */
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				$this->touched = true;
 
 				return 0;
@@ -475,12 +496,9 @@ class PaginateObjectSourceTest extends TestCase {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function testCanonicalQueryKeysAreNormalisedForProviders(): void {
-		$reflection = new ReflectionClass(ObjectService::class);
-		$service = $reflection->newInstanceWithoutConstructor();
-		$method = $reflection->getMethod('normaliseObjectSourceQuery');
-		$method->setAccessible(true);
+		$adapter = new ObjectSourceQuery();
 
-		$normalised = $method->invoke($service, [
+		$normalised = $adapter->forProvider([
 			'_limit' => '5',
 			'_page' => '2',
 			'_order' => ['status' => 'ASC'],
@@ -496,7 +514,7 @@ class PaginateObjectSourceTest extends TestCase {
 		$this->assertSame('granted', $normalised['_search']);
 
 		// Pre-set contract keys win over canonical ones.
-		$preset = $method->invoke($service, [
+		$preset = $adapter->forProvider([
 			'limit' => 3,
 			'offset' => 9,
 			'filters' => ['a' => 'b'],

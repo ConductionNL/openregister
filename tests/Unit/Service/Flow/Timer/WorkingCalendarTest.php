@@ -32,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class WorkingCalendarTest extends TestCase {
 

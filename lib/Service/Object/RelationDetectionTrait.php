@@ -78,19 +78,23 @@ trait RelationDetectionTrait {
 			return false;
 		}
 
-		$type = $propertyConfig['type'] ?? '';
-		$format = $propertyConfig['format'] ?? '';
-
-		if ($type === 'object') {
-			return true;
-		}
-
-		if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
-			return true;
-		}
-
-		return isset($propertyConfig['$ref']) === true || isset($propertyConfig['inversedBy']) === true;
+		return $this->hasReferenceType(propertyConfig: $propertyConfig)
+			|| isset($propertyConfig['$ref']) === true
+			|| isset($propertyConfig['inversedBy']) === true;
 	}//end isSchemaDeclaredReference()
+
+	/**
+	 * Whether the property's type says it holds a reference: an object, or text in uuid/uri/url format.
+	 *
+	 * @param array $propertyConfig The schema property definition.
+	 *
+	 * @return bool
+	 */
+	private function hasReferenceType(array $propertyConfig): bool {
+		$type = $propertyConfig['type'] ?? '';
+		return $type === 'object'
+			|| ($type === 'text' && in_array($propertyConfig['format'] ?? '', ['uuid', 'uri', 'url'], true) === true);
+	}//end hasReferenceType()
 
 	/**
 	 * Whether a value matches a UUID / prefixed-UUID / URL reference pattern.
@@ -100,19 +104,8 @@ trait RelationDetectionTrait {
 	 * @return bool True when the value looks like a reference.
 	 */
 	private function matchesReferencePattern(string $value): bool {
-		// Canonical UUID (8-4-4-4-12).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Prefixed UUID (e.g. "id-<uuid>" with or without dashes).
-		$prefixed = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-		if (preg_match($prefixed, $value) === 1) {
+		// A UUID, with or without dashes or a word prefix.
+		if (preg_match(UuidPattern::ANY, $value) === 1) {
 			return true;
 		}
 

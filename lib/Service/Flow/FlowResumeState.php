@@ -190,6 +190,17 @@ final class FlowResumeState implements JsonSerializable {
 			return new self();
 		}
 
+		return new self(self::valueBagsOf(stored: $stored));
+	}//end fromArray()
+
+	/**
+	 * The stored slots that are a value bag under a node id.
+	 *
+	 * @param array<mixed> $stored The decoded column.
+	 *
+	 * @return array<string, array<string, mixed>> The value bags by node id.
+	 */
+	private static function valueBagsOf(array $stored): array {
 		$byNode = [];
 		foreach ($stored as $nodeId => $values) {
 			// A JSON round trip turns a list into integer keys, which are not
@@ -201,8 +212,8 @@ final class FlowResumeState implements JsonSerializable {
 			$byNode[$nodeId] = $values;
 		}
 
-		return new self($byNode);
-	}//end fromArray()
+		return $byNode;
+	}//end valueBagsOf()
 
 	/**
 	 * The storable form, or null when there is nothing worth storing.
@@ -234,7 +245,7 @@ final class FlowResumeState implements JsonSerializable {
 	 * @return array<string, array<string, mixed>>|null The slots, or null to drop them.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	public function storableWhen(bool $live): ?array {
 		if ($live === false || $this->byNode === []) {

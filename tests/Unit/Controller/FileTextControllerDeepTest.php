@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -36,8 +36,6 @@ class FileTextControllerDeepTest extends TestCase {
 
 	private LoggerInterface|MockObject $logger;
 
-	private IAppConfig|MockObject $config;
-
 	private ManualEntityService|MockObject $manualEntityService;
 
 	private IUserSession|MockObject $userSession;
@@ -54,7 +52,6 @@ class FileTextControllerDeepTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->manualEntityService = $this->createMock(ManualEntityService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
@@ -69,65 +66,19 @@ class FileTextControllerDeepTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$this->userSession,
 			$this->rootFolder,
 			$this->groupManager
 		);
 	}//end setUp()
-
-	public function testExtractFileTextWhenDisabled(): void {
-		$this->config->method('hasKey')->willReturn(false);
-		$this->config->method('getValueString')->willReturn('{}');
-
-		$response = $this->controller->extractFileText(42);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
-		$data = $response->getData();
-		$this->assertFalse($data['success']);
-	}//end testExtractFileTextWhenDisabled()
-
-	public function testExtractFileTextWhenScopeNone(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn('{"extractionScope":"none"}');
-
-		$response = $this->controller->extractFileText(42);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
-	}//end testExtractFileTextWhenScopeNone()
-
-	public function testExtractFileTextSuccess(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn('{"extractionScope":"all"}');
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(42, true);
-
-		$response = $this->controller->extractFileText(42);
-
-		$this->assertEquals(200, $response->getStatus());
-		$this->assertTrue($response->getData()['success']);
-	}//end testExtractFileTextSuccess()
-
-	public function testExtractFileTextException(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn('{"extractionScope":"all"}');
-		$this->textExtractor->method('extractFile')
-			->willThrowException(new \Exception('extract error'));
-
-		$response = $this->controller->extractFileText(42);
-
-		$this->assertEquals(500, $response->getStatus());
-		$this->assertStringContainsString('extract error', $response->getData()['message']);
-	}//end testExtractFileTextException()
 
 	public function testBulkExtractException(): void {
 		$this->request->method('getParam')->willReturn(100);
@@ -148,6 +99,43 @@ class FileTextControllerDeepTest extends TestCase {
 
 		$this->assertEquals(500, $response->getStatus());
 	}//end testGetStatsException()
+
+	public function testFailuresAreLoggedAndAnsweredWithTheirOwnWording(): void {
+		$this->request->method('getParam')->willReturn(100);
+		$this->textExtractor->method('getExtractedText')->willThrowException(new \Exception('text fail'));
+		$this->textExtractor->method('extractPendingFiles')->willThrowException(new \Exception('bulk fail'));
+		$this->textExtractor->method('getStats')->willThrowException(new \Exception('stats fail'));
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				unset($context['file'], $context['line']);
+				$logged[] = [$message, $context];
+			}
+		);
+
+		$responses = [
+			$this->controller->getFileText(7),
+			$this->controller->bulkExtract(),
+			$this->controller->getStats(),
+		];
+
+		$this->assertSame(
+			[
+				[500, ['success' => false, 'message' => 'Failed to retrieve file text: text fail']],
+				[500, ['success' => false, 'message' => 'Bulk extraction failed: bulk fail']],
+				[500, ['success' => false, 'message' => 'Failed to retrieve statistics: stats fail']],
+			],
+			array_map(static fn ($response) => [$response->getStatus(), $response->getData()], $responses)
+		);
+		$this->assertSame(
+			[
+				['[FileTextController] Failed to get file text', ['file_id' => 7, 'error' => 'text fail']],
+				['[FileTextController] Failed bulk extraction', ['error' => 'bulk fail']],
+				['[FileTextController] Failed to get stats', ['error' => 'stats fail']],
+			],
+			$logged
+		);
+	}//end testFailuresAreLoggedAndAnsweredWithTheirOwnWording()
 
 	public function testAnonymizeFileNotFound(): void {
 		$this->fileService->method('getFileById')->willReturn(null);

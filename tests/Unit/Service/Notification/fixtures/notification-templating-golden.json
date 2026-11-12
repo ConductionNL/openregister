@@ -1,0 +1,660 @@
+{
+    "translated": {
+        "string": {
+            "none": "Hello",
+            "nl": "Hello",
+            "en-GB": "Hello",
+            "en_US": "Hello",
+            "de-nl": "Hello",
+            "pt-BR": "Hello",
+            "zh": "Hello"
+        },
+        "empty": {
+            "none": "",
+            "nl": "",
+            "en-GB": "",
+            "en_US": "",
+            "de-nl": "",
+            "pt-BR": "",
+            "zh": ""
+        },
+        "int": {
+            "none": 42,
+            "nl": 42,
+            "en-GB": 42,
+            "en_US": 42,
+            "de-nl": 42,
+            "pt-BR": 42,
+            "zh": 42
+        },
+        "zero": {
+            "none": 0,
+            "nl": 0,
+            "en-GB": 0,
+            "en_US": 0,
+            "de-nl": 0,
+            "pt-BR": 0,
+            "zh": 0
+        },
+        "float": {
+            "none": 1.5,
+            "nl": 1.5,
+            "en-GB": 1.5,
+            "en_US": 1.5,
+            "de-nl": 1.5,
+            "pt-BR": 1.5,
+            "zh": 1.5
+        },
+        "true": {
+            "none": true,
+            "nl": true,
+            "en-GB": true,
+            "en_US": true,
+            "de-nl": true,
+            "pt-BR": true,
+            "zh": true
+        },
+        "false": {
+            "none": false,
+            "nl": false,
+            "en-GB": false,
+            "en_US": false,
+            "de-nl": false,
+            "pt-BR": false,
+            "zh": false
+        },
+        "null": {
+            "none": null,
+            "nl": null,
+            "en-GB": null,
+            "en_US": null,
+            "de-nl": null,
+            "pt-BR": null,
+            "zh": null
+        },
+        "list": {
+            "none": [
+                "a",
+                "b"
+            ],
+            "nl": [
+                "a",
+                "b"
+            ],
+            "en-GB": [
+                "a",
+                "b"
+            ],
+            "en_US": [
+                "a",
+                "b"
+            ],
+            "de-nl": [
+                "a",
+                "b"
+            ],
+            "pt-BR": [
+                "a",
+                "b"
+            ],
+            "zh": [
+                "a",
+                "b"
+            ]
+        },
+        "empty-array": {
+            "none": [],
+            "nl": [],
+            "en-GB": [],
+            "en_US": [],
+            "de-nl": [],
+            "pt-BR": [],
+            "zh": []
+        },
+        "nested": {
+            "none": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "nl": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "en-GB": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "en_US": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "de-nl": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "pt-BR": {
+                "nl": [
+                    "x"
+                ]
+            },
+            "zh": {
+                "nl": [
+                    "x"
+                ]
+            }
+        },
+        "map-nl-en": {
+            "none": "Bel klant",
+            "nl": "Bel klant",
+            "en-GB": "Call client",
+            "en_US": "Call client",
+            "de-nl": "Bel klant",
+            "pt-BR": "Bel klant",
+            "zh": "Bel klant"
+        },
+        "map-en-only": {
+            "none": "Call",
+            "nl": "Call",
+            "en-GB": "Call",
+            "en_US": "Call",
+            "de-nl": "Call",
+            "pt-BR": "Call",
+            "zh": "Call"
+        },
+        "map-regional": {
+            "none": "Colour",
+            "nl": "Colour",
+            "en-GB": "Colour",
+            "en_US": "Color",
+            "de-nl": "Colour",
+            "pt-BR": "Colour",
+            "zh": "Colour"
+        },
+        "map-underscore": {
+            "none": "Olá",
+            "nl": "Olá",
+            "en-GB": "Olá",
+            "en_US": "Olá",
+            "de-nl": "Olá",
+            "pt-BR": "Olá",
+            "zh": "Olá"
+        },
+        "map-blank-first": {
+            "none": "Fallback",
+            "nl": "Fallback",
+            "en-GB": "Fallback",
+            "en_US": "Fallback",
+            "de-nl": "Fallback",
+            "pt-BR": "Fallback",
+            "zh": "Fallback"
+        },
+        "map-all-blank": {
+            "none": {
+                "nl": "",
+                "en": null
+            },
+            "nl": {
+                "nl": "",
+                "en": null
+            },
+            "en-GB": {
+                "nl": "",
+                "en": null
+            },
+            "en_US": {
+                "nl": "",
+                "en": null
+            },
+            "de-nl": {
+                "nl": "",
+                "en": null
+            },
+            "pt-BR": {
+                "nl": "",
+                "en": null
+            },
+            "zh": {
+                "nl": "",
+                "en": null
+            }
+        },
+        "map-false": {
+            "none": "x",
+            "nl": "x",
+            "en-GB": "x",
+            "en_US": "x",
+            "de-nl": "x",
+            "pt-BR": "x",
+            "zh": "x"
+        },
+        "map-zero": {
+            "none": "0",
+            "nl": "0",
+            "en-GB": "0",
+            "en_US": "0",
+            "de-nl": "0",
+            "pt-BR": "0",
+            "zh": "0"
+        },
+        "map-bad-key": {
+            "none": {
+                "nl": "a",
+                "English": "b"
+            },
+            "nl": {
+                "nl": "a",
+                "English": "b"
+            },
+            "en-GB": {
+                "nl": "a",
+                "English": "b"
+            },
+            "en_US": {
+                "nl": "a",
+                "English": "b"
+            },
+            "de-nl": {
+                "nl": "a",
+                "English": "b"
+            },
+            "pt-BR": {
+                "nl": "a",
+                "English": "b"
+            },
+            "zh": {
+                "nl": "a",
+                "English": "b"
+            }
+        },
+        "map-int-key": {
+            "none": {
+                "nl": "a",
+                "5": "b"
+            },
+            "nl": {
+                "nl": "a",
+                "5": "b"
+            },
+            "en-GB": {
+                "nl": "a",
+                "5": "b"
+            },
+            "en_US": {
+                "nl": "a",
+                "5": "b"
+            },
+            "de-nl": {
+                "nl": "a",
+                "5": "b"
+            },
+            "pt-BR": {
+                "nl": "a",
+                "5": "b"
+            },
+            "zh": {
+                "nl": "a",
+                "5": "b"
+            }
+        },
+        "map-upper": {
+            "none": {
+                "NL": "a"
+            },
+            "nl": {
+                "NL": "a"
+            },
+            "en-GB": {
+                "NL": "a"
+            },
+            "en_US": {
+                "NL": "a"
+            },
+            "de-nl": {
+                "NL": "a"
+            },
+            "pt-BR": {
+                "NL": "a"
+            },
+            "zh": {
+                "NL": "a"
+            }
+        },
+        "map-four": {
+            "none": {
+                "abcd": "a"
+            },
+            "nl": {
+                "abcd": "a"
+            },
+            "en-GB": {
+                "abcd": "a"
+            },
+            "en_US": {
+                "abcd": "a"
+            },
+            "de-nl": {
+                "abcd": "a"
+            },
+            "pt-BR": {
+                "abcd": "a"
+            },
+            "zh": {
+                "abcd": "a"
+            }
+        },
+        "map-long-region": {
+            "none": {
+                "zh-Hant-TW": "a"
+            },
+            "nl": {
+                "zh-Hant-TW": "a"
+            },
+            "en-GB": {
+                "zh-Hant-TW": "a"
+            },
+            "en_US": {
+                "zh-Hant-TW": "a"
+            },
+            "de-nl": {
+                "zh-Hant-TW": "a"
+            },
+            "pt-BR": {
+                "zh-Hant-TW": "a"
+            },
+            "zh": {
+                "zh-Hant-TW": "a"
+            }
+        },
+        "map-html": {
+            "none": "<b>\"x\" & y</b>",
+            "nl": "<b>\"x\" & y</b>",
+            "en-GB": "<b>\"x\" & y</b>",
+            "en_US": "<b>\"x\" & y</b>",
+            "de-nl": "<b>\"x\" & y</b>",
+            "pt-BR": "<b>\"x\" & y</b>",
+            "zh": "<b>\"x\" & y</b>"
+        },
+        "uuid-named": {
+            "none": "11111111-1111-4111-8111-111111111111",
+            "nl": "11111111-1111-4111-8111-111111111111",
+            "en-GB": "11111111-1111-4111-8111-111111111111",
+            "en_US": "11111111-1111-4111-8111-111111111111",
+            "de-nl": "11111111-1111-4111-8111-111111111111",
+            "pt-BR": "11111111-1111-4111-8111-111111111111",
+            "zh": "11111111-1111-4111-8111-111111111111"
+        },
+        "uuid-nameless": {
+            "none": "22222222-2222-4222-8222-222222222222",
+            "nl": "22222222-2222-4222-8222-222222222222",
+            "en-GB": "22222222-2222-4222-8222-222222222222",
+            "en_US": "22222222-2222-4222-8222-222222222222",
+            "de-nl": "22222222-2222-4222-8222-222222222222",
+            "pt-BR": "22222222-2222-4222-8222-222222222222",
+            "zh": "22222222-2222-4222-8222-222222222222"
+        },
+        "uuid-missing": {
+            "none": "33333333-3333-4333-8333-333333333333",
+            "nl": "33333333-3333-4333-8333-333333333333",
+            "en-GB": "33333333-3333-4333-8333-333333333333",
+            "en_US": "33333333-3333-4333-8333-333333333333",
+            "de-nl": "33333333-3333-4333-8333-333333333333",
+            "pt-BR": "33333333-3333-4333-8333-333333333333",
+            "zh": "33333333-3333-4333-8333-333333333333"
+        },
+        "uuid-throws": {
+            "none": "44444444-4444-4444-8444-444444444444",
+            "nl": "44444444-4444-4444-8444-444444444444",
+            "en-GB": "44444444-4444-4444-8444-444444444444",
+            "en_US": "44444444-4444-4444-8444-444444444444",
+            "de-nl": "44444444-4444-4444-8444-444444444444",
+            "pt-BR": "44444444-4444-4444-8444-444444444444",
+            "zh": "44444444-4444-4444-8444-444444444444"
+        },
+        "uuid-upper": {
+            "none": "11111111-1111-4111-8111-111111111111",
+            "nl": "11111111-1111-4111-8111-111111111111",
+            "en-GB": "11111111-1111-4111-8111-111111111111",
+            "en_US": "11111111-1111-4111-8111-111111111111",
+            "de-nl": "11111111-1111-4111-8111-111111111111",
+            "pt-BR": "11111111-1111-4111-8111-111111111111",
+            "zh": "11111111-1111-4111-8111-111111111111"
+        },
+        "html": {
+            "none": "<i>it's</i>",
+            "nl": "<i>it's</i>",
+            "en-GB": "<i>it's</i>",
+            "en_US": "<i>it's</i>",
+            "de-nl": "<i>it's</i>",
+            "pt-BR": "<i>it's</i>",
+            "zh": "<i>it's</i>"
+        }
+    },
+    "interpolate": {
+        "all": {
+            "none": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "nl": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "en-GB": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Call client | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "en_US": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Call client | Call | Color | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "de-nl": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "pt-BR": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+            "zh": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;"
+        },
+        "spacing": {
+            "none": "Hello 42 C Hello",
+            "nl": "Hello 42 C Hello",
+            "en-GB": "Hello 42 C Hello",
+            "en_US": "Hello 42 C Hello",
+            "de-nl": "Hello 42 C Hello",
+            "pt-BR": "Hello 42 C Hello",
+            "zh": "Hello 42 C Hello"
+        },
+        "unknown": {
+            "none": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "nl": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "en-GB": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "en_US": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "de-nl": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "pt-BR": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+            "zh": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}"
+        },
+        "no-holes": {
+            "none": "plain text",
+            "nl": "plain text",
+            "en-GB": "plain text",
+            "en_US": "plain text",
+            "de-nl": "plain text",
+            "pt-BR": "plain text",
+            "zh": "plain text"
+        },
+        "ctx-wins?": {
+            "none": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "nl": "from-data C {{ctx-list}} Ctx NL 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "en-GB": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "en_US": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "de-nl": "from-data C {{ctx-list}} Ctx NL 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "pt-BR": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+            "zh": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;"
+        },
+        "dotted": {
+            "none": "dot dash under",
+            "nl": "dot dash under",
+            "en-GB": "dot dash under",
+            "en_US": "dot dash under",
+            "de-nl": "dot dash under",
+            "pt-BR": "dot dash under",
+            "zh": "dot dash under"
+        }
+    },
+    "interpolate-no-resolver": {
+        "all": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | 11111111-1111-4111-8111-111111111111 | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | 11111111-1111-4111-8111-111111111111 | &lt;i&gt;it&#039;s&lt;/i&gt;",
+        "spacing": "Hello 42 C Hello",
+        "unknown": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+        "no-holes": "plain text",
+        "ctx-wins?": "from-data C {{ctx-list}} Ctx EN 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+        "dotted": "dot dash under"
+    },
+    "interpolate-no-context": {
+        "all": "Hello |  | 42 | 0 | 1.5 | 1 |  | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | Bel klant | Call | Colour | Olá | Fallback | {{ map-all-blank }} | x | 0 | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | &lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt; | Acme &lt;BV&gt; | 22222222-2222-4222-8222-222222222222 | 33333333-3333-4333-8333-333333333333 | 44444444-4444-4444-8444-444444444444 | Acme &lt;BV&gt; | &lt;i&gt;it&#039;s&lt;/i&gt;",
+        "spacing": "Hello 42 {{ctx-only}} Hello",
+        "unknown": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+        "no-holes": "plain text",
+        "ctx-wins?": "from-data {{ctx-only}} {{ctx-list}} {{ctx-map}} {{ctx-uuid}} {{ctx-html}}",
+        "dotted": "dot dash under"
+    },
+    "interpolate-no-data": {
+        "all": "{{ string }} | {{ empty }} | {{ int }} | {{ zero }} | {{ float }} | {{ true }} | {{ false }} | {{ null }} | {{ list }} | {{ empty-array }} | {{ nested }} | {{ map-nl-en }} | {{ map-en-only }} | {{ map-regional }} | {{ map-underscore }} | {{ map-blank-first }} | {{ map-all-blank }} | {{ map-false }} | {{ map-zero }} | {{ map-bad-key }} | {{ map-int-key }} | {{ map-upper }} | {{ map-four }} | {{ map-long-region }} | {{ map-html }} | {{ uuid-named }} | {{ uuid-nameless }} | {{ uuid-missing }} | {{ uuid-throws }} | {{ uuid-upper }} | {{ html }}",
+        "spacing": "{{string}} {{  int  }} C {{ string}}",
+        "unknown": "a {{nope}} b {{nope}} {{ other.key }} {{bad key}} {{}}",
+        "no-holes": "plain text",
+        "ctx-wins?": "from-context C {{ctx-list}} Ctx NL 11111111-1111-4111-8111-111111111111 &lt;x&gt;",
+        "dotted": "{{a.b}} {{a-b}} {{a_b}}"
+    },
+    "unanswered": {
+        "all": [
+            "null",
+            "list",
+            "empty-array",
+            "nested",
+            "map-all-blank",
+            "map-bad-key",
+            "map-int-key",
+            "map-upper",
+            "map-four",
+            "map-long-region"
+        ],
+        "spacing": [],
+        "unknown": [
+            "nope",
+            "other.key"
+        ],
+        "no-holes": [],
+        "ctx-wins?": [
+            "ctx-list"
+        ],
+        "dotted": []
+    },
+    "unanswered-empty": {
+        "all": [
+            "string",
+            "empty",
+            "int",
+            "zero",
+            "float",
+            "true",
+            "false",
+            "null",
+            "list",
+            "empty-array",
+            "nested",
+            "map-nl-en",
+            "map-en-only",
+            "map-regional",
+            "map-underscore",
+            "map-blank-first",
+            "map-all-blank",
+            "map-false",
+            "map-zero",
+            "map-bad-key",
+            "map-int-key",
+            "map-upper",
+            "map-four",
+            "map-long-region",
+            "map-html",
+            "uuid-named",
+            "uuid-nameless",
+            "uuid-missing",
+            "uuid-throws",
+            "uuid-upper",
+            "html"
+        ],
+        "spacing": [
+            "string",
+            "int",
+            "ctx-only"
+        ],
+        "unknown": [
+            "nope",
+            "other.key"
+        ],
+        "no-holes": [],
+        "ctx-wins?": [
+            "shared",
+            "ctx-only",
+            "ctx-list",
+            "ctx-map",
+            "ctx-uuid",
+            "ctx-html"
+        ],
+        "dotted": [
+            "a.b",
+            "a-b",
+            "a_b"
+        ]
+    },
+    "unanswered-context": {
+        "all": [
+            "string",
+            "empty",
+            "int",
+            "zero",
+            "float",
+            "true",
+            "false",
+            "null",
+            "list",
+            "empty-array",
+            "nested",
+            "map-nl-en",
+            "map-en-only",
+            "map-regional",
+            "map-underscore",
+            "map-blank-first",
+            "map-all-blank",
+            "map-false",
+            "map-zero",
+            "map-bad-key",
+            "map-int-key",
+            "map-upper",
+            "map-four",
+            "map-long-region",
+            "map-html",
+            "uuid-named",
+            "uuid-nameless",
+            "uuid-missing",
+            "uuid-throws",
+            "uuid-upper",
+            "html"
+        ],
+        "spacing": [
+            "string",
+            "int"
+        ],
+        "unknown": [
+            "nope",
+            "other.key"
+        ],
+        "no-holes": [],
+        "ctx-wins?": [
+            "ctx-list"
+        ],
+        "dotted": [
+            "a.b",
+            "a-b",
+            "a_b"
+        ]
+    },
+    "find-calls": [
+        "11111111-1111-4111-8111-111111111111",
+        "22222222-2222-4222-8222-222222222222",
+        "33333333-3333-4333-8333-333333333333",
+        "44444444-4444-4444-8444-444444444444"
+    ],
+    "log": [
+        "[NotificationTemplating] relation display-name resolve failed: lookup failed"
+    ]
+}

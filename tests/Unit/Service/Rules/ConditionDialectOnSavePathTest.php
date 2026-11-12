@@ -24,8 +24,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -43,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class ConditionDialectOnSavePathTest extends TestCase {
 
@@ -79,13 +83,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 * @return LifecycleConditionEvaluator The evaluator.
 	 */
 	private function evaluator(): LifecycleConditionEvaluator {
-		return new LifecycleConditionEvaluator(
-			$this->createMock(originalClassName: IUserSession::class),
-			$this->createMock(originalClassName: IGroupManager::class),
-			$this->createMock(originalClassName: IL10N::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->dialect()
-		);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->createMock(originalClassName: IL10N::class), $this->createMock(originalClassName: LoggerInterface::class)), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->dialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(originalClassName: IUserSession::class), $this->createMock(originalClassName: IGroupManager::class))));
 
 	}//end evaluator()
 
@@ -100,13 +98,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	private function holds(mixed $rule, array $object): bool {
 		return $this->evaluator()->holds(
 			rule: $rule,
-			newData: $object,
-			oldData: [],
-			action: 'beslissen',
-			from: 'in-behandeling',
-			to: 'besloten',
-			schemaSlug: 'bezwaar',
-			field: 'status'
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: $object, oldData: [], schemaSlug: 'bezwaar', field: 'status'), move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten'))
 		);
 
 	}//end holds()
@@ -162,7 +154,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheFixtureItselfIsAValidSchema(): void {
 		$this->assertSame([], $this->codesFor([]));
@@ -174,7 +166,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheSavePathEvaluatesAnAstCondition(): void {
 		$this->assertTrue($this->holds(self::ABOVE_FIVE_HUNDRED['ast'], ['bedrag' => 900]));
@@ -191,7 +183,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testBothDialectsAnswerTheSameAboutTheSameRule(): void {
 		foreach ([['bedrag' => 900], ['bedrag' => 120], ['bedrag' => 500], []] as $object) {
@@ -209,7 +201,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaSaveAcceptsAnAstConditionAndAnAstAutoWhen(): void {
 		$this->assertNotContains(
@@ -229,7 +221,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testASchemaSaveStillAcceptsTheLegacyDialect(): void {
 		$this->assertNotContains(
@@ -244,7 +236,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnUnknownOperatorIsRefusedAtSchemaSave(): void {
 		$this->assertContains(
@@ -262,7 +254,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testANestedUnknownOperatorIsRefusedToo(): void {
 		$this->assertContains(
@@ -281,7 +273,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testALiteralMapIsNotWalkedAsAnExpression(): void {
 		$this->assertTrue(

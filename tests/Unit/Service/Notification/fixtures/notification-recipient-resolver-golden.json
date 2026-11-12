@@ -1,0 +1,142 @@
+{
+    "empty": {
+        "uids": [],
+        "unresolved": []
+    },
+    "not-arrays": {
+        "uids": [],
+        "unresolved": []
+    },
+    "users": {
+        "uids": [
+            "anna",
+            "bram"
+        ],
+        "unresolved": []
+    },
+    "users-scalar": {
+        "uids": [
+            "chris"
+        ],
+        "unresolved": []
+    },
+    "users-missing": {
+        "uids": [],
+        "unresolved": []
+    },
+    "field": {
+        "uids": [
+            "anna"
+        ],
+        "unresolved": []
+    },
+    "relation": {
+        "uids": [
+            "bram",
+            "chris"
+        ],
+        "unresolved": []
+    },
+    "watchers-no-object": {
+        "uids": [
+            "anna"
+        ],
+        "unresolved": []
+    },
+    "watchers-object": {
+        "uids": [],
+        "unresolved": []
+    },
+    "acl-no-object": {
+        "uids": [],
+        "unresolved": []
+    },
+    "acl-read": {
+        "uids": [
+            "owner",
+            "dirk"
+        ],
+        "unresolved": []
+    },
+    "acl-manage": {
+        "uids": [
+            "owner"
+        ],
+        "unresolved": []
+    },
+    "expression": {
+        "uids": [],
+        "unresolved": []
+    },
+    "expression-no-obj": {
+        "uids": [],
+        "unresolved": []
+    },
+    "groups": {
+        "uids": [
+            "chris",
+            "dirk"
+        ],
+        "unresolved": [
+            {
+                "kind": "groups",
+                "id": "gone",
+                "reason": "group-not-found"
+            },
+            {
+                "kind": "groups",
+                "id": "broken",
+                "reason": "group-lookup-failed"
+            }
+        ]
+    },
+    "groups-scalar": {
+        "uids": [
+            "chris",
+            "dirk"
+        ],
+        "unresolved": []
+    },
+    "role": {
+        "uids": [
+            "chris",
+            "dirk"
+        ],
+        "unresolved": [
+            {
+                "kind": "role",
+                "id": "gone",
+                "reason": "group-not-found"
+            },
+            {
+                "kind": "role",
+                "id": "boss",
+                "reason": "role-not-assigned"
+            },
+            {
+                "kind": "role",
+                "id": "odd",
+                "reason": "role-not-assigned"
+            }
+        ]
+    },
+    "unknown-kind": {
+        "uids": [],
+        "unresolved": []
+    },
+    "mixed-dedupe": {
+        "uids": [
+            "bram",
+            "chris",
+            "dirk",
+            "anna"
+        ],
+        "unresolved": [
+            {
+                "kind": "role",
+                "id": "gone",
+                "reason": "group-not-found"
+            }
+        ]
+    }
+}

@@ -27,14 +27,15 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\EntryReference;
-use OCA\OpenRegister\Db\EntryReferenceMapper;
+use OCA\OpenRegister\Notifications\Db\EntryReference;
+use OCA\OpenRegister\Notifications\Db\EntryReferenceMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ReferencePattern;
-use OCA\OpenRegister\Db\ReferencePatternMapper;
+use OCA\OpenRegister\Notifications\Db\ReferencePattern;
+use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Timeline\ReferenceService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceSource;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -145,7 +146,7 @@ class ReferenceServiceTest extends TestCase {
 		$this->references->method('insert')
 			->willReturnCallback(static fn (EntryReference $ref): EntryReference => $ref);
 
-		$written = $this->service->record('entry-a', 'case-1', 'zie Z-2026-0044');
+		$written = $this->service->record(new ReferenceSource('entry-a', 'case-1', 'zie Z-2026-0044'));
 
 		$this->assertCount(1, $written);
 		$this->assertSame('case-1', $written[0]->getSourceUuid());
@@ -158,7 +159,7 @@ class ReferenceServiceTest extends TestCase {
 		$this->resolvesTo(null);
 		$this->references->expects($this->never())->method('insert');
 
-		$this->assertSame([], $this->service->record('entry-a', 'case-1', 'zie Z-2026-9999'));
+		$this->assertSame([], $this->service->record(new ReferenceSource('entry-a', 'case-1', 'zie Z-2026-9999')));
 	}
 
 	public function testRemovingTheTextRemovesTheReference(): void {
@@ -170,7 +171,7 @@ class ReferenceServiceTest extends TestCase {
 		$this->references->expects($this->once())->method('deleteForEntry')->with('entry-a');
 		$this->references->expects($this->never())->method('insert');
 
-		$this->assertSame([], $this->service->record('entry-a', 'case-1', 'de verwijzing is eruit gehaald'));
+		$this->assertSame([], $this->service->record(new ReferenceSource('entry-a', 'case-1', 'de verwijzing is eruit gehaald')));
 	}
 
 	public function testAPatternWithoutASlugIsRefused(): void {

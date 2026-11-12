@@ -23,3 +23,25 @@
 
 - Every schema and register write that reaches the mapper produces exactly one sealed row.
 - No row carries a credential value.
+
+## 5. Woo programme amendment: organisations (REQ-HSA-010, row 12.30)
+
+- [ ] 5.1 Register `EntityEditAuditListener` for `OrganisationCreatedEvent`, `OrganisationUpdatedEvent` and `OrganisationDeletedEvent` in `lib/AppInfo/Application.php`; teach `EntityEditAuditor` the `organisation.*` actions and the organisation diff. Verify: `tests/Unit/Listener/EntityEditAuditListenerTest.php::testAnOrganisationRenameWritesOneRow` and `testAnOrganisationCreatedByRepairNamesItsCause`, both constructing the real event classes with a real `Organisation` entity (fails today: no listener on those events).
+- [ ] 5.2 Through the caller: `tests/Unit/Controller/OrganisationAuditDoorTest.php` updates an organisation through `OrganisationController::update()` with the real `OrganisationMapper` event dispatch wired to the listener and asserts one sealed row; a Newman request in `tests/newman/` renames an organisation and reads the row from `GET /api/audit-trails?category=administrative&action=organisation.updated`.
+
+## 6. Woo programme amendment: administrative category (REQ-HSA-011, row 12.22 under D5)
+
+- [ ] 6.1 Migration adding nullable `category` to `openregister_audit_trails`, backfilled by action; `AuditTrail::$category`; the writers set it (`EntityEditAuditor`, `SettingsChangeAuditor`, the object write path). Confirm the hash input in `AuditTrailMapper` does not include it. Verify: `tests/Unit/Db/AuditCategoryBackfillTest.php::testTheChainVerifiesAfterBackfill` and `testEveryWriterSetsACategory` (fails today: no column).
+- [ ] 6.2 `AuditTrailController::index()` accepts `category`, defaults to `domain`, and refuses `administrative` to a non-administrator with 403; per-object trail endpoints filter administrative rows out. Verify: `tests/Unit/Controller/AuditCategoryReadTest.php::testTheDefaultIsDomain`, `testANonAdminNeverReceivesAdministrativeRows`; the hydra gates no-admin-idor and semantic-auth pass.
+- [ ] 6.3 Setting `audit.administrativeRetention` (ISO 8601 duration, default `P10Y`, refused when unparsable) applied at write time to `retentionPeriod` and `expires`. Verify: `tests/Unit/Service/Audit/AuditCategoryRetentionTest.php::testAdministrativeRowsTakeTheirOwnRetention`, `testAnUnparsableDurationIsRefused`.
+- [ ] 6.4 "Administrative changes" view on the audit log page (`audit-log-page`'s view, or `src/views/auditTrail/` where it lives on `development`). Verify: `tests/e2e/ci/administrative-change-log.spec.ts` renames an organisation and edits a schema, opens the view, sees both rows, switches to the default view and sees neither.
+
+## V. Verification and done
+
+Follow `openspec/woo-build-rules.md`.
+
+- [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
+- [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
+- [ ] V.3 Full unit suite: `./vendor/bin/phpunit -c phpunit-unit.xml --no-coverage`, judged by the `Tests:` line (`Failures:` and `Errors:`), never by the exit code alone, because a green suite exits 1 without a coverage driver.
+- [ ] V.4 Gates: `run-hydra-gates.sh --base origin/development` from `vendor/conduction/hydra-gates` (without `--base` the gates read NOT APPLICABLE, which is not a pass), and count the gates that ran. Then once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint`. CI runs the gates on the full tree, and the coverage guard needs tests for every added statement, so project the coverage arithmetically and say in the PR body that it is arithmetic.
+- [ ] V.5 One PR with `--base development`. Merge `development` into the branch, never rebase a pushed branch. No `Co-Authored-By` trailer on any commit. Done means merged on `development` with CI green; the rows this change closes count as `production` only once it ships in a store release.

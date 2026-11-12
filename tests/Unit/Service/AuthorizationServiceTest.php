@@ -68,10 +68,27 @@ class AuthorizationServiceTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->consumerMapper = $this->createMock(ConsumerMapper::class);
 
+		// A jti cache that remembers, and a request that carried a Bearer
+		// header (the OAuth guard reads it).
+		$store = [];
+		$cache = $this->createMock(\OCP\ICache::class);
+		$cache->method('get')->willReturnCallback(function (string $key) use (&$store) {
+			return $store[$key] ?? null;
+		});
+		$cache->method('set')->willReturnCallback(function (string $key, $value) use (&$store): bool {
+			$store[$key] = $value;
+			return true;
+		});
+		$cacheFactory = $this->createMock(\OCP\ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn($cache);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getHeader')->willReturnCallback(fn (string $name) => (strtolower($name) === 'authorization') ? 'Bearer sometoken' : '');
+
 		$this->service = new AuthorizationService(
-			$this->userManager,
-			$this->userSession,
-			$this->consumerMapper
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $this->userSession, users: $this->userManager, groups: $this->createMock(\OCP\IGroupManager::class)),
+			consumerMapper: $this->consumerMapper,
+			cacheFactory: $cacheFactory,
+			request: $request
 		);
 	}
 
@@ -172,7 +189,11 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		$payload['exp'] = $now - 60;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service->validatePayload($payload);
 	}
 
 	public function testValidatePayloadThrowsWhenMissingIat(): void {
@@ -228,7 +249,12 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		// Past the default one hour lifetime.
+		$payload['iat'] = time() - 3700;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('expired');
+		$this->service->validatePayload($payload);
 	}
 
 	public function testValidatePayloadDefaultExpiryExpired(): void {
@@ -249,19 +275,13 @@ class AuthorizationServiceTest extends TestCase {
 			'exp' => $now + 3600,
 		];
 
+		// Exactly at the clock skew.
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
-	}
 
-	public function testValidatePayloadWithExactlyNowIat(): void {
-		$now = time();
-		$payload = [
-			'iat' => $now,
-			'exp' => $now + 3600,
-		];
-
+		$payload['iat'] = $now + 3000;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('invalid issue time');
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
 	}
 
 	public function testValidatePayloadWithZeroIat(): void {
@@ -284,7 +304,11 @@ class AuthorizationServiceTest extends TestCase {
 		];
 
 		$this->service->validatePayload($payload);
-		$this->assertTrue(true);
+
+		$payload['nbf'] = $now + 3000;
+		$this->expectException(AuthenticationException::class);
+		$this->expectExceptionMessage('not yet valid');
+		$this->service->validatePayload($payload);
 	}
 
 	// ==========================================
@@ -302,7 +326,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$header = 'Basic ' . base64_encode('admin:password');
@@ -323,7 +347,9 @@ class AuthorizationServiceTest extends TestCase {
 	}
 
 	public function testAuthorizeBasicWithUsersAndGroupsParams(): void {
+		// The allow-list is enforced now; testuser is on it.
 		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
 
 		$this->userManager
 			->expects($this->once())
@@ -333,7 +359,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$header = 'Basic ' . base64_encode('testuser:testpass');
@@ -353,7 +379,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$header = 'Basic ' . base64_encode('admin:pass:extra');
@@ -363,7 +389,7 @@ class AuthorizationServiceTest extends TestCase {
 	public function testAuthorizeBasicRejectsMalformedBase64(): void {
 		// Invalid base64 (strict) must fail authentication, not raise a TypeError.
 		$this->userManager->expects($this->never())->method('checkPassword');
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$this->expectException(AuthenticationException::class);
 		$this->callAuth('authorizeBasic', 'Basic @@not-valid-base64@@');
@@ -372,7 +398,7 @@ class AuthorizationServiceTest extends TestCase {
 	public function testAuthorizeBasicRejectsMissingColon(): void {
 		// A decoded credential with no colon separator is malformed.
 		$this->userManager->expects($this->never())->method('checkPassword');
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$this->expectException(AuthenticationException::class);
 		$this->callAuth('authorizeBasic', 'Basic ' . base64_encode('nocolonhere'));
@@ -401,6 +427,8 @@ class AuthorizationServiceTest extends TestCase {
 			->expects($this->once())
 			->method('isLoggedIn')
 			->willReturn(true);
+		// The session user Nextcloud authenticated from the Bearer token.
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 
 		$this->callAuth('authorizeOAuth', 'Bearer sometoken');
 		$this->assertTrue(true);
@@ -468,6 +496,8 @@ class AuthorizationServiceTest extends TestCase {
 			->expects($this->once())
 			->method('isLoggedIn')
 			->willReturn(true);
+		// The session user Nextcloud authenticated from the Bearer token.
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 
 		$this->callAuth('authorizeOAuth', 'Bearertoken');
 		$this->assertTrue(true);
@@ -489,7 +519,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeApiKey', 'valid-key-123', $keys);
@@ -533,7 +563,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeApiKey', 'key-two', $keys);
@@ -731,7 +761,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
@@ -763,7 +793,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
@@ -795,7 +825,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
@@ -920,7 +950,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
@@ -992,7 +1022,7 @@ class AuthorizationServiceTest extends TestCase {
 			->willReturn([$consumer]);
 
 		// Must NOT authenticate the attacker.
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$this->expectException(AuthenticationException::class);
 
@@ -1026,7 +1056,7 @@ class AuthorizationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([$consumer]);
 
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$this->expectException(AuthenticationException::class);
 
@@ -1034,11 +1064,12 @@ class AuthorizationServiceTest extends TestCase {
 	}
 
 	/**
-	 * An asymmetric-configured issuer (RS256) with a matching-header token must
-	 * fail closed until real asymmetric verification is implemented — it must
-	 * never fall through to HMAC verification with the public key.
+	 * An asymmetric-configured issuer (RS256) whose key and signature do not
+	 * verify is refused: RS/PS are verified with the public key and never fall
+	 * through to HMAC (a valid RS256/PS256 token is accepted, see
+	 * AuthorizationServiceHardeningTest).
 	 */
-	public function testAuthorizeJwtFailsClosedForAsymmetricAlgorithm(): void {
+	public function testAuthorizeJwtRefusesAnRs256TokenItCannotVerify(): void {
 		$now = time();
 		$payload = [
 			'iss' => 'rs256-issuer',
@@ -1064,10 +1095,10 @@ class AuthorizationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([$consumer]);
 
-		$this->userSession->expects($this->never())->method('setUser');
+		$this->userSession->expects($this->never())->method('setVolatileActiveUser');
 
 		$this->expectException(AuthenticationException::class);
-		$this->expectExceptionMessage('not supported');
+		$this->expectExceptionMessage('could not be validated');
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
 	}
@@ -1100,7 +1131,7 @@ class AuthorizationServiceTest extends TestCase {
 
 		$this->userSession
 			->expects($this->once())
-			->method('setUser')
+			->method('setVolatileActiveUser')
 			->with($user);
 
 		$this->callAuth('authorizeJwt', 'Bearer ' . $token);
@@ -1119,9 +1150,10 @@ class AuthorizationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([$consumer]);
 
-		$result = $this->invokePrivateMethod($this->service, 'findIssuer', ['test-issuer']);
-		$this->assertInstanceOf(Consumer::class, $result);
-		$this->assertSame('test-issuer', $result->getName());
+		$result = $this->invokePrivateMethod($this->service, 'findIssuer', ['test-issuer', new \OCA\OpenRegister\Service\Consumer\ConsumerMapperSource($this->consumerMapper)]);
+		$this->assertInstanceOf(\OCA\OpenRegister\Service\Consumer\ResolvedConsumer::class, $result);
+		$this->assertSame('test-issuer', $result->name);
+		$this->assertSame($consumer, $result->record);
 	}
 
 	public function testFindIssuerThrowsWhenNotFound(): void {
@@ -1133,7 +1165,7 @@ class AuthorizationServiceTest extends TestCase {
 		$this->expectException(AuthenticationException::class);
 		$this->expectExceptionMessage('issuer was not found');
 
-		$this->invokePrivateMethod($this->service, 'findIssuer', ['nonexistent']);
+		$this->invokePrivateMethod($this->service, 'findIssuer', ['nonexistent', new \OCA\OpenRegister\Service\Consumer\ConsumerMapperSource($this->consumerMapper)]);
 	}
 
 	public function testFindIssuerDetailsContainIss(): void {
@@ -1142,7 +1174,7 @@ class AuthorizationServiceTest extends TestCase {
 			->willReturn([]);
 
 		try {
-			$this->invokePrivateMethod($this->service, 'findIssuer', ['my-issuer']);
+			$this->invokePrivateMethod($this->service, 'findIssuer', ['my-issuer', new \OCA\OpenRegister\Service\Consumer\ConsumerMapperSource($this->consumerMapper)]);
 			$this->fail('Expected AuthenticationException');
 		} catch (AuthenticationException $e) {
 			$this->assertArrayHasKey('iss', $e->getDetails());
@@ -1163,8 +1195,8 @@ class AuthorizationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([$consumer1, $consumer2]);
 
-		$result = $this->invokePrivateMethod($this->service, 'findIssuer', ['issuer']);
-		$this->assertSame('user1', $result->getUserId());
+		$result = $this->invokePrivateMethod($this->service, 'findIssuer', ['issuer', new \OCA\OpenRegister\Service\Consumer\ConsumerMapperSource($this->consumerMapper)]);
+		$this->assertSame('user1', $result->userId);
 	}
 
 	// ==========================================

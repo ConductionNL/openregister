@@ -3,7 +3,7 @@
 /**
  * AuditHashService::sealRows batched sealing tests.
  *
- * Proves the batched counterpart of sealRow() preserves the exact chain
+ * Proves the batched seal pass preserves the exact chain
  * semantics: rows are hashed in id order, the first row chains onto the
  * hash before the range (or genesis), already-sealed rows are left
  * untouched but contribute their stored hash as the chain link, and the
@@ -270,7 +270,9 @@ class AuditHashSealRowsTest extends TestCase {
 	 * lock it does not hold.
 	 */
 	public function testSealRowsLockUnavailableFailsSoft(): void {
-		$this->lockingProvider->method('acquireLock')
+		$this->lockingProvider->expects($this->exactly(3))
+			->method('acquireLock')
+			->with('openregister/audit-seal', ILockingProvider::LOCK_EXCLUSIVE)
 			->willThrowException(new LockedException('openregister/audit-seal'));
 		$this->lockingProvider->expects($this->never())->method('releaseLock');
 
@@ -302,28 +304,6 @@ class AuditHashSealRowsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->service->sealRows([1]);
 	}//end testSealRowsReleasesLockWhenSealPassThrows()
-
-	/**
-	 * sealRow() takes the SAME lock as sealRows() (they race each other)
-	 * and is equally fail-soft on contention: warning + row left unsealed,
-	 * no database access.
-	 */
-	public function testSealRowLockUnavailableFailsSoft(): void {
-		$this->lockingProvider->expects($this->exactly(3))
-			->method('acquireLock')
-			->with('openregister/audit-seal', ILockingProvider::LOCK_EXCLUSIVE)
-			->willThrowException(new LockedException('openregister/audit-seal'));
-		$this->lockingProvider->expects($this->never())->method('releaseLock');
-
-		$this->db->expects($this->never())->method('getQueryBuilder');
-		$this->db->expects($this->never())->method('executeStatement');
-
-		$this->logger->expects($this->once())
-			->method('warning')
-			->with($this->stringContains('seal lock unavailable'));
-
-		$this->assertFalse($this->service->sealRow(42));
-	}//end testSealRowLockUnavailableFailsSoft()
 
 	/**
 	 * A transient lock conflict is retried: first acquisition attempt
@@ -359,7 +339,7 @@ class AuditHashSealRowsTest extends TestCase {
 	 * verifies instead of permanently breaking at row N+1.
 	 *
 	 * Row 1 is sealed (h1), row 2 is an unsealed leftover, row 3 is sealed
-	 * through sealRow(). The predecessor query must filter unsealed rows
+	 * through sealRows(). The predecessor query must filter unsealed rows
 	 * (isNotNull(hash) + hash != ''), row 3 must chain onto h1 (NOT
 	 * genesis), and a subsequent verifyChain() over all three rows must
 	 * report the chain valid with exactly one skipped null-hash row.
@@ -395,9 +375,9 @@ class AuditHashSealRowsTest extends TestCase {
 			'previous_hash' => null,
 		];
 
-		// --- sealRow(3): row SELECT, predecessor SELECT (filtered to sealed
-		// rows -> returns h1), UPDATE.
-		$rowQb = $this->buildQueryBuilder([], $row3);
+		// --- sealRows([3]): range SELECT, predecessor SELECT (filtered to
+		// sealed rows -> returns h1), the table name for the UPDATE.
+		$rangeQb = $this->buildQueryBuilder([$row3], false);
 
 		$beforeExpr = $this->createMock(IExpressionBuilder::class);
 		$beforeExpr->method('lt')->willReturn('lt');
@@ -422,22 +402,13 @@ class AuditHashSealRowsTest extends TestCase {
 		$beforeQb->method('executeQuery')->willReturn($beforeCursor);
 
 		$capturedValues = [];
-		$updateExpr = $this->createMock(IExpressionBuilder::class);
-		$updateExpr->method('eq')->willReturn('eq');
-
-		$updateQb = $this->createMock(IQueryBuilder::class);
-		$updateQb->method('update')->willReturnSelf();
-		$updateQb->method('set')->willReturnSelf();
-		$updateQb->method('where')->willReturnSelf();
-		$updateQb->method('expr')->willReturn($updateExpr);
-		$updateQb->method('createNamedParameter')
+		$this->db->method('executeStatement')
 			->willReturnCallback(
-				function (mixed $value) use (&$capturedValues): string {
-					$capturedValues[] = $value;
-					return ':p';
+				function (string $sql, array $params) use (&$capturedValues): int {
+					$capturedValues = $params;
+					return 1;
 				}
 			);
-		$updateQb->method('executeStatement')->willReturn(1);
 
 		// --- verifyChain(): windowed walk over rows 1..3.
 		// verifyChain() pages by id rather than issuing one unbounded query,
@@ -463,7 +434,7 @@ class AuditHashSealRowsTest extends TestCase {
 
 		// The seal path consumes exactly three builders; every builder after
 		// that belongs to the verify walk, which asks for one per window.
-		$sealBuilders = [$rowQb, $beforeQb, $updateQb];
+		$sealBuilders = [$rangeQb, $beforeQb, $this->buildQueryBuilder([], false)];
 		$this->db->method('getQueryBuilder')
 			->willReturnCallback(
 				function () use (&$sealBuilders, $verifyQb): IQueryBuilder {
@@ -475,11 +446,11 @@ class AuditHashSealRowsTest extends TestCase {
 				}
 			);
 
-		$this->assertTrue($this->service->sealRow(3));
+		$this->assertSame(1, $this->service->sealRows([3]));
 
 		// Row 3 chained onto h1 — the nearest SEALED predecessor — not genesis.
 		$expectedHash3 = $this->service->computeHash($this->entityFromRow($row3), $hash1);
-		// Captured named parameters: [hash, previousHash, id].
+		// Captured statement parameters: [hash, previousHash].
 		$this->assertSame($expectedHash3, $capturedValues[0]);
 		$this->assertSame($hash1, $capturedValues[1]);
 		$this->assertNotSame($genesis, $capturedValues[1]);

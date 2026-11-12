@@ -88,6 +88,9 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/delegation-grants/spec.md
  */
 class DelegationGrant extends Entity implements JsonSerializable {
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
+
 
 	/**
 	 * Asked for, but not yet delivered to the person who must answer.
@@ -296,27 +299,11 @@ class DelegationGrant extends Entity implements JsonSerializable {
 	}//end isLiveAt()
 
 	/**
-	 * Serialise for the API.
+	 * The serialised scope: an unset scope is an empty list.
 	 *
-	 * @return array<string, mixed> The serialised grant.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
+	 * @return array{scope: array}
 	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'principal' => $this->principal,
-			'actingAs' => $this->actingAs,
-			'scope' => ($this->scope ?? []),
-			'status' => $this->status,
-			'grantedBy' => $this->grantedBy,
-			'reason' => $this->reason,
-			'organisation' => $this->organisation,
-			'requestedAt' => $this->requestedAt?->format('c'),
-			'answeredAt' => $this->answeredAt?->format('c'),
-			'expiresAt' => $this->expiresAt?->format('c'),
-			'revokedAt' => $this->revokedAt?->format('c'),
-		];
-	}//end jsonSerialize()
+	protected function jsonOverrides(): array {
+		return ['scope' => ($this->scope ?? [])];
+	}//end jsonOverrides()
 }//end class

@@ -28,6 +28,11 @@
  *
  * A watcher may always remove themselves, whatever the posture above says.
  *
+ * ONE FEATURE, NOT TWO (`merge-follow-and-favourites`). Every follow carries a
+ * `notify` switch. A follow with it off is what a favourite was, so the star's
+ * deprecated verbs land here too (`followQuietly()`), and only follows with it
+ * on are handed to the notification dispatcher (`watcherUids()`).
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -40,7 +45,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -48,34 +53,32 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\Watcher;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The one subscription primitive: watch, unwatch, list, and heal.
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods) Twelve, and each one has a caller that
- * no other method can serve: five are the API verbs, three are read by the render layer
- * (the marker, the count, and who may see the count), two are the notification
- * dispatcher's (resolve the audience, drop a watcher who lost read), one is the deletion
- * cleanup and one is the caller's uid. Splitting them would put the three permission
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Sixteen, and each one has a caller that
+ * no other method can serve: five are the API verbs, three subscribe on someone's behalf
+ * (a mention, an assignment, the deprecated star), four are read by the render layer
+ * (the marker, its notify switch, the count, and who may see the count), two are the
+ * notification dispatcher's (resolve the audience, drop a watcher who lost read), one is
+ * the deletion cleanup and one is the caller's uid. Splitting them would put the three permission
  * postures in more than one class, which is the drift this class exists to prevent.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The count is 51 against a threshold of
  * 50, and almost all of it is guard clauses: every public method is wrapped so a
  * subscription lookup can never take out an object read or a dispatch. Removing a branch
  * here means removing a fail-safe.
  */
-class WatcherService {
+class WatcherService implements WatcherServiceInterface {
 
 	/**
-	 * The uuids the current user watches, loaded once per request.
+	 * What the current user follows, loaded once per request: uuid to whether
+	 * that follow notifies.
 	 *
 	 * `@self.watching` is rendered on every row of every list, so reading it
 	 * per row would be an N+1 on the hot read path. Null until first read.
@@ -101,22 +104,16 @@ class WatcherService {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherMapper $mapper The watcher rows.
-	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param IGroupManager $groupManager Resolves the caller's groups for the `manage` posture.
-	 * @param SchemaMapper $schemaMapper Resolves the object's schema for the `update` posture.
-	 * @param PermissionHandler $permissions The one RBAC evaluator.
+	 * @param WatcherStore $store The watcher rows, the schema lookups and the log.
+	 * @param WatcherCaller $caller The signed-in user and their groups.
+	 * @param PermissionCheckInterface $permissions The one RBAC evaluator.
 	 * @param ObjectScopeResolver $scopeResolver The one definition of "admitted unconditionally".
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly WatcherMapper $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PermissionHandler $permissions,
+		private readonly WatcherStore $store,
+		private readonly WatcherCaller $caller,
+		private readonly PermissionCheckInterface $permissions,
 		private readonly ObjectScopeResolver $scopeResolver,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -125,10 +122,10 @@ class WatcherService {
 	 *
 	 * @return string|null The uid, or null when anonymous.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function callerUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->caller->userSession->getUser()?->getUID();
 	}//end callerUid()
 
 	/**
@@ -137,29 +134,48 @@ class WatcherService {
 	 * Idempotent: subscribing twice leaves one row, and writes nothing on the
 	 * object itself — no audit entry, no version.
 	 *
-	 * @param ObjectEntity $object The object to follow, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * `$notify` is the follow's notification switch: a bool sets it, null
+	 * keeps what is there (and a new follow notifies).
+	 *
+	 * @param AddressedObject $target The object to follow, already resolved through RBAC, and how the caller addressed it.
+	 * @param bool|null       $notify The notification switch, or null to keep it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function watch(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
-
-		$this->forgetMemos();
-
-		return $this->mapper->subscribe(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema
-		);
+	public function watch(AddressedObject $target, ?bool $notify = null): Watcher {
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $this->requireCaller(), target: $target), notify: $notify);
 	}//end watch()
+
+	/**
+	 * Follow without notifications, unless the caller already follows.
+	 *
+	 * The deprecated star (`PUT .../favourite`) lands here for one release. A
+	 * star used to be silent, so a new follow from it is quiet; but starring a
+	 * case you already follow loudly must not mute it, so an existing follow
+	 * is returned untouched.
+	 *
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the caller is anonymous.
+	 *
+	 * @return Watcher The follow as it now stands.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function followQuietlyAt(AddressedObject $target): Watcher {
+		$uid = $this->requireCaller();
+
+		$existing = $this->store->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $target->object));
+		if ($existing !== null) {
+			return $existing;
+		}
+
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $uid, target: $target), notify: false);
+	}//end followQuietlyAt()
 
 	/**
 	 * Remove the calling user's own subscription.
@@ -170,7 +186,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when a subscription was removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function unwatch(ObjectEntity $object): bool {
 		$uid = $this->requireCaller();
@@ -178,7 +194,7 @@ class WatcherService {
 
 		$this->forgetMemos();
 
-		return $this->mapper->unsubscribe(userId: $uid, objectUuid: $uuid);
+		return $this->store->mapper->unsubscribe(userId: $uid, objectUuid: $uuid);
 	}//end unwatch()
 
 	/**
@@ -190,39 +206,30 @@ class WatcherService {
 	 *
 	 * @return array<int, Watcher> The subscriptions, oldest first.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function listWatchers(ObjectEntity $object): array {
 		$this->requireUpdate(object: $object);
 
-		return $this->mapper->findByObject(objectUuid: $this->requireUuid(object: $object));
+		return $this->store->mapper->findByObject(objectUuid: $this->requireUuid(object: $object));
 	}//end listWatchers()
 
 	/**
 	 * Subscribe another user, for a caller with `manage`.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $userId The user to subscribe.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 * @param string          $userId The user to subscribe.
 	 *
 	 * @throws NotAuthorizedException When the caller may not manage the object.
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
-	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
-		$this->requireManage(object: $object);
+	public function addWatcher(AddressedObject $target, string $userId): Watcher {
+		$this->requireManage(object: $target->object);
 
-		$this->forgetMemos();
-
-		return $this->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end addWatcher()
 
 	/**
@@ -241,10 +248,8 @@ class WatcherService {
 	 * Idempotent, like every other subscribe: naming somebody twice leaves one
 	 * row and writes nothing on the object.
 	 *
-	 * @param ObjectEntity $object The object the entry hangs on.
-	 * @param string $userId The principal who was named, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object the entry hangs on, and how the caller addressed it.
+	 * @param string          $userId The principal who was named, already checked for read access.
 	 *
 	 * @return Watcher The subscription.
 	 *
@@ -252,21 +257,33 @@ class WatcherService {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function subscribeMentioned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher {
-		$this->forgetMemos();
-
-		return $this->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+	public function subscribeMentioned(AddressedObject $target, string $userId): Watcher {
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target));
 	}//end subscribeMentioned()
+
+	/**
+	 * Make an assignee follow the object, with notifications on.
+	 *
+	 * Being assigned something means hearing about it, so an existing quiet
+	 * follow is switched on. Like `subscribeMentioned()` this is not
+	 * `addWatcher()`: the act is the assignment, not one person deciding for
+	 * another, and the caller has checked that the assignee may read the
+	 * object (AssigneeFollowListener does, through the same read check a
+	 * mention uses). Public, so an app whose assignment is not an object
+	 * property (a task, a workflow step) can call it.
+	 *
+	 * @param AddressedObject $target The assigned object and how the caller addressed it.
+	 * @param string          $userId The assignee, already checked for read access.
+	 *
+	 * @return Watcher The follow.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid to hang the row on.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+	 */
+	public function followAssigned(AddressedObject $target, string $userId): Watcher {
+		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target), notify: true);
+	}//end followAssigned()
 
 	/**
 	 * Remove another user's subscription.
@@ -281,7 +298,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when a subscription was removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function removeWatcher(ObjectEntity $object, string $userId): bool {
 		if ($this->callerUid() !== $userId) {
@@ -290,7 +307,7 @@ class WatcherService {
 
 		$this->forgetMemos();
 
-		return $this->mapper->unsubscribe(
+		return $this->store->mapper->unsubscribe(
 			userId: $userId,
 			objectUuid: $this->requireUuid(object: $object)
 		);
@@ -306,46 +323,59 @@ class WatcherService {
 	 *
 	 * @return boolean True when the caller watches it.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function isWatchedByCaller(string $objectUuid): bool {
 		if ($objectUuid === '') {
 			return false;
 		}
 
-		return isset($this->watchedSetForCaller()[$objectUuid]);
+		return array_key_exists($objectUuid, $this->watchedSetForCaller());
 	}//end isWatchedByCaller()
 
 	/**
-	 * The uuids one user watches, behind the follow marker.
+	 * Whether the calling user's follow of one object notifies them.
 	 *
-	 * Private: the `_watching=true` lens reads WatcherMapper::uuidsForUser()
-	 * directly (SearchQueryHandler explains why), so the only caller of this is
-	 * the per-request memo below.
+	 * @param string $objectUuid The object's uuid.
 	 *
-	 * @param string|null $userId The user, or null for the caller.
-	 * @param string|null $register Narrow to one register.
-	 * @param string|null $schema Narrow to one schema.
+	 * @return boolean|null The switch, or null when the caller does not follow it.
 	 *
-	 * @return array<int, string> The watched uuids; empty when anonymous.
-	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	private function watchedUuids(?string $userId = null, ?string $register = null, ?string $schema = null): array {
-		$uid = ($userId ?? $this->callerUid());
+	public function notifyForCaller(string $objectUuid): ?bool {
+		if ($objectUuid === '') {
+			return null;
+		}
+
+		return ($this->watchedSetForCaller()[$objectUuid] ?? null);
+	}//end notifyForCaller()
+
+	/**
+	 * What the caller follows, with each follow's notify switch.
+	 *
+	 * Private: the `_watching=true` lens is an `EXISTS` in the query
+	 * (SearchQueryHandler explains why), so the only caller of this is the
+	 * per-request memo below.
+	 *
+	 * @return array<string, bool> Uuid to notify; empty when anonymous.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function followsOfCaller(): array {
+		$uid = $this->callerUid();
 		if ($uid === null || $uid === '') {
 			return [];
 		}
 
 		try {
-			return $this->mapper->uuidsForUser(userId: $uid, register: $register, schema: $schema);
+			return $this->store->mapper->notifyMapForUser(userId: $uid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[WatcherService] watched uuid lookup failed for "%s": %s', $uid, $e->getMessage())
+			$this->store->logger->warning(
+				sprintf('[WatcherService] follow lookup failed for "%s": %s', $uid, $e->getMessage())
 			);
 			return [];
 		}
-	}//end watchedUuids()
+	}//end followsOfCaller()
 
 	/**
 	 * How many users watch one object.
@@ -354,7 +384,7 @@ class WatcherService {
 	 *
 	 * @return integer The watcher count.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function watcherCount(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -374,9 +404,9 @@ class WatcherService {
 		}
 
 		try {
-			return $this->mapper->countForObject(objectUuid: $objectUuid);
+			return $this->store->mapper->countForObject(objectUuid: $objectUuid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher count failed for "%s": %s', $objectUuid, $e->getMessage())
 			);
 			return 0;
@@ -390,11 +420,11 @@ class WatcherService {
 	 *
 	 * @return boolean True when the caller has `update` on the object's schema.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function maySeeWatchers(ObjectEntity $object): bool {
 		try {
-			$schema = $this->schemaMapper->find(id: $object->getSchema(), _rbac: false, _multitenancy: false);
+			$schema = $this->store->schemaMapper->find(id: $object->getSchema(), _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			// No schema, no verdict, and the fail-closed answer hides the count.
 			return false;
@@ -413,13 +443,16 @@ class WatcherService {
 	}//end maySeeWatchers()
 
 	/**
-	 * The uids watching one object, for the notification dispatcher.
+	 * The uids following one object with notifications on, for the dispatcher.
+	 *
+	 * A quiet follow (a former favourite, or a follower who switched
+	 * notifications off) is left out here and nowhere else.
 	 *
 	 * @param string $objectUuid The object's uuid.
 	 *
-	 * @return array<int, string> The watching uids.
+	 * @return array<int, string> The uids to notify.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function watcherUids(string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -427,9 +460,9 @@ class WatcherService {
 		}
 
 		try {
-			$rows = $this->mapper->findByObject(objectUuid: $objectUuid);
+			$rows = $this->store->mapper->findNotifyingByObject(objectUuid: $objectUuid);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher lookup failed for "%s": %s', $objectUuid, $e->getMessage())
 			);
 			return [];
@@ -461,7 +494,7 @@ class WatcherService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function dropWatchers(string $objectUuid, array $userIds): void {
 		foreach ($userIds as $userId) {
@@ -470,9 +503,9 @@ class WatcherService {
 			}
 
 			try {
-				$this->mapper->unsubscribe(userId: $userId, objectUuid: $objectUuid);
+				$this->store->mapper->unsubscribe(userId: $userId, objectUuid: $objectUuid);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->store->logger->warning(
 					sprintf('[WatcherService] could not drop watcher "%s": %s', $userId, $e->getMessage())
 				);
 			}
@@ -488,7 +521,7 @@ class WatcherService {
 	 *
 	 * @return integer How many subscriptions were removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
 	 */
 	public function cleanupForObject(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -497,7 +530,7 @@ class WatcherService {
 
 		$this->forgetMemos();
 
-		return $this->mapper->deleteByObject(objectUuid: $objectUuid);
+		return $this->store->mapper->deleteByObject(objectUuid: $objectUuid);
 	}//end cleanupForObject()
 
 	/**
@@ -515,23 +548,18 @@ class WatcherService {
 	}//end forgetMemos()
 
 	/**
-	 * The per-request set of uuids the caller watches.
+	 * The per-request map of what the caller follows.
 	 *
-	 * @return array<string, bool> Uuid to true.
+	 * @return array<string, bool> Uuid to whether that follow notifies.
 	 */
 	private function watchedSetForCaller(): array {
 		if ($this->watchedByCallerMemo !== null) {
 			return $this->watchedByCallerMemo;
 		}
 
-		$set = [];
-		foreach ($this->watchedUuids() as $uuid) {
-			$set[$uuid] = true;
-		}
+		$this->watchedByCallerMemo = $this->followsOfCaller();
 
-		$this->watchedByCallerMemo = $set;
-
-		return $set;
+		return $this->watchedByCallerMemo;
 	}//end watchedSetForCaller()
 
 	/**
@@ -545,15 +573,15 @@ class WatcherService {
 		}
 
 		try {
-			$counts = $this->mapper->countsByObject();
+			$counts = $this->store->mapper->countsByObject();
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				sprintf('[WatcherService] watcher count map failed: %s', $e->getMessage())
 			);
 			$counts = [];
 		}
 
-		$this->countsComplete = (count($counts) < WatcherMapper::COUNT_MAP_LIMIT);
+		$this->countsComplete = (count($counts) < WatcherMapperInterface::COUNT_MAP_LIMIT);
 		$this->countsMemo = $counts;
 
 		return $counts;
@@ -574,6 +602,45 @@ class WatcherService {
 
 		return $uid;
 	}//end requireCaller()
+
+	/**
+	 * An unsaved follow of one user on the addressed object, carrying the
+	 * register and schema as addressed. Drops this request's memos, since a
+	 * subscribe follows.
+	 *
+	 * @param string          $userId The following user.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid.
+	 *
+	 * @return Watcher The follow, without a notify switch.
+	 */
+	private function newFollow(string $userId, AddressedObject $target): Watcher {
+		$uuid = $this->requireUuid(object: $target->object);
+
+		$this->forgetMemos();
+
+		$follow = self::follow(userId: $userId, objectUuid: $uuid);
+		$follow->setRegister($target->register);
+		$follow->setSchema($target->schema);
+
+		return $follow;
+	}//end newFollow()
+
+	/**
+	 * An unsaved follow of one user on one object, for the mapper to subscribe.
+	 *
+	 * @param string $userId The following user.
+	 * @param string $objectUuid The followed object's uuid.
+	 *
+	 * @return Watcher The follow, without register, schema or notify switch.
+	 */
+	private static function follow(string $userId, string $objectUuid): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		return $follow;
+	}//end follow()
 
 	/**
 	 * The object's uuid, or a refusal.
@@ -626,9 +693,9 @@ class WatcherService {
 	private function requireManage(ObjectEntity $object): void {
 		$uid = $this->callerUid();
 		$groups = [];
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user !== null) {
-			$groups = $this->groupManager->getUserGroupIds($user);
+			$groups = $this->caller->groupManager->getUserGroupIds($user);
 		}
 
 		if ($this->scopeResolver->admitsUnconditionally(

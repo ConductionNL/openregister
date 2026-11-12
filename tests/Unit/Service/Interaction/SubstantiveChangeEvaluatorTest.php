@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
@@ -75,10 +76,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 		$schema->setConfiguration($configuration);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
-		return new SubstantiveChangeEvaluator(
-			schemaMapper: $this->schemaMapper,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
-		);
+		return new SubstantiveChangeEvaluator(schemas: new SchemaReading(schemaMapper: $this->schemaMapper, logger: $this->createMock(originalClassName: LoggerInterface::class)));
 
 	}//end evaluatorFor()
 
@@ -104,7 +102,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testADeclaredPropertyChangeIsSubstantive(): void {
 		$evaluator = $this->evaluatorFor(annotation: ['properties' => ['status']]);
@@ -123,7 +121,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testAnUndeclaredPropertyChangeIsNotSubstantive(): void {
 		$evaluator = $this->evaluatorFor(annotation: ['properties' => ['status']]);
@@ -146,7 +144,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testARecalculatedComputedFieldIsNotSubstantive(): void {
 		$evaluator = $this->evaluatorFor(
@@ -170,7 +168,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testWithNothingDeclaredAnOrdinaryChangeIsSubstantive(): void {
 		$evaluator = $this->evaluatorFor(
@@ -191,7 +189,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testAWriteThatChangedNothingIsNotSubstantive(): void {
 		$evaluator = $this->evaluatorFor();
@@ -206,11 +204,84 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	}//end testAWriteThatChangedNothingIsNotSubstantive()
 
 	/**
+	 * A save that only rewrites how values are stored is not news.
+	 *
+	 * A background save reads the object back and writes it again: an empty
+	 * value comes back as '' instead of null, a list as its JSON text, a whole
+	 * number as 11 instead of 11.0, and keys in another order. None of that is
+	 * something a reader can see.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function testARepresentationOnlySaveIsNotSubstantive(): void {
+		$history = [
+			['status' => 'received', 'enteredAt' => '2026-10-13T11:20:00+02:00'],
+			['status' => 'in-progress', 'enteredAt' => '2026-10-17T09:00:00+02:00'],
+		];
+
+		$this->assertFalse(
+			condition: $this->evaluatorFor()->isSubstantive(
+				new: $this->objectWith(
+					body: [
+						'groupName' => '',
+						'attachments' => [],
+						'statusHistory' => json_encode(value: $history),
+						'daysRemaining' => 11,
+						'address' => ['city' => 'Zuiddrecht', 'street' => 'Parkweg'],
+					]
+				),
+				old: $this->objectWith(
+					body: [
+						'groupName' => null,
+						'statusHistory' => $history,
+						'daysRemaining' => 11.0,
+						'address' => ['street' => 'Parkweg', 'city' => 'Zuiddrecht'],
+					]
+				)
+			)
+		);
+
+	}//end testARepresentationOnlySaveIsNotSubstantive()
+
+	/**
+	 * A value that changes meaning is still news, whatever its representation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function testAChangedValueBehindARepresentationIsSubstantive(): void {
+		$evaluator = $this->evaluatorFor();
+
+		$this->assertTrue(
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['statusHistory' => json_encode(value: [['status' => 'closed']])]),
+				old: $this->objectWith(body: ['statusHistory' => [['status' => 'received']]])
+			)
+		);
+		$this->assertTrue(
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['daysRemaining' => 0]),
+				old: $this->objectWith(body: ['daysRemaining' => null])
+			)
+		);
+		$this->assertTrue(
+			condition: $evaluator->isSubstantive(
+				new: $this->objectWith(body: ['steps' => ['b', 'a']]),
+				old: $this->objectWith(body: ['steps' => ['a', 'b']])
+			)
+		);
+
+	}//end testAChangedValueBehindARepresentationIsSubstantive()
+
+	/**
 	 * Files are a sub-resource whether or not a schema says so.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testFilesAreAlwaysASubResource(): void {
 		$this->assertSame(
@@ -226,7 +297,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testASubResourceWithoutADateFieldIsDropped(): void {
 		$resources = $this->evaluatorFor(

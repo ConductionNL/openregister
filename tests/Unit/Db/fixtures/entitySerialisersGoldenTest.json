@@ -1,0 +1,140 @@
+{
+    "OCA\\OpenRegister\\Files\\Db\\File": {
+        "types": {
+            "id": "integer",
+            "fileId": "integer",
+            "description": "string",
+            "category": "string",
+            "labels": "json",
+            "lockedBy": "string",
+            "lockedAt": "datetime",
+            "lockExpires": "datetime",
+            "downloadCount": "integer",
+            "created": "datetime",
+            "updated": "datetime",
+            "published": "datetime",
+            "depublished": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "fileId": null,
+            "description": null,
+            "category": null,
+            "labels": [],
+            "lockedBy": null,
+            "lockedAt": null,
+            "lockExpires": null,
+            "downloadCount": 0,
+            "created": null,
+            "updated": null,
+            "published": null,
+            "depublished": null,
+            "isPublished": false
+        },
+        "filled": {
+            "id": 7,
+            "fileId": 101,
+            "description": "s2",
+            "category": "s3",
+            "labels": {
+                "k4": "v4"
+            },
+            "lockedBy": "s5",
+            "lockedAt": "2026-07-16T06:04:05+00:00",
+            "lockExpires": "2026-08-17T07:04:05+01:00",
+            "downloadCount": 108,
+            "created": "2026-01-19T09:04:05+00:00",
+            "updated": "2026-02-10T00:04:05+01:00",
+            "published": "2026-03-11T01:04:05+02:00",
+            "depublished": "2026-04-12T02:04:05+00:00",
+            "isPublished": false
+        }
+    },
+    "OCA\\OpenRegister\\Db\\RecordTemplate": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "name": "string",
+            "description": "string",
+            "register": "string",
+            "schema": "string",
+            "templateValues": "json",
+            "owner": "string",
+            "isPublic": "boolean",
+            "sharedWith": "json",
+            "created": "datetime",
+            "updated": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "name": null,
+            "description": null,
+            "register": null,
+            "schema": null,
+            "values": [],
+            "owner": null,
+            "isPublic": false,
+            "sharedWith": [],
+            "@self": {
+                "access": null
+            },
+            "created": null,
+            "updated": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "name": "s2",
+            "description": "s3",
+            "register": "s4",
+            "schema": "s5",
+            "values": {
+                "k6": "v6"
+            },
+            "owner": "s7",
+            "isPublic": true,
+            "sharedWith": {
+                "k9": "v9"
+            },
+            "@self": {
+                "access": null
+            },
+            "created": "2026-02-10T00:04:05+01:00",
+            "updated": "2026-03-11T01:04:05+02:00"
+        }
+    },
+    "OCA\\OpenRegister\\Files\\Db\\NoteVersion": {
+        "types": {
+            "id": "integer",
+            "uuid": "string",
+            "commentId": "integer",
+            "message": "string",
+            "author": "string",
+            "authorType": "string",
+            "editedBy": "string",
+            "editedAt": "datetime",
+            "created": "datetime"
+        },
+        "empty": {
+            "id": null,
+            "uuid": null,
+            "noteId": 0,
+            "message": null,
+            "author": null,
+            "authorType": null,
+            "editedBy": null,
+            "editedAt": null
+        },
+        "filled": {
+            "id": 7,
+            "uuid": "s1",
+            "noteId": 102,
+            "message": "s3",
+            "author": "s4",
+            "authorType": "s5",
+            "editedBy": "s6",
+            "editedAt": "2026-08-17T07:04:05+01:00"
+        }
+    }
+}

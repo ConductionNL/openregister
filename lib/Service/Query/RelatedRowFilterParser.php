@@ -63,10 +63,34 @@ class RelatedRowFilterParser {
 	public const KEY = '_related';
 
 	/**
+	 * The query key of the forward blocks: the object's own property references
+	 * a row of the named schema.
+	 *
+	 *     _referenced[subsidieAanvraag][subsidieaanvraag][case]=<case uuid>
+	 *
+	 * One block over the schema `subsidieAanvraag`, joined on the object's
+	 * `subsidieaanvraag` property, with one condition on the referenced row.
+	 * Same grammar, operators and numbered blocks as `_related`.
+	 */
+	public const FORWARD_KEY = '_referenced';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string $key KEY for inverse blocks, FORWARD_KEY for forward ones.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly string $key = self::KEY,
+	) {
+	}//end __construct()
+
+	/**
 	 * The operators a row condition may use.
 	 *
-	 * The same six the object query already accepts, spelled the same way, read
-	 * off `MariaDbSearchHandler::convertToSqlOperator()`. A filter over a
+	 * The same ones the object query already accepts, spelled the same way, as
+	 * listed in `MagicSearchHandler::COMPARISON_OPERATORS`. A filter over a
 	 * related row is not a second query language, and a caller who learned `gte`
 	 * on the object's own fields must not have to learn something else here.
 	 *
@@ -84,40 +108,88 @@ class RelatedRowFilterParser {
 	 * @throws InvalidArgumentException When a block is unusable.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function parse(array $query): array {
-		$raw = ($query[self::KEY] ?? null);
+		$raw = ($query[$this->key] ?? null);
 		if ($raw === null) {
 			return [];
 		}
 
-		if (is_array($raw) === false || $raw === []) {
-			throw new InvalidArgumentException(
-				sprintf('%s must be an object of schema blocks, and it is not.', self::KEY)
-			);
-		}
+		$this->assertSchemaBlocks(raw: $raw);
 
 		$filters = [];
 		foreach ($raw as $schema => $byForeignKey) {
-			$schemaSlug = trim((string)$schema);
-			if ($schemaSlug === '' || is_array($byForeignKey) === false || $byForeignKey === []) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'%s[%s] must name a foreign key and at least one condition.',
-						self::KEY,
-						(string)$schema
-					)
-				);
-			}
-
 			$filters = array_merge(
 				$filters,
-				$this->filtersForSchema(schemaSlug: $schemaSlug, byForeignKey: $byForeignKey)
+				$this->filtersForSchema(
+					schemaSlug: $this->schemaSlug(schema: $schema, byForeignKey: $byForeignKey),
+					byForeignKey: $byForeignKey
+				)
 			);
 		}
 
 		return $filters;
 	}//end parse()
+
+	/**
+	 * Refuse a `_related` value that is not a non-empty object of schema blocks.
+	 *
+	 * @param mixed $raw The value under this parser's key.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not.
+	 *
+	 * @psalm-assert non-empty-array $raw
+	 */
+	private function assertSchemaBlocks(mixed $raw): void {
+		if (is_array($raw) === false || $raw === []) {
+			throw new InvalidArgumentException(
+				sprintf('%s must be an object of schema blocks, and it is not.', $this->key)
+			);
+		}
+	}//end assertSchemaBlocks()
+
+	/**
+	 * The trimmed schema slug of one block, refusing a block that names nothing.
+	 *
+	 * @param string|int $schema       The block's key.
+	 * @param mixed      $byForeignKey The block.
+	 *
+	 * @return string The slug.
+	 *
+	 * @throws InvalidArgumentException When the slug is blank or the block carries no foreign key.
+	 */
+	private function schemaSlug(string|int $schema, mixed $byForeignKey): string {
+		$schemaSlug = trim((string)$schema);
+		if ($schemaSlug === '' || is_array($byForeignKey) === false || $byForeignKey === []) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'%s[%s] must name a foreign key and at least one condition.',
+					$this->key,
+					(string)$schema
+				)
+			);
+		}
+
+		return $schemaSlug;
+	}//end schemaSlug()
+
+	/**
+	 * The direction the blocks under this parser's key run.
+	 *
+	 * @return string RelatedRowFilter::DIRECTION_FORWARD for `_referenced`, else inverse.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function direction(): string {
+		if ($this->key === self::FORWARD_KEY) {
+			return RelatedRowFilter::DIRECTION_FORWARD;
+		}
+
+		return RelatedRowFilter::DIRECTION_INVERSE;
+	}//end direction()
 
 	/**
 	 * The filters one schema block declares, in the order written.
@@ -135,32 +207,72 @@ class RelatedRowFilterParser {
 		$filters = [];
 
 		foreach ($byForeignKey as $foreignKey => $block) {
-			$key = trim((string)$foreignKey);
-			if ($key === '' || is_array($block) === false || $block === []) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'%s[%s][%s] must carry at least one condition.',
-						self::KEY,
-						$schemaSlug,
-						(string)$foreignKey
-					)
-				);
-			}
+			$at  = sprintf('%s[%s][%s]', $this->key, $schemaSlug, (string)$foreignKey);
+			$key = self::foreignKeyName(at: $at, foreignKey: $foreignKey);
 
-			foreach ($this->blocks(block: $block) as $conditions) {
+			foreach ($this->blocks(block: self::conditionBlock(at: $at, block: $block)) as $conditions) {
 				$filters[] = new RelatedRowFilter(
 					schema: $schemaSlug,
 					foreignKey: $key,
 					conditions: $this->conditions(
 						raw: $conditions,
-						path: sprintf('%s[%s][%s]', self::KEY, $schemaSlug, $key)
-					)
+						path: sprintf('%s[%s][%s]', $this->key, $schemaSlug, $key)
+					),
+					direction: $this->direction()
 				);
 			}
 		}
 
 		return $filters;
 	}//end filtersForSchema()
+
+	/**
+	 * The trimmed foreign key of one block, refusing a blank one.
+	 *
+	 * @param string     $at         The block's path as written, for the message.
+	 * @param string|int $foreignKey The foreign key as written.
+	 *
+	 * @return string The foreign key.
+	 *
+	 * @throws InvalidArgumentException When the key is blank.
+	 */
+	private static function foreignKeyName(string $at, string|int $foreignKey): string {
+		$key = trim((string)$foreignKey);
+		if ($key === '') {
+			throw self::noCondition(at: $at);
+		}
+
+		return $key;
+	}//end foreignKeyName()
+
+	/**
+	 * The block under one foreign key, refusing a block that carries no condition.
+	 *
+	 * @param string $at    The block's path as written, for the message.
+	 * @param mixed  $block The block.
+	 *
+	 * @return array<string|int, mixed> The block.
+	 *
+	 * @throws InvalidArgumentException When the block is empty.
+	 */
+	private static function conditionBlock(string $at, mixed $block): array {
+		if (is_array($block) === false || $block === []) {
+			throw self::noCondition(at: $at);
+		}
+
+		return $block;
+	}//end conditionBlock()
+
+	/**
+	 * The refusal of a foreign key block that carries no condition.
+	 *
+	 * @param string $at The block's path as written.
+	 *
+	 * @return InvalidArgumentException
+	 */
+	private static function noCondition(string $at): InvalidArgumentException {
+		return new InvalidArgumentException(sprintf('%s must carry at least one condition.', $at));
+	}//end noCondition()
 
 	/**
 	 * One block, or the several a numeric suffix asked for.
@@ -191,6 +303,20 @@ class RelatedRowFilterParser {
 			);
 		}
 
+		return $this->numberedBlocks(block: $block, numeric: $numeric);
+	}//end blocks()
+
+	/**
+	 * The rows of a numbered block, refusing a number that carries no condition.
+	 *
+	 * @param array<string|int, mixed> $block   The raw block.
+	 * @param array<int, string|int>   $numeric Its keys, all numeric.
+	 *
+	 * @return array<int, array<string, mixed>> One entry per row asked for.
+	 *
+	 * @throws InvalidArgumentException When a numbered entry is empty.
+	 */
+	private function numberedBlocks(array $block, array $numeric): array {
 		$blocks = [];
 		foreach ($numeric as $index) {
 			$entry = $block[$index];
@@ -204,7 +330,7 @@ class RelatedRowFilterParser {
 		}
 
 		return $blocks;
-	}//end blocks()
+	}//end numberedBlocks()
 
 	/**
 	 * The conditions of one block.
@@ -220,16 +346,9 @@ class RelatedRowFilterParser {
 		$conditions = [];
 
 		foreach ($raw as $field => $value) {
-			$name = trim((string)$field);
-			if ($name === '') {
-				throw new InvalidArgumentException(
-					sprintf('A condition in %s names no field.', $path)
-				);
-			}
-
 			$conditions = array_merge(
 				$conditions,
-				$this->conditionsFor(name: $name, value: $value, path: $path)
+				$this->conditionsFor(field: new RelatedRowBlockField(name: self::fieldName(field: $field, path: $path), path: $path), value: $value)
 			);
 		}
 
@@ -241,15 +360,35 @@ class RelatedRowFilterParser {
 	}//end conditions()
 
 	/**
+	 * The trimmed name of one condition's field, refusing a blank one.
+	 *
+	 * @param int|string $field The field as written.
+	 * @param string     $path  The block's path, for the message.
+	 *
+	 * @return string The name.
+	 *
+	 * @throws InvalidArgumentException When the field is blank.
+	 */
+	private static function fieldName(int|string $field, string $path): string {
+		$name = trim((string)$field);
+		if ($name === '') {
+			throw new InvalidArgumentException(
+				sprintf('A condition in %s names no field.', $path)
+			);
+		}
+
+		return $name;
+	}//end fieldName()
+
+	/**
 	 * The conditions ONE field declares.
 	 *
 	 * Three spellings, all of them in use: `field=value` is the `eq` shorthand
 	 * the object's own filters use, a bare list `field[]=a&field[]=b` is the
 	 * `in` shorthand, and `field[op]=value` names the operator outright.
 	 *
-	 * @param string $name  The field name, already trimmed and non-empty.
-	 * @param mixed  $value The declared value in any of the three spellings.
-	 * @param string $path  The block's path, for the message.
+	 * @param RelatedRowBlockField $field The field name, already trimmed and non-empty, and the block's path.
+	 * @param mixed                $value The declared value in any of the three spellings.
 	 *
 	 * @return array<int, array{field: string, operator: string, value: mixed}> The conditions.
 	 *
@@ -257,43 +396,83 @@ class RelatedRowFilterParser {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	private function conditionsFor(string $name, mixed $value, string $path): array {
+	private function conditionsFor(RelatedRowBlockField $field, mixed $value): array {
 		if (is_array($value) === false) {
-			return [['field' => $name, 'operator' => 'eq', 'value' => $value]];
+			return [['field' => $field->name, 'operator' => 'eq', 'value' => $value]];
 		}
 
 		if ($value === []) {
 			throw new InvalidArgumentException(
-				sprintf('The condition %s[%s] carries no value.', $path, $name)
+				sprintf('The condition %s carries no value.', $field->label())
 			);
 		}
 
 		if (array_is_list($value) === true) {
-			return [['field' => $name, 'operator' => 'in', 'value' => $value]];
+			return [['field' => $field->name, 'operator' => 'in', 'value' => $value]];
 		}
 
+		return $this->operatorConditions(field: $field, byOperator: $value);
+	}//end conditionsFor()
+
+	/**
+	 * The `field[op]=value` conditions of one field.
+	 *
+	 * @param RelatedRowBlockField     $field      The field and the block's path.
+	 * @param array<string|int, mixed> $byOperator The operands, keyed by operator.
+	 *
+	 * @return array<int, array{field: string, operator: string, value: mixed}> The conditions.
+	 *
+	 * @throws InvalidArgumentException When an operator is not one of OPERATORS.
+	 */
+	private function operatorConditions(RelatedRowBlockField $field, array $byOperator): array {
 		$conditions = [];
-		foreach ($value as $operator => $operand) {
-			$op = trim((string)$operator);
-			if (in_array($op, self::OPERATORS, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'The condition %s[%s] uses operator \'%s\'. It must be one of: %s.',
-						$path,
-						$name,
-						$op,
-						implode(', ', self::OPERATORS)
-					)
-				);
-			}
+		foreach ($byOperator as $operator => $operand) {
+			$operator = self::knownOperator(field: $field, operator: trim((string)$operator));
 
-			if ($op === 'in' && is_array($operand) === false) {
-				$operand = array_map('trim', explode(',', (string)$operand));
-			}
-
-			$conditions[] = ['field' => $name, 'operator' => $op, 'value' => $operand];
+			$conditions[] = ['field' => $field->name, 'operator' => $operator, 'value' => self::operand(operator: $operator, operand: $operand)];
 		}
 
 		return $conditions;
-	}//end conditionsFor()
+	}//end operatorConditions()
+
+	/**
+	 * The operator, refusing one that is not one of OPERATORS.
+	 *
+	 * @param RelatedRowBlockField $field    The field, for the message.
+	 * @param string               $operator The operator, already trimmed.
+	 *
+	 * @return string The operator.
+	 *
+	 * @throws InvalidArgumentException When the operator is not one of OPERATORS.
+	 */
+	private static function knownOperator(RelatedRowBlockField $field, string $operator): string {
+		if (in_array($operator, self::OPERATORS, true) === true) {
+			return $operator;
+		}
+
+		throw new InvalidArgumentException(
+			sprintf(
+				'The condition %s uses operator \'%s\'. It must be one of: %s.',
+				$field->label(),
+				$operator,
+				implode(', ', self::OPERATORS)
+			)
+		);
+	}//end knownOperator()
+
+	/**
+	 * The operand of one condition: a scalar `in` is split on commas.
+	 *
+	 * @param string $operator The operator.
+	 * @param mixed  $operand  The value as written.
+	 *
+	 * @return mixed
+	 */
+	private static function operand(string $operator, mixed $operand): mixed {
+		if ($operator === 'in' && is_array($operand) === false) {
+			return array_map('trim', explode(',', (string)$operand));
+		}
+
+		return $operand;
+	}//end operand()
 }//end class

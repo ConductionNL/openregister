@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the note versions table.
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 class Version1Date20260916141000 extends SimpleMigrationStep {
 
@@ -52,7 +52,7 @@ class Version1Date20260916141000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

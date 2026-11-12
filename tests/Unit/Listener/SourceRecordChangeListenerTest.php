@@ -20,7 +20,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#6.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#6.1
  */
 
 declare(strict_types=1);
@@ -40,6 +40,7 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\SourceRecordChangeServices;
 
 class SourceRecordChangeListenerTest extends TestCase {
 
@@ -75,11 +76,9 @@ class SourceRecordChangeListenerTest extends TestCase {
 	private function listener(bool $deferralEnabled): SourceRecordChangeListener {
 		$this->deferral->method('isDeferralEnabled')->willReturn($deferralEnabled);
 		return new SourceRecordChangeListener(
-			$this->schemaMapper,
+			new SourceRecordChangeServices($this->schemaMapper, $this->deferral, $this->recompute),
 			$this->logger,
-			$this->cacheFactory,
-			$this->deferral,
-			$this->recompute
+			$this->cacheFactory
 		);
 	}//end listener()
 

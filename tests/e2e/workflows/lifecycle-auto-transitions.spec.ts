@@ -38,7 +38,7 @@ import type { SeededRegister, SeededSchema } from '../_fixtures.ts'
  * own comment for why it is included even though it also passes on a build
  * with no automatic-transition code at all.
  *
- * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 import { expect, test } from '@playwright/test'
 import {

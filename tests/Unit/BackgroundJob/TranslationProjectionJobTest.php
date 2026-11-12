@@ -17,6 +17,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred projection: same effect as inline, under the forwarded actor,
@@ -40,10 +41,12 @@ class TranslationProjectionJobTest extends TestCase {
 
 		$this->job = new TranslationProjectionJob(
 			time: $this->createMock(ITimeFactory::class),
-			userSession: $this->userSession,
-			userManager: $this->userManager,
-			organisation: $this->createMock(OrganisationService::class),
-			logger: $this->logger,
+			actor: new ActorForwardingServices(
+				userSession: $this->userSession,
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $this->logger
+			),
 			resolver: $this->resolver,
 			projection: $this->projection,
 		);

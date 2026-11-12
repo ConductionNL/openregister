@@ -20,6 +20,33 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
+use OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\OutputFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\CoordinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\MessagingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ReshapingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\RoutingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\TriggerFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\WaitAndBranchFlowNodes;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
@@ -37,6 +64,9 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
@@ -47,6 +77,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -58,6 +90,33 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Listener\FlowNodeRegistrationListener
  * @covers \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CoordinationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\MessagingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\OutputFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ReshapingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\RoutingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\TriggerFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\WaitAndBranchFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes
  */
 class FlowNodeRegistrationListenerTest extends TestCase {
 
@@ -71,33 +130,50 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 	private function listener(array &$registered): FlowNodeRegistrationListener {
 		$mock = fn (string $class) => $this->createMock($class);
 		$listener = new FlowNodeRegistrationListener(
-			setFields: $mock(SetFieldsNode::class),
-			explode: $mock(ExplodeNode::class),
-			filter: $mock(FilterNode::class),
-			wait: $mock(WaitNode::class),
-			awaitSignal: $mock(AwaitSignalNode::class),
-			switch: $mock(SwitchNode::class),
-			end: $mock(EndNode::class),
-			merge: $mock(MergeNode::class),
-			lockObject: $mock(LockObjectNode::class),
-			unlockObject: $mock(UnlockObjectNode::class),
-			loop: $mock(LoopNode::class),
-			subFlow: $mock(SubFlowNode::class),
-			router: $mock(RouterNode::class),
-			objectWrite: $mock(ObjectWriteNode::class),
-			objectRead: $mock(ObjectReadNode::class),
-			flowState: $mock(FlowStateNode::class),
-			map: $mock(MapNode::class),
-			iterate: $mock(IterateNode::class),
-			sendNotification: $mock(SendNotificationNode::class),
-			sendEmail: $mock(SendEmailNode::class),
-			sendTalkMessage: $mock(SendTalkMessageNode::class),
-			triggerObject: $mock(TriggerObjectNode::class),
-			triggerSchedule: $mock(TriggerScheduleNode::class),
-			triggerManual: $mock(TriggerManualNode::class),
-			userTask: $mock(UserTaskNode::class),
-			portalTask: $mock(PortalTaskNode::class),
-			decisionTable: $mock(DecisionTableNode::class),
+			core: new CoreFlowNodes(
+				itemHandling: new ItemHandlingFlowNodes(dataShaping: new DataShapingFlowNodes(
+					fields: new FieldFlowNodes(setFields: $mock(SetFieldsNode::class), actionInputs: $mock(ActionInputsNode::class)),
+					itemList: new ItemListFlowNodes(explode: $mock(ExplodeNode::class), filter: $mock(FilterNode::class)),
+				), waitAndBranch: new WaitAndBranchFlowNodes(
+					wait: new WaitFlowNodes(wait: $mock(WaitNode::class), awaitSignal: $mock(AwaitSignalNode::class)),
+					branch: new BranchFlowNodes(switch: $mock(SwitchNode::class), end: $mock(EndNode::class)),
+				)),
+				destination: new DestinationFlowNodes(routing: new RoutingFlowNodes(
+					itemLoop: new ItemLoopFlowNodes(merge: $mock(MergeNode::class), loop: $mock(LoopNode::class)),
+					handOff: new HandOffFlowNodes(subFlow: $mock(SubFlowNode::class), router: $mock(RouterNode::class)),
+				), objects: new ObjectFlowNodes(
+					objectChange: new ObjectChangeFlowNodes(objectWrite: $mock(ObjectWriteNode::class), transition: $mock(TransitionNode::class)),
+					objectLookup: new ObjectLookupFlowNodes(linkObject: $mock(LinkObjectNode::class), objectRead: $mock(ObjectReadNode::class)),
+				)),
+			),
+			actions: new ActionFlowNodes(
+				output: new OutputFlowNodes(reshaping: new ReshapingFlowNodes(
+					dataMapping: new DataMappingFlowNodes(flowState: $mock(FlowStateNode::class), map: $mock(MapNode::class)),
+					evaluation: new EvaluationFlowNodes(iterate: $mock(IterateNode::class), decisionTable: $mock(DecisionTableNode::class)),
+				), messaging: new MessagingFlowNodes(
+					sendNotification: $mock(SendNotificationNode::class),
+					sendEmail: $mock(SendEmailNode::class),
+					sendTalkMessage: $mock(SendTalkMessageNode::class),
+				)),
+				coordination: new CoordinationFlowNodes(humanTasks: new HumanTaskFlowNodes(
+					userTask: $mock(UserTaskNode::class),
+					portalTask: $mock(PortalTaskNode::class),
+				), locks: new LockFlowNodes(
+					lockObject: $mock(LockObjectNode::class),
+					unlockObject: $mock(UnlockObjectNode::class),
+				)),
+			),
+			boundary: new BoundaryFlowNodes(
+				cases: new CaseFlowNodes(
+					caseOpen: $mock(CaseOpenNode::class),
+					caseAdvance: $mock(CaseAdvanceNode::class),
+				),
+				triggers: new TriggerFlowNodes(
+					triggerObject: $mock(TriggerObjectNode::class),
+					triggerSchedule: $mock(TriggerScheduleNode::class),
+					triggerManual: $mock(TriggerManualNode::class),
+				),
+			),
 		);
 
 		return $listener;
@@ -122,9 +198,9 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(27, $registered, 'all twenty-seven built-ins are registered');
+		$this->assertCount(32, $registered, 'all thirty-two built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
-		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class] as $waiter) {
+		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");
 		}
 	}//end testEveryBuiltInReachesTheRegistryPortalTaskIncluded()

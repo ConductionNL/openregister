@@ -11,7 +11,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		name="export-register-dialog"
 		:title="t('openregister', 'Export Objects')"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -40,45 +40,101 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="closeModal" />
+			<BusyButton
+				:busy="loading"
+				:disabled="loading"
+				variant="primary"
+				@click="exportObjects">
 				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				{{ t('openregister', 'Export') }}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+
+/**
+ * Whether both the register and the schema have an id.
+ *
+ * @param {object|null} register The selected register
+ * @param {object|null} schema The selected schema
+ * @return {boolean} True when both have one
+ */
+function hasIds(register, schema) {
+	return Boolean(register?.id && schema?.id)
+}
+
+/**
+ * The register and schema as they appear in the export URL: slug, else id.
+ *
+ * @param {object} register The selected register
+ * @param {object} schema The selected schema
+ * @return {Array<string>} The register and schema slugs
+ */
+function exportSlugs(register, schema) {
+	return [register.slug || register.id, schema.slug || schema.id]
+}
+
+/**
+ * Download the objects of a register and schema in the given format.
+ *
+ * @param {Array<string>} slugs The register and schema slugs
+ * @param {string} format The export format
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(slugs, format) {
+	const url = generateUrl(
+		`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
+	)
+	const params = {
+		type: format,
+	}
+
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob',
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureMessage(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| t('openregister', 'Failed to export objects')
+	)
+}
 
 export default {
 	name: 'ExportRegister',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		// Icons
 		Export,
-		Cancel,
+		BusyButton,
+		CloseCancelButton,
 	},
 
 	data() {
@@ -126,10 +182,7 @@ export default {
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */
 		async exportObjects() {
-			const register = registerStore.registerItem
-			const schema = schemaStore.schemaItem
-
-			if (!register?.id || !schema?.id) {
+			if (!hasIds(registerStore.registerItem, schemaStore.schemaItem)) {
 				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
@@ -138,60 +191,77 @@ export default {
 			this.error = null
 
 			try {
-				const registerSlug = register.slug || register.id
-				const schemaSlug = schema.slug || schema.id
-				const url = generateUrl(
-					`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`,
-				)
-				const params = {
-					type: this.exportFormat,
-				}
-
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob',
-				})
-
-				const blob = new Blob([response.data], {
-					type: response.headers['content-type'],
-				})
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `${registerSlug}_${schemaSlug}_${new Date().toISOString().split('T')[0]}.${this.exportFormat === 'excel' ? 'xlsx' : 'csv'}`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
-				this.closeModal()
+				await this.downloadExport()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| t('openregister', 'Failed to export objects')
+				this.error = exportFailureMessage(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current register and schema, save it
+		 * and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadExport() {
+			const slugs = exportSlugs(
+				registerStore.registerItem,
+				schemaStore.schemaItem,
+			)
+			const response = await requestExport(slugs, this.exportFormat)
+			this.saveExport(response, slugs)
+			this.closeModal()
+		},
+
+		/**
+		 * Hand the exported file to the browser as a download.
+		 *
+		 * @param {object} response The export response
+		 * @param {Array<string>} slugs The register and schema slugs
+		 * @spec exclude UI plumbing — turns the export response into a browser download
+		 * @return {void}
+		 */
+		saveExport(response, slugs) {
+			const blob = new Blob([response.data], {
+				type: response.headers['content-type'],
+			})
+			const downloadUrl = window.URL.createObjectURL(blob)
+			const link = document.createElement('a')
+
+			link.href = downloadUrl
+			link.download = this.exportFileName(response, slugs)
+			document.body.appendChild(link)
+			link.click()
+			document.body.removeChild(link)
+			window.URL.revokeObjectURL(downloadUrl)
+		},
+
+		/**
+		 * The file name the server gives, else one from the slugs, the date and the format.
+		 *
+		 * @param {object} response The export response
+		 * @param {Array<string>} slugs The register and schema slugs
+		 * @spec exclude UI plumbing — names the downloaded export file
+		 * @return {string} The file name
+		 */
+		exportFileName(response, slugs) {
+			const contentDisposition = response.headers['content-disposition']
+			if (contentDisposition) {
+				return contentDisposition.split('filename=')[1].replace(/"/g, '')
+			}
+			const extension = this.exportFormat === 'excel' ? 'xlsx' : 'csv'
+			return `${slugs[0]}_${slugs[1]}_${new Date().toISOString().split('T')[0]}.${extension}`
 		},
 	},
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 
 .formGroup {
 	display: flex;

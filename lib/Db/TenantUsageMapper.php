@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -37,7 +39,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TenantUsage>
  */
-class TenantUsageMapper extends QBMapper {
+class TenantUsageMapper extends QBMapper implements TenantUsageMapperInterface {
 	/**
 	 * Constructor
 	 *
@@ -56,25 +58,13 @@ class TenantUsageMapper extends QBMapper {
 	 * @return TenantUsage|null The usage record or null
 	 */
 	public function findByOrgAndPeriod(string $organisationUuid, DateTime $period): ?TenantUsage {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'organisation_uuid',
-					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
-				)
+		$qb = $this->organisationRowsQuery(organisationUuid: $organisationUuid);
+		$qb->andWhere(
+			$qb->expr()->eq(
+				'period',
+				$qb->createNamedParameter($period->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
 			)
-			->andWhere(
-				$qb->expr()->eq(
-					'period',
-					$qb->createNamedParameter(
-						$period->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					)
-				)
-			);
+		);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -87,16 +77,27 @@ class TenantUsageMapper extends QBMapper {
 	 * Find usage records for an organisation within a date range.
 	 *
 	 * @param string $organisationUuid Organisation UUID
-	 * @param DateTime $from Start date
-	 * @param DateTime $to End date
+	 * @param UsageRange $range The first and last bucket, inclusive
 	 *
 	 * @return TenantUsage[] Array of usage records
 	 */
-	public function findByOrgAndDateRange(
-		string $organisationUuid,
-		DateTime $from,
-		DateTime $to,
-	): array {
+	public function findByOrgAndDateRange(string $organisationUuid, UsageRange $range): array {
+		$qb = $this->organisationRowsQuery(organisationUuid: $organisationUuid);
+		$this->wherePeriodFrom(qb: $qb, from: $range->from);
+		$this->wherePeriodTo(qb: $qb, to: $range->to);
+		$qb->orderBy('period', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByOrgAndDateRange()
+
+	/**
+	 * Every usage row of one organisation, before any period bound.
+	 *
+	 * @param string $organisationUuid The organisation UUID.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function organisationRowsQuery(string $organisationUuid): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -106,90 +107,71 @@ class TenantUsageMapper extends QBMapper {
 					'organisation_uuid',
 					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
 				)
-			)
-			->andWhere(
-				$qb->expr()->gte(
-					'period',
-					$qb->createNamedParameter($from->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
-				)
-			)
-			->andWhere(
-				$qb->expr()->lte(
-					'period',
-					$qb->createNamedParameter($to->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
-				)
-			)
-			->orderBy('period', 'ASC');
+			);
 
-		return $this->findEntities(query: $qb);
-	}//end findByOrgAndDateRange()
+		return $qb;
+	}//end organisationRowsQuery()
+
+	/**
+	 * Only periods at or after a moment.
+	 *
+	 * @param IQueryBuilder $qb   The query being built.
+	 * @param DateTime      $from The inclusive lower bound.
+	 *
+	 * @return void
+	 */
+	private function wherePeriodFrom(IQueryBuilder $qb, DateTime $from): void {
+		$qb->andWhere(
+			$qb->expr()->gte(
+				'period',
+				$qb->createNamedParameter($from->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
+			)
+		);
+	}//end wherePeriodFrom()
+
+	/**
+	 * Only periods at or before a moment.
+	 *
+	 * @param IQueryBuilder $qb The query being built.
+	 * @param DateTime      $to The inclusive upper bound.
+	 *
+	 * @return void
+	 */
+	private function wherePeriodTo(IQueryBuilder $qb, DateTime $to): void {
+		$qb->andWhere(
+			$qb->expr()->lte(
+				'period',
+				$qb->createNamedParameter($to->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
+			)
+		);
+	}//end wherePeriodTo()
 
 	/**
 	 * Upsert a usage record (insert or update on conflict).
 	 *
-	 * @param string $organisationUuid Organisation UUID
-	 * @param DateTime $period Hourly bucket
-	 * @param int $requestCount Requests to add
-	 * @param int $bandwidthBytes Bandwidth to add
-	 * @param int $storageBytes Current storage usage
+	 * @param UsageBucket      $bucket      The organisation and the hourly bucket
+	 * @param UsageMeasurement $measurement The traffic to add and the current storage
 	 *
 	 * @return TenantUsage The upserted entity
 	 */
-	public function upsertUsage(
-		string $organisationUuid,
-		DateTime $period,
-		int $requestCount,
-		int $bandwidthBytes,
-		int $storageBytes,
-	): TenantUsage {
-		$existing = $this->findByOrgAndPeriod(organisationUuid: $organisationUuid, period: $period);
+	public function upsertUsage(UsageBucket $bucket, UsageMeasurement $measurement): TenantUsage {
+		$existing = $this->findByOrgAndPeriod(organisationUuid: $bucket->organisationUuid, period: $bucket->period);
 
 		if ($existing !== null) {
-			$existing->setRequestCount($existing->getRequestCount() + $requestCount);
-			$existing->setBandwidthBytes($existing->getBandwidthBytes() + $bandwidthBytes);
-			$existing->setStorageBytes($storageBytes);
+			$measurement->addTo(row: $existing);
 			$existing->setUpdated(new DateTime());
 			return $this->update(entity: $existing);
 		}
 
 		$entity = new TenantUsage();
-		$entity->setOrganisationUuid($organisationUuid);
-		$entity->setPeriod($period);
-		$entity->setRequestCount($requestCount);
-		$entity->setBandwidthBytes($bandwidthBytes);
-		$entity->setStorageBytes($storageBytes);
+		$entity->setOrganisationUuid($bucket->organisationUuid);
+		$entity->setPeriod($bucket->period);
+		$measurement->writeTo(row: $entity);
 		$entity->setCreated(new DateTime());
 		$entity->setUpdated(new DateTime());
 
 		return $this->insert(entity: $entity);
 	}//end upsertUsage()
-
-	/**
-	 * Delete every organisation's usage records older than a given date.
-	 *
-	 * INSTALLATION-WIDE. This is a retention sweep across ALL organisations
-	 * and has no organisation parameter. Never use it to remove one
-	 * organisation's records: TenantPurgeJob once did, with a far-future date,
-	 * and every purge deleted the usage history of every tenant. Use
-	 * deleteByOrganisation() for that.
-	 *
-	 * @param DateTime $before Delete records before this date
-	 *
-	 * @return int Number of deleted records
-	 */
-	public function deleteOlderThan(DateTime $before): int {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->delete($this->getTableName())
-			->where(
-				$qb->expr()->lt(
-					'period',
-					$qb->createNamedParameter($before->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
-				)
-			);
-
-		return $qb->executeStatement();
-	}//end deleteOlderThan()
 
 	/**
 	 * Delete all usage records of one organisation, and nothing else.

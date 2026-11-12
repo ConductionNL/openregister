@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 /**
  * Body, status and answer rules for a store publish.
  *
- * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
  */
 final class StorePublishRules {
 	/**
@@ -65,7 +65,7 @@ final class StorePublishRules {
 	 *
 	 * @return array<string, mixed>|null The body, or null when the payload has no valid slug.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
 	 */
 	public function body(StoreDescriptor $descriptor, array $payload): ?array {
 		$slug = ($payload['slug'] ?? null);
@@ -73,7 +73,19 @@ final class StorePublishRules {
 			return null;
 		}
 
-		$body = ['slug' => $slug];
+		return ['slug' => $slug] + self::publishedFields(descriptor: $descriptor, payload: $payload);
+	}//end body()
+
+	/**
+	 * The payload fields the descriptor lets a publish send, never the slug or an identity key.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store descriptor.
+	 * @param array<string, mixed> $payload    The item to publish.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function publishedFields(StoreDescriptor $descriptor, array $payload): array {
+		$fields = [];
 		foreach ($descriptor->publishFields as $field) {
 			$field = (string)$field;
 			if ($field === 'slug' || in_array($field, self::IDENTITY_KEYS, true) === true) {
@@ -81,12 +93,12 @@ final class StorePublishRules {
 			}
 
 			if (array_key_exists($field, $payload) === true) {
-				$body[$field] = $payload[$field];
+				$fields[$field] = $payload[$field];
 			}
 		}
 
-		return $body;
-	}//end body()
+		return $fields;
+	}//end publishedFields()
 
 	/**
 	 * The publish body as JSON, or null when nothing may be sent.
@@ -96,7 +108,7 @@ final class StorePublishRules {
 	 *
 	 * @return string|null The JSON body, or null when the payload has no valid slug or does not encode.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-send-only-allowed-fields-and-never-an-identity-key
 	 */
 	public function encodedBody(StoreDescriptor $descriptor, array $payload): ?string {
 		$body = $this->body(descriptor: $descriptor, payload: $payload);
@@ -119,7 +131,7 @@ final class StorePublishRules {
 	 *
 	 * @return bool True for any 2xx.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-publish-failures-must-map-to-generic-outcomes-that-name-the-remedy
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-publish-failures-must-map-to-generic-outcomes-that-name-the-remedy
 	 */
 	public function isSuccess(int $status): bool {
 		return $status >= 200 && $status < 300;
@@ -136,7 +148,7 @@ final class StorePublishRules {
 	 *
 	 * @return string One of the GenericStoreService outcome constants.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-publish-failures-must-map-to-generic-outcomes-that-name-the-remedy
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-publish-failures-must-map-to-generic-outcomes-that-name-the-remedy
 	 */
 	public function failureOutcome(int $status): string {
 		if ($status === 429) {
@@ -157,7 +169,7 @@ final class StorePublishRules {
 	 *
 	 * @return array<string, mixed>|null The object, or null when the body is not a JSON object.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-verify-the-slug-the-registry-stored
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-verify-the-slug-the-registry-stored
 	 */
 	public function storedObject(string $body): ?array {
 		$decoded = json_decode($body, true);

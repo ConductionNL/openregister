@@ -27,10 +27,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -40,6 +42,8 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
@@ -70,6 +74,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Regression: a PENDING schema ref left by a previous caller must not be
@@ -98,7 +103,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler:    $this->createMock(DataManipulationHandler::class),
 			deleteHandler:       $this->createMock(DeleteObject::class),
 			getHandler:          $this->createMock(GetObject::class),
@@ -137,7 +142,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 			dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
 			container:           $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 
@@ -198,17 +203,26 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 			}
 		);
 
+		// The read must reach the object handler scoped to what THIS call named.
+		$found = new ObjectEntity();
+		$this->getHandlerMock()->expects($this->once())
+			->method('find')
+			->with(
+				$this->callback(static fn (ObjectFindRequest $request): bool => $request->id === 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31'),
+				$this->callback(static fn (ReadScope $scope): bool => $scope->register === $register && $scope->schema === $synchronization)
+			)
+			->willReturn($found);
+
 		// BEFORE THE FIX this throws SchemaNotInRegisterException naming
 		// "application" — a schema this call never mentioned.
-		$this->service->find(
+		$result = $this->service->find(
 			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
-			register: 'openconnector',
-			schema: 'synchronization',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'synchronization', render: false),
 			_rbac: false,
 			_multitenancy: false
 		);
 
-		$this->addToAssertionCount(1);
+		$this->assertSame($found, $result);
 
 	}//end testAPendingSchemaRefFromAPreviousCallerIsNotResolvedInThisCallsRegister()
 
@@ -263,13 +277,69 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		// lookup actually takes (SynchronizationService passes register+schema
 		// inside `filters`, which prepareFindAllConfig turns into
 		// setRegister()->setSchema()).
+		// The rows must be loaded scoped to the flow's own register and schema.
+		$scope = [];
+		$this->getHandlerMock()->expects($this->once())
+			->method('findAll')
+			->willReturnCallback(
+				static function (...$args) use (&$scope): array {
+					$names = array_map(
+						static fn (\ReflectionParameter $p): string => $p->getName(),
+						(new \ReflectionMethod(GetObject::class, 'findAll'))->getParameters()
+					);
+					$named = array_combine(array_slice($names, 0, count($args)), $args);
+					$scope = [$named['request']->scope->register, $named['request']->scope->schema];
+					return [];
+				}
+			);
+
 		$this->service->findAll(
 			config: ['filters' => ['register' => 'fns-run-reg', 'schema' => 'target']]
 		);
 
-		$this->addToAssertionCount(1);
+		$this->assertSame([$flowRegister, $target], $scope);
 
 	}//end testALeakedRefDoesNotRefuseAnOperationThatNamesItsOwnScope()
+
+	/**
+	 * Refusal pair for the two tests above: a call that itself NAMES a schema
+	 * its register does not carry is still refused. The guard only stops a
+	 * previous caller's ref from being blamed; it does not open the boundary.
+	 *
+	 * @return void
+	 */
+	public function testACallNamingASchemaItsRegisterLacksIsStillRefused(): void {
+		$register = new Register();
+		$register->setId(65);
+		$register->setSlug('openconnector');
+		$register->setSchemas([221]);
+
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findBySlugInIds')->willReturn(null);
+		$this->schemaMapper->method('findInIds')->willReturn(null);
+		$this->getHandlerMock()->expects($this->never())->method('find');
+
+		$this->expectException(SchemaNotInRegisterException::class);
+
+		$this->service->find(
+			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'application', render: false),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end testACallNamingASchemaItsRegisterLacksIsStillRefused()
+
+	/**
+	 * The object handler the service was built with (a mock from setUp()).
+	 *
+	 * @return GetObject&MockObject The handler mock.
+	 */
+	private function getHandlerMock(): GetObject {
+		$property = new \ReflectionProperty(ObjectService::class, 'getHandler');
+		$property->setAccessible(true);
+
+		return $property->getValue($this->service);
+	}//end getHandlerMock()
 
 	/**
 	 * The same leak, on the WRITE path — which find() never covered.

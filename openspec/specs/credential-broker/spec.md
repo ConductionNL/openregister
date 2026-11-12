@@ -466,3 +466,120 @@ mutable only through a reviewed release like every other catalogue entry.
   than `/notices`
 - **THEN** no `doffin` allow-rule matches and the broker denies the call with the
   static 403, failing closed
+
+### Requirement: Per-app Doriath application registration
+
+OpenRegister SHALL register each consuming app that onboards to the credential
+broker as its OWN Doriath `Application`, in addition to the existing OR app-key
+registration (`CredentialAppTokenService::registerApp`). Onboarding means an
+AppHost leaf initialising, or a virtual-app manifest declaring a non-empty
+`credentials[]` being registered. Registration SHALL reuse Doriath's
+`ApplicationService::register` in-process (resolved via `class_exists` +
+`OCP\Server::get`, no compile-time dependency on Doriath), with the application
+name equal to the consuming appId, description drawn from the app's manifest,
+and type `internal`. Because this is identity-only, the registration SHALL NOT
+supply a CSR and SHALL NOT provision an EncryptionSuite; brokered secret custody
+SHALL remain under OpenRegister's single self-registered Doriath application
+vault, unchanged.
+
+The registration SHALL be **pending by default** (Doriath's non-admin
+registration path), so an administrator approves the app before it is active.
+The registration SHALL be **idempotent**: OpenRegister SHALL persist the
+Doriath-assigned application UUID in `IAppConfig` under a per-app key (namespaced
+by appId and distinct from OpenRegister's own application UUID), and SHALL skip
+when that UUID is set and the Doriath row still exists — it SHALL NEVER
+re-register or rotate an existing application. When Doriath is absent, disabled,
+or its `ApplicationService` is unloadable, the step SHALL degrade (warn, never
+throw); the app's OR app-key onboarding and the broker SHALL continue unchanged.
+
+#### Scenario: Onboarding app registers its own Doriath application
+
+- **WHEN** an app whose manifest declares a non-empty `credentials[]` onboards to the broker on an instance with an eligible Doriath
+- **THEN** OpenRegister registers a Doriath `Application` named after the consuming appId, description from the manifest, type `internal`, with no CSR
+- **AND** the app appears in Doriath's Applications list with its own identity, separate from OpenRegister's own application
+
+#### Scenario: Per-app registration is pending until an admin approves
+
+- **WHEN** the per-app Doriath `Application` is registered via the non-admin path
+- **THEN** it is created with status `pending` and an admin-approval notification is dispatched
+- **AND** the app becomes active only after an administrator approves it in Doriath
+
+#### Scenario: Registration is idempotent
+
+- **WHEN** the onboarding hook runs again after a successful per-app registration and the persisted application UUID still matches a live Doriath row
+- **THEN** OpenRegister makes no new registration call and does not rotate or mutate the existing application
+
+#### Scenario: Custody is unchanged
+
+- **WHEN** a per-app Doriath `Application` is registered
+- **THEN** no brokered secret is moved, re-keyed, or re-encrypted
+- **AND** brokered secret custody remains under OpenRegister's single self-registered Doriath application vault
+
+#### Scenario: Doriath unavailable degrades
+
+- **WHEN** the onboarding hook runs while Doriath is absent, disabled, or its `ApplicationService` is unloadable
+- **THEN** it logs/outputs a warning and completes without error
+- **AND** the app's OpenRegister app-key onboarding and the credential broker continue to operate unchanged
+
+### Requirement: GitHub code search allow-rule
+
+The provider catalogue's `github` entry SHALL permit `GET /search/code` so a
+caller can find files by name across every repository the token can see. The
+rule SHALL match the path exactly (after the broker strips the query string),
+SHALL be GET only, and SHALL NOT grant any other search endpoint or any sub-path
+of `/search/code`. The per-file read stays covered by the existing
+`GET /repos/*` rule; no additional contents rule is added.
+
+#### Scenario: Code search with a query and a page is allowed
+
+- **WHEN** a brokered call for a `github` credential requests
+  `GET /search/code?q=filename%3Apubliccode.yml+path%3A%2F&per_page=100&page=3`
+- **THEN** the query string is stripped for rule matching and the
+  `GET /search/code` rule matches
+- **AND** the outbound URL is
+  `https://api.github.com/search/code?q=filename%3Apubliccode.yml+path%3A%2F&per_page=100&page=3`
+  with the broker-injected `Authorization` header
+
+#### Scenario: The per-file contents read stays allowed
+
+- **WHEN** a brokered call requests
+  `GET /repos/ConductionNL/opencatalogi/contents/publiccode.yml?ref=main`
+- **THEN** the existing `GET /repos/*` rule matches and the call proceeds
+  host-locked to `api.github.com`
+
+#### Scenario: Writes and other searches stay refused
+
+- **WHEN** a brokered call requests `POST`, `PUT` or `DELETE` on `/search/code`,
+  or `GET /search/commits`, `GET /search/users`, `GET /search/code/extra` or
+  `GET /search/codes`
+- **THEN** the broker refuses it with the static 403 (`Request not permitted`;
+  the reason is logged, never returned) and makes no outbound call
+
+### Requirement: Provider titles are plain words in the reader's language
+
+Every `title` in the provider catalogue SHALL be written in sentence case and SHALL NOT contain an
+em-dash or an en-dash, because the title is what a person reads in the "Add credential" picker.
+`GET /api/credentials/providers` SHALL return each title translated through the app's l10n bundle
+for the requesting user's language, falling back to the English catalogue title when no translation
+exists, and to the identifier when an entry has no title. Provider identifiers SHALL NOT change when
+a title is reworded.
+
+#### Scenario: A catalogue title carries no dash
+
+- **GIVEN** the shipped `lib/Settings/credential-providers.json`
+- **WHEN** the catalogue is loaded
+- **THEN** no entry's `title` contains an em-dash or an en-dash
+
+#### Scenario: The picker receives dash-free titles with unchanged identifiers
+
+- **GIVEN** a signed-in user
+- **WHEN** they request `GET /api/credentials/providers`
+- **THEN** every returned `title` is free of em-dashes and en-dashes
+- **AND** the identifiers `anthropic`, `anthropic-oauth`, `anthropic-cli`, `github-push` and `bluesky` are still returned
+
+#### Scenario: A Dutch reader gets Dutch titles
+
+- **GIVEN** a signed-in user whose language is Dutch
+- **WHEN** they request `GET /api/credentials/providers`
+- **THEN** the `anthropic` entry's title is "Anthropic Claude API-sleutel"
+- **AND** an entry without a Dutch translation keeps its English title

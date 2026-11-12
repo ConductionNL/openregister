@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`sidebar route queries (golden) AuditTrailSideBar matches the recorded query 1`] = `
+{
+  "none/empty": "{}",
+  "none/emptyLists": "{}",
+  "none/everything": "{"action":"create,update","user":"alice,","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","object":"obj-1","onlyWithChanges":"1"}",
+  "none/invalidDates": "{"dateFrom":null,"dateTo":null}",
+  "none/notLists": "{}",
+  "withIds/empty": "{"register":"7","schema":"abc"}",
+  "withIds/emptyLists": "{"register":"7","schema":"abc"}",
+  "withIds/everything": "{"register":"7","schema":"abc","action":"create,update","user":"alice,","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","object":"obj-1","onlyWithChanges":"1"}",
+  "withIds/invalidDates": "{"register":"7","schema":"abc","dateFrom":null,"dateTo":null}",
+  "withIds/notLists": "{"register":"7","schema":"abc"}",
+  "withoutIds/empty": "{}",
+  "withoutIds/emptyLists": "{}",
+  "withoutIds/everything": "{"action":"create,update","user":"alice,","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","object":"obj-1","onlyWithChanges":"1"}",
+  "withoutIds/invalidDates": "{"dateFrom":null,"dateTo":null}",
+  "withoutIds/notLists": "{}",
+}
+`;
+
+exports[`sidebar route queries (golden) DeletedSideBar matches the recorded query 1`] = `
+{
+  "none/empty": "{}",
+  "none/emptyLists": "{}",
+  "none/everything": "{"deletedBy":"carol","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z"}",
+  "none/invalidDates": "{"dateFrom":null,"dateTo":null}",
+  "none/notLists": "{}",
+  "withIds/empty": "{"register":"7","schema":"abc"}",
+  "withIds/emptyLists": "{"register":"7","schema":"abc"}",
+  "withIds/everything": "{"register":"7","schema":"abc","deletedBy":"carol","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z"}",
+  "withIds/invalidDates": "{"register":"7","schema":"abc","dateFrom":null,"dateTo":null}",
+  "withIds/notLists": "{"register":"7","schema":"abc"}",
+  "withoutIds/empty": "{}",
+  "withoutIds/emptyLists": "{}",
+  "withoutIds/everything": "{"deletedBy":"carol","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z"}",
+  "withoutIds/invalidDates": "{"dateFrom":null,"dateTo":null}",
+  "withoutIds/notLists": "{}",
+}
+`;
+
+exports[`sidebar route queries (golden) SearchTrailSideBar matches the recorded query 1`] = `
+{
+  "none/empty": "{}",
+  "none/emptyLists": "{}",
+  "none/everything": "{"success":"true","user":"alice,bob","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","searchTerm":"term","executionTimeFrom":"10","executionTimeTo":"20","resultCountFrom":"1"}",
+  "none/invalidDates": "{"dateFrom":null,"dateTo":null}",
+  "none/notLists": "{}",
+  "withIds/empty": "{"register":"7","schema":"abc"}",
+  "withIds/emptyLists": "{"register":"7","schema":"abc"}",
+  "withIds/everything": "{"register":"7","schema":"abc","success":"true","user":"alice,bob","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","searchTerm":"term","executionTimeFrom":"10","executionTimeTo":"20","resultCountFrom":"1"}",
+  "withIds/invalidDates": "{"register":"7","schema":"abc","dateFrom":null,"dateTo":null}",
+  "withIds/notLists": "{"register":"7","schema":"abc"}",
+  "withoutIds/empty": "{"register":"undefined","schema":"0"}",
+  "withoutIds/emptyLists": "{"register":"undefined","schema":"0"}",
+  "withoutIds/everything": "{"register":"undefined","schema":"0","success":"true","user":"alice,bob","dateFrom":"2026-01-02T03:04:05.000Z","dateTo":"2026-02-03T00:00:00.000Z","searchTerm":"term","executionTimeFrom":"10","executionTimeTo":"20","resultCountFrom":"1"}",
+  "withoutIds/invalidDates": "{"register":"undefined","schema":"0","dateFrom":null,"dateTo":null}",
+  "withoutIds/notLists": "{"register":"undefined","schema":"0"}",
+}
+`;

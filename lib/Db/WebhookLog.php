@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\WebhookLog\WebhookLogFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -66,6 +67,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class WebhookLog extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Webhook (ID of the webhook this log belongs to)
@@ -164,21 +166,10 @@ class WebhookLog extends Entity implements JsonSerializable {
 	 * @return void
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'webhook', type: 'integer');
-		$this->addType(fieldName: 'eventClass', type: 'string');
-		$this->addType(fieldName: 'payload', type: 'string');
-		$this->addType(fieldName: 'url', type: 'string');
-		$this->addType(fieldName: 'method', type: 'string');
-		$this->addType(fieldName: 'success', type: 'boolean');
-		$this->addType(fieldName: 'statusCode', type: 'integer');
-		$this->addType(fieldName: 'requestBody', type: 'string');
-		$this->addType(fieldName: 'responseBody', type: 'string');
-		$this->addType(fieldName: 'errorMessage', type: 'string');
-		$this->addType(fieldName: 'attempt', type: 'integer');
-		$this->addType(fieldName: 'nextRetryAt', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
+		foreach (WebhookLogFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 
-		// Initialize created timestamp.
 		$this->created = new DateTime();
 	}//end __construct()
 
@@ -214,32 +205,14 @@ class WebhookLog extends Entity implements JsonSerializable {
 	}//end setPayloadArray()
 
 	/**
-	 * JSON serialize the entity
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return (array|bool|int|null|string)[]
-	 *
-	 * @psalm-return array{id: int, webhook: int, eventClass: string,
-	 *     payload: array, url: string, method: string, success: bool,
-	 *     statusCode: int|null, requestBody: null|string,
-	 *     responseBody: null|string, errorMessage: null|string, attempt: int,
-	 *     nextRetryAt: null|string, created: string}
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'webhook' => $this->webhook,
-			'eventClass' => $this->eventClass,
 			'payload' => $this->getPayloadArray(),
-			'url' => $this->url,
-			'method' => $this->method,
-			'success' => $this->success,
-			'statusCode' => $this->statusCode,
-			'requestBody' => $this->requestBody,
-			'responseBody' => $this->responseBody,
-			'errorMessage' => $this->errorMessage,
-			'attempt' => $this->attempt,
-			'nextRetryAt' => $this->nextRetryAt?->format('c'),
 			'created' => $this->created->format('c'),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

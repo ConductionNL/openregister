@@ -1,0 +1,415 @@
+{
+    "empty": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [],
+        "same": true
+    },
+    "enabled string": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": false,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [
+            "enabled"
+        ],
+        "same": true
+    },
+    "every field as arrays": {
+        "row": {
+            "id": 4,
+            "uuid": "w-1",
+            "name": "Hook",
+            "url": "https://example.org/h",
+            "method": "PUT",
+            "events": [
+                "object.created",
+                "object.updated"
+            ],
+            "headers": {
+                "X-A": "1"
+            },
+            "secret": "***",
+            "enabled": true,
+            "organisation": "org-1",
+            "filters": {
+                "register": 2
+            },
+            "retryPolicy": "linear",
+            "maxRetries": 5,
+            "timeout": 45,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": {
+                "useCloudEvents": true
+            },
+            "mapping": 9
+        },
+        "updated": [
+            "id",
+            "uuid",
+            "name",
+            "url",
+            "method",
+            "events",
+            "headers",
+            "secret",
+            "organisation",
+            "filters",
+            "retryPolicy",
+            "maxRetries",
+            "timeout",
+            "configuration",
+            "mapping"
+        ],
+        "same": true
+    },
+    "falsy values kept": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": false,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 0,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [
+            "enabled",
+            "maxRetries"
+        ],
+        "same": true
+    },
+    "json strings": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [
+                "a"
+            ],
+            "headers": {
+                "X": "y"
+            },
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": {
+                "k": 1
+            },
+            "mapping": null
+        },
+        "updated": [
+            "events",
+            "headers",
+            "filters",
+            "configuration"
+        ],
+        "same": true
+    },
+    "mapping empty clears": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [],
+        "same": true
+    },
+    "mapping left out keeps a set mapping": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "n",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": 7
+        },
+        "updated": [
+            "name"
+        ],
+        "same": true
+    },
+    "mapping null clears": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [],
+        "same": true
+    },
+    "mapping null clears a set mapping": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [
+            "mapping"
+        ],
+        "same": true
+    },
+    "mapping zero": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": 0
+        },
+        "updated": [
+            "mapping"
+        ],
+        "same": true
+    },
+    "nulls are skipped": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [],
+        "same": true
+    },
+    "numeric strings equal to the defaults": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [],
+        "same": true
+    },
+    "unknown key ignored": {
+        "row": {
+            "id": null,
+            "uuid": "",
+            "name": "n",
+            "url": "",
+            "method": "POST",
+            "events": [],
+            "headers": [],
+            "secret": null,
+            "enabled": true,
+            "organisation": null,
+            "filters": [],
+            "retryPolicy": "exponential",
+            "maxRetries": 3,
+            "timeout": 30,
+            "lastTriggeredAt": null,
+            "lastSuccessAt": null,
+            "lastFailureAt": null,
+            "totalDeliveries": 0,
+            "successfulDeliveries": 0,
+            "failedDeliveries": 0,
+            "configuration": [],
+            "mapping": null
+        },
+        "updated": [
+            "name"
+        ],
+        "same": true
+    }
+}

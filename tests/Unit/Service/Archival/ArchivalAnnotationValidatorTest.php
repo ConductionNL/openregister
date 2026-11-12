@@ -74,6 +74,28 @@ final class ArchivalAnnotationValidatorTest extends TestCase {
 		self::assertSame([], $errors);
 	}//end testDeclaredArchivalFactsPass()
 
+	/**
+	 * `category`, `categoryProperty` and `action` are read by
+	 * ArchivalDeclarationReader and ClassificationOverride. Every dossiq case
+	 * schema import logged them as ignored while they were being used.
+	 *
+	 * @return void
+	 */
+	public function testKeysTheArchiveReaderReadsAreNotUnknown(): void {
+		$findings = $this->validator->validate(
+			[
+				'x-openregister-archival' => [
+					'retention' => ['default' => 'P7Y'],
+					'category' => '1.1',
+					'categoryProperty' => 'selectielijstCategorie',
+					'action' => 'bewaren',
+				],
+			]
+		);
+
+		self::assertSame([], $findings);
+	}//end testKeysTheArchiveReaderReadsAreNotUnknown()
+
 	public function testUnknownTopLevelKeyIsReportedAsAWarningNotAnError(): void {
 		$findings = $this->validator->validate(
 			[
@@ -129,7 +151,9 @@ final class ArchivalAnnotationValidatorTest extends TestCase {
 			ArchivalAnnotationValidator::partition(findings: $filinq)['errors'],
 			"filinq's correspondence schema must still import."
 		);
-		self::assertCount(3, ArchivalAnnotationValidator::partition(findings: $filinq)['warnings']);
+		// `category` and `action` are read by the archive reader now, so only
+		// `responsibleParty` is still an unknown key.
+		self::assertCount(1, ArchivalAnnotationValidator::partition(findings: $filinq)['warnings']);
 
 		$pipelinq = $this->validator->validate(
 			[

@@ -1,0 +1,1507 @@
+{
+    "create": {
+        "result": {
+            "objects": [
+                "new-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 0 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] No existing object found - will create new object",
+                {
+                    "registerId": 4,
+                    "schemaId": 9,
+                    "slug": "z1"
+                }
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                null,
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "1.2.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    },
+    "create-empty-app": {
+        "result": {
+            "objects": [
+                "new-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 0 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] No existing object found - will create new object",
+                {
+                    "registerId": 4,
+                    "schemaId": 9,
+                    "slug": "z1"
+                }
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                null,
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "create-no-app": {
+        "result": {
+            "objects": [
+                "new-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 0 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] No existing object found - will create new object",
+                {
+                    "registerId": 4,
+                    "schemaId": 9,
+                    "slug": "z1"
+                }
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                null,
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "create-self-uuid-wins": {
+        "result": {
+            "objects": [
+                "self-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "declares"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z3"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z3",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z3"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 0 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] No existing object found - will create new object",
+                {
+                    "registerId": 4,
+                    "schemaId": 9,
+                    "slug": "z3"
+                }
+            ],
+            [
+                "saveObject",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z3",
+                        "uuid": "self-uuid"
+                    },
+                    "slug": "kept"
+                },
+                [],
+                4,
+                9,
+                "self-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z3": "1.0.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z3": "ff6809c1dd9a275d7cbe4bc6e68c7e73d17e49a0"
+                }
+            ]
+        ]
+    },
+    "create-top-level-identity": {
+        "result": {
+            "objects": [
+                "u-1"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z2"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z2",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z2"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 0 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] No existing object found - will create new object",
+                {
+                    "registerId": 4,
+                    "schemaId": 9,
+                    "slug": "z2"
+                }
+            ],
+            [
+                "saveObject",
+                {
+                    "version": "3.0.0",
+                    "title": "T",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z2"
+                    }
+                },
+                [],
+                4,
+                9,
+                "u-1",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z2": "3.0.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z2": "eba7143d0c45c57163225146abbdfe287908b854"
+                }
+            ]
+        ]
+    },
+    "follow-changed-content": {
+        "result": {
+            "objects": [
+                "stored-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                "stored-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    },
+    "follow-fill-in": {
+        "result": {
+            "objects": [
+                "stored-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "colour": "red",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                "stored-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "foreign-schema": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 1
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "listing"
+            ],
+            [
+                "schema.find",
+                "foreign"
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register",
+                {
+                    "appId": "app",
+                    "registerSlug": "listing",
+                    "schemaSlug": "foreign",
+                    "schemaId": 9,
+                    "schemaApplication": "other"
+                }
+            ]
+        ]
+    },
+    "no-self": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "log.warning",
+                "[ImportHandler] Skipping object import - register or schema not found in maps or DB",
+                {
+                    "objectSlug": null,
+                    "registerSlug": null,
+                    "schemaSlug": null,
+                    "registerFound": false,
+                    "schemaFound": false
+                }
+            ]
+        ]
+    },
+    "not-newer-than-shipped": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 1
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Skipped object update: imported version not higher",
+                {
+                    "slug": "z1",
+                    "register": 4,
+                    "schema": 9,
+                    "importedVersion": "1.2.0",
+                    "existingVersion": "1.0.0",
+                    "shippedVersion": "1.2.0"
+                }
+            ]
+        ]
+    },
+    "register-missing": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "gone"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Skipping object import - register or schema not found in maps or DB",
+                {
+                    "objectSlug": "z1",
+                    "registerSlug": "gone",
+                    "schemaSlug": "zaak",
+                    "registerFound": false,
+                    "schemaFound": true
+                }
+            ]
+        ]
+    },
+    "schema-missing": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "gone"
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Skipping object import - register or schema not found in maps or DB",
+                {
+                    "objectSlug": "z1",
+                    "registerSlug": "zaken",
+                    "schemaSlug": "gone",
+                    "registerFound": true,
+                    "schemaFound": false
+                }
+            ]
+        ]
+    },
+    "top-level-versions": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 1
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Skipped object update: imported version not higher",
+                {
+                    "slug": "z1",
+                    "register": 4,
+                    "schema": 9,
+                    "importedVersion": "2.0.0",
+                    "existingVersion": "2.0.0",
+                    "shippedVersion": null
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "2.0.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "f56e82cddb169ab6eb40e286c22a1db441a31c1e"
+                }
+            ]
+        ]
+    },
+    "unchanged-first-time": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 1
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Skipped object update: imported version not higher",
+                {
+                    "slug": "z1",
+                    "register": 4,
+                    "schema": 9,
+                    "importedVersion": "1.2.0",
+                    "existingVersion": "1.2.0",
+                    "shippedVersion": null
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "1.2.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    },
+    "unchanged-no-app": {
+        "result": {
+            "objects": [],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 1
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Skipped object update: imported version not higher",
+                {
+                    "slug": "z1",
+                    "register": 4,
+                    "schema": 9,
+                    "importedVersion": "1.2.0",
+                    "existingVersion": "1.2.0",
+                    "shippedVersion": null
+                }
+            ]
+        ]
+    },
+    "update-newer": {
+        "result": {
+            "objects": [
+                "stored-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                "stored-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "1.2.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    },
+    "update-newer-entity": {
+        "result": {
+            "objects": [
+                "entity-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                "entity-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "1.2.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    },
+    "update-newer-than-shipped": {
+        "result": {
+            "objects": [
+                "stored-uuid"
+            ],
+            "skipped": {
+                "objects": 0
+            },
+            "unchanged": {
+                "objects": 0
+            }
+        },
+        "calls": [
+            [
+                "register.find",
+                "zaken"
+            ],
+            [
+                "schema.find",
+                "zaak"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Import object search filter",
+                {
+                    "filter": {
+                        "@self": {
+                            "register": 4,
+                            "schema": 9,
+                            "slug": "z1"
+                        },
+                        "_limit": 1
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Searching: register=4, schema=9, slug=z1",
+                []
+            ],
+            [
+                "searchObjects",
+                {
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1"
+                    },
+                    "_limit": 1
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Found 1 results",
+                []
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_versions_app"
+            ],
+            [
+                "saveObject",
+                {
+                    "title": "Zaak",
+                    "@self": {
+                        "register": 4,
+                        "schema": 9,
+                        "slug": "z1",
+                        "version": "1.2.0"
+                    }
+                },
+                [],
+                4,
+                9,
+                "stored-uuid",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    "user",
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "appConfig.get",
+                "imported_seed_hashes_app"
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_versions_app",
+                {
+                    "4/9/z1": "1.2.0"
+                }
+            ],
+            [
+                "appConfig.set",
+                "imported_seed_hashes_app",
+                {
+                    "4/9/z1": "419239cb8627d2f51c3754df475fed852e42625d"
+                }
+            ]
+        ]
+    }
+}

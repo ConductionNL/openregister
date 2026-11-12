@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Exception;
 /**
  * A refused completion payload, naming the fields and the kind of refusal.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
  */
 class TaskFormRefusedException extends TaskValidationException {
 
@@ -91,7 +91,7 @@ class TaskFormRefusedException extends TaskValidationException {
 	 *
 	 * @return string One of the KIND_* constants.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	public function getKind(): string {
 		return $this->kind;
@@ -102,7 +102,7 @@ class TaskFormRefusedException extends TaskValidationException {
 	 *
 	 * @return array<int, string> The names.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	public function getFields(): array {
 		return $this->fields;

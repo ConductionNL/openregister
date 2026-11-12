@@ -147,4 +147,66 @@ class ObjectVersionHandlerTest extends TestCase {
 		$this->assertSame('0.0.1', $entity->getVersion());
 	}
 
+	/**
+	 * A re-imported seed carries the shipped version, which is higher: it is taken.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testAdvanceTakesAHigherCarriedVersion(): void {
+		$entity = new ObjectEntity();
+		$entity->setVersion('0.0.4');
+
+		$this->handler->advanceVersion(entity: $entity, carried: '1.4.7');
+
+		$this->assertSame('1.4.7', $entity->getVersion());
+	}
+
+	/**
+	 * A stored version that cannot be parsed (`1`) is replaced by a usable carried one.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testAdvanceTakesACarriedVersionOverAnUnusableStoredOne(): void {
+		$entity = new ObjectEntity();
+		$entity->setVersion('1');
+
+		$this->handler->advanceVersion(entity: $entity, carried: '1.4.7');
+
+		$this->assertSame('1.4.7', $entity->getVersion());
+	}
+
+	/**
+	 * A client echoing back the version it read is an ordinary save: the patch moves.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testAdvanceBumpsWhenTheCarriedVersionIsNotHigher(): void {
+		$equal = new ObjectEntity();
+		$equal->setVersion('1.4.7');
+		$this->handler->advanceVersion(entity: $equal, carried: '1.4.7');
+		$this->assertSame('1.4.8', $equal->getVersion());
+
+		$lower = new ObjectEntity();
+		$lower->setVersion('1.4.7');
+		$this->handler->advanceVersion(entity: $lower, carried: '1.0.0');
+		$this->assertSame('1.4.8', $lower->getVersion());
+	}
+
+	/**
+	 * No carried version, or free text, is an ordinary save.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function testAdvanceBumpsWithoutAUsableCarriedVersion(): void {
+		$none = new ObjectEntity();
+		$none->setVersion('0.0.3');
+		$this->handler->advanceVersion(entity: $none, carried: null);
+		$this->assertSame('0.0.4', $none->getVersion());
+
+		$text = new ObjectEntity();
+		$text->setVersion('0.0.3');
+		$this->handler->advanceVersion(entity: $text, carried: 'latest');
+		$this->assertSame('0.0.4', $text->getVersion());
+	}
+
 }//end class

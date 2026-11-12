@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GdprEntitiesControllerFactory;
 use OCA\OpenRegister\Controller\GdprEntitiesController;
+use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -56,7 +59,7 @@ class GdprEntitiesControllerTest extends TestCase {
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->organisationService->method('getUserOrganisations')->willReturn([]);
 
-		$this->controller = new GdprEntitiesController(
+		$this->controller = GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,
@@ -65,7 +68,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$this->userSession,
 			$this->groupManager,
-			$this->organisationService
+			$this->organisationService,
+			$this->visibleAsIs()
 		);
 	}
 
@@ -898,7 +902,7 @@ class GdprEntitiesControllerTest extends TestCase {
 
 	/**
 	 * Build a controller wired with a non-admin user belonging to the
-	 * given organisation UUIDs.
+	 * given organisation UUIDs, the first being the active one.
 	 *
 	 * @param array<int, string> $orgUuids Organisation UUIDs.
 	 *
@@ -925,8 +929,9 @@ class GdprEntitiesControllerTest extends TestCase {
 
 		$organisationService = $this->createMock(OrganisationService::class);
 		$organisationService->method('getUserOrganisations')->willReturn($orgs);
+		$organisationService->method('getActiveOrganisation')->willReturn($orgs[0] ?? null);
 
-		return new GdprEntitiesController(
+		return GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,
@@ -935,7 +940,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$userSession,
 			$groupManager,
-			$organisationService
+			$organisationService,
+			$this->visibleAsIs()
 		);
 	}
 
@@ -943,7 +949,7 @@ class GdprEntitiesControllerTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new GdprEntitiesController(
+		$controller = GdprEntitiesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->entityMapper,
@@ -952,7 +958,8 @@ class GdprEntitiesControllerTest extends TestCase {
 			$this->logger,
 			$userSession,
 			$this->groupManager,
-			$this->organisationService
+			$this->organisationService,
+			$this->visibleAsIs()
 		);
 
 		$result = $controller->index();
@@ -1018,5 +1025,22 @@ class GdprEntitiesControllerTest extends TestCase {
 		$result = $controller->destroy(1);
 
 		$this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
+	}
+
+	/**
+	 * A visibility filter that hides nothing: HiddenDecisionTest covers the mask itself.
+	 *
+	 * @return DecisionVisibility
+	 */
+	private function visibleAsIs(): DecisionVisibility {
+		$visibility = $this->createMock(DecisionVisibility::class);
+		$visibility->method('presentAll')->willReturnCallback(
+			static fn (array $relations, string $userId): array => array_map(
+				static fn (EntityRelation $relation): array => $relation->jsonSerialize(),
+				array_values($relations)
+			)
+		);
+
+		return $visibility;
 	}
 }

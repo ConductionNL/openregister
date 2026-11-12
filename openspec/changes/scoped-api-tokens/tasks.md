@@ -91,14 +91,27 @@
 - [x] C40.2a `lapsesSoon()` answers who should be warned.
 - [ ] C40.2b The notification that carries the warning, and the recorded
       renewal.
-- [ ] C40.3 A service account principal owned by a team, holding grants and tokens, with no interactive sign-in (D-C40-2).
 - [x] C40.4a The limit is carried on the grant and validated as a positive
       number of calls per minute.
 - [ ] C40.4b The counter and the refusal that names it, which needs a shared
       cache and a middleware.
 - [ ] C40.5 An administered outbound allowlist checked at save (D-C40-3).
-- [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save.
+- [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save. The leaver and the interactive sign-in tests belong to the service account, which moved with C40.3 to `scoped-api-tokens-machine-callers` (task W.4 there); they are written there, not here.
 - [ ] C40.7 Hand over to the dossiq and integriq lanes with candidate ids C-access-and-privacy-35, -42, -43, -44 and -70, noting that C-access-and-privacy-35 is already answered by `account-self-service`.
 - [x] C40.8 Reported, unfixed, in the PR body: `openspec validate --strict`
       confirms it, at `specs/auth-system/spec.md` line 888. It is on a line
       this change does not touch, so it belongs to the debt sweep.
+
+## Woo programme amendment (row 12.19; 12.20 and 13.11 moved to `scoped-api-tokens-machine-callers`)
+
+- [ ] W.1 Row 12.19 through the route, once 1.1d and 2.1c are done: a Newman sequence in `tests/newman/` issues a Consumer grant of `read` on schema `zaak` with `match` on `leverancier`, lists (only matching rows), reads a non-matching row (404) and attempts a `PUT` (403). Verify: the sequence fails on today's `development` at the list step (the match is not evaluated) and passes after.
+
+## V. Verification and done
+
+Follow `openspec/woo-build-rules.md`.
+
+- [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
+- [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
+- [ ] V.3 Full unit suite: `./vendor/bin/phpunit -c phpunit-unit.xml --no-coverage`, judged by the `Tests:` line (`Failures:` and `Errors:`), never by the exit code alone, because a green suite exits 1 without a coverage driver.
+- [ ] V.4 Gates: `run-hydra-gates.sh --base origin/development` from `vendor/conduction/hydra-gates` (without `--base` the gates read NOT APPLICABLE, which is not a pass), and count the gates that ran. Then once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint`. CI runs the gates on the full tree, and the coverage guard needs tests for every added statement, so project the coverage arithmetically and say in the PR body that it is arithmetic.
+- [ ] V.5 One PR with `--base development`. Merge `development` into the branch, never rebase a pushed branch. No `Co-Authored-By` trailer on any commit. Done means merged on `development` with CI green; the rows this change closes count as `production` only once it ships in a store release.

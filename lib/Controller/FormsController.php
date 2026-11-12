@@ -1,0 +1,507 @@
+<?php
+
+/**
+ * The forms API: judge a mapping while authoring, submit into the destination, upload a file first.
+ *
+ * Decision 179, ADR-117. `POST /api/forms/validate` lets buildiq and portaliq
+ * show findings while a form is built. `POST /api/forms/{formId}/submit`
+ * creates the destination object in one request for a form stored in
+ * OpenRegister. `POST /api/forms/{formId}/uploads` holds one file for that
+ * submit. Callers keeping their form elsewhere call FormSubmitService directly.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use OCA\OpenRegister\Controller\Support\FormsControllerServices;
+use OCA\OpenRegister\Service\Form\FormDestination;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmission;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+use OCP\Security\Bruteforce\IThrottler;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Thin wrappers over the validator, the submit service and the upload store.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One controller for the three form routes;
+ * each collaborator serves one of them.
+ *
+ * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+ */
+class FormsController extends Controller {
+
+	/**
+	 * The honeypot field: a person never fills it, a bot does.
+	 *
+	 * @var string
+	 */
+	public const HONEYPOT = '_hp';
+
+	/**
+	 * Resolves a stored form.
+	 *
+	 * @var FormDefinitionResolverInterface
+	 */
+	private readonly FormDefinitionResolverInterface $resolver;
+
+	/**
+	 * Creates the destination.
+	 *
+	 * @var FormSubmitServiceInterface
+	 */
+	private readonly FormSubmitServiceInterface $submitter;
+
+	/**
+	 * Judges a mapping.
+	 *
+	 * @var FormDestinationValidatorInterface
+	 */
+	private readonly FormDestinationValidatorInterface $validator;
+
+	/**
+	 * Holds upload tokens.
+	 *
+	 * @var FormUploadStoreInterface
+	 */
+	private readonly FormUploadStoreInterface $uploads;
+
+	/**
+	 * Resolves a destination schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * The signed-in subject, if any.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Counts guesses at form ids.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Logs a throttler failure.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string                   $appName     The app id.
+	 * @param IRequest                 $request     The request.
+	 * @param FormsControllerServices $services The forms controller services.
+	 *
+	 * request, session, throttler, translations and logger every public controller here takes.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		FormsControllerServices $services,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+		$this->resolver = $services->domain->resolver;
+		$this->submitter = $services->domain->submitter;
+		$this->validator = $services->domain->validator;
+		$this->uploads = $services->domain->uploads;
+		$this->schemas = $services->mappers->schemas;
+		$this->userSession = $services->platform->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->l10n = $services->platform->l10n;
+		$this->logger = $services->platform->logger;
+	}//end __construct()
+
+	/**
+	 * Judge a mapping against a destination schema, for an author building a form.
+	 *
+	 * Body: `{ mapping, destination: { register?, schema }, audience? }`.
+	 * Answer: `{ accepted, findings }`. A form with findings is not saved:
+	 * the check refuses from day one (Q9, Ruben, 10 October 2026).
+	 *
+	 * @return JSONResponse 200 with the findings, 404 when the schema does not exist.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
+	 */
+	#[NoAdminRequired]
+	public function validate(): JSONResponse {
+		$destination = $this->request->getParam('destination', []);
+		$mapping = $this->request->getParam('mapping', []);
+		$schemaRef = '';
+		if (is_array($destination) === true) {
+			$schemaRef = trim((string)($destination['schema'] ?? ''));
+		}
+
+		// The author's own tenancy and RBAC decide which schemas exist for them.
+		try {
+			$schema = $this->schemas->find($schemaRef, _rbac: true, _multitenancy: true);
+		} catch (Throwable) {
+			return new JSONResponse(data: ['message' => $this->l10n->t('The destination schema does not exist.')], statusCode: 404);
+		}
+
+		$options = [];
+		$audience = trim((string)$this->request->getParam('audience', ''));
+		if ($audience !== '') {
+			$options['audience'] = $audience;
+		}
+
+		if (is_array($mapping) === false) {
+			$mapping = [];
+		}
+
+		$findings = $this->validator->validate(
+			mapping: $mapping,
+			destination: new FormDestination(schema: $schema, audience: ($options['audience'] ?? null))
+		);
+
+		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
+	}//end validate()
+
+	/**
+	 * Submit a form stored in OpenRegister: create its destination in one request.
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return JSONResponse 201 with reference, id, receivedAt and confirmation; 202 for a honeypot hit;
+	 *                      401, 403, 404, 422 or 503 with `{ message, findings }`.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 10, period: 60)]
+	#[UserRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
+	public function submit(string $formId): JSONResponse {
+		// D7: the honeypot first. A hit stores nothing and tells the bot nothing.
+		if (trim((string)$this->request->getParam(self::HONEYPOT, '')) !== '') {
+			return new JSONResponse(data: [], statusCode: 202);
+		}
+
+		try {
+			$answer = $this->submittedAnswer(formId: $formId);
+		} catch (FormSubmitRefusedException $refused) {
+			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
+		}
+
+		if ($answer instanceof JSONResponse) {
+			return $answer;
+		}
+
+		return new JSONResponse(data: $answer, statusCode: 201);
+	}//end submit()
+
+	/**
+	 * Submit the payload to the form's writes as the session user, when the audience lets them.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed>|JSONResponse The submitter's answer, or the sign-in refusal
+	 *
+	 * @throws FormSubmitRefusedException When the form or the submission is refused
+	 */
+	private function submittedAnswer(string $formId): array|JSONResponse {
+		$form = $this->resolveForm(formId: $formId);
+		$subject = $this->userSession->getUser();
+		if ($this->audienceRefuses(form: $form, subject: $subject) === true) {
+			return $this->signInRequired();
+		}
+
+		$key = trim($this->request->getHeader('Idempotency-Key'));
+		if ($key === '') {
+			$key = null;
+		}
+
+		$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $this->draftIdParam());
+		$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
+
+		return $this->submitter->submit($submission, $key);
+	}//end submittedAnswer()
+
+	/**
+	 * The draft the request continues, or null for a new submission.
+	 *
+	 * @return string|null The draft id
+	 */
+	private function draftIdParam(): ?string {
+		$draftId = trim((string)$this->request->getParam('_draft', ''));
+		if ($draftId === '') {
+			return null;
+		}
+
+		return $draftId;
+	}//end draftIdParam()
+
+	/**
+	 * Save the signed-in subject's draft of this form: the destination object in status `draft`.
+	 *
+	 * Decision 180. Body: the answers so far, and `_draft` to update an
+	 * existing draft. A draft may miss required answers and is never
+	 * type-invalid. It leaves draft through submit with the same `_draft`.
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return JSONResponse 200 `{ id, status }`; 401, 404, 422 or 503 with `{ message, findings }`.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function draft(string $formId): JSONResponse {
+		try {
+			$draft = $this->savedDraft(formId: $formId);
+		} catch (FormSubmitRefusedException $refused) {
+			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
+		}
+
+		return new JSONResponse(data: $draft);
+	}//end draft()
+
+	/**
+	 * Save the payload as a draft of the form's one write, as the session user.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed> The saved draft
+	 *
+	 * @throws FormSubmitRefusedException When the form writes several objects, or the named draft is not the caller's
+	 */
+	private function savedDraft(string $formId): array {
+		$form = $this->resolveForm(formId: $formId);
+		if (count($form['writes']) !== 1) {
+			$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
+			throw new FormSubmitRefusedException(message: $message, status: 422);
+		}
+
+		$draftId = $this->draftIdParam();
+		$write = $this->writesOf(form: $form)[0];
+		$destination = ['register' => $write['register'], 'schema' => $write['schema']];
+		$submitter = new FormSubmitter(subject: $this->userSession->getUser(), scope: $formId, draftId: $draftId);
+		if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $submitter) === false) {
+			// The same 404 an unknown id gets, so a draft id is not an oracle.
+			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+		}
+
+		return $this->submitter->saveDraft(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
+	}//end savedDraft()
+
+	/**
+	 * Hold one file for a later submit of this form, checked against the property's file rules.
+	 *
+	 * Multipart: `file` (the file) and `property` (the destination property).
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return JSONResponse 201 `{ token, expiresAt }`; 401 for an anonymous visitor of a sign-in-only form;
+	 *                      404 or 422 with `{ message, findings }`.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 20, period: 60)]
+	#[UserRateLimit(limit: 120, period: 60)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
+	public function upload(string $formId): JSONResponse {
+		$property = trim((string)$this->request->getParam('property', ''));
+		$file = $this->request->getUploadedFile('file');
+		if (is_array($file) === false) {
+			$file = [];
+		}
+
+		try {
+			$form = $this->resolveForm(formId: $formId);
+			// The token is only redeemable by submit(), which asks the audience;
+			// asking it here too keeps a closed form from storing bytes for anyone.
+			if ($this->audienceRefuses(form: $form, subject: $this->userSession->getUser()) === true) {
+				return $this->signInRequired();
+			}
+
+			$rule = $this->ruleFor(writes: $form['writes'], property: $property);
+			$issued = $this->uploads->issue(formId: $formId, property: $property, rule: $rule, file: $file);
+		} catch (FormSubmitRefusedException $refused) {
+			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
+		}
+
+		return new JSONResponse(data: $issued, statusCode: 201);
+	}//end upload()
+
+	/**
+	 * Whether the form's audience turns this visitor away: anonymous, and the form is not public.
+	 *
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
+	 * @param IUser|null                                                                    $subject The signed-in subject, null when anonymous.
+	 *
+	 * @return bool True when the visitor must sign in first.
+	 */
+	private function audienceRefuses(array $form, ?IUser $subject): bool {
+		return $subject === null && $form['audience'] !== 'public';
+	}//end audienceRefuses()
+
+	/**
+	 * The 401 an anonymous visitor of a sign-in-only form gets.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function signInRequired(): JSONResponse {
+		return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
+	}//end signInRequired()
+
+	/**
+	 * The form's writes as submitted: a journey's as they are, one destination as `{ register, schema, mapping }`.
+	 *
+	 * A single write drops its other keys (such as `as`), so its answer names it `write0`.
+	 *
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form The form.
+	 *
+	 * @return array<int, array<string, mixed>> The writes.
+	 */
+	private function writesOf(array $form): array {
+		if (count($form['writes']) !== 1) {
+			return $form['writes'];
+		}
+
+		$write = $form['writes'][0];
+		$mapping = null;
+		if (is_array($write['mapping'] ?? null) === true) {
+			$mapping = $write['mapping'];
+		}
+
+		return [['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null), 'mapping' => $mapping]];
+	}//end writesOf()
+
+	/**
+	 * The stored form, registering a brute-force attempt when it does not resolve.
+	 *
+	 * @param string $formId The form id.
+	 *
+	 * @return array{id: string, writes: array<int, array<string, mixed>>, audience: string} The form.
+	 *
+	 * @throws FormSubmitRefusedException 404.
+	 */
+	private function resolveForm(string $formId): array {
+		try {
+			return $this->resolver->resolve(formId: $formId);
+		} catch (FormSubmitRefusedException $refused) {
+			try {
+				$this->throttler->registerAttempt(ThrottledSurfacesInterface::FORM_SUBMIT, $this->request->getRemoteAddress());
+			} catch (Throwable $throttlerFailure) {
+				$this->logger->warning(
+					message: '[FormsController] registerAttempt failed',
+					context: ['exception' => $throttlerFailure->getMessage()]
+				);
+			}
+
+			throw $refused;
+		}
+	}//end resolveForm()
+
+	/**
+	 * The schema definition of a property on one of the form's destinations.
+	 *
+	 * @param array<int, array<string, mixed>> $writes   The form's writes.
+	 * @param string                           $property The property.
+	 *
+	 * @return array<string, mixed> The property definition.
+	 *
+	 * @throws FormSubmitRefusedException 422 when no destination has the property.
+	 */
+	private function ruleFor(array $writes, string $property): array {
+		foreach ($writes as $write) {
+			$rule = ($this->schemaProperties(write: $write)[$property] ?? null);
+			if ($property !== '' && is_array($rule) === true) {
+				return $rule;
+			}
+		}
+
+		$message = $this->l10n->t('This form has no question that takes a file under that name.');
+		throw new FormSubmitRefusedException(
+			message: $message,
+			status: 422,
+			findings: [['property' => $property, 'code' => 'property-unknown', 'message' => $message]]
+		);
+	}//end ruleFor()
+
+	/**
+	 * The properties of a write's schema; none when the schema cannot be read.
+	 *
+	 * @param array<string, mixed> $write One write of the form
+	 *
+	 * @return array<string, mixed> The schema's properties
+	 */
+	private function schemaProperties(array $write): array {
+		try {
+			return $this->schemas->find((string)($write['schema'] ?? ''), _multitenancy: false)->getProperties();
+		} catch (Throwable) {
+			return [];
+		}
+	}//end schemaProperties()
+
+	/**
+	 * The submitted answers: the request body minus the route id and `_` control keys.
+	 *
+	 * @return array<string, mixed> The payload.
+	 */
+	private function payload(): array {
+		$payload = [];
+		foreach ($this->request->getParams() as $name => $value) {
+			$name = (string)$name;
+			if ($name === 'formId' || str_starts_with($name, '_') === true || str_starts_with($name, '@') === true) {
+				continue;
+			}
+
+			$payload[$name] = $value;
+		}
+
+		return $payload;
+	}//end payload()
+}//end class

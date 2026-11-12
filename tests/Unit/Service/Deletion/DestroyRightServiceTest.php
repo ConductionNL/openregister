@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ namespace Unit\Service\Deletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -59,7 +60,7 @@ final class DestroyRightServiceTest extends TestCase {
 		$permissions->method('resolveAuthorization')->willReturn($authorization);
 		$permissions->method('hasPermission')->willReturn($hasPermission);
 
-		return new DestroyRightService($permissions, $session, $groups, new NullLogger());
+		return new DestroyRightService($permissions, new CallerContext($session, $groups), new NullLogger());
 	}//end service()
 
 	private function object(): ObjectEntity {

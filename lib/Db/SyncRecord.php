@@ -61,6 +61,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SyncRecord extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Unique identifier for the sync record.
@@ -172,82 +175,4 @@ class SyncRecord extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}//end __construct()
 
-	/**
-	 * Get JSON field names.
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array $object The data array
-	 *
-	 * @return static
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
-	 * Serialize to a JSON-friendly array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	public function jsonSerialize(): array {
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'sourceId' => $this->sourceId,
-			'executionId' => $this->executionId,
-			'externalId' => $this->externalId,
-			'status' => $this->status,
-			'objectUuid' => $this->objectUuid,
-			'contentHash' => $this->contentHash,
-			'rawData' => $this->rawData,
-			'errorMessage' => $this->errorMessage,
-			'attempts' => $this->attempts,
-			'organisation' => $this->organisation,
-			'updated' => $updated,
-			'created' => $created,
-		];
-	}//end jsonSerialize()
 }//end class

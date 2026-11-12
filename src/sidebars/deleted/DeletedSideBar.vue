@@ -17,94 +17,39 @@ import {
 		:subname="t('openregister', 'Restore or permanently delete items')"
 		:open="navigationStore.sidebarState.deleted"
 		@update:open="(e) => navigationStore.setSidebarState('deleted', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Deleted Items') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						id="registerSelect"
-						v-bind="registerOptions"
-						:modelValue="selectedRegisterValue"
-						:placeholder="t('openregister', 'All registers')"
-						:inputLabel="t('openregister', 'Register')"
-						:clearable="true"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-bind="schemaOptions"
-						:modelValue="selectedSchemaValue"
-						:placeholder="t('openregister', 'All schemas')"
-						:inputLabel="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
-						:clearable="true"
-						@update:modelValue="handleSchemaChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="deletedBySelect">{{
-						t('openregister', 'Deleted By')
-					}}</label>
-					<NcSelect
-						id="deletedBySelect"
-						v-model="selectedDeletedBy"
-						:options="userOptions"
-						:placeholder="t('openregister', 'Any user')"
-						:inputLabel="t('openregister', 'Deleted By')"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Deletion Date Range') }}</label>
-					<NcDateTimePickerNative
-						v-model="dateFrom"
-						:label="t('openregister', 'From date')"
-						type="date"
-						@update:modelValue="applyFilters" />
-					<NcDateTimePickerNative
-						v-model="dateTo"
-						:label="t('openregister', 'To date')"
-						type="date"
-						@update:modelValue="applyFilters" />
-				</div>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Deleted Items')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.',
+				)
+			"
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange">
+			<SidebarFilterSelect
+				id="deletedBySelect"
+				v-model="selectedDeletedBy"
+				:options="userOptions"
+				:placeholder="t('openregister', 'Any user')"
+				:label="t('openregister', 'Deleted By')"
+				@update:modelValue="applyFilters" />
+			<div class="filterGroup">
+				<label>{{ t('openregister', 'Deletion Date Range') }}</label>
+				<NcDateTimePickerNative
+					v-model="dateFrom"
+					:label="t('openregister', 'From date')"
+					type="date"
+					@update:modelValue="applyFilters" />
+				<NcDateTimePickerNative
+					v-model="dateTo"
+					:label="t('openregister', 'To date')"
+					type="date"
+					@update:modelValue="applyFilters" />
 			</div>
+		</ScopeFiltersTab>
 
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.',
-					)
-				}}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
@@ -115,38 +60,18 @@ import {
 				</div>
 
 				<div v-else>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.totalDeleted }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Deleted Items') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedToday }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted Today') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedThisWeek }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted This Week') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.oldestDays }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Oldest Item (days)') }}
-						</div>
-					</div>
+					<SidebarStatCard
+						:value="deletedStore.statistics.totalDeleted"
+						:label="t('openregister', 'Total Deleted Items')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.deletedToday"
+						:label="t('openregister', 'Deleted Today')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.deletedThisWeek"
+						:label="t('openregister', 'Deleted This Week')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.oldestDays"
+						:label="t('openregister', 'Oldest Item (days)')" />
 				</div>
 			</div>
 
@@ -164,57 +89,65 @@ import {
 					<p>{{ t('openregister', 'No deletion data available') }}</p>
 				</div>
 
-				<NcListItem
+				<CountListItem
 					v-for="(deleter, index) in deletedStore.topDeleters"
 					v-else
 					:key="index"
 					:name="deleter.user"
-					:bold="false">
+					:subname="deletionsLabel(deleter.count)">
 					<template #icon>
 						<AccountCircle :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} deletions', {
-								count: deleter.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
 import {
 	NcAppSidebar,
-	NcAppSidebarTab,
 	NcDateTimePickerNative,
-	NcListItem,
 	NcLoadingIcon,
-	NcNoteCard,
-	NcSelect,
 } from '@nextcloud/vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
+import CountListItem from '../../components/shared/CountListItem.vue'
+import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
+import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
+import ScopeFiltersTab from '../ScopeFiltersTab.vue'
+import SidebarFilterSelect from '../SidebarFilterSelect.vue'
 import eventBus from '../../eventBus.js'
+import { addDateRange, addScope, routeDate } from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
+
+/**
+ * The ids of the selected register and schema, null when none is selected.
+ *
+ * @return {{register: (string|number|null), schema: (string|number|null)}} The ids
+ */
+function selectedScopeIds() {
+	return {
+		register: registerStore.registerItem?.id || null,
+		schema: schemaStore.schemaItem?.id || null,
+	}
+}
 
 export default {
 	name: 'DeletedSideBar',
 	components: {
+		CountListItem,
+		ScopeFiltersTab,
+		SidebarFilterSelect,
 		NcAppSidebar,
-		NcAppSidebarTab,
-		NcSelect,
-		NcNoteCard,
-		NcListItem,
 		NcDateTimePickerNative,
 		NcLoadingIcon,
-		FilterOutline,
-		ChartLine,
 		AccountCircle,
+		SidebarStatCard,
+		StatisticsSidebarTab,
 	},
+
+	mixins: [routeBoundFilters('/deleted')],
 
 	data() {
 		return {
@@ -227,104 +160,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the deleted-items filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
-
 		/**
 		 * Derive the "deleted by" user filter options from the deleted-items list.
 		 *
@@ -355,29 +190,7 @@ export default {
 		},
 	},
 
-	watch: {
-		// Keep component/store in sync with URL query params (single source of truth)
-		'$route.query': {
-			/**
-			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /deleted.
-			 */
-			handler() {
-				if (this.$route.path !== '/deleted') return
-				this.applyQueryParamsFromRoute()
-			},
-
-			deep: true,
-		},
-
-		// Watch for changes in the global stores
-		'registerStore.registerItem': function () {
-			this.applyFilters()
-		},
-
-		'schemaStore.schemaItem': function () {
-			this.applyFilters()
-		},
-	},
+	watch: {},
 
 	/**
 	 * @spec exclude Lifecycle plumbing; loads lists/statistics and seeds state from the route, delegating to already-annotated methods.
@@ -410,6 +223,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * "{count} deletions", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		deletionsLabel(count) {
+			return t('openregister', '{count} deletions', { count })
+		},
+
 		/**
 		 * Apply filters and emit to parent components.
 		 *
@@ -452,31 +276,6 @@ export default {
 		},
 
 		/**
-		 * Handle register change (cascade: set register, clear schema, re-apply filters).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} register - The selected register object
-		 * @return {void}
-		 */
-		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
-			this.applyFilters()
-		},
-
-		/**
-		 * Handle schema change (set schema, re-apply filters into the route query).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} schema - The selected schema object
-		 * @return {void}
-		 */
-		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
-			this.applyFilters()
-		},
-
-		/**
 		 * Build URL query object from current sidebar state
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
@@ -484,60 +283,12 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem && registerStore.registerItem.id) {
-				query.register = String(registerStore.registerItem.id)
-			}
-			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
-				query.schema = String(schemaStore.schemaItem.id)
-			}
+			addScope(query, selectedScope())
 			if (this.selectedDeletedBy && this.selectedDeletedBy.value) {
 				query.deletedBy = String(this.selectedDeletedBy.value)
 			}
-			// JS dates are awful, so we first check if it's a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addDateRange(query, this)
 			return query
-		},
-
-		/**
-		 * Compare two shallow query objects (keys and stringified values)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @param {object} a - First query object to compare
-		 * @param {object} b - Second query object to compare
-		 * @return {boolean} Whether the two query objects are equal
-		 */
-		queriesEqual(a, b) {
-			const ka = Object.keys(a || {}).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				if (ka[i] !== kb[i]) return false
-				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
-			}
-			return true
-		},
-
-		/**
-		 * Write current state to the router query (only on /deleted)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		updateRouteQueryFromState() {
-			if (this.$route.path !== '/deleted') return
-			const nextQuery = this.buildQueryFromState()
-			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
-			this.$router.replace({
-				path: this.$route.path,
-				query: nextQuery,
-			})
 		},
 
 		/**
@@ -548,55 +299,16 @@ export default {
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/deleted') return
-			const { register, schema, deletedBy, dateFrom, dateTo } =
-				this.$route.query || {}
-
-			// Dates
-			this.dateFrom =
-				dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo =
-				dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
-
-			// Deleted by
-			if (typeof deletedBy === 'string' && deletedBy.length > 0) {
-				this.selectedDeletedBy = { value: deletedBy, label: deletedBy }
-			} else {
-				this.selectedDeletedBy = null
-			}
-
-			// Registers and schemas depend on lists being loaded
-			const applyRegister = () => {
-				if (!register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(
-					(r) => String(r.id) === String(register),
-				)
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
-			}
-			const applySchema = () => {
-				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(
-					(s) => String(s.id) === String(schema),
-				)
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegister()
-				const schOk = applySchema()
-				if (regOk && schOk) {
-					// Once state is set from URL, emit filters for legacy compatibility
-					this.applyFiltersToStore()
-					return
-				}
-				if (attempt < 10) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
-			}
-			tryApply()
+			const query = this.$route.query || {}
+			this.dateFrom = routeDate(query.dateFrom)
+			this.dateTo = routeDate(query.dateTo)
+			const deletedBy = query.deletedBy
+			this.selectedDeletedBy =
+				typeof deletedBy === 'string' && deletedBy.length > 0
+					? { value: deletedBy, label: deletedBy }
+					: null
+			// Once state is set from URL, emit filters for legacy compatibility
+			applyRouteScope(query, () => this.applyFiltersToStore())
 		},
 
 		/**
@@ -607,8 +319,7 @@ export default {
 		 */
 		applyFiltersToStore() {
 			const filters = {
-				register: registerStore.registerItem?.id || null,
-				schema: schemaStore.schemaItem?.id || null,
+				...selectedScopeIds(),
 				deletedBy: this.selectedDeletedBy?.value || null,
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
@@ -619,47 +330,14 @@ export default {
 }
 </script>
 
-<style scoped>
-.filterSection,
-.statsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
 
-.filterSection:last-child,
-.statsSection:last-child {
-	border-bottom: none;
-}
+@include divided-sections(filterSection, statsSection);
 
-.filterSection h3,
-.statsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include filter-group-rules;
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
-
-.filter-hint {
-	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
+@include filter-hint-rules;
 
 .loading-stats {
 	display: flex;
@@ -670,25 +348,7 @@ export default {
 	font-size: 0.9rem;
 }
 
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
+@include stat-card;
 
 .topDeleters {
 	margin-top: 20px;

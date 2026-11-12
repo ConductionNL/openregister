@@ -13,6 +13,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Unit tests for SchemaMapper
@@ -44,24 +46,24 @@ class SchemaMapperTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->mapper = new SchemaMapper(
-			$this->db,
-			$this->eventDispatcher,
-			$this->validator,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger
+			db: $this->db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->organisationMapper,
+				userSession: $this->userSession,
+				groupManager: $this->groupManager
+			),
+			appConfig: $this->appConfig,
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->eventDispatcher,
+				validator: $this->validator,
+				logger: $this->logger
+			)
 		);
 	}
 
 	// -------------------------------------------------------------------------
 	// Construction
 	// -------------------------------------------------------------------------
-
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(SchemaMapper::class, $this->mapper);
-	}
 
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_schemas', $this->mapper->getTableName());

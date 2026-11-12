@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 final class ErasureBucket {
 	/**
@@ -143,7 +143,7 @@ final class ErasureBucket {
 	 *
 	 * @return array<string, array<string, int>> Bucket → kind → zero.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public static function emptyCounts(): array {
 		$counts = [];
@@ -163,7 +163,7 @@ final class ErasureBucket {
 	 *
 	 * @return bool True when the bucket is a member.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public static function isMember(?string $bucket): bool {
 		return in_array(needle: (string)$bucket, haystack: self::BUCKETS, strict: true);

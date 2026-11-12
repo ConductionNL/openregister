@@ -36,9 +36,15 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -54,6 +60,9 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class BulkSafeguardSchemaResolutionTest extends TestCase {
 
@@ -94,18 +103,10 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->service = new SaveObjects(
-			$this->createMock(MagicMapper::class),
-			$this->schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SaveObject::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$this->permissionHandler,
-			$this->createMock(ValidateObject::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(AuditTrailMapper::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: $this->createMock(IGroupManager::class)),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->createMock(IEventDispatcher::class), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
+			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->createMock(ValidateObject::class))
 		);
 
 	}//end setUp()
@@ -128,10 +129,9 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		$passed = $method->invokeArgs(
-			$this->service,
-			[$objects, null, $schema, true, false, &$result]
-		);
+		$batch  = new SafeguardBatchRun(objects: $objects, defaults: new BulkBatchDefaults(null, $schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$passed = $method->invokeArgs($this->service, [$batch]);
+		$result = $batch->result;
 
 		return [$passed, $result];
 	}//end runSafeguards()

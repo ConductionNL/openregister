@@ -8,7 +8,6 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'auditTrailChanges'"
 		:name="t('openregister', 'Audit Trail Changes')"
 		size="large"
-		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->
@@ -21,29 +20,8 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					}}
 				</h3>
 				<div class="audit-info">
-					<span
-						class="action-badge"
-						:class="`action-${auditTrailStore.auditTrailItem.action}`">
-						<Plus
-							v-if="auditTrailStore.auditTrailItem.action === 'create'"
-							:size="16" />
-						<Pencil
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'update'
-							"
-							:size="16" />
-						<Delete
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'delete'
-							"
-							:size="16" />
-						<Eye
-							v-else-if="
-								auditTrailStore.auditTrailItem.action === 'read'
-							"
-							:size="16" />
-						{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
-					</span>
+					<AuditActionBadge
+						:action="auditTrailStore.auditTrailItem.action" />
 					<span class="timestamp">
 						{{ formatDate(auditTrailStore.auditTrailItem.created) }}
 					</span>
@@ -165,15 +143,16 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 import { NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import AuditActionBadge from './AuditActionBadge.vue'
+import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailChanges',
 	components: {
+		AuditActionBadge,
 		NcDialog,
 		NcButton,
 		NcEmptyContent,
@@ -181,35 +160,12 @@ export default {
 		Close,
 		ContentCopy,
 		Eye,
-		Plus,
-		Pencil,
-		Delete,
 		InformationOutline,
 	},
 
+	mixins: [auditTrailModal],
+
 	computed: {
-		/**
-		 * Check if audit trail has changes data
-		 *
-		 * @return {boolean} True if has changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
-			if (!changed) return false
-
-			if (Array.isArray(changed)) {
-				return changed.length > 0
-			}
-
-			if (typeof changed === 'object') {
-				return Object.keys(changed).length > 0
-			}
-
-			return !!changed
-		},
-
 		/**
 		 * Get processed changes data
 		 *
@@ -224,13 +180,8 @@ export default {
 			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
 				// Check if it's in the format { field: { old: value, new: value } }
-				const hasStandardFormat = Object.values(changed).every(
-					(value) =>
-						typeof value === 'object'
-						&& value !== null
-						&& (Object.hasOwn(value, 'old')
-							|| Object.hasOwn(value, 'new')),
-				)
+				const hasStandardFormat =
+					Object.values(changed).every(isOldNewChange)
 
 				if (hasStandardFormat) {
 					return changed
@@ -254,62 +205,6 @@ export default {
 
 	methods: {
 		/**
-		 * Close the dialog
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-		},
-
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} dateString - Date string to format
-		 * @return {string} Formatted date
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatDate(dateString) {
-			if (!dateString) return '-'
-			try {
-				return new Date(dateString).toLocaleString()
-			} catch (error) {
-				return dateString
-			}
-		},
-
-		/**
-		 * Format changes data for display
-		 *
-		 * @param {*} changes - Changes data
-		 * @return {string} Formatted changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatChanges(changes) {
-			if (!changes) return ''
-
-			try {
-				if (typeof changes === 'string') {
-					// Try to parse if it's a JSON string
-					try {
-						const parsed = JSON.parse(changes)
-						return JSON.stringify(parsed, null, 2)
-					} catch {
-						return changes
-					}
-				}
-
-				return JSON.stringify(changes, null, 2)
-			} catch (error) {
-				return String(changes)
-			}
-		},
-
-		/**
 		 * Format value for display
 		 *
 		 * @param {*} value - Value to format
@@ -322,15 +217,7 @@ export default {
 			if (value === undefined) return 'undefined'
 			if (value === '') return '(empty)'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
@@ -389,30 +276,6 @@ export default {
 		},
 
 		/**
-		 * Copy changes data to clipboard
-		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async copyChanges() {
-			try {
-				const changes = this.formatChanges(
-					auditTrailStore.auditTrailItem.changed,
-				)
-				await navigator.clipboard.writeText(changes)
-				OC.Notification.showSuccess(
-					this.t('openregister', 'Changes copied to clipboard'),
-				)
-			} catch (error) {
-				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(
-					this.t('openregister', 'Failed to copy changes'),
-				)
-			}
-		},
-
-		/**
 		 * Switch to full details view
 		 *
 		 * @return {void}
@@ -424,9 +287,25 @@ export default {
 		},
 	},
 }
+
+/**
+ * Whether a logged change is in the `{ old, new }` form.
+ *
+ * @param {unknown} value The logged change of one field
+ * @return {boolean} True when it holds an old or a new value
+ */
+function isOldNewChange(value) {
+	return (
+		typeof value === 'object'
+		&& value !== null
+		&& (Object.hasOwn(value, 'old') || Object.hasOwn(value, 'new'))
+	)
+}
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-changes {
 	padding: 16px 0;
 }
@@ -451,33 +330,9 @@ export default {
 	flex-wrap: wrap;
 }
 
-.action-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
+@include action-badge;
 
-.action-badge.action-create {
-	background: var(--color-success);
-}
-
-.action-badge.action-update {
-	background: var(--color-warning);
-}
-
-.action-badge.action-delete {
-	background: var(--color-error);
-}
-
-.action-badge.action-read {
-	background: var(--color-info);
-}
+@include action-badge-colours;
 
 .timestamp,
 .user {

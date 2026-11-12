@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Source\SourceFieldTypes;
+use OCA\OpenRegister\Db\Source\SourceJson;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -82,6 +84,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Source extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use OrganisationFieldTrait;
+	use ManagedByConfigurationTrait;
 
 	/**
 	 * Unique identifier for the source
@@ -131,13 +136,6 @@ class Source extends Entity implements JsonSerializable {
 	 * @var string|null Organisation UUID
 	 */
 	protected ?string $organisation = null;
-
-	/**
-	 * Configuration that manages this source (transient, not stored in DB)
-	 *
-	 * @var Configuration|null
-	 */
-	private ?Configuration $managedByConfig = null;
 
 	/**
 	 * Whether scheduled/harvest sync is enabled for this source
@@ -257,50 +255,10 @@ class Source extends Entity implements JsonSerializable {
 	 * Sets up field types for all properties
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'databaseUrl', type: 'string');
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'syncEnabled', type: 'boolean');
-		$this->addType(fieldName: 'syncSchedule', type: 'string');
-		$this->addType(fieldName: 'syncInterval', type: 'integer');
-		$this->addType(fieldName: 'lastSyncDate', type: 'datetime');
-		$this->addType(fieldName: 'lastSyncStatus', type: 'string');
-		$this->addType(fieldName: 'lastSyncToken', type: 'string');
-		$this->addType(fieldName: 'authType', type: 'string');
-		$this->addType(fieldName: 'authConfig', type: 'json');
-		$this->addType(fieldName: 'mappingId', type: 'integer');
-		$this->addType(fieldName: 'targetRegister', type: 'string');
-		$this->addType(fieldName: 'targetSchema', type: 'string');
-		$this->addType(fieldName: 'conflictStrategy', type: 'string');
-		$this->addType(fieldName: 'deleteStrategy', type: 'string');
-		$this->addType(fieldName: 'batchSize', type: 'integer');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
+		foreach (SourceFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity with data from an array
@@ -310,103 +268,22 @@ class Source extends Entity implements JsonSerializable {
 	 * @param array $object The data array to hydrate from
 	 *
 	 * @return static Returns $this for method chaining
+	 *
+	 * @spec exclude entity plumbing, not a capability of its own
 	 */
 	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()
 
 	/**
-	 * Get the organisation UUID
+	 * Convert entity to JSON serializable array; see SourceJson.
 	 *
-	 * @return string|null The organisation UUID
-	 */
-	public function getOrganisation(): ?string {
-		return $this->organisation;
-	}//end getOrganisation()
-
-	/**
-	 * Set the organisation UUID
-	 *
-	 * @param string|null $organisation The organisation UUID
-	 *
-	 * @return void
-	 */
-	public function setOrganisation(?string $organisation): void {
-		$this->organisation = $organisation;
-		$this->markFieldUpdated(attribute: 'organisation');
-	}//end setOrganisation()
-
-	/**
-	 * Convert entity to JSON serializable array
-	 *
-	 * Prepares the entity data for JSON serialization
-	 *
-	 * @return array<string, mixed> The serialized source data
+	 * @return array<string, mixed> Array of serializable entity data
 	 */
 	public function jsonSerialize(): array {
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$lastSyncDate = null;
-		if ($this->lastSyncDate !== null) {
-			$lastSyncDate = $this->lastSyncDate->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'title' => $this->title,
-			'version' => $this->version,
-			'description' => $this->description,
-			'databaseUrl' => $this->databaseUrl,
-			'type' => $this->type,
-			'organisation' => $this->organisation,
-			'syncEnabled' => $this->syncEnabled,
-			'syncSchedule' => $this->syncSchedule,
-			'syncInterval' => $this->syncInterval,
-			'lastSyncDate' => $lastSyncDate,
-			'lastSyncStatus' => $this->lastSyncStatus,
-			'lastSyncToken' => $this->lastSyncToken,
-			'authType' => $this->authType,
-			// Never expose the encrypted credential blob; only signal whether one is configured.
-			'authConfigured' => ($this->authConfig !== null && $this->authConfig !== []),
-			'mappingId' => $this->mappingId,
-			'targetRegister' => $this->targetRegister,
-			'targetSchema' => $this->targetSchema,
-			'conflictStrategy' => $this->conflictStrategy,
-			'deleteStrategy' => $this->deleteStrategy,
-			'batchSize' => $this->batchSize,
-			'updated' => $updated,
-			'created' => $created,
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
-		];
+		return (new SourceJson())->serialise(fields: get_object_vars($this));
 	}//end jsonSerialize()
 
 	/**
@@ -418,117 +295,28 @@ class Source extends Entity implements JsonSerializable {
 	 * @return string String representation of the source
 	 */
 	public function __toString(): string {
-		// Return the title if available, otherwise return a descriptive string.
-		if ($this->title !== null && $this->title !== '') {
-			return $this->title;
+		foreach ([$this->title, $this->uuid] as $name) {
+			if ($name !== null && $name !== '') {
+				return $name;
+			}
 		}
 
-		// Fallback to UUID if available.
-		if ($this->uuid !== null && $this->uuid !== '') {
-			return $this->uuid;
-		}
-
-		// Fallback to ID if available.
 		if ($this->id !== null) {
 			return 'Source #' . $this->id;
 		}
 
-		// Final fallback.
 		return 'Source';
 	}//end __toString()
 
 	/**
-	 * Get the configuration that manages this source (transient property)
+	 * The ids a configuration lists as its sources, see ManagedByConfigurationTrait.
 	 *
-	 * @return Configuration|null The managing configuration or null
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array|null
 	 */
-	public function getManagedByConfigurationEntity(): ?Configuration {
-		return $this->managedByConfig;
-	}//end getManagedByConfigurationEntity()
+	protected function configurationMembers(Configuration $configuration): ?array {
+		return $configuration->getSources();
+	}//end configurationMembers()
 
-	/**
-	 * Set the configuration that manages this source (transient property)
-	 *
-	 * @param Configuration|null $configuration The managing configuration
-	 *
-	 * @return void
-	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
-		$this->managedByConfig = $configuration;
-	}//end setManagedByConfigurationEntity()
-
-	/**
-	 * Check if this source is managed by a configuration
-	 *
-	 * Returns true if this source's ID appears in any of the provided
-	 * configurations' sources arrays.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if managed by a configuration, false otherwise
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$sources = $configuration->getSources();
-			if (in_array($this->id, $sources ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this source
-	 *
-	 * Returns the first configuration that has this source's ID in its sources array.
-	 * Returns null if the source is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this source, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$sources = $configuration->getSources();
-			if (in_array($this->id, $sources ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
-
-	/**
-	 * Get managed by configuration data as array or null
-	 *
-	 * @return (int|null|string)[]|null Configuration data or null
-	 *
-	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-	 */
-	private function getManagedByConfigurationData(): ?array {
-		if ($this->managedByConfig === null) {
-			return null;
-		}
-
-		return [
-			'id' => $this->managedByConfig->getId(),
-			'uuid' => $this->managedByConfig->getUuid(),
-			'title' => $this->managedByConfig->getTitle(),
-		];
-	}//end getManagedByConfigurationData()
 }//end class

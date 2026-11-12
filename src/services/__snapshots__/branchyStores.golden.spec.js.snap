@@ -1,0 +1,3469 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`branchy stores golden beats the import heartbeat and reports health changes 1`] = `
+[
+  {
+    "changes": [],
+    "index": 0,
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": true,
+  },
+  {
+    "changes": [],
+    "index": 0,
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": false,
+  },
+  {
+    "changes": [
+      {
+        "count": 3,
+        "error": "HTTP 504: Bad",
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 5,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "index": 1,
+    "logged": [
+      [
+        "RegisterStore: Heartbeat #1 failed (failure 1):",
+        "HTTP 502: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #2 failed (failure 2):",
+        "HTTP 503: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #3 failed (failure 3):",
+        "HTTP 504: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #4 failed (failure 4):",
+        "HTTP 500: Bad",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 2,
+        "healthy": true,
+      },
+      {
+        "count": 3,
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 4,
+        "failures": 4,
+        "healthy": false,
+      },
+      {
+        "count": 5,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 6,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": true,
+  },
+  {
+    "changes": [],
+    "index": 1,
+    "logged": [
+      [
+        "RegisterStore: Heartbeat #1 failed (failure 1):",
+        "HTTP 502: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #2 failed (failure 2):",
+        "HTTP 503: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #3 failed (failure 3):",
+        "HTTP 504: Bad",
+      ],
+      [
+        "RegisterStore: Heartbeat #4 failed (failure 4):",
+        "HTTP 500: Bad",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 2,
+        "healthy": true,
+      },
+      {
+        "count": 3,
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 4,
+        "failures": 4,
+        "healthy": false,
+      },
+      {
+        "count": 5,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 6,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": false,
+  },
+  {
+    "changes": [
+      {
+        "count": 2,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 5,
+        "error": "y",
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 6,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "index": 2,
+    "logged": [
+      [
+        "RegisterStore: Heartbeat #1 failed (failure 1):",
+        "offline",
+      ],
+      [
+        "RegisterStore: Heartbeat #3 failed (failure 1):",
+        "offline",
+      ],
+      [
+        "RegisterStore: Heartbeat #4 failed (failure 2):",
+        "x",
+      ],
+      [
+        "RegisterStore: Heartbeat #5 failed (failure 3):",
+        "y",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 3,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 4,
+        "failures": 2,
+        "healthy": true,
+      },
+      {
+        "count": 5,
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 6,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": true,
+  },
+  {
+    "changes": [],
+    "index": 2,
+    "logged": [
+      [
+        "RegisterStore: Heartbeat #1 failed (failure 1):",
+        "offline",
+      ],
+      [
+        "RegisterStore: Heartbeat #3 failed (failure 1):",
+        "offline",
+      ],
+      [
+        "RegisterStore: Heartbeat #4 failed (failure 2):",
+        "x",
+      ],
+      [
+        "RegisterStore: Heartbeat #5 failed (failure 3):",
+        "y",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+      [
+        "/index.php/apps/openregister/api/heartbeat",
+        "GET",
+        {
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        "object",
+      ],
+    ],
+    "statuses": [
+      {
+        "count": 1,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 2,
+        "failures": 0,
+        "healthy": true,
+      },
+      {
+        "count": 3,
+        "failures": 1,
+        "healthy": true,
+      },
+      {
+        "count": 4,
+        "failures": 2,
+        "healthy": true,
+      },
+      {
+        "count": 5,
+        "failures": 3,
+        "healthy": false,
+      },
+      {
+        "count": 6,
+        "failures": 0,
+        "healthy": true,
+      },
+    ],
+    "withCallback": false,
+  },
+]
+`;
+
+exports[`branchy stores golden caches widget data 1`] = `
+{
+  "out": [
+    {
+      "cache": {},
+      "logged": [],
+      "result": {
+        "returned": null,
+      },
+    },
+    {
+      "cache": {},
+      "logged": [],
+      "result": {
+        "returned": null,
+      },
+    },
+    {
+      "cache": {
+        "stats:1:": {
+          "data": {
+            "rows": [
+              1,
+            ],
+          },
+          "error": null,
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+      },
+      "logged": [],
+      "result": {
+        "returned": {
+          "rows": [
+            1,
+          ],
+        },
+      },
+    },
+    {
+      "cache": {
+        "stats:1:": {
+          "data": {
+            "rows": [
+              1,
+            ],
+          },
+          "error": null,
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+      },
+      "logged": [],
+      "result": {
+        "returned": {
+          "rows": [
+            1,
+          ],
+        },
+      },
+    },
+    {
+      "cache": {
+        "stats:1:": {
+          "data": {
+            "rows": [
+              1,
+            ],
+          },
+          "error": null,
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+      },
+      "logged": [],
+      "result": {
+        "returned": {
+          "rows": [
+            1,
+          ],
+        },
+      },
+    },
+    {
+      "cache": {
+        "stats:1:": {
+          "data": {
+            "rows": [
+              1,
+            ],
+          },
+          "error": null,
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+        "stats:2:": {
+          "data": null,
+          "error": "srv",
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+      },
+      "logged": [
+        [
+          "[reports.fetchWidgetData]",
+          {
+            "error": {
+              "response": {
+                "data": {
+                  "error": "srv",
+                },
+              },
+            },
+            "widget": {
+              "dataSource": {
+                "fail": true,
+                "mode": "statistics",
+                "register": 2,
+              },
+            },
+          },
+        ],
+      ],
+      "result": {
+        "returned": null,
+      },
+    },
+    {
+      "cache": {
+        "stats:1:": {
+          "data": {
+            "rows": [
+              1,
+            ],
+          },
+          "error": null,
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+        "stats:2:": {
+          "data": null,
+          "error": "srv",
+          "fetchedAt": "2026-01-01T00:00:00.000Z",
+        },
+      },
+      "logged": [
+        [
+          "[reports.fetchWidgetData]",
+          {
+            "error": {
+              "response": {
+                "data": {
+                  "error": "srv",
+                },
+              },
+            },
+            "widget": {
+              "dataSource": {
+                "fail": true,
+                "mode": "statistics",
+                "register": 2,
+              },
+            },
+          },
+        ],
+      ],
+      "result": {
+        "returned": null,
+      },
+    },
+  ],
+  "sources": [
+    {
+      "mode": "statistics",
+      "register": 1,
+    },
+    {
+      "mode": "statistics",
+      "register": 1,
+    },
+    {
+      "fail": true,
+      "mode": "statistics",
+      "register": 2,
+    },
+    {
+      "fail": true,
+      "mode": "statistics",
+      "register": 2,
+    },
+  ],
+}
+`;
+
+exports[`branchy stores golden cleans a schema for saving 1`] = `
+[
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+    },
+    "input": {},
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+      "title": "New",
+    },
+    "input": {
+      "archive": {},
+      "created": "c",
+      "draft": {},
+      "id": "",
+      "stats": {},
+      "title": "New",
+      "updated": "u",
+      "version": "1",
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectNameField": "name",
+      },
+      "id": 5,
+    },
+    "input": {
+      "configuration": {
+        "objectNameField": "name",
+      },
+      "id": 5,
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+      "id": 5,
+      "properties": {
+        "a": {
+          "required": true,
+          "type": "string",
+        },
+        "c": {},
+      },
+    },
+    "input": {
+      "id": 5,
+      "properties": {
+        "a": {
+          "required": true,
+          "type": "string",
+        },
+        "c": {},
+      },
+      "required": [
+        "a",
+        "b",
+      ],
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+      "id": 5,
+      "required": [
+        "a",
+      ],
+    },
+    "input": {
+      "id": 5,
+      "required": [
+        "a",
+      ],
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+      "id": 5,
+      "properties": {
+        "a": {},
+      },
+      "required": "a",
+    },
+    "input": {
+      "id": 5,
+      "properties": {
+        "a": {},
+      },
+      "required": "a",
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+      "id": 5,
+      "properties": {},
+    },
+    "input": {
+      "id": 5,
+      "properties": {},
+      "required": [],
+    },
+  },
+  {
+    "cleaned": {
+      "configuration": {
+        "objectDescriptionField": "",
+        "objectNameField": "",
+        "objectSlugField": "",
+        "objectSlugSuffix": false,
+      },
+    },
+    "input": {
+      "configuration": null,
+      "id": 0,
+    },
+  },
+]
+`;
+
+exports[`branchy stores golden counts the objects of a schema 1`] = `
+[
+  [
+    {
+      "returned": 4,
+    },
+    [],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [],
+  ],
+  [
+    {
+      "returned": 9,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+    ],
+  ],
+  [
+    {
+      "returned": 5,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+    ],
+  ],
+  [
+    {
+      "returned": 3,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 2,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 6,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+    ],
+  ],
+  [
+    {
+      "returned": 8,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [
+      "/index.php/apps/openregister/api/objects/count?schema=7",
+      "/index.php/apps/openregister/api/schemas/7/stats",
+    ],
+  ],
+  [
+    {
+      "returned": 0,
+    },
+    [],
+  ],
+]
+`;
+
+exports[`branchy stores golden reads quality listings 1`] = `
+[
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "error": null,
+      "masterEntities": [
+        {
+          "id": 2,
+        },
+      ],
+      "masterEntitiesTotal": 9,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "answer",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "answer",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "answer",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 2,
+        },
+      ],
+      "mergeOperationsLimit": 5,
+      "mergeOperationsOffset": 10,
+      "mergeOperationsTotal": 9,
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "answer",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 2,
+        },
+      ],
+      "mergeOperationsLimit": 5,
+      "mergeOperationsOffset": 10,
+      "mergeOperationsTotal": 9,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "error": null,
+      "lowQualityLimit": 5,
+      "lowQualityObjects": [
+        {
+          "id": 1,
+        },
+      ],
+      "lowQualityOffset": 10,
+      "lowQualityTotal": 9,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "answer",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "error": null,
+      "lowQualityLimit": 5,
+      "lowQualityObjects": [
+        {
+          "id": 1,
+        },
+      ],
+      "lowQualityOffset": 10,
+      "lowQualityTotal": 9,
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 1,
+          },
+        ],
+        "limit": 5,
+        "offset": 10,
+        "results": [
+          {
+            "id": 2,
+          },
+        ],
+        "total": 9,
+      },
+    },
+    "state": {
+      "duplicates": [
+        {
+          "id": 1,
+        },
+      ],
+      "duplicatesLimit": 5,
+      "duplicatesOffset": 10,
+      "duplicatesTotal": 9,
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "bare answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "masterEntities": [
+        {
+          "id": 3,
+        },
+      ],
+      "masterEntitiesTotal": 1,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "bare answer",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "bare answer",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "bare answer",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 3,
+        },
+      ],
+      "mergeOperationsLimit": 2,
+      "mergeOperationsOffset": 4,
+      "mergeOperationsTotal": 1,
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "bare answer",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 3,
+        },
+      ],
+      "mergeOperationsTotal": 1,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "bare answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "lowQualityLimit": 7,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "bare answer",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "bare answer",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "results": [
+          {
+            "id": 3,
+          },
+        ],
+      },
+    },
+    "state": {
+      "duplicatesOffset": 7,
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "items only",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "masterEntities": [
+        {
+          "id": 4,
+        },
+      ],
+      "masterEntitiesTotal": 1,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "items only",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "items only",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "items only",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 4,
+        },
+      ],
+      "mergeOperationsLimit": 2,
+      "mergeOperationsOffset": 4,
+      "mergeOperationsTotal": 1,
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "items only",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "mergeOperations": [
+        {
+          "id": 4,
+        },
+      ],
+      "mergeOperationsTotal": 1,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "items only",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "lowQualityLimit": 7,
+      "lowQualityObjects": [
+        {
+          "id": 4,
+        },
+      ],
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "items only",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "error": null,
+      "lowQualityObjects": [
+        {
+          "id": 4,
+        },
+      ],
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "items only",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {
+        "items": [
+          {
+            "id": 4,
+          },
+        ],
+      },
+    },
+    "state": {
+      "duplicates": [
+        {
+          "id": 4,
+        },
+      ],
+      "duplicatesOffset": 7,
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "no data",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "no data",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "no data",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "no data",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "error": null,
+      "mergeOperationsLimit": 2,
+      "mergeOperationsOffset": 4,
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "no data",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "no data",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "error": null,
+      "lowQualityLimit": 7,
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "no data",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "no data",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": {},
+    },
+    "state": {
+      "duplicatesOffset": 7,
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "server error",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMasterEntities]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "server error",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "server error",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "server error",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "server error",
+    "args": [],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "server error",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "server error",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "server error",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchDuplicates]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "message only",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMasterEntities]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "message only",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "message only",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "message only",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "message only",
+    "args": [],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "message only",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "message only",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "message only",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchDuplicates]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "nothing",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 3,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMasterEntities]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "limit": 3,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch master entities",
+    },
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "nothing",
+    "args": [
+      "",
+      "s",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMasterEntities",
+    "answerName": "nothing",
+    "args": [
+      "r",
+      null,
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": {
+        "results": [],
+        "total": 0,
+      },
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "nothing",
+    "args": [
+      {
+        "limit": 2,
+        "offset": 4,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 2,
+            "_offset": 4,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch merge operations",
+    },
+  },
+  {
+    "action": "fetchMergeOperations",
+    "answerName": "nothing",
+    "args": [],
+    "logged": [
+      [
+        "[quality.fetchMergeOperations]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/merge-operation/mergeOperation",
+        {
+          "params": {
+            "_limit": 20,
+            "_offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch merge operations",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "nothing",
+    "args": [
+      "r",
+      "s",
+      {
+        "limit": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 7,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch lowest-quality objects",
+    },
+  },
+  {
+    "action": "fetchLowQualityObjects",
+    "answerName": "nothing",
+    "args": [
+      "r",
+      "s",
+    ],
+    "logged": [
+      [
+        "[quality.fetchLowQualityObjects]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/quality/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 0,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch lowest-quality objects",
+    },
+  },
+  {
+    "action": "fetchDuplicates",
+    "answerName": "nothing",
+    "args": [
+      "r",
+      "s",
+      {
+        "offset": 7,
+      },
+    ],
+    "logged": [
+      [
+        "[quality.fetchDuplicates]",
+        {},
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/duplicates/r/s",
+        {
+          "params": {
+            "limit": 20,
+            "offset": 7,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": undefined,
+    },
+    "state": {
+      "error": "Failed to fetch duplicate candidates",
+    },
+  },
+]
+`;
+
+exports[`branchy stores golden reads report dashboards and widgets 1`] = `
+[
+  {
+    "action": "fetchDashboards",
+    "answerName": "answer",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard",
+        {
+          "params": {
+            "_limit": 200,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "state": {
+      "dashboards": [
+        {
+          "id": 1,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "answer",
+    "args": [
+      {
+        "register": "r",
+        "schema": "s",
+        "status": "live",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "_limit": 200,
+            "register": "r",
+            "schema": "s",
+            "status": "live",
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 1,
+        },
+      ],
+    },
+    "state": {
+      "dashboards": [
+        {
+          "id": 1,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "answer",
+    "args": [
+      "dash-1",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": {
+        "id": "d",
+        "results": [
+          {
+            "id": 1,
+          },
+        ],
+      },
+    },
+    "state": {
+      "activeDashboard": {
+        "id": "d",
+        "results": [
+          {
+            "id": 1,
+          },
+        ],
+      },
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "answer",
+    "args": [
+      "dash-1",
+      {
+        "register": "r",
+        "schema": "s",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": {
+        "id": "d",
+        "results": [
+          {
+            "id": 1,
+          },
+        ],
+      },
+    },
+    "state": {
+      "activeDashboard": {
+        "id": "d",
+        "results": [
+          {
+            "id": 1,
+          },
+        ],
+      },
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "answer",
+    "args": [
+      "",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": null,
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "plain list",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard",
+        {
+          "params": {
+            "_limit": 200,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "state": {
+      "dashboards": [
+        {
+          "id": 2,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "plain list",
+    "args": [
+      {
+        "register": "r",
+        "schema": "s",
+        "status": "live",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "_limit": 200,
+            "register": "r",
+            "schema": "s",
+            "status": "live",
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "state": {
+      "dashboards": [
+        {
+          "id": 2,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "plain list",
+    "args": [
+      "dash-1",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "state": {
+      "activeDashboard": [
+        {
+          "id": 2,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "plain list",
+    "args": [
+      "dash-1",
+      {
+        "register": "r",
+        "schema": "s",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": [
+        {
+          "id": 2,
+        },
+      ],
+    },
+    "state": {
+      "activeDashboard": [
+        {
+          "id": 2,
+        },
+      ],
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "plain list",
+    "args": [
+      "",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": null,
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "no data",
+    "args": [],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard",
+        {
+          "params": {
+            "_limit": 200,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [],
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "no data",
+    "args": [
+      {
+        "register": "r",
+        "schema": "s",
+        "status": "live",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "_limit": 200,
+            "register": "r",
+            "schema": "s",
+            "status": "live",
+          },
+        },
+      ],
+    ],
+    "result": {
+      "returned": [],
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "no data",
+    "args": [
+      "dash-1",
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": null,
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "no data",
+    "args": [
+      "dash-1",
+      {
+        "register": "r",
+        "schema": "s",
+      },
+    ],
+    "logged": [],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s/dash-1",
+      ],
+    ],
+    "result": {
+      "returned": null,
+    },
+    "state": {
+      "error": null,
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "no data",
+    "args": [
+      "",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": null,
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "server error",
+    "args": [],
+    "logged": [
+      [
+        "[reports.fetchDashboards]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard",
+        {
+          "params": {
+            "_limit": 200,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "server error",
+    "args": [
+      {
+        "register": "r",
+        "schema": "s",
+        "status": "live",
+      },
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboards]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "_limit": 200,
+            "register": "r",
+            "schema": "s",
+            "status": "live",
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "server error",
+    "args": [
+      "dash-1",
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboard]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard/dash-1",
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "server error",
+    "args": [
+      "dash-1",
+      {
+        "register": "r",
+        "schema": "s",
+      },
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboard]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s/dash-1",
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "srv",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "server error",
+    "args": [
+      "",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": null,
+    },
+    "state": {},
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "message only",
+    "args": [],
+    "logged": [
+      [
+        "[reports.fetchDashboards]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard",
+        {
+          "params": {
+            "_limit": 200,
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchDashboards",
+    "answerName": "message only",
+    "args": [
+      {
+        "register": "r",
+        "schema": "s",
+        "status": "live",
+      },
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboards]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s",
+        {
+          "params": {
+            "_limit": 200,
+            "register": "r",
+            "schema": "s",
+            "status": "live",
+          },
+        },
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "message only",
+    "args": [
+      "dash-1",
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboard]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/reports/dashboard/dash-1",
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "message only",
+    "args": [
+      "dash-1",
+      {
+        "register": "r",
+        "schema": "s",
+      },
+    ],
+    "logged": [
+      [
+        "[reports.fetchDashboard]",
+        "m",
+      ],
+    ],
+    "requests": [
+      [
+        "/index.php/apps/openregister/api/objects/r/s/dash-1",
+      ],
+    ],
+    "result": {
+      "status": null,
+      "thrown": "m",
+    },
+    "state": {
+      "error": "m",
+    },
+  },
+  {
+    "action": "fetchDashboard",
+    "answerName": "message only",
+    "args": [
+      "",
+    ],
+    "logged": [],
+    "requests": [],
+    "result": {
+      "returned": null,
+    },
+    "state": {},
+  },
+]
+`;

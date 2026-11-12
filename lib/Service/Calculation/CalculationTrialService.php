@@ -27,10 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use Throwable;
 
 /**
  * Try an expression before you save it.
@@ -40,11 +36,13 @@ use Throwable;
  * validator and the same evaluator the save path runs, against a payload the
  * author supplies or an object they name, and writes nothing either way.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The trial composes the validator, the
- *   evaluator, the shared payload builder and the three mappers needed to resolve a named
- *   object; each is a distinct collaborator on the one dry-run path.
+ * A named object is resolved by the caller, CalculationsController, with RBAC and tenancy
+ * on. This service never looks an object up itself, so it cannot be handed an id that
+ * skips the caller's read check.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
-final class CalculationTrialService {
+final class CalculationTrialService implements CalculationTrialServiceInterface {
 
 	/**
 	 * The synthetic name a trial declaration is validated under.
@@ -52,24 +50,18 @@ final class CalculationTrialService {
 	private const TRIAL_NAME = '__trial';
 
 	/**
-	 * Wire the validator, the evaluator and the lookups a named object needs.
+	 * Wire the validator, the evaluator and the payload builder.
 	 *
 	 * @param CalculationAnnotationValidator $validator Declaration validator.
-	 * @param CalculationEvaluator $evaluator Pure expression evaluator.
+	 * @param CalculationEvaluatorInterface $evaluator Pure expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param RegisterMapper $registerMapper Register lookup for a named object.
-	 * @param SchemaMapper $schemaMapper Schema lookup for a named object.
-	 * @param MagicMapper $objectMapper Object lookup in the register+schema table.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalculationAnnotationValidator $validator,
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
 	) {
 	}//end __construct()
 
@@ -81,7 +73,7 @@ final class CalculationTrialService {
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function trySample(array $declaration, array $sample): array {
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($sample));
@@ -96,46 +88,50 @@ final class CalculationTrialService {
 	 * Evaluate an unsaved declaration against an object that already exists.
 	 *
 	 * The object is read, never written: the value comes back in the response
-	 * and nothing is persisted.
+	 * and nothing is persisted. The caller resolves the object with RBAC and
+	 * tenancy on, so only an object the acting user may read arrives here.
 	 *
 	 * @param array<string, mixed> $declaration The `{type, expression}` declaration.
-	 * @param string $register Register id, uuid or slug.
-	 * @param string $schema Schema id, uuid or slug.
-	 * @param string $objectId Object id, uuid, slug or uri.
+	 * @param TrialObject $target The object and its schema, already resolved for the acting user.
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function tryObject(array $declaration, string $register, string $schema, string $objectId): array {
-		try {
-			$registerEntity = $this->registerMapper->find($register);
-			$schemaEntity = $this->schemaMapper->find($schema);
-			$object = $this->objectMapper->findInRegisterSchemaTable(
-				identifier: $objectId,
-				register: $registerEntity,
-				schema: $schemaEntity
-			);
-		} catch (Throwable $e) {
-			return $this->failure(
-				error: [
-					'code' => 'calculation-trial-object-not-found',
-					'message' => sprintf('Could not resolve object "%s": %s', $objectId, $e->getMessage()),
-				],
-				declaration: $declaration
-			);
-		}
-
-		$properties = ($schemaEntity->getProperties() ?? []);
+	public function tryObject(array $declaration, TrialObject $target): array {
+		$properties = ($target->schema->getProperties() ?? []);
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($properties));
 		if ($errors !== []) {
 			return $this->failure(error: $errors[0], declaration: $declaration);
 		}
 
-		$payload = $this->payloadBuilder->build(object: $object, schema: $schemaEntity);
+		$payload = $this->payloadBuilder->build(object: $target->object, schema: $target->schema);
 
 		return $this->run(declaration: $declaration, payload: $payload);
 	}//end tryObject()
+
+	/**
+	 * The refusal for a named object that is absent or that the caller may not read.
+	 *
+	 * Both cases answer the same way, so the trial cannot be used to learn
+	 * whether an object the caller may not read exists.
+	 *
+	 * @param array<string, mixed> $declaration The declaration under trial.
+	 * @param UnresolvedTrialObject $target The object id the caller named, and why the lookup failed.
+	 *
+	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	public function objectNotFound(array $declaration, UnresolvedTrialObject $target): array {
+		return $this->failure(
+			error: [
+				'code' => 'calculation-trial-object-not-found',
+				'message' => sprintf('Could not resolve object "%s": %s', $target->objectId, $target->reason),
+			],
+			declaration: $declaration
+		);
+	}//end objectNotFound()
 
 	/**
 	 * Validate the declaration the way a schema save validates it.
@@ -174,16 +170,9 @@ final class CalculationTrialService {
 		$expression = ($declaration['expression'] ?? null);
 
 		try {
-			$value = $this->evaluator->evaluate($payload, $expression);
+			$value = $this->valueOf(payload: $payload, expression: $expression);
 		} catch (EvaluationException $e) {
-			return $this->failure(
-				error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()],
-				declaration: $declaration
-			);
-		}
-
-		if ($value instanceof DateTimeInterface) {
-			$value = $value->format(DATE_ATOM);
+			return $this->failure(error: ['code' => 'calculation-trial-failed', 'message' => $e->getMessage()], declaration: $declaration);
 		}
 
 		return [
@@ -192,6 +181,25 @@ final class CalculationTrialService {
 			'dependencies' => $this->evaluator->referencedProperties($expression),
 		];
 	}//end run()
+
+	/**
+	 * Evaluate the expression; a date comes back in ATOM form.
+	 *
+	 * @param array<string, mixed> $payload The payload to evaluate against.
+	 * @param mixed $expression The expression under trial.
+	 *
+	 * @return mixed The value.
+	 *
+	 * @throws EvaluationException When the expression fails.
+	 */
+	private function valueOf(array $payload, mixed $expression): mixed {
+		$value = $this->evaluator->evaluate($payload, $expression);
+		if ($value instanceof DateTimeInterface) {
+			$value = $value->format(DATE_ATOM);
+		}
+
+		return $value;
+	}//end valueOf()
 
 	/**
 	 * Shape a refusal, carrying the derived dependency list so the author

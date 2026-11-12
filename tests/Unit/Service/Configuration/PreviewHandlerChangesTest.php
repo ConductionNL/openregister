@@ -32,9 +32,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Before this, every object row of the preview was an empty array and every
@@ -77,6 +77,9 @@ final class PreviewHandlerChangesTest extends TestCase {
 		$this->schema->setSlug('zaaktype');
 		$this->schema->setVersion('1.0.0');
 		$this->schema->setTitle('Zaaktype');
+		// The import stores only declared properties (MagicMapper), and the
+		// preview compares only those.
+		$this->schema->setProperties(['title' => ['type' => 'string'], 'colour' => ['type' => 'string']]);
 
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->registerMapper->method('findAll')->willReturn([$this->register]);
@@ -86,11 +89,8 @@ final class PreviewHandlerChangesTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new PreviewHandler(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->fetchHandler,
-			$this->objectMapper
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper),
+			$this->fetchHandler
 		);
 	}//end setUp()
 

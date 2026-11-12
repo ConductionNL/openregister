@@ -28,10 +28,12 @@ declare(strict_types=1);
 
 namespace Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCP\DB\IPreparedStatement;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -60,11 +62,9 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 
 		// A REAL normaliser: the point of the expiry test is the stored format.
 		$this->handler = new MagicBulkHandler(
-			$this->db,
-			$logger,
+			new MagicTableSql($this->db, $this->createMock(IConfig::class), $logger),
 			$this->createMock(IEventDispatcher::class),
-			new DateTimeNormalizer($logger),
-			$this->createMock(IConfig::class)
+			new DateTimeNormalizer($logger)
 		);
 
 		$this->register = new Register();
@@ -125,7 +125,22 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 		$this->assertArrayNotHasKey('_expires', $row);
 	}
 
+	/**
+	 * Let the table report these columns when its column list is read.
+	 *
+	 * @param list<string> $columns The column names.
+	 */
+	private function tableHasColumns(array $columns): void {
+		$rows = array_map(fn (string $name): array => ['Field' => $name], $columns);
+		$rows[] = false;
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->method('fetch')->willReturnOnConsecutiveCalls(...$rows);
+		$this->db->method('prepare')->willReturn($statement);
+	}
+
 	public function testPurgeExpiredDeletesByRegisterSchemaAndPassedExpiry(): void {
+		$this->tableHasColumns(['_uuid', '_expires']);
+
 		$expr = $this->createMock(IExpressionBuilder::class);
 		$expr->method('eq')->willReturnCallback(fn (string $col, string $param): string => "$col = $param");
 		$expr->expects($this->once())->method('isNotNull')->with('_expires')->willReturn('_expires IS NOT NULL');
@@ -153,5 +168,72 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 
 		$this->assertSame(4, $purged);
 		$this->assertSame(['_schema = :p22', '_expires IS NOT NULL', '_expires < NOW()'], $andWheres);
+	}
+
+	public function testPurgeExpiredKeepsArchivedFrozenLockedAndRetainedRows(): void {
+		$this->tableHasColumns(['_uuid', '_expires', '_archived', '_frozen', '_locked', '_retention']);
+
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturnCallback(fn (string $col, string $param): string => "$col = $param");
+		$expr->method('isNotNull')->willReturnCallback(fn (string $col): string => "$col IS NOT NULL");
+		$expr->method('isNull')->willReturnCallback(fn (string $col): string => "$col IS NULL");
+		$expr->method('lt')->willReturn('_expires < NOW()');
+
+		$andWheres = [];
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturnCallback(fn (mixed $value): string => ':p' . $value);
+		$qb->method('createFunction')->willReturnCallback(fn (string $fn): string => $fn);
+		$qb->method('delete')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('andWhere')->willReturnCallback(function (string $clause) use (&$andWheres, $qb): IQueryBuilder {
+			$andWheres[] = $clause;
+			return $qb;
+		});
+		$qb->method('executeStatement')->willReturn(1);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+
+		$this->handler->purgeExpired($this->register, $this->schema, 'openregister_table_11_22');
+
+		$this->assertSame(
+			['_schema = :p22', '_expires IS NOT NULL', '_expires < NOW()', '_archived IS NULL', '_frozen IS NULL', '_locked IS NULL', '_retention IS NULL'],
+			$andWheres
+		);
+	}
+
+	public function testPurgeExpiredRemovesNothingWhenTheColumnsCannotBeRead(): void {
+		$this->db->method('prepare')->willThrowException(new \RuntimeException('no table'));
+		$this->db->expects($this->never())->method('getQueryBuilder');
+
+		$this->assertSame(0, $this->handler->purgeExpired($this->register, $this->schema, 'openregister_table_11_22'));
+	}
+
+	public function testADeclaredPropertyNamedLikeAMetadataColumnNeverReplacesTheStampedValue(): void {
+		$this->schema->setProperties(
+			[
+				'_authorization' => ['type' => 'object'],
+				'_owner' => ['type' => 'string'],
+				'_organisation' => ['type' => 'string'],
+				'_status' => ['type' => 'string'],
+				'_meta' => ['type' => 'string'],
+			]
+		);
+
+		$row = $this->prepare([
+			'@self' => ['uuid' => 'u-3', 'owner' => 'alice', 'organisation' => 'org-1'],
+			'object' => [
+				'_authorization' => ['read' => ['everyone']],
+				'_owner' => 'mallory',
+				'_organisation' => 'org-2',
+				'_status' => 'published',
+				'_meta' => 'kept',
+			],
+		]);
+
+		$this->assertSame('alice', $row['_owner']);
+		$this->assertSame('org-1', $row['_organisation']);
+		$this->assertArrayNotHasKey('_authorization', $row);
+		$this->assertArrayNotHasKey('_status', $row);
+		$this->assertSame('kept', $row['_meta']);
 	}
 }

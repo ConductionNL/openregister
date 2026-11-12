@@ -26,17 +26,17 @@
 - `lib/BackgroundJob/AnnotationNotificationDispatchJob.php` → `openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.2`
 - `lib/BackgroundJob/TranslationProjectionJob.php` → `openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.1`
 - `lib/BackgroundJob/ActorForwardedJob.php` → `openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.3`
-- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/hybrid-document-search/tasks.md#5.2`
-- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/hybrid-document-search/tasks.md#5.2`
-- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/hybrid-document-search/tasks.md#5.2`
-- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/hybrid-document-search/tasks.md#2.2`
+- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2`
+- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2`
+- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2`
+- `lib/BackgroundJob/ChunkVectorizationJob.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2`
 - `lib/Controller/MergeController.php` → `openspec/changes/mdm-merge-engine/tasks.md#5.1`
 - `lib/Controller/MergeController.php` → `openspec/changes/mdm-merge-engine/tasks.md#5.1`
 - `lib/Controller/MergeController.php` → `openspec/changes/mdm-merge-engine/tasks.md#5.1`
 - `lib/Controller/MergeController.php` → `openspec/changes/mdm-merge-engine/tasks.md#5.1`
-- `lib/Controller/SettingsController.php` → `openspec/changes/hybrid-document-search/tasks.md#6.1`
-- `lib/Controller/FileSearchController.php` → `openspec/changes/hybrid-document-search/tasks.md#4.1`
-- `lib/Controller/FileSearchController.php` → `openspec/changes/hybrid-document-search/tasks.md#4.2`
+- `lib/Controller/SettingsController.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1`
+- `lib/Controller/FileSearchController.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.1`
+- `lib/Controller/FileSearchController.php` → `openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.2`
 - … +430 more
 
 ## C. capability archived/deleted — no canonical spec (requirement genuinely gone) (74)

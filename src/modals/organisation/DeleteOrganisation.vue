@@ -4,7 +4,18 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog name="Delete Organisation" size="normal" :canClose="false">
+	<ConfirmDialogFrame
+		name="Delete Organisation"
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		:confirmDisabled="!canDelete"
+		successText="Organisation successfully deleted"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete Organisation"
+		@cancel="closeDialog"
+		@confirm="deleteOrganisation()">
 		<p v-if="!success && canDelete">
 			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ organisationStore.organisationItem?.name }}</b
@@ -47,62 +58,22 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 				<li>All audit trails and search history for this organisation</li>
 			</ul>
 		</NcNoteCard>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>Organisation successfully deleted</p>
-		</NcNoteCard>
-
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading || !canDelete"
-				variant="error"
-				@click="deleteOrganisation()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete Organisation
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import { NcNoteCard } from '@nextcloud/vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteOrganisation',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
+		ConfirmDialogFrame,
 		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
 	},
 
-	data() {
-		return {
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(false)],
 
 	computed: {
 		/**

@@ -3,8 +3,10 @@
 ## Purpose
 
 @e2e exclude backend file pipeline — covered by PHPUnit
-TBD - created by archiving change retrofit-2026-05-25-bw-svc-file. Update Purpose after archive.
+The file actions on an object: creating, replacing, renaming, moving and deleting the files attached to it, through one pipeline that validates, writes, sets ownership and tags.
+
 ## Requirements
+
 ### Requirement: File creation and upsert run a fixed validate-write-own-tag pipeline
 
 `CreateFileHandler::addFile()` MUST create a Nextcloud file under the object's
@@ -141,7 +143,9 @@ MUST persist OR-side metadata independently of the Nextcloud node.
 `description`/`category`/`labels` as independently optional — a `null` argument
 leaves the field unchanged while an explicit value (including `""` or `[]`)
 overwrites it. Document content rewrites (`DocumentProcessingHandler::replaceWords`
-for `.doc`/`.docx` via PHPWord and text files, and `::anonymizeDocument` which
+for `.docx`, by editing the text of the body, header, footer, note and comment
+parts in place across the runs of each paragraph, and for text files; and
+`::anonymizeDocument` which
 builds `[ENTITY_TYPE: key]` replacements) MUST write the result as a new
 `<name>_replaced` / `<name>_anonymized` sibling node rather than mutating the
 source. Write-path lock guarding MUST go through
@@ -745,3 +749,328 @@ is a facade over `FolderManagementHandler`.
 - **THEN** the new folder ID MUST be returned
 - **AND** the entity's own folder property MUST NOT have been written
 
+### Requirement: Recording an object's folder id is bookkeeping (REQ-OFIB-001)
+
+When the system makes the files folder of an object outside a save, it SHALL record the folder id by changing only the object's folder field, on that one object. It SHALL NOT change any other field and SHALL NOT change the object's version. It SHALL NOT dispatch an object updating or updated event. It SHALL NOT write an audit trail entry, as for a register's folder id (REQ-RFFU-002). It SHALL only take effect while the stored folder field is still empty or holds the value read before the folder was made.
+
+#### Scenario: Only the folder field is written, and no lifecycle event fires
+
+- **GIVEN** an object with no files folder
+- **WHEN** its folder id is recorded
+- **THEN** only the folder field of that object changes
+- **AND** no object updating or updated event is dispatched
+- @e2e exclude {write shape and event absence, covered by PHPUnit in MagicMapperRecordFolderTest}
+
+#### Scenario: A folder id recorded by another request is left alone
+
+- **GIVEN** a request that read the object while it had no folder
+- **AND** another request recorded a folder id since
+- **WHEN** this request records its folder id
+- **THEN** the stored folder id stays the one the other request recorded
+- **AND** this request still gets the object's folder
+- @e2e exclude {compare-and-set write, covered by PHPUnit in MagicMapperRecordFolderTest and FolderManagementHandlerObjectFolderBookkeepingTest}
+
+### Requirement: Reading an object's files never saves the object (REQ-OFIB-002)
+
+Listing or reading the files of an object SHALL NOT run save-time logic on that object. This holds when the read is the first one and the object's files folder has to be made. Save-time logic includes calculations, quality scoring, retention and any listener for object updating or updated events.
+
+#### Scenario: The first file listing on an object without a folder
+
+- **GIVEN** an object with no files folder
+- **AND** a request with no Nextcloud session, such as a portal listing a case's documents
+- **WHEN** the object's files are listed
+- **THEN** the folder is made and its id is recorded on the object
+- **AND** the object is not saved, so no save-time listener runs
+- @e2e exclude {backend read path with no OpenRegister UI; PHPUnit drives the real handler with a fake root in FolderManagementHandlerObjectFolderBookkeepingTest}
+
+#### Scenario: A legacy folder path is replaced without a save
+
+- **GIVEN** an object whose folder field holds a legacy path instead of a node id
+- **WHEN** the object's files are listed
+- **THEN** the path is replaced by the new folder id, only while it is still the stored value
+- **AND** the object is not saved
+- @e2e exclude {legacy data shape, covered by PHPUnit in FolderManagementHandlerObjectFolderBookkeepingTest}
+
+### Requirement: An app-imported register has its Files folder when the import returns (REQ-RFAI-001)
+
+When an app configuration import (`ConfigurationService::importFromApp()`) creates, updates or leaves unchanged a register, the system SHALL ensure that register has a Files folder before the import returns, the way a register created through the API gets one at creation. The folder id SHALL be recorded as bookkeeping (REQ-RFFU-002): no register-updated event, no version change, no organisation check. Provisioning SHALL be idempotent, SHALL only touch the registers the import returned, and SHALL NOT fail the import: a folder that cannot be made is logged and left for the first upload.
+
+#### Scenario: A register created by an app import gets its folder
+
+- **GIVEN** an app configuration that ships a register the instance does not have yet
+- **WHEN** the app imports it through `importFromApp()`
+- **THEN** the register has a recorded folder id when the import returns
+- **AND** no register-updated event is dispatched for the folder
+- @e2e exclude {backend provisioning during app install with no OpenRegister UI; covered by PHPUnit on ImportHandler::importFromApp and RegisterFolderProvisioner}
+
+#### Scenario: Re-importing leaves an existing folder alone
+
+- **GIVEN** a register whose recorded folder still resolves
+- **WHEN** the app import runs again
+- **THEN** no new folder is created and the recorded folder id is unchanged
+- @e2e exclude {backend idempotency, covered by PHPUnit}
+
+#### Scenario: A folder that cannot be made does not fail the import
+
+- **GIVEN** an app import whose folder provisioning fails for a register
+- **WHEN** the import runs
+- **THEN** the import still returns its result
+- **AND** the failure is logged with the register id
+- @e2e exclude {failure injection is a unit concern, covered by PHPUnit}
+
+### Requirement: A repair step provisions folders for registers imported earlier (REQ-RFAI-002)
+
+A post-migration repair step SHALL ensure a Files folder for every register on the instance, across organisations, using the same bookkeeping write. It SHALL report how many folders it provisioned, found present and could not make, and SHALL NOT throw.
+
+#### Scenario: An upgrade provisions a missing folder
+
+- **GIVEN** a register imported before this change, with no folder
+- **WHEN** the post-migration repair steps run
+- **THEN** the register has a recorded folder id
+- **AND** the step reports one provisioned folder
+- @e2e exclude {runs from occ upgrade; covered by PHPUnit on CreateMissingRegisterFolders}
+
+#### Scenario: The repair step skips when its services are unavailable
+
+- **GIVEN** a container that cannot build the register mapper or the provisioner
+- **WHEN** the repair step runs
+- **THEN** it reports that it skipped and does not throw
+- @e2e exclude {container failure, covered by PHPUnit}
+
+### Requirement: A register's folder is created on its first upload, by whoever uploads (REQ-RFFU-001)
+
+When a file is added to an object whose register has no folder yet, the system SHALL create the register's folder and record its id on the register as part of that upload. Recording the folder id SHALL NOT require permission to update registers and SHALL NOT depend on the caller's active organisation, so an upload without a Nextcloud session (a portal request) succeeds on a fresh instance. The folder id SHALL come from the folder the system created or found at the register's conventional path, never from request data. Whether the caller may upload to the object at all is unchanged.
+
+#### Scenario: The first upload without a session creates and records the register folder
+
+- **GIVEN** a register with no folder and a request with no Nextcloud user
+- **AND** the caller is not allowed to update registers
+- **WHEN** a file is added to one of the register's objects
+- **THEN** the folder `Open Registers/<title> Register` is created in the OpenRegister system user's files
+- **AND** its id is recorded on the register
+- **AND** the upload does not fail on a register permission or organisation check
+- @e2e exclude {backend folder provisioning with no OpenRegister UI; PHPUnit drives it with a fake root, and portaliq's portal-document-download e2e runs it live once its exclusion is lifted}
+
+#### Scenario: A second upload reuses the recorded folder
+
+- **GIVEN** a register whose folder was created and recorded by an earlier upload
+- **WHEN** a file is added to another object in that register
+- **THEN** no new register folder is created
+- **AND** the recorded folder id is not written again
+- @e2e exclude {backend folder reuse, covered by PHPUnit with a fake root}
+
+#### Scenario: Two first uploads racing share one folder
+
+- **GIVEN** two first uploads into the same register
+- **AND** the other upload creates the register folder after this one found none
+- **WHEN** this upload's folder creation is refused because the folder now exists
+- **THEN** this upload uses the existing folder and succeeds
+- @e2e exclude {a race cannot be staged in a browser; covered by PHPUnit with a fake root}
+
+### Requirement: Recording a register's folder id is bookkeeping (REQ-RFFU-002)
+
+Recording the folder id SHALL change only the register's folder field, on the register the upload resolved. It SHALL NOT change any other field, SHALL NOT change the register's version, and SHALL NOT dispatch a register-updated event, so no activity entry, webhook or notification says the register was edited. It SHALL only take effect while the stored folder field is still empty or holds the value read before the folder was made, so it never overwrites a folder id another request recorded first.
+
+#### Scenario: Only the folder field is written, and no update event fires
+
+- **GIVEN** a register with no folder
+- **WHEN** its folder id is recorded
+- **THEN** only the folder field of that register changes
+- **AND** no register-updated event is dispatched
+- @e2e exclude {write shape and event absence, covered by PHPUnit}
+
+#### Scenario: A folder id recorded by another request is left alone
+
+- **GIVEN** a request that read the register while it had no folder
+- **AND** another request recorded a folder id since
+- **WHEN** this request records its folder id
+- **THEN** the stored folder id stays the one the other request recorded
+- **AND** this request's upload still succeeds
+- @e2e exclude {compare-and-set write, covered by PHPUnit}
+
+### Requirement: A file link points at the host the visitor used
+
+Every absolute file address Open Register hands out (the public share link,
+its `/download` form, and the authenticated preview and download addresses)
+SHALL be built for the host of the current request, through Nextcloud's URL
+generator, so `overwritehost`, `overwriteprotocol` and trusted proxies apply.
+When there is no request (cron, occ) the address SHALL be built from
+`overwrite.cli.url`, and only when that is empty from the URL generator's own
+base. The address SHALL NOT take its host from an entry of `trusted_domains`,
+and the order of that list SHALL NOT change any address.
+
+#### Scenario: a visitor on localhost gets a localhost link
+
+- **GIVEN** an instance whose `trusted_domains` are `localhost` and `nextcloud`
+- **WHEN** a visitor on `http://localhost:8080` asks for the share link of token `abc123`
+- **THEN** the link is `http://localhost:8080/index.php/s/abc123`
+- @e2e exclude {host resolution is unit-tested in tests/Unit/Service/File/ShareUrlBuilderTest.php; e2e runs on one host}
+
+#### Scenario: a visitor on the public host gets that host
+
+- **GIVEN** an instance that answers on `zuiddrecht.nl` and `cloud.zuiddrecht.nl`, with `overwrite.cli.url` set to `https://cloud.zuiddrecht.nl`
+- **WHEN** a visitor on `https://zuiddrecht.nl` asks for the share link of token `abc123`
+- **THEN** the link is `https://zuiddrecht.nl/index.php/s/abc123`
+- @e2e exclude {host resolution is unit-tested in tests/Unit/Service/File/ShareUrlBuilderTest.php; e2e runs on one host}
+
+#### Scenario: without a request the link uses the CLI URL
+
+- **GIVEN** `overwrite.cli.url` is `https://cloud.zuiddrecht.nl/`
+- **WHEN** a cron job or occ command builds the share link, preview address or download address of a file
+- **THEN** each address starts with `https://cloud.zuiddrecht.nl/`
+- @e2e exclude {no browser takes part in a cron run; unit-tested in tests/Unit/Service/File/ShareUrlBuilderTest.php}
+
+#### Scenario: the order of trusted domains is irrelevant
+
+- **GIVEN** any order of `trusted_domains`, including an empty list or a single entry
+- **WHEN** a visitor on `http://localhost:8080` asks for the share link of token `abc123`
+- **THEN** the link is `http://localhost:8080/index.php/s/abc123` every time
+- @e2e exclude {configuration permutations are unit-tested in tests/Unit/Service/File/ShareUrlBuilderTest.php}
+
+### Requirement: A schema can grant file rights apart from object rights
+
+The permission catalogue SHALL publish `readFiles`, `addFiles` and `deleteFiles`, and the matrix SHALL accept them. When an effective authorization block names any of them, file actions on an object SHALL require `read` on the object and the file verb of the action (design D-4). When a block names none of them, file actions SHALL follow the object rule as before.
+
+#### Scenario: a reader of files cannot add one
+
+- **GIVEN** schema `case` whose authorization grants group `inspectors` `read` and `readFiles`
+- **WHEN** a member of `inspectors` lists a case's files and then uploads one
+- **THEN** the list answers 200 with the files
+- **AND** the upload answers 403
+- @e2e exclude {covered by PHPUnit through FilesController with a real PermissionHandler}
+
+#### Scenario: adding is not deleting
+
+- **GIVEN** group `intakers` with `read`, `readFiles` and `addFiles`
+- **WHEN** a member uploads a file and then deletes it
+- **THEN** the upload succeeds and the delete answers 403
+- @e2e exclude {covered by PHPUnit through FilesController}
+
+#### Scenario: a schema without file verbs keeps today's rule
+
+- **GIVEN** a schema granting `read` and `update` and no file verb
+- **WHEN** a member with `update` uploads a file
+- **THEN** the upload succeeds as it does today
+- @e2e exclude {covered by the existing object-files-follow-object-access tests}
+
+### Requirement: A file in an object's folder can carry a read restriction (REQ-PFRR-001)
+
+An app SHALL be able to restrict one file of an object to named users and groups through
+`FileRestrictionService::restrict(fileId, users, groups, reason)`, change it by calling it again, and lift it with
+`FileRestrictionService::lift(fileId)`. A restriction SHALL name at least one user or group and SHALL carry a
+non-empty reason; the service SHALL record who set it and when. `restrictionOf(fileId)` SHALL answer the stored
+restriction or null.
+
+#### Scenario: A restriction is stored with who and when
+- **GIVEN** user `pieter` is signed in
+- **WHEN** an app restricts file 42 to user `pieter` and group `woo-team` with reason "Commercially sensitive prices"
+- **THEN** `restrictionOf(42)` answers users `[pieter]`, groups `[woo-team]`, that reason, `setBy` `pieter` and the time
+
+#### Scenario: A restriction without principals or reason is refused
+- **WHEN** an app restricts a file with no users and no groups, or with an empty reason
+- **THEN** the service throws `InvalidArgumentException` and stores nothing
+
+#### Scenario: Lifting answers what was there
+- **WHEN** an app lifts the restriction of file 42
+- **THEN** the stored restriction is removed and the previous one is returned
+
+### Requirement: A restricted file is readable only by its listed principals, administrators and admitted callers (REQ-PFRR-002)
+
+`FileRestrictionGuard::mayRead(fileId)` SHALL answer true for a file without a restriction. For a restricted file it
+SHALL answer true only when the caller is listed, is a member of a listed group, is an administrator, or is admitted
+by a listener of `FileRestrictionAdmitEvent`. It SHALL answer false for an anonymous caller and when the restriction
+cannot be read.
+
+#### Scenario: A caller not listed is refused
+- **GIVEN** file 42 is restricted to user `pieter` and group `woo-team`
+- **WHEN** user `anna`, in neither, asks
+- **THEN** the guard answers false
+
+#### Scenario: A listed user, a group member and an admin are admitted
+- **GIVEN** file 42 is restricted to user `pieter` and group `woo-team`
+- **WHEN** `pieter`, a member of `woo-team`, or a member of `admin` asks
+- **THEN** the guard answers true
+
+#### Scenario: An app admits a caller through the event
+- **GIVEN** file 42 is restricted and `anna` is not listed
+- **WHEN** a listener of `FileRestrictionAdmitEvent` admits `anna` for file 42
+- **THEN** the guard answers true for `anna`
+
+#### Scenario: A lookup failure refuses
+- **WHEN** reading the restriction throws
+- **THEN** the guard answers false
+
+### Requirement: Every OpenRegister file path honours the restriction (REQ-PFRR-003)
+
+Every OpenRegister path that lists or returns an object's file SHALL ask `FileRestrictionGuard` before it lists or
+returns the file. A refused file SHALL be absent from a listing and SHALL answer 404 on a per-file endpoint, so the
+caller cannot tell a restricted file from a missing one.
+
+#### Scenario: The object folder listing leaves the file out
+- **GIVEN** a case folder holding `Offerte.pdf` (restricted) and `Brief.pdf`
+- **WHEN** a reader of the case who is not admitted lists the folder
+- **THEN** the listing holds `Brief.pdf` only
+
+#### Scenario: A rename or delete through the folder browser answers 404
+- **WHEN** that reader renames or deletes `Offerte.pdf` by node id
+- **THEN** the browser throws NotFoundException (404)
+
+#### Scenario: The files list leaves the file out
+- **WHEN** that reader asks `GET /api/objects/{r}/{s}/{id}/files`
+- **THEN** the restricted file is not in the result
+
+#### Scenario: A per-file endpoint answers 404
+- **WHEN** that reader asks show, preview, versions, Office or any other per-file endpoint for the restricted file
+- **THEN** the answer is 404
+
+#### Scenario: Download by file id answers 404
+- **WHEN** that reader asks `GET /api/files/{fileId}/download` for the restricted file
+- **THEN** the answer is 404
+
+#### Scenario: The ZIP download leaves the file out
+- **WHEN** that reader downloads the object's files as a ZIP
+- **THEN** the restricted file is not in the archive
+
+#### Scenario: Search leaves the file out
+- **WHEN** a file search hit points at the restricted file
+- **THEN** `FileReadScope` drops it for that reader
+
+#### Scenario: The integration files leaf leaves the file out
+- **WHEN** the files integration provider lists the object's files for that reader
+- **THEN** the restricted file is not in the rows
+
+#### Scenario: The rendered object leaves the file out
+- **WHEN** that reader reads the object with its files, or a file-typed property names the restricted file
+- **THEN** `@self.files` does not hold it and the property does not hydrate it
+
+#### Scenario: An access link never describes it
+- **WHEN** an access link to the object names the restricted file
+- **THEN** no file descriptor is returned
+
+#### Scenario: An admitted reader sees and opens the file on every path
+- **WHEN** a listed user does any of the above
+- **THEN** the file is listed and returned as it is today
+
+### Requirement: A restricted file has no public link (REQ-PFRR-004)
+
+Restricting a file SHALL remove its public link shares (share type 3). Publishing a restricted file SHALL be refused
+while the restriction exists. Native Nextcloud paths (Files, WebDAV, `/f/<id>`, core preview) are outside this
+guarantee; an object folder whose files may be restricted SHALL NOT be shared natively.
+
+#### Scenario: Restricting revokes the public link
+- **GIVEN** file 42 has a public link
+- **WHEN** it is restricted
+- **THEN** the public link share is deleted
+
+#### Scenario: Publishing a restricted file is refused
+- **WHEN** a caller publishes file 42 while it is restricted
+- **THEN** the publish throws and no share is created
+
+### Requirement: A download audit row names the file
+
+The `file.downloaded` audit row SHALL carry the file's name in its data (`fileName`) beside its id.
+
+#### Scenario: A medical report is opened
+
+- **WHEN** a reader opens "Medisch verslag.pdf" on a case
+- **THEN** the case's audit trail has a `file.downloaded` row whose `changed.data.fileName` is "Medisch verslag.pdf"

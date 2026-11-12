@@ -14,7 +14,9 @@ status: implemented
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
+
 ## Requirements
+
 ### Requirement: Every mutation MUST produce an immutable audit trail entry
 All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
 
@@ -228,14 +230,60 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 
 The system SHALL offer a scoped audit list, separate from the admin-only
 instance-wide index, that returns audit entries only for objects the calling
-user may read. Readability SHALL be decided by the same RBAC funnel the object
-read path uses, so that a grant, a schema rule and a register rule all mean
-here what they mean everywhere else. An anonymous caller SHALL receive
+user may read. Readability SHALL be decided by the read path of the object GET,
+`ObjectService::find()` with RBAC and multitenancy on, reached through the reader
+path of one object's history, so that a grant, a schema rule, a register rule,
+a draft and the organisation boundary all mean here what they mean on the
+object. Each entry SHALL carry only what that object's history gives the same
+caller: the properties the caller may not see are removed from `changed`, the
+doelbinding guard of the object GET applies, a free-text search SHALL match the
+redacted entries and not the stored change set, and filters on `changed`,
+`session`, `request` and `ip_address` SHALL be ignored. An anonymous caller SHALL receive
 nothing. An entry whose object cannot be resolved, or whose schema cannot be
 resolved, SHALL be absent rather than present, so that every failure to decide
 hides a row instead of showing it. The scoped list SHALL be cursor paginated,
 SHALL NOT count the table, and SHALL bound the number of rows it inspects per
-request.
+request. The page SHALL NOT say how many rows were inspected, and the cursor it
+hands out SHALL be sealed, because the raw-trail offset it holds counts rows the
+caller may not read. The cursor SHALL be sealed together with the caller and a
+hash of the filters and search it was walked under, and SHALL resume a walk only
+under that same caller, filters and search; no client-chosen offset SHALL be
+accepted, so every walk without such a cursor starts at the top of the trail.
+The scope SHALL hash only the filter columns the trail query applies, so the
+cursor parameter itself and any column the query drops do not change it. A walk
+whose caller, filters or search cannot be encoded SHALL have no scope: it is
+handed no cursor and no cursor resumes it.
+The doelbinding guard SHALL be decided once per register
+and schema within a request, so a list over many objects of a purpose-bound
+schema records one refusal, not one per object.
+
+#### Scenario: an unreadable object's entries leave no count in the page
+
+- **GIVEN** a caller filtering the scoped list on an object they may not read
+- **WHEN** that object has entries, and when it has none
+- **THEN** both pages are identical: no rows, no count of inspected rows, and the same cursor
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: the cursor carries no offset
+
+- **GIVEN** a page that filled before the trail was exhausted
+- **WHEN** the caller reads `nextCursor`
+- **THEN** it is a sealed token that holds no number, it resumes after the rows already walked, and a token the list did not hand out starts at the top
+
+#### Scenario: a cursor or an offset cannot be steered
+
+- **GIVEN** a cursor handed out under one filter, and a caller sending a plain offset
+- **WHEN** the cursor is sent back under another filter, search or caller, or the plain offset is sent as the cursor or as `offset`
+- **THEN** the walk starts at the top of the trail, so neither tells where in the raw trail the caller's rows lie
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php and ReadableAuditCursorTest.php}
+
+#### Scenario: a purpose-bound schema is refused once a request
+
+- **GIVEN** a list that walks several objects of a schema that asks for a purpose, and no purpose named
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** one refusal entry is recorded and every object of that schema stays absent
+- @e2e exclude {asserted with the real PurposeGuard in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
 #### Scenario: a handler sees only the entries of objects they may read
 
@@ -243,6 +291,20 @@ request.
 - **WHEN** the caller lists the scoped audit trail
 - **THEN** only the entries of the readable object are returned
 - @e2e exclude {the scope decision is a unit-level contract on ReadableAuditTrailLister, mutation-checked in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: an entry on another organisation's object is not shown
+
+- **GIVEN** an audit entry on an object of an organisation the caller is not active in, in a schema whose read rule admits the caller
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** that entry is absent, because the object GET refuses that object to the caller
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php through the reader path of ObjectHistoryForReaders; a live run needs two organisations and a non-admin seed user}
+
+#### Scenario: a property the caller may not see is not in a scoped row
+
+- **GIVEN** an audit entry on a readable object whose change set holds a property behind a read rule the caller does not meet
+- **WHEN** the caller lists the scoped audit trail, with or without a search for that property's value
+- **THEN** the row carries no value of that property, and a search for it finds nothing
+- @e2e exclude {asserted with the real HistoryEntryRedactor in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
 #### Scenario: an anonymous caller is told nothing
 
@@ -270,6 +332,101 @@ object, and the admin-only index remains the only surface that carries them.
 - **WHEN** a non-admin lists the scoped audit trail
 - **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
 - @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: The history of one object is readable by whoever may read that object
+
+The per-object history, `GET /api/objects/{register}/{schema}/{id}/audit-trails`
+and its older sibling `GET /api/objects/{register}/{schema}/{id}/logs` (the same
+answer, for the same caller, through the same redaction),
+SHALL be readable by a non-admin caller if and only if that caller may read the
+object itself (decision 14 Oct 2026). Readability SHALL be decided by the read
+path of the object GET, `ObjectService::find()` with RBAC and multitenancy on,
+so that a grant, a schema rule, a register rule, a draft, a deleted object and
+an organisation boundary mean here what they mean on the object. When that read
+is refused the history SHALL answer 404, the answer the object GET gives, so the
+route does not confirm that an object exists to somebody who may not see it.
+The doelbinding guard of the object GET SHALL apply to the history as well. An
+anonymous caller SHALL receive 401. An administrator SHALL read the history as
+before. The instance-wide and register-wide listings (`GET /api/audit-trails`,
+`GET /api/audit-trails/{id}`, `GET /api/audit-trails/statistics`,
+`GET /api/audit-trails/export`) SHALL stay admin-only. Every other surface that
+shows one object's entries, such as the audit-trail integration leaf
+(`GET /api/objects/{register}/{schema}/{id}/integrations/audit-trail`) and the
+merged activity feed, SHALL read them through this reader path, for every caller.
+
+#### Scenario: the integration leaf shows the history as the reader path gives it
+
+- **GIVEN** a caller who may read an object, and an entry on it whose change set holds a property behind a read rule the caller does not meet, with a session and an IP address
+- **WHEN** they list the object's audit-trail integration leaf
+- **THEN** the entry carries no value of that property and no `session`, `request` or `ipAddress`
+- **AND** a caller who may not read the object, or whose read the doelbinding guard refuses, gets no entries
+- @e2e exclude {asserted with the real HistoryEntryRedactor in tests/Unit/Service/Integration/AuditTrailProviderReaderPathTest.php}
+
+#### Scenario: a reader of the object gets its history
+
+- **GIVEN** a case handler who may read a case object, and audit entries on that object
+- **WHEN** they request the object's audit trail
+- **THEN** the response is 200 with the object's entries
+- **AND** the entries are read by the uuid of the object the read check resolved
+- @e2e exclude {asserted through the real controller in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php; a live run needs a non-admin seed user on the dev stack}
+
+#### Scenario: a caller who may not read the object gets 404
+
+- **GIVEN** a non-admin user for whom the object read is refused
+- **WHEN** they request the object's audit trail
+- **THEN** the response is 404 and no audit entry is read
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: an administrator reads the history as before
+
+- **GIVEN** an administrator
+- **WHEN** they request an object's audit trail
+- **THEN** the entries are returned unfiltered, with their session, request and IP address, and the reader path is not used
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: the instance-wide listings stay admin-only
+
+- **GIVEN** a non-admin user
+- **WHEN** they request the instance-wide audit trail, one entry by id, the statistics or the export
+- **THEN** the response is 403
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailControllerTest.php and by the @NoAdminRequired reflection check in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+### Requirement: An object's history withholds from its reader what the object withholds
+
+When a non-admin reads an object's history, every entry SHALL be stripped of
+`session`, `request` and `ipAddress`, and its `changed` payload SHALL NOT carry
+the old or new value of a property the caller may not see on the object. A
+property is withheld when the render path withholds it from this caller:
+`writeOnly` (top-level or a declared nested path), a property `authorization.read`
+rule the caller does not satisfy, or a field hidden by the object's lifecycle
+state. The `@self` copies of a withheld property (its keys in the relations
+mirror, and the name, description, summary or image field the schema copies
+from it) SHALL be withheld with it. A free-text search SHALL match the payload
+the reader is given, and a reader SHALL NOT filter or sort on `changed`,
+`session`, `request` or `ip_address`, so that neither can tell them whether a
+withheld property ever held a value.
+
+#### Scenario: a property hidden from the reader is absent from the history
+
+- **GIVEN** a schema whose `interneAantekening` property may be read only by the group `redactie`, and an update entry that changed `interneAantekening` and `titel`
+- **WHEN** a reader of the object outside `redactie` requests its history
+- **THEN** the entry's `changed` carries `titel` and does not carry `interneAantekening`
+- **AND** the relations mirror under `@self` carries no key of `interneAantekening`
+- @e2e exclude {asserted with the real PropertyRbacHandler in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: a write-only value never reaches the reader
+
+- **GIVEN** a schema with a `writeOnly` property `apiToken`, and an entry that changed it
+- **WHEN** a reader of the object requests its history
+- **THEN** the entry's `changed` does not carry `apiToken`
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
+
+#### Scenario: a search cannot find a withheld value
+
+- **GIVEN** an entry whose only match for a search term is the old value of a property hidden from the reader
+- **WHEN** the reader searches the object's history for that term
+- **THEN** the entry is not returned and the total is 0
+- @e2e exclude {asserted in tests/Unit/Controller/AuditTrailObjectHistoryForReadersTest.php}
 
 ### Requirement: An app counts and lists the audit actions it writes under its own prefix
 
@@ -299,6 +456,61 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 - **WHEN** the app is upgraded
 - **THEN** the table has the index `or_audit_obj_uuid_created` on `object_uuid`, `created`, and a second run of the migration adds nothing
 - @e2e exclude {schema change, asserted in tests/Unit/Migration/Version1Date20261003090000Test.php; the query plan was measured on the dev instance (planninq live pass, 3 Oct 2026)}
+
+### Requirement: Every user-facing read of an object is logged as a read
+
+`GetObject::find()` (`lib/Service/Object/GetObject.php`) SHALL write an audit trail entry with action `read` for every object it returns, on any schema, sensitive or not, while the instance setting `auditTrailsEnabled` is on (default on, `lib/Service/Settings/ConfigurationSettingsHandler.php:327`). The entry SHALL be written through `ReadHistoryService::registerAuditRead()` (`lib/Service/Interaction/ReadHistoryService.php`), the one read registration, which reads the setting and falls back to on when it cannot be read. The entry MUST name the reader and the object and MUST NOT carry a field diff (`AuditTrailMapper::buildAuditTrail()` treats `read` as a no-new-state action). A caller that loads an object as part of another operation MUST be able to skip the entry: `find()` takes `$_audit` (default `true`), passed through by `ObjectService::find()`, and `findSilent()` never logs. Read entries MUST NOT be throttled or merged: each audited read is its own row, and features built on reads (the `_recent` lens) collapse repeats at query time. The audit statistics and chart count `read` beside create, update and delete, so `/audit-trails` shows who viewed a record.
+
+#### Scenario: opening a record writes a read entry
+
+- **GIVEN** audit trails are enabled and user `medewerker-1` may read object `inwoner-123`
+- **WHEN** `medewerker-1` opens the object through `GET /api/objects/{register}/{schema}/inwoner-123`
+- **THEN** the audit trail MUST hold a new entry with action `read`, user `medewerker-1` and object `inwoner-123`
+- **AND** the entry MUST carry no changed fields
+- @e2e exclude {read logging is a backend side effect; asserted by reading /api/audit-trails after a GET, no page renders the write}
+
+#### Scenario: an internal load skips the entry
+
+- **GIVEN** audit trails are enabled
+- **WHEN** a flow node invocation loads its subject object only to check the boundary, calling `find()` with `_audit: false` (`lib/Controller/FlowNodeRunController.php:402`)
+- **THEN** no `read` entry MUST be written for that load
+- @e2e exclude {internal call path with no page; covered by ReadHistoryServiceTest and ReadRegistrationWiringTest}
+
+#### Scenario: the instance setting switches read logging off
+
+- **GIVEN** the retention setting `auditTrailsEnabled` is `false`
+- **WHEN** any user opens an object
+- **THEN** no `read` entry MUST be written
+- @e2e exclude {instance setting read on the server; no page renders the absence of an entry}
+
+#### Scenario: opening the same record twice writes two entries
+
+- **GIVEN** audit trails are enabled
+- **WHEN** a user opens the same object twice within one minute
+- **THEN** the audit trail MUST hold two `read` entries
+- @e2e exclude {no throttle exists to observe; covered by ReadHistoryServiceTest, which asserts one write per registered read}
+
+### Requirement: Sortable headers on OpenRegister's own lists sort
+
+A header the schemas list or the audit trail list marks sortable SHALL sort
+the list when clicked, both ways, and SHALL show that state (`aria-sort`).
+The schemas list SHALL keep newest first until a header is chosen. The audit
+trail list SHALL sort on the server by the action, timestamp, object,
+register, user and schema columns, and SHALL keep the chosen sort while
+paging.
+
+#### Scenario: Sort schemas by title
+
+- GIVEN the schemas "Zaak", "adres" and "Besluit"
+- WHEN the administrator clicks the Title header
+- THEN the list reads "adres", "Besluit", "Zaak"
+- AND a second click reverses it
+
+#### Scenario: Sort the audit trail by user and page on
+
+- GIVEN the audit trail sorted by User ascending
+- WHEN the administrator opens page 2
+- THEN the request asks for `sort=user_name&order=ASC`
 
 ## Current Implementation Status
 - **Implemented:**

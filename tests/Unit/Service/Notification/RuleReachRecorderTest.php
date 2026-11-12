@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\RuleReachRecorder;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

@@ -21,9 +21,15 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
@@ -41,6 +47,13 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\BulkSafeguardRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class Wave12BulkSafeguardsTest extends TestCase {
 
@@ -87,16 +100,10 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		// name keeps this fixture correct regardless of order; the positional list
 		// wave-12 shipped would bind permissionHandler into $groupManager here.
 		$this->handler = new SaveObjects(
-			objectEntityMapper: $this->objectMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			saveHandler: $this->saveHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			logger: $this->logger,
-			groupManager: $this->groupManager,
-			permissionHandler: $this->permissionHandler,
-			validateHandler: $this->validateHandler
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->validateHandler)
 		);
 
 		// Reset static caches between tests.
@@ -118,10 +125,16 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	): array {
 		$reflection = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$reflection->setAccessible(true);
-		return $reflection->invokeArgs(
-			$this->handler,
-			[$objects, $register, $schema, $_rbac, $_validation, &$result]
+		$batch  = new SafeguardBatchRun(
+			objects: $objects,
+			defaults: new BulkBatchDefaults($register, $schema),
+			flags: ['rbac' => $_rbac, 'validation' => $_validation],
+			result: $result
 		);
+		$passed = $reflection->invokeArgs($this->handler, [$batch]);
+		$result = $batch->result;
+
+		return $passed;
 	}//end callApplyBulkSafeguards()
 
 	private function initResult(int $totalObjects): array {
@@ -325,6 +338,170 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$this->assertSame(1, $result['statistics']['invalid']);
 		$this->assertStringContainsString('appendOnly', $result['invalid'][0]['error']);
 	}//end testBulkUpdateRowAgainstAppendOnlySchemaIsRejected()
+
+	// === draft ownership ===
+
+	/**
+	 * Bulk save of the uuid of somebody else's draft (schema without draftsVisible) is rejected as a denied permission.
+	 */
+	public function testBulkSaveOverSomebodyElsesDraftIsRejected(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		// The permission handler would allow it: the hole is that it has no draft rule.
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'overwritten']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(1, $result['statistics']['invalid']);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testBulkSaveOverSomebodyElsesDraftIsRejected()
+
+	/**
+	 * An administrator is not kept from another user's draft by the bulk save, as on the read path.
+	 */
+	public function testAnAdministratorMayBulkSaveOverSomebodyElsesDraft(): void {
+		$this->mockUser('root', isAdmin: true);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'admin edit']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testAnAdministratorMayBulkSaveOverSomebodyElsesDraft()
+
+	/**
+	 * On an appendOnly schema the draft rule answers first: a non-owner is not told by the appendOnly message that the uuid exists.
+	 */
+	public function testAppendOnlyDoesNotRevealSomebodyElsesDraft(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1, null, appendOnly: true);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'probe']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+		$this->assertStringNotContainsString('appendOnly', $result['invalid'][0]['error']);
+	}//end testAppendOnlyDoesNotRevealSomebodyElsesDraft()
+
+	/**
+	 * The owner's own bulk save of their draft still goes through.
+	 */
+	public function testBulkSaveOverYourOwnDraftPasses(): void {
+		$this->mockUser('alice', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'mine']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testBulkSaveOverYourOwnDraftPasses()
+
+	/**
+	 * A decoy `@self.uuid` next to the victim draft's `id` is refused: the writer takes `id`, so the guard may not take the decoy.
+	 */
+	public function testDecoyUuidNextToVictimIdIsRefused(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(2);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [
+				['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten'],
+				['@self' => ['id' => '22222222-2222-2222-2222-222222222222', 'uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten too'],
+			],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(2, $result['statistics']['invalid']);
+		$this->assertStringContainsString('more than one identity', $result['invalid'][0]['error']);
+	}//end testDecoyUuidNextToVictimIdIsRefused()
+
+	/**
+	 * The same identity in `id` and `@self` is one identity: the owner's own draft still passes, somebody else's is refused.
+	 */
+	public function testAgreeingIdentitiesAreOneIdentity(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'x']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testAgreeingIdentitiesAreOneIdentity()
+
+	/**
+	 * Store a draft of the given owner as the existing row of uuid 2222….
+	 */
+	private function storeDraft(string $owner): void {
+		$draft = new \OCA\OpenRegister\Db\ObjectEntity();
+		$draft->setUuid('22222222-2222-2222-2222-222222222222');
+		$draft->setStatus('draft');
+		$draft->setOwner($owner);
+		$this->objectMapper->method('find')->willReturn($draft);
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn(['22222222-2222-2222-2222-222222222222' => $draft]);
+	}//end storeDraft()
 
 	public function testBulkCreateAgainstAppendOnlySchemaIsAllowed(): void {
 		// appendOnly blocks UPDATE only; INSERT must still succeed.

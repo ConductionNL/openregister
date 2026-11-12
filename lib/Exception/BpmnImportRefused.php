@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport;
+use JsonSerializable;
 use RuntimeException;
 use Throwable;
 
@@ -40,13 +40,13 @@ class BpmnImportRefused extends RuntimeException {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                 $message  Why.
-	 * @param BpmnMappingReport|null $report   The report, when one was built.
-	 * @param Throwable|null         $previous Previous exception.
+	 * @param string                $message  Why.
+	 * @param JsonSerializable|null $report   The mapping report, when one was built.
+	 * @param Throwable|null        $previous Previous exception.
 	 */
 	public function __construct(
 		string $message,
-		private readonly ?BpmnMappingReport $report = null,
+		private readonly ?JsonSerializable $report = null,
 		?Throwable $previous = null,
 	) {
 		parent::__construct(message: $message, code: 422, previous: $previous);
@@ -55,9 +55,12 @@ class BpmnImportRefused extends RuntimeException {
 	/**
 	 * The report, when the refusal came after mapping.
 	 *
-	 * @return BpmnMappingReport|null The report.
+	 * The report is typed by what its readers do with it: they serialise it
+	 * into the refusal's response body.
+	 *
+	 * @return JsonSerializable|null The mapping report.
 	 */
-	public function getReport(): ?BpmnMappingReport {
+	public function getReport(): ?JsonSerializable {
 		return $this->report;
 	}//end getReport()
 }//end class

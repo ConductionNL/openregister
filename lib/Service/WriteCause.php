@@ -7,7 +7,7 @@
  * filled with whatever each caller felt like and the filter would be useless
  * within a month: "import", "Import", "bulk import", "IMPORT-2026" and
  * "migration script" would all mean the same thing and none of them would
- * match. Six values, fixed, and a value outside them is not stored.
+ * match. Seven values, fixed, and a value outside them is not stored.
  *
  * 🔴 IT IS NEVER READ FROM THE REQUEST, AND THAT IS A SECURITY PROPERTY RATHER
  * THAN TIDINESS. A client that can claim its write was a `migration` can hide a
@@ -101,6 +101,18 @@ final class WriteCause {
 	public const CASCADE = 'cascade';
 
 	/**
+	 * A read the code made while serving a person, not the person opening it.
+	 *
+	 * A permission guard, a relation lookup, a sub-resource of a page already
+	 * open, an agent tool. The `read` row is written exactly as before; the
+	 * cause is what lets "recently opened" leave it out while the audit trail
+	 * keeps it (`recently-opened-means-opened`).
+	 *
+	 * @var string
+	 */
+	public const LOOKUP = 'lookup';
+
+	/**
 	 * The whole vocabulary. Nothing outside it is ever stored.
 	 *
 	 * @var array<int, string>
@@ -112,6 +124,7 @@ final class WriteCause {
 		self::MIGRATION,
 		self::RULE,
 		self::CASCADE,
+		self::LOOKUP,
 	];
 
 	/**
@@ -128,25 +141,24 @@ final class WriteCause {
 	private static array $frames = [];
 
 	/**
-	 * Whether a request tried to name its own cause this request.
+	 * The objects whose write a request tried to label with its own cause, by uuid.
 	 *
-	 * @var boolean
+	 * @var array<string, true>
 	 */
-	private static bool $clientAttempted = false;
+	private static array $clientAttempts = [];
 
 	/**
 	 * Run something with a cause on the stack.
 	 *
-	 * @param string      $cause     One of {@see ALL}.
-	 * @param string|null $run       The run this write belongs to, when there is one.
-	 * @param callable    $operation The work.
+	 * @param CauseFrame $frame     The cause (one of {@see ALL}) and the run this write belongs to, when there is one.
+	 * @param callable   $operation The work.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function runAs(string $cause, ?string $run, callable $operation): mixed {
-		self::$frames[] = ['cause' => self::normalise(cause: $cause), 'run' => $run];
+	public static function runAs(CauseFrame $frame, callable $operation): mixed {
+		self::$frames[] = ['cause' => self::normalise(cause: $frame->cause), 'run' => $frame->run];
 
 		try {
 			return $operation();
@@ -157,6 +169,30 @@ final class WriteCause {
 			// like one long import.
 			array_pop(self::$frames);
 		}
+	}
+
+	/**
+	 * Run a read the code makes on a person's behalf.
+	 *
+	 * Opens a `lookup` frame only when the acting cause is `person`. Inside an
+	 * import, a rule, a migration, a scheduled job or a cascade the read keeps
+	 * that cause and its run, because those already say why it happened and
+	 * the run is the part a lookup frame would lose.
+	 *
+	 * @param callable(): T $operation The read.
+	 *
+	 * @return T Whatever the read returned.
+	 *
+	 * @template T
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 */
+	public static function asLookup(callable $operation): mixed {
+		if (self::current()['cause'] !== self::PERSON) {
+			return $operation();
+		}
+
+		return self::runAs(frame: new CauseFrame(cause: self::LOOKUP), operation: $operation);
 	}
 
 	/**
@@ -177,25 +213,41 @@ final class WriteCause {
 	}
 
 	/**
-	 * Note that a request tried to name its own cause.
+	 * The `@self` key a write door sets on the object it hands to a save, to say
+	 * the request tried to name its own cause. The object's uuid may not exist
+	 * yet, and nested objects are saved and audited before it, so the attempt
+	 * travels with the object until the save knows which row it belongs to.
+	 *
+	 * @var string
+	 */
+	public const CLIENT_ATTEMPT_KEY = '_clientCauseAttempt';
+
+	/**
+	 * Note that a request tried to name its own cause for the write of one object.
+	 *
+	 * @param string $objectUuid The object being written.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function noteClientAttempt(): void {
-		self::$clientAttempted = true;
+	public static function noteClientAttempt(string $objectUuid): void {
+		if ($objectUuid !== '') {
+			self::$clientAttempts[$objectUuid] = true;
+		}
 	}
 
 	/**
-	 * Whether a request tried to name its own cause this request.
+	 * Whether a request tried to name its own cause for the write of this object.
 	 *
-	 * @return boolean True when one did.
+	 * @param string $objectUuid The object an audit row describes.
+	 *
+	 * @return boolean True when the write of that object carried the attempt.
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function clientAttempted(): bool {
-		return self::$clientAttempted;
+	public static function clientAttemptedFor(string $objectUuid): bool {
+		return isset(self::$clientAttempts[$objectUuid]);
 	}
 
 	/**
@@ -230,6 +282,6 @@ final class WriteCause {
 	 */
 	public static function reset(): void {
 		self::$frames = [];
-		self::$clientAttempted = false;
+		self::$clientAttempts = [];
 	}
 }//end class

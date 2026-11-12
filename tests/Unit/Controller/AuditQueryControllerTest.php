@@ -27,6 +27,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AuditQueryController;
 use OCA\OpenRegister\Service\AuditQueryService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditQueryControllerFactory;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -35,6 +36,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 class AuditQueryControllerTest extends TestCase {
 
@@ -69,8 +71,7 @@ class AuditQueryControllerTest extends TestCase {
 	}//end setUp()
 
 	private function buildController(): AuditQueryController {
-		return new AuditQueryController(
-			'openregister',
+		return AuditQueryControllerFactory::create(
 			$this->request,
 			$this->auditQueryService,
 			$this->userSession,
@@ -88,8 +89,7 @@ class AuditQueryControllerTest extends TestCase {
 			$groupManager->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new AuditQueryController(
-			'openregister',
+		return AuditQueryControllerFactory::create(
 			$this->request,
 			$this->auditQueryService,
 			$userSession,
@@ -177,9 +177,11 @@ class AuditQueryControllerTest extends TestCase {
 		$this->auditQueryService->expects($this->once())
 			->method('query')
 			->with(
-				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid'],
-				limit: 25,
-				offset: 10
+				new ListQuery(
+					limit: 25,
+					offset: 10,
+					filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid']
+				)
 			)
 			->willReturn(['entries' => [], 'total' => 0, 'limit' => 25, 'offset' => 10]);
 

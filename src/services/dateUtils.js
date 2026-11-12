@@ -1,4 +1,54 @@
 /**
+ * A `date` value as local midnight, so the day does not shift with the timezone.
+ *
+ * @param {string} value The date string.
+ * @return {Date|null}
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
+ */
+function localDate(value) {
+	const parts = value.split(/[T ]/)[0].split('-').map(Number)
+	if (parts.length === 3 && parts.every((n) => !isNaN(n))) {
+		return new Date(parts[0], parts[1] - 1, parts[2])
+	}
+	return null
+}
+
+/**
+ * A `time` value as today at that local time.
+ *
+ * @param {string} value The time string.
+ * @return {Date|null}
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
+ */
+function localTime(value) {
+	const parts = value.split(':').map(Number)
+	if (parts.length >= 2 && parts.every((n) => !isNaN(n))) {
+		const d = new Date()
+		d.setHours(parts[0], parts[1], parts[2] || 0, 0)
+		return d
+	}
+	return null
+}
+
+/**
+ * A `date-time` value, in ISO or MySQL space format.
+ *
+ * @param {string} value The date-time string.
+ * @return {Date|null}
+ * @spec exclude Stateless date-format helper for the native datetime picker; pure presentation/format utility with no domain contract.
+ */
+function dateTime(value) {
+	const d = new Date(value.replace(' ', 'T'))
+	return isNaN(d.getTime()) ? null : d
+}
+
+const DATE_READERS = new Map([
+	['date', localDate],
+	['time', localTime],
+	['date-time', dateTime],
+])
+
+/**
  * Converts a backend date string to a local Date object for use with NcDateTimePickerNative.
  *
  * Handles ISO format ("YYYY-MM-DD") and MySQL space format ("YYYY-MM-DD HH:MM:SS").
@@ -12,25 +62,7 @@
 export function stringToDate(value, format) {
 	if (!value) return null
 	if (value instanceof Date) return value
-
-	if (format === 'date') {
-		const parts = value.split(/[T ]/)[0].split('-').map(Number)
-		if (parts.length === 3 && parts.every((n) => !isNaN(n))) {
-			return new Date(parts[0], parts[1] - 1, parts[2])
-		}
-	} else if (format === 'time') {
-		const parts = value.split(':').map(Number)
-		if (parts.length >= 2 && parts.every((n) => !isNaN(n))) {
-			const d = new Date()
-			d.setHours(parts[0], parts[1], parts[2] || 0, 0)
-			return d
-		}
-	} else if (format === 'date-time') {
-		const d = new Date(value.replace(' ', 'T'))
-		if (!isNaN(d.getTime())) return d
-	}
-
-	return null
+	return DATE_READERS.get(format)?.(value) ?? null
 }
 
 /**

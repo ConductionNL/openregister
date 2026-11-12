@@ -9,8 +9,13 @@ trigger and `macro: true`; schema save SHALL refuse a flow that is missing,
 unpublished or has no manual trigger. Invoking the action on one object
 SHALL queue the flow with the object as subject, attributed to the caller,
 `sync` unless the flow declares otherwise, and SHALL answer with the run id,
-outcome and `next`. Invoking it on a selection SHALL queue one run per
-object through the bulk write path and answer with a summary and `next`.
+outcome and `next`, and SHALL write one audit entry `action.macro` on the
+object naming the action, the flow and the run. Invoking it on a selection
+(`POST /api/object-actions/{register}/{schema}/{action}` with `ids`, at most
+100) SHALL run one flow per object through the same single-object path, so
+the action's right is checked per object and one refusal does not stop the
+others, and SHALL answer with a per-object summary and `next` (`list` unless
+the flow declares otherwise).
 The action's own authorisation SHALL govern; the flow SHALL NOT widen it.
 
 #### Scenario: a macro closes and notifies in one click

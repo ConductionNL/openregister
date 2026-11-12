@@ -1,0 +1,1076 @@
+{
+    "pg / 'oc_' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"_id\" BIGSERIAL, \"_uuid\" VARCHAR(36) NOT NULL, \"_name\" VARCHAR(255), \"_created\" TIMESTAMP, \"_object\" JSONB, PRIMARY KEY (\"_id\"), CONSTRAINT \"openregister_table_1_2_uuid_uq\" UNIQUE (\"_uuid\"))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"_id\" BIGSERIAL, \"_uuid\" VARCHAR(36) NOT NULL, \"_name\" VARCHAR(255), \"_created\" TIMESTAMP, \"_object\" JSONB, PRIMARY KEY (\"_id\"), CONSTRAINT \"openregister_table_1_2_uuid_uq\" UNIQUE (\"_uuid\"))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"active\" BOOLEAN DEFAULT TRUE, \"archived\" BOOLEAN NOT NULL DEFAULT FALSE, \"owner\" VARCHAR(255) DEFAULT 'O''Brien', \"note\" TEXT, \"count\" INTEGER DEFAULT 0, \"ratio\" TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"active\" BOOLEAN DEFAULT TRUE, \"archived\" BOOLEAN NOT NULL DEFAULT FALSE, \"owner\" VARCHAR(255) DEFAULT 'O''Brien', \"note\" TEXT, \"count\" INTEGER DEFAULT 0, \"ratio\" TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"code\" VARCHAR(20), \"odd\"\"name`\" VARCHAR(255), PRIMARY KEY (\"code\"), CONSTRAINT \"openregister_table_1_2_code_uq\" UNIQUE (\"code\"), CONSTRAINT \"openregister_table_1_2_odd\"\"name_uq\" UNIQUE (\"odd\"\"name`\"))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"code\" VARCHAR(20), \"odd\"\"name`\" VARCHAR(255), PRIMARY KEY (\"code\"), CONSTRAINT \"openregister_table_1_2_code_uq\" UNIQUE (\"code\"), CONSTRAINT \"openregister_table_1_2_odd\"\"name_uq\" UNIQUE (\"odd\"\"name`\"))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"seq\" BIGSERIAL, \"other\" TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / 'oc_' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"oc_openregister_table_1_2\" (\"seq\" BIGSERIAL, \"other\" TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / '' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "pg / '' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / '' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"_id\" BIGSERIAL, \"_uuid\" VARCHAR(36) NOT NULL, \"_name\" VARCHAR(255), \"_created\" TIMESTAMP, \"_object\" JSONB, PRIMARY KEY (\"_id\"), CONSTRAINT \"openregister_table_1_2_uuid_uq\" UNIQUE (\"_uuid\"))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / '' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"_id\" BIGSERIAL, \"_uuid\" VARCHAR(36) NOT NULL, \"_name\" VARCHAR(255), \"_created\" TIMESTAMP, \"_object\" JSONB, PRIMARY KEY (\"_id\"), CONSTRAINT \"openregister_table_1_2_uuid_uq\" UNIQUE (\"_uuid\"))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / '' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"active\" BOOLEAN DEFAULT TRUE, \"archived\" BOOLEAN NOT NULL DEFAULT FALSE, \"owner\" VARCHAR(255) DEFAULT 'O''Brien', \"note\" TEXT, \"count\" INTEGER DEFAULT 0, \"ratio\" TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / '' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"active\" BOOLEAN DEFAULT TRUE, \"archived\" BOOLEAN NOT NULL DEFAULT FALSE, \"owner\" VARCHAR(255) DEFAULT 'O''Brien', \"note\" TEXT, \"count\" INTEGER DEFAULT 0, \"ratio\" TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / '' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"code\" VARCHAR(20), \"odd\"\"name`\" VARCHAR(255), PRIMARY KEY (\"code\"), CONSTRAINT \"openregister_table_1_2_code_uq\" UNIQUE (\"code\"), CONSTRAINT \"openregister_table_1_2_odd\"\"name_uq\" UNIQUE (\"odd\"\"name`\"))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / '' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"code\" VARCHAR(20), \"odd\"\"name`\" VARCHAR(255), PRIMARY KEY (\"code\"), CONSTRAINT \"openregister_table_1_2_code_uq\" UNIQUE (\"code\"), CONSTRAINT \"openregister_table_1_2_odd\"\"name_uq\" UNIQUE (\"odd\"\"name`\"))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "pg / '' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"seq\" BIGSERIAL, \"other\" TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "pg / '' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS \"openregister_table_1_2\" (\"seq\" BIGSERIAL, \"other\" TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`seq` BIGINT AUTO_INCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / 'oc_' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`seq` BIGINT AUTO_INCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / '' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "maria / '' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / '' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / '' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / '' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / '' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / '' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / '' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "maria / '' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`seq` BIGINT AUTO_INCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "maria / '' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`seq` BIGINT AUTO_INCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`seq` INTEGER PRIMARY KEY AUTOINCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "oc_openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / 'oc_' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`seq` INTEGER PRIMARY KEY AUTOINCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / '' / none": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` ()"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": []
+                }
+            }
+        ]
+    },
+    "sqlite / '' / none / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` ()"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / '' / metadata": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "_id",
+                        "_uuid",
+                        "_name",
+                        "_created",
+                        "_object"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / '' / metadata / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / '' / defaults": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "active",
+                        "archived",
+                        "owner",
+                        "note",
+                        "count",
+                        "ratio"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / '' / defaults / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`active` BOOLEAN DEFAULT TRUE, `archived` BOOLEAN NOT NULL DEFAULT FALSE, `owner` VARCHAR(255) DEFAULT 'O''Brien', `note` TEXT, `count` INTEGER DEFAULT 0, `ratio` TEXT DEFAULT 1.5)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / '' / primary without autoincrement": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "code",
+                        "odd\"name`"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / '' / primary without autoincrement / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`code` VARCHAR(20), `odd\"name``` VARCHAR(255), PRIMARY KEY (`code`), CONSTRAINT `openregister_table_1_2_code_uq` UNIQUE (`code`), CONSTRAINT `openregister_table_1_2_odd\"name_uq` UNIQUE (`odd\"name```))"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    },
+    "sqlite / '' / autoincrement not primary": {
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`seq` INTEGER PRIMARY KEY AUTOINCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Created table with columns",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "fullTableName": "openregister_table_1_2",
+                    "columns": [
+                        "seq",
+                        "other"
+                    ]
+                }
+            }
+        ]
+    },
+    "sqlite / '' / autoincrement not primary / fails": {
+        "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
+        "events": [
+            {
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`seq` INTEGER PRIMARY KEY AUTOINCREMENT, `other` TEXT)"
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] Failed to create table",
+                "context": {
+                    "tableName": "openregister_table_1_2",
+                    "error": "statement refused"
+                }
+            }
+        ]
+    }
+}

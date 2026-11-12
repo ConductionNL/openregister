@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskControllerFactory;
 use OCA\OpenRegister\Controller\TaskController;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -35,6 +36,8 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\FormCompletionRequest;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
@@ -43,6 +46,7 @@ use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -52,11 +56,36 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
 
 /**
  * HTTP status and body translation for every task route.
  *
  * @covers \OCA\OpenRegister\Controller\TaskController
+ * @uses \OCA\OpenRegister\Controller\Support\TaskWork
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletion
+ * @uses \OCA\OpenRegister\Controller\Support\TaskPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\TaskControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Controller\Support\TaskCompletionCommand
+ * @uses \OCA\OpenRegister\Controller\Support\TaskInboxRequest
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
+ * @uses \OCA\OpenRegister\Service\Task\FormCompletionRequest
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskInboxPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
@@ -108,6 +137,13 @@ class TaskControllerTest extends TestCase {
 	private TaskController $controller;
 
 	/**
+	 * The request parameters the controller under test reads.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $params = ['title' => 'x', 'uuid' => 't-1', '_route' => 'r'];
+
+	/**
 	 * A controller with a session for `alice` and every collaborator mocked.
 	 *
 	 * @return void
@@ -127,7 +163,7 @@ class TaskControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$request = $this->createMock(originalClassName: IRequest::class);
-		$request->method('getParams')->willReturn(['title' => 'x', 'uuid' => 't-1', '_route' => 'r']);
+		$request->method('getParams')->willReturnCallback(fn (): array => $this->params);
 
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('getUserGroupIds')->willReturn(['reviewers']);
@@ -137,8 +173,11 @@ class TaskControllerTest extends TestCase {
 		$this->inbox->method('row')->willReturnCallback(
 			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
 		);
+		$this->inbox->method('enrich')->willReturnCallback(
+			static fn (Task $task): array => ['uuid' => $task->getUuid(), 'row' => true]
+		);
 
-		$this->controller = new TaskController(
+		$this->controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,
@@ -152,6 +191,19 @@ class TaskControllerTest extends TestCase {
 			groupManager: $groups
 		);
 	}//end setUp()
+
+	/**
+	 * GET /api/flow-tasks with these query parameters.
+	 *
+	 * @param array<string, mixed> $params The query parameters.
+	 *
+	 * @return JSONResponse The inbox answer.
+	 */
+	private function listInbox(array $params): JSONResponse {
+		$this->params = $params;
+
+		return $this->controller->index();
+	}//end listInbox()
 
 	/**
 	 * A task as the service returns it.
@@ -173,7 +225,9 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexReturnsTheInboxPageForTheSession(): void {
 		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$this->assertSame('alice', $criteria->uid);
 				$this->assertSame(['reviewers'], $criteria->groupIds);
 				$this->assertFalse($criteria->isAdmin);
@@ -185,11 +239,37 @@ class TaskControllerTest extends TestCase {
 			}
 		);
 
-		$response = $this->controller->index(sort: '-dueAt', limit: 10);
+		$response = $this->listInbox(params: ['sort' => '-dueAt', 'limit' => 10]);
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(0, $response->getData()['total']);
 	}//end testIndexReturnsTheInboxPageForTheSession()
+
+	/**
+	 * `openFirst=true` asks for the open tasks before the finished ones; it is
+	 * off unless asked, so an existing caller's order does not change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
+				$seen[] = $criteria->openFirst;
+
+				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
+			}
+		);
+
+		$this->listInbox(params: ['sort' => 'dueAt', 'openFirst' => 'true']);
+		$this->listInbox(params: ['sort' => 'dueAt']);
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesOpenFirstIntoTheCriteria()
 
 	/**
 	 * GET /api/flow-tasks/{uuid}: 404 for the invisible, 200 for the visible.
@@ -210,6 +290,37 @@ class TaskControllerTest extends TestCase {
 	}//end testShowIs404ForAnInvisibleTaskAnd200ForAVisibleOne()
 
 	/**
+	 * GET /api/flow-tasks/{uuid} carries the task's subject context, as an
+	 * inbox row does, so a task page can name its case ("bij zaak 2026-0074").
+	 *
+	 * @return void
+	 */
+	public function testShowCarriesTheSubjectContext(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$inbox = $this->createMock(originalClassName: TaskInboxService::class);
+		$inbox->expects($this->never())->method('row');
+		$inbox->expects($this->once())->method('enrich')->willReturn(
+			['uuid' => 't-1', 'subject' => ['uuid' => 'case-1', 'title' => 'Bezwaar parkeerboete Havenstraat', 'identifier' => '2026-0074']]
+		);
+		$controller = TaskControllerFactory::create(
+			appName: 'openregister',
+			request: $this->createMock(originalClassName: IRequest::class),
+			tasks: $this->tasks,
+			inbox: $inbox,
+			authorization: $this->authorization,
+			temporal: new TaskTemporalProjection(),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			forms: $this->createMock(originalClassName: TaskFormResolver::class),
+			completion: $this->completion
+		);
+
+		$data = $controller->show(uuid: 't-1')->getData();
+
+		$this->assertSame(expected: '2026-0074', actual: $data['subject']['identifier']);
+	}//end testShowCarriesTheSubjectContext()
+
+	/**
 	 * GET /api/flow-tasks/{uuid} carries the resolved form and the checklist
 	 * rule, so the completion surface needs no second round-trip.
 	 *
@@ -225,7 +336,7 @@ class TaskControllerTest extends TestCase {
 				'requireChecklist' => true,
 			]
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -252,7 +363,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testCompletePassesTheFieldValuesThrough(): void {
 		$this->completion->expects($this->once())->method('complete')
-			->with('t-1', 'rejected', null, 'late', ['reason' => 'late'], 'alice')
+			->with(new FormCompletionRequest(uuid: 't-1', answer: new TaskAnswer(outcome: 'rejected', comment: 'late'), data: ['reason' => 'late']), 'alice')
 			->willReturn($this->task());
 
 		$response = $this->controller->complete(uuid: 't-1', outcome: 'rejected', comment: 'late', data: ['reason' => 'late']);
@@ -415,6 +526,41 @@ class TaskControllerTest extends TestCase {
 	}//end testADeniedVerbIs403WhenTheCallerMayReadTheTask()
 
 	/**
+	 * PATCH /api/flow-tasks/{uuid}: the body goes to the service as the
+	 * changes, without the route bookkeeping, and the row comes back.
+	 *
+	 * @return void
+	 */
+	public function testEditPassesTheBodyAsTheChanges(): void {
+		$this->tasks->expects($this->once())->method('edit')
+			->with(new TaskActorRef(uuid: 't-1', actor: 'alice'), ['title' => 'x'])
+			->willReturn($this->task());
+
+		$response = $this->controller->edit(uuid: 't-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['uuid' => 't-1', 'row' => true], $response->getData());
+	}//end testEditPassesTheBodyAsTheChanges()
+
+	/**
+	 * An edit by someone who may read the task but not work it is 403, and
+	 * one that cannot be stored is 400.
+	 *
+	 * @return void
+	 */
+	public function testARefusedEditIs403AndAnInvalidOne400(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$this->tasks->method('edit')->willReturnOnConsecutiveCalls(
+			$this->throwException(new TaskAccessDeniedException("Verb 'edit' denied: not a member of the task's candidate pool.")),
+			$this->throwException(new TaskValidationException("Field 'title' may not be emptied."))
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->edit(uuid: 't-1')->getStatus());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->edit(uuid: 't-1')->getStatus());
+	}//end testARefusedEditIs403AndAnInvalidOne400()
+
+	/**
 	 * A conflict is 409 carrying the message (the current state, per spec).
 	 *
 	 * @return void
@@ -508,15 +654,7 @@ class TaskControllerTest extends TestCase {
 			}
 		);
 
-		$response = $this->controller->index(
-			scope: TaskInboxCriteria::SCOPE_POOLED,
-			state: 'active, enabled,',
-			isTerminal: 'false',
-			priority: 'high',
-			objectUuid: 'obj-1',
-			overdue: 'true',
-			sort: 'priority'
-		);
+		$response = $this->listInbox(params: ['scope' => TaskInboxCriteria::SCOPE_POOLED, 'state' => 'active, enabled,', 'isTerminal' => 'false', 'priority' => 'high', 'objectUuid' => 'obj-1', 'overdue' => 'true', 'sort' => 'priority']);
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testIndexPassesEveryFilterIntoTheCriteria()
@@ -545,10 +683,7 @@ class TaskControllerTest extends TestCase {
 			}
 		);
 
-		$response = $this->controller->index(
-			dueAfter: '2026-09-01T00:00:00+00:00',
-			dueBefore: '2026-09-08T00:00:00+00:00'
-		);
+		$response = $this->listInbox(params: ['dueAfter' => '2026-09-01T00:00:00+00:00', 'dueBefore' => '2026-09-08T00:00:00+00:00']);
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testIndexPassesADueWindowIntoTheCriteria()
@@ -565,7 +700,7 @@ class TaskControllerTest extends TestCase {
 	public function testIndexRefusesAnUnparseableDueInstant(): void {
 		$this->inbox->expects($this->never())->method('inbox');
 
-		$response = $this->controller->index(dueBefore: 'next tuesday-ish');
+		$response = $this->listInbox(params: ['dueBefore' => 'next tuesday-ish']);
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 	}//end testIndexRefusesAnUnparseableDueInstant()
@@ -585,8 +720,31 @@ class TaskControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller->index();
+		$this->listInbox(params: []);
 	}//end testIndexWithoutADueWindowCarriesNone()
+
+	/**
+	 * `includeBlocked=true` reaches the criteria; without it blocked tasks stay out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function testIndexPassesIncludeBlockedIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria) use (&$seen): array {
+				$seen[] = $criteria->includeBlocked;
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$this->listInbox(params: ['includeBlocked' => 'true']);
+		$this->listInbox(params: []);
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesIncludeBlockedIntoTheCriteria()
 
 	/**
 	 * With overdue unset the criteria carry no clock instant.
@@ -603,7 +761,7 @@ class TaskControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller->index(overdue: 'false');
+		$this->listInbox(params: ['overdue' => 'false']);
 	}//end testIndexWithoutOverdueCarriesNoClock()
 
 	/**
@@ -630,8 +788,8 @@ class TaskControllerTest extends TestCase {
 	public function testCheckItemParsesItsFlag(): void {
 		$seen = [];
 		$this->tasks->method('checkChecklistItem')->willReturnCallback(
-			function (string $uuid, string $itemId, bool $checked) use (&$seen): Task {
-				$seen[] = $checked;
+			function (TaskActorRef $ref, ChecklistTick $tick) use (&$seen): Task {
+				$seen[] = $tick->checked;
 
 				return $this->task();
 			}
@@ -679,7 +837,7 @@ class TaskControllerTest extends TestCase {
 				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
 			}
 		);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -704,7 +862,7 @@ class TaskControllerTest extends TestCase {
 	public function testIndexWithoutASessionIs401(): void {
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		$session->method('getUser')->willReturn(null);
-		$controller = new TaskController(
+		$controller = TaskControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			tasks: $this->tasks,
@@ -736,10 +894,9 @@ class TaskControllerTest extends TestCase {
 
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
-		// The SPA calls the API from this page, so the shell must carry the
-		// same connect-domain relaxation the dashboard shell does.
+		// The SPA calls only this instance's own API from this page.
 		$policy = $response->getContentSecurityPolicy();
 		$this->assertNotNull($policy);
-		$this->assertStringContainsString('connect-src', $policy->buildPolicy());
+		$this->assertSame("'self'", UiControllerTest::connectSources(policy: $policy->buildPolicy()));
 	}//end testOpenServesTheSpaShell()
 }//end class

@@ -30,10 +30,13 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -41,6 +44,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
+if (class_exists('OCA\\Analytics\\Service\\ReportService') === false) {
+	eval('namespace OCA\\Analytics\\Service; class ReportService {}');
+}
 
 /**
  * AnalyticsLinkServiceTest.
@@ -81,9 +88,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 
 		$this->service = new AnalyticsLinkService(
 			$this->mapper,
-			$this->appManager,
-			$this->userSession,
-			$this->logger,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->createMock(ContainerInterface::class)
 		);
 	}//end setUp()
@@ -94,6 +99,10 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		return $user;
 	}//end setupUser()
+
+	private function target(): LinkTarget {
+		return (new LinkTarget(objectUuid: 'abc-123', registerId: 1))->inSchema(schemaId: 2);
+	}//end target()
 
 	public function testIsAnalyticsAvailableTrue(): void {
 		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
@@ -111,7 +120,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkReport('abc-123', 1, 2, 99);
+		$this->service->linkReport($this->target(), 99);
 	}//end testLinkReportThrowsWhenNoUser()
 
 	public function testLinkReportThrowsWhenAnalyticsUnavailable(): void {
@@ -121,7 +130,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkReport('abc-123', 1, 2, 99);
+		$this->service->linkReport($this->target(), 99);
 	}//end testLinkReportThrowsWhenAnalyticsUnavailable()
 
 	public function testLinkReportThrowsOnDuplicate(): void {
@@ -133,7 +142,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Report already linked to this object');
 
-		$this->service->linkReport('abc-123', 1, 2, 99);
+		$this->service->linkReport($this->target(), 99);
 	}//end testLinkReportThrowsOnDuplicate()
 
 	public function testCreateAndLinkReportThrowsWhenNoUser(): void {
@@ -142,7 +151,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('Sales'));
 	}//end testCreateAndLinkReportThrowsWhenNoUser()
 
 	public function testCreateAndLinkReportThrowsOnEmptyName(): void {
@@ -151,7 +160,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkReport('abc-123', 1, 2, '   ');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('   '));
 	}//end testCreateAndLinkReportThrowsOnEmptyName()
 
 	public function testCreateAndLinkReportThrowsWhenAnalyticsUnavailable(): void {
@@ -161,7 +170,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkReport('abc-123', 1, 2, 'Sales');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('Sales'));
 	}//end testCreateAndLinkReportThrowsWhenAnalyticsUnavailable()
 
 	public function testUnlinkReportThrowsWhenNoUser(): void {
@@ -223,4 +232,120 @@ class AnalyticsLinkServiceTest extends TestCase {
 
 		$this->assertSame([], $this->service->getAvailableReports());
 	}//end testGetAvailableReportsEmptyWhenAnalyticsUnavailable()
+
+	/**
+	 * A service whose container hands out the given ReportService stand-in.
+	 *
+	 * @param object $reportService The ReportService stand-in.
+	 *
+	 * @return AnalyticsLinkService The service.
+	 */
+	private function serviceWithReports(object $reportService): AnalyticsLinkService {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($reportService);
+		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
+		$this->mapper->method('insert')->willReturnArgument(0);
+
+		return new AnalyticsLinkService($this->mapper, new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger), $container);
+	}//end serviceWithReports()
+
+	public function testLinkReportStampsTheObjectAndCachesTheReport(): void {
+		$this->setupUser('bob');
+		$this->mapper->method('findByObjectAndReport')->with('abc-123', 99)->willReturn(null);
+		$reports = new class {
+			public function read(int $reportId): array {
+				return ['id' => $reportId, 'name' => 'Sales', 'type' => 3, 'subheader' => 'Q1'];
+			}
+		};
+
+		$link = $this->serviceWithReports($reports)->linkReport($this->target(), 99);
+
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(1, $link->getRegisterId());
+		$this->assertSame(2, $link->getSchemaId());
+		$this->assertSame('bob', $link->getLinkedBy());
+		$this->assertNotNull($link->getLinkedAt());
+		$this->assertSame(99, $link->getReportId());
+		$this->assertSame('Sales', $link->getReportTitle());
+		$this->assertSame('3', $link->getReportType());
+		$this->assertSame('Q1', $link->getSubheader());
+	}//end testLinkReportStampsTheObjectAndCachesTheReport()
+
+	public function testLinkReportThrowsWhenReportMissing(): void {
+		$this->setupUser();
+		$this->mapper->method('findByObjectAndReport')->willReturn(null);
+		$reports = new class {
+			public function read(int $reportId): array {
+				return [];
+			}
+		};
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(404);
+
+		$this->serviceWithReports($reports)->linkReport($this->target(), 99);
+	}//end testLinkReportThrowsWhenReportMissing()
+
+	public function testCreateAndLinkReportStampsTheObjectAndTheNewReport(): void {
+		$this->setupUser('bob');
+		$reports = new class {
+			public array $created = [];
+
+			public function create(...$args): int {
+				$this->created = $args;
+				return 42;
+			}
+
+			public function read(int $reportId): array {
+				return ['id' => $reportId, 'name' => 'Fresh', 'type' => 5];
+			}
+		};
+
+		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('  Fresh  ', 5));
+
+		$this->assertSame('Fresh', $reports->created[0]);
+		$this->assertSame(5, $reports->created[3]);
+		$this->assertSame('abc-123', $link->getObjectUuid());
+		$this->assertSame(1, $link->getRegisterId());
+		$this->assertSame(2, $link->getSchemaId());
+		$this->assertSame('bob', $link->getLinkedBy());
+		$this->assertSame(42, $link->getReportId());
+		$this->assertSame('Fresh', $link->getReportTitle());
+		$this->assertSame('5', $link->getReportType());
+		$this->assertNull($link->getSubheader());
+	}//end testCreateAndLinkReportStampsTheObjectAndTheNewReport()
+
+	public function testCreateAndLinkReportFallsBackToTheNameWhenTheReadIsEmpty(): void {
+		$this->setupUser();
+		$reports = new class {
+			public function create(...$args): int {
+				return 7;
+			}
+
+			public function read(int $reportId): array {
+				return [];
+			}
+		};
+
+		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('Draft'));
+
+		$this->assertSame(7, $link->getReportId());
+		$this->assertSame('Draft', $link->getReportTitle());
+		$this->assertSame('0', $link->getReportType());
+		$this->assertSame(2, $link->getSchemaId());
+	}//end testCreateAndLinkReportFallsBackToTheNameWhenTheReadIsEmpty()
+
+	public function testCreateAndLinkReportThrowsWhenTheCreateReturnsNoId(): void {
+		$this->setupUser();
+		$reports = new class {
+			public function create(...$args): int {
+				return 0;
+			}
+		};
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(500);
+
+		$this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('Draft'));
+	}//end testCreateAndLinkReportThrowsWhenTheCreateReturnsNoId()
 }//end class

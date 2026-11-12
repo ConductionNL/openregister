@@ -1,0 +1,348 @@
+{
+    "webhook findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 expr.isNotNull(a)",
+            "#2 andWhere(isNotNull(a))",
+            "#2 expr.isNull(b)",
+            "#2 andWhere(isNull(b))",
+            "#2 param :p1 = 5, 2",
+            "#2 expr.eq(c, :p1, NULL)",
+            "#2 andWhere(eq(c, :p1, NULL))",
+            "#2 param :p2 = x, 2",
+            "#2 expr.eq(d, :p2, NULL)",
+            "#2 andWhere(eq(d, :p2, NULL))",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "webhook findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "webhook findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "register findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findLocalTenants / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(is_local_tenant)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(is_local_tenant, :p1, NULL)",
+            "#1 expr.orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL))",
+            "#1 andWhere(orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL)))",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p2 = 5, 2",
+            "#1 expr.eq(c, :p2, NULL)",
+            "#1 andWhere(eq(c, :p2, NULL))",
+            "#1 param :p3 = x, 2",
+            "#1 expr.eq(d, :p3, NULL)",
+            "#1 andWhere(eq(d, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findLocalTenants / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(is_local_tenant)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(is_local_tenant, :p1, NULL)",
+            "#1 expr.orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL))",
+            "#1 andWhere(orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "organisation findLocalTenants / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_organisations, NULL)",
+            "#1 orderBy(name, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(is_local_tenant)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(is_local_tenant, :p1, NULL)",
+            "#1 expr.orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL))",
+            "#1 andWhere(orX(isNull(is_local_tenant), eq(is_local_tenant, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "source findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "source findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "source findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "configuration findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "configuration findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "configuration findAll / null": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "consumer findAll / mixed": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNotNull(a)",
+            "#1 andWhere(isNotNull(a))",
+            "#1 expr.isNull(b)",
+            "#1 andWhere(isNull(b))",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 param :p2 = x, 2",
+            "#1 expr.eq(d, :p2, NULL)",
+            "#1 andWhere(eq(d, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "consumer findAll / none": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    }
+}

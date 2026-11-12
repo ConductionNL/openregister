@@ -7,7 +7,7 @@ The generic controllers OpenRegister hosts for manifest-driven apps, so an app w
 
 ### Requirement: One-Call Bootstrap
 
-`AppHost\Bootstrap::register(IRegistrationContext, string $appId, array $options)` SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
+`AppHost\Bootstrap::register(IRegistrationContext, LeafAdoption)` (the `LeafAdoption` carrying the app id and its options) SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
 
 The laziness applies to the closure BODIES. It does NOT make reaching `Bootstrap::register()` safe: calling it requires resolving the symbol `OCA\OpenRegister\AppHost\Bootstrap`, which is an ordinary autoload. A leaf that has not satisfied the Autoload Prelude requirement below, and does not guard the call with `class_exists()`, WILL fatal out of its own `register()` when that symbol is unavailable.
 
@@ -33,20 +33,30 @@ An app adopting AppHost SHALL register OpenRegister's autoload prefix as the fir
 
 ```php
 try {
-    $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
-    \OC_App::registerAutoloading('openregister', $orPath);
+    $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+    if ($appManager->isEnabledForAnyone('openregister') === true) {
+        $orLib = rtrim($appManager->getAppPath('openregister'), '/').'/lib/';
+        spl_autoload_register(static function (string $class) use ($orLib): void {
+            if (str_starts_with($class, 'OCA\\OpenRegister\\') === true) {
+                $file = $orLib.str_replace('\\', '/', substr($class, 17)).'.php';
+                if (is_file($file) === true) {
+                    require_once $file;
+                }
+            }
+        });
+    }
 } catch (\Throwable) {
     // OpenRegister absent/disabled — fall through to the degraded path.
 }
 ```
 
-`OC_App::registerAutoloading()` touches only the autoloader and is idempotent (it early-returns on an `$alreadyRegistered` key).
+The prelude SHALL use public API only (`IAppManager::isEnabledForAnyone()` + `getAppPath()` and `spl_autoload_register()`), preferably housed in an `AppInfo\OpenRegisterAutoloader::register()` class that never throws and is idempotent (keepiq#712). It SHALL NOT call `\OC_App::registerAutoloading()`: that is private API and Nextcloud 35 removed it, so the call throws `\Error` into the catch and the AppHost wiring is silently skipped.
 
-An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute a relative `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
+An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute an `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
 
 The prelude is required regardless of where the app id sorts. Sorting after `openregister` makes an app safe by alphabet alone, which is a property of its name rather than of its design.
 
-Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list calling `OC_App::registerAutoloading($appId, $path)` then `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
+Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list registering each app's autoloader then calling `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
 
 #### Scenario: A leaf sorting before openregister still wires its AppHost plumbing
 
@@ -118,5 +128,5 @@ Every AppHost generic class SHALL be subclassable (no `final`, protected hook me
 
 #### Scenario: Bootstrap full-options resolution
 
-- **WHEN** `Bootstrap::register($context, $appId, $options)` is called with all standard options enabled and every aliased factory is resolved through a container
+- **WHEN** `Bootstrap::register($context, new LeafAdoption($appId, $options))` is called with all standard options enabled and every aliased factory is resolved through a container
 - **THEN** each factory produces a real generic instance — including `Controller\PreferencesController` → `GenericPreferencesController` — with no dangling reference to a non-existent class

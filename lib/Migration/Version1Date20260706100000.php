@@ -50,8 +50,9 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
@@ -72,7 +73,7 @@ use Psr\Container\ContainerInterface;
  *
  * @package OCA\OpenRegister\Migration
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.1
  */
 class Version1Date20260706100000 extends SimpleMigrationStep {
 	/**
@@ -106,7 +107,7 @@ class Version1Date20260706100000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.1
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$schema = $schemaClosure();
@@ -199,7 +200,7 @@ class Version1Date20260706100000 extends SimpleMigrationStep {
 		// 1. Currently-configured embedding model (SettingsService), resolved
 		// lazily so a DI failure during upgrade degrades instead of aborting.
 		try {
-			$settingsService = $this->container->get(SettingsService::class);
+			$settingsService = $this->container->get(SettingsServiceInterface::class);
 			$generator = $this->container->get(EmbeddingGeneratorHandler::class);
 
 			if ($settingsService instanceof SettingsService

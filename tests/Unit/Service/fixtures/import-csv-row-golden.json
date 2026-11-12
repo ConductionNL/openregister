@@ -1,0 +1,303 @@
+{
+    "admin": {
+        "plain": {
+            "name": "Jan",
+            "age": 30,
+            "extra": "x",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "typed": {
+            "age": 7,
+            "score": 1.5,
+            "active": true,
+            "tags": [
+                "a",
+                "b"
+            ],
+            "born": "2026-01-02",
+            "obj": {
+                "k": 1
+            },
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "empty cells": {
+            "extra": "0",
+            "n": 0,
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "underscore": {
+            "name": "A",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at columns": {
+            "name": "B",
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "owner": "bob",
+                "published": "2026-01-01 10:00:00",
+                "organisation": "org",
+                "": "y"
+            }
+        },
+        "id column": {
+            "id": "abc-1",
+            "name": "C",
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "id": "abc-1"
+            }
+        },
+        "numeric keys": {
+            "0": "zero",
+            "1": "one",
+            "name": "D",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at only": {
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "id": "u-1"
+            }
+        }
+    },
+    "anonymous": {
+        "plain": {
+            "name": "Jan",
+            "age": 30,
+            "extra": "x",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "typed": {
+            "age": 7,
+            "score": 1.5,
+            "active": true,
+            "tags": [
+                "a",
+                "b"
+            ],
+            "born": "2026-01-02",
+            "obj": {
+                "k": 1
+            },
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "empty cells": {
+            "extra": "0",
+            "n": 0,
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "underscore": {
+            "name": "A",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at columns": {
+            "name": "B",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "id column": {
+            "id": "abc-1",
+            "name": "C",
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "id": "abc-1"
+            }
+        },
+        "numeric keys": {
+            "0": "zero",
+            "1": "one",
+            "name": "D",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at only": {
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        }
+    },
+    "no admin group": {
+        "plain": {
+            "name": "Jan",
+            "age": 30,
+            "extra": "x",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "typed": {
+            "age": 7,
+            "score": 1.5,
+            "active": true,
+            "tags": [
+                "a",
+                "b"
+            ],
+            "born": "2026-01-02",
+            "obj": {
+                "k": 1
+            },
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "empty cells": {
+            "extra": "0",
+            "n": 0,
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "underscore": {
+            "name": "A",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at columns": {
+            "name": "B",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "id column": {
+            "id": "abc-1",
+            "name": "C",
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "id": "abc-1"
+            }
+        },
+        "numeric keys": {
+            "0": "zero",
+            "1": "one",
+            "name": "D",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at only": {
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        }
+    },
+    "user": {
+        "plain": {
+            "name": "Jan",
+            "age": 30,
+            "extra": "x",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "typed": {
+            "age": 7,
+            "score": 1.5,
+            "active": true,
+            "tags": [
+                "a",
+                "b"
+            ],
+            "born": "2026-01-02",
+            "obj": {
+                "k": 1
+            },
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "empty cells": {
+            "extra": "0",
+            "n": 0,
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "underscore": {
+            "name": "A",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at columns": {
+            "name": "B",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "id column": {
+            "id": "abc-1",
+            "name": "C",
+            "@self": {
+                "register": 1,
+                "schema": 2,
+                "id": "abc-1"
+            }
+        },
+        "numeric keys": {
+            "0": "zero",
+            "1": "one",
+            "name": "D",
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        },
+        "at only": {
+            "@self": {
+                "register": 1,
+                "schema": 2
+            }
+        }
+    }
+}

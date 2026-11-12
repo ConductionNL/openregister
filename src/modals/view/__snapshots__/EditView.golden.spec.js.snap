@@ -1,0 +1,510 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditView.saveView (golden) saves the blankName form, answering plainError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [],
+  "emitted": [],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": true,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the blankName form, answering saved 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [],
+  "emitted": [],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": true,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the blankName form, answering serverError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [],
+  "emitted": [],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": true,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the blankName form, answering silentError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [],
+  "emitted": [],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": true,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the full form, answering plainError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      7,
+      {
+        "description": "d",
+        "isDefault": false,
+        "isPublic": true,
+        "name": "Mine",
+        "query": {
+          "a": 1,
+        },
+        "sharedUsers": [
+          "alice",
+        ],
+        "sharedWith": [
+          {
+            "group": "g1",
+            "mode": "write",
+          },
+          {
+            "group": "g2",
+            "mode": "read",
+          },
+        ],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "offline",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error(offline)",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the full form, answering saved 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      7,
+      {
+        "description": "d",
+        "isDefault": false,
+        "isPublic": true,
+        "name": "Mine",
+        "query": {
+          "a": 1,
+        },
+        "sharedUsers": [
+          "alice",
+        ],
+        "sharedWith": [
+          {
+            "group": "g1",
+            "mode": "write",
+          },
+          {
+            "group": "g2",
+            "mode": "read",
+          },
+        ],
+      },
+    ],
+    [
+      "fetchViews",
+    ],
+  ],
+  "emitted": [
+    [
+      "close",
+    ],
+  ],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": false,
+  "success": true,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the full form, answering serverError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      7,
+      {
+        "description": "d",
+        "isDefault": false,
+        "isPublic": true,
+        "name": "Mine",
+        "query": {
+          "a": 1,
+        },
+        "sharedUsers": [
+          "alice",
+        ],
+        "sharedWith": [
+          {
+            "group": "g1",
+            "mode": "write",
+          },
+          {
+            "group": "g2",
+            "mode": "read",
+          },
+        ],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "Name taken",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error(400)",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the full form, answering silentError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      7,
+      {
+        "description": "d",
+        "isDefault": false,
+        "isPublic": true,
+        "name": "Mine",
+        "query": {
+          "a": 1,
+        },
+        "sharedUsers": [
+          "alice",
+        ],
+        "sharedWith": [
+          {
+            "group": "g1",
+            "mode": "write",
+          },
+          {
+            "group": "g2",
+            "mode": "read",
+          },
+        ],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "Failed to update view",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error()",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the uuidOnly form, answering plainError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      "u8",
+      {
+        "description": "",
+        "isDefault": true,
+        "isPublic": false,
+        "name": "X",
+        "query": {},
+        "sharedUsers": [],
+        "sharedWith": [],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "offline",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error(offline)",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the uuidOnly form, answering saved 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      "u8",
+      {
+        "description": "",
+        "isDefault": true,
+        "isPublic": false,
+        "name": "X",
+        "query": {},
+        "sharedUsers": [],
+        "sharedWith": [],
+      },
+    ],
+    [
+      "fetchViews",
+    ],
+  ],
+  "emitted": [
+    [
+      "close",
+    ],
+  ],
+  "error": null,
+  "loading": false,
+  "logged": [],
+  "nameTouched": false,
+  "success": true,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the uuidOnly form, answering serverError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      "u8",
+      {
+        "description": "",
+        "isDefault": true,
+        "isPublic": false,
+        "name": "X",
+        "query": {},
+        "sharedUsers": [],
+        "sharedWith": [],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "Name taken",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error(400)",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.saveView (golden) saves the uuidOnly form, answering silentError 1`] = `
+{
+  "before": {
+    "emitted": [],
+  },
+  "calls": [
+    [
+      "updateView",
+      "u8",
+      {
+        "description": "",
+        "isDefault": true,
+        "isPublic": false,
+        "name": "X",
+        "query": {},
+        "sharedUsers": [],
+        "sharedWith": [],
+      },
+    ],
+  ],
+  "emitted": [],
+  "error": "Failed to update view",
+  "loading": false,
+  "logged": [
+    [
+      "error",
+      "Error updating view:",
+      "Error()",
+    ],
+  ],
+  "nameTouched": false,
+  "success": false,
+}
+`;
+
+exports[`EditView.searchUsers (golden) searches users, answering noUsers 1`] = `
+{
+  "availableUsers": [
+    "stale",
+  ],
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/users?format=json&search=a%20l",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "loadingUsers": false,
+  "logged": [],
+  "pending": {
+    "calls": 0,
+    "loadingUsers": false,
+  },
+}
+`;
+
+exports[`EditView.searchUsers (golden) searches users, answering refused 1`] = `
+{
+  "availableUsers": [
+    "stale",
+  ],
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/users?format=json&search=a%20l",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "loadingUsers": false,
+  "logged": [
+    [
+      "warn",
+      "Failed to search users:",
+      "Forbidden",
+    ],
+  ],
+  "pending": {
+    "calls": 0,
+    "loadingUsers": false,
+  },
+}
+`;
+
+exports[`EditView.searchUsers (golden) searches users, answering thrown 1`] = `
+{
+  "availableUsers": [
+    "stale",
+  ],
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/users?format=json&search=a%20l",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "loadingUsers": false,
+  "logged": [
+    [
+      "error",
+      "Error searching Nextcloud users:",
+      "Error(offline)",
+    ],
+  ],
+  "pending": {
+    "calls": 0,
+    "loadingUsers": false,
+  },
+}
+`;
+
+exports[`EditView.searchUsers (golden) searches users, answering users 1`] = `
+{
+  "availableUsers": [
+    {
+      "id": "alice",
+      "name": "Alice",
+    },
+    {
+      "id": "bob",
+      "name": "bob",
+    },
+  ],
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/users?format=json&search=a%20l",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "loadingUsers": false,
+  "logged": [],
+  "pending": {
+    "calls": 0,
+    "loadingUsers": false,
+  },
+}
+`;

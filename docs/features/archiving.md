@@ -66,6 +66,23 @@ The `archiefactiedatum` is calculated using configurable `afleidingswijzen` (der
 | `vaste_datum` | Fixed absolute date |
 | Custom Twig expression | Evaluated at runtime |
 
+### The destruction date follows its source date
+
+The destruction date (`archiefactiedatum`) is recalculated on every save in which its source date changed. The source depends on the schema's derivation method:
+
+| Method | Source that is watched |
+|--------|------------------------|
+| `ander_datumkenmerk` | `sourceDateProperty` on the record |
+| `eigenschap` | `bronEigenschap` on the record |
+| `afgehandeld`, `termijn` | `closureField` on the record |
+| Relation methods (`gerelateerde_zaak`, `hoofdzaak`, `zaakobject`, `ingangsdatum_besluit`, `vervaldatum_besluit`) | `sourceRelation` on the record, and `sourceRelationProperty` on the related record |
+
+- A source date that appears after the record was created sets the destruction date. A record that has no nomination yet gets the schema's `defaultNominatie` at the same moment.
+- A corrected source date moves the destruction date.
+- A cleared source date clears the destruction date, and the audit trail records `archival.destruction_date_removed` with the old date. This applies to the methods without a fallback (`ander_datumkenmerk` and the relation methods); `afgehandeld`, `termijn` and `eigenschap` fall back to the creation date as before.
+
+When a record's date that other records read through a relation changes, those records follow in a background job (`RelatedRetentionRecalculationJob`). For example, a contact person schema with `sourceRelation: client` and `sourceRelationProperty: relationshipEndedAt` gets a new destruction date for every contact of a client whose end date was set, corrected or cleared. The client's own save is not slowed down, and repeated saves of one client queue the job once.
+
 ## Destruction Workflow
 
 ### Automated Destruction Scheduling
@@ -117,6 +134,20 @@ POST /api/objects/{register}/{schema}/{id}/legal-hold
 ```
 
 Objects with active legal holds are excluded from destruction lists. Legal holds appear in audit trail and MDTO metadata.
+
+### Frozen records cannot be deleted
+
+A frozen record (`POST /api/objects/{register}/{schema}/{id}/freeze`) refuses every change to its data, and it refuses deletion too. A `DELETE` on a frozen record answers 409 with a message that names who froze it and since when:
+
+```
+409 Conflict
+{
+  "error": "This record is locked by Anna de Vries since 2026-10-30. Unlock it before deleting it.",
+  "errors": { "code": "object-frozen", "frozenBy": "anna", "frozenAt": "2026-10-30T09:12:00+00:00" }
+}
+```
+
+The refusal holds on every delete path: the single delete, the bulk delete and a cascade. A cascade that reaches a frozen record is refused as a whole. To delete the record, unfreeze it first (`DELETE /api/objects/{register}/{schema}/{id}/freeze`).
 
 ## e-Depot Transfer
 

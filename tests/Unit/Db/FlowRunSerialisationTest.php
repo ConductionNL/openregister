@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * Tests for {@see FlowRun::jsonSerialize()}.
  *
  * @covers \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowRunSerialisationTest extends TestCase {
 

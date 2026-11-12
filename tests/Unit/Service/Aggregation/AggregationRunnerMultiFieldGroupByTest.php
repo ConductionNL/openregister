@@ -39,14 +39,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -255,7 +255,7 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$db->method('prepare')->willReturnCallback(
 			function (string $sql) use ($pdo, $captured): IPreparedStatement {
 				$captured['sql'] = $sql;
-				$pdoStmt = $pdo->prepare($sql);
+				$pdoStmt = $pdo->prepare(str_replace('*PREFIX*', 'oc_', $sql));
 				$stmt = $this->createMock(IPreparedStatement::class);
 				$stmt->method('execute')->willReturnCallback(
 					function ($bindings = []) use ($pdoStmt): IResult {
@@ -317,7 +317,7 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$pdo->exec(
 			'CREATE TABLE "oc_register_1_schema_ap_tx" (
                 "_deleted" TEXT,
-                "_archived" TEXT,
+                "_archived" TEXT, "_status" TEXT,
                 "_organisation" TEXT,
                 "vendor_id" TEXT,
                 "due_date_bucket" TEXT,
@@ -375,9 +375,7 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $cache,

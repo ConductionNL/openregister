@@ -874,3 +874,429 @@ value) SHALL refuse a `source` node, because its result is stored.
 
 - **WHEN** a calculation containing `{"source": "env:INTAKE_REGION"}` is evaluated
 - **THEN** the evaluation MUST be refused with a message naming the reference
+
+### Requirement: Trigger matching speaks slugs on both sides
+
+The `(event, register, schema)` triple is matched as SLUGS. The trigger index
+SHALL store the register slug and schema slug for every derived row, whatever
+identifier the trigger node's config holds — an imported declaration's slug
+and a builder select's numeric id MUST produce the same row. The fired
+subject's register and schema SHALL be resolved to slugs before matching, so
+an object event carrying numeric ids matches a trigger declared with slugs
+and vice versa.
+
+An identifier that resolves to no register or schema SHALL pass through
+unchanged rather than being dropped or blanked: an unresolvable identifier
+that silently became an empty value would unsubscribe the flow, which is the
+silence this rule exists to end.
+
+The resolution SHALL live in exactly one implementation, used by the listener
+and by the index writer alike — a second answer to "what does this triple look
+like" would diverge on exactly the flows nobody looks at.
+
+#### Scenario: An imported flow fires on an object event
+
+- **GIVEN** a flow imported from `x-openregister-flows` whose trigger node
+  names its register and schema by slug
+- **WHEN** an object of that register and schema is created, the event
+  carrying the object's numeric ids
+- **THEN** the flow MUST match and a run MUST be queued
+- @e2e exclude engine-internal matching seam — covered by
+  `FlowTriggerIdSlugMatchTest` end to end and `FlowTriggerListenerTest` at the
+  listener
+
+#### Scenario: A trigger node holding numeric ids indexes as slugs
+
+- **GIVEN** a flow whose published trigger node config holds a numeric
+  register id and schema id
+- **WHEN** its trigger rows are derived
+- **THEN** the written rows MUST hold the register and schema SLUGS
+- @e2e exclude engine-internal index write — covered by
+  `FlowTriggerIndexSlugNormalisationTest`
+
+#### Scenario: The registered repair rewrites pre-fix rows
+
+- **GIVEN** an instance whose trigger index still holds rows in the id
+  vocabulary, written before this rule
+- **WHEN** the `BackfillFlowTriggerIndex` repair step runs on upgrade
+- **THEN** every flow's rows MUST be rebuilt through the normalising writer,
+  so already-imported flows start firing without being re-saved
+- @e2e exclude an upgrade-time repair — covered by
+  `FlowTriggerIndexSlugNormalisationTest` through the same rebuild path
+
+#### Scenario: An unresolvable identifier is matched as-is
+
+- **WHEN** a subject or trigger names a register that no longer resolves
+- **THEN** the value MUST pass through unchanged rather than becoming empty
+- @e2e exclude engine-internal resolver behaviour — covered by
+  `FlowTriggerSlugsTest`
+
+### Requirement: A run MUST carry the identity it executes as, distinct from what caused it
+
+A run records two identity values. `triggeredBy` names what caused the run and is
+provenance: it is immutable and MUST NOT be consulted to decide access. `runAs`
+names the user whose rights the run's steps execute with, and is the only value
+an access decision reads.
+
+They are allowed to differ, and for a scheduled run they always do: the cause is
+a schedule, the acting identity is a person.
+
+A run MUST NOT be queued with an absent `runAs`. A dispatch path that cannot
+resolve one MUST refuse to queue rather than record a run that every
+attribution-requiring node will later reject one step at a time.
+
+#### Scenario: A run records both values
+- **GIVEN** any dispatch path — manual, object event, schedule, sub-flow, MCP or
+  workflow engine
+- **WHEN** a run is queued
+- **THEN** the run carries a non-empty `runAs`
+- **AND** it carries a `triggeredBy` describing what caused it
+
+#### Scenario: Access decisions read runAs, not triggeredBy
+- **GIVEN** a run whose `runAs` and `triggeredBy` differ
+- **WHEN** a node performs a read or a write
+- **THEN** the access decision answers for `runAs`
+- **AND** changing `triggeredBy` does not change what the node may read or write
+
+#### Scenario: An unattributable dispatch is refused at the queue, not at the node
+- **GIVEN** a dispatch path that cannot resolve an acting identity
+- **WHEN** it attempts to queue a run
+- **THEN** the queue is refused with a reason naming the missing identity
+- **AND** no run row is created
+
+### Requirement: A run's acting identity comes from its trigger, never from the flow
+
+A flow MUST NOT carry an acting identity. `owner` and `organisation` on a flow
+express ownership of the DEFINITION — who may edit it and which tenant it belongs
+to — and MUST continue to be required and enforced on write. Neither MUST be read
+as a mandate to execute as that user.
+
+Because a flow may carry several trigger nodes, and each is an independent entry
+point, a single flow can start under several different identities. The identity
+therefore resolves per trigger:
+
+| trigger | acting identity |
+|---|---|
+| manual | the acting session user |
+| object event | the user whose action raised the event |
+| schedule | the `runAs` declared on that trigger node |
+| sub-flow | the calling run's `runAs` |
+
+Where a caller is present, the caller wins: a manual run is the acting user's
+act, and attributing it to the flow's author would be a worse answer than none.
+Where no caller is present, the trigger's declared identity answers, and its
+absence MUST fail closed.
+
+Tenancy resolves independently of identity and keeps its own fallback: a run
+whose caller has no resolvable organisation is still scoped to the flow's
+organisation. The mixed case — a resolvable caller with an unresolvable tenant —
+MUST yield a run scoped to the flow's tenant rather than to none.
+
+#### Scenario: A manual run acts as the caller, not the flow's author
+- **GIVEN** a flow owned by user A
+- **WHEN** user B runs it manually
+- **THEN** the run's `runAs` is B
+
+#### Scenario: A scheduled run acts as its trigger's declared identity
+- **GIVEN** a flow owned by user A whose schedule trigger declares `runAs` C
+- **WHEN** the schedule fires
+- **THEN** the run's `runAs` is C
+- **AND** it is not A
+
+#### Scenario: Identity and tenancy resolve independently
+- **GIVEN** a resolvable acting identity whose active organisation cannot be
+  resolved
+- **WHEN** a run is queued
+- **THEN** the run's acting identity is the caller
+- **AND** its organisation is the flow's organisation
+
+### Requirement: A schedule trigger MUST declare a resolvable acting identity or fail to save
+
+A node of type `openregister.trigger-schedule` MUST declare a `runAs` naming a
+user that resolves. Validation MUST refuse the save when it is missing, empty, or
+names a user that does not exist — alongside the cron-expression check the node
+already performs.
+
+The registration that makes the schedule fire and the identity it fires under
+MUST derive from the same node, so that the two cannot disagree.
+
+This closes a defect class in which a scheduled run was queued with no identity
+and then refused one node at a time, reported by `ObjectWriteNode` as "this flow
+run has no owner" — leaving a natively scheduled flow silently incapable of
+writing anything.
+
+#### Scenario: A schedule trigger without runAs is refused at save
+- **GIVEN** a node of type `openregister.trigger-schedule` with a valid cron
+  expression and no `runAs`
+- **WHEN** its config is validated
+- **THEN** the save MUST be refused, naming the missing `runAs`
+- **AND** the flow MUST NOT be stored
+
+#### Scenario: A schedule trigger naming a non-existent user is refused at save
+- **GIVEN** a schedule trigger whose `runAs` names a user that does not resolve
+- **WHEN** its config is validated
+- **THEN** the save MUST be refused, naming the unresolvable user
+
+#### Scenario: Save-time validation is not the only control
+- **GIVEN** a stored schedule trigger whose `runAs` resolved when it was saved
+- **WHEN** the schedule fires after that user has been disabled or removed
+- **THEN** the firing MUST be refused
+- **AND** passing validation at save time MUST NOT be treated as standing
+  authorization
+
+### Requirement: A resumed run MUST re-resolve its acting identity before it continues
+
+A run that suspended — on a wait, on an external signal, or in a queue — MUST
+resolve its acting identity again when it resumes, and apply the rights that
+identity holds at resumption. It MUST NOT apply rights captured when the run was
+queued or suspended.
+
+A run whose recorded identity no longer resolves to an enabled user MUST fail
+with a reason naming it, rather than continuing under any fallback.
+
+#### Scenario: Rights revoked during a suspension take effect on resume
+- **GIVEN** a run suspended while acting as user C, who could write to a schema
+- **AND** C's permission on that schema is removed while the run is suspended
+- **WHEN** the run resumes and reaches a write to that schema
+- **THEN** the write is refused
+
+#### Scenario: A run whose identity has gone fails closed on resume
+- **GIVEN** a suspended run whose `runAs` names a user since removed
+- **WHEN** the run resumes
+- **THEN** the run fails with a reason naming the unresolvable identity
+- **AND** no further step executes
+
+#### Scenario: A schedule whose identity has gone is disabled and surfaced
+- **GIVEN** a registered schedule whose declared `runAs` no longer resolves to an
+  enabled user
+- **WHEN** the schedule would next fire
+- **THEN** the schedule is disabled
+- **AND** the owner of the flow definition is notified
+- **AND** the schedule does not remain enabled while silently firing nothing
+
+### Requirement: A run says how it ended
+
+A run and the `lastRun` of `GET /api/flow-runs/summary` SHALL carry `outcome` beside `status`. `outcome` SHALL equal
+`status`, except that a `stopped` run whose stop came from an End step SHALL read `completed`. A stop from an oversight
+check names itself in the log entry's `checkId` and keeps `stopped`, as does a `stopped` run with no stop in its log.
+`outcome` SHALL be derived from the stored log when read, so runs stored before it existed read the same way.
+`status` SHALL NOT change.
+
+#### Scenario: A run that reached its End step
+
+- **GIVEN** a stored run with status `stopped` whose last log entry is an End step with status `stopped` and no `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `completed` and `status` is `stopped`
+
+#### Scenario: A run an oversight check stopped
+
+- **GIVEN** a stored run with status `stopped` whose log entry has status `stopped` and a `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `stopped`
+
+### Requirement: A flow can be tried against an object without effect
+
+`POST /api/flows/{id}/dry-run` SHALL walk the flow's graph through the engine against the named object and answer the
+steps reached, in order, each with `nodeId`, `type`, `label`, `status`, `error`, `itemsIn`, `itemsOut` and a `preview`,
+plus the end `status`. It SHALL perform only steps that declare `IFlowSideEffectFree`; every other step SHALL be
+described and not performed, and a described step whose `validateConfig()` refuses its configuration SHALL fail with
+that message, under the step's `onError` policy, as it would in a run. It SHALL write no run, object, audit trail entry or message and SHALL deliver nothing. It SHALL be
+refused without a session (401), without the `flow.update` right (403), for a flow the caller cannot see (404) and for
+an object the caller cannot read (404). A body with `payload` in place of an object SHALL walk the flow the same way
+with that data as the object, reading no object; a `payload` that is not a JSON object SHALL be refused (400).
+
+#### Scenario: A step the run would fail
+
+- **GIVEN** a flow with an object-write step that has no `operation`
+- **WHEN** it is tried against an object
+- **THEN** that step has status `failed` and an `error` naming the missing operation
+- **AND** the end `status` is `failed`, as it is in a real run
+
+#### Scenario: Example payload
+
+- **GIVEN** the same flow
+- **WHEN** it is tried with the payload `{"amount": 5000}`
+- **THEN** the steps are the switch and the send-email, as for an object with amount 5000
+- **AND** no object is read, no mail is sent and no run is stored
+
+#### Scenario: Branch and message
+
+- **GIVEN** a flow that switches on `json.amount > 1000` to a send-email step, else to a set-fields step
+- **WHEN** it is tried against an object with amount 5000
+- **THEN** the steps are the switch and the send-email, the email's preview names its recipients and subject
+- **AND** no mail is sent and no run is stored
+
+### Requirement: A node can say what it would do
+
+A node MAY implement `IFlowNodePreview::preview(items, config, context)` and SHALL answer an array with any of
+`summary` (one sentence), `changes` (`[{field, value}]`) and `messages` (`[{channel, to, subject}]`), computing it
+without side effects. object-write SHALL preview its operation and fields; send-email, send-notification and
+send-talk-message SHALL preview their composed recipients and text.
+
+#### Scenario: Object write
+
+- **GIVEN** an object-write step setting `status` to `closed`
+- **THEN** its preview has the change `{field: status, value: closed}` and the object is not written
+
+### Requirement: The rule inventory can be asked for the rules of one scope
+
+A rule declaration MAY carry `scope: { property, value }`. The inventory SHALL return each descriptor's scope, and
+SHALL accept `scope[<property>]=<value>`, returning the rules with exactly that scope and the rules without a scope.
+
+#### Scenario: Two kinds of object in one schema
+
+- **GIVEN** a schema with a calculation without a scope, a state field block scoped to `caseType` `a` and a flow whose
+  object trigger node is scoped to `caseType` `b`
+- **WHEN** the inventory is asked with `scope[caseType]=a`
+- **THEN** it lists the calculation and the state field block, and not the flow
+- @e2e exclude {API filter, covered by unit tests}
+
+#### Scenario: No filter
+
+- **GIVEN** the same schema
+- **WHEN** the inventory is asked without a scope
+- **THEN** it lists all three rules, each with its scope or `null`
+- @e2e exclude {API filter, covered by unit tests}
+
+### Requirement: A trigger naming another user MUST be refused without a grant
+
+A schedule trigger whose `runAs` names a user other than the flow's author MUST
+fail to save unless the author holds a live delegation grant for that user.
+
+Naming yourself remains free. `or-delegated-identity` already requires the field
+to be present and resolvable; this adds that the author must be entitled to it.
+
+#### Scenario: A trigger naming an ungranted user is refused at save
+
+- **GIVEN** an author holding no grant for another user
+- **WHEN** they save a flow whose schedule trigger names that user
+- **THEN** the save is refused, naming both parties
+- **AND** the flow is not stored
+
+#### Scenario: A trigger naming the author is unaffected
+
+- **WHEN** an author saves a schedule trigger naming themselves
+- **THEN** the save succeeds without consulting the grant store
+
+### Requirement: A run MUST be able to park awaiting consent
+
+A run that requires a grant nobody has yet given MUST enter `awaiting_consent`
+rather than failing outright, so that answering the request resumes it.
+
+This state MUST be distinct from a wait on a signal or a timer: the thing that
+resumes it is a grant record changing state, and an operator must be able to tell
+the two apart.
+
+On resume the identity and the grant MUST both be re-resolved, per
+`delegated-identity`.
+
+#### Scenario: A run needing consent parks rather than failing
+
+- **WHEN** a run reaches a step requiring an ungranted identity, and a consent
+  request can be raised
+- **THEN** the run enters `awaiting_consent`
+- **AND** it names the pending grant
+
+#### Scenario: Granting consent resumes the parked run
+
+- **GIVEN** a run parked on a pending grant
+- **WHEN** the grant is granted
+- **THEN** the run becomes resumable
+- **AND** on resume it re-resolves both the identity and the grant
+
+### Requirement: Every rule that can act on a schema is listed in evaluation order (REQ-REO-001)
+
+The system SHALL publish, per schema, every rule that can act on its
+objects: lifecycle conditions, state field blocks, declared calculations
+and the flows its objects trigger. The list SHALL be in the order the save
+pipeline evaluates them, and each entry SHALL name its source annotation,
+its last run, its last error and whether it is enabled. The list SHALL be
+derived from the schema and the flow definitions and SHALL NOT be stored
+separately. A rule SHALL be switched off and on from this surface, and the
+switch SHALL be recorded in the audit trail with the actor.
+
+#### Scenario: an administrator reads what will run
+
+- **GIVEN** a schema with one lifecycle condition, one state field block and two triggering flows
+- **WHEN** the rule inventory for that schema is read
+- **THEN** four entries are returned in evaluation order
+- **AND** each names its source annotation and whether it is enabled
+
+#### Scenario: a removed annotation leaves the inventory
+
+- **GIVEN** the same schema with the lifecycle condition removed and saved
+- **WHEN** the inventory is read again
+- **THEN** three entries are returned and the condition is absent
+- @e2e exclude {projection behaviour, covered by unit tests}
+
+#### Scenario: switching a rule off is an audited act
+
+- **GIVEN** an enabled calculation on a schema
+- **WHEN** an administrator disables it from the inventory
+- **THEN** the entry reports it disabled, the calculation does not run on the next save
+- **AND** an audit trail entry names the actor and the rule
+
+### Requirement: A rule evaluation records the operand that decided it (REQ-REO-002)
+
+Every rule evaluation SHALL record the rule, the object, the verdict
+(`fired`, `no_match`, `refused`, `error`) and, when the verdict is
+`no_match` or `refused`, the first operand that decided it with the value
+it read. The log SHALL be readable per rule with filters on verdict and
+period. A rule with no run inside the configured window SHALL be reported
+as such in the inventory. The log SHALL be pruned by the daily retention
+pass under its own configured period, and the inventory SHALL keep the
+last run and the last error after the detail rows are pruned.
+
+#### Scenario: a rule that did not fire says why
+
+- **GIVEN** a lifecycle condition requiring `bedrag` above 500 and an object whose `bedrag` is 120
+- **WHEN** the object is saved and the rule is evaluated
+- **THEN** the run log records verdict `no_match` for that rule and object
+- **AND** the entry names `bedrag` and the value 120
+
+#### Scenario: a rule that has not fired for ninety days is visible
+
+- **GIVEN** a rule whose last run is older than the configured window
+- **WHEN** the inventory for its schema is read
+- **THEN** that entry is flagged as not having run inside the window
+- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+
+#### Scenario: pruning keeps the summary and drops the detail
+
+- **GIVEN** a rule with run log rows older than the configured retention period
+- **WHEN** the daily retention pass runs
+- **THEN** those rows are removed
+- **AND** the inventory still reports the rule's last run and last error
+- @e2e exclude {background job, covered by unit tests}
+
+### Requirement: A run is bounded, simulated and replayable (REQ-REO-003)
+
+A rule MAY declare `maxObjects` for one run. The system SHALL count the
+objects a run would touch before the first write and SHALL refuse the run
+as a whole above the ceiling, naming the rule and the count, leaving no
+partial mutation. The system SHALL evaluate a rule against a named object
+or a stored sample payload without committing, returning the verdict and
+the writes it would have made, and SHALL NOT require the rule to be saved
+first. The system SHALL apply a rule to existing objects as a background
+job with a preview and a per-object outcome, under the same ceiling.
+
+#### Scenario: a runaway rule writes nothing
+
+- **GIVEN** a rule with `maxObjects: 100` and a selection matching 4,000 objects
+- **WHEN** the rule runs
+- **THEN** the run is refused, the refusal names the rule and 4,000
+- **AND** no object was modified
+
+#### Scenario: a rule is tried before it is saved
+
+- **GIVEN** an unsaved rule and a sample payload
+- **WHEN** it is evaluated with `commit: false`
+- **THEN** the response carries the verdict and the writes it would make
+- **AND** no object and no schema were changed
+
+#### Scenario: a replay reports per object
+
+- **GIVEN** a saved rule and a selection of 30 existing objects
+- **WHEN** the replay job runs
+- **THEN** each object has an outcome of applied, skipped with a reason, or failed with an error
+- @e2e exclude {background job, covered by the bulk-action-jobs e2e and unit tests}

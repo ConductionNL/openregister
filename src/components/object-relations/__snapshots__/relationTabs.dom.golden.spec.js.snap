@@ -1,0 +1,1269 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`http relation tab emails loads anew for another object, and not for none 1`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/emails {"register":1,"schema":2,"id":"o1"}",
+  ],
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/emails {"register":1,"schema":2,"id":"o2"}",
+  ],
+]
+`;
+
+exports[`http relation tab emails shows the empty state 1`] = `
+"<div class="emails-tab">
+  <x-ncemptycontent name="t:No emails linked to this object" description="t:Link an email from the Mail app sidebar to associate it with this object.">
+    <slot-icon>
+      <x-emailoutline size="44"></x-emailoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab emails shows the failure missing 1`] = `
+"<div class="emails-tab">
+  <x-ncemptycontent name="t:Mail integration is not available" description="t:The Nextcloud Mail app is not installed or enabled on this server.">
+    <slot-icon>
+      <x-emailoffoutline size="44"></x-emailoffoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab emails shows the failure plain 1`] = `
+"<div class="emails-tab">
+  <x-ncemptycontent name="t:Failed to load linked emails" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab emails shows the failure refused 1`] = `
+"<div class="emails-tab">
+  <x-ncemptycontent name="t:Failed to load linked emails" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab emails shows the loading state, then the items 1`] = `
+"<div class="emails-tab">
+  <div class="emails-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>"
+`;
+
+exports[`http relation tab emails shows the loading state, then the items 2`] = `
+"<div class="emails-tab">
+  <ul class="emails-tab__list">
+    <li class="emails-tab__item">
+      <div class="emails-tab__icon">
+        <x-emailoutline size="20"></x-emailoutline>
+      </div>
+      <div class="emails-tab__content">
+        <div class="emails-tab__subject">Hi</div>
+        <div class="emails-tab__meta">
+        </div>
+      </div>
+      <x-ncbutton variant="tertiary" aria-label="t:Unlink email">
+        <slot-icon>
+          <x-closecircleoutline size="20"></x-closecircleoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </li>
+  </ul>
+</div>"
+`;
+
+exports[`http relation tab emails shows the loading state, then the items 3`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/emails {"register":1,"schema":2,"id":"o1"}",
+  ],
+]
+`;
+
+exports[`http relation tab emails unlinks, or reports a refused unlink 1`] = `
+{
+  "deletes": [
+    [
+      "/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId} {"register":1,"schema":2,"id":"o1","emailId":4}",
+    ],
+  ],
+  "emitted": {
+    "emails-changed": [
+      [
+        0,
+      ],
+    ],
+  },
+  "html": "<div class="emails-tab">
+  <x-ncemptycontent name="t:No emails linked to this object" description="t:Link an email from the Mail app sidebar to associate it with this object.">
+    <slot-icon>
+      <x-emailoutline size="44"></x-emailoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+}
+`;
+
+exports[`http relation tab emails unlinks, or reports a refused unlink 2`] = `
+"<div class="emails-tab">
+  <x-ncemptycontent name="t:Failed to load linked emails" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab referencedBy loads anew for another object, and not for none 1`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by {"register":1,"schema":2,"id":"o1"}",
+  ],
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by {"register":1,"schema":2,"id":"o2"}",
+  ],
+]
+`;
+
+exports[`http relation tab referencedBy shows the empty state 1`] = `
+"<div class="referenced-by-tab">
+  <x-ncemptycontent name="t:Nothing points here yet" description="t:When a record references this object, it shows up here with its status and when it last changed.">
+    <slot-icon>
+      <x-linkvariantoff size="44"></x-linkvariantoff>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the failure missing 1`] = `
+"<div class="referenced-by-tab">
+  <x-ncemptycontent name="t:The referencing records could not be read" description="">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the failure plain 1`] = `
+"<div class="referenced-by-tab">
+  <x-ncemptycontent name="t:The referencing records could not be read" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the failure refused 1`] = `
+"<div class="referenced-by-tab">
+  <x-ncemptycontent name="t:The referencing records could not be read" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the loading state, then the items 1`] = `
+"<div class="referenced-by-tab">
+  <div class="referenced-by-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the loading state, then the items 2`] = `
+"<div class="referenced-by-tab">
+  <div>
+    <section class="referenced-by-tab__group">
+      <h3 class="referenced-by-tab__heading">Book <span class="referenced-by-tab__count">3</span></h3>
+      <x-nclistitem name="T" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>open</slot-subname>
+      </x-nclistitem>
+      <div class="referenced-by-tab__more">t:and {count} more {"count":2}</div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`http relation tab referencedBy shows the loading state, then the items 3`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by {"register":1,"schema":2,"id":"o1"}",
+  ],
+]
+`;
+
+exports[`http relation tab referencedBy unlinks, or reports a refused unlink 1`] = `
+{
+  "deletes": [],
+  "emitted": {},
+  "html": "<div class="referenced-by-tab">
+  <div>
+    <section class="referenced-by-tab__group">
+      <h3 class="referenced-by-tab__heading">Book <span class="referenced-by-tab__count">3</span></h3>
+      <x-nclistitem name="T" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>open</slot-subname>
+      </x-nclistitem>
+      <div class="referenced-by-tab__more">t:and {count} more {"count":2}</div>
+    </section>
+  </div>
+</div>",
+}
+`;
+
+exports[`http relation tab referencedBy unlinks, or reports a refused unlink 2`] = `
+"<div class="referenced-by-tab">
+  <div>
+    <section class="referenced-by-tab__group">
+      <h3 class="referenced-by-tab__heading">Book <span class="referenced-by-tab__count">3</span></h3>
+      <x-nclistitem name="T" bold="false" forcedisplayactions="true">
+        <slot-icon>
+          <x-cubeoutline disablemenu="" size="44"></x-cubeoutline>
+        </slot-icon>
+        <slot-subname>open</slot-subname>
+      </x-nclistitem>
+      <div class="referenced-by-tab__more">t:and {count} more {"count":2}</div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`http relation tab relations loads anew for another object, and not for none 1`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/relations {"register":1,"schema":2,"id":"o1"}",
+    {
+      "params": {
+        "view": "timeline",
+      },
+    },
+  ],
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/relations {"register":1,"schema":2,"id":"o2"}",
+    {
+      "params": {
+        "view": "timeline",
+      },
+    },
+  ],
+]
+`;
+
+exports[`http relation tab relations shows the empty state 1`] = `
+"<div class="relations-tab">
+  <x-ncemptycontent name="t:No related entities" description="t:Linked emails, calendar events, contacts and Deck cards will appear here.">
+    <slot-icon>
+      <x-linkvariantoff size="44"></x-linkvariantoff>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab relations shows the failure missing 1`] = `
+"<div class="relations-tab">
+  <x-ncemptycontent name="t:Failed to load related entities" description="">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab relations shows the failure plain 1`] = `
+"<div class="relations-tab">
+  <x-ncemptycontent name="t:Failed to load related entities" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab relations shows the failure refused 1`] = `
+"<div class="relations-tab">
+  <x-ncemptycontent name="t:Failed to load related entities" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>"
+`;
+
+exports[`http relation tab relations shows the loading state, then the items 1`] = `
+"<div class="relations-tab">
+  <div class="relations-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>"
+`;
+
+exports[`http relation tab relations shows the loading state, then the items 2`] = `
+"<div class="relations-tab">
+  <div class="relations-tab__filters">
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Emails</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Events</slot-default>
+    </x-nccheckboxradioswitch>
+  </div>
+  <ol class="relations-tab__timeline">
+    <li class="relations-tab__entry relations-tab__entry--email">
+      <div class="relations-tab__icon">
+        <x-emailoutline size="20"></x-emailoutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">M</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Emails</span>
+        </div>
+      </div>
+    </li>
+    <li class="relations-tab__entry relations-tab__entry--event">
+      <div class="relations-tab__icon">
+        <x-calendaroutline size="20"></x-calendaroutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">E</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Events</span>
+        </div>
+      </div>
+    </li>
+  </ol>
+</div>"
+`;
+
+exports[`http relation tab relations shows the loading state, then the items 3`] = `
+[
+  [
+    "/apps/openregister/api/objects/{register}/{schema}/{id}/relations {"register":1,"schema":2,"id":"o1"}",
+    {
+      "params": {
+        "view": "timeline",
+      },
+    },
+  ],
+]
+`;
+
+exports[`http relation tab relations unlinks, or reports a refused unlink 1`] = `
+{
+  "deletes": [],
+  "emitted": {},
+  "html": "<div class="relations-tab">
+  <div class="relations-tab__filters">
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Emails</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Events</slot-default>
+    </x-nccheckboxradioswitch>
+  </div>
+  <ol class="relations-tab__timeline">
+    <li class="relations-tab__entry relations-tab__entry--email">
+      <div class="relations-tab__icon">
+        <x-emailoutline size="20"></x-emailoutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">M</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Emails</span>
+        </div>
+      </div>
+    </li>
+    <li class="relations-tab__entry relations-tab__entry--event">
+      <div class="relations-tab__icon">
+        <x-calendaroutline size="20"></x-calendaroutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">E</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Events</span>
+        </div>
+      </div>
+    </li>
+  </ol>
+</div>",
+}
+`;
+
+exports[`http relation tab relations unlinks, or reports a refused unlink 2`] = `
+"<div class="relations-tab">
+  <div class="relations-tab__filters">
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Emails</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-nccheckboxradioswitch modelvalue="true" type="button">
+      <slot-default>t:Events</slot-default>
+    </x-nccheckboxradioswitch>
+  </div>
+  <ol class="relations-tab__timeline">
+    <li class="relations-tab__entry relations-tab__entry--email">
+      <div class="relations-tab__icon">
+        <x-emailoutline size="20"></x-emailoutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">M</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Emails</span>
+        </div>
+      </div>
+    </li>
+    <li class="relations-tab__entry relations-tab__entry--event">
+      <div class="relations-tab__icon">
+        <x-calendaroutline size="20"></x-calendaroutline>
+      </div>
+      <div class="relations-tab__body">
+        <div class="relations-tab__title">E</div>
+        <div class="relations-tab__meta"><span class="relations-tab__type-badge">t:Events</span>
+        </div>
+      </div>
+    </li>
+  </ol>
+</div>"
+`;
+
+exports[`store relation tab contacts loads anew for another object, and not for none 1`] = `
+[
+  [
+    "fetch",
+    1,
+    2,
+    "o1",
+  ],
+  [
+    "fetch",
+    1,
+    2,
+    "o2",
+  ],
+]
+`;
+
+exports[`store relation tab contacts reports a refused unlink 1`] = `
+{
+  "emitted": {
+    "add-contact": [
+      [],
+    ],
+  },
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked contacts" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "c1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state empty 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No contacts linked to this object" description="t:Add a contact from any of your address books to associate it with this object.">
+    <slot-icon>
+      <x-accountoutline size="44"></x-accountoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state failed 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked contacts" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state failedPlain 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked contacts" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state items 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <ul class="contacts-tab__list">
+    <li class="contacts-tab__item">
+      <div class="contacts-tab__icon">
+        <x-accountoutline size="20"></x-accountoutline>
+      </div>
+      <div class="contacts-tab__content">
+        <div class="contacts-tab__name">Ann</div>
+        <div class="contacts-tab__meta"><span class="contacts-tab__email">a@b</span><span class="contacts-tab__separator">·</span><span class="contacts-tab__role">owner</span></div>
+      </div>
+      <x-ncbutton variant="tertiary" aria-label="t:Remove contact">
+        <slot-icon>
+          <x-closecircleoutline size="20"></x-closecircleoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </li>
+  </ul>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state loading 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts shows the state missing 1`] = `
+{
+  "html": "<div class="contacts-tab">
+  <x-ncemptycontent name="t:Contacts integration is not available" description="t:The Nextcloud Contacts app is not installed or enabled on this server.">
+    <slot-icon>
+      <x-accountoff size="44"></x-accountoff>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab contacts unlinks and reports the new count, then the buttons 1`] = `
+{
+  "emitted": {
+    "add-contact": [
+      [],
+    ],
+    "contacts-changed": [
+      [
+        0,
+      ],
+    ],
+  },
+  "html": "<div class="contacts-tab">
+  <div class="contacts-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add contact</slot-default>
+      <slot-icon>
+        <x-accountplus size="20"></x-accountplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No contacts linked to this object" description="t:Add a contact from any of your address books to associate it with this object.">
+    <slot-icon>
+      <x-accountoutline size="44"></x-accountoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "c1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck loads anew for another object, and not for none 1`] = `
+[
+  [
+    "fetch",
+    1,
+    2,
+    "o1",
+  ],
+  [
+    "fetch",
+    1,
+    2,
+    "o2",
+  ],
+]
+`;
+
+exports[`store relation tab deck reports a refused unlink 1`] = `
+{
+  "emitted": {
+    "add-deck-card": [
+      [],
+    ],
+  },
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load Deck cards" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "d3",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state empty 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No Deck cards linked to this object" description="t:Create or link a Deck card to track work on this object.">
+    <slot-icon>
+      <x-tablelarge size="44"></x-tablelarge>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state failed 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load Deck cards" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state failedPlain 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load Deck cards" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state items 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <ul class="deck-tab__list">
+    <li class="deck-tab__item">
+      <div class="deck-tab__icon">
+        <x-tablelarge size="20"></x-tablelarge>
+      </div>
+      <div class="deck-tab__content">
+        <div class="deck-tab__title">Card</div>
+        <div class="deck-tab__meta"><span class="deck-tab__board">Board</span>
+        </div>
+      </div>
+      <x-ncbutton variant="tertiary" aria-label="t:Remove Deck card">
+        <slot-icon>
+          <x-closecircleoutline size="20"></x-closecircleoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </li>
+  </ul>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state loading 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck shows the state missing 1`] = `
+{
+  "html": "<div class="deck-tab">
+  <x-ncemptycontent name="t:Deck integration is not available" description="t:The Nextcloud Deck app is not installed or enabled on this server.">
+    <slot-icon>
+      <x-tableremove size="44"></x-tableremove>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab deck unlinks and reports the new count, then the buttons 1`] = `
+{
+  "emitted": {
+    "add-deck-card": [
+      [],
+    ],
+    "deck-changed": [
+      [
+        0,
+      ],
+    ],
+  },
+  "html": "<div class="deck-tab">
+  <div class="deck-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Add card</slot-default>
+      <slot-icon>
+        <x-tablelargeplus size="20"></x-tablelargeplus>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No Deck cards linked to this object" description="t:Create or link a Deck card to track work on this object.">
+    <slot-icon>
+      <x-tablelarge size="44"></x-tablelarge>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "d3",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events loads anew for another object, and not for none 1`] = `
+[
+  [
+    "fetch",
+    1,
+    2,
+    "o1",
+  ],
+  [
+    "fetch",
+    1,
+    2,
+    "o2",
+  ],
+]
+`;
+
+exports[`store relation tab events reports a refused unlink 1`] = `
+{
+  "emitted": {
+    "create-event": [
+      [],
+    ],
+    "link-event": [
+      [],
+    ],
+  },
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked events" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "e1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state empty 1`] = `
+{
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No events linked to this object" description="t:Create a new event or link an existing one from any of your calendars.">
+    <slot-icon>
+      <x-calendaroutline size="44"></x-calendaroutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state failed 1`] = `
+{
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked events" description="refused">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state failedPlain 1`] = `
+{
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:Failed to load linked events" description="boom">
+    <slot-icon>
+      <x-alertcircleoutline size="44"></x-alertcircleoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state items 1`] = `
+{
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <ul class="events-tab__list">
+    <li class="events-tab__item">
+      <div class="events-tab__icon">
+        <x-calendaroutline size="20"></x-calendaroutline>
+      </div>
+      <div class="events-tab__content">
+        <div class="events-tab__summary">Meet</div>
+        <div class="events-tab__meta"><span class="events-tab__calendar">Home</span><span class="events-tab__separator">·</span><span class="events-tab__date">1/2/2026, 12:00:00 AM</span></div>
+      </div>
+      <x-ncbutton variant="tertiary" aria-label="t:Unlink event">
+        <slot-icon>
+          <x-closecircleoutline size="20"></x-closecircleoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </li>
+  </ul>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state loading 1`] = `
+{
+  "html": "<div class="events-tab">
+  <div class="events-tab__loading">
+    <x-ncloadingicon size="44"></x-ncloadingicon>
+  </div>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events shows the state missing 1`] = `
+{
+  "html": "<div class="events-tab">
+  <x-ncemptycontent name="t:Calendar integration is not available" description="t:The Nextcloud Calendar app is not installed or enabled on this server.">
+    <slot-icon>
+      <x-calendarremove size="44"></x-calendarremove>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+  ],
+}
+`;
+
+exports[`store relation tab events unlinks and reports the new count, then the buttons 1`] = `
+{
+  "emitted": {
+    "create-event": [
+      [],
+    ],
+    "events-changed": [
+      [
+        0,
+      ],
+    ],
+    "link-event": [
+      [],
+    ],
+  },
+  "html": "<div class="events-tab">
+  <div class="events-tab__toolbar">
+    <x-ncbutton variant="primary">
+      <slot-default> t:Create event</slot-default>
+      <slot-icon>
+        <x-calendarplus size="20"></x-calendarplus>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="secondary">
+      <slot-default> t:Link existing event</slot-default>
+      <slot-icon>
+        <x-linkvariant size="20"></x-linkvariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <x-ncemptycontent name="t:No events linked to this object" description="t:Create a new event or link an existing one from any of your calendars.">
+    <slot-icon>
+      <x-calendaroutline size="44"></x-calendaroutline>
+    </slot-icon>
+  </x-ncemptycontent>
+</div>",
+  "log": [
+    [
+      "fetch",
+      1,
+      2,
+      "o1",
+    ],
+    [
+      "unlink",
+      1,
+      2,
+      "o1",
+      "e1",
+    ],
+  ],
+}
+`;

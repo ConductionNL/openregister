@@ -111,41 +111,88 @@ class GenericDeepLinkRegistrationListener implements IEventListener {
 	 * Load the `deepLinks` array from the leaf app's manifest. Overridable hook.
 	 *
 	 * Always returns an array; a missing/unreadable manifest or block yields
-	 * an empty list (no deep links registered), never a fatal.
+	 * an empty list (no deep links registered), never a fatal. A missing
+	 * manifest is logged as a warning.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/deep-link-registry/spec.md#requirement-the-registry-must-fill-itself-in-a-process-that-never-booted-openregister
 	 */
 	protected function loadDeepLinks(): array {
-		try {
-			$appPath = $this->appManager->getAppPath(appId: $this->appId);
-		} catch (Throwable $e) {
+		$manifest = $this->readManifest();
+		if ($manifest === null) {
 			return [];
 		}
 
-		$manifestPath = $appPath . '/src/manifest.json';
-		if (is_readable($manifestPath) === false) {
+		$links = ($manifest['deepLinks'] ?? []);
+		if (is_array($links) === false) {
 			return [];
+		}
+
+		return self::arrayEntries(links: $links);
+	}//end loadDeepLinks()
+
+	/**
+	 * The app's decoded src/manifest.json; null when it cannot be read or is invalid.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function readManifest(): ?array {
+		$manifestPath = $this->manifestPath();
+		if ($manifestPath === null) {
+			return null;
 		}
 
 		$raw = file_get_contents($manifestPath);
 		if ($raw === false) {
-			return [];
+			return null;
 		}
 
 		$decoded = json_decode($raw, associative: true);
 		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
 			$this->logger->warning(sprintf('[AppHost:%s] manifest.json is invalid JSON; no deep links registered', $this->appId));
-			return [];
+			return null;
 		}
 
-		$links = ($decoded['deepLinks'] ?? []);
-		if (is_array($links) === false) {
-			return [];
+		return $decoded;
+	}//end readManifest()
+
+	/**
+	 * The path of the app's readable src/manifest.json; null when there is none.
+	 *
+	 * @return string|null
+	 */
+	private function manifestPath(): ?string {
+		try {
+			$appPath = $this->appManager->getAppPath(appId: $this->appId);
+		} catch (Throwable $e) {
+			return null;
 		}
 
-		// Keep only array entries.
+		$manifestPath = $appPath . '/src/manifest.json';
+		if (is_readable($manifestPath) === false) {
+			// Said out loud: a release package without src/ registered nothing
+			// here, and every notification of the app silently fell back to
+			// OpenRegister (cloud check, 9 October 2026).
+			$this->logger->warning(
+				sprintf('[AppHost:%s] no src/manifest.json in the app package; no deep links registered', $this->appId)
+			);
+			return null;
+		}
+
+		return $manifestPath;
+	}//end manifestPath()
+
+	/**
+	 * Keep only the array entries of a deep-link list.
+	 *
+	 * @param array $links The manifest's `deepLinks`.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function arrayEntries(array $links): array {
 		$entries = [];
 		foreach ($links as $link) {
 			if (is_array($link) === true) {
@@ -154,5 +201,5 @@ class GenericDeepLinkRegistrationListener implements IEventListener {
 		}//end foreach
 
 		return $entries;
-	}//end loadDeepLinks()
+	}//end arrayEntries()
 }//end class

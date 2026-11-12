@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -59,11 +60,8 @@ class PreviewHandlerTest extends TestCase {
 		$this->fetchHandler = $this->createMock(FetchHandler::class);
 
 		$this->handler = new PreviewHandler(
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->logger,
-			$this->fetchHandler,
-			$this->createMock(MagicMapper::class)
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapper::class)),
+			$this->fetchHandler
 		);
 	}
 
@@ -357,7 +355,7 @@ class PreviewHandlerTest extends TestCase {
 
 		$result = $this->handler->previewConfigurationChanges($configuration);
 
-		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame($errorResponse, $result);
 	}
 
 	// ──────────────────────────────────────────────────────────────
@@ -855,13 +853,12 @@ class PreviewHandlerTest extends TestCase {
 	}
 
 	/**
-	 * compareArrays reports a changed scalar under its prefixed path.
+	 * compareArrays reports a changed scalar in a nested map under its dotted path.
 	 */
 	public function testCompareArraysReportsAChangedScalar(): void {
 		$result = $this->handler->compareArrays(
-			['key' => 'old'],
-			['key' => 'new'],
-			'prefix'
+			['prefix' => ['key' => 'old']],
+			['prefix' => ['key' => 'new']]
 		);
 
 		$this->assertSame([['field' => 'prefix.key', 'current' => 'old', 'proposed' => 'new']], $result);

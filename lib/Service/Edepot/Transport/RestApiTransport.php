@@ -26,9 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Psr\Log\LoggerInterface;
+use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 
 /**
@@ -39,7 +38,9 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class RestApiTransport implements TransportInterface {
+class RestApiTransport extends HttpSipTransport implements RestApiTransportInterface {
+
+	use SipTransportSteps;
 
 	/**
 	 * API-key authentication (`X-API-Key` header).
@@ -76,18 +77,6 @@ class RestApiTransport implements TransportInterface {
 	];
 
 	/**
-	 * Constructor.
-	 *
-	 * @param Client $httpClient The HTTP client.
-	 * @param LoggerInterface $logger Logger.
-	 */
-	public function __construct(
-		private readonly Client $httpClient,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
-
-	/**
 	 * Send a SIP package via REST API.
 	 *
 	 * @param string $sipFilePath The local path to the SIP ZIP archive.
@@ -107,94 +96,12 @@ class RestApiTransport implements TransportInterface {
 		);
 
 		try {
-			$this->validateConfig(config: $config);
+			$this->assertSendable(sipFilePath: $sipFilePath, config: $config);
 
-			if (file_exists($sipFilePath) === false) {
-				throw new RuntimeException("SIP file not found: {$sipFilePath}");
-			}
-
-			$headers = $this->buildAuthHeaders(config: $config);
-
-			$response = $this->httpClient->post(
-				$config['endpointUrl'],
-				[
-					'headers' => $headers,
-					'multipart' => [
-						[
-							'name' => 'sip',
-							'contents' => fopen($sipFilePath, 'r'),
-							'filename' => basename($sipFilePath),
-						],
-					],
-					'timeout' => 300,
-				]
-			);
-
-			$statusCode = $response->getStatusCode();
-			$body = json_decode((string)$response->getBody(), true);
-
-			if ($statusCode >= 200 && $statusCode < 300) {
-				$transferRef = ($body['reference'] ?? $body['id'] ?? null);
-
-				$objectResults = [];
-				if (isset($body['objects']) === true && is_array($body['objects']) === true) {
-					foreach ($body['objects'] as $objResult) {
-						$uuid = ($objResult['uuid'] ?? $objResult['id'] ?? '');
-						$objectResults[$uuid] = [
-							'accepted' => ($objResult['accepted'] ?? true),
-							'reference' => ($objResult['reference'] ?? null),
-							'error' => ($objResult['error'] ?? null),
-						];
-					}
-				}
-
-				$hasRejections = false;
-				foreach ($objectResults as $result) {
-					if ($result['accepted'] === false) {
-						$hasRejections = true;
-						break;
-					}
-				}
-
-				$this->logger->info(
-					message: '[RestApiTransport] REST API transfer completed',
-					context: [
-						'statusCode' => $statusCode,
-						'reference' => $transferRef,
-						'hasRejections' => $hasRejections,
-					]
-				);
-
-				return new TransportResult(
-					success: ($hasRejections === false),
-					objectResults: $objectResults,
-					transferReference: $transferRef
-				);
-			}//end if
-
-			$errorMsg = ($body['error'] ?? $body['message'] ?? "HTTP {$statusCode}");
-			throw new RuntimeException("e-Depot API returned error: {$errorMsg}");
-		} catch (GuzzleException $e) {
-			$this->logger->error(
-				message: '[RestApiTransport] REST API transfer failed',
-				context: ['error' => $e->getMessage()]
-			);
-
-			return new TransportResult(
-				success: false,
-				errorMessage: $e->getMessage()
-			);
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[RestApiTransport] REST API transfer failed',
-				context: ['error' => $e->getMessage()]
-			);
-
-			return new TransportResult(
-				success: false,
-				errorMessage: $e->getMessage()
-			);
-		}//end try
+			return $this->acceptedOrThrow(response: $this->postSip(sipFilePath: $sipFilePath, config: $config));
+		} catch (GuzzleException | \Exception $e) {
+			return $this->failedTransfer(cause: $e, message: '[RestApiTransport] REST API transfer failed');
+		}
 	}//end send()
 
 	/**
@@ -209,25 +116,143 @@ class RestApiTransport implements TransportInterface {
 	public function testConnection(array $config): bool {
 		try {
 			$this->validateConfig(config: $config);
-			$headers = $this->buildAuthHeaders(config: $config);
 
-			$response = $this->httpClient->get(
-				$config['endpointUrl'],
-				[
-					'headers' => $headers,
-					'timeout' => 10,
-				]
-			);
-
-			return ($response->getStatusCode() < 400);
+			return $this->probeEndpoint(config: $config);
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[RestApiTransport] Connection test failed',
-				context: ['error' => $e->getMessage()]
-			);
-			return false;
+			return $this->failedConnectionTest(cause: $e, message: '[RestApiTransport] Connection test failed');
 		}
 	}//end testConnection()
+
+	/**
+	 * Whether the endpoint answers an authenticated GET below 400.
+	 *
+	 * @param array<string, mixed> $config The transport config.
+	 *
+	 * @return bool
+	 *
+	 * @throws GuzzleException When the request fails.
+	 */
+	private function probeEndpoint(array $config): bool {
+		$headers = $this->buildAuthHeaders(config: $config);
+
+		$response = $this->httpClient->get(
+			$config['endpointUrl'],
+			[
+				'headers' => $headers,
+				'timeout' => 10,
+			]
+		);
+
+		return ($response->getStatusCode() < 400);
+	}//end probeEndpoint()
+
+	/**
+	 * Post the SIP package as multipart with the configured authentication headers.
+	 *
+	 * @param string               $sipFilePath The SIP package path.
+	 * @param array<string, mixed> $config      The transport config.
+	 *
+	 * @return ResponseInterface The e-Depot's answer.
+	 *
+	 * @throws GuzzleException When the request fails.
+	 */
+	private function postSip(string $sipFilePath, array $config): ResponseInterface {
+		$headers = $this->buildAuthHeaders(config: $config);
+
+		return $this->httpClient->post(
+			$config['endpointUrl'],
+			[
+				'headers' => $headers,
+				'multipart' => [$this->sipPart(sipFilePath: $sipFilePath)],
+				'timeout' => 300,
+			]
+		);
+	}//end postSip()
+
+	/**
+	 * The multipart part that carries the SIP package.
+	 *
+	 * @param string $sipFilePath The SIP package path.
+	 *
+	 * @return array{name: string, contents: resource|false, filename: string}
+	 */
+	private function sipPart(string $sipFilePath): array {
+		return [
+			'name' => 'sip',
+			'contents' => fopen($sipFilePath, 'r'),
+			'filename' => basename($sipFilePath),
+		];
+	}//end sipPart()
+
+	/**
+	 * The result of a 2xx answer; any other status is an error.
+	 *
+	 * @param ResponseInterface $response The e-Depot's answer.
+	 *
+	 * @return TransportResult The result of an accepted transfer.
+	 *
+	 * @throws RuntimeException When the status is not 2xx.
+	 */
+	private function acceptedOrThrow(ResponseInterface $response): TransportResult {
+		$statusCode = $response->getStatusCode();
+		$body = json_decode((string)$response->getBody(), true);
+
+		if ($statusCode >= 200 && $statusCode < 300) {
+			return $this->acceptedResult(body: $body, statusCode: $statusCode);
+		}
+
+		$errorMsg = ($body['error'] ?? $body['message'] ?? "HTTP {$statusCode}");
+		throw new RuntimeException("e-Depot API returned error: {$errorMsg}");
+	}//end acceptedOrThrow()
+
+	/**
+	 * The result of an accepted transfer: successful unless an object was rejected.
+	 *
+	 * @param mixed $body       The decoded answer body.
+	 * @param int   $statusCode The HTTP status.
+	 *
+	 * @return TransportResult The result.
+	 */
+	private function acceptedResult(mixed $body, int $statusCode): TransportResult {
+		$transferRef = ($body['reference'] ?? $body['id'] ?? null);
+		$result = new TransportResult(transferReference: $transferRef, objectResults: $this->objectResults(body: $body));
+
+		$this->logger->info(
+			message: '[RestApiTransport] REST API transfer completed',
+			context: [
+				'statusCode' => $statusCode,
+				'reference' => $transferRef,
+				'hasRejections' => $result->hasRejections(),
+			]
+		);
+
+		return $result;
+	}//end acceptedResult()
+
+	/**
+	 * The per-object outcomes in an answer body, keyed by object uuid.
+	 *
+	 * @param mixed $body The decoded answer body.
+	 *
+	 * @return array<string, array{accepted: mixed, reference: mixed, error: mixed}> The outcomes.
+	 */
+	private function objectResults(mixed $body): array {
+		$objectResults = [];
+		if (isset($body['objects']) === false || is_array($body['objects']) === false) {
+			return $objectResults;
+		}
+
+		foreach ($body['objects'] as $objResult) {
+			$uuid = ($objResult['uuid'] ?? $objResult['id'] ?? '');
+			$objectResults[$uuid] = [
+				'accepted' => ($objResult['accepted'] ?? true),
+				'reference' => ($objResult['reference'] ?? null),
+				'error' => ($objResult['error'] ?? null),
+			];
+		}
+
+		return $objectResults;
+	}//end objectResults()
 
 	/**
 	 * Get transport name.
@@ -268,6 +293,20 @@ class RestApiTransport implements TransportInterface {
 			throw new RuntimeException('Missing required REST API config: endpointUrl');
 		}
 
+		$authType = $this->supportedAuthType(config: $config);
+		$this->assertCredentialFor(authType: $authType, config: $config);
+	}//end validateConfig()
+
+	/**
+	 * The configured authentication type, or a refusal when it is missing or unsupported.
+	 *
+	 * @param array<string, mixed> $config The transport config.
+	 *
+	 * @return string One of SUPPORTED_AUTH_TYPES.
+	 *
+	 * @throws RuntimeException When the type is missing or unsupported.
+	 */
+	private function supportedAuthType(array $config): string {
 		$authType = (string)($config['authenticationType'] ?? '');
 		if (in_array($authType, self::SUPPORTED_AUTH_TYPES, true) === false) {
 			throw new RuntimeException(
@@ -277,18 +316,28 @@ class RestApiTransport implements TransportInterface {
 			);
 		}
 
-		if ($authType === self::AUTH_API_KEY && empty($config['apiKey']) === true) {
-			throw new RuntimeException(
-				'Missing required REST API config: apiKey is empty while authenticationType is ' . self::AUTH_API_KEY
-			);
-		}
+		return $authType;
+	}//end supportedAuthType()
 
-		if ($authType === self::AUTH_OAUTH2 && empty($config['bearerToken']) === true) {
+	/**
+	 * Refuse an API-key or OAuth2 config whose credential is empty.
+	 *
+	 * @param string               $authType The validated authentication type.
+	 * @param array<string, mixed> $config   The transport config.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the credential the type needs is empty.
+	 */
+	private function assertCredentialFor(string $authType, array $config): void {
+		$needs = [self::AUTH_API_KEY => 'apiKey', self::AUTH_OAUTH2 => 'bearerToken'];
+		$key = ($needs[$authType] ?? null);
+		if ($key !== null && empty($config[$key]) === true) {
 			throw new RuntimeException(
-				'Missing required REST API config: bearerToken is empty while authenticationType is ' . self::AUTH_OAUTH2
+				"Missing required REST API config: {$key} is empty while authenticationType is {$authType}"
 			);
 		}
-	}//end validateConfig()
+	}//end assertCredentialFor()
 
 	/**
 	 * Build authentication headers.

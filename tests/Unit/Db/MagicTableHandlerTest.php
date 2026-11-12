@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IAppConfig;
@@ -55,9 +58,8 @@ class MagicTableHandlerTest extends TestCase {
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new MagicTableHandler(
-			db: $this->db,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 			appConfig: $this->appConfig,
-			logger: $this->logger,
 			magicMapper: $this->magicMapper
 		);
 
@@ -97,9 +99,8 @@ class MagicTableHandlerTest extends TestCase {
 		// syncTableForRegisterSchema must NOT be called — table is up to date.
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $this->handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);
@@ -131,9 +132,8 @@ class MagicTableHandlerTest extends TestCase {
 		// Partial mock: intercept syncTableForRegisterSchema on the handler itself.
 		$handler = $this->getMockBuilder(MagicTableHandler::class)
 			->setConstructorArgs([
-				'db' => $this->db,
+				'sql' => new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 				'appConfig' => $this->appConfig,
-				'logger' => $this->logger,
 				'magicMapper' => $this->magicMapper,
 			])
 			->onlyMethods(['syncTableForRegisterSchema'])
@@ -143,13 +143,36 @@ class MagicTableHandlerTest extends TestCase {
 			->method('syncTableForRegisterSchema')
 			->willReturn(['success' => true]);
 
-		$result = $handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);
 	}//end testSyncCalledWhenColumnMissing()
+
+	/**
+	 * A plain first use of a table never ALTERs a narrow number column: that
+	 * would put one ALTER per table under live traffic after an upgrade. The
+	 * upgrade step and the reconcile command widen it.
+	 */
+	public function testFirstUseDoesNotWidenANarrowNumberColumn(): void {
+		$columnMap = [
+			'_uuid' => ['name' => '_uuid', 'type' => 'string', 'nullable' => false, 'default' => null],
+			'weight' => ['name' => 'weight', 'type' => 'decimal', 'precision' => 20, 'scale' => 6, 'nullable' => true, 'default' => null],
+		];
+		$existing = $columnMap;
+		$existing['weight'] = ['name' => 'weight', 'type' => 'numeric', 'precision' => 10, 'scale' => 2, 'nullable' => true, 'default' => null];
+
+		$this->magicMapper->method('hasRegisterSchemaChanged')->willReturn(false);
+		$this->magicMapper->method('buildTableColumnsFromSchema')->willReturn($columnMap);
+		$this->magicMapper->method('getExistingTableColumns')->willReturn($existing);
+		$this->magicMapper->method('findDecimalColumnsNeedingWiden')->willReturn(['weight']);
+
+		$this->magicMapper->expects($this->never())->method('widenDecimalColumns');
+		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
+
+		$this->assertTrue($this->handler->ensureTargetTable(target: new MagicTableTarget(register: $this->register, schema: $this->schema)));
+	}//end testFirstUseDoesNotWidenANarrowNumberColumn()
 
 	/**
 	 * Fast path: when the verified flag is set, neither buildTableColumnsFromSchema
@@ -165,9 +188,8 @@ class MagicTableHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('getExistingTableColumns');
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $this->handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);

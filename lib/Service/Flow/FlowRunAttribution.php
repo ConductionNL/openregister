@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\Flow;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -72,6 +73,16 @@ class FlowRunAttribution {
 	private const TRIGGER_SCHEDULE = 'schedule';
 
 	/**
+	 * The trigger kind of a run a case plan queues for a stage or process task.
+	 *
+	 * Queued without a caller whenever the plan was realised by a system or cascade actor, so it answers from
+	 * the same declared identity a schedule does.
+	 *
+	 * @var string
+	 */
+	private const TRIGGER_CASE = 'case';
+
+	/**
 	 * The node type a schedule trigger uses.
 	 *
 	 * @var string
@@ -84,6 +95,14 @@ class FlowRunAttribution {
 	 * @var string
 	 */
 	private const CONFIG_RUN_AS = 'runAs';
+
+	/**
+	 * Why a compiled schedule whose identity left its tenant is stopped.
+	 *
+	 * @var string
+	 */
+	private const OUTSIDE_TENANT = 'Its acting identity "%s" is not a member of the flow\'s organisation. '
+		. 'Publishing the application again sets a new one.';
 
 	/**
 	 * Constructor.
@@ -145,14 +164,29 @@ class FlowRunAttribution {
 	 * @param string      $trigger What started the run — `manual`, `schedule`, an
 	 *                             event id, `sub-flow`, `nc-flow`.
 	 *
-	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null}
-	 *         The attribution. A null `user` means REFUSE.
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE; `refusal` says why when
+	 *         someone was named.
 	 *
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function resolve(string $flowId, ?string $user, string $trigger = 'manual'): array {
-		$caller = $this->orNull(value: $user);
+		return $this->attribute(query: new RunAttributionQuery(flowId: $flowId, user: $user, trigger: $trigger));
+	}//end resolve()
+
+	/**
+	 * Resolve the run's acting identity and organisation, as {@see resolve()} documents.
+	 *
+	 * @param RunAttributionQuery $query The flow, the caller's uid and what started the run.
+	 *
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function attribute(RunAttributionQuery $query): array {
+		$caller = $this->orNull(value: $query->user);
 		$organisation = $this->activeOrganisation();
 
 		if ($caller !== null && $organisation !== null) {
@@ -161,25 +195,72 @@ class FlowRunAttribution {
 			return ['user' => $caller, 'organisation' => $organisation, 'declaredBy' => null];
 		}
 
-		$flow = $this->loadFlow(flowId: $flowId);
-		$declared = $this->declaredByTrigger(flow: $flow, trigger: $trigger);
+		return $this->fromFlow(query: $query, organisation: $organisation);
+	}//end attribute()
+
+	/**
+	 * Fill what the caller and the active organisation left open from the flow and its trigger.
+	 *
+	 * @param RunAttributionQuery $query        The flow, the caller's uid and what started the run.
+	 * @param string|null         $organisation The active organisation, when one resolved.
+	 *
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE; `refusal` says why when
+	 *         someone was named.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function fromFlow(RunAttributionQuery $query, ?string $organisation): array {
+		$caller = $this->orNull(value: $query->user);
+		$flow = $this->loadFlow(flowId: $query->flowId);
+		$declared = $this->declaredByTrigger(flow: $flow, trigger: $query->trigger);
 
 		$declaredBy = null;
 		if ($caller === null) {
 			$declaredBy = $declared['declaredBy'];
 		}
 
-		return [
+		$attribution = [
 			'user' => ($caller ?? $declared['user']),
 			'organisation' => ($organisation ?? $this->orNull(value: $flow?->getOrganisation())),
 			'declaredBy' => $declaredBy,
 		];
-	}//end resolve()
+
+		if ($caller === null && $this->leftItsTenant(flow: $flow, runAs: $declared['user']) === true) {
+			return ['user' => null, 'refusal' => sprintf(self::OUTSIDE_TENANT, (string)$declared['user'])] + $attribution;
+		}
+
+		return $attribution;
+	}//end fromFlow()
+
+	/**
+	 * Whether a flow compiled from a manifest declares an identity outside its tenant.
+	 *
+	 * A flow an author drew is not asked: this rule is the compiled flow's.
+	 *
+	 * @param object|null $flow  The flow entity, or null when unreadable.
+	 * @param string|null $runAs The declared identity.
+	 *
+	 * @return boolean True when the run may not act as that identity.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	private function leftItsTenant(?object $flow, ?string $runAs): bool {
+		if (($flow instanceof Flow) === false || $runAs === null || $flow->getApp() !== Flow::APP_MANIFEST_SCHEDULE) {
+			return false;
+		}
+
+		return $this->container->get(FlowTenantMembership::class)->isMember(
+			uid: $runAs,
+			organisation: (string)$flow->getOrganisation()
+		) === false;
+	}//end leftItsTenant()
 
 	/**
 	 * The identity declared by the trigger that started this run.
 	 *
-	 * Only a SCHEDULE trigger declares one. Every other entry point already
+	 * Only a SCHEDULE trigger node declares one, for a schedule run and for a `case` run (a plan item realised
+	 * by a system actor, which has no caller either). Every other entry point already
 	 * carries its identity in the caller argument: a manual run has the session
 	 * user, an object event has the user whose action raised it, and a sub-flow
 	 * is dispatched with its parent run's acting identity. A schedule has no
@@ -199,52 +280,89 @@ class FlowRunAttribution {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function declaredByTrigger(?object $flow, string $trigger): array {
-		$none = ['user' => null, 'declaredBy' => null];
+		foreach ($this->nodesDeclaringFor(flow: $flow, trigger: $trigger) as $node) {
+			$declared = $this->declaredByNode(node: $node);
+			if ($declared !== null) {
+				return $declared;
+			}
+		}
 
-		if ($flow === null || $trigger !== self::TRIGGER_SCHEDULE) {
-			return $none;
+		return ['user' => null, 'declaredBy' => null];
+	}//end declaredByTrigger()
+
+	/**
+	 * The flow's nodes when this trigger is one that declares its identity on a node, else none.
+	 *
+	 * @param object|null $flow    The flow entity, or null when unreadable.
+	 * @param string      $trigger What started the run.
+	 *
+	 * @return array The nodes to look for a declaration in.
+	 */
+	private function nodesDeclaringFor(?object $flow, string $trigger): array {
+		if ($flow === null || in_array($trigger, [self::TRIGGER_SCHEDULE, self::TRIGGER_CASE], true) === false) {
+			return [];
 		}
 
 		$nodes = $flow->getNodes();
 		if (is_array($nodes) === false) {
-			return $none;
+			return [];
 		}
 
-		foreach ($nodes as $node) {
-			if (is_array($node) === false
-				|| ($node['type'] ?? null) !== self::NODE_TRIGGER_SCHEDULE
-			) {
-				continue;
-			}
+		return $nodes;
+	}//end nodesDeclaringFor()
 
-			// `config` is `[]` on a flow still mid-cutover from the trigger
-			// COLUMNS to trigger NODES — measured on 3 of this instance's flows,
-			// all of which keep their cron in the legacy column. Such a node
-			// declares no identity, so it yields null and the run is refused
-			// rather than fired ownerless.
-			$config = ($node['config'] ?? []);
-			if (is_array($config) === false) {
-				continue;
-			}
-
-			$declared = $this->orNull(value: ($config[self::CONFIG_RUN_AS] ?? null));
-			if ($declared !== null) {
-				return [
-					'user' => $declared,
-					// Server-written at save time by FlowTriggerValidator, and
-					// absent whenever the trigger names its own saver. Its
-					// presence is what tells the fire path there is a grant to
-					// re-resolve; its absence means the identity was nobody's to
-					// delegate.
-					'declaredBy' => $this->orNull(
-						value: ($config[FlowTriggerValidator::CONFIG_DECLARED_BY] ?? null)
-					),
-				];
-			}
+	/**
+	 * The identity one flow node declares, or null when it is no schedule trigger or declares none.
+	 *
+	 * @param mixed $node One entry of the flow's nodes.
+	 *
+	 * @return array{user: string, declaredBy: string|null}|null The declaration, or null.
+	 */
+	private function declaredByNode(mixed $node): ?array {
+		if (is_array($node) === false
+			|| ($node['type'] ?? null) !== self::NODE_TRIGGER_SCHEDULE
+		) {
+			return null;
 		}
 
-		return $none;
-	}//end declaredByTrigger()
+		// `config` is `[]` on a flow still mid-cutover from the trigger
+		// COLUMNS to trigger NODES — measured on 3 of this instance's flows,
+		// all of which keep their cron in the legacy column. Such a node
+		// declares no identity, so it yields null and the run is refused
+		// rather than fired ownerless.
+		$config = ($node['config'] ?? []);
+		if (is_array($config) === false) {
+			return null;
+		}
+
+		return $this->declaredByConfig(config: $config);
+	}//end declaredByNode()
+
+	/**
+	 * The identity a schedule trigger's config declares, and who asserted it.
+	 *
+	 * @param array $config The schedule trigger node's config.
+	 *
+	 * @return array{user: string, declaredBy: string|null}|null The declaration, or null when it names nobody.
+	 */
+	private function declaredByConfig(array $config): ?array {
+		$declared = $this->orNull(value: ($config[self::CONFIG_RUN_AS] ?? null));
+		if ($declared === null) {
+			return null;
+		}
+
+		return [
+			'user' => $declared,
+			// Server-written at save time by FlowTriggerValidator, and
+			// absent whenever the trigger names its own saver. Its
+			// presence is what tells the fire path there is a grant to
+			// re-resolve; its absence means the identity was nobody's to
+			// delegate.
+			'declaredBy' => $this->orNull(
+				value: ($config[FlowTriggerValidator::CONFIG_DECLARED_BY] ?? null)
+			),
+		];
+	}//end declaredByConfig()
 
 	/**
 	 * Load the flow, or null when it cannot be read.
@@ -277,7 +395,7 @@ class FlowRunAttribution {
 	 */
 	private function activeOrganisation(): ?string {
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
 		} catch (Throwable $e) {
 			$this->logger->debug(

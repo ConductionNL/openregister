@@ -23,8 +23,8 @@
  * `idempotentHint`) and an optional `scope` may also be declared. These reuse
  * the SAME vocabulary the `x-openregister-mcp` schema dialect already
  * canonicalised for schema-derived tools ({@see
- * \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS},
- * {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}) — no
+ * \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::HINT_KEYS},
+ * {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::SCOPES}) — no
  * parallel vocabulary is introduced. Every one of the four defaults to
  * `null`/omitted; {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} forwards
  * only what the author actually set, never a fabricated default, into the
@@ -57,6 +57,10 @@
  *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
  */
 
 declare(strict_types=1);
@@ -64,6 +68,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Attribute;
 
 use Attribute;
+use ReflectionMethod;
 
 /**
  * McpTool
@@ -82,24 +87,40 @@ final class McpTool {
 	 * @param string|null $name Local tool name; defaults to the method name when null.
 	 * @param string|null $description LLM-facing description; defaults to the docblock summary when null.
 	 * @param bool|null $readOnlyHint Optional MCP 2025-11-25 annotation hint; one of
-	 *                                {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
+	 *                                {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
 	 *                                Omitted (null) when the author does not declare it — never inferred.
 	 * @param bool|null $destructiveHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
 	 * @param bool|null $idempotentHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
 	 * @param string|null $scope Optional advisory scope; when set, MUST be one of
-	 *                           {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}
+	 *                           {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::SCOPES}
 	 *                           (validated by {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} at
 	 *                           scan time, not here). Omitted (null) when not declared.
 	 * @param string|null $subject The thing this tool acts on, e.g. `document`. Groups the tool in
 	 *                             the agent grant matrix. Omitted (null) when not declared — and an
 	 *                             omission is INVISIBLE, because
-	 *                             {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::describeTools()}
+	 *                             {@see \OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade::describeTools()}
 	 *                             deliberately returns null rather than inferring one from the id.
 	 *                             Declare it: a consumer cannot tell an inferred subject from a real one.
 	 * @param string|null $action The verb this tool performs on that subject, e.g. `get`. NOT closed
 	 *                            to CRUD — a tool that sends, converts or delegates should say so
 	 *                            rather than be filed under the nearest CRUD verb, since the matrix
 	 *                            grants on this value.
+	 * @param string|null $reach The widest set of principals a successful call can affect or
+	 *                           disclose to; when set, MUST be one of
+	 *                           {@see \OCA\OpenRegister\Service\Capability\ToolReachLevels::ORDER}
+	 *                           (`self`, `user`, `instance`, `external`), validated by the scanner at
+	 *                           scan time. A curated two-segment id carries no verb to infer a reach
+	 *                           from, so an omitted reach resolves to `external` (fail closed).
+	 * @param array<string, bool|int|float|string> $annotations Free-form marks a consuming app reads
+	 *                           off the descriptor, e.g. `['citizenIntake' => true]` for hermiq's
+	 *                           intake surface. OpenRegister interprets none of them; it forwards the
+	 *                           map under `annotations` only when non-empty. Keys MUST be non-empty
+	 *                           strings and values scalars, validated by the scanner at scan time.
+	 *                           A mark is a claim: a consumer MUST NOT treat one as a grant.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) An attribute is a flat declaration:
+	 * every field is one named argument at the call site, and grouping them in a value
+	 * object would break every `#[McpTool(...)]` already written.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
@@ -107,14 +128,34 @@ final class McpTool {
 	 *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
 	 */
 	public function __construct(
-		public readonly ?string $name = null,
-		public readonly ?string $description = null,
-		public readonly ?bool $readOnlyHint = null,
-		public readonly ?bool $destructiveHint = null,
-		public readonly ?bool $idempotentHint = null,
-		public readonly ?string $scope = null,
-		public readonly ?string $subject = null,
-		public readonly ?string $action = null,
+		public readonly string|null $name = null,
+		public readonly string|null $description = null,
+		public readonly bool|null $readOnlyHint = null,
+		public readonly bool|null $destructiveHint = null,
+		public readonly bool|null $idempotentHint = null,
+		public readonly string|null $scope = null,
+		public readonly string|null $subject = null,
+		public readonly string|null $action = null,
+		public readonly string|null $reach = null,
+		public readonly array $annotations = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * The title an #[McpToolTitle] beside this attribute declares on a method, or null.
+	 *
+	 * @param ReflectionMethod $method The attributed method.
+	 *
+	 * @return string|null The declared title.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function titleOn(ReflectionMethod $method): ?string {
+		$attributes = $method->getAttributes(McpToolTitle::class);
+		if ($attributes === []) {
+			return null;
+		}
+
+		return $attributes[0]->newInstance()->title;
+	}//end titleOn()
 }//end class

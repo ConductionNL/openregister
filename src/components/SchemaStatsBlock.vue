@@ -10,6 +10,14 @@
 				<NcLoadingIcon :size="16" />
 				{{ t('openregister', 'Counting objects...') }}
 			</div>
+			<div v-else-if="failed" class="no-objects">
+				{{
+					t(
+						'openregister',
+						'We could not count the objects. Close this window and try again.',
+					)
+				}}
+			</div>
 			<div v-else class="no-objects">
 				{{ t('openregister', 'No objects found') }}
 			</div>
@@ -73,6 +81,12 @@ export default {
 		},
 
 		loading: {
+			type: Boolean,
+			default: false,
+		},
+
+		/** The count request failed, so the count is unknown rather than zero. */
+		failed: {
 			type: Boolean,
 			default: false,
 		},
