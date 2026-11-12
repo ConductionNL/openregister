@@ -219,6 +219,33 @@ notification reaches only the tasks something remembered to stamp.
 - **THEN** no overdue notification MUST be produced for it
 - @e2e exclude covered by clock-controlled scheduled-rule unit tests
 
+### Requirement: A task nearing its deadline warns its assignee once
+
+The engine SHALL record the transition action `due-soon` on an open task when the warning moment passes: the deadline minus the warning lead time its flow declares, counted on the flow's working calendar when it has one. It SHALL record it once per deadline value, and SHALL NOT record it for a task that is terminal or has no deadline. The `taskDueSoon` rule then delivers it to the assignee, or to the candidate pool of an unclaimed task.
+
+A moved deadline SHALL move the warning moment, and a task warned for its old deadline SHALL be warned again for the new one.
+
+#### Scenario: The assignee is warned a working day before the deadline
+- **GIVEN** a task assigned to Fatima with its deadline on Friday 12 March 2027 at 17:00
+- **AND** a flow that declares a warning lead time of one working day on a calendar open Monday to Friday 09:00 to 17:00
+- **WHEN** the clock passes Thursday 11 March 2027 at 17:00 and the scheduled evaluation runs
+- **THEN** the engine records `due-soon` on the task
+- **AND** Fatima gets one notification "Due soon" naming the task
+- **AND** a second evaluation an hour later records nothing new
+- @e2e exclude {specified only; clock-controlled unit tests cover the timer, task 7.1}
+
+#### Scenario: A finished task is not warned
+- **GIVEN** a task completed on Wednesday whose deadline is Friday
+- **WHEN** its warning moment passes
+- **THEN** no `due-soon` is recorded and nobody is notified
+- @e2e exclude {specified only; clock-controlled unit tests cover the timer, task 7.1}
+
+#### Scenario: A moved deadline is warned again
+- **GIVEN** a task already warned for a deadline of Friday 12 March 2027
+- **WHEN** its handler moves the deadline to Friday 19 March 2027
+- **THEN** a new `due-soon` is recorded when the new warning moment passes
+- @e2e exclude {specified only; clock-controlled unit tests cover the timer, task 7.2}
+
 ### Requirement: An assigned task appears in the assignee's own calendar
 
 When a task has a resolved individual assignee, the system SHALL project it
