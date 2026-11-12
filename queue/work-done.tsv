@@ -601,3 +601,4 @@ cover:openregister:7350e3ef:js32df05fd	failed: lang=js but lib/Files/Service/ co
 verify:thematiq:1662:b7390a28	GREEN 1662 (2858 tests, 0 new failures)	session-20261112T221532-752808b3	2026-11-12T22:23:17Z
 cover:launchpad:755175ff:f91e7417	PR #1132: 5 tests, ConnectionReporter 117/117, Observations 55/55; suite 3256->3261 green	session-20261112T215819-2dd7b64e	2026-11-12T22:23:25Z
 verify:shillinq:2799:7bbd7273	GREEN 2799 (9031 tests, 0 new failures)	session-20261112T221234-13fcfd6a	2026-11-12T22:23:27Z
+cover:openregister:7350e3ef:js0b640b77	failed: lang=js but lib/Service/ObjectSource/ holds only PHP (66 files, no JS to cover); task row malformed	session-20261112T220138-f0050f42	2026-11-12T22:23:30Z
