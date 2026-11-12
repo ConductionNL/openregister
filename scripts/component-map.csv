@@ -211,6 +211,7 @@ Controller/ApiCallersController.php,174,Controller,Integrations,Integrations/Con
 Controller/ApiSurfaceController.php,98,Controller,Service,Service/Controller/ApiSurfaceController.php,0,,Core
 Controller/ApplicationsController.php,198,Controller,Configuration,Configuration/Controller/ApplicationsController.php,0,,Configuration
 Controller/ArchivalController.php,698,Controller,Compliance,Compliance/Controller/ArchivalController.php,0,,Compliance
+Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
