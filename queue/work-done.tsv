@@ -263,3 +263,4 @@ gap:versioniq:1:e16dc70b	failed: permission (composer/phpunit run refused; PR #6
 cover:dossiq:6ca0231e:2aa8dc21	PR #6131: 4 classes, 9 tests (Actions); suite 11972->11981, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:31:05Z
 cover:dossiq:6ca0231e:3bc85ed6	PR #6132 @075eb826: 4 tests for NeedsInputDispatcher; suite 11972->11976, failures 19 unchanged	session-20261112T175557-37d60f4f	2026-11-12T20:31:22Z
 gap:versioniq:9:7d352ecb	failed: permission (composer-cloud.sh refused; fix is Pat::KIND_FORGE_TOKEN literal split, value unchanged, unpushed)	session-20261112T202910-688a509a	2026-11-12T20:31:28Z
+merge:portaliq:2331:b3480e37	2331 MERGED 2332 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T20:31:42Z
