@@ -28,8 +28,8 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Every case read is RBAC- and tenant-scoped; a listed row without uuid, or one the caller

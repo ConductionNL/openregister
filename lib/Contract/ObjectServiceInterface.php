@@ -11,11 +11,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IUser;
 
@@ -332,30 +333,21 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist many objects in one bulk operation.
 	 *
-	 * @param array           $objects        The objects to store.
-	 * @param string|int|null $register       Register id, UUID or slug.
-	 * @param string|int|null $schema         Schema id, UUID or slug.
-	 * @param bool            $_rbac          Apply register RBAC.
-	 * @param bool            $_multitenancy  Apply organisation scoping.
-	 * @param bool            $validation     Validate against the schema.
-	 * @param bool            $events         Emit events for each object.
-	 * @param bool            $deduplicateIds Drop duplicate ids within the batch.
-	 * @param bool            $enrich         Enrich each object with derived metadata.
-	 * @param bool            $_audit         Write an audit-trail entry.
+	 * @param array           $objects       The objects to store.
+	 * @param BulkSaveOptions $options       The register and schema for rows that name none (id, UUID
+	 *                                       or slug), whether to validate against the schema, whether
+	 *                                       to emit events for each object, and whether to write
+	 *                                       audit-trail entries.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
 	 *
 	 * @return array The stored objects.
 	 */
 	public function saveObjects(
 		array $objects,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		BulkSaveOptions $options=new BulkSaveOptions(),
 		bool $_rbac=true,
-		bool $_multitenancy=true,
-		bool $validation=false,
-		bool $events=false,
-		bool $deduplicateIds=true,
-		bool $enrich=true,
-		bool $_audit=true
+		bool $_multitenancy=true
 	): array;
 
 	/**

@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Tests that an eligible set becomes one saved destruction list and one review notice.
@@ -165,11 +166,11 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$saved->setUuid('list-uuid-1');
 		$saver = $this->createMock(SaveObjectWriterInterface::class);
 		$saver->method('saveObject')->willReturnCallback(
-			function (mixed ...$args) use ($saved): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$args) use ($saved): ObjectEntity {
 				// A mock fills in the defaulted trailing parameters; the job passes eight.
 				$this->saves[] = array_slice($args, 0, 8);
 				return $saved;
-			}
+			})
 		);
 
 		$logger = $this->createMock(LoggerInterface::class);

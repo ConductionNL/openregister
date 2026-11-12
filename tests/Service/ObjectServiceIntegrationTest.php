@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -1258,15 +1260,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		}
 
 		$result = $this->service->saveObjects(
-			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			objects: $objects,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema),
+				validation: false,
+				events: false
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
