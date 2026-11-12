@@ -2,10 +2,8 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:83587c9d-fd1f-4129-aa1f-c54fc1c58797",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T17:34:52Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +80,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-main",
+      "bom-ref": "conductionnl/openregister-1.0.0.0",
       "type": "application",
       "name": "openregister",
-      "version": "dev-main",
+      "version": "1.0.0",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,16 +94,8 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-main",
+      "purl": "pkg:composer/conductionnl/openregister@1.0.0",
       "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
         {
           "name": "cdx:composer:package:type",
           "value": "library"
@@ -29055,7 +29045,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-main",
+      "ref": "conductionnl/openregister-1.0.0.0",
       "dependsOn": [
         "adbario/php-dot-notation-3.5.0.0",
         "ddn/sapp-dev-feat/chained-filter-text-replace",
