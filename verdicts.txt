@@ -2640,3 +2640,4 @@
 10056 eea10fac4f2b24f4ccc8d5c140e5db1ee1ea145e APPROVE Tests only (one jest spec); merged with main: mail-sidebar components 5 suites / 84 tests pass, eslint clean; no production code changed.
 10062 34c12d7679a28460ad843416b1d09e2b65fadfcb APPROVE openspec-only: two screens.md files and two screen.board values in capabilities.json; JSON valid, change dirs exist, no code or test changes
 10061 c8d3817dae3b3b39d54bf7e75ff3cda30f6fa085 APPROVE package-lock.json only: fast-xml-parser 5.10.1->5.12.0 (minor, within ^5 range of webdav) plus transitive patch bumps; lock internally consistent; dev->devOptional flag churn only; no source change
+10060 84090fc074c1fe87054fd7de9c854a638ac11958 APPROVE Tests only (6 files under tests/Unit/BackgroundJob), no production code. Merged with main: new tests 36/36 pass, BackgroundJob 756 OK, Architecture, Rules, Contract green; 9 Controller errors are environment-bound and unrelated.
