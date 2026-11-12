@@ -413,7 +413,10 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		[$register, $schema] = $this->scope();
 
 		try {
-			$this->service->saveObject(object: ['subject' => 'planted'], register: $register, schema: $schema, uuid: '12');
+			$this->service->saveObject(
+				object: ['subject' => 'planted'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '12')
+			);
 			$this->fail('A new object was stored under the uuid "12".');
 		} catch (ValidationException $refused) {
 			$this->assertStringContainsString('only digits', $refused->getMessage());
@@ -435,9 +438,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		try {
 			$this->service->saveObject(
 				object: ['subject' => 'shouted'],
-				register: $register,
-				schema: $schema,
-				uuid: '5B1F1A1E-0000-4000-8000-00000000000A'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '5B1F1A1E-0000-4000-8000-00000000000A')
 			);
 			$this->fail('A new object was stored under an upper-case uuid.');
 		} catch (ValidationException $refused) {
@@ -446,7 +447,10 @@ class ObjectServiceDraftWriteTest extends TestCase {
 
 		$this->assertSame([], $this->saves);
 
-		$this->service->saveObject(object: ['subject' => 'quiet'], register: $register, schema: $schema, uuid: '5b1f1a1e-0000-4000-8000-00000000000a');
+		$this->service->saveObject(
+			object: ['subject' => 'quiet'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '5b1f1a1e-0000-4000-8000-00000000000a')
+		);
 		$this->assertCount(1, $this->saves);
 	}//end testANewObjectCannotTakeAnUpperCaseUuid()
 
@@ -462,9 +466,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['subject' => 'imported'],
-			register: $register,
-			schema: $schema,
-			uuid: '12',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '12'),
 			_rbac: false,
 			_multitenancy: false
 		);
