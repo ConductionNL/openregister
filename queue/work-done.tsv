@@ -711,3 +711,4 @@ fix:learniq:2419:f3b7bef8	failed: behaviour change is the PR's purpose (API v1 c
 verify:integriq:3415:229315d4	stale	session-20261112T224529-5928280e	2026-11-12T22:46:25Z
 merge:stackiq:1683:569f5768	stale	feeder	2026-11-12T22:45:25Z
 measure:keepiq:20261112h18	php 80.2% js 79.46% (pcov needed pcov.directory=lib: src/ holds JS)	session-20261112T223908-abd0da4a	2026-11-12T22:47:10Z
+cover:hermiq:755cdfe7m7444:js66a28494	PR #1616: 8 PHPUnit tests for FunctionInfoBuilder/ToolRefusals (task said js, dir was PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:47:10Z
