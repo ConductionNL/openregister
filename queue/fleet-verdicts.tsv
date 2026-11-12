@@ -4252,6 +4252,7 @@ keepiq	1678	d8b203903df132cde38d17b3749fcaf172754f8b	GREEN	worker-29	3763 tests 
 larpinq	1005	623ed4fa204e82222e9ab91f40476f7762bae59c	GREEN	worker-24	unit 697 tests, baseline 682 green, 0 new failures; additive versioned aliases and deprecation headers, existing routes unchanged
 pipelinq	3565	15e3e445b184248dd9eb1d64a583c42015f73cff	GREEN	worker-10	5773 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest), 0 new; quality-tool config only
 pipelinq	3561	17991ca1514295f0569afcf2ed13a01aa10c815d	REVERIFY	worker-45	merged development; add/add spec conflict resolved by keeping both (development's spec as resourceRowEditorsContract.spec.js), vitest 31/31 + eslint clean; new head 04914a6b79f5a6c349f09a3fe96933176ede3a3c, verify it
+hermiq	1595	572a95a7f296d6b4d7238ae6b8db70341c1c1ce8	GREEN	worker-18	tree of 8: phpunit 3691 run vs baseline 3548 (143E/26F inherited), 0 new failures; vitest 977 passed; tests-only additions
 decidiq	2089	6643ab96df2ed7950b64a581c5cd62a6de84019e	GREEN	worker-57	tree 3145 tests, baseline 3116/0 fail, new failures 0; tests-only
 decidiq	2090	cf6cfe3c847c8bf8b5d59ea612e68662cec434b7	GREEN	worker-57	tree 3145 tests, baseline 3116/0 fail, new failures 0; tests-only
 decidiq	2091	832e08e7364525d1e524409f9f86c00c869b6a8d	GREEN	worker-57	tree 3145 tests, baseline 3116/0 fail, new failures 0; tests-only
