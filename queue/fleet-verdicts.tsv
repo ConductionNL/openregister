@@ -4291,3 +4291,8 @@ hermiq	1612	d4bebea7efe9518e99088ce1592f0e7c536d6af1	GREEN	worker-26	phpunit-uni
 hermiq	1613	b6b1ea56dbc830140a10653837824b534e37c09c	GREEN	worker-26	phpunit-unit 3689 on 9-PR tree (baseline 3555, all pass), vitest 949 (baseline 944, all pass), 0 new failures; tests-only
 hermiq	1614	56913f84cf82ae3fbea0b9f899f0b672d3797567	GREEN	worker-26	phpunit-unit 3689 on 9-PR tree (baseline 3555, all pass), vitest 949 (baseline 944, all pass), 0 new failures; tests-only
 keepiq	1680	c370c74fb406088eb2bacb4917fa2426dc75d16d	BLOCK	worker-29	3747 tests run (baseline 3722), 0 new failures; behaviour change: new middleware rewrites every API 4xx/5xx JSON body to problem+json (content type, added members, key order), adds Deprecation/Link/API-Version headers, and aliases every unversioned route under /api/v1/; needs a human decision
+decidiq	2092	4142d189ee257d42e3ef5f0b5e5f546ee9fddab3	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
+decidiq	2094	31582a8f29e687b0676787c4269f2af54dbd625e	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
+decidiq	2095	28e186ab069f14fbfcb83fdcc20a8bd81f8b41d7	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
+decidiq	2096	86c26a22e6bf2fce232252cf424602be8447b6f5	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
+decidiq	2097	608db5c0643fea6d7d340b55a005f09b267394f8	GREEN	worker-05	3188 tests (baseline 3116, all passing), 0 new failures; tests only
