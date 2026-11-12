@@ -432,3 +432,4 @@ cover:integriq:9b0f5894:js5a3cabaa	PR #3399: 8 action forms, 13 vitest tests; sr
 merge:buildiq:1437:21e17f43	failed: merge not permitted in this session (this worker authored the fix heads of 1437, 1440, 1450); needs another worker	session-20261112T184508-711de18c	2026-11-12T21:25:45Z
 cover:integriq:9b0f5894:js0023cfc7	PR #3400: 14 vitest tests for EditMappingRuleDialog + DsoActivityMappingDialog; src/dialogs 78.27->90.99%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:25:37Z
 verify:dossiq:6151:e9fa35ad	6151 BLOCK (API error bodies and routes change); 6152-6159 GREEN tests-only; tree 12564 tests, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:26:06Z
+cover:buildiq:8ca317f6:js3f3bfe56	PR #1474: 4 vitest tests for ncDashboard boot and settings entry; src/*.js statements 131/174 -> 143/174; suite 2962 -> 2966 passing	session-20261112T200018-e68ecbf8	2026-11-12T21:26:22Z
