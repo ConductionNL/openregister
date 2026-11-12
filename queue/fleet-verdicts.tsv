@@ -3478,3 +3478,14 @@ decidiq	2027	6824a8a705b36b2b3d3ae2ec09eff6c97a0d3fff	GREEN	vm1:64009	tree of 25
 decidiq	2028	2aeb2cc5100e16d058ded7c0d1967544e280b068	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
 decidiq	2029	a53c6739bb03bddb8b4832161202d2bfa378ba42	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
 decidiq	2030	fd4b17112baf64d9482dc5171f1841b8bc28bf6b	GREEN	vm1:64009	tree of 25 green on f7dbd8955b; unit failures only inherited (0); floor held; diffs read: behaviour-preserving extractions
+decidiq	2031	f6a6774f3691e25483a1d55e0a8dc78978cd0914	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2032	ac8fa9b72f828967e20ba26d93ca542ea041f32c	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2033	b1a9355280e80339e868bab9c5a1ffc450409ec5	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2034	98c6c45fc279a2a7f277a3621ee560ae325fb045	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2035	ef03a78c472e55a0be4d7d688fdc3a207031d07e	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2036	d77499cf20c51c5815f62b1354e34aa27f4089eb	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2037	77cda0a805f8d8812daaee61369f5f005ec76db6	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2038	86bd2ced4683e2ee5bdbae9f9f5eec4f11242718	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2039	bf57a80d4070c5c0dbffe1993dfac23cbfdbccc2	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2040	e19ded4e2411000f7582b8eea56d8afc7fc847b6	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+decidiq	2041	fe108f18cdda3fa46214d319cb8b77479a83a7aa	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
