@@ -20,8 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -46,55 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 class MigrationHandler {
 	/**
-	 * Mapper for object entities.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectMapper;
-
-	/**
-	 * Handler for utility operations.
-	 *
-	 * @var UtilityHandler
-	 */
-	private readonly UtilityHandler $utilityHandler;
-
-	/**
-	 * Handler for data manipulation.
-	 *
-	 * @var DataManipulationHandler
-	 */
-	private readonly DataManipulationHandler $dataManipHandler;
-
-	/**
-	 * Moves an object to its target address.
-	 *
-	 * @var MoveObject
-	 */
-	private readonly MoveObject $mover;
-
-	/**
-	 * Finds the relations in the mapped data.
-	 *
-	 * @var SaveObjectRelationScannerInterface
-	 */
-	private readonly SaveObjectRelationScannerInterface $relationScanner;
-
-	/**
-	 * Records what the mapping changed.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrail;
-
-	/**
-	 * Logger for logging operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for MigrationHandler.
 	 *
 	 * @param MigrationStorage $storage Reads, moves and records the objects.
@@ -104,17 +54,10 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		MigrationStorage $storage,
-		MigrationMapping $mapping,
-		LoggerInterface $logger,
+		private readonly MigrationStorage $storage,
+		private readonly MigrationMapping $mapping,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectMapper = $storage->objectMapper;
-		$this->mover = $storage->mover;
-		$this->auditTrail = $storage->auditTrail;
-		$this->utilityHandler = $mapping->utilityHandler;
-		$this->dataManipHandler = $mapping->dataManipHandler;
-		$this->relationScanner = $mapping->relationScanner;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -123,10 +66,8 @@ class MigrationHandler {
 	 * This method migrates multiple objects from one register/schema combination
 	 * to another register/schema combination with property mapping.
 	 *
-	 * @param array{0: string|int, 1: string|int} $source The source register and schema, each an ID or slug.
-	 * @param array{0: string|int, 1: string|int} $target The target register and schema, each an ID or slug.
-	 * @param array $objectIds Array of object IDs to migrate.
-	 * @param array $mapping Simple mapping where keys are target properties, values are source properties.
+	 * @param ObjectMigration $migration The source and target register and schema (each an ID or slug), the
+	 *                                   object IDs to migrate and the mapping (target property => source property).
 	 *
 	 * @return array Migration report with success status, statistics, details, warnings, and errors.
 	 *
@@ -135,21 +76,35 @@ class MigrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function migrateObjects(
-		array $source,
-		array $target,
-		array $objectIds,
-		array $mapping,
-	): array {
-		$run = new MigrationRun(source: $source, target: $target);
-		$run->mapping = $mapping;
+	public function migrateObjects(ObjectMigration $migration): array {
+		$run          = new MigrationRun(
+			source: [$migration->source->register, $migration->source->schema],
+			target: [$migration->target->register, $migration->target->schema]
+		);
+		$run->mapping = $migration->mapping;
 
+		return $this->migrate(run: $run, objectIds: $migration->objectIds);
+	}//end migrateObjects()
+
+	/**
+	 * Migrate the requested objects along one route and report each of them.
+	 *
+	 * @param MigrationRun $run       The route, the mapping and the report.
+	 * @param array        $objectIds Array of object IDs to migrate.
+	 *
+	 * @return array Migration report with success status, statistics, details, warnings, and errors.
+	 *
+	 * @throws OcpDoesNotExistException If register or schema not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function migrate(MigrationRun $run, array $objectIds): array {
 		$this->loadSides(run: $run);
 		if ($run->source->isLoaded() === false || $run->target->isLoaded() === false) {
 			throw new OcpDoesNotExistException('One or more registers/schemas not found');
 		}
 
-		$sourceObjects = $this->objectMapper->findMultiple($objectIds);
+		$sourceObjects = $this->storage->objectMapper->findMultiple($objectIds);
 
 		// An id stays here until an object with that uuid or id is returned, so whatever is
 		// left was not found.
@@ -164,7 +119,7 @@ class MigrationHandler {
 		}
 
 		return $run->report();
-	}//end migrateObjects()
+	}//end migrate()
 
 	/**
 	 * The requested ids that are neither the uuid nor the id of a found object.
@@ -195,8 +150,8 @@ class MigrationHandler {
 	 */
 	private function loadSides(MigrationRun $run): void {
 		foreach ([$run->source, $run->target] as $side) {
-			$side->registerEntity = $this->utilityHandler->normalizeEntity(entity: $side->register, type: 'register');
-			$side->schemaEntity = $this->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema');
+			$side->registerEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->register, type: 'register');
+			$side->schemaEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema');
 		}
 	}//end loadSides()
 
@@ -228,7 +183,7 @@ class MigrationHandler {
 			$stored = $this->storedObject(sourceObject: $sourceObject, run: $run);
 			$this->assertMayLeave(stored: $stored);
 			$sourceData = $stored->getObject();
-			$mappedData = $this->dataManipHandler->mapObjectProperties(
+			$mappedData = $this->mapping->dataManipHandler->mapObjectProperties(
 				sourceData: $sourceData,
 				mapping: $run->mapping
 			);
@@ -248,7 +203,7 @@ class MigrationHandler {
 			// Relations are keyed by property, so the mapping decides which survive and under which name.
 			$stored->setObject($mappedData);
 			$stored->setRelations(
-				$this->relationScanner->scanForRelations(data: $mappedData, schema: $run->target->schemaEntity)
+				$this->mapping->relationScanner->scanForRelations(data: $mappedData, schema: $run->target->schemaEntity)
 			);
 			$move = $this->moveOf(stored: $stored, run: $run)->storedAs(stored: $before);
 			$objectDetail['newObjectId'] = $this->moveToTarget(move: $move, run: $run);
@@ -278,7 +233,7 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function storedObject(ObjectEntity $sourceObject, MigrationRun $run): ObjectEntity {
-		return $this->objectMapper->findInRegisterSchemaTable(
+		return $this->storage->objectMapper->findInRegisterSchemaTable(
 			identifier: (string)$sourceObject->getUuid(),
 			register: $run->source->registerEntity,
 			schema: $run->source->schemaEntity,
@@ -301,7 +256,7 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function assertMayLeave(ObjectEntity $stored): void {
-		$kept = $this->mover->keptReason(object: $stored);
+		$kept = $this->storage->mover->keptReason(object: $stored);
 		if ($kept !== null) {
 			throw new InvalidArgumentException($kept);
 		}
@@ -343,7 +298,7 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function moveToTarget(ObjectMove $move, MigrationRun $run): string {
-		$outcome = $this->mover->perform(move: $move);
+		$outcome = $this->storage->mover->perform(move: $move);
 
 		if ($outcome['moved'] === false) {
 			throw new InvalidArgumentException(implode(' ', $outcome['errors']));
@@ -370,7 +325,7 @@ class MigrationHandler {
 	 */
 	private function recordMapping(ObjectEntity $before, ObjectEntity $after): void {
 		try {
-			$this->auditTrail->createAuditTrail(old: $before, new: $after, action: 'update');
+			$this->storage->auditTrail->createAuditTrail(old: $before, new: $after, action: 'update');
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[MigrationHandler] the mapping of ' . (string)$after->getUuid() . ' could not be recorded: ' . $e->getMessage(),

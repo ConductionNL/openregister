@@ -21,8 +21,15 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use DateTimeImmutable;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ConsumersControllerServices;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
+use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -38,21 +45,48 @@ use OCP\IRequest;
  */
 class ConsumersController extends Controller {
 	/**
+	 * The consumer database mapper
+	 *
+	 * @var ConsumerMapperInterface
+	 */
+	private readonly ConsumerMapperInterface $consumerMapper;
+
+	/**
+	 * The localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Refuses a token grant that cannot be issued.
+	 *
+	 * @var TokenGrantValidator
+	 */
+	private readonly TokenGrantValidator $grantValidator;
+
+	/**
+	 * The verbs this instance knows.
+	 *
+	 * @var PermissionCatalogueInterface
+	 */
+	private readonly PermissionCatalogueInterface $catalogue;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name
-	 * @param IRequest $request The request object
-	 * @param ConsumerMapperInterface $consumerMapper The consumer database mapper
-	 * @param IL10N $l10n The localization service
+	 * @param IRequest                    $request  The request object
+	 * @param ConsumersControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ConsumerMapperInterface $consumerMapper,
-		private readonly IL10N $l10n,
+		ConsumersControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->consumerMapper = $services->consumerMapper;
+		$this->l10n = $services->l10n;
+		$this->grantValidator = $services->grantValidator;
+		$this->catalogue = $services->catalogue;
 	}//end __construct()
 
 	/**
@@ -102,8 +136,6 @@ class ConsumersController extends Controller {
 	 *
 	 * @return JSONResponse The created consumer
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -111,6 +143,11 @@ class ConsumersController extends Controller {
 
 		// Remove framework-injected params.
 		unset($data['_route']);
+
+		$refusal = $this->grantRefusal(data: $data);
+		if ($refusal !== null) {
+			return new JSONResponse(['error' => $refusal], 400);
+		}
 
 		$data['created'] = new DateTime();
 		$data['updated'] = new DateTime();
@@ -127,8 +164,6 @@ class ConsumersController extends Controller {
 	 *
 	 * @return JSONResponse The updated consumer or error
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function update(int $id): JSONResponse {
@@ -136,6 +171,11 @@ class ConsumersController extends Controller {
 			$data = $this->request->getParams();
 
 			unset($data['_route'], $data['id']);
+
+			$refusal = $this->grantRefusal(data: $data);
+			if ($refusal !== null) {
+				return new JSONResponse(['error' => $refusal], 400);
+			}
 
 			$data['updated'] = new DateTime();
 
@@ -149,13 +189,37 @@ class ConsumersController extends Controller {
 	}//end update()
 
 	/**
+	 * Why the token grant in a consumer's configuration may not be saved, or null when it may.
+	 *
+	 * Consumers are managed by admins, who hold every verb, so the issuer's
+	 * verbs are the catalogue's.
+	 *
+	 * @param array<string, mixed> $data The submitted consumer.
+	 *
+	 * @return string|null The reason, or null when there is no grant or it may be saved.
+	 */
+	private function grantRefusal(array $data): ?string {
+		$configuration = ($data['configuration'] ?? null);
+		if (is_array($configuration) === false || array_key_exists(TokenGrant::KEY, $configuration) === false) {
+			return null;
+		}
+
+		$grant = $configuration[TokenGrant::KEY];
+		if (is_array($grant) === false) {
+			return 'a grant must be an object';
+		}
+
+		return $this->grantValidator->refusalFor(
+			issue: new TokenGrantIssue(grant: $grant, issuerVerbs: $this->catalogue->verbs(), now: new DateTimeImmutable())
+		);
+	}//end grantRefusal()
+
+	/**
 	 * Delete a consumer.
 	 *
 	 * @param int $id The consumer ID
 	 *
 	 * @return JSONResponse Empty response or error
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
@@ -177,8 +241,6 @@ class ConsumersController extends Controller {
 	 * @param int $id The consumer ID
 	 *
 	 * @return JSONResponse The updated consumer or error
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */

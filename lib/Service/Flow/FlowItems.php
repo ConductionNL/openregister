@@ -99,17 +99,16 @@ final class FlowItems {
 	/**
 	 * Build one well-formed item.
 	 *
-	 * @param array $json The record.
-	 * @param array $binary File attachments, keyed by name.
-	 * @param int|null $fromItemIndex Input item this came from, when known.
-	 * @param string|null $output The output branch this item routes to, when set.
+	 * @param array           $json    The record.
+	 * @param FlowItemOptions $options File attachments keyed by name, the input item this came from, and the
+	 *                                 output branch this item routes to, each when known.
 	 *
 	 * @return array<string, mixed> The item.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
-		return FlowItemShape::item(json: $json, binary: $binary, fromItemIndex: $fromItemIndex, output: $output);
+	public static function item(array $json, FlowItemOptions $options=new FlowItemOptions()): array {
+		return FlowItemShape::item(json: $json, options: $options);
 	}//end item()
 
 	/**
@@ -140,38 +139,5 @@ final class FlowItems {
 	public static function fromSubject(object $subject): array {
 		return FlowSubjectItems::fromSubject(subject: $subject);
 	}//end fromSubject()
-
-	/**
-	 * Refresh the subject's own fields on every item that IS the subject.
-	 *
-	 * The seam between two requirements that are compatible but easy to
-	 * conflate. Items survive the pause (flow-runs REQ-FR-003): resuming
-	 * continues from the stored list, never a fresh seed, so everything the
-	 * earlier steps produced is kept. But an item that is the run's SUBJECT
-	 * began as a trigger-time snapshot of it, and a step that branches on a
-	 * subject field after a human answered — "is the description filled in
-	 * now?" — must read the subject as it stands, not as it stood when the
-	 * run started. Without this, the shipped re-ask loop can never succeed:
-	 * the answer lands on the object, the re-check reads the frozen snapshot,
-	 * and the run strands.
-	 *
-	 * So: only items carrying the subject's identity are touched, and on
-	 * those the live subject's serialised fields are merged OVER the stale
-	 * snapshot. A key the live subject does not serialise — a task outcome
-	 * bag, a step's computed field — survives untouched, which is what keeps
-	 * REQ-FR-003 true. An item that is some OTHER object (a fan-out read)
-	 * carries its own identity and is never smeared with the subject's data.
-	 *
-	 * @param array<int, array<string, mixed>> $items The stored items.
-	 * @param object $subject The live subject.
-	 * @param string $subjectUuid The run's subject uuid, matching items by identity.
-	 *
-	 * @return array<int, array<string, mixed>> The items, subject fields refreshed.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
-	 */
-	public static function refreshSubjectProjection(array $items, object $subject, string $subjectUuid): array {
-		return FlowSubjectItems::refreshSubjectProjection(items: $items, subject: $subject, subjectUuid: $subjectUuid);
-	}//end refreshSubjectProjection()
 
 }//end class

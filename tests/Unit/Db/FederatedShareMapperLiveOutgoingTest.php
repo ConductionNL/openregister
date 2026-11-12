@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -35,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * The administrator report reads every live outgoing share, across organisations.
  *
  * @covers \OCA\OpenRegister\Db\FederatedShareMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 class FederatedShareMapperLiveOutgoingTest extends TestCase {
 
@@ -67,7 +69,7 @@ class FederatedShareMapperLiveOutgoingTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		$mapper = new class($db, $this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IAppConfig::class)) extends FederatedShareMapper {
+		$mapper = new class($db, new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)), $this->createMock(IAppConfig::class)) extends FederatedShareMapper {
 
 			public bool $filtered = false;
 

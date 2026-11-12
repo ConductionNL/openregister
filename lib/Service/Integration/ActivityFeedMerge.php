@@ -108,7 +108,7 @@ class ActivityFeedMerge {
 		$counts = [];
 
 		foreach (self::KINDS as $kind) {
-			$admitted = $this->admitted(rows: ($bySource[$kind] ?? []), kind: $kind, options: $options);
+			$admitted = $this->admitted(rows: $this->normalisedRows(rows: ($bySource[$kind] ?? []), kind: $kind), options: $options);
 			$counts[$kind] = count($admitted);
 			array_push($rows, ...$admitted);
 		}
@@ -119,47 +119,55 @@ class ActivityFeedMerge {
 		// that was merged: a cursor taken from a row the reader never saw
 		// skips the rows between it and the last one on screen.
 		$page = array_slice($rows, 0, $pageSize);
-		$nextCursor = self::nextCursor(rows: $rows, page: $page, pageSize: $pageSize);
+		$nextCursor = self::nextCursor(merged: count($rows), page: $page);
 
 		return ['rows' => $page, 'nextCursor' => $nextCursor, 'counts' => $counts];
 	}//end page()
 
 	/**
-	 * One source's rows, normalised, that the options admit; non-array rows are skipped.
+	 * One source's rows in the feed's own shape; non-array rows are skipped.
 	 *
-	 * @param mixed               $rows    The source's rows.
-	 * @param string              $kind    Which source they came from.
-	 * @param array<string,mixed> $options The caller's options.
+	 * @param mixed  $rows The source's rows.
+	 * @param string $kind Which source they came from.
 	 *
-	 * @return array<int,array<string,mixed>> The admitted rows, in source order.
+	 * @return array<int,array<string,mixed>> The normalised rows, in source order.
 	 */
-	private function admitted(mixed $rows, string $kind, array $options): array {
-		$admitted = [];
+	private function normalisedRows(mixed $rows, string $kind): array {
+		$normalised = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			$normalised = $this->normalise(row: $row, kind: $kind);
-			if ($this->admits(row: $normalised, options: $options) === true) {
-				$admitted[] = $normalised;
+			if (is_array($row) === true) {
+				$normalised[] = $this->normalise(row: $row, kind: $kind);
 			}
 		}
 
-		return $admitted;
+		return $normalised;
+	}//end normalisedRows()
+
+	/**
+	 * The normalised rows the options admit.
+	 *
+	 * @param array<int,array<string,mixed>> $rows    The normalised rows of one source.
+	 * @param array<string,mixed>            $options The caller's options.
+	 *
+	 * @return array<int,array<string,mixed>> The admitted rows, in source order.
+	 */
+	private function admitted(array $rows, array $options): array {
+		return array_values(array_filter($rows, fn (array $row): bool => $this->admits(row: $row, options: $options)));
 	}//end admitted()
 
 	/**
 	 * The cursor for the next page: the last returned row's time, when rows were held back.
 	 *
-	 * @param array<int,array<string,mixed>> $rows     Every merged row, newest first.
-	 * @param array<int,array<string,mixed>> $page     The returned page.
-	 * @param int                            $pageSize The page size.
+	 * The page is the head of the merged rows, so rows were held back exactly
+	 * when more rows were merged than the page returns.
+	 *
+	 * @param int                            $merged How many rows were merged.
+	 * @param array<int,array<string,mixed>> $page   The returned page.
 	 *
 	 * @return int|null The cursor, or null when this page is the last.
 	 */
-	private static function nextCursor(array $rows, array $page, int $pageSize): ?int {
-		if (count($rows) > $pageSize && $page !== []) {
+	private static function nextCursor(int $merged, array $page): ?int {
+		if ($merged > count($page) && $page !== []) {
 			return (int)$page[(count($page) - 1)]['timestamp'];
 		}
 
@@ -182,19 +190,10 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	public function normalise(array $row, string $kind): array {
-		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
-		if (is_string($timestamp) === true) {
-			// A source that writes an ISO moment is not wrong; it just speaks
-			// the other spelling. An unparseable one sorts as 0, which puts it
-			// at the bottom rather than at the top: a row with no time must
-			// never head a feed that is read as a sequence.
-			$timestamp = (int)max(0, (int)strtotime($timestamp));
-		}
-
 		return [
 			'id' => (string)($row['id'] ?? ''),
 			'kind' => $kind,
-			'timestamp' => (int)$timestamp,
+			'timestamp' => self::timestampOf(row: $row),
 			'actor' => (string)($row['actor'] ?? ($row['actor_id'] ?? ($row['user'] ?? ($row['affecteduser'] ?? '')))),
 			'summary' => (string)($row['summary'] ?? ($row['title'] ?? ($row['subject'] ?? ''))),
 			'action' => (string)($row['action'] ?? ($row['type'] ?? '')),
@@ -205,6 +204,26 @@ class ActivityFeedMerge {
 			'visibility' => (string)($row['visibility'] ?? ''),
 		];
 	}//end normalise()
+
+	/**
+	 * When a source row happened, as an epoch.
+	 *
+	 * @param array<string, mixed> $row The source row.
+	 *
+	 * @return int
+	 */
+	private static function timestampOf(array $row): int {
+		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
+		if (is_string($timestamp) === true) {
+			// A source that writes an ISO moment is not wrong; it just speaks
+			// the other spelling. An unparseable one sorts as 0, which puts it
+			// at the bottom rather than at the top: a row with no time must
+			// never head a feed that is read as a sequence.
+			$timestamp = (int)max(0, (int)strtotime($timestamp));
+		}
+
+		return (int)$timestamp;
+	}//end timestampOf()
 
 	/**
 	 * Whether a normalised row belongs on this page.
@@ -339,25 +358,32 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	private function newestFirst(array $rows): array {
-		usort(
-			$rows,
-			static function (array $left, array $right): int {
-				$byTime = ($right['timestamp'] <=> $left['timestamp']);
-				if ($byTime !== 0) {
-					return $byTime;
-				}
-
-				$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
-				if ($byKind !== 0) {
-					return $byKind;
-				}
-
-				return ($left['id'] <=> $right['id']);
-			}
-		);
+		usort($rows, self::compareNewestFirst(...));
 
 		return $rows;
 	}//end newestFirst()
+
+	/**
+	 * Order two feed rows: newest first, then by the order of KINDS, then by id.
+	 *
+	 * @param array<string, mixed> $left  One row.
+	 * @param array<string, mixed> $right The other row.
+	 *
+	 * @return int
+	 */
+	private static function compareNewestFirst(array $left, array $right): int {
+		$byTime = ($right['timestamp'] <=> $left['timestamp']);
+		if ($byTime !== 0) {
+			return $byTime;
+		}
+
+		$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
+		if ($byKind !== 0) {
+			return $byKind;
+		}
+
+		return ($left['id'] <=> $right['id']);
+	}//end compareNewestFirst()
 
 	/**
 	 * How many rows this page holds.

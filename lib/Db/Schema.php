@@ -33,9 +33,7 @@ use OCA\OpenRegister\Db\Schema\AnnotationVocabulary;
 use OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator;
 use OCA\OpenRegister\Db\Schema\ConfigurationValidator;
 use OCA\OpenRegister\Db\Schema\DeclaredActions;
-use OCA\OpenRegister\Db\Schema\GrantActor;
-use OCA\OpenRegister\Db\Schema\GrantObject;
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\Schema\PropertyAuthorization;
 use OCA\OpenRegister\Db\Schema\SchemaGrantEvaluator;
 use OCA\OpenRegister\Db\Schema\VocabularyEntries;
@@ -47,6 +45,7 @@ use OCP\DB\Types;
 use OCA\OpenRegister\Db\Schema\NotSuppliedReasons;
 use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
 use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
+use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
 use OCP\IURLGenerator;
 use stdClass;
@@ -140,6 +139,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	use JsonFieldsTrait;
+	use LinkedItemsTrait;
 
 	/**
 	 * Unique identifier for the schema
@@ -445,55 +445,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var array|null Hooks configuration
 	 */
 	protected ?array $hooks = null;
-
-	/**
-	 * Linked mail entity IDs for this schema.
-	 *
-	 * @var array|null Linked mail entity IDs
-	 */
-	protected ?array $mail = null;
-
-	/**
-	 * Linked contact entity IDs for this schema.
-	 *
-	 * @var array|null Linked contact entity IDs
-	 */
-	protected ?array $contacts = null;
-
-	/**
-	 * Linked note entity IDs for this schema.
-	 *
-	 * @var array|null Linked note entity IDs
-	 */
-	protected ?array $notes = null;
-
-	/**
-	 * Linked todo entity IDs for this schema.
-	 *
-	 * @var array|null Linked todo entity IDs
-	 */
-	protected ?array $todos = null;
-
-	/**
-	 * Linked calendar event entity IDs for this schema.
-	 *
-	 * @var array|null Linked calendar event entity IDs
-	 */
-	protected ?array $calendar = null;
-
-	/**
-	 * Linked Talk conversation IDs for this schema.
-	 *
-	 * @var array|null Linked Talk conversation IDs
-	 */
-	protected ?array $talk = null;
-
-	/**
-	 * Linked Deck card IDs for this schema.
-	 *
-	 * @var array|null Linked Deck card IDs
-	 */
-	protected ?array $deck = null;
 
 	/**
 	 * A pending edit of this schema's definition, held beside the published one.
@@ -1060,14 +1011,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * When $propertyName is provided, check the property's authorization array first,
 	 * then fall back to schema-level authorization if no property-level authorization exists.
 	 *
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string $userId Optional user ID for owner check
-	 * @param string $userGroup Optional user group for admin check
-	 * @param string $objectOwner Optional object owner for ownership check
-	 * @param array $objectData Optional object data for conditional match evaluation
-	 * @param string $objectOrganisation Optional object organisation UUID (@self.organisation)
-	 * @param string $activeOrganisation Optional user's active organisation UUID for $organisation variable
+	 * @param GrantQuery $query The group and CRUD action (create, read, update, delete) asked for, the
+	 *                         actor (user, user group, active organisation) and the object (owner,
+	 *                         data for conditional matches, organisation).
 	 *
 	 * @return bool True if the group has permission for the action
 	 *
@@ -1085,25 +1031,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
 	 */
-	public function hasPermission(
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-		?string $activeOrganisation = null,
-	): bool {
-		return (new SchemaGrantEvaluator())->allows(
-			authorization: $this->authorization,
-			query: new GrantQuery(
-				groupId: $groupId,
-				action: $action,
-				actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
-				object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
-			)
-		);
+	public function hasPermission(GrantQuery $query): bool {
+		return (new SchemaGrantEvaluator())->allows(authorization: $this->authorization, query: $query);
 	}//end hasPermission()
 
 	/**
@@ -2227,10 +2156,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function regenerateFacetsFromProperties(): void {
 		$this->setFacets(
-			facets: (new PropertyFacetBlock())->built(
+			facets: (new PropertyFacetBlock())->builtFor(
 				properties: $this->getProperties(),
-				version: $this->getVersion(),
-				generatedAt: time()
+				stamp: new FacetBlockStamp(version: $this->getVersion(), generatedAt: time())
 			)
 		);
 	}//end regenerateFacetsFromProperties()

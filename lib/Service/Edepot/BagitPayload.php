@@ -64,7 +64,7 @@ final class BagitPayload {
 	public function add(ZipArchive $zip, array $entry): void {
 		$dataPath = 'data/'.$entry['path'];
 		if ($entry['kind'] === 'file') {
-			$sha256 = $this->addFile(zip: $zip, sourcePath: (string)$entry['filePath'], dataPath: $dataPath);
+			$sha256 = $this->addFile(zip: $zip, entry: $entry);
 		} else {
 			$content = (string)$entry['content'];
 			$sha256  = hash('sha256', $content);
@@ -117,15 +117,34 @@ final class BagitPayload {
 	/**
 	 * Add an on-disk payload file; one that cannot be checksummed refuses the bag.
 	 *
-	 * @param ZipArchive $zip        The open bag archive.
-	 * @param string     $sourcePath The file on disk.
-	 * @param string     $dataPath   Its path in the bag.
+	 * @param ZipArchive           $zip   The open bag archive.
+	 * @param array<string, mixed> $entry The file entry: its path on disk (`filePath`) and in the payload (`path`).
 	 *
 	 * @return string The file's SHA-256.
 	 *
 	 * @throws InvalidArgumentException When the file cannot be checksummed.
 	 */
-	private function addFile(ZipArchive $zip, string $sourcePath, string $dataPath): string {
+	private function addFile(ZipArchive $zip, array $entry): string {
+		$sourcePath = (string)$entry['filePath'];
+		$dataPath   = 'data/'.$entry['path'];
+		$sha256     = self::checksumOf(sourcePath: $sourcePath);
+
+		$zip->addFile($sourcePath, $dataPath);
+		$this->totalBytes += (int)filesize($sourcePath);
+
+		return $sha256;
+	}//end addFile()
+
+	/**
+	 * The SHA-256 of a payload file, refusing one that cannot be read.
+	 *
+	 * @param string $sourcePath The file on disk.
+	 *
+	 * @return string The checksum.
+	 *
+	 * @throws InvalidArgumentException When the file cannot be checksummed.
+	 */
+	private static function checksumOf(string $sourcePath): string {
 		$sha256 = false;
 		if (is_file($sourcePath) === true && is_readable($sourcePath) === true) {
 			$sha256 = hash_file('sha256', $sourcePath);
@@ -137,9 +156,6 @@ final class BagitPayload {
 			);
 		}
 
-		$zip->addFile($sourcePath, $dataPath);
-		$this->totalBytes += (int)filesize($sourcePath);
-
 		return $sha256;
-	}//end addFile()
+	}//end checksumOf()
 }//end class

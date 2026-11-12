@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -77,7 +78,7 @@ final class ReadableAuditTrailHttpPagingTest extends TestCase {
 		}
 
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('findAll')->willReturnCallback(
+		$mapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit = null, ?int $offset = null, ?array $filters = []) use ($trail): array {
 				if (($filters['object_uuid'] ?? null) !== self::OBJECT) {
 					return [];
@@ -85,7 +86,7 @@ final class ReadableAuditTrailHttpPagingTest extends TestCase {
 
 				return array_slice($trail, (int)$offset, (int)$limit);
 			}
-		);
+		));
 
 		$object = new ObjectEntity();
 		$object->setUuid(self::OBJECT);

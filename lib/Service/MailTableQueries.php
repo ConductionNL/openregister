@@ -195,6 +195,21 @@ final class MailTableQueries {
 	public function messageQuery(int $accountId, int $messageId): IQueryBuilder {
 		$qb = $this->messagesQuery();
 		$qb->addSelect('m.message_id');
+		$this->joinAccountMailbox(qb: $qb, accountId: $accountId);
+		$this->joinSender(qb: $qb);
+		$qb->where($qb->expr()->eq('m.id', $this->intParam(qb: $qb, value: $messageId)))->setMaxResults(1);
+		return $qb;
+	}//end messageQuery()
+
+	/**
+	 * Join the mailbox of a message, restricted to one account.
+	 *
+	 * @param IQueryBuilder $qb        The messages query.
+	 * @param int           $accountId The Mail account id.
+	 *
+	 * @return void
+	 */
+	private function joinAccountMailbox(IQueryBuilder $qb, int $accountId): void {
 		$qb->innerJoin(
 			'm',
 			'mail_mailboxes',
@@ -204,10 +219,7 @@ final class MailTableQueries {
 				$qb->expr()->eq('mb.account_id', $this->intParam(qb: $qb, value: $accountId))
 			)
 		);
-		$this->joinSender(qb: $qb);
-		$qb->where($qb->expr()->eq('m.id', $this->intParam(qb: $qb, value: $messageId)))->setMaxResults(1);
-		return $qb;
-	}//end messageQuery()
+	}//end joinAccountMailbox()
 	/**
 	 * A named integer parameter on a query.
 	 *

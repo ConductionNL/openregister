@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Service\Oas;
 /**
  * ProblemDetailsBuilder, typed for callers outside the Service component.
  *
- * Its outside caller, the OAS validation middleware, calls validationFailed() and reads
- * CONTENT_TYPE, so those are the whole contract. Binding it in ContractBindings lets that caller resolve
+ * Its outside callers, the OAS validation and problem details middlewares, call
+ * build() and validationFailed() and read CONTENT_TYPE, so those are the whole contract. Binding it in ContractBindings lets that caller resolve
  * ProblemDetailsBuilder without naming the class.
  */
 interface ProblemDetailsBuilderInterface {
@@ -38,15 +38,25 @@ interface ProblemDetailsBuilderInterface {
 	public const CONTENT_TYPE = 'application/problem+json';
 
 	/**
+	 * Build a problem document from a stated problem.
+	 *
+	 * @param ProblemStatement $statement Status, title, description and extension fields.
+	 *
+	 * @return array<string, mixed> The problem-json payload.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	public function build(ProblemStatement $statement): array;
+
+	/**
 	 * Wrap a list of validation errors as a 422 problem document.
 	 *
-	 * @param array $errors List of validation errors (each free-form, typically `{path, message}`).
-	 * @param string $detail Optional human-readable explanation.
-	 * @param string $instance Instance URI, '' = omit.
+	 * @param array              $errors      List of validation errors (each free-form, typically `{path, message}`).
+	 * @param ProblemDescription $description The optional explanation and instance URI ('' = omit); its type is ignored.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
 	 */
-	public function validationFailed(array $errors, string $detail = '', string $instance = ''): array;
+	public function validationFailed(array $errors, ProblemDescription $description = new ProblemDescription()): array;
 }//end interface

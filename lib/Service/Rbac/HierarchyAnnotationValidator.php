@@ -90,39 +90,35 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 			];
 		}
 
+		return $this->annotationFindings(annotation: $annotation, schema: $schema);
+	}//end validate()
+
+	/**
+	 * Findings for an annotation that is an object: unknown keys, then the parent, then the optional keys.
+	 *
+	 * Without a parent nothing else is judged beyond the unknown keys.
+	 *
+	 * @param array<string, mixed> $annotation The hierarchy annotation.
+	 * @param array<string, mixed> $schema     `properties`, `slug` and the annotation.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
+	 */
+	private function annotationFindings(array $annotation, array $schema): array {
 		$findings = $this->unknownKeyFindings(annotation: $annotation);
 
 		$parent = trim((string)($annotation['parent'] ?? ($annotation['parentField'] ?? '')));
 		if ($parent === '') {
-			$findings[] = $this->error(
-				code: 'hierarchy.no-parent',
-				message: 'A hierarchy must name the property that points at the parent.'
-			);
+			$findings[] = $this->noParentError();
 			return $findings;
 		}
 
-		$declaredProperties = [];
-		if (is_array($schema['properties'] ?? null) === true) {
-			$declaredProperties = $schema['properties'];
-		}
-
-		$findings = array_merge(
+		return array_merge(
 			$findings,
-			$this->checkParentProperty(
-				parent: $parent,
-				properties: $declaredProperties,
-				identities: self::identitiesOf(schema: $schema)
-			)
-		);
-
-		$findings = array_merge(
-			$findings,
+			$this->checkParentProperty(parent: $parent, schema: $schema),
 			$this->maxDepthFindings(annotation: $annotation),
 			$this->inheritedVerbsFindings(annotation: $annotation)
 		);
-
-		return $findings;
-	}//end validate()
+	}//end annotationFindings()
 
 	/**
 	 * A warning for every annotation key this validator does not know.
@@ -180,6 +176,23 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 	}//end maxDepthFindings()
 
 	/**
+	 * Whether a verb list holds a non-string or blank entry.
+	 *
+	 * @param array<int|string, mixed> $verbs The declared verbs.
+	 *
+	 * @return bool True at the first entry that is not a non-empty name.
+	 */
+	private static function holdsBlankVerb(array $verbs): bool {
+		foreach ($verbs as $verb) {
+			if (is_string($verb) === false || trim($verb) === '') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end holdsBlankVerb()
+
+	/**
 	 * Findings for the optional `inheritedVerbs` key.
 	 *
 	 * A non-list and a list holding a blank name are BOTH reported when both
@@ -200,21 +213,12 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 		$findings = [];
 		$verbs = $annotation['inheritedVerbs'];
 		if (is_array($verbs) === false) {
-			$findings[] = $this->error(
-				code: 'hierarchy.bad-verbs',
-				message: 'inheritedVerbs must be a list of verbs.'
-			);
+			$findings[] = $this->error(code: 'hierarchy.bad-verbs', message: 'inheritedVerbs must be a list of verbs.');
 			$verbs = [];
 		}
 
-		foreach ($verbs as $verb) {
-			if (is_string($verb) === false || trim($verb) === '') {
-				$findings[] = $this->error(
-					code: 'hierarchy.bad-verbs',
-					message: 'inheritedVerbs must hold non-empty verb names.'
-				);
-				break;
-			}
+		if (self::holdsBlankVerb(verbs: $verbs) === true) {
+			$findings[] = $this->error(code: 'hierarchy.bad-verbs', message: 'inheritedVerbs must hold non-empty verb names.');
 		}
 
 		return $findings;
@@ -223,50 +227,133 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 	/**
 	 * Whether the named property is a reference to this same schema.
 	 *
-	 * @param string $parent The declared property name.
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param array<int, string> $identities Every spelling that names THIS schema.
+	 * @param string               $parent The declared property name.
+	 * @param array<string, mixed> $schema The schema shape being validated, with its properties and identities.
 	 *
 	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
 	 */
-	private function checkParentProperty(string $parent, array $properties, array $identities): array {
-		$property = ($properties[$parent] ?? null);
+	private function checkParentProperty(string $parent, array $schema): array {
+		$property = self::declaredProperty(name: $parent, schema: $schema);
 		if (is_array($property) === false) {
-			return [
-				$this->error(
-					code: 'hierarchy.unknown-property',
-					message: 'The parent property "' . $parent . '" is not a property of this schema.'
-				),
-			];
+			return [$this->unknownPropertyError(parent: $parent)];
 		}
 
-		// `$ref` is how this app declares a reference, and it carries the
-		// target's SLUG. `objectConfiguration.schema` is the older spelling and
-		// is read too, for the same reason both parent spellings are: a schema
-		// saved before the newer one existed would otherwise read as declaring
-		// no reference at all and be refused on upgrade.
-		$target = trim((string)($property['$ref'] ?? ($property['objectConfiguration']['schema'] ?? '')));
+		$target = self::referenceTarget(property: $property);
 		if ($target === '') {
-			return [
-				$this->error(
-					code: 'hierarchy.not-a-reference',
-					message: 'The parent property "' . $parent . '" is not declared as a reference to another object.'
-				),
-			];
+			return [$this->notAReferenceError(parent: $parent)];
 		}
 
-		if ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false) {
-			return [
-				$this->error(
-					code: 'hierarchy.foreign-reference',
-					message: 'The parent property "' . $parent . '" references "' . $target
-						. '" rather than this schema; a hierarchy edge must point at the same schema.'
-				),
-			];
+		if ($this->pointsElsewhere(target: $target, schema: $schema) === true) {
+			return [$this->foreignReferenceError(parent: $parent, target: $target)];
 		}
 
 		return [];
 	}//end checkParentProperty()
+
+	/**
+	 * The schema's declaration of a property, or null when it has none.
+	 *
+	 * @param string               $name   The property name.
+	 * @param array<string, mixed> $schema The schema shape being validated.
+	 *
+	 * @return mixed The declaration (an array when it is a usable one).
+	 */
+	private static function declaredProperty(string $name, array $schema): mixed {
+		if (is_array($schema['properties'] ?? null) === false) {
+			return null;
+		}
+
+		return ($schema['properties'][$name] ?? null);
+	}//end declaredProperty()
+
+	/**
+	 * The schema a property declares a reference to, or '' when it declares none.
+	 *
+	 * `$ref` is how this app declares a reference, and it carries the
+	 * target's SLUG. `objectConfiguration.schema` is the older spelling and
+	 * is read too, for the same reason both parent spellings are: a schema
+	 * saved before the newer one existed would otherwise read as declaring
+	 * no reference at all and be refused on upgrade.
+	 *
+	 * @param array<string, mixed> $property The property declaration.
+	 *
+	 * @return string The target, trimmed.
+	 */
+	private static function referenceTarget(array $property): string {
+		return trim((string)($property['$ref'] ?? ($property['objectConfiguration']['schema'] ?? '')));
+	}//end referenceTarget()
+
+	/**
+	 * Whether a reference target names some other schema than this one.
+	 *
+	 * A schema shape carrying no identity at all cannot be compared, and is not refused.
+	 *
+	 * @param string               $target The referenced schema.
+	 * @param array<string, mixed> $schema The schema shape being validated.
+	 *
+	 * @return bool True when the target is not this schema.
+	 */
+	private function pointsElsewhere(string $target, array $schema): bool {
+		$identities = self::identitiesOf(schema: $schema);
+
+		return ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false);
+	}//end pointsElsewhere()
+
+	/**
+	 * The finding for a hierarchy that names no parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function noParentError(): array {
+		return $this->error(
+			code: 'hierarchy.no-parent',
+			message: 'A hierarchy must name the property that points at the parent.'
+		);
+	}//end noParentError()
+
+	/**
+	 * The finding for a parent property the schema does not declare.
+	 *
+	 * @param string $parent The declared parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function unknownPropertyError(string $parent): array {
+		return $this->error(
+			code: 'hierarchy.unknown-property',
+			message: 'The parent property "' . $parent . '" is not a property of this schema.'
+		);
+	}//end unknownPropertyError()
+
+	/**
+	 * The finding for a parent property that is not a reference.
+	 *
+	 * @param string $parent The declared parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function notAReferenceError(string $parent): array {
+		return $this->error(
+			code: 'hierarchy.not-a-reference',
+			message: 'The parent property "' . $parent . '" is not declared as a reference to another object.'
+		);
+	}//end notAReferenceError()
+
+	/**
+	 * The finding for a parent property that references another schema.
+	 *
+	 * @param string $parent The declared parent property.
+	 * @param string $target The schema it references.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function foreignReferenceError(string $parent, string $target): array {
+		return $this->error(
+			code: 'hierarchy.foreign-reference',
+			message: 'The parent property "' . $parent . '" references "' . $target
+				. '" rather than this schema; a hierarchy edge must point at the same schema.'
+		);
+	}//end foreignReferenceError()
 
 	/**
 	 * Every spelling by which a `$ref` can name this schema.

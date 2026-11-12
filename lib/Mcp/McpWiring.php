@@ -27,7 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;

@@ -128,19 +128,8 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkBookmark(LinkTarget $target, int $bookmarkId): BookmarkLink {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
-		if ($existing !== null) {
-			throw new Exception('Bookmark already linked to this object', 409);
-		}
-
-		if ($this->isBookmarksAvailable() === false) {
-			throw new Exception('Bookmarks is not available', 503);
-		}
+		$user = $this->requireUser();
+		$this->assertBookmarkLinkable(target: $target, bookmarkId: $bookmarkId);
 
 		$details = $this->fetchBookmarkDetails(bookmarkId: $bookmarkId, userId: $user->getUID());
 		if ($details === null) {
@@ -154,6 +143,43 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 
 		return $this->bookmarkLinkMapper->insert($link);
 	}//end linkBookmark()
+
+	/**
+	 * The logged-in user.
+	 *
+	 * @return IUser
+	 *
+	 * @throws Exception When no user is logged in.
+	 */
+	private function requireUser(): IUser {
+		$user = $this->runtime->userSession()->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		return $user;
+	}//end requireUser()
+
+	/**
+	 * Refuse linking a bookmark the object already links, or while Bookmarks is unavailable.
+	 *
+	 * @param LinkTarget $target     The object to link to.
+	 * @param int        $bookmarkId NC Bookmarks bookmark id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 409 on a duplicate, 503 when Bookmarks is unavailable.
+	 */
+	private function assertBookmarkLinkable(LinkTarget $target, int $bookmarkId): void {
+		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
+		if ($existing !== null) {
+			throw new Exception('Bookmark already linked to this object', 409);
+		}
+
+		if ($this->isBookmarksAvailable() === false) {
+			throw new Exception('Bookmarks is not available', 503);
+		}
+	}//end assertBookmarkLinkable()
 
 	/**
 	 * Unlink a bookmark from an object.
@@ -193,7 +219,18 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			return [];
 		}
 
-		$userId = $this->refreshingUserId();
+		return $this->serialisedLinks(links: $links, userId: $this->refreshingUserId());
+	}//end getLinkedBookmarks()
+
+	/**
+	 * Link rows as arrays, each stale row refreshed first when a refreshing user is known.
+	 *
+	 * @param array<int,BookmarkLink> $links  The link rows.
+	 * @param string|null             $userId The refreshing user, or null to return the cached rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function serialisedLinks(array $links, ?string $userId): array {
 		$now = time();
 
 		$results = [];
@@ -206,7 +243,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 		}
 
 		return $results;
-	}//end getLinkedBookmarks()
+	}//end serialisedLinks()
 
 	/**
 	 * Return bookmarks visible to the current user (picker source).
@@ -232,10 +269,24 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			return [];
 		}
 
-		return $this->normaliseAll(
-			bookmarks: $this->findBookmarks(mapper: $mapper, userId: $user->getUID(), search: $search ?? '', tags: $tags ?? [])
-		);
+		$query = new BookmarkSearch(userId: $user->getUID(), text: $search ?? '', tags: $tags ?? []);
+
+		return $this->pickerRows(mapper: $mapper, query: $query);
 	}//end getAvailableBookmarks()
+
+	/**
+	 * The picker rows of the bookmarks a search finds.
+	 *
+	 * @param object         $mapper The NC Bookmarks BookmarkMapper.
+	 * @param BookmarkSearch $query  The owner, text and tags to search by.
+	 *
+	 * @return array<int,array{id:int,title:string,url:string,description:string,tags:array<int,string>,added:?int}>
+	 */
+	private function pickerRows(object $mapper, BookmarkSearch $query): array {
+		return $this->normaliseAll(
+			bookmarks: $this->findBookmarks(mapper: $mapper, search: $query)
+		);
+	}//end pickerRows()
 
 	/**
 	 * Create a new NC Bookmarks bookmark and link it to an OR object in
@@ -251,40 +302,45 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 *
 	 * @throws Exception On missing user, Bookmarks unavailable, or create failure.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function createAndLinkBookmark(LinkTarget $target, BookmarkDraft $draft): BookmarkLink {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
+		$user = $this->requireUser();
 		$mapper = $this->requireCreatableMapper(draft: $draft);
 
-		$cleanTags = $this->cleanTags(tags: $draft->tags());
-
-		$bookmarkId = $this->createBookmark(
-			mapper: $mapper,
-			draft: $draft->withDetails(description: $draft->description(), tags: $cleanTags)->ownedBy(ownerId: $user->getUID())
-		);
+		$cleaned = $draft->withDetails(description: $draft->description(), tags: $this->cleanTags(tags: $draft->tags()));
+		$bookmarkId = $this->createBookmark(mapper: $mapper, draft: $cleaned->ownedBy(ownerId: $user->getUID()));
 
 		$existing = $this->bookmarkLinkMapper->findByObjectAndBookmark($target->objectUuid, $bookmarkId);
 		if ($existing !== null) {
 			return $existing;
 		}
 
+		$link = $this->createdBookmarkLink(draft: $cleaned, bookmarkId: $bookmarkId);
+		$target->stamp(link: $link, linkedBy: $user->getUID());
+
+		return $this->bookmarkLinkMapper->insert($link);
+	}//end createAndLinkBookmark()
+
+	/**
+	 * The link row for a bookmark just created from a draft.
+	 *
+	 * @param BookmarkDraft $draft      The bookmark as created: tags cleaned.
+	 * @param int           $bookmarkId The created bookmark id.
+	 *
+	 * @return BookmarkLink The unsaved, unstamped link.
+	 */
+	private function createdBookmarkLink(BookmarkDraft $draft, int $bookmarkId): BookmarkLink {
 		$link = new BookmarkLink();
 		$link->setBookmarkId($bookmarkId);
 		$link->setTitle(mb_substr(trim($draft->title), 0, 512));
 		$link->setUrl(trim($draft->url));
 		$link->setDescription((string)($draft->description() ?? ''));
-		$link->setTags($cleanTags);
+		$link->setTags($draft->tags());
 		$link->setAddedAt(new DateTime());
-		$target->stamp(link: $link, linkedBy: $user->getUID());
 
-		return $this->bookmarkLinkMapper->insert($link);
-	}//end createAndLinkBookmark()
+		return $link;
+	}//end createdBookmarkLink()
 
 	/**
 	 * The user whose stale link rows may be refreshed: none when Bookmarks is unavailable.
@@ -373,16 +429,14 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * List the user's bookmarks matching the optional search and tags; a failure is logged and yields none.
 	 *
-	 * @param object            $mapper The NC Bookmarks BookmarkMapper.
-	 * @param string            $userId The current user's id.
-	 * @param string            $search Title/url substring filter; '' for none.
-	 * @param array<int,string> $tags   Tag filter; empty for none.
+	 * @param object         $mapper The NC Bookmarks BookmarkMapper.
+	 * @param BookmarkSearch $search Whose bookmarks, and the text and tag filters.
 	 *
 	 * @return iterable<object>
 	 */
-	private function findBookmarks(object $mapper, string $userId, string $search, array $tags): iterable {
+	private function findBookmarks(object $mapper, BookmarkSearch $search): iterable {
 		try {
-			return $mapper->findAll($userId, $this->queryParameters(search: $search, tags: $tags));
+			return $mapper->findAll($search->userId, $this->queryParameters(search: $search));
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('BookmarkLinkService::getAvailableBookmarks failed: ' . $e->getMessage());
 			return [];
@@ -392,19 +446,18 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * Build the NC Bookmarks query parameters for a picker listing.
 	 *
-	 * @param string            $search Title/url substring filter; '' for none.
-	 * @param array<int,string> $tags   Tag filter; empty for none.
+	 * @param BookmarkSearch $search The text and tag filters.
 	 *
 	 * @return object
 	 */
-	private function queryParameters(string $search, array $tags): object {
+	private function queryParameters(BookmarkSearch $search): object {
 		$queryParameters = new \OCA\Bookmarks\QueryParameters();
-		if ($search !== '') {
-			$queryParameters->setSearch([$search]);
+		if ($search->text !== '') {
+			$queryParameters->setSearch([$search->text]);
 		}
 
-		if (count($tags) > 0) {
-			$queryParameters->setTags(array_values($tags));
+		if (count($search->tags) > 0) {
+			$queryParameters->setTags(array_values($search->tags));
 		}
 
 		return $queryParameters;
@@ -424,13 +477,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			throw new Exception('Bookmarks is not available', 503);
 		}
 
-		if (trim($draft->title) === '') {
-			throw new Exception('Title is required', 400);
-		}
-
-		if (trim($draft->url) === '') {
-			throw new Exception('URL is required', 400);
-		}
+		$this->assertDraftComplete(draft: $draft);
 
 		$mapper = $this->resolveBookmarkMapper();
 		if ($mapper === null) {
@@ -439,6 +486,25 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 
 		return $mapper;
 	}//end requireCreatableMapper()
+
+	/**
+	 * Refuse a draft without a title or URL.
+	 *
+	 * @param BookmarkDraft $draft The bookmark to create.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the title or URL is empty (400).
+	 */
+	private function assertDraftComplete(BookmarkDraft $draft): void {
+		if (trim($draft->title) === '') {
+			throw new Exception('Title is required', 400);
+		}
+
+		if (trim($draft->url) === '') {
+			throw new Exception('URL is required', 400);
+		}
+	}//end assertDraftComplete()
 
 	/**
 	 * Create the bookmark in NC Bookmarks and tag it.
@@ -452,19 +518,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 */
 	private function createBookmark(object $mapper, BookmarkDraft $draft): int {
 		try {
-			$bookmark = new \OCA\Bookmarks\Db\Bookmark();
-			$bookmark->setUserId($draft->ownerId());
-			$bookmark->setUrl(trim($draft->url));
-			$bookmark->setTitle(mb_substr(trim($draft->title), 0, 512));
-			$bookmark->setDescription((string)($draft->description() ?? ''));
-
-			$saved = $mapper->insertOrUpdate($bookmark);
-			$bookmarkId = (int)$saved->getId();
-
-			if ($bookmarkId === 0) {
-				throw new Exception('Failed to retrieve created bookmark id', 500);
-			}
-
+			$bookmarkId = $this->insertBookmark(mapper: $mapper, draft: $draft);
 			$this->addTags(cleanTags: $draft->tags(), bookmarkId: $bookmarkId);
 		} catch (Exception $e) {
 			throw $e;
@@ -475,6 +529,33 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 
 		return $bookmarkId;
 	}//end createBookmark()
+
+	/**
+	 * Insert the bookmark in NC Bookmarks.
+	 *
+	 * @param object        $mapper The NC Bookmarks BookmarkMapper.
+	 * @param BookmarkDraft $draft  The bookmark to create: owner set.
+	 *
+	 * @return int The created bookmark id.
+	 *
+	 * @throws Exception When the created bookmark has no id (500).
+	 */
+	private function insertBookmark(object $mapper, BookmarkDraft $draft): int {
+		$bookmark = new \OCA\Bookmarks\Db\Bookmark();
+		$bookmark->setUserId($draft->ownerId());
+		$bookmark->setUrl(trim($draft->url));
+		$bookmark->setTitle(mb_substr(trim($draft->title), 0, 512));
+		$bookmark->setDescription((string)($draft->description() ?? ''));
+
+		$saved = $mapper->insertOrUpdate($bookmark);
+		$bookmarkId = (int)$saved->getId();
+
+		if ($bookmarkId === 0) {
+			throw new Exception('Failed to retrieve created bookmark id', 500);
+		}
+
+		return $bookmarkId;
+	}//end insertBookmark()
 
 	/**
 	 * Attach tags to a bookmark when there are any and the tag mapper resolves.
@@ -585,22 +666,61 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @return array{title:string,url:string,description:string,tags:array<int,string>,addedAt:?DateTime}|null
 	 */
 	private function fetchBookmarkDetails(int $bookmarkId, string $userId): ?array {
+		$bookmark = $this->ownedBookmark(bookmarkId: $bookmarkId, userId: $userId);
+		if ($bookmark === null) {
+			return null;
+		}
+
+		return $this->cachedDetails(bookmark: $bookmark);
+	}//end fetchBookmarkDetails()
+
+	/**
+	 * A bookmark of the given user.
+	 *
+	 * @param int    $bookmarkId NC Bookmarks bookmark id.
+	 * @param string $userId     The user who must own it.
+	 *
+	 * @return object|null The NC Bookmarks entity, or null when Bookmarks is unavailable, it cannot be found, or another user owns it.
+	 */
+	private function ownedBookmark(int $bookmarkId, string $userId): ?object {
 		$mapper = $this->resolveBookmarkMapper();
 		if ($mapper === null) {
 			return null;
 		}
 
+		$bookmark = $this->findBookmark(mapper: $mapper, bookmarkId: $bookmarkId);
+		if ($bookmark === null || (string)$bookmark->getUserId() !== $userId) {
+			return null;
+		}
+
+		return $bookmark;
+	}//end ownedBookmark()
+
+	/**
+	 * A bookmark by id.
+	 *
+	 * @param object $mapper     The NC Bookmarks BookmarkMapper.
+	 * @param int    $bookmarkId NC Bookmarks bookmark id.
+	 *
+	 * @return object|null The NC Bookmarks entity, or null when it cannot be found (logged at debug).
+	 */
+	private function findBookmark(object $mapper, int $bookmarkId): ?object {
 		try {
-			$bookmark = $mapper->find($bookmarkId);
+			return $mapper->find($bookmarkId);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('fetchBookmarkDetails find failed: ' . $e->getMessage());
 			return null;
 		}
+	}//end findBookmark()
 
-		if ((string)$bookmark->getUserId() !== $userId) {
-			return null;
-		}
-
+	/**
+	 * The details a link row caches of a bookmark.
+	 *
+	 * @param object $bookmark NC Bookmarks Bookmark entity.
+	 *
+	 * @return array{title:string,url:string,description:string,tags:array<int,string>,addedAt:?DateTime}
+	 */
+	private function cachedDetails(object $bookmark): array {
 		$normalised = $this->normaliseBookmark(bookmark: $bookmark);
 		$addedAt = $this->addedAt(added: $normalised['added'] ?? 0);
 
@@ -611,7 +731,7 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			'tags' => $normalised['tags'],
 			'addedAt' => $addedAt,
 		];
-	}//end fetchBookmarkDetails()
+	}//end cachedDetails()
 
 	/**
 	 * Normalise a NC Bookmarks bookmark entity into the picker/leaf row
@@ -625,25 +745,11 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function normaliseBookmark(object $bookmark): array {
-		$arr = (array)$bookmark;
-		if (method_exists($bookmark, 'toArray') === true) {
-			$arr = $bookmark->toArray();
-		}
-
-		$idFallback = 0;
-		if (method_exists($bookmark, 'getId') === true) {
-			$idFallback = $bookmark->getId();
-		}
-
-		$id = (int)($arr['id'] ?? $idFallback);
+		$arr = $this->bookmarkFields(bookmark: $bookmark);
+		$id = $this->bookmarkIdOf(bookmark: $bookmark, fields: $arr);
 		$url = (string)($arr['url'] ?? '');
 
 		$tags = $this->bookmarkTags(bookmark: $bookmark, id: $id);
-
-		$added = null;
-		if (isset($arr['added']) === true) {
-			$added = (int)$arr['added'];
-		}
 
 		return [
 			'id' => $id,
@@ -651,9 +757,58 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 			'url' => $url,
 			'description' => (string)($arr['description'] ?? ''),
 			'tags' => $this->cleanTags(tags: $tags),
-			'added' => $added,
+			'added' => $this->addedEpoch(fields: $arr),
 		];
 	}//end normaliseBookmark()
+
+	/**
+	 * The fields of a bookmark entity: its toArray() when it has one, else its public properties.
+	 *
+	 * @param object $bookmark NC Bookmarks Bookmark entity.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function bookmarkFields(object $bookmark): array {
+		$arr = (array)$bookmark;
+		if (method_exists($bookmark, 'toArray') === true) {
+			$arr = $bookmark->toArray();
+		}
+
+		return $arr;
+	}//end bookmarkFields()
+
+	/**
+	 * The id of a bookmark: its `id` field, else its getId().
+	 *
+	 * @param object              $bookmark NC Bookmarks Bookmark entity.
+	 * @param array<string,mixed> $fields   The bookmark's fields.
+	 *
+	 * @return int
+	 */
+	private function bookmarkIdOf(object $bookmark, array $fields): int {
+		$idFallback = 0;
+		if (method_exists($bookmark, 'getId') === true) {
+			$idFallback = $bookmark->getId();
+		}
+
+		return (int)($fields['id'] ?? $idFallback);
+	}//end bookmarkIdOf()
+
+	/**
+	 * When a bookmark was added, as an epoch.
+	 *
+	 * @param array<string,mixed> $fields The bookmark's fields.
+	 *
+	 * @return int|null Null when the bookmark has no `added` field.
+	 */
+	private function addedEpoch(array $fields): ?int {
+		$added = null;
+		if (isset($fields['added']) === true) {
+			$added = (int)$fields['added'];
+		}
+
+		return $added;
+	}//end addedEpoch()
 
 	/**
 	 * Strip empty + `or:*` marker tags and re-index.

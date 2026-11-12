@@ -47,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 
 /**
  * Contract tests for objects#presenceBeat, presenceDepart and presenceList.
@@ -233,7 +234,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 		$this->objectIsReadable();
 		$this->presence->expects($this->once())
 			->method('present')
-			->with('uuid-123', self::CALLER)
+			->with(new PresenceLookup(objectUuid: 'uuid-123', exceptUser: self::CALLER))
 			->willReturn([['userId' => 'bob']]);
 
 		$response = $this->controller->presenceList('reg', 'sch', 'uuid-123');

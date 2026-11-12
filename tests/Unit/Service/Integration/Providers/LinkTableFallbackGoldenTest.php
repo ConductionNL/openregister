@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
@@ -43,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
@@ -234,11 +236,11 @@ class LinkTableFallbackGoldenTest extends TestCase {
 			return new Providers\CospendProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $mapper, $this->container($name === 'cospend'));
 		}
 		if ($name === 'forms') {
-			return new Providers\FormsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\FormLinkMapper::class, $links), new NullLogger());
+			return new Providers\FormsProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, new NullLogger()), $this->mapper(Db\FormLinkMapper::class, $links));
 		}
 		$config = $this->createMock(IConfig::class);
 		$config->method('getAppValue')->willReturn('timemanager');
-		return new Providers\TimeProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\TimeTrackerLinkMapper::class, $links), $config, new NullLogger());
+		return new Providers\TimeProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, new NullLogger()), $this->mapper(Db\TimeTrackerLinkMapper::class, $links), $config);
 	}//end provider()
 
 	/**
@@ -324,7 +326,7 @@ class LinkTableFallbackGoldenTest extends TestCase {
 				$this->queries = [];
 				$this->dbMode = $mode;
 				try {
-					$rows = $this->provider($name, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+					$rows = $this->provider($name, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				} catch (\Throwable $e) {
 					$rows = ['thrown' => get_class($e), 'message' => $e->getMessage()];
 				}

@@ -126,13 +126,8 @@ class LifecycleConditionTest extends TestCase {
 		);
 
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger), $this->userSession, $this->permissionHandler),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator(
-				$this->userSession,
-				$this->groupManager,
-				new LifecycleConditionReporting($this->l10n, $this->logger),
-				$this->realConditionDialect()
-			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $this->groupManager))), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
@@ -240,17 +235,10 @@ class LifecycleConditionTest extends TestCase {
 		$this->l10n->method('getLanguageCode')->willReturn('nl');
 		$this->l10n->method('t')->willReturnArgument(0);
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger), $this->userSession, $this->permissionHandler),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry(
-				$this->guardContainer,
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer,
 				$this->createMock(IServerContainer::class),
-				$this->logger
-			), new LifecycleConditionEvaluator(
-				$this->userSession,
-				$this->groupManager,
-				new LifecycleConditionReporting($this->l10n, $this->logger),
-				$this->realConditionDialect()
-			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				$this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $this->groupManager))), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
@@ -507,12 +495,10 @@ class LifecycleConditionTest extends TestCase {
 		// ITS condition, and that only works through the declared action.
 		$context = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context), $this->logger), $this->userSession, $this->permissionHandler),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry(
-				$this->guardContainer,
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context)), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer,
 				$this->createMock(originalClassName: IServerContainer::class),
-				$this->logger
-			), new LifecycleConditionEvaluator($this->userSession, $this->groupManager, new LifecycleConditionReporting($this->l10n, $this->logger), $this->realConditionDialect()), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+				$this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $this->groupManager))), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
 						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(

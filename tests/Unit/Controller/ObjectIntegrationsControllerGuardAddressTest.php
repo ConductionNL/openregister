@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- the provider stub's methods are its interface's.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
@@ -47,6 +48,15 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectIntegrationsController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsObjectLookup
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 final class ObjectIntegrationsControllerGuardAddressTest extends TestCase {
 
@@ -118,7 +128,6 @@ final class ObjectIntegrationsControllerGuardAddressTest extends TestCase {
 		$registry->addProvider($this->provider());
 
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(registry: $registry, objectService: $objects, schemaMapper: $this->createMock(SchemaMapper::class)),
@@ -170,28 +179,28 @@ final class ObjectIntegrationsControllerGuardAddressTest extends TestCase {
 				return true;
 			}
 
-			public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-				$this->test->dispatched[] = 'list:'.$objectId;
+			public function list(ObjectRef $ref, array $filters = []): array {
+				$this->test->dispatched[] = 'list:'.$ref->id;
 				return [];
 			}
 
-			public function get(string $register, string $schema, string $objectId, string $entityId): array {
-				$this->test->dispatched[] = 'get:'.$objectId;
+			public function get(ObjectRef $ref, string $entityId): array {
+				$this->test->dispatched[] = 'get:'.$ref->id;
 				return ['id' => $entityId];
 			}
 
-			public function create(string $register, string $schema, string $objectId, array $payload): array {
-				$this->test->dispatched[] = 'create:'.$objectId;
+			public function create(ObjectRef $ref, array $payload): array {
+				$this->test->dispatched[] = 'create:'.$ref->id;
 				return ['id' => 'new'];
 			}
 
-			public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-				$this->test->dispatched[] = 'update:'.$objectId;
+			public function update(ObjectRef $ref, string $entityId, array $payload): array {
+				$this->test->dispatched[] = 'update:'.$ref->id;
 				return ['id' => $entityId];
 			}
 
-			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-				$this->test->dispatched[] = 'delete:'.$objectId;
+			public function delete(ObjectRef $ref, string $entityId): void {
+				$this->test->dispatched[] = 'delete:'.$ref->id;
 			}
 		};
 	}//end provider()

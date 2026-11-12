@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -66,6 +67,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for ObjectService::patchObject() and its merge rules.
@@ -127,7 +132,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -166,7 +171,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 
@@ -300,10 +305,11 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		try {
 			$this->service->patchObject(
-				objectId: $uuid,
-				data: ['status' => 'closed'],
-				register: $this->register,
-				schema: $this->schema
+				patch: new ObjectPatch(
+					objectId: $uuid,
+					data: ['status' => 'closed'],
+					target: new ObjectFindTarget(register: $this->register, schema: $this->schema)
+				)
 			);
 		} catch (Throwable $e) {
 			// The deep saveObject pipeline is not the subject here; the lookup is.
@@ -334,7 +340,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: ['title' => 'Beta', 'contact' => ['email' => 'b@example.org']]);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: ['title' => 'Beta', 'contact' => ['email' => 'b@example.org']]));
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -402,7 +408,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: $patch);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: $patch));
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -517,13 +523,13 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = [];
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
 				$seen[] = $_rbac;
 			}
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: ['title' => 'Beta'], _rbac: false);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: ['title' => 'Beta']), _rbac: false);
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -540,13 +546,10 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$names[] = $parameter->getName();
 		}
 
-		$this->assertSame(
-			['objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser'],
-			$names,
-			'the signature mirrors saveObject()\'s parameter vocabulary'
-		);
+		$this->assertSame(['patch', '_rbac', '_multitenancy'], $names, 'the patch travels as one ObjectPatch');
 
-		$currentUser = $method->getParameters()[6];
+		$currentUser = (new \ReflectionClass(ObjectPatch::class))->getConstructor()->getParameters()[3];
+		$this->assertSame('currentUser', $currentUser->getName());
 		$this->assertSame(IUser::class, (string)$currentUser->getType()->getName());
 		$this->assertTrue($currentUser->allowsNull());
 
@@ -560,7 +563,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		// appending any further optional parameter broke it while the property
 		// it means to protect was untouched.
 		$found = null;
-		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+		foreach ((new \ReflectionMethod(ObjectDeletion::class, '__construct'))->getParameters() as $parameter) {
 			if ($parameter->getName() === 'currentUser') {
 				$found = $parameter;
 				break;
@@ -585,7 +588,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 	 */
 	public function testDeleteObjectOffersPermanenceAndDefaultsToASoftDelete(): void {
 		$found = null;
-		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+		foreach ((new \ReflectionMethod(ObjectDeletion::class, '__construct'))->getParameters() as $parameter) {
 			if ($parameter->getName() === 'permanent') {
 				$found = $parameter;
 				break;
@@ -611,7 +614,8 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = null;
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = ['action' => $action, 'userId' => $userId];
 			}
 		);
@@ -621,10 +625,11 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		try {
 			$this->service->deleteObject(
-				uuid: 'u-1',
-				register: $this->register,
-				schema: $this->schema,
-				currentUser: $alice
+				deletion: new ObjectDeletion(
+					uuid: 'u-1',
+					target: new ObjectFindTarget(register: $this->register, schema: $this->schema),
+					currentUser: $alice
+				)
 			);
 		} catch (Throwable $e) {
 			// Expected — the delete handler is mocked out.
@@ -647,13 +652,14 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = 'untouched';
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = $userId;
 			}
 		);
 
 		try {
-			$this->service->deleteObject(uuid: 'u-1', register: $this->register, schema: $this->schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'u-1', target: new ObjectFindTarget(register: $this->register, schema: $this->schema)));
 		} catch (Throwable $e) {
 			// Expected — the delete handler is mocked out.
 		}

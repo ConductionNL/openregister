@@ -45,13 +45,13 @@ class LockAuthorization {
 	 * @param IUserSession                    $userSession       The caller.
 	 * @param IGroupManager                   $groupManager      Administrator and group membership checks.
 	 * @param SchemaMapperInterface           $schemaMapper      Resolves the manage rules of the owning schema.
-	 * @param PermissionHandlerInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock.
+	 * @param PermissionHandlerInterface      $permissionHandler RBAC, asked for update permission before a user takes a lock.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ?PermissionHandlerInterface $permissionHandler = null,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 	}//end __construct()
 
@@ -73,13 +73,11 @@ class LockAuthorization {
 	 */
 	public function assertMayLock(array $context): void {
 		$object = $context['object'];
-		$this->permissionHandler?->checkPermission(
+		$this->permissionHandler->checkPermission(
 			schema: $context['schema'],
 			action: 'update',
-			userId: null,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+			_rbac: true
 		);
 	}//end assertMayLock()
 

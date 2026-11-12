@@ -18,7 +18,6 @@ final class ConversationControllerFactory {
 	/**
 	 * The constructor arguments of ConversationController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ConversationMapper $conversationMapper Constructor argument.
 	 * @param MessageMapper $messageMapper Constructor argument.
@@ -32,7 +31,6 @@ final class ConversationControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Mcp\Db\ConversationMapper $conversationMapper,
 		\OCA\OpenRegister\Notifications\Db\MessageMapper $messageMapper,
@@ -44,7 +42,6 @@ final class ConversationControllerFactory {
 		string $userId,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConversationControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\ChatMappers(

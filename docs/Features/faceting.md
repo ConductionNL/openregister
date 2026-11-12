@@ -268,7 +268,7 @@ For categorical data — status, priority, category, etc.
 
 Request:
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[status][type]=terms&_facets[priority][type]=terms" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[status][type]=terms&_facets[priority][type]=terms" \
   -u admin:admin
 ```
 
@@ -292,7 +292,7 @@ For time-based data with configurable intervals (`day`, `week`, `month`, `quarte
 
 Request:
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
   -u admin:admin
 ```
 
@@ -324,7 +324,7 @@ For time-based data with predefined ranges (e.g., "Last 7 days", "Last month"):
 
 Request (configured via schema, no extra query params needed):
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[published_date][type]=date_range" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[published_date][type]=date_range" \
   -u admin:admin
 ```
 
@@ -350,7 +350,7 @@ For numeric data with custom buckets.
 
 Request:
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[price][type]=range&_facets[price][ranges][0][to]=100&_facets[price][ranges][1][from]=100&_facets[price][ranges][1][to]=500&_facets[price][ranges][2][from]=500" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[price][type]=range&_facets[price][ranges][0][to]=100&_facets[price][ranges][1][from]=100&_facets[price][ranges][1][to]=500&_facets[price][ranges][2][from]=500" \
   -u admin:admin
 ```
 
@@ -383,7 +383,7 @@ Response:
 Discover which fields are available for faceting:
 
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facetable=true&_limit=0" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facetable=true&_limit=0" \
   -u admin:admin
 ```
 
@@ -468,7 +468,7 @@ The three sections:
 Request specific facets by field name and type:
 
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[@self][created][type]=date_histogram&_facets[@self][created][interval]=month" \
   -u admin:admin
 ```
 
@@ -477,7 +477,7 @@ curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets
 Facets work alongside search filters and pagination:
 
 ```bash
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_search=customer&_limit=25&_page=1&_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[priority][type]=terms" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_search=customer&_limit=25&_page=1&_facets[@self][register][type]=terms&_facets[status][type]=terms&_facets[priority][type]=terms" \
   -u admin:admin
 ```
 
@@ -525,7 +525,7 @@ Example: if the user filters by `status=active`, the status facet still shows co
 
 ```bash
 # User has selected status=active
-curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_facets[status][type]=terms&_facets[priority][type]=terms" \
+curl -H 'OCS-APIRequest: true' "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?status=active&_facets[status][type]=terms&_facets[priority][type]=terms" \
   -u admin:admin
 ```
 

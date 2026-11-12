@@ -61,7 +61,7 @@ class ObjectHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ObjectHandler(
-			new TextExtractionObjects($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new TextExtractionObjects(new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			$this->chunkMapper,
 			$this->logger
 		);
@@ -530,6 +530,8 @@ class ObjectHandlerTest extends TestCase {
 		$result = $this->handler->extractText(1, []);
 
 		$this->assertIsString($result['text']);
+		// The leaf sits below the depth limit, so its value is not extracted.
+		$this->assertStringNotContainsString('deep-value', $result['text']);
 	}//end testExtractTextRespectsMaxRecursionDepth()
 
 	// ── A REAL ObjectEntity, because the mocks are what hid this ──────────

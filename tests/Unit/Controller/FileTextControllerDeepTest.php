@@ -100,6 +100,43 @@ class FileTextControllerDeepTest extends TestCase {
 		$this->assertEquals(500, $response->getStatus());
 	}//end testGetStatsException()
 
+	public function testFailuresAreLoggedAndAnsweredWithTheirOwnWording(): void {
+		$this->request->method('getParam')->willReturn(100);
+		$this->textExtractor->method('getExtractedText')->willThrowException(new \Exception('text fail'));
+		$this->textExtractor->method('extractPendingFiles')->willThrowException(new \Exception('bulk fail'));
+		$this->textExtractor->method('getStats')->willThrowException(new \Exception('stats fail'));
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$logged): void {
+				unset($context['file'], $context['line']);
+				$logged[] = [$message, $context];
+			}
+		);
+
+		$responses = [
+			$this->controller->getFileText(7),
+			$this->controller->bulkExtract(),
+			$this->controller->getStats(),
+		];
+
+		$this->assertSame(
+			[
+				[500, ['success' => false, 'message' => 'Failed to retrieve file text: text fail']],
+				[500, ['success' => false, 'message' => 'Bulk extraction failed: bulk fail']],
+				[500, ['success' => false, 'message' => 'Failed to retrieve statistics: stats fail']],
+			],
+			array_map(static fn ($response) => [$response->getStatus(), $response->getData()], $responses)
+		);
+		$this->assertSame(
+			[
+				['[FileTextController] Failed to get file text', ['file_id' => 7, 'error' => 'text fail']],
+				['[FileTextController] Failed bulk extraction', ['error' => 'bulk fail']],
+				['[FileTextController] Failed to get stats', ['error' => 'stats fail']],
+			],
+			$logged
+		);
+	}//end testFailuresAreLoggedAndAnsweredWithTheirOwnWording()
+
 	public function testAnonymizeFileNotFound(): void {
 		$this->fileService->method('getFileById')->willReturn(null);
 

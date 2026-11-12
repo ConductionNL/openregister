@@ -51,6 +51,15 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\AlertRecipientChange
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachedView
+ * @uses \OCA\OpenRegister\Service\View\ViewAlertLine
  */
 class ViewAlertOnSaveTest extends TestCase {
 
@@ -102,13 +111,12 @@ class ViewAlertOnSaveTest extends TestCase {
 		$logger = new NullLogger();
 
 		return new ViewsController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
 				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
 				$this->createMock(ViewPresentationService::class),
 				$logger,
-				new ViewerReachResolver(userSession: $session, groupManager: $groupManager, logger: $logger)
+				new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($session, $groupManager), logger: $logger)
 			)
 		);
 	}//end controllerFor()

@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -305,7 +306,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$values = new ExampleSetValues();
 		foreach ($plan['fragments'][0]['objects'] as $object) {
 			$gaps = [];
-			$values->fill(value: $object['data'], context: ['cast' => $plan['cast']['entries'], 'objects' => [], 'today' => $this->today()], gaps: $gaps);
+			$values->fill(value: $object['data'], scope: new ExampleSetFillScope(context: ['cast' => $plan['cast']['entries'], 'objects' => [], 'today' => $this->today()], gaps: $gaps));
 			$this->assertSame([], $gaps, $object['key']);
 		}
 	}

@@ -68,7 +68,7 @@ class GeoFilterApplierTest extends TestCase {
 		];
 		$filters = [
 			GeoFilter::fromBbox('5.10,52.05,5.15,52.10'),
-			GeoFilter::fromNearAndRadius(5.12, 52.09, 500),
+			GeoFilter::fromNearAndRadius(['lon' => 5.12, 'lat' => 52.09, 'radius' => 500]),
 		];
 
 		$result = $this->applier->applyAll($rows, $filters);

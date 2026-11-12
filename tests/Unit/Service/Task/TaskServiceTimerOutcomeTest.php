@@ -33,8 +33,14 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -70,15 +76,23 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->audits,
 			authorization: $this->createMock(TaskAuthorizationService::class),
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 
@@ -106,7 +120,7 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 
 		$results = [];
 		foreach (['skip', 'error', 'dead_letter', 'transition:approve'] as $outcome) {
-			$task = $service->applyTimerOutcome(uuid: 't-' . $outcome, outcome: $outcome, source: 'flow-timer:abc', reason: 'deadline reached');
+			$task = $service->applyTimerOutcome(uuid: 't-' . $outcome, outcome: new TimerOutcome(outcome: $outcome, trigger: new TaskTrigger(source: 'flow-timer:abc', reason: 'deadline reached')));
 			$results[$outcome] = $task->getState() . '/' . $task->getOutcome();
 			self::assertTrue($task->getIsTerminal());
 		}
@@ -133,7 +147,7 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($done);
 		$this->tasks->expects(self::never())->method('updateIfOpen');
 
-		$result = $this->service()->applyTimerOutcome(uuid: 't-1', outcome: 'error', source: 'flow-timer:abc', reason: 'x');
+		$result = $this->service()->applyTimerOutcome(uuid: 't-1', outcome: new TimerOutcome(outcome: 'error', trigger: new TaskTrigger(source: 'flow-timer:abc', reason: 'x')));
 		self::assertSame('approved', $result->getOutcome());
 		self::assertSame([], $this->audited);
 	}//end testAnAlreadyTerminalTaskIsLeftAsItEnded()
@@ -143,7 +157,7 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 		$service = $this->service();
 		foreach (['expire', 'transition:', 'transition:skip', 'transition:' . str_repeat('x', 33)] as $bad) {
 			try {
-				$service->applyTimerOutcome(uuid: 't-1', outcome: $bad, source: 's', reason: 'r');
+				$service->applyTimerOutcome(uuid: 't-1', outcome: new TimerOutcome(outcome: $bad, trigger: new TaskTrigger(source: 's', reason: 'r')));
 				self::fail('accepted ' . $bad);
 			} catch (TaskValidationException $refused) {
 				self::assertStringContainsString("'" . $bad . "'", $refused->getMessage());
@@ -155,6 +169,6 @@ class TaskServiceTimerOutcomeTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->openTask('t-1'));
 		$this->tasks->method('updateIfOpen')->willReturn(false);
 		$this->expectException(TaskConflictException::class);
-		$this->service()->applyTimerOutcome(uuid: 't-1', outcome: 'skip', source: 's', reason: 'r');
+		$this->service()->applyTimerOutcome(uuid: 't-1', outcome: new TimerOutcome(outcome: 'skip', trigger: new TaskTrigger(source: 's', reason: 'r')));
 	}//end testALostRaceSurfacesAsAConflict()
 }//end class

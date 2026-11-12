@@ -70,10 +70,8 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 	 * `field` / `before` / `after` / `ground`. Persists once (audited). It does
 	 * NOT call the erase pseudonymise path.
 	 *
-	 * @param string $caseUuid The case object uuid.
-	 * @param string $field The case field being redacted.
-	 * @param string $after The redacted replacement value.
-	 * @param string $ground The generic ground key the redaction was applied under.
+	 * @param string         $caseUuid  The case object uuid.
+	 * @param FieldRedaction $redaction The field, its redacted replacement value and the generic ground key.
 	 *
 	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
 	 *
@@ -81,7 +79,7 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
-	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
+	public function applyRedaction(string $caseUuid, FieldRedaction $redaction): array {
 		$case = CasePayload::loaded(case: $this->accessor->load(caseUuid: $caseUuid), caseUuid: $caseUuid);
 		$data = $case->getObject();
 
@@ -89,15 +87,15 @@ class RedactionWriteService implements RedactionWriteServiceInterface {
 		// field-level capture on the case object — NOT the statutory erase
 		// pseudonymise across the subject's objects.
 		$entry = [
-			'field' => $field,
-			'before' => $this->scalarOf(data: $data, field: $field),
-			'after' => $after,
-			'ground' => $ground,
+			'field' => $redaction->field,
+			'before' => $this->scalarOf(data: $data, field: $redaction->field),
+			'after' => $redaction->after,
+			'ground' => $redaction->ground,
 			'recordType' => self::RECORD_TYPE,
 		];
 
 		// Apply the redacted value to the case field, and record it.
-		$data[$field] = $after;
+		$data[$redaction->field] = $redaction->after;
 		$data['redactions'] = [...CasePayload::listField(data: $data, key: 'redactions'), $entry];
 
 		$this->accessor->save(case: $case, data: $data);

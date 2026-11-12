@@ -10,12 +10,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -91,7 +95,8 @@ class PartyServiceAccessGoldenTest extends TestCase {
 		$schemas = ($schemas === [] ? [$this->schema(7)] : $schemas);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend=[], bool $files=false, mixed $register=null, mixed $schema=null) use ($stored): ?ObjectEntity {
+			function (...$args) use ($stored): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema] = FindCallShape::find(args: $args);
 				$key = $id . '@' . (string)$schema;
 				$this->calls[] = 'find:' . $key . ':' . (string)$register;
 				$hit = ($stored[$key] ?? null);
@@ -132,7 +137,7 @@ class PartyServiceAccessGoldenTest extends TestCase {
 		);
 
 		if ($registers === false) {
-			return new PartyService($objects, $mapper);
+			return new PartyService($objects, $this->catalog(schemas: $mapper, registers: $this->createMock(RegisterMapperInterface::class)));
 		}
 
 		$registerMapper = $this->getMockBuilder(RegisterMapper::class)
@@ -150,8 +155,23 @@ class PartyServiceAccessGoldenTest extends TestCase {
 			}
 		);
 
-		return new PartyService($objects, $mapper, $registerMapper);
+		return new PartyService($objects, $this->catalog(schemas: $mapper, registers: $registerMapper));
 	}//end service()
+
+	/**
+	 * A schema catalog serving the given schema and register mappers.
+	 *
+	 * @param SchemaMapperInterface   $schemas   The schema mapper.
+	 * @param RegisterMapperInterface $registers The register mapper.
+	 *
+	 * @return SchemaCatalogInterface The catalog.
+	 */
+	private function catalog(SchemaMapperInterface $schemas, RegisterMapperInterface $registers): SchemaCatalogInterface {
+		$catalog = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('schemas')->willReturn($schemas);
+		$catalog->method('registers')->willReturn($registers);
+		return $catalog;
+	}//end catalog()
 
 	/**
 	 * A blank uuid reads nothing.

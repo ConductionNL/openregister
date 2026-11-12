@@ -37,9 +37,24 @@ import {
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
+import {
 	confirmDialogState,
 	settleConfirmRequest,
 } from '../shared/confirmDialogState.js'
+
+/**
+ * The first register that holds the schema being deleted.
+ *
+ * @return {object|undefined} The register
+ */
+function registerHoldingSchema() {
+	return registerStore.registerList.find((reg) =>
+		reg.schemas.includes(schemaStore.schemaItem.id),
+	)
+}
 
 export default {
 	name: 'DeleteSchema',
@@ -47,32 +62,15 @@ export default {
 		ConfirmDialogFrame,
 	},
 
-	mixins: [confirmDialogState(false)],
+	mixins: [
+		confirmDialogState(false),
+		objectUsageGuard(() => navigationStore.dialog === 'deleteSchema'),
+	],
 
 	data() {
 		return {
 			objects: [],
 			registerName: '',
-			isUpdated: false,
-		}
-	},
-
-	computed: {
-		/**
-		 * @spec exclude UI state helper — enables deletion only when no objects reference the schema.
-		 */
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
-	 */
-	updated() {
-		if (!this.isUpdated && navigationStore.dialog === 'deleteSchema') {
-			this.isUpdated = true
-			this.initDialog()
 		}
 	},
 
@@ -93,10 +91,21 @@ export default {
 					'Could not load schema stats, falling back to individual register checks:',
 					err,
 				)
-				for (const reg of registerStore.registerList) {
-					if (reg.schemas.includes(schemaStore.schemaItem.id)) {
-						await this.collectFromRegister(reg)
-					}
+				await this.collectFromRegisters()
+			}
+		},
+
+		/**
+		 * Collect the schema's objects register by register, from every
+		 * register that holds the schema.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @return {Promise<void>}
+		 */
+		async collectFromRegisters() {
+			for (const reg of registerStore.registerList) {
+				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+					await this.collectFromRegister(reg)
 				}
 			}
 		},
@@ -112,11 +121,7 @@ export default {
 		async countFromStats() {
 			const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 			const totalObjects = stats.objects?.total || 0
-			const register =
-				totalObjects > 0
-				&& registerStore.registerList.find((reg) =>
-					reg.schemas.includes(schemaStore.schemaItem.id),
-				)
+			const register = totalObjects > 0 && registerHoldingSchema()
 			if (register) {
 				this.registerName = register.title
 				this.objects = Array(totalObjects).fill({
@@ -135,11 +140,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async collectFromRegister(reg) {
-			await objectStore.refreshObjectList({
-				register: reg.id,
-				schema: schemaStore.schemaItem.id,
-				search: '',
-			})
+			await refreshSchemaObjects(reg)
 			if (objectStore.getCollection(objectStore.currentType).length) {
 				this.objects.push(
 					...objectStore.getCollection(objectStore.currentType),

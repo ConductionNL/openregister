@@ -116,17 +116,26 @@ export function defaultFileOptions() {
 		extractionMode: 'background', // background, immediate, manual
 		maxFileSize: 100,
 		batchSize: 10,
-		enabledFileTypes: [
-			'txt',
-			'pdf',
-			'docx',
-			'xlsx',
-			'pptx',
-			'html',
-			'md',
-			'json',
-		],
+		enabledFileTypes: defaultFileTypes(),
 	}
+}
+
+/**
+ * The file types text is extracted from by default.
+ *
+ * @return {Array<string>} The extensions
+ */
+function defaultFileTypes() {
+	return [
+		'txt',
+		'pdf',
+		'docx',
+		'xlsx',
+		'pptx',
+		'html',
+		'md',
+		'json',
+	]
 }
 
 // The warning counts and totals of the system statistics, in display order.

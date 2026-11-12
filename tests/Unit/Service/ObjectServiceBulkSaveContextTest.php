@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -24,6 +25,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectService
@@ -52,8 +54,8 @@ class ObjectServiceBulkSaveContextTest extends TestCase {
 	private function service(FileService $files, ?Schema $schema = null): ObjectService {
 		$bulk = $this->createMock(SaveObjects::class);
 		$bulk->method('saveObjects')->willReturnCallback(
-			function (array $objects, ?Register $register, ?Schema $schema): array {
-				$this->savedUnder = $schema;
+			function (array $objects, BulkSaveOptions $options): array {
+				$this->savedUnder = $options->defaults->schema;
 				return ['statistics' => []];
 			}
 		);
@@ -79,7 +81,7 @@ class ObjectServiceBulkSaveContextTest extends TestCase {
 		$register = new Register();
 		$register->setId(1);
 
-		$this->service($this->createMock(FileService::class), $schema)->saveObjects([], register: $register);
+		$this->service($this->createMock(FileService::class), $schema)->saveObjects(objects: [], options: new BulkSaveOptions(defaults: new BulkBatchDefaults(register: $register)));
 
 		$this->assertSame($schema, $this->savedUnder);
 	}//end testAPendingSchemaRefDoesNotCostTheBulkSaveItsSchema()
@@ -88,6 +90,6 @@ class ObjectServiceBulkSaveContextTest extends TestCase {
 		$files = $this->createMock(FileService::class);
 		$files->expects($this->once())->method('resetFolderAccessRevalidationCache');
 
-		$this->service($files)->saveObjects([]);
+		$this->service($files)->saveObjects(objects: []);
 	}//end testTheFolderVerdictsOfEarlierWritesAreDropped()
 }//end class

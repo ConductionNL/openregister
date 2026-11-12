@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * The single-save decision-table rule, for the bulk save that dispatches no save event.
  *
@@ -42,16 +44,14 @@ interface DecisionTableValidationListenerInterface {
 	public function isDecisionTableRef(?string $schema, ?string $register): ?bool;
 
 	/**
-	 * What is wrong with a decision-table row, or null when the row is no decision table.
+	 * What stops a row from being stored as a decision table, the row named by its reference.
 	 *
-	 * @param string|null          $schema   The row's schema reference (id or slug).
-	 * @param string|null          $register The row's register reference (id or slug).
-	 * @param array<string, mixed> $data     The row's own properties.
-	 * @param string               $uuid     The row's uuid, '' for a new row.
+	 * @param ObjectRef            $row  The row's register and schema reference (id or slug, '' for none) and uuid ('' for a new row).
+	 * @param array<string, mixed> $data The row's own properties.
 	 *
 	 * @return array<int, string>|null Null when the row is no decision table, else the problems (empty when it is valid).
 	 *
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	public function problemsFor(?string $schema, ?string $register, array $data, string $uuid): ?array;
+	public function problemsOf(ObjectRef $row, array $data): ?array;
 }//end interface

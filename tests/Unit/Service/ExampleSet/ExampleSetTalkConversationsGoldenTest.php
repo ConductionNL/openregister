@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
@@ -107,7 +109,8 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 	private function talkStore(): ExampleSetTalkStore {
 		$store = $this->createMock(ExampleSetTalkStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => ($this->world['talk'] ?? true));
-		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+		$store->method('openRoom')->willReturnCallback(function (ExampleSetTalkRoom $room): array {
+			[$owner, $name, $participants] = [$room->owner, $room->name, $room->participants];
 			$this->calls[] = ['room', $owner, $name, $participants];
 			if (($this->world['roomFails'] ?? false) === true) {
 				throw new RuntimeException('Talk refused the room');
@@ -115,8 +118,10 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 
 			return ['token' => 'tok-'.$name, 'id' => 41, 'created' => ($this->world['created'] ?? true)];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, DateTime $start, DateTime $end, array $joined): void {
-			$this->calls[] = ['heldCall', $token, $owner, $start->format('c'), $end->format('c'), $joined];
+		$store->method('heldCall')->willReturnCallback(function (HeldTalkCall $held): void {
+			$start = new DateTime((string) $held->call['start']);
+			$end   = new DateTime((string) $held->call['end']);
+			$this->calls[] = ['heldCall', $held->token, $held->owner, $start->format('c'), $end->format('c'), $held->joined];
 		});
 		$store->method('roomExists')->willReturnCallback(function (string $token): bool {
 			$this->calls[] = ['roomExists', $token];

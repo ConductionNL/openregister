@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -94,9 +95,9 @@ final class RelatedReadFilter {
 	}//end schemaMemo()
 
 	/**
-	 * Whether the current user may read the object; values that are not objects, and objects without a schema, pass.
+	 * Whether the current user may read the object; values that are not objects pass.
 	 *
-	 * An object whose schema cannot be loaded is dropped.
+	 * An object without a schema, or whose schema cannot be loaded, is dropped: no read rule can be checked for it.
 	 *
 	 * @param mixed                    $object   The candidate.
 	 * @param Closure(mixed): ?Schema $schemaOf The schema lookup.
@@ -106,8 +107,12 @@ final class RelatedReadFilter {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function admitsRead(mixed $object, Closure $schemaOf): bool {
-		if (($object instanceof ObjectEntity) === false || $object->getSchema() === null) {
+		if (($object instanceof ObjectEntity) === false) {
 			return true;
+		}
+
+		if ($object->getSchema() === null) {
+			return false;
 		}
 
 		$schema = $schemaOf($object->getSchema());
@@ -134,10 +139,13 @@ final class RelatedReadFilter {
 	 */
 	private function readableUnder(ObjectEntity $object, Schema $schema): bool {
 		$userId = $this->rbac->getCurrentUserId();
-		if ((new DraftCallerRule())->keptFromCaller(object: $object, schema: $schema, userId: $userId, isAdmin: false) === true) {
+		if ((new DraftCallerRule())->keptFromCaller(
+			subject: new DraftSubject(object: $object, schema: $schema),
+			caller: new DraftCaller(userId: $userId, isAdmin: false)
+		) === true) {
 			return false;
 		}
 
-		return $this->rbac->hasRowPermission(schema: $schema, action: 'read', row: $object) === true;
+		return $this->rbac->hasRowPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read'), row: $object) === true;
 	}//end readableUnder()
 }//end class

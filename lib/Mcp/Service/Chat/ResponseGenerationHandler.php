@@ -74,27 +74,6 @@ use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 class ResponseGenerationHandler {
 
 	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Tool management handler
-	 *
-	 * @var ToolManagementHandler
-	 */
-	private ToolManagementHandler $toolHandler;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Token/latency usage from the last generateResponse() call, for per-run cost recording
 	 * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
 	 * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
@@ -115,13 +94,10 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		SettingsServiceInterface $settingsService,
-		ToolManagementHandler $toolHandler,
-		LoggerInterface $logger,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly ToolManagementHandler $toolHandler,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->settingsService = $settingsService;
-		$this->toolHandler = $toolHandler;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -148,35 +124,28 @@ class ResponseGenerationHandler {
 	 *                                           null it runs in legacy blocking mode, load-bearing
 	 *                                           for `POST /api/chat/send`) and the Conduction AI
 	 *                                           context overrides (provider/model hints).
-	 * @param array              $context        RAG context with 'text' and 'sources' keys.
-	 * @param array              $messageHistory Array of LLPhantMessage objects.
-	 * @param Agent|null         $agent          Agent configuration (optional).
+	 * @param ReplyGrounding     $grounding      The RAG context, the earlier messages (LLPhantMessage
+	 *                                           objects) and the agent configuration.
 	 *
 	 * @return string Generated response text
 	 *
 	 * @throws \Exception If LLM provider is not configured or API call fails
 	 *
-	 * @psalm-param  array{text: string, sources: list<array>} $context
 	 * @psalm-return string
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function generateResponse(
-		ChatMessageRequest $request,
-		array $context,
-		array $messageHistory,
-		?Agent $agent,
-	): string {
+	public function generateResponse(ChatMessageRequest $request, ReplyGrounding $grounding): string {
 		return $this->respond(
 			turn: [
 				'userMessage' => $request->userMessage,
-				'context' => $context,
-				'agent' => $agent,
+				'context' => $grounding->context,
+				'agent' => $grounding->agent,
 				'selectedTools' => $request->selectedTools,
 				'channel' => $request->channel,
 				'cnAiContext' => $request->cnAiContext,
 			],
-			messageHistory: $messageHistory
+			messageHistory: $grounding->messageHistory
 		);
 	}//end generateResponse()
 
@@ -194,60 +163,106 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function respond(array $turn, array $messageHistory): string {
-		$startTime = microtime(true);
+		$run = new ResponseRun(turn: $turn, messageHistory: $messageHistory);
+		$run->startTime = microtime(true);
 
+		$this->logGenerating(run: $run);
+		$this->loadTools(run: $run);
+
+		$run->llmConfig = $this->settingsService->getLLMSettingsOnly();
+		$run->provider = $this->chatProvider(llmConfig: $run->llmConfig, hasTools: empty($run->tools) === false);
+
+		try {
+			return $this->generateWithProvider(
+				request: $this->chatRequest(run: $run),
+				timings: ['start' => $run->startTime, 'tools' => $run->toolsTime]
+			);
+		} catch (Exception $e) {
+			throw $this->generationFailure(run: $run, error: $e);
+		}
+	}//end respond()
+
+	/**
+	 * Log the start of a response generation with the sizes of its inputs.
+	 *
+	 * @param ResponseRun $run The response generation.
+	 *
+	 * @return void
+	 */
+	private function logGenerating(ResponseRun $run): void {
 		$this->logger->info(
 			message: '[ResponseGenerationHandler] Generating response',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'messageLength' => strlen($turn['userMessage']),
-				'contextLength' => strlen($turn['context']['text']),
-				'historyCount' => count($messageHistory),
-				'selectedTools' => count($turn['selectedTools']),
+				'messageLength' => strlen($run->turn['userMessage']),
+				'contextLength' => strlen($run->turn['context']['text']),
+				'historyCount' => count($run->messageHistory),
+				'selectedTools' => count($run->turn['selectedTools']),
 			]
 		);
+	}//end logGenerating()
 
-		// Get enabled tools for agent, filtered by selectedTools.
+	/**
+	 * Load the agent's enabled tools, filtered by the selected tools, and time it.
+	 *
+	 * @param ResponseRun $run The response generation; receives the tools and the time taken.
+	 *
+	 * @return void
+	 */
+	private function loadTools(ResponseRun $run): void {
 		$toolsStartTime = microtime(true);
-		$tools = $this->agentTools(agent: $turn['agent'], selectedTools: $turn['selectedTools']);
-		$toolsTime = microtime(true) - $toolsStartTime;
+		$run->tools = $this->agentTools(agent: $run->turn['agent'], selectedTools: $run->turn['selectedTools']);
+		$run->toolsTime = microtime(true) - $toolsStartTime;
+	}//end loadTools()
 
-		$llmConfig = $this->settingsService->getLLMSettingsOnly();
-		$chatProvider = $this->chatProvider(llmConfig: $llmConfig, hasTools: empty($tools) === false);
+	/**
+	 * The chat request: provider, provider config, full conversation, tools and streaming channel.
+	 *
+	 * @param ResponseRun $run The response generation.
+	 *
+	 * @return array
+	 */
+	private function chatRequest(ResponseRun $run): array {
+		$turn = $run->turn;
 
-		try {
-			return $this->generateWithProvider(
-				request: [
-					'provider' => $chatProvider,
-					'config' => $this->buildChatConfig(llmConfig: $llmConfig, agent: $turn['agent']),
-					'messageHistory' => $this->conversation(
-						messageHistory: $messageHistory,
-						turn: [
-							'agent' => $turn['agent'],
-							'userMessage' => $turn['userMessage'],
-							'context' => $turn['context'],
-							'cnAiContext' => $turn['cnAiContext'],
-						]
-					),
-					'tools' => $tools,
-					'channel' => $turn['channel'],
-				],
-				timings: ['start' => $startTime, 'tools' => $toolsTime]
-			);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ResponseGenerationHandler] Failed to generate response',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $chatProvider ?? 'unknown',
-					'error' => $e->getMessage(),
+		return [
+			'provider' => $run->provider,
+			'config' => $this->buildChatConfig(llmConfig: $run->llmConfig, agent: $turn['agent']),
+			'messageHistory' => $this->conversation(
+				messageHistory: $run->messageHistory,
+				turn: [
+					'agent' => $turn['agent'],
+					'userMessage' => $turn['userMessage'],
+					'context' => $turn['context'],
+					'cnAiContext' => $turn['cnAiContext'],
 				]
-			);
-			throw new Exception('Failed to generate response: ' . $e->getMessage(), $e->getCode(), $e);
-		}//end try
-	}//end respond()
+			),
+			'tools' => $run->tools,
+			'channel' => $turn['channel'],
+		];
+	}//end chatRequest()
+
+	/**
+	 * Log a failed generation and wrap the failure.
+	 *
+	 * @param ResponseRun $run   The response generation.
+	 * @param Exception   $error The failure.
+	 *
+	 * @return Exception The exception to throw.
+	 */
+	private function generationFailure(ResponseRun $run, Exception $error): Exception {
+		$this->logger->error(
+			message: '[ResponseGenerationHandler] Failed to generate response',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $run->provider ?? 'unknown',
+				'error' => $error->getMessage(),
+			]
+		);
+		return new Exception('Failed to generate response: ' . $error->getMessage(), $error->getCode(), $error);
+	}//end generationFailure()
 
 	/**
 	 * Put the system prompt before the history and the user's message after it.
@@ -479,12 +494,7 @@ class ResponseGenerationHandler {
 			default: ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct')
 		);
 
-		$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-		if (str_ends_with($baseUrl, '/v1') === false) {
-			$baseUrl .= '/v1';
-		}
-
-		$config->url = $baseUrl;
+		$config->url = FireworksBaseUrl::of(fireworksConfig: $fireworksConfig);
 		return $config;
 	}//end fireworksConfig()
 

@@ -121,15 +121,13 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param HardeningPolicy $policy The administered controls and the declared floors.
-	 * @param PlatformSecurityReader $platform Nextcloud's own password, session and brute-force posture.
+	 * @param HardeningPosture       $posture      The declared policy and floors, and the platform's own posture.
 	 * @param ApiCapabilitiesService $capabilities Reads the upload ceiling the upload actually runs under.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly HardeningPolicy $policy,
-		private readonly PlatformSecurityReader $platform,
+		private readonly HardeningPosture $posture,
 		private readonly ApiCapabilitiesService $capabilities,
 	) {
 
@@ -144,15 +142,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 */
 	public function report(): array {
 		$controls = $this->controls();
-
-		$failing = [];
-		foreach ($controls as $control) {
-			if ($control->meetsFloor() === false) {
-				$failing[] = $control->id;
-			}
-		}
-
-		$origins = $this->policy->allowedOrigins();
+		$failing = $this->failingIds(controls: $controls);
 
 		return [
 			'generated' => (new DateTimeImmutable())->format(DATE_ATOM),
@@ -162,16 +152,45 @@ class HardeningReportService implements HardeningReportServiceInterface {
 				static fn (HardeningControl $control): array => $control->jsonSerialize(),
 				$controls
 			),
-			'observed' => [
-				'bruteForce' => $this->platform->bruteForceState(),
-				'throttledSurfaces' => ThrottledSurfaces::ALL,
-				'allowedOrigins' => $origins,
-				'reflectsAnyOrigin' => ($origins === []),
-				'passwordPolicyRuns' => $this->platform->passwordPolicyRuns(),
-			],
+			'observed' => $this->observed(),
 		];
 
 	}//end report()
+
+	/**
+	 * The ids of the controls that do not meet their floor.
+	 *
+	 * @param array<int, HardeningControl> $controls The controls.
+	 *
+	 * @return array<int, string> The failing ids, in control order.
+	 */
+	private function failingIds(array $controls): array {
+		$failing = [];
+		foreach ($controls as $control) {
+			if ($control->meetsFloor() === false) {
+				$failing[] = $control->label->id;
+			}
+		}
+
+		return $failing;
+	}//end failingIds()
+
+	/**
+	 * What the platform is observed to do: brute-force state, throttled surfaces, origins and password policy.
+	 *
+	 * @return array<string, mixed> The observations.
+	 */
+	private function observed(): array {
+		$origins = $this->posture->policy->allowedOrigins();
+
+		return [
+			'bruteForce' => $this->posture->platform->bruteForceState(),
+			'throttledSurfaces' => ThrottledSurfaces::ALL,
+			'allowedOrigins' => $origins,
+			'reflectsAnyOrigin' => ($origins === []),
+			'passwordPolicyRuns' => $this->posture->platform->passwordPolicyRuns(),
+		];
+	}//end observed()
 
 	/**
 	 * Every control, with the value in force and the floor beside it.
@@ -200,7 +219,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function passwordRows(): array {
-		$password = $this->platform->passwordPolicy();
+		$password = $this->posture->platform->passwordPolicy();
 
 		return $this->rows(
 			values: [
@@ -220,7 +239,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function sessionRows(): array {
-		$session = $this->platform->sessionPolicy();
+		$session = $this->posture->platform->sessionPolicy();
 
 		return $this->rows(
 			values: [
@@ -240,7 +259,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function rateLimitRows(): array {
-		$authLimit = $this->policy->authRateLimit();
+		$authLimit = $this->posture->policy->authRateLimit();
 
 		return $this->rows(
 			values: [
@@ -268,7 +287,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	private function bruteForceRows(): array {
-		$bruteForce = $this->platform->bruteForceState();
+		$bruteForce = $this->posture->platform->bruteForceState();
 
 		return $this->rows(
 			values: [
@@ -287,7 +306,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function originRows(): array {
-		return $this->rows(values: ['origins.allowlistEntries' => count($this->policy->allowedOrigins())]);
+		return $this->rows(values: ['origins.allowlistEntries' => count($this->posture->policy->allowedOrigins())]);
 
 	}//end originRows()
 
@@ -335,14 +354,13 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	private function control(string $id, ?int $value): HardeningControl {
 		[$title, $category, $source, $unit, $note] = self::CONTROLS[$id];
 		return new HardeningControl(
-			id: $id,
-			title: $title,
-			category: $category,
-			source: $source,
-			value: $value,
-			floor: $this->policy->floor(control: $id),
-			comparator: HardeningPolicy::comparator(control: $id),
-			unit: $unit,
+			label: new HardeningControlLabel(id: $id, title: $title, category: $category, source: $source),
+			reading: new HardeningReading(
+				value: $value,
+				floor: $this->posture->policy->floor(control: $id),
+				comparator: HardeningPolicy::comparator(control: $id),
+				unit: $unit,
+			),
 			note: $note,
 		);
 

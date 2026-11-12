@@ -28,6 +28,7 @@ use DateTime;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\IWriter;
 use PhpOffice\PhpSpreadsheet\Writer\Ods;
@@ -48,20 +49,19 @@ class SpreadsheetReportWriter {
 	/**
 	 * Render the spreadsheet bytes.
 	 *
-	 * @param array<string, mixed> $dashboard Dashboard payload.
-	 * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
-	 * @param string $format csv|xlsx|ods.
+	 * @param ReportContent $content The dashboard payload and its resolved widgets.
+	 * @param string        $format  csv|xlsx|ods.
 	 *
 	 * @return string Rendered bytes.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-5
 	 */
-	public function write(array $dashboard, array $resolvedWidgets, string $format): string {
-		$spreadsheet = $this->newWorkbook(dashboard: $dashboard);
+	public function write(ReportContent $content, string $format): string {
+		$spreadsheet = $this->newWorkbook(dashboard: $content->dashboard);
 		$overview = $spreadsheet->getActiveSheet();
-		$this->writeOverviewSheet(sheet: $overview, dashboard: $dashboard);
-		$this->writeOverviewTable(sheet: $overview, resolvedWidgets: $resolvedWidgets);
-		foreach ($resolvedWidgets as $i => $entry) {
+		$this->writeOverviewSheet(sheet: $overview, dashboard: $content->dashboard);
+		$this->writeOverviewTable(sheet: $overview, resolvedWidgets: $content->resolvedWidgets);
+		foreach ($content->resolvedWidgets as $i => $entry) {
 			$widgetEntry = new ReportWidgetEntry(index: $i, widget: $entry['widget'], data: $entry['data']);
 			$this->writeWidgetSheet(sheet: $spreadsheet->createSheet(), entry: $widgetEntry);
 		}
@@ -166,7 +166,7 @@ class SpreadsheetReportWriter {
 		$sheet->setTitle($this->sheetTitle(title: $title, index: $entry->index));
 		$this->writeHeading(sheet: $sheet, heading: new SheetHeading(title: $title, subtitle: ($entry->widget['subtitle'] ?? null), fontSize: 14));
 		if ($entry->data === null) {
-			$sheet->setCellValue('A4', 'No data available (data source did not resolve).');
+			SpreadsheetCell::set(sheet: $sheet, coordinate: 'A4', value: 'No data available (data source did not resolve).');
 			return;
 		}
 
@@ -202,14 +202,14 @@ class SpreadsheetReportWriter {
 	 * @return void
 	 */
 	private function writeHeading(Worksheet $sheet, SheetHeading $heading): void {
-		$sheet->setCellValue('A1', $heading->title);
+		SpreadsheetCell::set(sheet: $sheet, coordinate: 'A1', value: $heading->title);
 		$sheet->getStyle('A1')->getFont()->setSize($heading->fontSize)->setBold(true);
 		$sheet->mergeCells('A1:D1');
 		if ($heading->subtitle === null || $heading->subtitle === '') {
 			return;
 		}
 
-		$sheet->setCellValue('A2', (string)$heading->subtitle);
+		SpreadsheetCell::set(sheet: $sheet, coordinate: 'A2', value: (string)$heading->subtitle);
 		$sheet->mergeCells('A2:D2');
 	}//end writeHeading()
 
@@ -291,7 +291,7 @@ class SpreadsheetReportWriter {
 	 */
 	private function writeCells(Worksheet $sheet, array $cells): void {
 		foreach ($cells as $coordinate => $value) {
-			$sheet->setCellValue($coordinate, $value);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $coordinate, value: $value);
 		}
 	}//end writeCells()
 
@@ -325,7 +325,7 @@ class SpreadsheetReportWriter {
 	 * @return string Rendered bytes.
 	 */
 	private function writeCsv(Spreadsheet $spreadsheet): string {
-		$writer = new Csv($spreadsheet);
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $spreadsheet));
 		$writer->setUseBOM(true);
 		$bytes = '';
 		$sheetCount = $spreadsheet->getSheetCount();

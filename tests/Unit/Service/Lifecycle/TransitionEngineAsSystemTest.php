@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -68,6 +69,7 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -85,6 +87,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -159,14 +162,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// RBAC-filtered find refuses the row, exactly as it does for a learner;
 		// only an unfiltered find (the system path) returns it.
 		$this->objectService->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				mixed $register = null,
-				mixed $schema = null,
-				bool $_rbac = true,
-			): ObjectEntity {
+			function (...$args): ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac] = FindCallShape::find(args: $args);
 				if ($_rbac === true) {
 					throw new DoesNotExistException('Object not found in any magic table');
 				}
@@ -190,27 +187,17 @@ class TransitionEngineAsSystemTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groupManager, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new LifecycleTransitionResolver($this->actions)), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $groupManager))), new ConditionTracer(dialect: $dialect)),
 			$this->createMock(RuleRunRecorder::class)
 		);
 
 		// saveObject() dispatches ObjectUpdatingEvent to the real listener and
 		// refuses the write when it stops the event, as MagicMapper does.
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				mixed $register = null,
-				mixed $schema = null,
-				?string $uuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $silent = false,
-				bool $_validation = true,
-				?array $uploadedFiles = null,
-				?IUser $currentUser = null,
-			): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$silent = $options->policy->silent;
+				$currentUser = $options->actor->currentUser;
 				$this->saves[] = [
 					'_rbac' => $_rbac,
 					'_multitenancy' => $_multitenancy,
@@ -264,7 +251,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 */
 	private function engine(): TransitionEngine {
 		return new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->actions), $this->createMock(LifecycleActionProviderRegistry::class)),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->userSession, $this->createMock(IAppConfig::class), $this->logger),
 			$this->permission
@@ -430,7 +417,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		$this->actions->enterSystem(uuid: self::OBJECT_ID, app: 'learniq');
 
 		try {
-			$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+			$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 		} finally {
 			$this->actions->leaveSystem(uuid: self::OBJECT_ID);
 		}
@@ -443,7 +430,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 * Control: an ordinary write carries no system mark.
 	 */
 	public function testOrdinaryAuditRowCarriesNoSystemMark(): void {
-		$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+		$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 
 		$this->assertArrayNotHasKey('transitionAsSystem', $row->getChanged());
 	}//end testOrdinaryAuditRowCarriesNoSystemMark()
@@ -477,9 +464,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$this->userSession,
-			$request,
-			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->userSession, $request)
 		);
 	}//end auditMapper()
 }//end class

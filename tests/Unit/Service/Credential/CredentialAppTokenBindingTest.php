@@ -34,6 +34,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Security\ICredentialsManager;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 class CredentialAppTokenBindingTest extends TestCase {
 	private const APP_ID = 'spectr';
@@ -88,8 +89,8 @@ class CredentialAppTokenBindingTest extends TestCase {
 	public function testBoundTokenVerifiesWithMatchingMethodAndPath(): void {
 		$service = $this->makeService();
 
-		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, 'GET', '/notices');
-		$claims = $service->verify($token, 'GET', '/notices');
+		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, new BrokerTokenBinding('GET', '/notices'));
+		$claims = $service->verify($token, new BrokerTokenBinding('GET', '/notices'));
 
 		$this->assertSame(self::APP_ID, $claims['appId']);
 		$this->assertSame(self::CREDENTIAL_ID, $claims['credentialId']);
@@ -101,10 +102,10 @@ class CredentialAppTokenBindingTest extends TestCase {
 	public function testBoundTokenRejectsDifferentPath(): void {
 		$service = $this->makeService();
 
-		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, 'GET', '/notices');
+		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, new BrokerTokenBinding('GET', '/notices'));
 
 		$this->expectException(CredentialAccessDeniedException::class);
-		$service->verify($token, 'GET', '/other');
+		$service->verify($token, new BrokerTokenBinding('GET', '/other'));
 	}
 
 	/**
@@ -113,10 +114,10 @@ class CredentialAppTokenBindingTest extends TestCase {
 	public function testBoundTokenRejectsDifferentMethod(): void {
 		$service = $this->makeService();
 
-		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, 'GET', '/notices');
+		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, new BrokerTokenBinding('GET', '/notices'));
 
 		$this->expectException(CredentialAccessDeniedException::class);
-		$service->verify($token, 'POST', '/notices');
+		$service->verify($token, new BrokerTokenBinding('POST', '/notices'));
 	}
 
 	/**
@@ -126,7 +127,7 @@ class CredentialAppTokenBindingTest extends TestCase {
 	public function testBoundTokenRejectsWhenVerifiedWithoutBinding(): void {
 		$service = $this->makeService();
 
-		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, 'GET', '/notices');
+		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID, new BrokerTokenBinding('GET', '/notices'));
 
 		$this->expectException(CredentialAccessDeniedException::class);
 		$service->verify($token);
@@ -141,7 +142,7 @@ class CredentialAppTokenBindingTest extends TestCase {
 		$service = $this->makeService();
 
 		$token = $service->issueToken(self::APP_ID, self::CREDENTIAL_ID);
-		$claims = $service->verify($token, 'GET', '/notices');
+		$claims = $service->verify($token, new BrokerTokenBinding('GET', '/notices'));
 
 		$this->assertSame(self::APP_ID, $claims['appId']);
 		$this->assertSame(self::CREDENTIAL_ID, $claims['credentialId']);

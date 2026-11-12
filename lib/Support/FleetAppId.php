@@ -37,7 +37,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Support;
 
 use OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue;
+use OCA\OpenRegister\Support\FleetApp\FleetAppClass;
 use OCA\OpenRegister\Support\FleetApp\FleetAppNames;
+use OCA\OpenRegister\Support\FleetApp\FleetAppPath;
 use OCA\OpenRegister\Support\FleetApp\FleetAppProbe;
 use OCP\App\IAppManager;
 
@@ -126,15 +128,14 @@ final class FleetAppId
      * the id that is really installed. Hardcoding either name yields a 404 on
      * half the fleet.
      *
-     * @param IAppManager $appManager The Nextcloud app manager.
-     * @param string      $canonical  Canonical (new) app name, e.g. 'integriq'.
-     * @param string      $suffix     Path after the app segment, no leading slash.
+     * @param IAppManager  $appManager The Nextcloud app manager.
+     * @param FleetAppPath $path       The canonical (new) app name, e.g. 'integriq', and the path after the app segment.
      *
      * @return string|null The path, or null when the app is not installed.
      */
-    public static function appPath(IAppManager $appManager, string $canonical, string $suffix = ''): ?string
+    public static function appPath(IAppManager $appManager, FleetAppPath $path): ?string
     {
-        return FleetAppNames::appPath(appManager: $appManager, canonical: $canonical, suffix: $suffix);
+        return FleetAppNames::appPath(appManager: $appManager, path: $path);
 
     }//end appPath()
 
@@ -168,16 +169,15 @@ final class FleetAppId
      * name handed to an app that is not there is never dereferenced anyway and
      * the newest spelling is the one the fleet is moving to.
      *
-     * @param IAppManager $appManager    The Nextcloud app manager.
-     * @param string      $canonical     Canonical (new) app name, e.g. 'integriq'.
-     * @param string      $relativeClass Class path below the namespace, e.g. 'Service\CallService'.
+     * @param IAppManager   $appManager The Nextcloud app manager.
+     * @param FleetAppClass $class      The canonical (new) app name, e.g. 'integriq', and the class path below the namespace.
      *
      * @return string|null The FQCN, or null when this repo has not read that
      *                     app's namespace.
      */
-    public static function className(IAppManager $appManager, string $canonical, string $relativeClass): ?string
+    public static function className(IAppManager $appManager, FleetAppClass $class): ?string
     {
-        return FleetAppNames::className(appManager: $appManager, canonical: $canonical, relativeClass: $relativeClass);
+        return FleetAppNames::className(appManager: $appManager, class: $class);
 
     }//end className()
 

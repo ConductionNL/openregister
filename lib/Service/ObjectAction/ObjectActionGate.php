@@ -76,26 +76,24 @@ class ObjectActionGate {
 	}//end userId()
 
 	/**
-	 * Whether the acting user holds a right on this object.
+	 * Whether the acting user holds the checked right.
 	 *
-	 * @param Schema            $schema The object's schema.
-	 * @param string            $right  The action key, or a CRUD verb.
-	 * @param ObjectEntity|null $object The object; null asks at schema level (owner-independent rules only).
+	 * @param RightCheck $check The schema, the right and the object (null asks at schema level).
 	 *
 	 * @return bool True when they do.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function may(Schema $schema, string $right, ?ObjectEntity $object): bool {
+	public function holds(RightCheck $check): bool {
 		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: $right,
+			schema: $check->schema,
+			action: $check->right,
 			userId: $this->userId(),
-			objectOwner: $object?->getOwner(),
+			objectOwner: $check->object?->getOwner(),
 			_rbac: true,
-			object: $object
+			object: $check->object
 		);
-	}//end may()
+	}//end holds()
 
 	/**
 	 * Whether the caller may run this action on the object.
@@ -107,28 +105,27 @@ class ObjectActionGate {
 	 * otherwise default open. Its right is then checked without the object
 	 * owner's bypass: owning an object does not make one its assignee.
 	 *
-	 * @param Schema                 $schema     The object's schema.
-	 * @param string                 $right      The right a non-self-assign action needs.
+	 * @param RightCheck             $check      The schema, the right a non-self-assign action needs,
+	 *                                           and the object (null for a selection).
 	 * @param ObjectActionDefinition $definition The action.
-	 * @param ObjectEntity|null      $object     The object, or null for a selection.
 	 *
 	 * @return bool True when the caller may run it.
 	 *
 	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
 	 */
-	public function mayRun(Schema $schema, string $right, ObjectActionDefinition $definition, ?ObjectEntity $object): bool {
+	public function mayRun(RightCheck $check, ObjectActionDefinition $definition): bool {
 		if ($definition->selfAssignField() === null) {
-			return $this->may(schema: $schema, right: $right, object: $object);
+			return $this->holds(check: $check);
 		}
 
-		return $this->selfAssignNamed(schema: $schema, key: $definition->key)
+		return $this->selfAssignNamed(schema: $check->schema, key: $definition->key)
 			&& $this->permissions->hasPermission(
-				schema: $schema,
+				schema: $check->schema,
 				action: $definition->key,
 				userId: $this->userId(),
 				objectOwner: null,
 				_rbac: true,
-				object: $this->withoutOwnership(object: $object)
+				object: $this->withoutOwnership(object: $check->object)
 			);
 	}//end mayRun()
 
@@ -231,25 +228,24 @@ class ObjectActionGate {
 	/**
 	 * Whether the action's `when` holds for this object and these inputs.
 	 *
-	 * @param ObjectActionDefinition $definition The action.
+	 * @param ObjectActionInvocation $invocation The action and its inputs, defaults resolved.
 	 * @param ObjectEntity           $object     The object.
-	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
 	 *
 	 * @return bool True when it holds, or when the action declares none.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function whenHolds(ObjectActionDefinition $definition, ObjectEntity $object, array $inputs = []): bool {
-		if ($definition->when === null) {
+	public function whenHolds(ObjectActionInvocation $invocation, ObjectEntity $object): bool {
+		if ($invocation->definition->when === null) {
 			return true;
 		}
 
 		return FlowExpression::isTrue(
-			logic: $definition->when,
+			logic: $invocation->definition->when,
 			data: [
 				'object' => ($object->getObject() ?? []),
 				'user' => ['id' => $this->userId()],
-				'inputs' => $inputs,
+				'inputs' => $invocation->inputs,
 			]
 		);
 	}//end whenHolds()
@@ -269,12 +265,13 @@ class ObjectActionGate {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	public function elevated(ObjectActionDefinition $definition, callable $operation): mixed {
-		return ObjectActionElevationScope::run(
+		$elevation = new ActionElevation(
 			action: $definition->key,
 			person: $this->userId(),
-			entries: $this->elevation->resolve(entries: $definition->elevate),
-			operation: $operation
+			entries: $this->elevation->resolve(entries: $definition->elevate)
 		);
+
+		return ObjectActionElevationScope::run(elevation: $elevation, operation: $operation);
 	}//end elevated()
 
 	/**

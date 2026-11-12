@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -219,8 +220,8 @@ class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 		$language->method('shouldReturnAllTranslations')->willReturn($all);
 		$translation = $this->createMock(TranslationHandler::class);
 		$translation->method('resolveTranslationsForRender')->willReturnCallback(
-			static fn (array $objectData, Schema $schema, ?Register $register): array => $objectData + [
-				'translatedWith' => [$schema->getSlug(), $register?->getSlug()],
+			static fn (array $objectData, TranslationScope $scope): array => $objectData + [
+				'translatedWith' => [$scope->schema->getSlug(), $scope->register?->getSlug()],
 			]
 		);
 		$schema = new Schema();
@@ -230,8 +231,20 @@ class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 
 		return $this->handlerWith(
 			[
-				'languageService'    => $language,
-				'translationHandler' => $translation,
+				'enrichers'          => new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+					translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+						translationHandler: $translation,
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapperInterface::class),
+						languageService: $language
+					),
+					derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+						calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface::class),
+						linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+						urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+					)
+				),
 				'schemasCache'       => [7 => $schema, 'seven' => $schema],
 				'registersCache'     => [8 => $register, 'eight' => $register],
 			]

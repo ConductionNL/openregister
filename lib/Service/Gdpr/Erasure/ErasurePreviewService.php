@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 
 /**
  * Counts what an erasure would touch, split three ways, writing nothing.
@@ -78,24 +79,21 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * retention service — are called inside a catch that counts an unanswerable
 	 * question as PROTECTED (D-2).
 	 *
-	 * @param string      $subjectId Subject identifier value (email, bsn, …).
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $eraseMode `pseudonymise` or `whole-object`.
+	 * @param SubjectQuery $subject   Subject identifier value (email, bsn, …) and optional GdprEntity type
+	 *                                filter; the match is always exact.
+	 * @param string       $eraseMode `pseudonymise` or `whole-object`.
 	 *
 	 * @return array<string, mixed> The preview: counts, items, protected, digest.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
-		string $subjectId,
-		?string $type = null,
+		SubjectQuery $subject,
 		string $eraseMode = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE,
 	): array {
-		$subjectId = trim($subjectId);
-		$eraseMode = $this->normaliseMode(eraseMode: $eraseMode);
-		$items = $this->classifyAll(subjectId: $subjectId, type: $type, eraseMode: $eraseMode);
+		$run = new ErasurePreviewRun(subjectId: trim($subject->subjectId), type: $subject->type, eraseMode: $this->normaliseMode(eraseMode: $eraseMode));
 
-		return $this->assemble(subjectId: $subjectId, type: $type, eraseMode: $eraseMode, items: $items);
+		return $this->assemble(run: $run, items: $this->classifyAll(run: $run));
 	}//end preview()
 
 	/**
@@ -148,21 +146,14 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Classify every object the subject is found on.
 	 *
-	 * @param string      $subjectId The subject value.
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $eraseMode The normalised mode.
+	 * @param ErasurePreviewRun $run The subject, type filter and normalised mode.
 	 *
 	 * @return array<int, array<string, mixed>> The preview items, in discovery order.
 	 */
-	private function classifyAll(string $subjectId, ?string $type, string $eraseMode): array {
+	private function classifyAll(ErasurePreviewRun $run): array {
 		$items = [];
-		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subjectId, type: $type)) as $hit) {
-			$items[] = $this->classify(
-				object: $hit['object'],
-				subjectId: $subjectId,
-				matched: $hit['gdprEntities'],
-				eraseMode: $eraseMode
-			);
+		foreach ($this->subjects->findSubjectObjects($run->query()) as $hit) {
+			$items[] = $this->classify(match: new SubjectMatch(object: $hit['object'], matched: $hit['gdprEntities']), run: $run);
 		}
 
 		return $items;
@@ -171,18 +162,16 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Put the classified items together into the preview, digest included.
 	 *
-	 * @param string                           $subjectId The subject value.
-	 * @param string|null                      $type      Optional GdprEntity type filter.
-	 * @param string                           $eraseMode The normalised mode.
-	 * @param array<int, array<string, mixed>> $items     The classified items.
+	 * @param ErasurePreviewRun                $run   The subject, type filter and normalised mode.
+	 * @param array<int, array<string, mixed>> $items The classified items.
 	 *
 	 * @return array<string, mixed> The preview.
 	 */
-	private function assemble(string $subjectId, ?string $type, string $eraseMode, array $items): array {
+	private function assemble(ErasurePreviewRun $run, array $items): array {
 		$preview = [
-			'subject' => $subjectId,
-			'type' => $type,
-			'eraseMode' => $eraseMode,
+			'subject' => $run->subjectId,
+			'type' => $run->type,
+			'eraseMode' => $run->eraseMode,
 			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 			'matchedCount' => count($items),
 			'counts' => $this->tally(items: $items),
@@ -230,16 +219,14 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Classify one object and count what an erasure would cost on it.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits that pulled it in.
-	 * @param string            $eraseMode The requested mode.
+	 * @param SubjectMatch      $match The object and the PII hits that pulled it in.
+	 * @param ErasurePreviewRun $run   The subject value and the requested mode.
 	 *
 	 * @return array<string, mixed> One preview item.
 	 */
-	private function classify(ObjectEntity $object, string $subjectId, array $matched, string $eraseMode): array {
-		$item = $this->baseItem(object: $object, matched: $matched);
-		$ground = $this->protection->protectionFor(object: $object);
+	private function classify(SubjectMatch $match, ErasurePreviewRun $run): array {
+		$item = $this->baseItem(match: $match);
+		$ground = $this->protection->protectionFor(object: $match->object);
 		if ($ground !== null) {
 			// A protected record is not destroyed and not scrubbed, so the only
 			// thing it costs is itself. Counting its files here would read as
@@ -247,30 +234,42 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 			return array_merge($item, $ground, ['bucket' => ErasureBucket::PROTECTED, 'counts' => [ErasureBucket::OBJECTS => 1]]);
 		}
 
-		$parties = $this->countPartyRecords(object: $object, subjectId: $subjectId, matched: $matched);
-		if ($eraseMode === DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT) {
-			return array_merge($item, $this->wholeObject(object: $object, subjectId: $subjectId, matched: $matched, parties: $parties));
+		return array_merge($item, $this->erasureCost(match: $match, run: $run));
+	}//end classify()
+
+	/**
+	 * The bucket and counts of an unprotected object under the requested mode.
+	 *
+	 * @param SubjectMatch      $match The object and the PII hits that pulled it in.
+	 * @param ErasurePreviewRun $run   The subject value and the requested mode.
+	 *
+	 * @return array<string, mixed> The `bucket` and `counts` of the preview item.
+	 */
+	private function erasureCost(SubjectMatch $match, ErasurePreviewRun $run): array {
+		if ($run->eraseMode === DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT) {
+			return $this->wholeObject(match: $match, subjectId: $run->subjectId);
 		}
 
 		// Pseudonymisation leaves the object, its folder and its timeline where
 		// they are: only the subject's values inside the payload move.
-		return array_merge($item, ['bucket' => ErasureBucket::PSEUDONYMISED, 'counts' => $this->scrubCounts(parties: $parties)]);
-	}//end classify()
+		$parties = $this->countPartyRecords(match: $match, subjectId: $run->subjectId);
+
+		return ['bucket' => ErasureBucket::PSEUDONYMISED, 'counts' => $this->scrubCounts(parties: $parties)];
+	}//end erasureCost()
 
 	/**
 	 * What every preview item says about its object, whatever its bucket.
 	 *
-	 * @param ObjectEntity      $object  The object.
-	 * @param array<int, array> $matched The PII hits that pulled it in.
+	 * @param SubjectMatch $match The object and the PII hits that pulled it in.
 	 *
 	 * @return array<string, mixed> The uuid, register, schema and matched types.
 	 */
-	private function baseItem(ObjectEntity $object, array $matched): array {
+	private function baseItem(SubjectMatch $match): array {
 		return [
-			'uuid' => (string)($object->getUuid() ?? ''),
-			'register' => $object->getRegister(),
-			'schema' => $object->getSchema(),
-			'matchedOn' => array_values(array_unique(array_filter(array_column($matched, 'type')))),
+			'uuid' => (string)($match->object->getUuid() ?? ''),
+			'register' => $match->object->getRegister(),
+			'schema' => $match->object->getSchema(),
+			'matchedOn' => array_values(array_unique(array_filter(array_column($match->matched, 'type')))),
 		];
 	}//end baseItem()
 
@@ -282,15 +281,14 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * subject's record to destroy, so the whole-object request is downgraded to
 	 * a scrub and the downgrade is named.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits.
-	 * @param int               $parties   Party records naming the subject.
+	 * @param SubjectMatch $match     The object and the PII hits.
+	 * @param string       $subjectId The subject value.
 	 *
 	 * @return array<string, mixed> The bucket, any downgrade ground, and the counts.
 	 */
-	private function wholeObject(ObjectEntity $object, string $subjectId, array $matched, int $parties): array {
-		$shared = $this->counters->coSubjects->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
+	private function wholeObject(SubjectMatch $match, string $subjectId): array {
+		$parties = $this->countPartyRecords(match: $match, subjectId: $subjectId);
+		$shared = $this->counters->coSubjects->otherSubjectsOn(match: $match, subjectId: $subjectId);
 		if ($shared !== []) {
 			return [
 				'bucket' => ErasureBucket::PSEUDONYMISED,
@@ -301,7 +299,7 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 			];
 		}
 
-		return ['bucket' => ErasureBucket::ERASABLE, 'counts' => $this->destroyCounts(object: $object, parties: $parties)];
+		return ['bucket' => ErasureBucket::ERASABLE, 'counts' => $this->destroyCounts(object: $match->object, parties: $parties)];
 	}//end wholeObject()
 
 	/**
@@ -340,16 +338,15 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Count the party records inside an object that name this subject.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits.
+	 * @param SubjectMatch $match     The object and the PII hits.
+	 * @param string       $subjectId The subject value.
 	 *
 	 * @return int The number of party records naming the subject.
 	 */
-	private function countPartyRecords(ObjectEntity $object, string $subjectId, array $matched): int {
+	private function countPartyRecords(SubjectMatch $match, string $subjectId): int {
 		return $this->counters->parties->count(
-			payload: ($object->getObject() ?? []),
-			needles: $this->counters->parties->needles(subjectId: $subjectId, matched: $matched)
+			payload: ($match->object->getObject() ?? []),
+			needles: $this->counters->parties->needles(subjectId: $subjectId, matched: $match->matched)
 		);
 	}//end countPartyRecords()
 

@@ -29,8 +29,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRendering;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -105,7 +108,7 @@ class LeafRegistryRefusalGoldenTest extends TestCase {
 	 * @return LeafDescriptor
 	 */
 	private function leaf(string $id, array $kinds = [LeafDescriptor::KIND_RENDER_SURFACE], string $renderMode = 'component'): LeafDescriptor {
-		return new LeafDescriptor(id: $id, label: 'L', icon: 'Cube', kinds: $kinds, renderMode: $renderMode);
+		return new LeafDescriptor(identity: new LeafIdentity(id: $id, label: 'L', icon: 'Cube'), kinds: $kinds, rendering: new LeafRendering(renderMode: $renderMode));
 	}//end leaf()
 
 	/**
@@ -159,12 +162,10 @@ class LeafRegistryRefusalGoldenTest extends TestCase {
 			$registry = $this->registry(
 				descriptors: [
 					new LeafDescriptor(
-						id: 'acme-tab',
-						label: 'Tab',
-						icon: 'Cube',
+						identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						requiredApp: 'acme',
-						loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+						availability: new LeafAvailability(requiredApp: 'acme'),
+						rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY),
 					),
 				],
 				appManager: $appManager
@@ -188,14 +189,12 @@ class LeafRegistryRefusalGoldenTest extends TestCase {
 		$registry = $this->registry(
 			descriptors: [
 				new LeafDescriptor(
-					id: 'acme-tab',
-					label: 'Tab',
-					icon: 'Cube',
+					identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 					kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-					requiredApp: 'acme',
-					loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+					availability: new LeafAvailability(requiredApp: 'acme'),
+					rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY),
 				),
-				new LeafDescriptor(id: 'blank-app', label: 'B', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: ''),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'blank-app', label: 'B', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: '')),
 			],
 			appManager: $appManager
 		);
@@ -218,14 +217,12 @@ class LeafRegistryRefusalGoldenTest extends TestCase {
 		$registry = $this->registry(
 			descriptors: [
 				new LeafDescriptor(
-					id: 'claims',
-					label: 'C',
-					icon: 'Cube',
+					identity: new LeafIdentity(id: 'claims', label: 'C', icon: 'Cube'),
 					kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-					requiredApp: 'acme',
-					loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+					availability: new LeafAvailability(requiredApp: 'acme'),
+					rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY),
 				),
-				new LeafDescriptor(id: 'silent', label: 'S', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: 'acme'),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'silent', label: 'S', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: 'acme')),
 			],
 			appManager: $appManager
 		);

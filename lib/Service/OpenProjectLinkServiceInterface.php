@@ -33,10 +33,8 @@ interface OpenProjectLinkServiceInterface {
 	/**
 	 * Create a new OpenProject work package and link it to an OR object.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string $projectId Target OpenProject project id.
-	 * @param string $subject New work-package subject.
-	 * @param string $type Optional work-package type (id or label).
+	 * @param LinkTarget       $target The object to link to.
+	 * @param WorkPackageDraft $draft  The target project id, the new work-package subject and the optional type (id or label).
 	 *
 	 * @return OpenProjectLink The persisted link row.
 	 *
@@ -45,12 +43,7 @@ interface OpenProjectLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkWorkPackage(
-		LinkTarget $target,
-		string $projectId,
-		string $subject,
-		string $type = '',
-	): OpenProjectLink;
+	public function createAndLinkDraft(LinkTarget $target, WorkPackageDraft $draft): OpenProjectLink;
 
 	/**
 	 * Return the work packages reachable through the OpenConnector

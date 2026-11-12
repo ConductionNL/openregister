@@ -61,69 +61,18 @@
 						<h2>{{ t('openregister', 'Entity Information') }}</h2>
 					</div>
 
-					<table class="statisticsTable entityInfoTable">
-						<tbody>
-							<tr>
-								<th scope="row">
-									<strong>{{ t('openregister', 'Value') }}</strong>
-								</th>
-								<td>{{ entity.value }}</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{ t('openregister', 'Type') }}</strong>
-								</th>
-								<td>
-									<span class="badge badge-type">{{
-										entity.type
-									}}</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Category')
-									}}</strong>
-								</th>
-								<td>
-									<span class="badge badge-category">{{
-										entity.category
-									}}</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Detected At')
-									}}</strong>
-								</th>
-								<td>{{ formatDate(entity.detectedAt) }}</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Confidence Score')
-									}}</strong>
-								</th>
-								<td>
-									{{
-										entity.confidence
-											? (entity.confidence * 100).toFixed(2)
-												+ '%'
-											: '-'
-									}}
-								</td>
-							</tr>
-							<tr v-if="entity.source">
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Source')
-									}}</strong>
-								</th>
-								<td>{{ entity.source }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<EntityStatsTable
+						class="statisticsTable entityInfoTable"
+						labelWidth="30%"
+						:entity="entity"
+						:fields="[
+							'value',
+							'type',
+							'category',
+							'detectedAt',
+							'confidence',
+							'source',
+						]" />
 				</div>
 
 				<!-- Relations Section -->
@@ -255,9 +204,9 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 
@@ -291,6 +240,7 @@ import { refreshAction } from '../../services/menuActions.js'
 export default {
 	name: 'EntityDetail',
 	components: {
+		EntityStatsTable,
 		ListActionsBar,
 		NcAppContent,
 		NcButton,
@@ -337,32 +287,62 @@ export default {
 			this.error = null
 
 			try {
-				const entityId = this.$route.params.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', {
-						id: entityId,
-					}),
-				)
-
-				if (response.data.success) {
-					this.entity = response.data.data
-					// Relations are returned in the same response.
-					this.relations = response.data.relations || []
-				} else {
-					this.error =
-						response.data.message
-						|| t('openregister', 'Failed to load entity')
-				}
+				const response = await axios.get(this.entityUrl())
+				this.showEntityAnswer(response.data)
 			} catch (error) {
-				console.error('Failed to load entity:', error)
-				this.error =
-					error.response?.data?.message
-					|| t('openregister', 'Failed to load entity')
-				showError(this.error)
+				this.showEntityFailure(error)
 			} finally {
 				this.loading = false
 				this.loadingRelations = false
 			}
+		},
+
+		/**
+		 * The URL of the entity the route names.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @return {string} The URL
+		 */
+		entityUrl() {
+			const entityId = this.$route.params.id
+			return generateUrl('/apps/openregister/api/entities/{id}', {
+				id: entityId,
+			})
+		},
+
+		/**
+		 * Take the entity and its relations from a successful answer, or the
+		 * refusal's message.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityAnswer(data) {
+			if (data.success) {
+				this.entity = data.data
+				// Relations are returned in the same response.
+				this.relations = data.relations || []
+			} else {
+				this.error =
+					data.message
+					|| t('openregister', 'Failed to load entity')
+			}
+		},
+
+		/**
+		 * Log and show a failed entity load in the API's words or the default.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {Error} error The failed request
+		 * @return {void}
+		 */
+		showEntityFailure(error) {
+			console.error('Failed to load entity:', error)
+			this.error =
+				error.response?.data?.message
+				|| t('openregister', 'Failed to load entity')
+			showError(this.error)
 		},
 
 		/**
@@ -447,6 +427,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
 
 @include view-container-2;
 
@@ -480,11 +461,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 	background: var(--color-background-hover);
 }
 
@@ -495,32 +472,6 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-}
-
-.entityInfoTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityInfoTable tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityInfoTable tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityInfoTable td,
-.entityInfoTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityInfoTable td:first-child,
-.entityInfoTable th:first-child {
-	width: 30%;
-	color: var(--color-text-maxcontrast);
 }
 
 @include badge-rules-2;

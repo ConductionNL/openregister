@@ -37,8 +37,6 @@ namespace OCA\OpenRegister\Service\Relation;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectRelationMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -113,27 +111,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	private readonly RelationGraphShapes $shapes;
 
 	/**
-	 * Mapper for stored relation rows.
-	 *
-	 * @var ObjectRelationMapperInterface
-	 */
-	private readonly ObjectRelationMapperInterface $relationMapper;
-
-	/**
-	 * Mapper for schemas.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Resolves what a relation is called.
-	 *
-	 * @var RelationTypeResolver
-	 */
-	private readonly RelationTypeResolver $relationTypes;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param MagicObjectFinderInterface $objectEntityMapper Mapper for object entities.
@@ -145,14 +122,11 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectEntityMapper,
-		RelationGraphSources $sources,
+		private readonly RelationGraphSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->relationMapper = $sources->relationMapper;
-		$this->schemaMapper   = $sources->schemaMapper;
-		$this->relationTypes  = $sources->relationTypes;
-		$this->shapes         = new RelationGraphShapes();
+		$this->shapes = new RelationGraphShapes();
 	}//end __construct()
 
 	/**
@@ -190,9 +164,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * of wrongness this whole method exists to avoid. The answer always says
 	 * what it is.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag to resolve labels in.
+	 * @param string             $rootUuid The object to walk out from.
+	 * @param GraphExportOptions $options  The depth (1 by default) and the language of the labels (Dutch by default).
 	 *
 	 * @return array{root: string, depth: int, requestedDepth: int, maxDepth: int,
 	 *     nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>,
@@ -201,26 +174,51 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function graph(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
+	public function graph(string $rootUuid, GraphExportOptions $options = new GraphExportOptions()): array {
+		$walk = $this->newWalk(depth: $options->depth, language: $options->language);
+		$this->startAt(walk: $walk, rootUuid: $rootUuid);
+		$this->walkLevels(walk: $walk);
+		$this->markDepthTruncation(walk: $walk);
+
+		return $this->graphResult(walk: $walk);
+	}//end graph()
+
+	/**
+	 * A walk bounded at the administered maximum depth.
+	 *
+	 * @param int    $depth    The depth asked for.
+	 * @param string $language The BCP-47 tag to resolve labels in.
+	 *
+	 * @return GraphWalk The walk, not yet started.
+	 */
+	private function newWalk(int $depth, string $language): GraphWalk {
 		$walk = new GraphWalk();
 		$walk->maxDepth = $this->maximumDepth();
 		$walk->requestedDepth = max(1, $depth);
 		$walk->depth = min($walk->requestedDepth, $walk->maxDepth);
 		$walk->language = $language;
-		$this->startAt(walk: $walk, rootUuid: $rootUuid);
-		$this->walkLevels(walk: $walk);
 
-		// A walk that still had an UNVISITED neighbour when the requested depth
-		// ran out is truncated by that depth, even within the administered
-		// maximum. A non-empty frontier alone is not enough: the last level
-		// almost always sits in it, and a flag that is always true tells a
-		// reader nothing.
-		if ($walk->truncatedBy === null && $this->hasMore(frontier: $walk->frontier, visited: $walk->visited, language: $language) === true) {
+		return $walk;
+	}//end newWalk()
+
+	/**
+	 * Mark a finished walk truncated by depth when the level it stopped on leads further.
+	 *
+	 * A walk that still had an UNVISITED neighbour when the requested depth
+	 * ran out is truncated by that depth, even within the administered
+	 * maximum. A non-empty frontier alone is not enough: the last level
+	 * almost always sits in it, and a flag that is always true tells a
+	 * reader nothing.
+	 *
+	 * @param GraphWalk $walk The finished walk.
+	 *
+	 * @return void
+	 */
+	private function markDepthTruncation(GraphWalk $walk): void {
+		if ($walk->truncatedBy === null && $this->hasMore(walk: $walk) === true) {
 			$walk->truncatedBy = self::TRUNCATED_DEPTH;
 		}
-
-		return $this->graphResult(walk: $walk);
-	}//end graph()
+	}//end markDepthTruncation()
 
 	/**
 	 * Start a walk at its root: the node cap, a depth cut when more was asked
@@ -240,7 +238,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$walk->root = $rootUuid;
 		$walk->frontier = [$rootUuid];
 		$walk->visited = [$rootUuid => true];
-		$walk->nodes[$rootUuid] = $this->node(uuid: $rootUuid, object: $this->loadObject(uuid: $rootUuid), distance: 0);
+		$walk->nodes[$rootUuid] = $this->node(uuid: $rootUuid, distance: 0);
 	}//end startAt()
 
 	/**
@@ -378,15 +376,14 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$other = self::otherEnd(edge: $edge);
 
 		if ($this->shapes->isExternal(edge: $edge) === true) {
-			$walk->nodes[$other] = $this->shapes->externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
+			$walk->nodes[$other] = $this->shapes->externalNode(
+				edge: $edge,
+				node: $this->shapes->unresolvedNode(uuid: $other, distance: ($walk->level + 1))
+			);
 			return;
 		}
 
-		$walk->nodes[$other] = $this->node(
-			uuid: $other,
-			object: $this->loadObject(uuid: $other),
-			distance: ($walk->level + 1)
-		);
+		$walk->nodes[$other] = $this->node(uuid: $other, distance: ($walk->level + 1));
 		$walk->next[] = $other;
 	}//end reachNode()
 
@@ -414,21 +411,19 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * and you were not shown it" rather than "the walk ended", which is true
 	 * of every walk.
 	 *
-	 * @param array<int, string> $frontier The level the walk stopped on.
-	 * @param array<string, bool> $visited Every node already in the answer.
-	 * @param string $language The BCP-47 tag.
+	 * @param GraphWalk $walk The walk, with the level it stopped on as its frontier.
 	 *
 	 * @return boolean True when an unvisited neighbour exists.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function hasMore(array $frontier, array $visited, string $language): bool {
-		if ($frontier === []) {
+	private function hasMore(GraphWalk $walk): bool {
+		if ($walk->frontier === []) {
 			return false;
 		}
 
-		foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
-			if (self::isUnvisited(other: self::otherEnd(edge: $edge), visited: $visited) === true) {
+		foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
+			if (self::isUnvisited(other: self::otherEnd(edge: $edge), visited: $walk->visited) === true) {
 				return true;
 			}
 		}
@@ -444,17 +439,17 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * The truncation marker rides along as a trailing row rather than a header
 	 * comment, so it survives a paste into a sheet.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag.
+	 * @param string                  $rootUuid The object to walk out from.
+	 * @param GraphExportOptions|null $options  The depth and the language; null is depth 1 in Dutch.
 	 *
 	 * @return array{rows: array<int, array<int, string>>, graph: array<string, mixed>}
 	 *     The export rows, header first, and the graph they came from.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function export(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$graph = $this->graph(rootUuid: $rootUuid, depth: $depth, language: $language);
+	public function export(string $rootUuid, ?GraphExportOptions $options = null): array {
+		$options ??= new GraphExportOptions();
+		$graph = $this->graph(rootUuid: $rootUuid, options: $options);
 
 		return ['rows' => $this->rowsOf(graph: $graph), 'graph' => $graph];
 	}//end export()
@@ -542,7 +537,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 
 		// Source two: the stored rows for the links no property can hold. One
 		// query for the whole level, not one per node.
-		foreach ($this->relationMapper->findTouching(uuids: $uuids) as $stored) {
+		foreach ($this->sources->relationMapper->findTouching(uuids: $uuids) as $stored) {
 			$edges[] = $this->shapes->storedEdge(stored: $stored, uuids: $uuids);
 		}
 
@@ -566,8 +561,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$schema = $this->schemaOf(schemaId: $object->getSchema());
 		$edges  = [];
 		foreach ($this->linksOf(relations: ($object->getRelations() ?? []), uuid: $uuid) as [$path, $target]) {
-			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
-			$row        = $this->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
+			$descriptor = $this->sources->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
+			$row        = $this->sources->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
 			$edges[]    = ['from' => $uuid, 'to' => $target] + $this->shapes->outgoingDetails(row: $row);
 		}
 
@@ -624,15 +619,15 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * and "the link is not there" and "you may not read what it points at" are
 	 * not the same answer.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param ObjectEntity|null $object The object, when it loaded.
-	 * @param int $distance How many steps from the root.
+	 * @param string $uuid     The object's uuid.
+	 * @param int    $distance How many steps from the root.
 	 *
 	 * @return array<string, mixed> The node.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function node(string $uuid, ?ObjectEntity $object, int $distance): array {
+	private function node(string $uuid, int $distance): array {
+		$object = $this->loadObject(uuid: $uuid);
 		if ($object === null) {
 			return $this->shapes->unresolvedNode(uuid: $uuid, distance: $distance);
 		}
@@ -685,7 +680,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		}
 
 		try {
-			return $this->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
+			return $this->sources->schemaMapper->find((int)$schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}

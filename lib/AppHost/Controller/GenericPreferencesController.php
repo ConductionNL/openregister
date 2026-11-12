@@ -53,6 +53,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -91,29 +92,14 @@ class GenericPreferencesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function getPreference(string $key): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
-		}
-
+		$user    = $this->userSession->getUser();
 		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
+		$refusal = self::refusalFor(user: $user, safeKey: $safeKey);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		$value = $this->config->getUserValue(
-			userId: $user->getUID(),
-			appName: $this->appName,
-			key: 'pref_' . $safeKey,
-			default: ''
-		);
-
-		$stored = null;
-		if ($value !== '') {
-			$stored = $value;
-		}
-
-		return new JSONResponse(data: ['value' => $stored]);
+		return new JSONResponse(data: ['value' => $this->storedValue(user: $user, safeKey: $safeKey)]);
 	}//end getPreference()
 
 	/**
@@ -128,23 +114,15 @@ class GenericPreferencesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function setPreference(string $key, string $value = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
-		}
-
+		$user    = $this->userSession->getUser();
 		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
+		$refusal = self::refusalFor(user: $user, safeKey: $safeKey);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		if ($value === '') {
-			$this->config->deleteUserValue(
-				userId: $user->getUID(),
-				appName: $this->appName,
-				key: 'pref_' . $safeKey
-			);
-
+			$this->clearValue(user: $user, safeKey: $safeKey);
 			return new JSONResponse(data: ['value' => null]);
 		}
 
@@ -157,6 +135,66 @@ class GenericPreferencesController extends Controller {
 
 		return new JSONResponse(data: ['value' => $value]);
 	}//end setPreference()
+
+	/**
+	 * The refusal of a preference call: 401 when anonymous, 400 on an invalid key.
+	 *
+	 * @param IUser|null $user    The current user.
+	 * @param string     $safeKey The sanitised key; '' when nothing safe remained.
+	 *
+	 * @return JSONResponse|null Null when the call may proceed.
+	 */
+	private static function refusalFor(?IUser $user, string $safeKey): ?JSONResponse {
+		if ($user === null) {
+			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($safeKey === '') {
+			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		return null;
+	}//end refusalFor()
+
+	/**
+	 * The user's stored value for a preference; null when none is stored.
+	 *
+	 * @param IUser  $user    The current user.
+	 * @param string $safeKey The sanitised key.
+	 *
+	 * @return string|null
+	 */
+	private function storedValue(IUser $user, string $safeKey): ?string {
+		$value = $this->config->getUserValue(
+			userId: $user->getUID(),
+			appName: $this->appName,
+			key: 'pref_' . $safeKey,
+			default: ''
+		);
+
+		$stored = null;
+		if ($value !== '') {
+			$stored = $value;
+		}
+
+		return $stored;
+	}//end storedValue()
+
+	/**
+	 * Clear the user's stored value for a preference.
+	 *
+	 * @param IUser  $user    The current user.
+	 * @param string $safeKey The sanitised key.
+	 *
+	 * @return void
+	 */
+	private function clearValue(IUser $user, string $safeKey): void {
+		$this->config->deleteUserValue(
+			userId: $user->getUID(),
+			appName: $this->appName,
+			key: 'pref_' . $safeKey
+		);
+	}//end clearValue()
 
 	/**
 	 * Restrict keys to a safe charset so callers cannot reach arbitrary

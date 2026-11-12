@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -176,20 +177,19 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	/**
 	 * Every timer bound to a subject, optionally restricted to a state set.
 	 *
-	 * @param string $subjectType The subject type.
-	 * @param string $subjectUuid The subject uuid.
-	 * @param array<int, string> $states Restrict to these states; empty means all.
+	 * @param TimerSubject       $subject The subject's type and uuid.
+	 * @param array<int, string> $states  Restrict to these states; empty means all.
 	 *
 	 * @return array<int, FlowTimer> The subject's timers, oldest first.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findBySubject(string $subjectType, string $subjectUuid, array $states = []): array {
+	public function findBySubject(TimerSubject $subject, array $states = []): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('subject_type', $qb->createNamedParameter($subjectType)))
-			->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subjectUuid)))
+			->where($qb->expr()->eq('subject_type', $qb->createNamedParameter($subject->type)))
+			->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subject->uuid)))
 			->orderBy('id', 'ASC');
 
 		if ($states !== []) {
@@ -223,12 +223,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 					)
 				)
 			)
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -237,22 +232,21 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	/**
 	 * Every timer in a state, paged by id, for the invariant check.
 	 *
-	 * @param string $state The state.
-	 * @param int $afterId Return rows with an id above this.
-	 * @param int $limit The page size.
+	 * @param string   $state  The state.
+	 * @param IdCursor $cursor The rows after this id, and the page size.
 	 *
 	 * @return array<int, FlowTimer> The page.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findByStatePaged(string $state, int $afterId, int $limit): array {
+	public function findByStatePaged(string $state, IdCursor $cursor): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('state', $qb->createNamedParameter($state)))
-			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->andWhere($cursor->after(qb: $qb))
 			->orderBy('id', 'ASC')
-			->setMaxResults($limit);
+			->setMaxResults($cursor->limit);
 
 		return $this->findEntities(query: $qb);
 	}//end findByStatePaged()
@@ -300,12 +294,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 
@@ -331,12 +320,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select($qb->func()->count('*', 'open_timers'))
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+			->andWhere($this->isOpen(qb: $qb));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -344,4 +328,18 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 		return $count;
 	}//end countOpenByCalendarSlug()
+
+	/**
+	 * The condition that a timer is still open: armed or suspended.
+	 *
+	 * @param IQueryBuilder $qb The query the condition is for.
+	 *
+	 * @return string
+	 */
+	private function isOpen(IQueryBuilder $qb): string {
+		return $qb->expr()->in(
+			'state',
+			$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end isOpen()
 }//end class

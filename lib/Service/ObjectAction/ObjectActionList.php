@@ -50,16 +50,14 @@ class ObjectActionList implements ObjectActionListInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionDefinitions $definitions The schema's actions, inherited ones included.
-	 * @param ObjectActionGate        $gate        The right and the precondition.
-	 * @param ObjectActionInputs      $inputs      Defaults and the transition input translation.
-	 * @param TransitionEngine        $transitions The lifecycle's available moves.
-	 * @param IL10N                   $l10n        Reasons.
+	 * @param ObjectActionCatalogue $catalogue   The declared actions and their inputs.
+	 * @param ObjectActionGate      $gate        The right and the precondition.
+	 * @param TransitionEngine      $transitions The lifecycle's available moves.
+	 * @param IL10N                 $l10n        Reasons.
 	 */
 	public function __construct(
-		private readonly ObjectActionDefinitions $definitions,
+		private readonly ObjectActionCatalogue $catalogue,
 		private readonly ObjectActionGate $gate,
-		private readonly ObjectActionInputs $inputs,
 		private readonly TransitionEngine $transitions,
 		private readonly IL10N $l10n,
 	) {
@@ -78,7 +76,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function forObject(ObjectEntity $object, Schema $schema): array {
-		if ($this->gate->may(schema: $schema, right: 'read', object: $object) === false) {
+		if ($this->gate->holds(check: new RightCheck(schema: $schema, right: 'read', object: $object)) === false) {
 			throw new NotAuthorizedException(message: 'You do not have permission to read this object.');
 		}
 
@@ -87,7 +85,7 @@ class ObjectActionList implements ObjectActionListInterface {
 			$available[(string)$move['action']] = $move;
 		}
 
-		[$entries, $named] = $this->declaredEntries(schema: $schema, object: $object, available: $available);
+		[$entries, $named] = $this->declaredEntries(run: new ActionListingRun(object: $object, schema: $schema, available: $available));
 		foreach (array_diff_key($available, $named) as $move) {
 			$entries[] = $this->transitionEntry(move: $move);
 		}
@@ -98,17 +96,15 @@ class ObjectActionList implements ObjectActionListInterface {
 	/**
 	 * The entries of the declared actions the caller may run, and the transitions they name.
 	 *
-	 * @param Schema                              $schema    The schema.
-	 * @param ObjectEntity                        $object    The object.
-	 * @param array<string, array<string, mixed>> $available The lifecycle's available moves, by action.
+	 * @param ActionListingRun $run The object, its schema and the lifecycle's available moves.
 	 *
 	 * @return array{0: list<array<string, mixed>>, 1: array<string, true>} The entries, and the transitions named.
 	 */
-	private function declaredEntries(Schema $schema, ObjectEntity $object, array $available): array {
+	private function declaredEntries(ActionListingRun $run): array {
 		$entries = [];
 		$named   = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
-			if ($this->mayRun(schema: $schema, definition: $definition, object: $object) === false) {
+		foreach ($this->catalogue->definitions->forSchema(schema: $run->schema, register: $run->object->getRegister()) as $definition) {
+			if ($this->mayRun(run: $run, definition: $definition) === false) {
 				continue;
 			}
 
@@ -116,7 +112,7 @@ class ObjectActionList implements ObjectActionListInterface {
 				$named[(string)$definition->body] = true;
 			}
 
-			$entries[] = $this->declaredEntry(definition: $definition, object: $object, move: $this->moveOf(definition: $definition, available: $available));
+			$entries[] = $this->declaredEntry(run: $run, definition: $definition);
 		}
 
 		return [$entries, $named];
@@ -154,12 +150,13 @@ class ObjectActionList implements ObjectActionListInterface {
 	 */
 	public function canRun(ObjectEntity $object, Schema $schema): array {
 		$can = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
+		$run = new ActionListingRun(object: $object, schema: $schema, available: []);
+		foreach ($this->catalogue->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
 			if ($definition->isRunnable() === false) {
 				continue;
 			}
 
-			$can[$definition->key] = $this->mayRun(schema: $schema, definition: $definition, object: $object)
+			$can[$definition->key] = $this->mayRun(run: $run, definition: $definition)
 				&& $this->gate->selfAssignOpen(definition: $definition, object: $object)
 				&& $this->preconditionHolds(definition: $definition, object: $object);
 		}
@@ -170,15 +167,15 @@ class ObjectActionList implements ObjectActionListInterface {
 	/**
 	 * Whether the caller holds the right to run this declared action on the object.
 	 *
-	 * @param Schema                 $schema     The schema.
+	 * @param ActionListingRun       $run        The object and its schema.
 	 * @param ObjectActionDefinition $definition The action.
-	 * @param ObjectEntity           $object     The object.
 	 *
 	 * @return bool True when it is runnable and granted.
 	 */
-	private function mayRun(Schema $schema, ObjectActionDefinition $definition, ObjectEntity $object): bool {
-		return $definition->isRunnable() === true
-			&& $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: $object) === true;
+	private function mayRun(ActionListingRun $run, ObjectActionDefinition $definition): bool {
+		$check = new RightCheck(schema: $run->schema, right: $definition->key, object: $run->object);
+
+		return $definition->isRunnable() === true && $this->gate->mayRun(check: $check, definition: $definition) === true;
 	}//end mayRun()
 
 	/**
@@ -190,9 +187,10 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * @return bool True when the precondition holds.
 	 */
 	private function preconditionHolds(ObjectActionDefinition $definition, ObjectEntity $object): bool {
-		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: [], object: $object, userId: $this->gate->userId());
+		$scope  = new DefaultScope(object: $object, userId: $this->gate->userId());
+		$inputs = $this->catalogue->inputs->withDefaults(invocation: new ObjectActionInvocation(definition: $definition, inputs: []), scope: $scope);
 
-		return $this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs);
+		return $this->gate->whenHolds(invocation: new ObjectActionInvocation(definition: $definition, inputs: $inputs), object: $object);
 	}//end preconditionHolds()
 
 	/**
@@ -210,9 +208,9 @@ class ObjectActionList implements ObjectActionListInterface {
 	 */
 	public function forSelection(Schema $schema, int|string|null $register): array {
 		$entries = [];
-		foreach ($this->definitions->forSchema(schema: $schema, register: $register) as $definition) {
+		foreach ($this->catalogue->definitions->forSchema(schema: $schema, register: $register) as $definition) {
 			if ($definition->isRunnable() === false || $definition->offersBulk() === false
-				|| $this->gate->mayRun(schema: $schema, right: $definition->key, definition: $definition, object: null) === false
+				|| $this->gate->mayRun(check: new RightCheck(schema: $schema, right: $definition->key, object: null), definition: $definition) === false
 			) {
 				continue;
 			}
@@ -228,22 +226,22 @@ class ObjectActionList implements ObjectActionListInterface {
 	/**
 	 * The entry of a declared action on one object.
 	 *
-	 * @param ObjectActionDefinition    $definition The action.
-	 * @param ObjectEntity              $object     The object.
-	 * @param array<string, mixed>|false|null $move The transition it names, false when not available now, null when none.
+	 * @param ActionListingRun       $run        The object and the lifecycle's available moves.
+	 * @param ObjectActionDefinition $definition The action.
 	 *
 	 * @return array<string, mixed> The entry.
 	 */
-	private function declaredEntry(ObjectActionDefinition $definition, ObjectEntity $object, array|false|null $move): array {
+	private function declaredEntry(ActionListingRun $run, ObjectActionDefinition $definition): array {
 		$entry  = $this->shape(definition: $definition);
-		$reason = $this->unavailableReason(definition: $definition, object: $object, move: $move);
+		$move   = $this->moveOf(definition: $definition, available: $run->available);
+		$reason = $this->unavailableReason(run: $run, definition: $definition);
 		$entry['available'] = ($reason === null);
 		if ($reason !== null) {
 			$entry['reason'] = $reason;
 		}
 
 		if ($definition->inputs === null && is_array($move) === true) {
-			$entry['inputs'] = $this->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? []));
+			$entry['inputs'] = $this->catalogue->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? []));
 		}
 
 		return $entry;
@@ -256,22 +254,21 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * not reachable from the current status, its self-assign property is
 	 * already set, its `when` does not hold.
 	 *
-	 * @param ObjectActionDefinition          $definition The action.
-	 * @param ObjectEntity                    $object     The object.
-	 * @param array<string, mixed>|false|null $move       The transition it names, false when not available now, null when none.
+	 * @param ActionListingRun       $run        The object and the lifecycle's available moves.
+	 * @param ObjectActionDefinition $definition The action.
 	 *
 	 * @return string|null The reason.
 	 */
-	private function unavailableReason(ObjectActionDefinition $definition, ObjectEntity $object, array|false|null $move): ?string {
-		if ($move === false) {
+	private function unavailableReason(ActionListingRun $run, ObjectActionDefinition $definition): ?string {
+		if ($this->moveOf(definition: $definition, available: $run->available) === false) {
 			return $this->l10n->t('This step is not available from the current status.');
 		}
 
-		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
+		if ($this->gate->selfAssignOpen(definition: $definition, object: $run->object) === false) {
 			return $this->l10n->t('This object is already assigned.');
 		}
 
-		if ($this->preconditionHolds(definition: $definition, object: $object) === false) {
+		if ($this->preconditionHolds(definition: $definition, object: $run->object) === false) {
 			return $this->gate->reason(definition: $definition);
 		}
 
@@ -310,7 +307,7 @@ class ObjectActionList implements ObjectActionListInterface {
 			'icon' => null,
 			'surfaces' => ObjectActionDefinition::DEFAULT_SURFACES,
 			'available' => (($move['blocked'] ?? false) !== true),
-			'inputs' => $this->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? [])),
+			'inputs' => $this->catalogue->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? [])),
 		];
 	}//end moveFields()
 

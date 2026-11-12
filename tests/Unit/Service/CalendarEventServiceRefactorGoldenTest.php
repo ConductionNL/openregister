@@ -10,6 +10,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\CalendarObjectRef;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -265,9 +267,9 @@ class CalendarEventServiceRefactorGoldenTest extends TestCase {
 			'create attendees not list' => ['createEvent', [1, 2, 'o', 'T', ['dtstart' => '2026-03-01T00:00:00Z', 'attendees' => 'x@y', 'location' => '', 'summary' => 'S']], ['pin' => 'personal']],
 			'create no start' => ['createEvent', [1, 2, 'o', 'T', ['summary' => 'S']], []],
 			'create bad end' => ['createEvent', [1, 2, 'o', 'T', ['dtstart' => '2026-03-01T00:00:00Z', 'dtend' => 'not a date']], ['pin' => 'personal', 'maskMessage' => true]],
-			'link event' => ['linkEvent', [3, 'b.ics', 7, 8, 'obj-7'], []],
-			'link missing' => ['linkEvent', [3, 'nope.ics', 7, 8, 'obj-7'], []],
-			'link todo' => ['linkEvent', [3, 'todo.ics', 7, 8, 'obj-7'], []],
+			'link event' => ['linkEventTo', [new CalendarObjectRef(calendarId: 3, uri: 'b.ics'), (new LinkTarget(objectUuid: 'obj-7', registerId: 7))->inSchema(schemaId: 8)], []],
+			'link missing' => ['linkEventTo', [new CalendarObjectRef(calendarId: 3, uri: 'nope.ics'), (new LinkTarget(objectUuid: 'obj-7', registerId: 7))->inSchema(schemaId: 8)], []],
+			'link todo' => ['linkEventTo', [new CalendarObjectRef(calendarId: 3, uri: 'todo.ics'), (new LinkTarget(objectUuid: 'obj-7', registerId: 7))->inSchema(schemaId: 8)], []],
 			'unlink event' => ['unlinkEvent', ['3', 'a.ics'], []],
 			'unlink missing' => ['unlinkEvent', ['3', 'nope.ics'], []],
 			'unlink todo' => ['unlinkEvent', ['2', 't1.ics'], []],

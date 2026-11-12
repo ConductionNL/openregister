@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -69,12 +70,7 @@ class ScheduledReportRunNowJob extends QueuedJob {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	protected function run($argument): void {
-		$rawReportId = 0;
-		if (is_array($argument) === true) {
-			$rawReportId = ($argument['scheduledReportId'] ?? 0);
-		}
-
-		$reportId = (int)$rawReportId;
+		$reportId = self::reportId(argument: $argument);
 		if ($reportId <= 0) {
 			$this->logger->warning(
 				message: '[ScheduledReportRunNowJob] Missing/invalid scheduledReportId argument',
@@ -83,16 +79,44 @@ class ScheduledReportRunNowJob extends QueuedJob {
 			return;
 		}
 
+		$report = $this->findReport(reportId: $reportId);
+		if ($report !== null) {
+			$this->service->runOne(report: $report);
+		}
+	}//end run()
+
+	/**
+	 * The report id the job argument names; 0 when it names none.
+	 *
+	 * @param mixed $argument Job argument: `['scheduledReportId' => int]`.
+	 *
+	 * @return int
+	 */
+	private static function reportId(mixed $argument): int {
+		$rawReportId = 0;
+		if (is_array($argument) === true) {
+			$rawReportId = ($argument['scheduledReportId'] ?? 0);
+		}
+
+		return (int)$rawReportId;
+	}//end reportId()
+
+	/**
+	 * The scheduled report; null (logged) when it no longer exists.
+	 *
+	 * @param int $reportId The report id.
+	 *
+	 * @return ScheduledReport|null
+	 */
+	private function findReport(int $reportId): ?ScheduledReport {
 		try {
-			$report = $this->mapper->find(id: $reportId);
+			return $this->mapper->find(id: $reportId);
 		} catch (DoesNotExistException $e) {
 			$this->logger->warning(
 				message: '[ScheduledReportRunNowJob] Scheduled report no longer exists',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $reportId]
 			);
-			return;
+			return null;
 		}
-
-		$this->service->runOne(report: $report);
-	}//end run()
+	}//end findReport()
 }//end class

@@ -61,18 +61,17 @@ final class ExampleSetFieldRules {
 	/**
 	 * Why a row names a field its kind does not know, or ''.
 	 *
-	 * @param array<string, mixed> $data   The filled fields.
-	 * @param array<int, string>   $fields The fields the kind knows.
-	 * @param string               $row    The kind, with its article, as the message names it (`a deck card`).
+	 * @param array<string, mixed> $data  The filled fields.
+	 * @param ExampleSetRowShape   $shape The kind, as the message names it (`a deck card`), and the fields it knows.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function unknownRefusal(array $data, array $fields, string $row): string {
-		$unknown = array_diff(array_keys($data), $fields);
+	public function unknownRefusal(array $data, ExampleSetRowShape $shape): string {
+		$unknown = array_diff(array_keys($data), $shape->fields);
 		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not '.$row.' field a set may write';
+			return 'field "'.implode('", "', $unknown).'" is not '.$shape->row.' field a set may write';
 		}
 
 		return '';
@@ -81,18 +80,18 @@ final class ExampleSetFieldRules {
 	/**
 	 * Why a row leaves a field it needs empty, or '': the first such field, in the order given.
 	 *
-	 * @param array<string, mixed>  $data     The filled fields.
-	 * @param array<string, string> $required What each needed field holds, by field (`'title' => 'a title'`).
-	 * @param string                $row      The kind, with its article, as the message names it (`a deck card`).
+	 * @param array<string, mixed> $data  The filled fields.
+	 * @param ExampleSetRowShape   $shape The kind, as the message names it (`a deck card`), and what each needed field
+	 *                                    holds, by field (`'title' => 'a title'`).
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function missingRefusal(array $data, array $required, string $row): string {
-		foreach ($required as $field => $what) {
+	public function missingRefusal(array $data, ExampleSetRowShape $shape): string {
+		foreach ($shape->required as $field => $what) {
 			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return $row.' needs '.$what.' ('.$field.')';
+				return $shape->row.' needs '.$what.' ('.$field.')';
 			}
 		}
 

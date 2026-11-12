@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\FilledRow;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use ReflectionMethod;
@@ -115,6 +116,6 @@ class ExampleSetAccessLinksGoldenTest extends TestCase {
 		$container->expects($this->never())->method('get');
 		$links = new ExampleSetAccessLinks(container: $container);
 		$this->assertSame($refusal, $links->refusal(data: $data, users: $users));
-		$this->assertSame($refusalIn, (new ReflectionMethod($links, 'refusalIn'))->invoke($links, $data, $users, $context));
+		$this->assertSame($refusalIn, (new ReflectionMethod($links, 'refusalIn'))->invoke($links, new FilledRow(data: $data, users: $users), $context));
 	}//end testRefusal()
 }//end class

@@ -99,12 +99,51 @@ class TimeReconcileCommand extends Command {
 	 * @spec openspec/specs/integration-time-tracker/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$objectUuid = self::objectUuid(input: $input);
+		$dryRun = (bool)$input->getOption('dry-run');
+
+		$output->writeln(self::header(objectUuid: $objectUuid, dryRun: $dryRun));
+
+		$stats = $this->service->reconcileAllLinks(objectUuid: $objectUuid, dryRun: $dryRun);
+
+		$output->writeln(self::statsLine(stats: $stats));
+
+		if ($stats['errors'] > 0) {
+			return Command::FAILURE;
+		}
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * The --object uuid, or null for every link row.
+	 *
+	 * @param InputInterface $input Console input.
+	 *
+	 * @return string|null The object uuid.
+	 *
+	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 */
+	private static function objectUuid(InputInterface $input): ?string {
 		$objectUuid = $input->getOption('object');
 		if (is_string($objectUuid) === false || $objectUuid === '') {
 			$objectUuid = null;
 		}
 
-		$dryRun = (bool)$input->getOption('dry-run');
+		return $objectUuid;
+	}//end objectUuid()
+
+	/**
+	 * The opening line: what is reconciled, and whether it is a dry run.
+	 *
+	 * @param string|null $objectUuid The one object, or null for every link row.
+	 * @param bool        $dryRun     Whether nothing is written.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 */
+	private static function header(?string $objectUuid, bool $dryRun): string {
 		$dryRunLabel = '';
 		if ($dryRun === true) {
 			$dryRunLabel = ' (dry run)';
@@ -115,24 +154,25 @@ class TimeReconcileCommand extends Command {
 			$scope = 'object=' . $objectUuid;
 		}
 
-		$output->writeln(sprintf('<info>Reconciling %s%s</info>', $scope, $dryRunLabel));
+		return sprintf('<info>Reconciling %s%s</info>', $scope, $dryRunLabel);
+	}//end header()
 
-		$stats = $this->service->reconcileAllLinks(objectUuid: $objectUuid, dryRun: $dryRun);
-
-		$output->writeln(
-			sprintf(
-				' walked=%d refreshed=%d missing=%d errors=%d',
-				$stats['walked'],
-				$stats['refreshed'],
-				$stats['missing'],
-				$stats['errors']
-			)
+	/**
+	 * The stats line: rows walked, refreshed, missing and in error.
+	 *
+	 * @param array<string, int> $stats The reconcile's stats.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 */
+	private static function statsLine(array $stats): string {
+		return sprintf(
+			' walked=%d refreshed=%d missing=%d errors=%d',
+			$stats['walked'],
+			$stats['refreshed'],
+			$stats['missing'],
+			$stats['errors']
 		);
-
-		if ($stats['errors'] > 0) {
-			return Command::FAILURE;
-		}
-
-		return Command::SUCCESS;
-	}//end execute()
+	}//end statsLine()
 }//end class

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Before openregister#4088 every filter that was not an `@self.` filter was
@@ -67,7 +68,7 @@ class ExportServicePropertyFilterTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(9);
 
-		$service->countExportRows(register: $register, schema: $schema, filters: $filters);
+		$service->countExportRows(request: new ObjectExportRequest(register: $register, schema: $schema, filters: $filters));
 
 		return $captured;
 	}//end queryFor()

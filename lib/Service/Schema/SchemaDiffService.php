@@ -81,6 +81,18 @@ class SchemaDiffService {
 	public function diff(array $old, array $new, array $renames = []): SchemaChangeSet {
 		$run = new SchemaDiffRun(old: $old, new: $new);
 		$run->declareRenames(renames: $renames);
+
+		return $this->classified(run: $run);
+	}//end diff()
+
+	/**
+	 * Collect every change of one diff and classify the set.
+	 *
+	 * @param SchemaDiffRun $run The diff state, renames declared.
+	 *
+	 * @return SchemaChangeSet The typed, classified change set.
+	 */
+	private function classified(SchemaDiffRun $run): SchemaChangeSet {
 		$this->collectRemoved(run: $run);
 		$this->collectAdded(run: $run);
 		$this->collectChanged(run: $run);
@@ -88,7 +100,7 @@ class SchemaDiffService {
 		$this->collectNoLongerRequired(run: $run);
 
 		return $run->changeSet();
-	}//end diff()
+	}//end classified()
 
 	/**
 	 * Record properties of the old definition that the new one lacks, except declared renames.
@@ -365,23 +377,23 @@ class SchemaDiffService {
 		}
 
 		if (is_array($oldEnum) !== is_array($newEnum)) {
-			return $this->diffEnumPresence(pair: $pair, oldEnum: $oldEnum, newEnum: $newEnum);
+			return $this->diffEnumPresence(pair: $pair);
 		}
 
-		return $this->diffEnumMembers(pair: $pair, oldEnum: $oldEnum, newEnum: $newEnum);
+		return $this->diffEnumMembers(pair: $pair);
 
 	}//end diffEnum()
 
 	/**
 	 * Diff an enum that only one side declares as a list.
 	 *
-	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
-	 * @param mixed                  $oldEnum The old enum.
-	 * @param mixed                  $newEnum The new enum.
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
 	 *
 	 * @return array<string, mixed> The change.
 	 */
-	private function diffEnumPresence(PropertyDefinitionPair $pair, mixed $oldEnum, mixed $newEnum): array {
+	private function diffEnumPresence(PropertyDefinitionPair $pair): array {
+		$oldEnum = $pair->old['enum'] ?? null;
+		$newEnum = $pair->new['enum'] ?? null;
 		if (is_array($newEnum) === true) {
 			// Newly constrained to a fixed set = tightening.
 			return $pair->tightened(old: null, new: ['enum' => $newEnum]);
@@ -395,13 +407,15 @@ class SchemaDiffService {
 	/**
 	 * Diff the membership of an enum both sides declare.
 	 *
-	 * @param PropertyDefinitionPair $pair    The property's old and new definition.
-	 * @param array<int, mixed>      $oldEnum The old enum.
-	 * @param array<int, mixed>      $newEnum The new enum.
+	 * A side that declares a non-list enum raises a TypeError, as before.
+	 *
+	 * @param PropertyDefinitionPair $pair The property's old and new definition.
 	 *
 	 * @return array<string, mixed>|null The change, or null when the members are the same.
 	 */
-	private function diffEnumMembers(PropertyDefinitionPair $pair, array $oldEnum, array $newEnum): ?array {
+	private function diffEnumMembers(PropertyDefinitionPair $pair): ?array {
+		$oldEnum = $pair->old['enum'] ?? null;
+		$newEnum = $pair->new['enum'] ?? null;
 		$removed = array_diff($oldEnum, $newEnum);
 		$added = array_diff($newEnum, $oldEnum);
 

@@ -26,17 +26,22 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -169,11 +174,8 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		$runner = $this->runner(case: $case);
 		try {
 			$result = $runner->run(
-				registerRef: 'reg',
-				schemaRef: 'parent',
-				name: 'agg',
-				bypassRbac: $case['bypass'],
-				parentRow: $case['parentRow']
+				ref: new NamedAggregationRef(register: 'reg', schema: 'parent', name: 'agg'),
+				options: new NamedAggregationOptions(bypassRbac: $case['bypass'], parentRow: $case['parentRow'])
 			);
 			$outcome = ['result' => $result];
 		} catch (Throwable $e) {
@@ -256,7 +258,8 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 			}
 		);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null) use ($case): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($case): array {
+				[$register, $schema, $limit] = [$table->register, $table->schema, $listing->limitOrNull()];
 				$this->calls[] = ['table' => [$register->getSlug(), $schema->getSlug(), $limit]];
 				$entities = [];
 				foreach ($case['rows'] as $row) {
@@ -269,14 +272,14 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 
 		$cache = $this->createMock(AggregationCache::class);
 		$cache->method('get')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter) use ($case): ?array {
-				$this->calls[] = ['cacheGet' => [$registerSlug, $schemaSlug, $name, $filter]];
+			function (AggregationSlot $slot) use ($case): ?array {
+				$this->calls[] = ['cacheGet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter]];
 				return $case['cached'];
 			}
 		);
 		$cache->method('set')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
-				$this->calls[] = ['cacheSet' => [$registerSlug, $schemaSlug, $name, $filter, $result]];
+			function (AggregationSlot $slot, array $result): void {
+				$this->calls[] = ['cacheSet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter, $result]];
 			}
 		);
 
@@ -321,9 +324,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		);
 
 		return new AggregationRunner(
-			magicMapper: $magic,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			placeholders: new PlaceholderResolver($session),
 			db: $db,
 			cache: $cache,

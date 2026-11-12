@@ -18,12 +18,15 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Service\LanguageGapScan;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -80,7 +83,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->expectExceptionMessage(
 			'Invalid translation status "bogus"; expected one of: ' . implode(', ', Translation::ALL_STATUSES)
 		);
-		$this->service->setStatus('u1', 'title', 'en', 'bogus');
+		$this->service->setStatus(new TranslationSlot('u1', 'title', 'en'), 'bogus');
 	}//end testSetStatusRejectsUnknownStatusBeforeLookup()
 
 	public function testSetStatusRejectsMissingSlot(): void {
@@ -90,7 +93,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->expectExceptionMessage(
 			'No translation slot for object=u1 property=title language=en — set a value before promoting status.'
 		);
-		$this->service->setStatus('u1', 'title', 'en', Translation::STATUS_APPROVED);
+		$this->service->setStatus(new TranslationSlot('u1', 'title', 'en'), Translation::STATUS_APPROVED);
 	}//end testSetStatusRejectsMissingSlot()
 
 	public function testSetStatusUpsertsExistingValueWithSessionTranslator(): void {
@@ -99,12 +102,12 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
 		$this->session->method('getUser')->willReturn($user);
-		$this->mapper->expects($this->once())->method('findOne')->with('u1', 'title', 'en')->willReturn($existing);
+		$this->mapper->expects($this->once())->method('findOne')->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')))->willReturn($existing);
 		$this->mapper->expects($this->once())->method('upsert')
 			->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')), $this->equalTo(new TranslationEdit('Hello', Translation::STATUS_APPROVED, 'alice')))
 			->willReturn($saved);
 
-		$this->assertSame($saved, $this->service->setStatus('u1', 'title', 'en', Translation::STATUS_APPROVED));
+		$this->assertSame($saved, $this->service->setStatus(new TranslationSlot('u1', 'title', 'en'), Translation::STATUS_APPROVED));
 	}//end testSetStatusUpsertsExistingValueWithSessionTranslator()
 
 	public function testSetStatusWithoutUserPassesNullTranslator(): void {
@@ -115,7 +118,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 			->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')), $this->equalTo(new TranslationEdit('Hello', Translation::STATUS_DRAFT, null)))
 			->willReturn($existing);
 
-		$this->service->setStatus('u1', 'title', 'en', Translation::STATUS_DRAFT);
+		$this->service->setStatus(new TranslationSlot('u1', 'title', 'en'), Translation::STATUS_DRAFT);
 	}//end testSetStatusWithoutUserPassesNullTranslator()
 
 	public function testCompletenessEmptyWhenNoTranslatableProperties(): void {
@@ -146,7 +149,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[$rows[0]->jsonSerialize()],
-			$this->service->search('q', 'en', 'draft', 'u1', 5, 'nl', true)
+			$this->service->search(new TranslationSearch(new TranslationFilter('en', 'draft', 'u1', 'nl'), 'q', 5, true))
 		);
 	}//end testSearchForwardsEveryFilterAndSerialises()
 
@@ -154,7 +157,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->mapper->expects($this->once())->method('search')
 			->with($this->equalTo(new TranslationFilter()), null, 100, false)
 			->willReturn([]);
-		$this->assertSame([], $this->service->search());
+		$this->assertSame([], $this->service->search(new TranslationSearch()));
 	}//end testSearchDefaults()
 
 	public function testSearchWithSourceValuesResolvesAndCaches(): void {
@@ -167,7 +170,8 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 			->willReturn([$a, $b, $c, $d]);
 		$this->mapper->expects($this->exactly(2))->method('findOne')
 			->willReturnCallback(
-				function (string $uuid, string $prop, string $lang) {
+				function (TranslationSlot $slot) {
+					[$uuid, $prop, $lang] = [$slot->objectUuid, $slot->property, $slot->language];
 					if ($uuid === 'u1') {
 						$this->assertSame(['title', 'nl'], [$prop, $lang]);
 						return $this->row('u1', 'title', 'nl', 'Hoi');
@@ -178,7 +182,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 				}
 			);
 
-		$result = $this->service->searchWithSourceValues('q', 'en', null, null, 7, 'nl', true);
+		$result = $this->service->searchWithSourceValues(new TranslationSearch(new TranslationFilter('en', null, null, 'nl'), 'q', 7, true));
 
 		$expected = [
 			$a->jsonSerialize() + ['sourceValue' => 'Hoi'],
@@ -196,7 +200,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		// A null source value is not cached (isset), so the lookup repeats.
 		$this->mapper->expects($this->exactly(2))->method('findOne')->willReturn(null);
 
-		$result = $this->service->searchWithSourceValues();
+		$result = $this->service->searchWithSourceValues(new TranslationSearch());
 		$this->assertNull($result[0]['sourceValue']);
 		$this->assertNull($result[1]['sourceValue']);
 	}//end testSearchWithSourceValuesRetriesNullLookups()
@@ -205,8 +209,8 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$schema = new Schema();
 		$this->handler->method('getTranslatableProperties')->with($schema)->willReturn(['title']);
 		$this->mapper->expects($this->once())->method('findObjectsMissingLanguage')
-			->with('en', ['title'], ['u1', 'u2'])
+			->with($this->equalTo(new LanguageCoverageCheck('en', ['title'], ['u1', 'u2'])))
 			->willReturn(['u2']);
-		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage('en', $schema, ['u1', 'u2']));
+		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage($schema, new LanguageGapScan('en', ['u1', 'u2'])));
 	}//end testFindObjectsMissingLanguageUsesTranslatableProperties()
 }//end class

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\ReadStateInvalidationListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
@@ -39,6 +40,8 @@ use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -141,7 +144,7 @@ final class TaskAreaListenersBehaviourTest extends TestCase {
 		$schemas->method('find')->willReturn($schema);
 		$projector = $this->createMock(StateHistoryProjector::class);
 		$projector->expects(self::once())->method('record')
-			->with('uuid-1', $schema, '3', 'closed', self::anything())
+			->with(self::callback(static fn (ObjectTransitionedEvent $move): bool => $move->getObject()->getUuid() === 'uuid-1' && $move->getRegister() === '3' && $move->getTo() === 'closed'), $schema, self::anything())
 			->willReturn(true);
 		$listener = new StateHistoryProjectionListener($projector, $schemas, new NullLogger());
 
@@ -160,7 +163,7 @@ final class TaskAreaListenersBehaviourTest extends TestCase {
 		$schemas->method('find')->willThrowException(new \RuntimeException('no schema'));
 		$projector = $this->createMock(StateHistoryProjector::class);
 		$projector->expects(self::once())->method('record')
-			->with('uuid-1', null, '3', 'closed', self::anything())
+			->with(self::callback(static fn (ObjectTransitionedEvent $move): bool => $move->getObject()->getUuid() === 'uuid-1' && $move->getRegister() === '3' && $move->getTo() === 'closed'), null, self::anything())
 			->willThrowException(new \RuntimeException('db gone'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning');
@@ -212,6 +215,6 @@ final class TaskAreaListenersBehaviourTest extends TestCase {
 	 * @return ObjectTransitionedEvent
 	 */
 	private function transition(ObjectEntity $object): ObjectTransitionedEvent {
-		return new ObjectTransitionedEvent($object, 'close', 'open', 'closed', 'jan', '3', '12');
+		return new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'close', from: 'open', to: 'closed'), scope: new RegisterSchemaRef(register: '3', schema: '12'), actor: new TransitionActor(userId: 'jan'));
 	}//end transition()
 }//end class

@@ -51,10 +51,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -121,19 +120,16 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger for degraded paths.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
+	 * @param LoggerInterface  $logger  Logger for degraded paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**
@@ -199,9 +195,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * set (the registry contract requires the method; the dispatch surface is
 	 * {@see dispatch()}).
 	 *
-	 * @param string $register Ignored (send-only leaf).
-	 * @param string $schema Ignored (send-only leaf).
-	 * @param string $objectId Ignored (send-only leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Ignored (send-only leaf).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -212,7 +206,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *   filters are mandated by the IntegrationProvider contract; this leaf is
 	 *   send-only so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 
@@ -230,13 +224,11 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @param string $source The seeded source slug to send through
 	 *                       (MUST be in {@see ALLOWED_SOURCES}).
-	 * @param array<string,mixed> $body The provider-shaped request body the
-	 *                                  consuming app composed.
-	 * @param string $path Path relative to the source base URL
-	 *                     (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
-	 *                     `{PhoneNumberID}/messages`, `message`).
-	 * @param array<string,string> $headers Optional extra request headers
-	 *                                      (e.g. a per-call Content-Type).
+	 * @param OutboundMessage $message The path relative to the source base URL
+	 *                                 (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
+	 *                                 `{PhoneNumberID}/messages`, `message`), the
+	 *                                 provider-shaped body the consuming app composed,
+	 *                                 and optional extra request headers.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or
 	 *                             `{ unavailable: true, cause }` when the source
@@ -244,21 +236,34 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
-	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$source = trim($source);
+	public function dispatch(string $source, OutboundMessage $message): array {
+		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
+
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
+	}//end dispatch()
+
+	/**
+	 * Make one call through an allowed messaging source; refuse any other source.
+	 *
+	 * @param string                       $source The messaging source, trimmed.
+	 * @param callable(): array<mixed>     $send   The call to make through it.
+	 *
+	 * @return array<string,mixed> The upstream response, or the degraded envelope.
+	 */
+	private function sendThrough(string $source, callable $send): array {
 		if (in_array($source, self::ALLOWED_SOURCES, true) === false) {
 			return $this->rejectUnknownSource();
 		}
 
 		$this->targetSource = $source;
 		try {
-			return $this->send(path: $path, options: ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)]);
+			return $send();
 		} finally {
 			// Reset to the advertised default so a later contract caller
 			// (health/probe) never inherits a stale per-call source.
 			$this->targetSource = self::SOURCE_ID;
 		}
-	}//end dispatch()
+	}//end sendThrough()
 
 	/**
 	 * Refuse a source slug outside {@see ALLOWED_SOURCES} before the router
@@ -282,7 +287,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 */
 	private function send(string $path, array $options): array {
 		try {
-			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
+			$response = $this->router->call(provider: $this, request: new UpstreamRequest(method: 'POST', path: ltrim($path, '/'), options: $options));
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {

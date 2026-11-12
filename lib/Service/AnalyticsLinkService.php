@@ -224,15 +224,13 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	}//end assertReportLinkable()
 
 	/**
-	 * Create a new NC Analytics report and link it to an OR object.
+	 * Create the drafted NC Analytics report and link it to an OR object.
 	 *
 	 * The new report is a blank group/folder report by default; callers
-	 * may pass a different NC Analytics datasource type integer via
-	 * `$type`.
+	 * may draft a different NC Analytics datasource type integer.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string     $name   New report name.
-	 * @param int|null   $type   NC Analytics datasource type (default group).
+	 * @param LinkTarget           $target The object to link to.
+	 * @param AnalyticsReportDraft $draft  The report name and optional datasource type (default group).
 	 *
 	 * @return AnalyticsLink The persisted link row.
 	 *
@@ -241,15 +239,15 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink {
+	public function createAndLinkReport(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
 		$uid = $this->requireUid();
 
-		$name = trim($name);
+		$name = trim($draft->name);
 		if ($name === '') {
 			throw new Exception('Report name is required', 400);
 		}
 
-		$reportType = ($type ?? self::REPORT_TYPE_GROUP);
+		$reportType = ($draft->type ?? self::REPORT_TYPE_GROUP);
 		$reportId   = $this->createReport(name: $name, reportType: $reportType);
 
 		$info = ($this->fetchReportInfo(reportId: $reportId) ?? $this->draftReportInfo(name: $name, reportType: $reportType));

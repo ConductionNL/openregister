@@ -28,12 +28,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\DependencyCycleFinder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -135,7 +137,14 @@ class ReferenceResolversGoldenTest extends TestCase {
 				],
 				'unresolved' => [],
 			],
-			$this->references->resolveAllWithOutcome(['f' => 1.5, 'e' => ''], $declarations, 'reg', 'org-a')
+			$this->references->resolveReferences(
+				referrer: new ReferringObject(
+					payload: ['f' => 1.5, 'e' => ''],
+					register: 'reg',
+					organisation: 'org-a'
+				),
+				references: $declarations
+			)
 		);
 
 	}//end testDeclarationsWithNothingToResolve()
@@ -148,13 +157,17 @@ class ReferenceResolversGoldenTest extends TestCase {
 	public function testRelatedObjectByIntegerKeyAndRegisterOverride(): void {
 		$this->objectService->expects($this->once())->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = FindCallShape::find(args: $args);
 				$this->assertSame([42, 'other', 'target', false, false], [$args[0], $args[3], $args[4], $args[5], $args[6]]);
 				return $this->entity(organisation: 'org-a');
 			}
 		);
 		$declaration = ['r' => ['schema' => 'target', 'mode' => 'relatedObject', 'field' => 'id', 'register' => 'other']];
 
-		$outcome = $this->references->resolveAllWithOutcome(['id' => 42], $declaration, 'reg', 'org-a');
+		$outcome = $this->references->resolveReferences(
+			referrer: new ReferringObject(payload: ['id' => 42], register: 'reg', organisation: 'org-a'),
+			references: $declaration
+		);
 
 		$self = ['id' => 'ref', 'uuid' => 'ref', 'register' => '1', 'schema' => '2', 'owner' => 'o'];
 		$this->assertSame(['id' => 'ref', 'v' => 1, '@self' => $self], $outcome['refs']['r']);
@@ -179,11 +192,13 @@ class ReferenceResolversGoldenTest extends TestCase {
 		$dated = ['schema' => 's', 'mode' => 'lookup', 'effectiveDate' => ['field' => 'validFrom']];
 		$undated = ['schema' => 's', 'mode' => 'lookup', 'effectiveDate' => ['op' => '<=']];
 
-		$outcome = $this->references->resolveAllWithOutcome(
-			['code' => 'c', '@self' => []],
-			['plain' => $plain, 'dated' => $dated, 'undated' => $undated],
-			null,
-			'org-a'
+		$outcome = $this->references->resolveReferences(
+			referrer: new ReferringObject(
+				payload: ['code' => 'c', '@self' => []],
+				register: null,
+				organisation: 'org-a'
+			),
+			references: ['plain' => $plain, 'dated' => $dated, 'undated' => $undated]
 		);
 
 		$this->assertSame(['refs' => ['plain' => null, 'dated' => null, 'undated' => null], 'unresolved' => ['plain', 'dated', 'undated']], $outcome);
@@ -224,7 +239,7 @@ class ReferenceResolversGoldenTest extends TestCase {
 			'noMetric' => ['schema' => 'scalar'],
 		];
 
-		$outcome = $this->aggregates->resolveAllWithOutcome(['x' => 'xv', '@self' => ['x' => 'self-x']], $declarations, 'reg');
+		$outcome = $this->aggregates->resolveOutcome(referrer: new ReferringObject(payload: ['x' => 'xv', '@self' => ['x' => 'self-x']], register: 'reg'), aggregates: $declarations);
 
 		$this->assertSame(
 			[
@@ -236,7 +251,7 @@ class ReferenceResolversGoldenTest extends TestCase {
 		$this->assertSame(['reg', 'scalar', 'sum', 'h', ['x' => 'self-x', 'y' => 2], null, true], $calls[0]);
 		$this->assertSame(['own', 'grouped', 'count', null, [], ['status'], true], $calls[1]);
 		$this->assertSame(['reg', 'empty', 'count', null, [], null, true], $calls[2]);
-		$this->assertSame(['scalar' => null], $this->aggregates->resolveAll([], ['scalar' => $declarations['scalar']]));
+		$this->assertSame(['scalar' => null], $this->aggregates->resolveAll(new ReferringObject([]), ['scalar' => $declarations['scalar']]));
 
 	}//end testAggregateQueriesAndEnvelopes()
 

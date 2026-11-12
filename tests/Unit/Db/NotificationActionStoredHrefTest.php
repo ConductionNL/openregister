@@ -32,6 +32,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 final class NotificationActionStoredHrefTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -117,14 +119,18 @@ final class NotificationActionStoredHrefTest extends TestCase {
 		);
 
 		return new SchemaMapper(
-			$db,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$logger
+			db: $db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $logger
+			)
 		);
 	}//end mapper()
 }//end class

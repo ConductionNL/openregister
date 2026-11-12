@@ -253,7 +253,7 @@ final class ServiceHoursDeclaration {
 	 * @return int|null The ISO number, or null.
 	 */
 	private static function isoWeekday(mixed $weekday): ?int {
-		if (is_int($weekday) === true || (is_string($weekday) === true && ctype_digit($weekday) === true)) {
+		if (self::isWeekdayNumber(weekday: $weekday) === true) {
 			return self::isoNumber(number: (int)$weekday);
 		}
 
@@ -263,6 +263,17 @@ final class ServiceHoursDeclaration {
 
 		return (ServiceHours::WEEKDAYS[strtolower(trim($weekday))] ?? null);
 	}//end isoWeekday()
+
+	/**
+	 * Whether a weekday is written as a number: an int or a string of digits.
+	 *
+	 * @param mixed $weekday The declared weekday.
+	 *
+	 * @return bool
+	 */
+	private static function isWeekdayNumber(mixed $weekday): bool {
+		return is_int($weekday) === true || (is_string($weekday) === true && ctype_digit($weekday) === true);
+	}//end isWeekdayNumber()
 
 	/**
 	 * A weekday number, when it is one.

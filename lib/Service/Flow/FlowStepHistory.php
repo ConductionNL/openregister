@@ -133,55 +133,101 @@ class FlowStepHistory {
 			return;
 		}
 
-		$runUuid = (string)$run->getUuid();
-
 		// The SAME computation the attribution used before the walk. One method,
 		// so the number an audit row was stamped with and the number its step row
 		// is given cannot drift apart.
-		$sequence = $this->baseFor(runUuid: $runUuid);
+		$sequence = $this->baseFor(runUuid: (string)$run->getUuid());
 
-		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			// A firing committed by FlowRunCommit already has its step row,
-			// written inside the firing's own transaction at the stream's
-			// position. Writing it again here would double every firing.
-			if (($entry['recorded'] ?? false) === true) {
-				continue;
-			}
-
-			$step = new FlowRunStep();
-			$step->setRunUuid($runUuid);
-			$step->setFlowId((string)$run->getFlowId());
-			$step->setNodeId((string)($entry['transition'] ?? ''));
-			$step->setNodeType(($entry['type'] ?? null));
+		foreach (self::unrecorded(entries: $entries) as $entry) {
+			$step = self::stepFor(run: $run, entry: $entry);
 			$step->setSequence($sequence);
-			// Branch identity when the walk knew it (a suspension, a stop, a
-			// terminal failure on a stream); a row from a pre-stream walk
-			// carries the root path, the single implicit stream.
-			$step->setStreamId(($entry['streamId'] ?? null));
-			$step->setOrdinalPath((string)($entry['ordinalPath'] ?? FlowStream::ROOT_PATH));
-			$step->setStatus((string)($entry['status'] ?? 'unknown'));
-			$step->setDurationMs(($entry['durationMs'] ?? null));
-			$step->setCreated(new DateTime());
-			$step->setFinished(new DateTime());
-			FlowStepOutcome::stamp(step: $step, entry: $entry);
+			self::describeOutcome(step: $step, entry: $entry);
 
-			try {
-				$this->steps->insert($step);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: '[FlowStepHistory] Could not record a step row for run ' . $runUuid . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-
+			$this->insertStep(step: $step);
 			$this->hopAudit?->record(run: $run, step: $step);
 
 			$sequence++;
-		}//end foreach
+		}
 
 	}//end record()
+
+	/**
+	 * The entries that still need a step row, in order.
+	 *
+	 * @param array<int, mixed> $entries The engine log entries for this segment.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed entries not yet recorded.
+	 */
+	private static function unrecorded(array $entries): array {
+		return array_values(
+			array_filter(
+				$entries,
+				// A firing committed by FlowRunCommit already has its step row,
+				// written inside the firing's own transaction at the stream's
+				// position. Writing it again here would double every firing.
+				static fn ($entry): bool => is_array($entry) === true && ($entry['recorded'] ?? false) !== true
+			)
+		);
+
+	}//end unrecorded()
+
+	/**
+	 * A new step row for one entry of this run, naming the node it executed.
+	 *
+	 * @param FlowRun              $run   The run the step belongs to.
+	 * @param array<string, mixed> $entry The engine log entry.
+	 *
+	 * @return FlowRunStep The step, not yet numbered or stored.
+	 */
+	private static function stepFor(FlowRun $run, array $entry): FlowRunStep {
+		$step = new FlowRunStep();
+		$step->setRunUuid((string)$run->getUuid());
+		$step->setFlowId((string)$run->getFlowId());
+		$step->setNodeId((string)($entry['transition'] ?? ''));
+		$step->setNodeType(($entry['type'] ?? null));
+
+		return $step;
+
+	}//end stepFor()
+
+	/**
+	 * Record where the step ran, how it ended and how long it took.
+	 *
+	 * @param FlowRunStep          $step  The step.
+	 * @param array<string, mixed> $entry The engine log entry.
+	 *
+	 * @return void
+	 */
+	private static function describeOutcome(FlowRunStep $step, array $entry): void {
+		// Branch identity when the walk knew it (a suspension, a stop, a
+		// terminal failure on a stream); a row from a pre-stream walk
+		// carries the root path, the single implicit stream.
+		$step->setStreamId(($entry['streamId'] ?? null));
+		$step->setOrdinalPath((string)($entry['ordinalPath'] ?? FlowStream::ROOT_PATH));
+		$step->setStatus((string)($entry['status'] ?? 'unknown'));
+		$step->setDurationMs(($entry['durationMs'] ?? null));
+		$step->setCreated(new DateTime());
+		$step->setFinished(new DateTime());
+		FlowStepOutcome::stamp(step: $step, entry: $entry);
+
+	}//end describeOutcome()
+
+	/**
+	 * Store the step row; a row that cannot be written is logged, never fatal to the run.
+	 *
+	 * @param FlowRunStep $step The step.
+	 *
+	 * @return void
+	 */
+	private function insertStep(FlowRunStep $step): void {
+		try {
+			$this->steps->insert($step);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowStepHistory] Could not record a step row for run ' . $step->getRunUuid() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+	}//end insertStep()
 }//end class

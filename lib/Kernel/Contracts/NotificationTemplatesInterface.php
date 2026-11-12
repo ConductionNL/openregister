@@ -90,15 +90,14 @@ interface NotificationTemplatesInterface {
 	 * itself; what it must never do is print a sentence that reads like the
 	 * template somebody forgot to write, because then nobody finds out.
 	 *
-	 * @param string $event The event name.
-	 * @param string|null $locale The reader's locale, or null for the default.
-	 * @param array<string, mixed> $variables Values for the template's variables.
+	 * @param TemplateRendering $rendering The event name, the reader's locale (null for the default)
+	 *                                     and the values for the template's variables.
 	 *
 	 * @return array{subject: string, body: string}|null The rendered text, or null when the event has no template.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
-	public function render(string $event, ?string $locale, array $variables = []): ?array;
+	public function renderFor(TemplateRendering $rendering): ?array;
 
 	/**
 	 * The template that applies for one event, the edit winning over the shipped text.

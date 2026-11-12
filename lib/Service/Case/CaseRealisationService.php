@@ -37,14 +37,12 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Creates, reads and closes realisations.
@@ -52,35 +50,6 @@ use Throwable;
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
  */
 class CaseRealisationService {
-	/**
-	 * The task lifecycle (its trusted creation path).
-	 *
-	 * @var TaskServiceInterface
-	 */
-	private readonly TaskServiceInterface $tasks;
-
-	/**
-	 * The task table, for the terminal-outcome read.
-	 *
-	 * @var TaskMapper
-	 */
-	private readonly TaskMapper $taskRows;
-
-	/**
-	 * The one queue funnel.
-	 *
-	 * @var FlowRunServiceInterface
-	 */
-	private readonly FlowRunServiceInterface $runs;
-
-	/**
-	 * The run table, for the terminal-outcome read.
-	 *
-	 * @var FlowRunMapperInterface
-	 */
-	private readonly FlowRunMapperInterface $runRows;
-
-
 	/**
 	 * The trigger name a stage-queued run carries.
 	 */
@@ -94,15 +63,10 @@ class CaseRealisationService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		CaseRealisationTasks $tasks,
-		CaseRealisationRuns $runs,
+		private readonly CaseRealisationTasks $tasks,
+		private readonly CaseRealisationRuns $runs,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->tasks    = $tasks->tasks;
-		$this->taskRows = $tasks->taskRows;
-		$this->runs     = $runs->runs;
-		$this->runRows  = $runs->runRows;
-
 	}//end __construct()
 
 	/**
@@ -123,10 +87,9 @@ class CaseRealisationService {
 			return;
 		}
 
-		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
 		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
-		if ($runnable === true && $flow !== '') {
-			$this->realiseAsRun(item: $item, flow: $flow, actor: $actor);
+		if ($runnable === true && self::flowOf(item: $item) !== '') {
+			$this->realiseAsRun(item: $item, actor: $actor);
 
 			return;
 		}
@@ -203,7 +166,7 @@ class CaseRealisationService {
 		}
 
 		if ($item->getRealisationKind() === CaseItem::REALISATION_TASK) {
-			$this->terminateTask(item: $item, uuid: $uuid, reason: $reason);
+			$this->terminateTask(item: $item, reason: $reason);
 
 			return;
 		}
@@ -294,7 +257,7 @@ class CaseRealisationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	private function realiseAsTask(CaseItem $item, string $actor): void {
-		$task = $this->tasks->import(data: $this->taskDataFor(item: $item, actor: $actor), actor: $actor);
+		$task = $this->tasks->tasks->import(data: $this->taskDataFor(item: $item, actor: $actor), actor: $actor);
 		$item->setRealisationKind(CaseItem::REALISATION_TASK);
 		$item->setRealisationUuid($task->getUuid());
 	}//end realiseAsTask()
@@ -311,29 +274,41 @@ class CaseRealisationService {
 	 * time); a flow that declares none is refused as unattributed, loudly,
 	 * rather than run as a label.
 	 *
-	 * @param CaseItem $item The item entering active.
-	 * @param string $flow The flow it is bound to.
+	 * @param CaseItem $item The item entering active; the plan's settings name its flow.
 	 * @param string $actor The identity the realisation is created by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function realiseAsRun(CaseItem $item, string $flow, string $actor): void {
-		$run = $this->runs->queue(
-			flowId: $flow,
-			subject: [
-				'uuid' => (string)$item->getObjectUuid(),
-				'register' => (string)$item->getRegisterId(),
-				'schema' => (string)$item->getSchemaId(),
-			],
-			trigger: self::RUN_TRIGGER,
-			context: ['caseItem' => (string)$item->getUuid()],
-			user: $this->runUser(actor: $actor)
+	private function realiseAsRun(CaseItem $item, string $actor): void {
+		$run = $this->runs->runs->queueRun(
+			flowId: self::flowOf(item: $item),
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => (string)$item->getObjectUuid(),
+					'register' => (string)$item->getRegisterId(),
+					'schema' => (string)$item->getSchemaId(),
+				],
+				trigger: self::RUN_TRIGGER,
+				context: ['caseItem' => (string)$item->getUuid()],
+				user: $this->runUser(actor: $actor)
+			)
 		);
 		$item->setRealisationKind(CaseItem::REALISATION_RUN);
 		$item->setRealisationUuid($run->getUuid());
 	}//end realiseAsRun()
+
+	/**
+	 * The flow the plan's settings name for this item, '' when none.
+	 *
+	 * @param CaseItem $item The item.
+	 *
+	 * @return string The flow id, trimmed.
+	 */
+	private static function flowOf(CaseItem $item): string {
+		return trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
+	}//end flowOf()
 
 	/**
 	 * The user a run is queued for: the actor when it is an account, nobody for an audit label.
@@ -366,11 +341,11 @@ class CaseRealisationService {
 	 */
 	private function outcomeOf(CaseItem $item, string $uuid): ?string {
 		if ($item->getRealisationKind() === CaseItem::REALISATION_TASK) {
-			return $this->outcomeOfTask(task: $this->taskRows->findByUuid(uuid: $uuid));
+			return $this->outcomeOfTask(task: $this->tasks->taskRows->findByUuid(uuid: $uuid));
 		}
 
 		if ($item->getRealisationKind() === CaseItem::REALISATION_RUN) {
-			return $this->outcomeOfRun(run: $this->runRows->findByUuid(uuid: $uuid));
+			return $this->outcomeOfRun(run: $this->runs->runRows->findByUuid(uuid: $uuid));
 		}
 
 		return null;
@@ -379,8 +354,7 @@ class CaseRealisationService {
 	/**
 	 * Terminate a task realisation as moot; one that is gone needs nothing.
 	 *
-	 * @param CaseItem $item The exited item.
-	 * @param string $uuid The task's uuid.
+	 * @param CaseItem $item The exited item, realised by a task.
 	 * @param string $reason Why, recorded on the task and its audit.
 	 *
 	 * @return void
@@ -389,9 +363,11 @@ class CaseRealisationService {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function terminateTask(CaseItem $item, string $uuid, string $reason): void {
+	private function terminateTask(CaseItem $item, string $reason): void {
+		$uuid = trim((string)$item->getRealisationUuid());
 		try {
-			$this->tasks->terminateAsMoot(uuid: $uuid, reason: $reason, source: sprintf('case-item:%s', (string)$item->getUuid()));
+			$trigger = new TaskTrigger(source: sprintf('case-item:%s', (string)$item->getUuid()), reason: $reason);
+			$this->tasks->tasks->terminateAsMoot(uuid: $uuid, trigger: $trigger);
 		} catch (DoesNotExistException) {
 			// Nothing left to terminate.
 			return;

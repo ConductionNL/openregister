@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Identity;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Gdpr\Seam\SeamStatus;
+use OCA\OpenRegister\Service\Gdpr\Seam\SeamStatusSet;
 
 /**
  * The three-state result of verifying a data-subject's identity.
@@ -85,7 +85,7 @@ final class IdentityVerifyResult {
 		private readonly string $providerId,
 		private readonly ?string $message = null,
 	) {
-		SeamStatus::assertAllowed(resultName: 'IdentityVerifyResult', status: $status, allowed: self::ALLOWED);
+		(new SeamStatusSet(resultName: 'IdentityVerifyResult', allowed: self::ALLOWED))->assert(status: $status);
 	}//end __construct()
 
 	/**

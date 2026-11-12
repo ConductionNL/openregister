@@ -173,7 +173,8 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->console,
 			$this->jobs,
 			$this->alerts,
-			$this->session($uid)
+			$this->session($uid),
+			$this->createMock(\OCP\IGroupManager::class)
 		);
 	}//end consoleController()
 
@@ -265,9 +266,8 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		$this->jobs->method('runs')->willReturnCallback(
 			fn (
 				JobRunFilter $filter,
-				int $limit,
-				int $offset
-			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $limit, $offset]
+				\OCA\OpenRegister\Kernel\Contracts\ListQuery $page
+			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $page->limit, $page->offset]
 		);
 		$this->assertSame(
 			['J', 'failed', 3, 10, 20],
@@ -366,7 +366,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			['ok' => 1],
 			$this->throwException(new ConsistencyCheckWouldWriteException('wrote', 'probe-x'))
 		);
-		$c = OperationsConsistencyControllerFactory::create('openregister', $this->request([]), $this->check, $this->repair, $this->session('admin'));
+		$c = OperationsConsistencyControllerFactory::create($this->request([]), $this->check, $this->repair, $this->session('admin'));
 		$this->assertSame(['ok' => 1], $c->consistency()->getData());
 		$r = $c->consistency();
 		$this->assertSame([500, ['error' => 'would-write', 'probe' => 'probe-x', 'message' => 'wrote']], [$r->getStatus(), $r->getData()]);
@@ -394,7 +394,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			return ['plan' => $slug];
 		});
 		$c = OperationsConsistencyControllerFactory::create(
-			'openregister',
 			$this->request(['check' => 'orphans']),
 			$this->check,
 			$this->repair,
@@ -402,7 +401,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		);
 		$this->assertSame([200, ['plan' => 'orphans']], [$c->repairPlan()->getStatus(), $c->repairPlan()->getData()]);
 		$c = OperationsConsistencyControllerFactory::create(
-			'openregister',
 			$this->request(['check' => 'bad']),
 			$this->check,
 			$this->repair,
@@ -427,7 +425,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			return [$slug, $actor];
 		});
 		$c = OperationsConsistencyControllerFactory::create(
-			'openregister',
 			$this->request(['check' => 'orphans'], 'POST'),
 			$this->check,
 			$this->repair,
@@ -435,7 +432,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		);
 		$this->assertSame(['orphans', 'root'], $c->repair()->getData());
 		$c = OperationsConsistencyControllerFactory::create(
-			'openregister',
 			$this->request(['check' => 'orphans'], 'POST'),
 			$this->check,
 			$this->repair,
@@ -443,7 +439,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		);
 		$this->assertSame(['orphans', ''], $c->repair()->getData());
 		$c = OperationsConsistencyControllerFactory::create(
-			'openregister',
 			$this->request(['check' => 'bad'], 'POST'),
 			$this->check,
 			$this->repair,
@@ -472,7 +467,6 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			array $params,
 			?string $uid
 		) => OperationsMaintenanceControllerFactory::create(
-			'openregister',
 			$this->request($params, $verb),
 			$this->maintenance,
 			$this->bundle,

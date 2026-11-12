@@ -83,6 +83,30 @@ class RbacAccessCall {
 	}//end __construct()
 
 	/**
+	 * Set the CRUD action this call checks.
+	 *
+	 * @param string $action The action (read, create, update, delete).
+	 *
+	 * @return static This call.
+	 */
+	public function forAction(string $action): static {
+		$this->action = $action;
+		return $this;
+	}//end forAction()
+
+	/**
+	 * Set the bare magic table this call reads, or null.
+	 *
+	 * @param string|null $tableName The table, so a `_status` column it lacks is left out of the draft predicate.
+	 *
+	 * @return static This call.
+	 */
+	public function onTable(?string $tableName): static {
+		$this->tableName = $tableName;
+		return $this;
+	}//end onTable()
+
+	/**
 	 * The rule-key columns of the schema, qualified with this call's prefix.
 	 *
 	 * @return RuleColumns The columns.

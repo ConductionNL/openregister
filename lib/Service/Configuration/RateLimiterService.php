@@ -14,7 +14,7 @@
  * Two limiter shapes:
  *   - `consumeFixedWindow()` — "1 action per `$windowSeconds`" (used by the POST submission
  *     limiter, task 1.6).
- *   - `consumeDistinctKeyBudget()` — "at most `$maxKeys` distinct sub-keys per rolling
+ *   - `consumeFromBudget()` — "at most `$maxKeys` distinct sub-keys per rolling
  *     `$windowSeconds`" (used by the GET cache-miss limiter, task 1.19).
  *
  * Both return `null` when within budget and an `int` (whole seconds until the window
@@ -137,40 +137,38 @@ class RateLimiterService implements RateLimiterServiceInterface {
 	}//end markFixedWindow()
 
 	/**
-	 * Distinct-key-budget limiter: at most `$maxKeys` distinct `$distinctKey` values seen for
-	 * the given `$bucketKey` within a rolling `$windowSeconds`. Used by the GET cache-miss
+	 * Distinct-key-budget limiter: at most `maxKeys` distinct `$distinctKey` values seen for
+	 * the budget's `bucketKey` within a rolling `windowSeconds`. Used by the GET cache-miss
 	 * limiter — each distinct cache-key tuple counts once, repeats are free, and the window
 	 * rolls over once it expires.
 	 *
 	 * The caller does NOT need a separate "mark" step — this method records the key as part of
 	 * the same call when the budget is not yet exhausted.
 	 *
-	 * @param string $bucketKey Caller-namespaced bucket key (e.g. `getmiss:<uid>`).
-	 * @param string $distinctKey The value being counted (e.g. the read cache key).
-	 * @param int $maxKeys Maximum distinct values permitted within the window.
-	 * @param int $windowSeconds Rolling window length.
+	 * @param DistinctKeyBudget $budget      The bucket, its maximum and its window.
+	 * @param string            $distinctKey The value being counted (e.g. the read cache key).
 	 *
 	 * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
 	 */
-	public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int {
-		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($bucketKey), windowSeconds: $windowSeconds);
+	public function consumeFromBudget(DistinctKeyBudget $budget, string $distinctKey): ?int {
+		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($budget->bucketKey), windowSeconds: $budget->windowSeconds);
 
 		$keys = (array)($bucket['keys'] ?? []);
 		if (in_array($distinctKey, $keys, true) === false) {
 			$keys[] = $distinctKey;
 		}
 
-		if (count($keys) > $maxKeys) {
-			return max(1, $windowSeconds - $age);
+		if (count($keys) > $budget->maxKeys) {
+			return max(1, $budget->windowSeconds - $age);
 		}
 
 		$bucket['keys'] = $keys;
-		$this->cache->set($bucketKey, $bucket, $windowSeconds);
+		$this->cache->set($budget->bucketKey, $bucket, $budget->windowSeconds);
 		return null;
-	}//end consumeDistinctKeyBudget()
+	}//end consumeFromBudget()
 
 	/**
 	 * The stored bucket and its age, or a fresh bucket of age 0 when none is

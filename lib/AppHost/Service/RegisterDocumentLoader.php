@@ -111,6 +111,7 @@ class RegisterDocumentLoader implements RegisterDocumentLoaderInterface {
 
 		$version = (string)($configData['info']['version'] ?? '0.0.0');
 		if ($fragmentSig !== '') {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			$version .= '+frag.' . substr(md5($fragmentSig), 0, 8);
 		}
 
@@ -166,6 +167,7 @@ class RegisterDocumentLoader implements RegisterDocumentLoaderInterface {
 			}
 
 			$base = self::deepMergeConfig(base: $base, overlay: $fragmentData);
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
 		}
 

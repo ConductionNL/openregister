@@ -142,20 +142,36 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	 */
 	private function describeAll(Schema $schema, string $language): array {
 		$vocabulary = $this->vocabularyOf(schema: $schema);
+
+		$descriptors = [];
+		foreach (self::referencePropertiesOf(schema: $schema) as $name => $property) {
+			$descriptors[(string)$name] = $this->describe(
+				run: new DescribeRun(name: (string)$name, property: $property, language: $language),
+				vocabulary: $vocabulary
+			);
+		}
+
+		return $descriptors;
+	}//end describeAll()
+
+	/**
+	 * The schema's properties that hold a reference, keyed by name, in declaration order.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int|string, mixed> The reference properties; none when the schema's properties are unreadable.
+	 */
+	private static function referencePropertiesOf(Schema $schema): array {
 		$properties = ($schema->getProperties() ?? []);
 		if (is_array($properties) === false) {
 			return [];
 		}
 
-		$descriptors = [];
-		foreach ($properties as $name => $property) {
-			if (RelationAnnotationValidator::isReferenceProperty(property: $property) === true) {
-				$descriptors[(string)$name] = $this->describe(name: (string)$name, property: $property, vocabulary: $vocabulary, language: $language);
-			}
-		}
-
-		return $descriptors;
-	}//end describeAll()
+		return array_filter(
+			$properties,
+			static fn ($property): bool => RelationAnnotationValidator::isReferenceProperty(property: $property) === true
+		);
+	}//end referencePropertiesOf()
 
 	/**
 	 * One property's descriptor, or null when the property holds no reference.
@@ -196,15 +212,23 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	public function row(?array $descriptor, string $direction, ?string $path = null): array {
 		$descriptor = ($descriptor ?? self::fallbackDescriptor(path: $path));
 
-		return array_merge(
-			$descriptor,
-			[
-				'direction' => $direction,
-				'displayLabel' => self::displayLabel(descriptor: $descriptor, direction: $direction),
-				'path' => $path,
-			]
-		);
+		return array_merge($descriptor, self::directionFields(descriptor: $descriptor, direction: $direction) + ['path' => $path]);
 	}//end row()
+
+	/**
+	 * The direction a row is read in and the label that reads it.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor.
+	 * @param string               $direction  One of the DIRECTION_* constants.
+	 *
+	 * @return array{direction: string, displayLabel: mixed} The two fields.
+	 */
+	private static function directionFields(array $descriptor, string $direction): array {
+		return [
+			'direction' => $direction,
+			'displayLabel' => self::displayLabel(descriptor: $descriptor, direction: $direction),
+		];
+	}//end directionFields()
 
 	/**
 	 * The descriptor a row reads under when its property declares nothing resolvable.
@@ -266,17 +290,15 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	/**
 	 * Build one property's descriptor.
 	 *
-	 * @param string $name The property name.
-	 * @param mixed $property The property definition.
+	 * @param DescribeRun                         $run        The property, its name and the language.
 	 * @param array<string, array<string, mixed>> $vocabulary The schema's relation types.
-	 * @param string $language The BCP-47 tag.
 	 *
 	 * @return array<string, mixed> The descriptor.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function describe(string $name, mixed $property, array $vocabulary, string $language): array {
-		$declaration = self::declarationArray(property: $property);
+	private function describe(DescribeRun $run, array $vocabulary): array {
+		$declaration = self::declarationArray(property: $run->property);
 
 		// A `type` resolves only when the vocabulary actually holds it. One
 		// that does not is dropped rather than carried, so a property naming a
@@ -287,33 +309,30 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 		// The property's own declaration wins over the vocabulary entry it
 		// points at, so one property can share a vocabulary and still say
 		// something of its own.
-		$merged = array_merge(self::entryOf(type: $type, vocabulary: $vocabulary), $declaration);
+		$run->merged = array_merge(self::entryOf(type: $type, vocabulary: $vocabulary), $declaration);
 
 		return self::withExposure(
-			descriptor: ['property' => $name, 'type' => $type] + $this->readingOf(name: $name, property: $property, merged: $merged, language: $language),
-			merged: $merged
+			descriptor: ['property' => $run->name, 'type' => $type] + $this->readingOf(run: $run),
+			merged: $run->merged
 		);
 	}//end describe()
 
 	/**
 	 * How a relation reads: its two labels, whether it is symmetric, and what it inherits.
 	 *
-	 * @param string               $name     The property name.
-	 * @param mixed                $property The property definition.
-	 * @param array<string, mixed> $merged   The vocabulary entry under the property's own declaration.
-	 * @param string               $language The BCP-47 tag.
+	 * @param DescribeRun $run The property, with its declaration merged over its vocabulary entry.
 	 *
 	 * @return array{label: string, inverseLabel: string, symmetric: bool, inherits: array<string, string>} The reading.
 	 */
-	private function readingOf(string $name, mixed $property, array $merged, string $language): array {
-		$symmetric = self::symmetricOf(merged: $merged);
-		$labels    = $this->labelsFor(name: $name, property: $property, merged: $merged, language: $language);
+	private function readingOf(DescribeRun $run): array {
+		$symmetric = self::symmetricOf(merged: $run->merged);
+		$labels    = $this->labelsFor(run: $run);
 
 		return [
 			'label' => $labels['label'],
 			'inverseLabel' => $labels['inverse'],
 			'symmetric' => $symmetric,
-			'inherits' => $this->inheritsOf(declaration: $merged),
+			'inherits' => $this->inheritsOf(declaration: $run->merged),
 		];
 	}//end readingOf()
 
@@ -416,23 +435,21 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	 * to nothing would render as a blank chip, and an inverse that did would
 	 * render the other end of the same link as a blank one.
 	 *
-	 * Whether the relation is symmetric is read from `$merged`, the same
-	 * place {@see self::readingOf()} reads it from.
+	 * Whether the relation is symmetric is read from the run's `merged`, the
+	 * same place {@see self::readingOf()} reads it from.
 	 *
-	 * @param string               $name     The property name.
-	 * @param mixed                $property The property definition.
-	 * @param array<string, mixed> $merged   The vocabulary entry under the property's own declaration.
-	 * @param string               $language The BCP-47 tag.
+	 * @param DescribeRun $run The property, with its declaration merged over its vocabulary entry.
 	 *
 	 * @return array{label: string, inverse: string} The two labels.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function labelsFor(string $name, mixed $property, array $merged, string $language): array {
-		$label = ($this->values->text(value: ($merged['label'] ?? null), language: $language) ?? $this->values->titleOf(property: $property) ?? $name);
+	private function labelsFor(DescribeRun $run): array {
+		$label = ($this->values->text(value: ($run->merged['label'] ?? null), language: $run->language)
+			?? $this->values->titleOf(property: $run->property) ?? $run->name);
 
-		$inverse = $this->values->text(value: ($merged['inverseLabel'] ?? null), language: $language);
-		if (self::symmetricOf(merged: $merged) === true) {
+		$inverse = $this->values->text(value: ($run->merged['inverseLabel'] ?? null), language: $run->language);
+		if (self::symmetricOf(merged: $run->merged) === true) {
 			// A symmetric relation reads the same from both ends. The save-time
 			// refusal keeps an inverseLabel out of a symmetric declaration, so
 			// this only has to hold for rows written before that refusal.

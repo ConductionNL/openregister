@@ -36,6 +36,9 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueText;
 
 /**
  * Runs createIssue() (which token is used, refused when there is none, the
@@ -174,7 +177,7 @@ class GitHubHandlerCredentialsGoldenTest extends TestCase {
 		);
 
 		try {
-			$out = ['returned' => $handler->$method(...$arguments)];
+			$out = ['returned' => $handler->$method(...self::contractArguments(method: $method, arguments: $arguments))];
 		} catch (\Throwable $e) {
 			$out = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}
@@ -306,4 +309,25 @@ class GitHubHandlerCredentialsGoldenTest extends TestCase {
 		$response->method('getBody')->willReturn($bodies[$kind][1]);
 		return $response;
 	}//end response()
+
+	/**
+	 * The recorded positional arguments in the shape the client contract takes.
+	 *
+	 * @param string            $method    The handler method.
+	 * @param array<int, mixed> $arguments The recorded arguments.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function contractArguments(string $method, array $arguments): array {
+		return match ($method) {
+			'createIssue' => [
+				new GitHubIssueSubmission(owner: $arguments[0], repo: $arguments[1], userId: $arguments[5], specRef: $arguments[4]),
+				new GitHubIssueText(title: $arguments[2], body: $arguments[3]),
+			],
+			'getFileSha' => [
+				new GitHubFileLocation(owner: $arguments[0], repo: $arguments[1], path: $arguments[2], branch: ($arguments[3] ?? 'main')),
+			],
+			default => $arguments,
+		};
+	}//end contractArguments()
 }//end class

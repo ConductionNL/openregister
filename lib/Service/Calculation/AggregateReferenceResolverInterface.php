@@ -37,13 +37,12 @@ interface AggregateReferenceResolverInterface {
 	 * a caller that must not read that null as a real value (the rematerialise
 	 * command: live pass O9 counted 205 rows "unchanged") reads `failed`.
 	 *
-	 * @param array<string, mixed> $payload    The object payload.
+	 * @param ReferringObject      $referrer   The saving object: payload and register.
 	 * @param array<string, mixed> $aggregates The declared aggregate-references.
-	 * @param mixed                $registerRef The saving object's register.
 	 *
 	 * @return array{values: array<string, mixed>, failed: array<string, string>} Values and failures by name.
 	 *
 	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
 	 */
-	public function resolveAllWithOutcome(array $payload, array $aggregates, mixed $registerRef = null): array;
+	public function resolveOutcome(ReferringObject $referrer, array $aggregates): array;
 }//end interface

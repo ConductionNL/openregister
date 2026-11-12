@@ -19,8 +19,6 @@
 namespace OCA\OpenRegister\Search\Service\GraphQL\Scalar;
 
 use GraphQL\Error\Error;
-use GraphQL\Language\AST\StringValueNode;
-use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Utils\Utils;
 
 /**
@@ -29,9 +27,8 @@ use GraphQL\Utils\Utils;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class DateTimeType extends ScalarType {
+class DateTimeType extends FormattedStringType {
 
 	/**
 	 * The name of this scalar type.
@@ -74,61 +71,28 @@ class DateTimeType extends ScalarType {
 	}//end serialize()
 
 	/**
-	 * Parses a value from client input.
+	 * The noun naming a value of this format in the invalid-value message.
 	 *
-	 * @param mixed $value The value to parse
-	 *
-	 * @return string The validated ISO 8601 string
-	 *
-	 * @throws Error If the value is not a valid ISO 8601 date-time
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 * @return string The noun.
 	 */
-	public function parseValue(mixed $value): string {
-		if (is_string($value) === false) {
-			throw new Error(
-				'DateTime cannot represent non-string value: ' . Utils::printSafe($value)
-			);
-		}
-
-		$dateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $value);
-		if ($dateTime === false) {
-			$dateTime = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s', $value);
-		}
-
-		if ($dateTime === false) {
-			$dateTime = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
-		}
-
-		if ($dateTime === false) {
-			throw new Error(
-				'DateTime cannot represent invalid date-time value: ' . $value
-			);
-		}
-
-		return $value;
-	}//end parseValue()
+	protected function formatNoun(): string {
+		return 'date-time';
+	}//end formatNoun()
 
 	/**
-	 * Parses a literal AST value.
+	 * Whether a string is an ISO 8601 date-time: ATOM, a local date-time, or a date.
 	 *
-	 * @param \GraphQL\Language\AST\Node $valueNode The AST node
-	 * @param array|null $variables Variables map
+	 * @param string $value The string.
 	 *
-	 * @return string The parsed value
-	 *
-	 * @throws Error If the node is not a string
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 * @return bool True when it is.
 	 */
-	public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables = null): string {
-		if ($valueNode instanceof StringValueNode === false) {
-			throw new Error(
-				'DateTime cannot represent non-string value',
-				$valueNode
-			);
+	protected function isWellFormed(string $value): bool {
+		foreach ([\DateTimeInterface::ATOM, 'Y-m-d\TH:i:s', 'Y-m-d'] as $format) {
+			if (\DateTimeImmutable::createFromFormat($format, $value) !== false) {
+				return true;
+			}
 		}
 
-		return $this->parseValue(value: $valueNode->value);
-	}//end parseLiteral()
+		return false;
+	}//end isWellFormed()
 }//end class

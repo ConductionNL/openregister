@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
@@ -44,9 +47,28 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotesController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\NoteEditForbiddenException
+ * @uses \OCA\OpenRegister\Exception\NoteLockedException
+ * @uses \OCA\OpenRegister\Exception\NoteWriteRefusedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\AddressedObject
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotePath
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NoteStep
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ObjectNote
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
+ * @uses \OCA\OpenRegister\Notifications\Service\NoteVisibilityMove
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite
  */
 class A26NotesControllerGoldenTest extends TestCase {
 
@@ -142,7 +164,7 @@ class A26NotesControllerGoldenTest extends TestCase {
 			visibility: $this->visibility(),
 			timeline: $this->timeline(),
 		);
-		$controller = new NotesController('openregister', $request, $services);
+		$controller = new NotesController($request, $services);
 		try {
 			$response = $controller->$action(...$args);
 		} catch (\Throwable $e) {
@@ -166,13 +188,14 @@ class A26NotesControllerGoldenTest extends TestCase {
 
 	private function noteService(): NoteService {
 		$notes = $this->createMock(NoteService::class);
-		$notes->method('getNotesForObject')->willReturnCallback(function (string $objectUuid, int $limit, int $offset, ?string $visibility = null): array {
-			$this->log(call: 'getNotesForObject', args: [$objectUuid, $limit, $offset, $visibility]);
+		$notes->method('listNotes')->willReturnCallback(function (ObjectNotesQuery $query): array {
+			$this->log(call: 'getNotesForObject', args: [$query->objectUuid, $query->page->limit, $query->page->offset, $query->visibility]);
 			$this->failWhen(knob: 'list', call: 'list');
 			return [['id' => 1, 'visibility' => 'public']];
 		});
-		$notes->method('createNote')->willReturnCallback(function (string $objectUuid, string $message, ?string $visibility = null): array {
-			$this->log(call: 'createNote', args: [$objectUuid, $message, $visibility]);
+		$notes->method('createNote')->willReturnCallback(function (NoteDraft $draft): array {
+			$message = $draft->message;
+			$this->log(call: 'createNote', args: [$draft->objectUuid, $message, $draft->visibility]);
 			$this->failWhen(knob: 'create', call: 'create');
 			return ['id' => 12, 'message' => $message];
 		});
@@ -185,8 +208,9 @@ class A26NotesControllerGoldenTest extends TestCase {
 			$this->failWhen(knob: 'getNote', call: 'getNote');
 			return ['id' => $noteId, 'visibility' => 'internal'];
 		});
-		$notes->method('updateNote')->willReturnCallback(function (int $noteId, ?string $message = null, ?string $visibility = null, bool $mayManage = false): array {
-			$this->log(call: 'updateNote', args: [$noteId, $message, $visibility, $mayManage]);
+		$notes->method('editNote')->willReturnCallback(function (int $noteId, NoteEdit $edit): array {
+			$visibility = $edit->visibility;
+			$this->log(call: 'updateNote', args: [$noteId, $edit->message, $visibility, $edit->mayManage]);
 			match ($this->knobs['update'] ?? null) {
 				'locked'    => throw new NoteLockedException(12),
 				'forbidden' => throw new NoteEditForbiddenException(),
@@ -194,7 +218,7 @@ class A26NotesControllerGoldenTest extends TestCase {
 			};
 			return ['id' => $noteId, 'visibility' => $visibility ?? 'internal', 'versionCount' => '3'];
 		});
-		$notes->method('auditEdit')->willReturnCallback(fn (mixed $object, int $noteId, int $versions): bool => $this->log(call: 'auditEdit', args: [$noteId, $versions], result: true));
+		$notes->method('auditEdit')->willReturnCallback(fn (mixed $object, array $note): bool => $this->log(call: 'auditEdit', args: [$note['id'], (int)$note['versionCount']], result: true));
 		$notes->method('noteVersions')->willReturnCallback(function (int $noteId): array {
 			$this->log(call: 'noteVersions', args: [$noteId]);
 			$this->failWhen(knob: 'versions', call: 'versions');
@@ -243,7 +267,9 @@ class A26NotesControllerGoldenTest extends TestCase {
 			return $this->log(call: 'effectiveFilter', args: [$requested], result: $filter);
 		});
 		$visibility->method('filterRows')->willReturnCallback(fn (array $rows, ?string $filter): array => $this->log(call: 'filterRows', args: [$rows, $filter], result: ($this->knobs['filter'] ?? null) === 'drop' ? [] : $rows));
-		$visibility->method('auditVisibilityChange')->willReturnCallback(fn (mixed $object, int $noteId, string $from, string $to): bool => $this->log(call: 'auditVisibilityChange', args: [$noteId, $from, $to], result: true));
+		$visibility->method('auditNoteMove')->willReturnCallback(
+			fn (mixed $object, NoteVisibilityMove $move): bool => $this->log(call: 'auditVisibilityChange', args: [$move->noteId, $move->from, $move->to], result: true)
+		);
 		return $visibility;
 	}//end visibility()
 

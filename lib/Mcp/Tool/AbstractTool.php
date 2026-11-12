@@ -30,6 +30,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Abstract Tool Base Class
@@ -44,6 +45,15 @@ use ReflectionMethod;
  * @package  OCA\OpenRegister\Tool
  */
 abstract class AbstractTool implements ToolInterface {
+	/**
+	 * The logger method each log level is written with; anything else is info.
+	 *
+	 * @var array<string, string>
+	 */
+	private const LOG_METHODS = [
+		'error' => 'error',
+		'warning' => 'warning',
+	];
 
 	/**
 	 * User session
@@ -69,15 +79,11 @@ abstract class AbstractTool implements ToolInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 */
-	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-	) {
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+	public function __construct(ToolCallTrail $trail) {
+		$this->userSession = $trail->userSession;
+		$this->logger = $trail->logger;
 	}//end __construct()
 
 	/**
@@ -120,23 +126,22 @@ abstract class AbstractTool implements ToolInterface {
 	 * The user context is checked before the function runs; a failure of the
 	 * function is logged and returned as an error result.
 	 *
-	 * @param string       $functionName The snake_case function name
-	 * @param array<mixed> $parameters   The parameters the model sent
-	 * @param string|null  $userId       Explicit user id, if any
+	 * @param ToolCall    $call   The function and the parameters the model sent
+	 * @param string|null $userId Explicit user id, if any
 	 *
 	 * @return array The function result, or an error result
 	 */
-	protected function executeWithUser(string $functionName, array $parameters, ?string $userId): array {
-		$this->log(functionName: $functionName, parameters: $parameters);
+	protected function executeWithUser(ToolCall $call, ?string $userId): array {
+		$this->log(call: $call);
 
 		if ($this->hasUserContext(explicitUserId: $userId) === false) {
 			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
 		}
 
 		try {
-			return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
+			return $this->invokeFunction(functionName: $call->functionName, parameters: $call->parameters);
 		} catch (\Exception $e) {
-			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+			$this->log(call: $call, options: new ToolLogOptions(level: 'error', message: $e->getMessage()));
 			return $this->formatError(message: $e->getMessage());
 		}
 	}//end executeWithUser()
@@ -153,8 +158,70 @@ abstract class AbstractTool implements ToolInterface {
 	protected function invokeFunction(string $functionName, array $parameters): array {
 		$methodName = $this->functionMethod(functionName: $functionName);
 
-		return $this->$methodName(...array_values($parameters));
+		return $this->callMethod(methodName: $methodName, arguments: array_values($parameters));
 	}//end invokeFunction()
+
+	/**
+	 * The signature the model's arguments bind to: the method's own
+	 * parameters, or the constructor of the operation object it takes.
+	 *
+	 * @param string $methodName The camelCase method name
+	 *
+	 * @return ReflectionMethod The binding signature
+	 */
+	protected function bindingTarget(string $methodName): ReflectionMethod {
+		$method    = new ReflectionMethod($this, $methodName);
+		$operation = $this->operationClass(method: $method);
+		if ($operation === null) {
+			return $method;
+		}
+
+		return new ReflectionMethod($operation, '__construct');
+	}//end bindingTarget()
+
+	/**
+	 * Call a tool method with bound arguments, built into its operation
+	 * object first when the method takes one.
+	 *
+	 * @param string       $methodName The camelCase method name
+	 * @param array<mixed> $arguments  The arguments, bound to {@see bindingTarget()}
+	 *
+	 * @return mixed The method's result
+	 */
+	protected function callMethod(string $methodName, array $arguments): mixed {
+		if (method_exists($this, $methodName) === false) {
+			// Reaches __call(), which refuses an unknown function.
+			return $this->$methodName(...$arguments);
+		}
+
+		$operation = $this->operationClass(method: new ReflectionMethod($this, $methodName));
+		if ($operation === null) {
+			return $this->$methodName(...$arguments);
+		}
+
+		return $this->$methodName(new $operation(...$arguments));
+	}//end callMethod()
+
+	/**
+	 * The operation class a tool method takes as its one parameter, if any.
+	 *
+	 * @param ReflectionMethod $method The tool method
+	 *
+	 * @return class-string<ToolOperation>|null The operation class, or null when the method takes its arguments one by one
+	 */
+	private function operationClass(ReflectionMethod $method): ?string {
+		$parameters = $method->getParameters();
+		$type       = null;
+		if (count($parameters) === 1) {
+			$type = $parameters[0]->getType();
+		}
+
+		if ($type instanceof ReflectionNamedType === false || is_subclass_of($type->getName(), ToolOperation::class) === false) {
+			return null;
+		}
+
+		return $type->getName();
+	}//end operationClass()
 
 	/**
 	 * The camelCase method of a snake_case function name, for PSR compliance.
@@ -295,10 +362,8 @@ abstract class AbstractTool implements ToolInterface {
 	 * function name, parameters, agent ID, and user ID. Supports different log levels
 	 * for error tracking and debugging.
 	 *
-	 * @param string $functionName Function being executed
-	 * @param array $parameters Function parameters (will be logged in context)
-	 * @param string $level Log level: 'info', 'warning', or 'error' (default: 'info')
-	 * @param string $message Custom log message (default: 'Executing function')
+	 * @param ToolCall            $call    Function being executed and its parameters (logged in context)
+	 * @param ToolLogOptions|null $options The level and custom message; null logs 'Executing function' at info
 	 *
 	 * @return void
 	 *
@@ -306,72 +371,80 @@ abstract class AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	protected function log(string $functionName, array $parameters, string $level = 'info', string $message = ''): void {
-		$this->writeLog(
-			call: ['function' => $functionName, 'parameters' => $parameters],
-			entry: ['level' => $level, 'message' => $message]
-		);
+	protected function log(ToolCall $call, ?ToolLogOptions $options = null): void {
+		$this->writeLog(call: $call, entry: ($options ?? new ToolLogOptions()));
 	}//end log()
 
 	/**
 	 * Write the log entry of a tool function call.
 	 *
-	 * @param array<string, mixed>  $call  The function name (`function`) and its parameters (`parameters`).
-	 * @param array<string, string> $entry The log level (`level`) and custom message (`message`, empty for the default).
+	 * @param ToolCall       $call  The function and its parameters.
+	 * @param ToolLogOptions $entry The log level and custom message (empty for the default).
 	 *
 	 * @return void
 	 *
 	 * @psalm-suppress PossiblyNullArgument
 	 */
-	private function writeLog(array $call, array $entry): void {
-		// Build context array with tool execution metadata.
-		// Includes tool name, function name, parameters, agent ID, and user ID.
-		$context = [
+	private function writeLog(ToolCall $call, ToolLogOptions $entry): void {
+		$context    = $this->logContext(call: $call);
+		$logMessage = $this->logMessage(call: $call, entry: $entry);
+
+		// Log based on severity level.
+		// Different log levels help filter and prioritize log entries:
+		// errors for critical issues that need attention, warnings for
+		// non-critical issues, info for normal operations (the default level).
+		// Add file and line to context for all log calls.
+		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
+		$method = (self::LOG_METHODS[$entry->level] ?? 'info');
+		$this->logger->{$method}(message: $logMessage, context: $contextWithLocation);
+	}//end writeLog()
+
+	/**
+	 * The tool execution metadata a log entry carries.
+	 *
+	 * Includes tool name, function name, parameters, agent ID, and user ID.
+	 *
+	 * @param ToolCall $call The function call being logged.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function logContext(ToolCall $call): array {
+		return [
 			'file' => __FILE__,
 			'line' => __LINE__,
 			'tool' => $this->getName(),
-			'function' => $call['function'],
-			'parameters' => $call['parameters'],
+			'function' => $call->functionName,
+			'parameters' => $call->parameters,
 			'agent' => $this->agent?->getId(),
 			'user' => $this->getUserId(),
 		];
+	}//end logContext()
 
+	/**
+	 * The log line: class name, tool name, function name and message text.
+	 *
+	 * @param ToolCall        $call  The function call being logged.
+	 * @param ToolLogOptions  $entry The custom message (default: "Executing function").
+	 *
+	 * @return string
+	 */
+	private function logMessage(ToolCall $call, ToolLogOptions $entry): string {
 		// Use custom message if provided, otherwise use default message.
 		$messageText = 'Executing function';
-		if ($entry['message'] !== '') {
-			$messageText = $entry['message'];
+		if ($entry->message !== '') {
+			$messageText = $entry->message;
 		}
 
-		// Format log message with class name, tool name, function name, and message text.
 		$className = (new ReflectionClass($this))->getShortName();
-		$toolName = $this->getName();
-		$logMessage = sprintf(
+		$toolName  = $this->getName();
+		return sprintf(
 			'[%s] %s: %s: %s',
 			$className,
 			$toolName,
-			$call['function'],
+			$call->functionName,
 			$messageText
 		);
-
-		// Log based on severity level.
-		// Different log levels help filter and prioritize log entries.
-		// Add file and line to context for all log calls.
-		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
-		switch ($entry['level']) {
-			case 'error':
-				// Log errors for critical issues that need attention.
-				$this->logger->error(message: $logMessage, context: $contextWithLocation);
-				break;
-			case 'warning':
-				// Log warnings for non-critical issues.
-				$this->logger->warning(message: $logMessage, context: $contextWithLocation);
-				break;
-			default:
-				// Log info for normal operations (default level).
-				$this->logger->info(message: $logMessage, context: $contextWithLocation);
-				break;
-		}
-	}//end writeLog()
+	}//end logMessage()
 
 	/**
 	 * Validate required parameters
@@ -440,16 +513,17 @@ abstract class AbstractTool implements ToolInterface {
 			throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
 		}
 
-		// Steps 3-5: Match the arguments to the method's parameters (named or
-		// positional), apply defaults for (string) null and type-cast the rest.
+		// Steps 3-5: Match the arguments to the method's parameters, or to the
+		// constructor of the operation object it takes (named or positional),
+		// apply defaults for (string) null and type-cast the rest.
 		$coercer = new ToolArgumentCoercer();
 		$typedArguments = $coercer->argumentsFor(
-			method: new ReflectionMethod($this, $camelCaseMethod),
+			method: $this->bindingTarget(methodName: $camelCaseMethod),
 			arguments: $arguments
 		);
 
 		// Step 6: Call the camelCase method with type-cast arguments.
-		$result = $this->$camelCaseMethod(...$typedArguments);
+		$result = $this->callMethod(methodName: $camelCaseMethod, arguments: $typedArguments);
 
 		// Step 7: Convert array results to JSON for LLPhant compatibility.
 		// LLPhant expects tool results to be JSON strings, not PHP arrays.
@@ -460,4 +534,20 @@ abstract class AbstractTool implements ToolInterface {
 		// Return non-array results as-is.
 		return $result;
 	}//end __call()
+
+	/**
+	 * Apply the non-null fields of a patch to an entity through its setters.
+	 *
+	 * @param object               $entity The entity being patched.
+	 * @param array<string, mixed> $fields Setter name → value; null values are left alone.
+	 *
+	 * @return void
+	 */
+	protected static function applySetters(object $entity, array $fields): void {
+		foreach ($fields as $setter => $value) {
+			if ($value !== null) {
+				$entity->$setter($value);
+			}
+		}
+	}//end applySetters()
 }//end class

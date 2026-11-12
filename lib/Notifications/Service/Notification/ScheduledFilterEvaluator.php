@@ -103,17 +103,16 @@ final class ScheduledFilterEvaluator {
 	}//end __construct()
 
 	/**
-	 * Evaluate the filter against the given object data.
+	 * Evaluate the filter against one object's data at one moment.
 	 *
-	 * @param array<string, mixed> $objectData Flat field map (typically `$object->getObject()`).
-	 * @param array<string, mixed> $filter Filter map per the class docblock.
-	 * @param DateTimeImmutable $now Logical "now" for the entire scan pass.
+	 * @param array<string, mixed>  $filter Filter map per the class docblock.
+	 * @param ScheduledFilterTarget $target The object's flat field map and the scan's logical "now".
 	 *
 	 * @return bool True when every entry matches, false otherwise.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function matches(array $objectData, array $filter, DateTimeImmutable $now): bool {
+	public function matchesTarget(array $filter, ScheduledFilterTarget $target): bool {
 		if (count($filter) === 0) {
 			return true;
 		}
@@ -123,8 +122,8 @@ final class ScheduledFilterEvaluator {
 			return false;
 		}
 
-		return $this->nodeMatches(node: $ast, target: new ScheduledFilterTarget(objectData: $objectData, now: $now));
-	}//end matches()
+		return $this->nodeMatches(node: $ast, target: $target);
+	}//end matchesTarget()
 
 	/**
 	 * The filter's AST, or null (logged) when it does not parse.

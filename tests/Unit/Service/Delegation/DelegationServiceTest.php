@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Delegation;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationResolver;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
@@ -133,7 +134,7 @@ class DelegationServiceTest extends TestCase {
 	 */
 	public function testAGrantedDelegationRunsAsTheNamedUser(): void {
 		$result = $this->service(DelegationVerdict::granted($this->grant()))
-			->runAsDelegated('alice', 'mayor', static fn (): string => 'done');
+			->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()), static fn (): string => 'done');
 
 		$this->assertSame('done', $result);
 		$this->assertTrue($this->switched, 'a delegation that permits must actually switch identity');
@@ -151,7 +152,7 @@ class DelegationServiceTest extends TestCase {
 	 */
 	public function testActingAsYourselfDoesNotSwitchIdentity(): void {
 		$result = $this->service(DelegationVerdict::self())
-			->runAsDelegated('alice', 'alice', static fn (): string => 'done');
+			->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'alice', scope: [], now: new DateTime()), static fn (): string => 'done');
 
 		$this->assertSame('done', $result);
 		$this->assertFalse($this->switched);
@@ -178,8 +179,7 @@ class DelegationServiceTest extends TestCase {
 
 		try {
 			$service->runAsDelegated(
-				'alice',
-				'mayor',
+				new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()),
 				static function () use (&$ran): string {
 					$ran = true;
 
@@ -210,7 +210,7 @@ class DelegationServiceTest extends TestCase {
 		);
 
 		try {
-			$service->runAsDelegated('alice', 'mayor', static fn (): string => 'done');
+			$service->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()), static fn (): string => 'done');
 			$this->fail('a denied delegation must throw');
 		} catch (DelegationRefused $e) {
 			$this->assertFalse(
@@ -233,7 +233,7 @@ class DelegationServiceTest extends TestCase {
 		);
 
 		try {
-			$service->runAsDelegated('alice', 'mayor', static fn (): string => 'done');
+			$service->runAsDelegated(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()), static fn (): string => 'done');
 			$this->fail('an ungranted delegation must throw');
 		} catch (DelegationRefused $e) {
 			$this->assertTrue($e->mayRequestConsent());
@@ -260,8 +260,7 @@ class DelegationServiceTest extends TestCase {
 
 		try {
 			$service->runAsDelegated(
-				'alice',
-				'mayor',
+				new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime()),
 				static function () use (&$ran): string {
 					$ran = true;
 
@@ -288,7 +287,7 @@ class DelegationServiceTest extends TestCase {
 	 */
 	public function testVerdictForAnswersWithoutRunningAnything(): void {
 		$verdict = $this->service(DelegationVerdict::granted($this->grant()))
-			->verdictFor('alice', 'mayor', [], new DateTime('2026-08-25 12:00:00'));
+			->verdictFor(new DelegationRequest('alice', 'mayor', [], new DateTime('2026-08-25 12:00:00')));
 
 		$this->assertTrue($verdict->permitted);
 		$this->assertFalse($this->switched);

@@ -106,6 +106,30 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\WriteOnlyPathsDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Support\UnknownFilterKeys
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -232,33 +256,40 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		// for its `array` return type, and the list path writes that back over the row.
 		$languageService = new \OCA\OpenRegister\Service\LanguageService();
 
-		$propertyRbacHandler = new PropertyRbacHandler(
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))
-		);
+		$propertyRbacHandler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class), self::stateFieldRuleResolver($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))), logger: $this->createMock(LoggerInterface::class));
 
 		return new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$schemaMapper,
-			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
-			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$propertyRbacHandler,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			new \OCA\OpenRegister\Service\Object\TranslationHandler($languageService, $this->createMock(LoggerInterface::class)),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$languageService
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapper::class)),
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
+					fileService: $this->createMock(\OCA\OpenRegister\Service\FileService::class),
+					systemTagManager: $this->createMock(\OCP\SystemTag\ISystemTagManager::class),
+					systemTagMapper: $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: new \OCA\OpenRegister\Service\Object\TranslationHandler($languageService, $this->createMock(LoggerInterface::class)),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $languageService
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->createMock(LoggerInterface::class),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $propertyRbacHandler
 		);
 	}
 

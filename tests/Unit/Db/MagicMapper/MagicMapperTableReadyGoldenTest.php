@@ -39,6 +39,8 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableTarget
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class MagicMapperTableReadyGoldenTest extends TestCase {
 
@@ -158,7 +160,7 @@ class MagicMapperTableReadyGoldenTest extends TestCase {
 	public function testCountTable(bool $exists, bool $magic, ?string $expected, array $log): void {
 		$mapper = $this->mapper(exists: $exists);
 		$count  = new ReflectionMethod(MagicMapper::class, 'resolveCountTable');
-		$table  = $count->invoke($mapper, $this->register(magic: $magic), $this->schema());
+		$table  = $count->invoke($mapper, $this->register(magic: $magic), $this->schema())?->tableName;
 
 		$this->assertSame($expected, $table);
 		$this->assertSame($log, $this->log);

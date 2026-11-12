@@ -47,6 +47,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -112,7 +113,7 @@ class CodedValueValidationListener implements IEventListener {
 		try {
 			$this->check(event: $event, object: $object);
 		} catch (CodedValueException $refused) {
-			$this->refuse(event: $event, code: self::ERROR_CODE, errors: $refused->getErrors());
+			$this->refuse(event: $event, refusal: self::refusal(code: self::ERROR_CODE, errors: $refused->getErrors()));
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				message: '[CodedValueValidationListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
@@ -144,32 +145,41 @@ class CodedValueValidationListener implements IEventListener {
 		$data = $this->writtenData(object: $object);
 		$shapeErrors = $this->shapeGuard->violations(object: $data, schema: $schema);
 		if ($shapeErrors !== []) {
-			$this->refuse(event: $event, code: self::ERROR_CODE_SHAPE, errors: $shapeErrors);
+			$this->refuse(event: $event, refusal: self::refusal(code: self::ERROR_CODE_SHAPE, errors: $shapeErrors));
 			return;
 		}
 
-		$this->guard->enforce(object: $data, schema: $schema);
+		$this->guard->enforce(new CodedValueWrite(object: $data, schema: $schema));
 	}//end check()
 
 	/**
-	 * Stop the write, carrying the refusals.
+	 * Stop the write, carrying the refusal.
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
-	 * @param string $code The machine-readable refusal code.
-	 * @param array<string,string> $errors The refusals keyed by property name.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event   The write event.
+	 * @param array<string,string>                    $refusal The refusal payload, see {@see self::refusal()}.
 	 *
 	 * @return void
 	 */
-	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, string $code, array $errors): void {
-		$event->setErrors(
-			array_merge(
-				[
-					'code' => $code,
-					'message' => implode(' ', array_values($errors)),
-				],
-				$errors
-			)
-		);
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, array $refusal): void {
+		$event->setErrors($refusal);
 		$event->stopPropagation();
 	}//end refuse()
+
+	/**
+	 * The refusal payload: the code, one message joining every refusal, then the refusals by property.
+	 *
+	 * @param string               $code   The machine-readable refusal code.
+	 * @param array<string,string> $errors The refusals keyed by property name.
+	 *
+	 * @return array<string,string> The payload the write event carries.
+	 */
+	private static function refusal(string $code, array $errors): array {
+		return array_merge(
+			[
+				'code' => $code,
+				'message' => implode(' ', array_values($errors)),
+			],
+			$errors
+		);
+	}//end refusal()
 }//end class

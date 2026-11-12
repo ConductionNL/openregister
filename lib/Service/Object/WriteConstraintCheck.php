@@ -39,10 +39,21 @@ final class WriteConstraintCheck {
 	 * @param array $stored   The previously-stored object data
 	 */
 	public function __construct(
-		private readonly array $incoming,
-		private readonly array $stored,
+		public readonly array $incoming,
+		public readonly array $stored,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether there is a stored record to compare against.
+	 *
+	 * @return bool False on CREATE, where the stored side is empty
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function hasStored(): bool {
+		return $this->stored !== [];
+	}//end hasStored()
 
 	/**
 	 * A violation for each named property the write changes.

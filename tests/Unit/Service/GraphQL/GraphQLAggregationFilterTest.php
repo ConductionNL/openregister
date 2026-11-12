@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
@@ -205,16 +207,9 @@ final class GraphQLAggregationFilterTest extends TestCase {
 		$seen = [];
 		$runner = $this->createMock(AggregationRunner::class);
 		$runner->method('run')->willReturnCallback(
-			function (
-				string $registerRef,
-				string $schemaRef,
-				string $name,
-				bool $bypassRbac = false,
-				array $parentRow = [],
-				array $extraFilter = [],
-			) use (&$seen): array {
-				$seen = compact('registerRef', 'schemaRef', 'name', 'extraFilter');
-				return ['name' => $name, 'metric' => 'sum', 'groups' => []];
+			function (NamedAggregationRef $ref, ?NamedAggregationOptions $options = null) use (&$seen): array {
+				$seen = ['registerRef' => $ref->register, 'schemaRef' => $ref->schema, 'name' => $ref->name, 'extraFilter' => $options?->extraFilter ?? []];
+				return ['name' => $ref->name, 'metric' => 'sum', 'groups' => []];
 			}
 		);
 

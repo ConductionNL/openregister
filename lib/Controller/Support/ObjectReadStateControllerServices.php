@@ -22,11 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
- * The read-state store and the notification clearing a read marks.
+ * The read-state store, the notification clearing a read marks, the RBAC-bounded object resolver and the failure log.
  *
  * @spec openspec/specs/object-read-state/spec.md
  */
@@ -34,14 +36,18 @@ final readonly class ObjectReadStateControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ReadStateServiceInterface            $readState Read-state store.
-	 * @param NotificationClearingServiceInterface $clearing  Clears the notifications a read covers.
+	 * @param ReadStateServiceInterface            $readState     Read-state store.
+	 * @param NotificationClearingServiceInterface $clearing      Clears the notifications a read covers.
+	 * @param ObjectOperationsInterface            $objectService Resolves an object through the RBAC boundary.
+	 * @param LoggerInterface                      $logger        Records unexpected failures.
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	public function __construct(
 		public ReadStateServiceInterface $readState,
 		public NotificationClearingServiceInterface $clearing,
+		public ObjectOperationsInterface $objectService,
+		public LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

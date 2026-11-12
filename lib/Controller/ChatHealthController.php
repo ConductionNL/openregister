@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
+use OCA\OpenRegister\Controller\Support\ChatHealthControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -72,24 +74,20 @@ class ChatHealthController extends Controller implements ChatFamilyControllerInt
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request object
-	 * @param AppSettingsInterface $settingsService Settings service for LLM config
-	 * @param LoggerInterface $logger Logger for surfacing config errors
+	 * @param IRequest                     $request  HTTP request object
+	 * @param ChatHealthControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		AppSettingsInterface $settingsService,
-		LoggerInterface $logger,
+		ChatHealthControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -115,43 +113,63 @@ class ChatHealthController extends Controller implements ChatFamilyControllerInt
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function health(): JSONResponse {
 		try {
-			$llmConfig = $this->settingsService->getLLMSettingsOnly();
-			$chatProvider = $llmConfig['chatProvider'] ?? null;
-
-			if (empty($chatProvider) === true) {
-				return new JSONResponse(
-					data: ['status' => 'no_provider'],
-					statusCode: 503
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'status' => 'ok',
-					'capabilities' => ['chat', 'stream'],
-				],
-				statusCode: 200
-			);
+			return $this->providerHealth();
 		} catch (\Throwable $e) {
-			// Distinguish "configuration service failed" from "no provider
-			// configured". Returning 'no_provider' for both made it
-			// impossible to tell a fresh instance (genuinely unconfigured)
-			// from a broken config service (deserialisation, DB connectivity
-			// etc.). Operators need that signal; the widget can still treat
-			// any non-200 as "no AI" without branching.
-			$this->logger->warning(
-				message: '[ChatHealthController] Health probe failed reading LLM settings',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->configError(exception: $e);
+		}
+	}//end health()
+
+	/**
+	 * The probe answer from the configured chat provider.
+	 *
+	 * @return JSONResponse 200 with the capabilities, or 503 `no_provider` when none is configured
+	 */
+	private function providerHealth(): JSONResponse {
+		$llmConfig = $this->settingsService->getLLMSettingsOnly();
+		$chatProvider = $llmConfig['chatProvider'] ?? null;
+
+		if (empty($chatProvider) === true) {
 			return new JSONResponse(
-				data: ['status' => 'config_error'],
+				data: ['status' => 'no_provider'],
 				statusCode: 503
 			);
-		}//end try
-	}//end health()
+		}
+
+		return new JSONResponse(
+			data: [
+				'status' => 'ok',
+				'capabilities' => ['chat', 'stream'],
+			],
+			statusCode: 200
+		);
+	}//end providerHealth()
+
+	/**
+	 * The probe answer when the LLM settings could not be read.
+	 *
+	 * Distinguish "configuration service failed" from "no provider
+	 * configured". Returning 'no_provider' for both made it impossible to tell
+	 * a fresh instance (genuinely unconfigured) from a broken config service
+	 * (deserialisation, DB connectivity etc.). Operators need that signal; the
+	 * widget can still treat any non-200 as "no AI" without branching.
+	 *
+	 * @param \Throwable $exception Why the settings could not be read
+	 *
+	 * @return JSONResponse 503 `config_error`
+	 */
+	private function configError(\Throwable $exception): JSONResponse {
+		$this->logger->warning(
+			message: '[ChatHealthController] Health probe failed reading LLM settings',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'exception' => $exception,
+				'error' => $exception->getMessage(),
+			]
+		);
+		return new JSONResponse(
+			data: ['status' => 'config_error'],
+			statusCode: 503
+		);
+	}//end configError()
 }//end class

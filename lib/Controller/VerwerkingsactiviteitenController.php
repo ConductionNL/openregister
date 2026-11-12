@@ -37,21 +37,21 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityAuditCounts;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityHydrator;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityViewer;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
+use OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
-use OCP\IDBConnection;
 use OCP\IRequest;
 
 /**
@@ -96,28 +96,27 @@ class VerwerkingsactiviteitenController extends Controller {
 	private readonly ProcessingActivityAuditCounts $auditCounts;
 
 	/**
+	 * The catalog mapper, session, database and org scoping.
+	 *
+	 * @var VerwerkingsactiviteitenControllerServices
+	 */
+	private readonly VerwerkingsactiviteitenControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName             App identifier.
-	 * @param IRequest                     $request             Active request.
-	 * @param VerwerkingsactiviteitMapperInterface  $vrwMapper           Mapper for the catalog.
-	 * @param ControllerSession            $session             Session, group manager and logger.
-	 * @param IDBConnection                $db                  DB for the verantwoording aggregation.
-	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
+	 * @param IRequest                                  $request  Active request.
+	 * @param VerwerkingsactiviteitenControllerServices $services The catalog mapper, session, database and org scoping.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
-		private readonly ControllerSession $session,
-		IDBConnection $db,
-		OrganisationServiceInterface $organisationService,
+		VerwerkingsactiviteitenControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
-		$this->visibility = new ProcessingActivityVisibility(organisationService: $organisationService);
-		$this->auditCounts = new ProcessingActivityAuditCounts(db: $db);
-		$this->access = new GdprRegisterAccess(session: $this->session);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
+		$this->visibility = new ProcessingActivityVisibility(organisationService: $services->organisationService);
+		$this->auditCounts = new ProcessingActivityAuditCounts(db: $services->db);
+		$this->access = new GdprRegisterAccess(session: $services->session);
 		$this->params = new GdprRequestParams(request: $request);
 		$this->replies = new GdprRegisterReplies();
 	}//end __construct()
@@ -146,12 +145,18 @@ class VerwerkingsactiviteitenController extends Controller {
 			return new JSONResponse(data: ['count' => 0, 'results' => []]);
 		}
 
-		$rows = $this->vrwMapper->findAll(organisationId: $this->params->nonEmpty(key: 'organisation'), status: $this->params->nonEmpty(key: 'status'));
+		$rows = $this->services->vrwMapper->findAll(
+			organisationId: $this->params->nonEmpty(key: 'organisation'),
+			status: $this->params->nonEmpty(key: 'status')
+		);
 
 		// Enforce tenant scoping in-controller: the mapper filter accepts
 		// a single org while a user may belong to several, and a
 		// caller-supplied `organisation` must never widen visibility.
-		$visible = $this->visibility->filter(activities: $rows, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$visible = $this->visibility->visibleTo(
+			activities: $rows,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$results = array_map(static fn (Verwerkingsactiviteit $activity): array => $activity->jsonSerialize(), $visible);
 
@@ -200,8 +205,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @return JSONResponse The persisted activity (201) or a 422 envelope.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -212,7 +215,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$payload = $this->params->payload();
 
 		return $this->persist(
-			write: fn () => $this->vrwMapper->insert($this->hydrated(entity: new Verwerkingsactiviteit(), payload: $payload)),
+			write: fn () => $this->services->vrwMapper->insert($this->hydrated(entity: new Verwerkingsactiviteit(), payload: $payload)),
 			status: Http::STATUS_CREATED
 		);
 	}//end create()
@@ -226,8 +229,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @return JSONResponse The updated activity, 404, 403, or 422.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update(string $id): JSONResponse {
@@ -239,7 +240,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		$payload = $this->params->payload();
 
 		return $this->persist(
-			write: fn () => $this->vrwMapper->update($this->hydrated(entity: $entity, payload: $payload)),
+			write: fn () => $this->services->vrwMapper->update($this->hydrated(entity: $entity, payload: $payload)),
 			status: Http::STATUS_OK
 		);
 	}//end update()
@@ -256,8 +257,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @return JSONResponse 204 on success, 404, or 403.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function destroy(string $id): JSONResponse {
@@ -267,7 +266,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		}
 
 		$entity->setStatus('archived');
-		$this->vrwMapper->update($entity);
+		$this->services->vrwMapper->update($entity);
 
 		return new JSONResponse(data: [], statusCode: Http::STATUS_NO_CONTENT);
 	}//end destroy()
@@ -318,8 +317,11 @@ class VerwerkingsactiviteitenController extends Controller {
 			return new JSONResponse(data: ['count' => 0, 'activities' => []]);
 		}
 
-		$all = $this->vrwMapper->findAll();
-		$activities = $this->visibility->filter(activities: $all, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$all = $this->services->vrwMapper->findAll();
+		$activities = $this->visibility->visibleTo(
+			activities: $all,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$payload = $this->withAuditCounts(activities: $activities);
 
@@ -437,13 +439,13 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		if (ctype_digit($identifier) === true) {
 			try {
-				return $this->vrwMapper->find(id: (int)$identifier);
+				return $this->services->vrwMapper->find(id: (int)$identifier);
 			} catch (DoesNotExistException $e) {
 				return null;
 			}
 		}
 
-		return $this->vrwMapper->resolveReference(reference: $identifier);
+		return $this->services->vrwMapper->resolveReference(reference: $identifier);
 	}//end resolveOne()
 
 	/**

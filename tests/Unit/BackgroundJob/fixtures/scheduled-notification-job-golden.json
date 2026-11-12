@@ -151,6 +151,15 @@
             ]
         },
         {
+            "warning": [
+                "[ScheduledNotificationJob] Could not touch the dedupe state, the sweep reclaims it",
+                {
+                    "objectUuid": "touch-fails",
+                    "exception": "touch failed"
+                }
+            ]
+        },
+        {
             "findOne": [
                 7,
                 "remind",

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -111,7 +112,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
 			objectEntityMapper: $this->createMock(originalClassName: MagicMapper::class),
 			conditionMatcher: new ConditionMatcher(
-				userSession: $userSession,
+				users: new ConditionUserResolvers(userSession: $userSession),
 				container: $container,
 				operatorEvaluator: new OperatorEvaluator(logger: $logger),
 				logger: $logger

@@ -26,6 +26,7 @@ namespace Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AnalyticsSeriesController;
+use OCA\OpenRegister\Service\AnalyticsSeriesDraft;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -43,14 +44,30 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 		parent::setUp();
 		$this->request = $this->createMock(IRequest::class);
 		$this->service = $this->createMock(AnalyticsSeriesService::class);
-		$this->controller = new AnalyticsSeriesController('openregister', $this->request, $this->service);
+		$this->controller = new AnalyticsSeriesController($this->request, $this->service);
+	}
+
+	private static function draft(
+		string $seriesKey,
+		array $labels,
+		array $datasets,
+		?string $title = null,
+		string $chartType = 'line',
+		string $visibility = 'private',
+		?int $registerId = null,
+		?int $schemaId = null
+	): AnalyticsSeriesDraft {
+		return (new AnalyticsSeriesDraft(seriesKey: $seriesKey, title: $title))
+			->withData(labels: $labels, datasets: $datasets)
+			->shownAs(chartType: $chartType, visibility: $visibility)
+			->inScope(registerId: $registerId, schemaId: $schemaId);
 	}
 
 	public function testRegisterAppliesDefaultsForAnEmptyBody(): void {
 		$this->request->method('getParams')->willReturn([]);
 		$this->service->expects($this->once())->method('ensureCanRegister');
-		$this->service->expects($this->once())->method('register')
-			->with('', [], [], null, 'line', 'private', null, null)
+		$this->service->expects($this->once())->method('registerSeries')
+			->with($this->equalTo(self::draft('', [], [], null, 'line', 'private', null, null)))
 			->willReturn(['seriesKey' => '']);
 
 		$response = $this->controller->register();
@@ -72,8 +89,8 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 				'schemaId' => 3.0,
 			]
 		);
-		$this->service->expects($this->once())->method('register')
-			->with('42', ['jan'], [['data' => [1]]], '7', 'bar', 'group', 12, 3)
+		$this->service->expects($this->once())->method('registerSeries')
+			->with($this->equalTo(self::draft('42', ['jan'], [['data' => [1]]], '7', 'bar', 'group', 12, 3)))
 			->willReturn(['ok' => true]);
 
 		$this->assertSame(['ok' => true], $this->controller->register()->getData());
@@ -83,8 +100,8 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			['seriesKey' => 'k', 'title' => null, 'registerId' => 'abc', 'schemaId' => null, 'chartType' => null]
 		);
-		$this->service->expects($this->once())->method('register')
-			->with('k', [], [], null, 'line', 'private', null, null)
+		$this->service->expects($this->once())->method('registerSeries')
+			->with($this->equalTo(self::draft('k', [], [], null, 'line', 'private', null, null)))
 			->willReturn([]);
 
 		$this->assertSame(201, $this->controller->register()->getStatus());
@@ -92,8 +109,8 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 
 	public function testRegisterKeepsAnEmptyStringTitle(): void {
 		$this->request->method('getParams')->willReturn(['seriesKey' => 'k', 'title' => '']);
-		$this->service->expects($this->once())->method('register')
-			->with('k', [], [], '', 'line', 'private', null, null)
+		$this->service->expects($this->once())->method('registerSeries')
+			->with($this->equalTo(self::draft('k', [], [], '', 'line', 'private', null, null)))
 			->willReturn([]);
 
 		$this->controller->register();
@@ -102,7 +119,7 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 	public function testRegisterGuardRefusalSkipsTheWrite(): void {
 		$this->request->method('getParams')->willReturn(['seriesKey' => 'k']);
 		$this->service->method('ensureCanRegister')->willThrowException(new InvalidArgumentException('login'));
-		$this->service->expects($this->never())->method('register');
+		$this->service->expects($this->never())->method('registerSeries');
 
 		$response = $this->controller->register();
 
@@ -112,7 +129,7 @@ class AnalyticsSeriesControllerGoldenTest extends TestCase {
 
 	public function testRegisterValidationFailureIs400(): void {
 		$this->request->method('getParams')->willReturn(['seriesKey' => 'k']);
-		$this->service->method('register')->willThrowException(new InvalidArgumentException('bad chart'));
+		$this->service->method('registerSeries')->willThrowException(new InvalidArgumentException('bad chart'));
 
 		$response = $this->controller->register();
 

@@ -11,6 +11,7 @@ import {
 	sendJson,
 	withoutReadOnly,
 } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions, listStateFields } from './listState.js'
 
 /**
@@ -134,9 +135,9 @@ export const useConfigurationStore = defineStore('configuration', {
 				run: async () => {
 					const response = await fetch(
 						configurationUrl(configurationItem),
-						{
+						withRequestToken({
 							method: 'DELETE',
-						},
+						}),
 					)
 					if (!response.ok) {
 						throw new Error(`HTTP error! status: ${response.status}`)
@@ -211,7 +212,7 @@ export const useConfigurationStore = defineStore('configuration', {
 				run: async () => {
 					const response = await fetch(
 						'/index.php/apps/openregister/api/configurations/import',
-						{ method: 'POST', body },
+						withRequestToken({ method: 'POST', body }),
 					)
 					const responseData = await importAnswer(response)
 					await this.refreshConfigurationList()

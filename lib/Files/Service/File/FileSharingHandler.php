@@ -52,41 +52,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileSharingHandler implements FileSharingHandlerInterface {
 	/**
-	 * Share manager for share operations.
-	 *
-	 * @var IManager
-	 */
-	private readonly IManager $shareManager;
-
-	/**
-	 * User manager for user operations.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * Builds share links for the host the visitor used.
-	 *
-	 * @var ShareUrlBuilder
-	 */
-	private readonly ShareUrlBuilder $shareUrls;
-
-	/**
-	 * Logger for logging operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Ownership handler for user operations.
-	 *
-	 * @var FileOwnershipHandlerInterface
-	 */
-	private readonly FileOwnershipHandlerInterface $fileOwnershipHandler;
-
-	/**
 	 * Constructor for FileSharingHandler.
 	 *
 	 * @param IManager            $shareManager Share manager for share operations.
@@ -95,16 +60,11 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	 * @param LoggerInterface     $logger       Logger for logging operations.
 	 */
 	public function __construct(
-		IManager $shareManager,
-		FileSharingAccounts $accounts,
-		ShareUrlBuilder $shareUrls,
-		LoggerInterface $logger,
+		private readonly IManager $shareManager,
+		private readonly FileSharingAccounts $accounts,
+		private readonly ShareUrlBuilder $shareUrls,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->shareManager = $shareManager;
-		$this->userManager = $accounts->userManager;
-		$this->fileOwnershipHandler = $accounts->fileOwnershipHandler;
-		$this->shareUrls = $shareUrls;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -139,7 +99,7 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	public function findShares(Node $file, int $shareType = 3): array {
 		// Use the OpenRegister system user instead of current user session.
 		// This ensures we can find shares created by the OpenRegister system user.
-		$userId = $this->fileOwnershipHandler->getUser()->getUID();
+		$userId = $this->accounts->fileOwnershipHandler->getUser()->getUID();
 
 		return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 	}//end findShares()
@@ -169,9 +129,24 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function createShare(array $shareData): IShare {
+		$userId = $this->sharerId(shareData: $shareData);
+		$share = $this->newShareFrom(shareData: $shareData, sharedBy: $userId);
+
+		// Actually create the share.
+		return $this->persistShare(share: $share, subject: "{$shareData['path']} by user {$userId}");
+	}//end createShare()
+
+	/**
+	 * Who creates the share: the file's owner when a file with an owner is given, else the OpenRegister user.
+	 *
+	 * @param array<string, mixed> $shareData The share data.
+	 *
+	 * @return string The sharer's uid.
+	 */
+	private function sharerId(array $shareData): string {
 		// Use the file's owner as the share creator for better compatibility.
 		// This avoids permission issues when the OpenRegister user doesn't own the file.
-		$userId = $this->fileOwnershipHandler->getUser()->getUID();
+		$userId = $this->accounts->fileOwnershipHandler->getUser()->getUID();
 
 		// If we have a file object and it has an owner, use that owner as the sharer.
 		if (empty($shareData['file']) === false) {
@@ -181,16 +156,21 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 			}
 		}
 
+		return $userId;
+	}//end sharerId()
+
+	/**
+	 * A new share carrying the node, type, permissions, sharer and recipient of the share data.
+	 *
+	 * @param array<string, mixed> $shareData The share data.
+	 * @param string               $sharedBy  The sharer's uid.
+	 *
+	 * @return IShare The share, not yet created.
+	 */
+	private function newShareFrom(array $shareData, string $sharedBy): IShare {
 		// Create a new share.
 		$share = $this->shareManager->newShare();
-
-		// Use setNode directly when file is available (more reliable than setNodeId).
-		if (empty($shareData['file']) === false) {
-			$share->setNode($shareData['file']);
-		} elseif (empty($shareData['nodeId']) === false) {
-			$share->setNodeId(fileId: $shareData['nodeId']);
-			$share->setNodeType(type: $shareData['nodeType'] ?? 'file');
-		}
+		$this->setShareNode(share: $share, shareData: $shareData);
 
 		$share->setShareType(shareType: $shareData['shareType']);
 
@@ -198,131 +178,224 @@ class FileSharingHandler implements FileSharingHandlerInterface {
 			$share->setPermissions(permissions: $shareData['permissions']);
 		}
 
-		$share->setSharedBy(sharedBy: $userId);
+		$share->setSharedBy(sharedBy: $sharedBy);
 
 		// Add the sharedWith for user and group shares.
 		if (empty($shareData['sharedWith']) === false) {
 			$share->setSharedWith(sharedWith: $shareData['sharedWith']);
 		}
 
-		// Actually create the share.
+		return $share;
+	}//end newShareFrom()
+
+	/**
+	 * Point the share at its node: the file itself, or a node id and type.
+	 *
+	 * @param IShare               $share     The new share.
+	 * @param array<string, mixed> $shareData The share data.
+	 *
+	 * @return void
+	 */
+	private function setShareNode(IShare $share, array $shareData): void {
+		// Use setNode directly when file is available (more reliable than setNodeId).
+		if (empty($shareData['file']) === false) {
+			$share->setNode($shareData['file']);
+		} elseif (empty($shareData['nodeId']) === false) {
+			$share->setNodeId(fileId: $shareData['nodeId']);
+			$share->setNodeType(type: $shareData['nodeType'] ?? 'file');
+		}
+	}//end setShareNode()
+
+	/**
+	 * Create the share; a refusal is logged and rethrown with its cause.
+	 *
+	 * @param IShare $share   The share to create.
+	 * @param string $subject What the log lines name: "<path> by user <uid>".
+	 *
+	 * @return IShare The created share.
+	 *
+	 * @throws Exception If creating the share fails.
+	 */
+	private function persistShare(IShare $share, string $subject): IShare {
 		try {
 			$this->shareManager->createShare($share);
 			$this->logger->info(
-				message: "Successfully created share for {$shareData['path']} by user {$userId}"
+				message: "Successfully created share for {$subject}"
 			);
 			return $share;
 		} catch (Exception $e) {
-			$msg = '[FileSharingHandler] Failed to create share for ' . $shareData['path'] . ' by user ' . $userId;
+			$msg = '[FileSharingHandler] Failed to create share for ' . $subject;
 			$this->logger->error(
 				message: $msg . ': ' . $e->getMessage()
 			);
 			throw new Exception('Failed to create share: ' . $e->getMessage());
 		}
-	}//end createShare()
+	}//end persistShare()
 
 	/**
-	 * Share a file with a specific user.
+	 * Share a file with a user unless it already is.
 	 *
-	 * @param File $file The file to share.
-	 * @param string $userId The user ID to share with.
-	 * @param int $permissions The permissions to grant (default: 31 = all).
+	 * @param UserShareGrant $grant The file, the user and the permissions.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If sharing fails.
 	 *
-	 * @psalm-return   void
-	 * @phpstan-return void
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function shareFileWithUser(File $file, string $userId, int $permissions = 31): void {
+	public function shareFileWithUser(UserShareGrant $grant): void {
 		try {
-			// Check if a share already exists with this user.
-			$existingShares = $this->shareManager->getSharesBy(
-				userId: $this->fileOwnershipHandler->getUser()->getUID(),
-				shareType: IShare::TYPE_USER,
-				path: $file
-			);
-
-			foreach ($existingShares as $share) {
-				if ($share->getSharedWith() === $userId) {
-					$this->logger->info(
-						message: '[FileSharingHandler] Share already exists for file ' . $file->getName() . ' with user ' . $userId
-					);
-					return;
-				}
+			if ($this->alreadySharedWith(grant: $grant) === false) {
+				$this->createUserShare(grant: $grant);
 			}
-
-			// Create new share.
-			$share = $this->shareManager->newShare();
-			$share->setNode($file);
-			$share->setShareType(IShare::TYPE_USER);
-			$share->setSharedWith($userId);
-			$share->setSharedBy($this->fileOwnershipHandler->getUser()->getUID());
-			$share->setPermissions($permissions);
-
-			$this->shareManager->createShare(share: $share);
-
-			$this->logger->info(
-				message: '[FileSharingHandler] Created share for file ' . $file->getName() . ' with user ' . $userId
-			);
 		} catch (Exception $e) {
-			$msg = '[FileSharingHandler] Failed to share file ' . $file->getName() . ' with user ' . $userId;
+			$msg = '[FileSharingHandler] Failed to share file ' . $grant->node->getName() . ' with user ' . $grant->userId;
 			$this->logger->error(
 				message: $msg . ': ' . $e->getMessage()
 			);
 			throw $e;
-		}//end try
+		}
 	}//end shareFileWithUser()
 
 	/**
-	 * Share a folder with a specific user.
+	 * Whether the OpenRegister user already shares the file with the user (logged when so).
 	 *
-	 * @param Node $folder The folder to share.
-	 * @param string $userId The user ID to share with.
-	 * @param int $permissions The permissions to grant (default: 31 = all).
+	 * @param UserShareGrant $grant The file and the user.
 	 *
-	 * @return IShare|null The created share or null if user doesn't exist.
+	 * @return bool
+	 */
+	private function alreadySharedWith(UserShareGrant $grant): bool {
+		// Check if a share already exists with this user.
+		foreach ($this->systemUserShares(grant: $grant) as $share) {
+			if ($share->getSharedWith() === $grant->userId) {
+				$this->logger->info(
+					message: '[FileSharingHandler] Share already exists for file ' . $grant->node->getName() . ' with user ' . $grant->userId
+				);
+				return true;
+			}
+		}
+
+		return false;
+	}//end alreadySharedWith()
+
+	/**
+	 * The OpenRegister user's user shares of the grant's node.
 	 *
-	 * @psalm-return   IShare|null
-	 * @phpstan-return IShare|null
+	 * @param UserShareGrant $grant The node.
+	 *
+	 * @return IShare[]
+	 */
+	private function systemUserShares(UserShareGrant $grant): array {
+		return $this->shareManager->getSharesBy(
+			userId: $this->accounts->fileOwnershipHandler->getUser()->getUID(),
+			shareType: IShare::TYPE_USER,
+			path: $grant->node
+		);
+	}//end systemUserShares()
+
+	/**
+	 * Share the file with the user as the OpenRegister user.
+	 *
+	 * @param UserShareGrant $grant The file, the user and the permissions.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If creating the share fails.
+	 */
+	private function createUserShare(UserShareGrant $grant): void {
+		// Create new share.
+		$share = $this->shareManager->newShare();
+		$share->setNode($grant->node);
+		$share->setShareType(IShare::TYPE_USER);
+		$share->setSharedWith($grant->userId);
+		$share->setSharedBy($this->accounts->fileOwnershipHandler->getUser()->getUID());
+		$share->setPermissions($grant->permissions);
+
+		$this->shareManager->createShare(share: $share);
+
+		$this->logger->info(
+			message: '[FileSharingHandler] Created share for file ' . $grant->node->getName() . ' with user ' . $grant->userId
+		);
+	}//end createUserShare()
+
+	/**
+	 * Share a folder with an existing user.
+	 *
+	 * @param UserShareGrant $grant The folder, the user and the permissions.
+	 *
+	 * @return IShare|null The created share, or null when the user does not exist or sharing fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare {
+	public function shareFolderWithUser(UserShareGrant $grant): ?IShare {
 		try {
 			// Check if user exists.
-			if ($this->userManager->userExists($userId) === false) {
-				$this->logger->warning(
-					message: '[FileSharingHandler] Cannot share folder with user ' . $userId . ' - user does not exist',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
+			if ($this->recipientMissing(grant: $grant) === true) {
 				return null;
 			}
 
-			// Create the share.
-			$share = $this->createShare(
-				shareData: [
-					'path' => ltrim($folder->getPath(), '/'),
-					'nodeId' => $folder->getId(),
-					'nodeType' => 'folder',
-					'shareType' => IShare::TYPE_USER,
-					'permissions' => $permissions,
-					'sharedWith' => $userId,
-				]
-			);
-
-			$this->logger->info(
-				message: '[FileSharingHandler] Successfully shared folder ' . $folder->getName() . ' with user ' . $userId,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return $share;
+			return $this->createFolderShare(grant: $grant);
 		} catch (Exception $e) {
-			$msg = "Failed to share folder '{$folder->getName()}' with user '$userId': " . $e->getMessage();
+			$msg = "Failed to share folder '{$grant->node->getName()}' with user '$grant->userId': " . $e->getMessage();
 			$this->logger->error(message: '[FileSharingHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 			return null;
-		}//end try
+		}
 	}//end shareFolderWithUser()
+
+	/**
+	 * Whether the recipient does not exist (logged as a warning when so).
+	 *
+	 * @param UserShareGrant $grant The folder and the user.
+	 *
+	 * @return bool
+	 */
+	private function recipientMissing(UserShareGrant $grant): bool {
+		if ($this->accounts->userManager->userExists($grant->userId) === false) {
+			$this->logger->warning(
+				message: '[FileSharingHandler] Cannot share folder with user ' . $grant->userId . ' - user does not exist',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return true;
+		}
+
+		return false;
+	}//end recipientMissing()
+
+	/**
+	 * Share the folder with the user by node id.
+	 *
+	 * @param UserShareGrant $grant The folder, the user and the permissions.
+	 *
+	 * @return IShare The created share.
+	 *
+	 * @throws Exception If creating the share fails.
+	 */
+	private function createFolderShare(UserShareGrant $grant): IShare {
+		// Create the share.
+		$share = $this->createShare(shareData: $this->folderShareData(grant: $grant));
+
+		$this->logger->info(
+			message: '[FileSharingHandler] Successfully shared folder ' . $grant->node->getName() . ' with user ' . $grant->userId,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return $share;
+	}//end createFolderShare()
+
+	/**
+	 * The share data of a user share of a folder, by node id.
+	 *
+	 * @param UserShareGrant $grant The folder, the user and the permissions.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function folderShareData(UserShareGrant $grant): array {
+		return [
+			'path' => ltrim($grant->node->getPath(), '/'),
+			'nodeId' => $grant->node->getId(),
+			'nodeType' => 'folder',
+			'shareType' => IShare::TYPE_USER,
+			'permissions' => $grant->permissions,
+			'sharedWith' => $grant->userId,
+		];
+	}//end folderShareData()
 }//end class

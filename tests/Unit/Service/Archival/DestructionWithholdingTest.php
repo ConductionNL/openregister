@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -89,20 +90,14 @@ class DestructionWithholdingTest extends TestCase {
 	}//end uuidsOf()
 
 	public function testApproveAllDestroysOnlyTheEntryNobodyWithheld(): void {
-		$result = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_all')
-		);
+		$result = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$this->assertSame(['destroy-me'], $this->uuidsOf($result['objects']));
 		$this->assertSame(['keep-me', 'move-me'], $this->uuidsOf($result['excludedObjects']));
 	}//end testApproveAllDestroysOnlyTheEntryNobodyWithheld()
 
 	public function testObjectCountFollowsWhatIsActuallyLeft(): void {
-		$result = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_all')
-		);
+		$result = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		// The certificate and the execution job both read this.
 		$this->assertSame(1, $result['objectCount']);
@@ -123,10 +118,7 @@ class DestructionWithholdingTest extends TestCase {
 	}//end testTheRetentionRouteCanWithholdBeforeItCountsAnything()
 
 	public function testAWithheldEntryCarriesTheReviewersOwnReason(): void {
-		$result = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_all')
-		);
+		$result = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$withheld = $result['excludedObjects'][0];
 		$this->assertSame('uitgezonderd', $withheld['status']);
@@ -141,7 +133,7 @@ class DestructionWithholdingTest extends TestCase {
 			'reason' => 'Corrected: retained under the ten-year term.',
 		];
 
-		$result = $this->service->approveList(destructionList: $list, choice: new ApprovalChoice(action: 'approve_all'));
+		$result = $this->service->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$reason = (string)$result['excludedObjects'][0]['exclusionReason'];
 		$this->assertStringContainsString('ten-year term', $reason);
@@ -151,10 +143,7 @@ class DestructionWithholdingTest extends TestCase {
 	public function testWithholdingComposesWithAnExplicitPartialExclusion(): void {
 		// The ordering bug this guards: handlePartialApproval() ASSIGNS
 		// excludedObjects, so withholding must run after it or be overwritten.
-		$result = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['destroy-me'], exclusionReasons: ['destroy-me' => 'Approver pulled this one.'])
-		);
+		$result = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['destroy-me'], exclusionReasons: ['destroy-me' => 'Approver pulled this one.']), requiresDual: false, listUuid: null));
 
 		$this->assertSame([], $this->uuidsOf($result['objects']));
 		$this->assertEqualsCanonicalizing(
@@ -164,11 +153,8 @@ class DestructionWithholdingTest extends TestCase {
 	}//end testWithholdingComposesWithAnExplicitPartialExclusion()
 
 	public function testApprovingTwiceWithholdsNothingTwice(): void {
-		$once = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_all')
-		);
-		$twice = $this->service->approveList(destructionList: $once, choice: new ApprovalChoice(action: 'approve_all'));
+		$once = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
+		$twice = $this->service->approveList(destructionList: $once, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$this->assertSame($this->uuidsOf($once['objects']), $this->uuidsOf($twice['objects']));
 		$this->assertSame(
@@ -185,17 +171,11 @@ class DestructionWithholdingTest extends TestCase {
 		// vanished from the record. The objects stayed safe - they were already
 		// out of `objects` - but a destruction certificate is exactly the document
 		// that must name what was withheld and why.
-		$firstPass = $this->service->approveList(
-			destructionList: $this->listWithDecisions(),
-			choice: new ApprovalChoice(action: 'approve_all')
-		);
+		$firstPass = $this->service->approveList(destructionList: $this->listWithDecisions(), request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$this->assertSame(['keep-me', 'move-me'], $this->uuidsOf($firstPass['excludedObjects']));
 
-		$secondPass = $this->service->approveList(
-			destructionList: $firstPass,
-			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['destroy-me'])
-		);
+		$secondPass = $this->service->approveList(destructionList: $firstPass, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['destroy-me']), requiresDual: false, listUuid: null));
 
 		$this->assertContains('keep-me', $this->uuidsOf($secondPass['excludedObjects']));
 		$this->assertContains('move-me', $this->uuidsOf($secondPass['excludedObjects']));
@@ -206,7 +186,7 @@ class DestructionWithholdingTest extends TestCase {
 		$list = $this->listWithDecisions();
 		$list['objects'] = [['uuid' => 'undecided']];
 
-		$result = $this->service->approveList(destructionList: $list, choice: new ApprovalChoice(action: 'approve_all'));
+		$result = $this->service->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
 
 		$this->assertSame(['undecided'], $this->uuidsOf($result['objects']));
 		$this->assertSame([], ($result['excludedObjects'] ?? []));

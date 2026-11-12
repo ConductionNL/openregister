@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -121,10 +123,12 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 
 		try {
 			$result = $this->handler()->migrateObjects(
-				source: [$sourceRegister, $sourceSchema],
-				target: [$targetRegister, $targetSchema],
-				objectIds: $scenario['ids'],
-				mapping: $scenario['mapping']
+				migration: new ObjectMigration(
+					source: new RegisterSchemaRef(register: $sourceRegister, schema: $sourceSchema),
+					target: new RegisterSchemaRef(register: $targetRegister, schema: $targetSchema),
+					objectIds: $scenario['ids'],
+					mapping: $scenario['mapping']
+				)
 			);
 		} catch (Throwable $e) {
 			$result = ['threw' => get_class($e), 'message' => $e->getMessage()];

@@ -23,7 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -99,8 +102,7 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 			new RegisterImporters(
 				$this->configurationService,
 				new CountedRegisterImport(
-				registerMapper: $this->registerMapper,
-				schemaMapper: $this->createMock(SchemaMapper::class),
+				catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 				decision: new ShippedAuthorizationDecision()
 			),
 				new AppRegisterImportRunner(
@@ -202,8 +204,8 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 			$this->throwException(new RuntimeException('the table is missing'))
 		);
 
-		$imported = $this->service->reimport(appId: 'fixtureapp', slug: 'FLOWS', via: 'tester');
-		$failed   = $this->service->reimport(appId: 'fixtureapp', slug: 'flows', via: 'tester');
+		$imported = $this->service->reimportShipped(register: new ShippedRegister(appId: 'fixtureapp', slug: 'FLOWS'), via: 'tester');
+		$failed   = $this->service->reimportShipped(register: new ShippedRegister(appId: 'fixtureapp', slug: 'flows'), via: 'tester');
 		$via      = 'OpenRegister (lib/Settings/flows_register.json)';
 		$this->assertSame(
 			[
@@ -245,7 +247,7 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 		$this->registerMapper->method('findAll')->willReturnOnConsecutiveCalls([$this->register('flows', '1.2.0')], [$this->register('flows', '1.3.0')]);
 		$this->configurationService->method('importFromApp')->willReturn(['registers' => ['flows']]);
 
-		$result = $this->service->reimport(appId: 'fixtureapp', slug: 'flows', via: 'tester');
+		$result = $this->service->reimportShipped(register: new ShippedRegister(appId: 'fixtureapp', slug: 'flows'), via: 'tester');
 		$this->assertSame(
 			[
 				'outcome'   => 'imported',

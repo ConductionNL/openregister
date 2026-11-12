@@ -79,27 +79,25 @@ class UnaryTestEvaluator {
 	public const VALID_TYPES = ['string', 'number', 'boolean', 'date'];
 
 	/**
-	 * Check whether a rule cell expression matches an already-coerced value.
+	 * Check whether a rule cell expression matches a value under test.
 	 *
-	 * @param string $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).
-	 * @param mixed $value The runtime value, already coerced via {@see coerce()} for `$type`.
-	 * @param string $type One of {@see VALID_TYPES}.
+	 * @param string         $expression The raw cell text (e.g. `'[0..25000]'`, `'-'`, `'in (a,b)'`).
+	 * @param UnaryTestValue $subject    The runtime value, already coerced via {@see coerce()}, and its type.
 	 *
 	 * @return bool True when the expression matches the value.
 	 *
 	 * @throws DecisionEvaluationException `invalid_expression` on malformed grammar,
 	 *                                     `type_mismatch` when a literal in the expression
-	 *                                     cannot be coerced to `$type`.
+	 *                                     cannot be coerced to the subject's type.
 	 *
 	 * @spec openspec/changes/shared-decision-table-evaluator/specs/shared-decision-tables/spec.md
 	 */
-	public function matches(string $expression, mixed $value, string $type): bool {
+	public function matchesValue(string $expression, UnaryTestValue $subject): bool {
 		$trimmed = trim($expression);
-		$subject = new UnaryTestValue(value: $value, type: $type);
 
 		// A quoted literal bypasses the wildcard, so `"-"` matches the string "-".
 		if ($this->isQuoted(raw: $trimmed) === true) {
-			return $subject->equals(coerced: $this->coerce(value: $this->unquote(raw: $trimmed), type: $type));
+			return $subject->equals(coerced: $this->coerce(value: $this->unquote(raw: $trimmed), type: $subject->type));
 		}
 
 		if ($trimmed === '' || $trimmed === '-') {
@@ -107,7 +105,7 @@ class UnaryTestEvaluator {
 		}
 
 		return $this->matchesForm(trimmed: $trimmed, subject: $subject);
-	}//end matches()
+	}//end matchesValue()
 
 	/**
 	 * Match a non-wildcard, unquoted cell: a set, a range, a comparison or, failing those,
@@ -362,43 +360,54 @@ class UnaryTestEvaluator {
 	 * @return array<int, string> Raw (still-quoted) member strings.
 	 */
 	private function parseSetMembers(string $inner): array {
-		$members = [];
-		$buffer = '';
-		$inQuotes = false;
-		$length = strlen($inner);
-
-		for ($i = 0; $i < $length; $i++) {
-			$char = $inner[$i];
-			if ($char === '"') {
-				$inQuotes = !$inQuotes;
-				$buffer .= $char;
-				continue;
-			}
-
-			if ($char === ',' && $inQuotes === false) {
-				$members[] = trim($buffer);
-				$buffer = '';
-				continue;
-			}
-
-			$buffer .= $char;
+		$members = array_map('trim', self::splitOutsideQuotes(inner: $inner));
+		if ($members[array_key_last($members)] === '') {
+			// A trailing comma (or nothing at all) adds no member.
+			array_pop($members);
 		}
 
-		if (trim($buffer) !== '') {
-			$members[] = trim($buffer);
-		}
-
-		return array_map(
-			function (string $member): string {
-				if (strlen($member) >= 2 && $member[0] === '"' && str_ends_with($member, '"') === true) {
-					return $this->unquote(raw: $member);
-				}
-
-				return $member;
-			},
-			$members,
-		);
+		return array_map($this->unquotedMember(...), $members);
 	}//end parseSetMembers()
+
+	/**
+	 * Split text on the commas that are not inside double quotes.
+	 *
+	 * Every `"` toggles quoting, and stays in the segment it belongs to.
+	 *
+	 * @param string $inner The text between the parentheses.
+	 *
+	 * @return array<int, string> The untrimmed segments, at least one.
+	 */
+	private static function splitOutsideQuotes(string $inner): array {
+		$segments = [''];
+		$inQuotes = false;
+		foreach (str_split($inner) as $char) {
+			if ($char === ',' && $inQuotes === false) {
+				$segments[] = '';
+				continue;
+			}
+
+			$inQuotes = ($inQuotes !== ($char === '"'));
+			$segments[array_key_last($segments)] .= $char;
+		}
+
+		return $segments;
+	}//end splitOutsideQuotes()
+
+	/**
+	 * A set member without its surrounding quotes, when it is quoted.
+	 *
+	 * @param string $member The trimmed raw member.
+	 *
+	 * @return string The member.
+	 */
+	private function unquotedMember(string $member): string {
+		if (strlen($member) >= 2 && $member[0] === '"' && str_ends_with($member, '"') === true) {
+			return $this->unquote(raw: $member);
+		}
+
+		return $member;
+	}//end unquotedMember()
 
 	/**
 	 * Strip one layer of surrounding double quotes and unescape `\"`.

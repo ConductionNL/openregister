@@ -98,14 +98,41 @@ class LanguageDetector {
 			return null;
 		}
 
+		return $this->identify(text: $trimmed);
+	}//end detect()
+
+	/**
+	 * The language of a non-blank text: by script first, then by function words.
+	 *
+	 * @param string $text The trimmed entry text.
+	 *
+	 * @return string|null A two-letter code, or null when there is no evidence.
+	 */
+	private function identify(string $text): ?string {
+		$script = $this->byScript(text: $text);
+		if ($script !== null) {
+			return $script;
+		}
+
+		return $this->byFunctionWords(text: $text);
+	}//end identify()
+
+	/**
+	 * The language whose script the text is written in, for the scripts that settle it.
+	 *
+	 * @param string $text The entry text.
+	 *
+	 * @return string|null The first matching code in SCRIPTS order, or null.
+	 */
+	private function byScript(string $text): ?string {
 		foreach (self::SCRIPTS as $code => $pattern) {
-			if (preg_match($pattern, $trimmed) === 1) {
+			if (preg_match($pattern, $text) === 1) {
 				return $code;
 			}
 		}
 
-		return $this->byFunctionWords(text: $trimmed);
-	}//end detect()
+		return null;
+	}//end byScript()
 
 	/**
 	 * Score the Latin-script languages by their function words.
@@ -126,15 +153,27 @@ class LanguageDetector {
 			return null;
 		}
 
+		return $this->unlessTied(scores: $scores, best: (string)$best);
+	}//end byFunctionWords()
+
+	/**
+	 * The winner, unless another language scored just as high.
+	 *
+	 * @param array<string,int> $scores The score per language, highest first.
+	 * @param string            $best   The winning language code.
+	 *
+	 * @return string|null The winner, or null on a tie.
+	 */
+	private function unlessTied(array $scores, string $best): ?string {
 		// A tie is no evidence either. Two languages sharing the same function
 		// words on a short text is exactly where a detector invents a verdict,
 		// so this one declines instead.
-		if ($this->runnerUp(scores: $scores, best: (string)$best) === $scores[$best]) {
+		if ($this->runnerUp(scores: $scores, best: $best) === $scores[$best]) {
 			return null;
 		}
 
-		return (string)$best;
-	}//end byFunctionWords()
+		return $best;
+	}//end unlessTied()
 
 	/**
 	 * How many function words of each language the text carries.

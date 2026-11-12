@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\CalendarLink;
 
@@ -38,11 +37,8 @@ interface CalendarLinkServiceInterface {
 	 * not own the VEVENT). Re-fetches event details from CalDAV to
 	 * populate cached fields (summary/dtstart/dtend/location).
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param string $calendarUri Calendar URI (per-user CalDAV path component).
-	 * @param string $eventUid VEVENT UID.
+	 * @param LinkTarget       $target The object, register and schema to link to.
+	 * @param CalendarEventKey $key    The calendar URI (per-user CalDAV path component) and the VEVENT UID.
 	 *
 	 * @return CalendarLink The persisted link row.
 	 *
@@ -50,13 +46,7 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $calendarUri,
-		string $eventUid,
-	): CalendarLink;
+	public function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink;
 
 	/**
 	 * Create a new VEVENT through CalendarEventService and record a link-table row.
@@ -65,9 +55,7 @@ interface CalendarLinkServiceInterface {
 	 * to {@see CalendarEventService::createEvent()} then mirrors the
 	 * linkage in the link table with `taggedWithXor=true`.
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
+	 * @param LinkTarget          $target    The object, register and schema to link to.
 	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
 	 *
 	 * @return CalendarLink The persisted link row.
@@ -76,12 +64,7 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		array $eventData,
-	): CalendarLink;
+	public function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink;
 
 	/**
 	 * Unlink an event from an object.
@@ -135,9 +118,8 @@ interface CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -145,5 +127,5 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array;
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array;
 }//end interface

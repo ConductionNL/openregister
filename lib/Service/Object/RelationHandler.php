@@ -19,10 +19,13 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -97,7 +100,10 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function tables(): RelationTables {
-		$this->tables ??= new RelationTables(registers: $this->stores->registers, schemas: $this->stores->schemas, logger: $this->logger);
+		$this->tables ??= new RelationTables(
+			catalog: new SchemaCatalog(registers: $this->stores->registers, schemas: $this->stores->schemas, tables: $this->stores->objects),
+			logger: $this->logger
+		);
 		return $this->tables;
 	}//end tables()
 
@@ -213,9 +219,11 @@ class RelationHandler {
 	}//end indexedByUuidAndId()
 
 	/**
-	 * Load a chunk of relationships optimized.
+	 * Load a chunk of relationships: the related objects the caller may read.
 	 *
-	 * @param array $relationshipIds Array of relationship IDs to load.
+	 * Located across all magic tables, then read under RBAC and the organisation boundary.
+	 *
+	 * @param array $relationshipIds Array of relationship UUIDs to load.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -234,8 +242,7 @@ class RelationHandler {
 		}
 
 		try {
-			// Use the mapper's optimized bulk fetch.
-			return $this->stores->objects->findAll(ids: $relationshipIds, includeDeleted: false);
+			return $this->readableRelated(uuids: $relationshipIds, lookup: new RelationLookup(objectId: ''));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to load relationship chunk',
@@ -414,6 +421,8 @@ class RelationHandler {
 	/**
 	 * One page of the items, with the total and the limit and offset as requested.
 	 *
+	 * A limit or offset that is not a number pages with its default.
+	 *
 	 * @param array<int, mixed>    $items The items.
 	 * @param array<string, mixed> $query The request's paging parameters.
 	 *
@@ -425,12 +434,28 @@ class RelationHandler {
 		$limit = $query['_limit'] ?? 30;
 		$offset = $query['_offset'] ?? 0;
 		return [
-			'results' => array_slice($items, $offset, $limit),
+			'results' => array_slice($items, self::pagingNumber(value: $offset, default: 0), self::pagingNumber(value: $limit, default: 30)),
 			'total' => count($items),
 			'limit' => $limit,
 			'offset' => $offset,
 		];
 	}//end paged()
+
+	/**
+	 * A paging parameter as a non-negative integer, or the default when it is not a number.
+	 *
+	 * @param mixed $value   The parameter as requested.
+	 * @param int   $default The value used when it is missing or not numeric.
+	 *
+	 * @return int The number.
+	 */
+	private static function pagingNumber(mixed $value, int $default): int {
+		if (is_int($value) === false && (is_string($value) === false || is_numeric($value) === false)) {
+			return $default;
+		}
+
+		return max(0, (int) $value);
+	}//end pagingNumber()
 
 	/**
 	 * Load the related objects: locate them in one UNION query, then read each table.
@@ -476,9 +501,8 @@ class RelationHandler {
 
 		try {
 			return $this->stores->objects->findAllInRegisterSchemaTable(
-				register: $pair['register'],
-				schema: $pair['schema'],
-				filters: ['_ids' => $table['uuids'], '_limit' => 200]
+				table: new RegisterSchema(register: $pair['register'], schema: $pair['schema']),
+				listing: ListQuery::unbounded(filters: ['_ids' => $table['uuids'], '_limit' => 200])
 			);
 		} catch (\Exception $e) {
 			return [];
@@ -772,12 +796,13 @@ class RelationHandler {
 	 */
 	private function referrerSearch(array $pair, ReferrerPage $page): array {
 		return $this->stores->objects->findAllInRegisterSchemaTable(
-			register: $pair['register'],
-			schema: $pair['schema'],
-			limit: $page->remaining(),
-			offset: $page->nextOffset(),
-			filters: ['_relations_contains' => $page->targetUuid],
-			sort: ['_updated' => 'DESC']
+			table: new RegisterSchema(register: $pair['register'], schema: $pair['schema']),
+			listing: new ListQuery(
+				limit: $page->remaining(),
+				offset: $page->nextOffset(),
+				filters: ['_relations_contains' => $page->targetUuid],
+				sort: ['_updated' => 'DESC']
+			)
 		);
 	}//end referrerSearch()
 

@@ -40,7 +40,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
 use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
@@ -49,9 +51,8 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
@@ -65,7 +66,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -84,9 +84,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Session user accessor.
 	 *
-	 * @var IUserSession
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Nextcloud root folder (for file lookups).
@@ -110,18 +110,11 @@ class EntityRelationsController extends Controller {
 	private readonly MagicObjectFinderInterface $magicMapper;
 
 	/**
-	 * Schema loader (for hasPermission inputs).
+	 * Schema loader (for hasPermission inputs) and register loader (for object lookup disambiguation).
 	 *
-	 * @var SchemaMapperInterface
+	 * @var SchemaCatalogInterface
 	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register loader (for object lookup disambiguation).
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
+	private readonly SchemaCatalogInterface $catalog;
 
 	/**
 	 * EmailLink loader (for email-bound authz indirection).
@@ -154,25 +147,22 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Nextcloud app name.
 	 * @param IRequest $request Current request.
 	 * @param EntityRelationsControllerServices $services The entity relations controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		EntityRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
-		$this->userSession = $services->platform->userSession;
+		$this->session = $services->platform->session;
 		$this->rootFolder = $services->platform->rootFolder;
 		$this->permissionHandler = $services->domain->permissionHandler;
-		$this->magicMapper = $services->mappers->magicMapper;
-		$this->schemaMapper = $services->mappers->schemaMapper;
-		$this->registerMapper = $services->mappers->registerMapper;
+		$this->catalog = $services->mappers->catalog;
+		$this->magicMapper = $this->catalog->tables();
 		$this->emailLinkMapper = $services->links->emailLinkMapper;
-		$this->logger = $services->platform->logger;
+		$this->logger = $services->platform->session->logger;
 		$this->relationDecisions = $services->domain->relationDecisions;
 		$this->decisionVisibility = $services->domain->decisionVisibility;
 	}//end __construct()
@@ -196,7 +186,7 @@ class EntityRelationsController extends Controller {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function update(int $id): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
 				data: ['error' => 'unauthenticated'],
@@ -478,12 +468,12 @@ class EntityRelationsController extends Controller {
 		try {
 			$register = null;
 			if ($registerId !== null) {
-				$register = $this->registerMapper->find($registerId);
+				$register = $this->catalog->registers()->find($registerId);
 			}
 
 			$schema = null;
 			if ($schemaId !== null) {
-				$schema = $this->schemaMapper->find($schemaId);
+				$schema = $this->catalog->schemas()->find($schemaId);
 			}
 
 			return $this->magicMapper->find(
@@ -517,7 +507,7 @@ class EntityRelationsController extends Controller {
 	 */
 	private function loadSchemaOrDeny(string $schemaId, AuthDenialWarning $warning): ?Schema {
 		try {
-			return $this->schemaMapper->find($schemaId);
+			return $this->catalog->schemas()->find($schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: $warning->message,
@@ -632,7 +622,7 @@ class EntityRelationsController extends Controller {
 			// column is unexpectedly null at runtime.
 			$register = null;
 			if (empty($parentRegisterId) === false) {
-				$register = $this->registerMapper->find((string)$parentRegisterId);
+				$register = $this->catalog->registers()->find((string)$parentRegisterId);
 			}
 
 			return $this->magicMapper->find(

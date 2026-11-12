@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
@@ -492,7 +493,7 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid mode parameter');
 
-		$this->service->massValidateObjects(0, 1000, 'invalid_mode');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 1000, mode: 'invalid_mode', collectErrors: false));
 
 	}//end testMassValidateObjectsInvalidMode()
 
@@ -505,7 +506,7 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$this->service->massValidateObjects(0, 0, 'serial');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 0, mode: 'serial', collectErrors: false));
 
 	}//end testMassValidateObjectsBatchSizeTooSmall()
 
@@ -518,7 +519,7 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$this->service->massValidateObjects(0, 10000, 'serial');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 10000, mode: 'serial', collectErrors: false));
 
 	}//end testMassValidateObjectsBatchSizeTooLarge()
 

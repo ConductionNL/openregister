@@ -106,16 +106,14 @@ final class MagicNumberColumn {
 	 * so binary noise (0.1 + 0.2) is not refused but a real extra decimal is.
 	 * A non-numeric value is left to the validator and the database.
 	 *
-	 * @param mixed $value     The value to store.
-	 * @param int   $precision The column's precision.
-	 * @param int   $scale     The column's scale.
+	 * @param mixed                              $value The value to store.
+	 * @param array{precision: int, scale: int} $size  The column's precision and scale.
 	 *
 	 * @return string|null The reason, or null.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
-	public function refusal(mixed $value, int $precision, int $scale): ?string {
-		$size = ['precision' => $precision, 'scale' => $scale];
+	public function refusal(mixed $value, array $size): ?string {
 		if (is_float($value) === true) {
 			return $this->floatRefusal(value: $value, size: $size);
 		}
@@ -209,7 +207,7 @@ final class MagicNumberColumn {
 				continue;
 			}
 
-			$reason = $this->refusal(value: $value, precision: $size['precision'], scale: $size['scale']);
+			$reason = $this->refusal(value: $value, size: ['precision' => $size['precision'], 'scale' => $size['scale']]);
 			if ($reason !== null) {
 				$message = sprintf("The value of '%s' %s and cannot be stored without rounding.", $columnName, $reason);
 				throw new ValidationException(message: $message);
@@ -222,23 +220,35 @@ final class MagicNumberColumn {
 	 *
 	 * Never narrower than the live column, so widening cannot change a stored value.
 	 *
-	 * @param array $currentColumn The live column (type, precision, scale).
-	 * @param int   $precision     The required precision.
-	 * @param int   $scale         The required scale.
+	 * @param array                             $currentColumn The live column (type, precision, scale).
+	 * @param array{precision: int, scale: int} $required      The required size.
 	 *
 	 * @return array{precision: int, scale: int}|null The widened size, or null.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
-	public function widening(array $currentColumn, int $precision, int $scale): ?array {
-		$live = $this->decimalSize(column: $currentColumn);
+	public function widening(array $currentColumn, array $required): ?array {
+		return $this->widenedSize(live: $this->decimalSize(column: $currentColumn), required: $required);
+	}//end widening()
+
+	/**
+	 * The size a live column must be widened to so it holds the required size, or null when it already does.
+	 *
+	 * @param array{precision: int, scale: int}|null $live     The live column's size, or null when it is no DECIMAL.
+	 * @param array{precision: int, scale: int}      $required The required size.
+	 *
+	 * @return array{precision: int, scale: int}|null The widened size, or null.
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
+	 */
+	private function widenedSize(?array $live, array $required): ?array {
 		if ($live === null) {
 			return null;
 		}
 
 		// Neither part shrinks, so an unchanged total means both parts are unchanged.
-		$newScale = max($live['scale'], $scale);
-		$newIntegerDigits = max($live['precision'] - $live['scale'], $precision - $scale);
+		$newScale = max($live['scale'], $required['scale']);
+		$newIntegerDigits = max($live['precision'] - $live['scale'], $required['precision'] - $required['scale']);
 		if ($newIntegerDigits + $newScale === $live['precision']) {
 			return null;
 		}
@@ -247,7 +257,7 @@ final class MagicNumberColumn {
 			'precision' => min($newIntegerDigits + $newScale, self::MAX_PRECISION),
 			'scale' => min($newScale, self::MAX_SCALE),
 		];
-	}//end widening()
+	}//end widenedSize()
 
 	/**
 	 * The size of a live DECIMAL/NUMERIC column, or null for another type or an unknown size.

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 
 /**
  * One request to run an action on a selection, or on a single object as a selection of one:
@@ -69,8 +70,7 @@ final class ObjectActionsSelection {
 				schemaRef: $this->route['schema'],
 				ids: $this->ids
 			),
-			action: $this->action,
-			inputs: $this->inputs
+			request: new ObjectActionRequest(key: $this->action, given: $this->inputs)
 		);
 	}//end startOn()
 }//end class

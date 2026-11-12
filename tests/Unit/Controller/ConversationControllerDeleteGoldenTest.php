@@ -43,6 +43,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\ConversationControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ConversationFailure
  * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationChange
  */
 class ConversationControllerDeleteGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/conversation-delete-golden.json';
@@ -155,7 +156,6 @@ class ConversationControllerDeleteGoldenTest extends TestCase {
 		}
 
 		$controller = ConversationControllerFactory::create(
-			'openregister',
 			$request,
 			$conversations,
 			$messages,

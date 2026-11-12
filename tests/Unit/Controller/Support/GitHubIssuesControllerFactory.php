@@ -27,6 +27,7 @@ final class GitHubIssuesControllerFactory {
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param ICacheFactory $cacheFactory Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,9 +41,9 @@ final class GitHubIssuesControllerFactory {
 		\OCP\IUserSession $userSession,
 		\OCP\ICacheFactory $cacheFactory,
 		\Psr\Log\LoggerInterface $logger,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\GitHubIssuesDomain(
@@ -52,11 +53,14 @@ final class GitHubIssuesControllerFactory {
 					rateLimiter: $rateLimiter,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\GitHubIssuesPlatform(
-					userSession: $userSession,
-					logger: $logger,
+					session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+						userSession: $userSession,
+						groupManager: $groupManager,
+						logger: $logger,
+					),
+					cacheFactory: $cacheFactory,
 				),
 			),
-			$cacheFactory,
 		];
 	}
 

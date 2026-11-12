@@ -44,12 +44,31 @@ use JsonSerializable;
 final class StateFieldRules implements JsonSerializable, StateFieldRulesInterface {
 
 	/**
+	 * Properties kept out of the rendered object.
+	 *
+	 * @var array<int, string>
+	 */
+	private readonly array $hidden;
+
+	/**
+	 * Properties rendered but refused on change.
+	 *
+	 * @var array<int, string>
+	 */
+	private readonly array $readOnly;
+
+	/**
+	 * Properties that may not be left empty.
+	 *
+	 * @var array<int, string>
+	 */
+	private readonly array $required;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string|null $state The state the rules were resolved for, null when the schema declares no lifecycle.
-	 * @param array<int, string> $hidden Properties kept out of the rendered object.
-	 * @param array<int, string> $readOnly Properties rendered but refused on change.
-	 * @param array<int, string> $required Properties that may not be left empty.
+	 * @param StateFieldLists $fields What is hidden, read only and required.
 	 * @param array<string, string> $messages Per-property refusal text the author declared.
 	 *
 	 * @return void
@@ -58,11 +77,12 @@ final class StateFieldRules implements JsonSerializable, StateFieldRulesInterfac
 	 */
 	public function __construct(
 		private readonly ?string $state = null,
-		private readonly array $hidden = [],
-		private readonly array $readOnly = [],
-		private readonly array $required = [],
+		StateFieldLists $fields = new StateFieldLists(),
 		private readonly array $messages = [],
 	) {
+		$this->hidden = $fields->hidden;
+		$this->readOnly = $fields->readOnly;
+		$this->required = $fields->required;
 	}//end __construct()
 
 	/**

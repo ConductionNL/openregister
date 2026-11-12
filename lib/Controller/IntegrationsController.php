@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
+use OCA\OpenRegister\Service\Integration\IntegrationAdminView;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -116,35 +117,52 @@ class IntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
-		$group = $this->request->getParam('group');
-		$enabled = $this->request->getParam('enabled');
-
 		try {
-			$providers = $this->registry->list();
-			$isAdmin = $this->currentUserIsAdmin();
-
-			$rows = [];
-			foreach ($providers as $provider) {
-				if ($enabled === 'true' && $provider->isEnabled() === false) {
-					continue;
-				}
-
-				if (is_string($group) === true && $provider->getGroup() !== $group) {
-					continue;
-				}
-
-				$rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
-			}
-
-			return new JSONResponse(['integrations' => $rows], Http::STATUS_OK);
+			return new JSONResponse(['integrations' => $this->listedRows()], Http::STATUS_OK);
 		} catch (\Throwable $e) {
 			$this->logger->error('[IntegrationsController] index failed', ['exception' => $e]);
 			return new JSONResponse(
 				['message' => 'Failed to list integrations'],
 				Http::STATUS_INTERNAL_SERVER_ERROR
 			);
-		}//end try
+		}
 	}//end index()
+
+	/**
+	 * The descriptors of the registered providers the request's filters keep.
+	 *
+	 * @return array<int, array<string, mixed>> One descriptor per listed provider
+	 */
+	private function listedRows(): array {
+		$providers = $this->registry->list();
+		$isAdmin = $this->currentUserIsAdmin();
+
+		$rows = [];
+		foreach ($providers as $provider) {
+			if ($this->isListed(provider: $provider) === true) {
+				$rows[] = $this->describe(provider: $provider, isAdmin: $isAdmin);
+			}
+		}
+
+		return $rows;
+	}//end listedRows()
+
+	/**
+	 * Whether a provider passes the `enabled` and `group` filters of the request.
+	 *
+	 * @param IntegrationProvider $provider The provider
+	 *
+	 * @return bool True when the provider is listed
+	 */
+	private function isListed(IntegrationProvider $provider): bool {
+		if ($this->request->getParam('enabled') === 'true' && $provider->isEnabled() === false) {
+			return false;
+		}
+
+		$group = $this->request->getParam('group');
+
+		return is_string($group) === false || $provider->getGroup() === $group;
+	}//end isListed()
 
 	/**
 	 * GET /api/integrations/{id}
@@ -205,21 +223,7 @@ class IntegrationsController extends Controller {
 			return $row;
 		}
 
-		// Admin-only operational surface.
-		$row['requiresPermission'] = $provider->requiresPermission();
-		$row['openConnectorSource'] = $provider->getOpenConnectorSource();
-
-		try {
-			$row['authStatus'] = $provider->health();
-		} catch (\Throwable $e) {
-			$row['authStatus'] = [
-				'status' => 'unavailable',
-				'authStatus' => 'unknown',
-				'message' => 'Provider health check threw',
-			];
-		}
-
-		return $row;
+		return IntegrationAdminView::withAdminFields(row: $row, provider: $provider);
 	}//end describe()
 
 	/**
@@ -228,11 +232,6 @@ class IntegrationsController extends Controller {
 	 * @return bool
 	 */
 	private function currentUserIsAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return IntegrationAdminView::callerIsAdmin(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end currentUserIsAdmin()
 }//end class

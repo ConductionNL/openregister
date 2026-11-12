@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Subject;
 
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -64,27 +65,21 @@ class SubjectEntityIndex {
 	 * LIKE wildcards in the subject are escaped before anchoring. Rows naming
 	 * no object (no uuid and no positive id) are dropped.
 	 *
-	 * @param string      $subjectId Subject value.
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $mode      `exact` or `ilike`.
+	 * @param SubjectQuery $query The subject value, optional GdprEntity type filter and match mode (`exact` or `ilike`).
 	 *
 	 * @return array<string, array{object_id: int, object_uuid: string, gdprEntities: array}>
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-consumable-rbac-tenant-scoped-data-subject-request-service
 	 */
-	public function discover(string $subjectId, ?string $type, string $mode): array {
+	public function discover(SubjectQuery $query): array {
 		$grouped = [];
-		foreach ($this->lookup(subject: $subjectId, type: $type, mode: $mode) as $hit) {
+		foreach ($this->lookup(query: $query) as $hit) {
 			$key = $this->groupKey(hit: $hit);
 			if ($key === null) {
 				continue;
 			}
 
-			$grouped[$key] ??= [
-				'object_id' => (int)($hit['object_id'] ?? 0),
-				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
-				'gdprEntities' => [],
-			];
+			$grouped[$key] ??= self::groupFor(hit: $hit);
 
 			$grouped[$key]['gdprEntities'][] = $this->entityOf(hit: $hit);
 		}
@@ -92,6 +87,21 @@ class SubjectEntityIndex {
 		return $grouped;
 
 	}//end discover()
+
+	/**
+	 * An empty group for the object a hit belongs to.
+	 *
+	 * @param array<string, mixed> $hit The index hit.
+	 *
+	 * @return array{object_id: int, object_uuid: string, gdprEntities: array} The group.
+	 */
+	private static function groupFor(array $hit): array {
+		return [
+			'object_id' => (int)($hit['object_id'] ?? 0),
+			'object_uuid' => (string)($hit['object_uuid'] ?? ''),
+			'gdprEntities' => [],
+		];
+	}//end groupFor()
 
 	/**
 	 * The grouping key of a row: its object uuid, else its object id, else none.
@@ -135,21 +145,19 @@ class SubjectEntityIndex {
 	/**
 	 * The index lookup (one row per entity/object pair); empty on failure.
 	 *
-	 * @param string      $subject Subject value.
-	 * @param string|null $type    Optional type filter.
-	 * @param string      $mode    `exact` or `ilike`.
+	 * @param SubjectQuery $query The subject value, optional type filter and match mode.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function lookup(string $subject, ?string $type, string $mode): array {
+	private function lookup(SubjectQuery $query): array {
 		try {
-			return $this->rowsOf(qb: $this->query(subject: $subject, type: $type, mode: $mode));
+			return $this->rowsOf(qb: $this->query(query: $query));
 		} catch (\Throwable $e) {
 			// No subject and no driver message: both can carry the data subject's
 			// identifier, and the app log is no place for personal data.
 			$this->logger->warning(
 				message: '[DSR] GdprEntity lookup failed',
-				context: ['type' => $type, 'error' => $e::class]
+				context: ['type' => $query->type, 'error' => $e::class]
 			);
 			return [];
 		}
@@ -159,20 +167,19 @@ class SubjectEntityIndex {
 	/**
 	 * Build the join, anchored on the escaped subject and the optional type.
 	 *
-	 * @param string      $subject Subject value.
-	 * @param string|null $type    Optional type filter.
-	 * @param string      $mode    `exact` or `ilike`.
+	 * @param SubjectQuery $query The subject value, optional type filter and match mode.
 	 *
 	 * @return IQueryBuilder
 	 */
-	private function query(string $subject, ?string $type, string $mode): IQueryBuilder {
+	private function query(SubjectQuery $query): IQueryBuilder {
+		$type = $query->type;
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct(self::COLUMNS)
 			->from('openregister_entities', 'e')
 			->innerJoin('e', 'openregister_entity_relations', 'r', $qb->expr()->eq('r.entity_id', 'e.id'))
 			->where($qb->expr()->isNotNull('r.object_id'));
 
-		$pattern = $this->pattern(subject: $subject, mode: $mode);
+		$pattern = $this->pattern(subject: $query->subjectId, mode: $query->mode);
 		$qb->andWhere($qb->expr()->iLike('e.value', $qb->createNamedParameter($pattern)));
 
 		if ($type !== null && $type !== '') {

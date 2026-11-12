@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses -- small stand-ins live beside the test.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -75,7 +77,7 @@ class DispatchGoldenProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -165,7 +167,7 @@ class ExternalIntegrationRouterDispatchGoldenTest extends TestCase {
 	public function testARequestOnlyConnectorIsCalledThroughRequest(): void {
 		$service = new DispatchGoldenRequestOnlyService();
 
-		$this->router($this->objects(), $service)->call(new DispatchGoldenProvider(), 'GET', 'pages', ['query' => ['q' => 'x']]);
+		$this->router($this->objects(), $service)->call(new DispatchGoldenProvider(), new UpstreamRequest(method: 'GET', path: 'pages', options: ['query' => ['q' => 'x']]));
 
 		$this->assertSame('GET', $service->seen[0]);
 		$this->assertSame('/pages', $service->seen[1]);
@@ -176,7 +178,7 @@ class ExternalIntegrationRouterDispatchGoldenTest extends TestCase {
 		$service = new DispatchGoldenRequestOnlyService();
 
 		try {
-			$this->router($this->objects(), $service)->call(new DispatchGoldenProvider(), 'GET', 'pages', ['withholdBodies' => true]);
+			$this->router($this->objects(), $service)->call(new DispatchGoldenProvider(), new UpstreamRequest(method: 'GET', path: 'pages', options: ['withholdBodies' => true]));
 			$this->fail('A connector that cannot withhold bodies must not be called.');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES, $e->getCause());
@@ -187,7 +189,7 @@ class ExternalIntegrationRouterDispatchGoldenTest extends TestCase {
 
 	public function testAConnectorWithNeitherMethodIsAnUpstreamFailure(): void {
 		try {
-			$this->router($this->objects(), new stdClass())->call(new DispatchGoldenProvider(), 'POST', 'pages', []);
+			$this->router($this->objects(), new stdClass())->call(new DispatchGoldenProvider(), new UpstreamRequest(method: 'POST', path: 'pages', options: []));
 			$this->fail('A connector without call/request must fail.');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
@@ -201,7 +203,7 @@ class ExternalIntegrationRouterDispatchGoldenTest extends TestCase {
 
 	public function testTheMetaCallNamesItselfInTheFailureLine(): void {
 		try {
-			$this->router($this->objects(), new stdClass())->callWithMeta(new DispatchGoldenProvider(), 'GET', 'pages/1', []);
+			$this->router($this->objects(), new stdClass())->callWithMeta(new DispatchGoldenProvider(), new UpstreamRequest(method: 'GET', path: 'pages/1', options: []));
 			$this->fail('A connector without call/request must fail.');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
@@ -212,7 +214,7 @@ class ExternalIntegrationRouterDispatchGoldenTest extends TestCase {
 
 	public function testAContainerWithoutAnObjectServiceIsASourceMissing(): void {
 		try {
-			$this->router(new stdClass(), new DispatchGoldenRequestOnlyService())->call(new DispatchGoldenProvider(), 'GET', 'pages', []);
+			$this->router(new stdClass(), new DispatchGoldenRequestOnlyService())->call(new DispatchGoldenProvider(), new UpstreamRequest(method: 'GET', path: 'pages', options: []));
 			$this->fail('No ObjectService means no source.');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getCause());

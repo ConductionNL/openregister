@@ -118,19 +118,18 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	}//end normaliseCategory()
 
 	/**
-	 * Ask once for a batch of addresses.
+	 * Ask once for the batch of addresses a question names.
 	 *
-	 * @param string $channel The channel, `email` for both OpenRegister paths.
-	 * @param string $category The message category; normalised first.
-	 * @param array<int, string> $addresses The addresses, as they will be mailed.
-	 * @param string $correlationId Ties integriq's log rows to this send.
+	 * The addresses are cleaned and the category normalised before integriq is asked.
+	 *
+	 * @param OptOutQuestion $question The channel, category, addresses and correlation id.
 	 *
 	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
-	public function ask(string $channel, string $category, array $addresses, string $correlationId = ''): array {
-		$addresses = $this->cleanAddresses(addresses: $addresses);
+	public function askQuestion(OptOutQuestion $question): array {
+		$addresses = $this->cleanAddresses(addresses: $question->addresses);
 		if ($addresses === []) {
 			return [];
 		}
@@ -139,9 +138,15 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 			return $this->uniform(addresses: $addresses, code: self::CODE_CHECK_OFF);
 		}
 
-		$category = self::normaliseCategory(category: $category);
-		return $this->answer(question: new OptOutQuestion(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId));
-	}//end ask()
+		return $this->answer(
+			question: new OptOutQuestion(
+				channel: $question->channel,
+				category: self::normaliseCategory(category: $question->category),
+				addresses: $addresses,
+				correlationId: $question->correlationId
+			)
+		);
+	}//end askQuestion()
 
 	/**
 	 * The addresses as strings, without empties and duplicates.
@@ -203,7 +208,7 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	}//end decisionsFrom()
 
 	/**
-	 * One decision as integriq gave it, in the shape ask() returns.
+	 * One decision as integriq gave it, in the shape askQuestion() returns.
 	 *
 	 * @param array<string, mixed> $decision Integriq's decision.
 	 *
@@ -225,7 +230,7 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	/**
 	 * One address's decision; none means no answer, and no answer is refused.
 	 *
-	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions What ask() returned.
+	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions What askQuestion() returned.
 	 * @param string $address The address.
 	 *
 	 * @return array{send: bool, code: string, unsubscribe: array|null} The decision.

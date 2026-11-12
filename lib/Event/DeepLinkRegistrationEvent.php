@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Event dispatched during OpenRegister boot to allow consuming apps
@@ -84,6 +85,15 @@ class DeepLinkRegistrationEvent extends Event {
 		string $icon = '',
 		?string $displayName = null,
 	): void {
-		$this->registry->register($appId, $registerSlug, $schemaSlug, $urlTemplate, $icon, $displayName);
+		$this->registry->add(
+			registration: new DeepLinkRegistration(
+				appId: $appId,
+				registerSlug: $registerSlug,
+				schemaSlug: $schemaSlug,
+				urlTemplate: $urlTemplate,
+				icon: $icon,
+				displayName: $displayName
+			)
+		);
 	}//end register()
 }//end class

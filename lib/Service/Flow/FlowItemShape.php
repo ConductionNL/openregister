@@ -95,31 +95,29 @@ final class FlowItemShape {
 	/**
 	 * Build one well-formed item.
 	 *
-	 * @param array $json The record.
-	 * @param array $binary File attachments, keyed by name.
-	 * @param int|null $fromItemIndex Input item this came from, when known.
-	 * @param string|null $output The output branch this item routes to, when set.
+	 * @param array           $json    The record.
+	 * @param FlowItemOptions $options The attachments, the source item and the output branch.
 	 *
 	 * @return array<string, mixed> The item.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
+	public static function item(array $json, FlowItemOptions $options=new FlowItemOptions()): array {
 		$paired = null;
-		if ($fromItemIndex !== null) {
-			$paired = ['item' => $fromItemIndex];
+		if ($options->fromItemIndex !== null) {
+			$paired = ['item' => $options->fromItemIndex];
 		}
 
 		$item = [
 			self::JSON => $json,
-			self::BINARY => $binary,
+			self::BINARY => $options->binary,
 			self::PAIRED_ITEM => $paired,
 		];
 
 		// The output tag is added only when set, so an ordinary item keeps its
 		// exact three-key shape and nothing downstream has to know about routing.
-		if ($output !== null && $output !== '') {
-			$item[self::OUTPUT] = $output;
+		if ($options->output !== null && $options->output !== '') {
+			$item[self::OUTPUT] = $options->output;
 		}
 
 		return $item;
@@ -173,9 +171,11 @@ final class FlowItemShape {
 	private static function fromMember(array $member, ?int $fallback): array {
 		return self::item(
 			json: (array)($member[self::JSON] ?? $member),
-			binary: (array)($member[self::BINARY] ?? []),
-			fromItemIndex: self::pairedIndex(member: $member, fallback: $fallback),
-			output: self::outputOf(member: $member)
+			options: new FlowItemOptions(
+				binary: (array)($member[self::BINARY] ?? []),
+				fromItemIndex: self::pairedIndex(member: $member, fallback: $fallback),
+				output: self::outputOf(member: $member)
+			)
 		);
 	}//end fromMember()
 
@@ -193,7 +193,22 @@ final class FlowItemShape {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private static function pairedIndex(array $member, ?int $fallback): ?int {
-		$paired = ($member[self::PAIRED_ITEM] ?? null);
+		$tracked = self::trackedIndex(paired: ($member[self::PAIRED_ITEM] ?? null));
+		if ($tracked !== null) {
+			return $tracked;
+		}
+
+		return $fallback;
+	}//end pairedIndex()
+
+	/**
+	 * The input index a member's own provenance names: `{item: n}` or a bare int.
+	 *
+	 * @param mixed $paired The member's paired-item value.
+	 *
+	 * @return int|null The index, or null when it names none.
+	 */
+	private static function trackedIndex(mixed $paired): ?int {
 		if (is_array($paired) === true && isset($paired['item']) === true) {
 			return (int)$paired['item'];
 		}
@@ -202,6 +217,6 @@ final class FlowItemShape {
 			return $paired;
 		}
 
-		return $fallback;
-	}//end pairedIndex()
+		return null;
+	}//end trackedIndex()
 }//end class

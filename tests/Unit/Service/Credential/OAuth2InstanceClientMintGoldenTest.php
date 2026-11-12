@@ -29,6 +29,8 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -110,11 +112,11 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 	 */
 	#[DataProvider('flows')]
 	public function testTheClientSecretIsMintedForTheFlowsOwner(array $claims, array $expected): void {
-		$result = $this->client(['client_id' => 'CID', 'client_secret' => 'ISSUED_SECRET'])->ensure(
+		$result = $this->client(['client_id' => 'CID', 'client_secret' => 'ISSUED_SECRET'])->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 			provider: $this->mastodon(),
 			claims: $claims,
 			redirectUri: 'https://home.example/cb'
-		);
+		));
 
 		$this->assertSame([$expected], $this->mints);
 		$this->assertSame('CID', $result['cl']);
@@ -132,11 +134,11 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 	 */
 	public function testARefusedRegistrationMintsNothing(): void {
 		try {
-			$this->client(['client_secret' => 'ISSUED_SECRET'])->ensure(
+			$this->client(['client_secret' => 'ISSUED_SECRET'])->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(
 				provider: $this->mastodon(),
 				claims: ['u' => 'alice', 's' => 'personal', 'h' => 'https://mastodon.example'],
 				redirectUri: 'https://home.example/cb'
-			);
+			));
 			$this->fail('A registration without a client id must be refused.');
 		} catch (OAuth2RegistrationFailedException $refused) {
 			$this->assertSame([], $this->mints);
@@ -174,24 +176,16 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 		$objectService->method('find')->willReturn(null);
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(
-			function (
-				string $name,
-				string $provider,
-				string $owner,
-				array $allowedApps = [],
-				?string $secret = null,
-				string $scope = 'personal',
-				?string $organisation = null,
-			): ObjectEntity {
+		$broker->method('mintCredential')->willReturnCallback(
+			function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
 				$this->mints[] = [
-					'name' => $name,
-					'provider' => $provider,
-					'owner' => $owner,
-					'allowedApps' => $allowedApps,
-					'secret' => $secret,
-					'scope' => $scope,
-					'organisation' => $organisation,
+					'name' => $mint->name,
+					'provider' => $mint->provider,
+					'owner' => $mint->owner,
+					'allowedApps' => $options->allowedApps,
+					'secret' => $options->secret(),
+					'scope' => $options->scope,
+					'organisation' => $options->organisation,
 				];
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');

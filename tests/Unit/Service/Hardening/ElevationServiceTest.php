@@ -33,6 +33,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Service\Hardening\HardeningFact;
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Hardening\PlatformSecurityReader;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsStore;
+use OCA\OpenRegister\Service\Hardening\HardeningPosture;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\ElevationIdentity;
@@ -103,8 +109,12 @@ class ElevationServiceTest extends TestCase {
 		$this->service = new ElevationService(
 			identity: new ElevationIdentity(session: $session, userSession: $userSession, users: $this->users),
 			time: $time,
-			policy: new HardeningPolicy($appConfig),
-			audit: $this->audit
+			posture: new HardeningPosture(
+				policy: new HardeningPolicy($appConfig),
+				store: new HardeningSettingsStore($appConfig, $this->createMock(AuditTrailMapperInterface::class), $this->createMock(LoggerInterface::class)),
+				audit: $this->audit,
+				platform: $this->createMock(PlatformSecurityReader::class),
+			)
 		);
 	}
 
@@ -118,7 +128,7 @@ class ElevationServiceTest extends TestCase {
 
 	public function testAWrongPasswordElevatesNothingAndIsAudited(): void {
 		$this->users->method('checkPassword')->willReturn(false);
-		$this->audit->expects($this->atLeastOnce())->method('record');
+		$this->audit->expects($this->atLeastOnce())->method('refused');
 
 		$this->assertFalse($this->service->elevate(password: 'guess'));
 		$this->assertFalse($this->service->isElevated());
@@ -190,21 +200,16 @@ class ElevationServiceTest extends TestCase {
 	public function testTheGrantIsWrittenToTheAuditTrail(): void {
 		$this->users->method('checkPassword')->willReturn($this->createMock(IUser::class));
 		$this->audit->expects($this->once())
-			->method('record')
-			->with(
-				'elevation.granted',
-				'',
-				['user' => 'beheerder', 'periodSeconds' => 900],
-				true
-			);
+			->method('accepted')
+			->with(new HardeningFact(fact: 'elevation.granted', before: '', after: ['user' => 'beheerder', 'periodSeconds' => 900]));
 
 		$this->service->elevate(password: 'correct horse');
 	}
 
 	public function testALapsedWriteAttemptIsWrittenToTheAuditTrail(): void {
 		$this->audit->expects($this->once())
-			->method('record')
-			->with('elevation.lapsed', '', 'beheerder', false, $this->stringContains('lapsed'));
+			->method('refused')
+			->with(new HardeningFact(fact: 'elevation.lapsed', before: '', after: 'beheerder'), $this->stringContains('lapsed'));
 
 		try {
 			$this->service->requireElevated();

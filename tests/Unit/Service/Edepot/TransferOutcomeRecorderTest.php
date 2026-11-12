@@ -75,14 +75,9 @@ class TransferOutcomeRecorderTest extends TestCase {
 			);
 		}
 
-		$auditLog = new TransferAuditLog(
-			$this->createMock(AuditTrailMapperInterface::class),
-			new TransferSettings($this->createMock(IAppConfig::class), new NullLogger()),
-			$this->createMock(INotificationManager::class),
-			new NullLogger()
-		);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), new NullLogger()), new TransferSettings($this->createMock(IAppConfig::class), new NullLogger()), $this->createMock(INotificationManager::class));
 
-		return new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger);
+		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog);
 	}//end recorder()
 
 	public function testAFailingWriteIsLoggedAndNeverThrown(): void {

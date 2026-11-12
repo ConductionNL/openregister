@@ -37,10 +37,8 @@ interface RedactionWriteServiceInterface {
 	 * `field` / `before` / `after` / `ground`. Persists once (audited). It does
 	 * NOT call the erase pseudonymise path.
 	 *
-	 * @param string $caseUuid The case object uuid.
-	 * @param string $field The case field being redacted.
-	 * @param string $after The redacted replacement value.
-	 * @param string $ground The generic ground key the redaction was applied under.
+	 * @param string         $caseUuid  The case object uuid.
+	 * @param FieldRedaction $redaction The field, its redacted replacement value and the generic ground key.
 	 *
 	 * @return array{caseUuid: string, field: string, before: string, after: string, ground: string, recordType: string}
 	 *
@@ -48,5 +46,5 @@ interface RedactionWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
-	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array;
+	public function applyRedaction(string $caseUuid, FieldRedaction $redaction): array;
 }//end interface

@@ -73,7 +73,6 @@ class FilesControllerIL10NTest extends TestCase {
 
 	private function buildController(?IL10N $l10n): FilesController {
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,

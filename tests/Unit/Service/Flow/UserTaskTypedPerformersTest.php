@@ -159,10 +159,7 @@ final class UserTaskTypedPerformersTest extends TestCase {
 			}
 		);
 
-		return new UserTaskPerformers(
-			config: $this->configReader(),
-			principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))
-		);
+		return new UserTaskPerformers(config: $this->configReader(), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))));
 	}//end performers()
 
 	/**
@@ -308,13 +305,16 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testAKnownTypeThatResolvesToNobodyStillSaves(): void {
-		$this->expectNotToPerformAssertions();
-
 		// `KnownTypeResolver` deliberately resolves to nobody.
-		$this->performers()->refuseUnknownTypes(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'vacant']],
-			l10n: $this->l10n()
+		$refusal = $this->refusalOf(
+			fn () => $this->performers()->refuseUnknownTypes(
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'vacant']],
+				l10n: $this->l10n()
+			)
 		);
+
+		// Pair: testAnUnknownTypeIsRefusedAtSaveNamingTypeAndId, an unregistered type.
+		$this->assertNull($refusal, 'a known type with no holders today refused the save');
 	}//end testAKnownTypeThatResolvesToNobodyStillSaves()
 
 	/**
@@ -326,12 +326,15 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testWithoutARegistryNoTypeIsRefused(): void {
-		$this->expectNotToPerformAssertions();
-
-		(new UserTaskPerformers(config: $this->configReader()))->refuseUnknownTypes(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']],
-			l10n: $this->l10n()
+		$refusal = $this->refusalOf(
+			fn () => (new UserTaskPerformers(config: $this->configReader()))->refuseUnknownTypes(
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'gremium', 'id' => 'bezwaar']],
+				l10n: $this->l10n()
+			)
 		);
+
+		// Pair: testAnUnknownTypeIsRefusedAtSaveNamingTypeAndId, the same type with a registry.
+		$this->assertNull($refusal, 'a type was refused without a registry to judge it');
 	}//end testWithoutARegistryNoTypeIsRefused()
 
 	/**
@@ -344,16 +347,32 @@ final class UserTaskTypedPerformersTest extends TestCase {
 	 * @return void
 	 */
 	public function testATypedAssigneeCountsAsAPerformer(): void {
-		$this->expectNotToPerformAssertions();
+		$config = ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']];
 
-		$this->configReader()->validate(
-			['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']]
+		// Pair: testAStepNamingNobodyIsStillRefused drops the assignee.
+		$this->assertNull($this->refusalOf(fn () => $this->configReader()->validate($config)));
+		$this->assertNull(
+			$this->refusalOf(fn () => $this->performers()->refuseUnknownTypes(config: $config, l10n: $this->l10n()))
 		);
-		$this->performers()->refuseUnknownTypes(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'position', 'id' => 'chair']],
-			l10n: $this->l10n()
-		);
-	}//end testATypedAssigneeCountsAsAPerformer()
+		$this->assertSame(['position:chair'], $this->performersOf($config));
+	}
+
+	/**
+	 * Run a save-time check and return its refusal, or null when it let the step through.
+	 *
+	 * @param callable $check The check.
+	 *
+	 * @return UnexpectedValueException|null The refusal.
+	 */
+	private function refusalOf(callable $check): ?UnexpectedValueException {
+		try {
+			$check();
+		} catch (UnexpectedValueException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()//end testATypedAssigneeCountsAsAPerformer()
 
 	/**
 	 * A step naming nobody at all is still refused.

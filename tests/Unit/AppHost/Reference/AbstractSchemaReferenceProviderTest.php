@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Reference;
 
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -62,6 +65,17 @@ final class TestLeadReferenceProvider extends AbstractSchemaReferenceProvider {
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\AppHost\SchemaScopeLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
  */
 class AbstractSchemaReferenceProviderTest extends TestCase {
 
@@ -134,9 +148,7 @@ class AbstractSchemaReferenceProviderTest extends TestCase {
 	private function buildProvider(?string $userId = 'test-user'): TestLeadReferenceProvider {
 		return new TestLeadReferenceProvider(
 			$this->formatter,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->createMock(LoggerInterface::class),
+			new SchemaScopeLookups(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class)),
 			$userId
 		);
 	}//end buildProvider()

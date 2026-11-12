@@ -44,8 +44,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,16 +63,13 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * The mappers memoise `find()` per request, so resolving the same
 	 * register/schema for several triggers in one dispatch costs one read.
 	 *
-	 * @param RegisterMapperInterface $registers Resolves a register by id, uuid or slug.
-	 * @param SchemaMapperInterface $schemas Resolves a schema by id, uuid or slug.
-	 * @param LoggerInterface $logger Records identifiers that resolve to nothing.
+	 * @param SchemaCatalogInterface $catalog Resolves a register or schema by id, uuid or slug.
+	 * @param LoggerInterface        $logger  Records identifiers that resolve to nothing.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -88,24 +86,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function registerSlug(string $identifier): string {
-		$identifier = trim($identifier);
-		if ($identifier === '') {
-			return '';
-		}
-
-		try {
-			$slug = trim((string)$this->registers->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
-		} catch (Throwable $e) {
-			$this->reportUnresolved(kind: 'register', identifier: $identifier, error: $e);
-
-			return $identifier;
-		}
-
-		if ($slug === '') {
-			return $identifier;
-		}
-
-		return $slug;
+		return $this->slugOf(identifier: $identifier, kind: 'register');
 	}//end registerSlug()
 
 	/**
@@ -123,25 +104,64 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function schemaSlug(string $identifier): string {
+		return $this->slugOf(identifier: $identifier, kind: 'schema');
+	}//end schemaSlug()
+
+	/**
+	 * The slug of a register or schema identifier, or the identifier itself when it has none or cannot be read.
+	 *
+	 * @param string $identifier The id, uuid or slug as written.
+	 * @param string $kind       `register` or `schema`.
+	 *
+	 * @return string The slug, the identifier, or '' for a blank one.
+	 */
+	private function slugOf(string $identifier, string $kind): string {
 		$identifier = trim($identifier);
 		if ($identifier === '') {
 			return '';
 		}
 
-		try {
-			$slug = trim((string)$this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
-		} catch (Throwable $e) {
-			$this->reportUnresolved(kind: 'schema', identifier: $identifier, error: $e);
-
-			return $identifier;
-		}
-
-		if ($slug === '') {
+		$slug = $this->storedSlug(identifier: $identifier, kind: $kind);
+		if ($slug === null || $slug === '') {
 			return $identifier;
 		}
 
 		return $slug;
-	}//end schemaSlug()
+	}//end slugOf()
+
+	/**
+	 * The stored slug of the entity the identifier names, or null when it cannot be read.
+	 *
+	 * @param string $identifier The trimmed identifier.
+	 * @param string $kind       `register` or `schema`.
+	 *
+	 * @return string|null The trimmed slug, possibly empty.
+	 */
+	private function storedSlug(string $identifier, string $kind): ?string {
+		try {
+			return trim((string)$this->findEntity(identifier: $identifier, kind: $kind)->getSlug());
+		} catch (Throwable $e) {
+			$this->reportUnresolved(what: $kind . ' identifier "' . $identifier . '"', error: $e);
+
+			return null;
+		}
+	}//end storedSlug()
+
+	/**
+	 * The register or schema the identifier names, read as the system.
+	 *
+	 * @param string $identifier The trimmed identifier.
+	 * @param string $kind       `register` or `schema`.
+	 *
+	 * @return Register|Schema The entity.
+	 */
+	private function findEntity(string $identifier, string $kind): Register|Schema {
+		if ($kind === 'register') {
+			return $this->catalog->registers()->find(id: $identifier, _rbac: false, _multitenancy: false);
+		}
+
+		return $this->catalog->schemas()->find(id: $identifier, _rbac: false, _multitenancy: false);
+	}//end findEntity()
 
 	/**
 	 * Say out loud that an identifier resolved to nothing.
@@ -150,16 +170,14 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * since-deleted register still has to pass through unchanged, and warning
 	 * on every event for it would drown the log without changing the outcome.
 	 *
-	 * @param string $kind Which catalogue was asked.
-	 * @param string $identifier What was asked for.
+	 * @param string    $what  Which catalogue was asked, and for what: `register identifier "x"`.
 	 * @param Throwable $error Why it did not resolve.
 	 *
 	 * @return void
 	 */
-	private function reportUnresolved(string $kind, string $identifier, Throwable $error): void {
+	private function reportUnresolved(string $what, Throwable $error): void {
 		$this->logger->debug(
-			message: '[FlowTriggerSlugs] The ' . $kind . ' identifier "' . $identifier
-				. '" did not resolve to a slug and is matched as-is: ' . $error->getMessage(),
+			message: '[FlowTriggerSlugs] The ' . $what . ' did not resolve to a slug and is matched as-is: ' . $error->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 

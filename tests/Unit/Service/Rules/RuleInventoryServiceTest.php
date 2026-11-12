@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use DateTime;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
@@ -64,8 +65,6 @@ class RuleInventoryServiceTest extends TestCase {
 
 		return new RuleInventoryService(
 			summaries: $summaryMapper,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 
@@ -201,11 +200,7 @@ class RuleInventoryServiceTest extends TestCase {
 		$stale->setLastRun(new DateTime('2026-01-01 00:00:00'));
 		$stale->setLastVerdict(RuleVocabulary::VERDICT_FIRED);
 
-		$rows = $this->service(summaries: ['calculation:bezwaar:uiterlijkeDatum' => $stale])->inventory(
-			schema: $this->schema(),
-			idleDays: 90,
-			now: new DateTime('2026-09-14 00:00:00')
-		);
+		$rows = $this->service(summaries: ['calculation:bezwaar:uiterlijkeDatum' => $stale])->inventory(schema: $this->schema(), options: new RuleInventoryOptions(idleDays: 90, now: new DateTime('2026-09-14 00:00:00')));
 
 		$byId = [];
 		foreach ($rows as $row) {
@@ -234,11 +229,7 @@ class RuleInventoryServiceTest extends TestCase {
 		$fresh->setLastRun(new DateTime('2026-09-10 00:00:00'));
 		$fresh->setLastVerdict(RuleVocabulary::VERDICT_FIRED);
 
-		$rows = $this->service(summaries: ['calculation:bezwaar:uiterlijkeDatum' => $fresh])->inventory(
-			schema: $this->schema(),
-			idleDays: 90,
-			now: new DateTime('2026-09-14 00:00:00')
-		);
+		$rows = $this->service(summaries: ['calculation:bezwaar:uiterlijkeDatum' => $fresh])->inventory(schema: $this->schema(), options: new RuleInventoryOptions(idleDays: 90, now: new DateTime('2026-09-14 00:00:00')));
 
 		$this->assertTrue(condition: $rows[0]['ranInsideWindow']);
 
@@ -348,7 +339,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAScopeFilterKeepsThatScopeAndTheSchemaWideRules(): void {
-		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'a']);
+		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), options: new RuleInventoryOptions(scope: ['caseType' => 'a']));
 
 		$this->assertSame(
 			expected: ['calculation:bezwaar:uiterlijkeDatum', 'stateFieldRule:bezwaar:gesloten'],
@@ -366,7 +357,7 @@ class RuleInventoryServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFlowIsScopedThroughItsTriggerNode(): void {
-		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), scope: ['caseType' => 'b']);
+		$rows = $this->scopedService()->inventory(schema: $this->scopedSchema(), options: new RuleInventoryOptions(scope: ['caseType' => 'b']));
 
 		$this->assertSame(
 			expected: ['calculation:bezwaar:uiterlijkeDatum', 'flow:bezwaar:flow-b'],
@@ -392,7 +383,7 @@ class RuleInventoryServiceTest extends TestCase {
 			actual: array_column($rows, 'scope')
 		);
 
-		$other = $service->inventory(schema: $this->scopedSchema(), scope: ['zaaksoort' => 'a']);
+		$other = $service->inventory(schema: $this->scopedSchema(), options: new RuleInventoryOptions(scope: ['zaaksoort' => 'a']));
 		$this->assertSame(expected: ['calculation:bezwaar:uiterlijkeDatum'], actual: array_column($other, 'id'));
 
 	}//end testWithoutAFilterEveryRuleIsListedWithItsScope()

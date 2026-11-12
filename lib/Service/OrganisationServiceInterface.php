@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 
 /**
  * Every public method of OrganisationService. Callers depend on this interface, not on the class.
@@ -151,10 +152,8 @@ interface OrganisationServiceInterface {
 	/**
 	 * Create a new organisation
 	 *
-	 * @param string $name Organisation name
-	 * @param string $description Organisation description
-	 * @param bool $addCurrentUser Whether to add current user as owner and member
-	 * @param string $uuid Optional specific UUID to use
+	 * @param NewOrganisation $details        The name, description and optional UUID.
+	 * @param bool            $addCurrentUser Whether to add current user as owner and member
 	 *
 	 * @return Organisation The created organisation
 	 *
@@ -167,7 +166,7 @@ interface OrganisationServiceInterface {
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	public function createOrganisation(string $name, string $description = '', bool $addCurrentUser = true, string $uuid = ''): Organisation;
+	public function createOrganisation(NewOrganisation $details, bool $addCurrentUser = true): Organisation;
 
 	/**
 	 * Check if current user has access to an organisation
@@ -179,6 +178,41 @@ interface OrganisationServiceInterface {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	public function hasAccessToOrganisation(string $organisationUuid): bool;
+
+	/**
+	 * Check whether a named user has access to an organisation (administrator or member).
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check.
+	 *
+	 * @return bool True when the user is an administrator or a member of the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function userHasAccessToOrganisation(string $organisationUuid, string $userId): bool;
+
+	/**
+	 * Check whether a named user is on an organisation's own member list (no administrator pass).
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check.
+	 *
+	 * @return bool True only when the organisation lists the user as a member.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function isMemberOfOrganisation(string $organisationUuid, string $userId): bool;
+
+	/**
+	 * The organisations a user may manage shared resources for.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return Organisation[] The organisations.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function getManageableOrganisations(string $userId): array;
 
 	/**
 	 * Whether a user administers an organisation (may manage its shared resources).

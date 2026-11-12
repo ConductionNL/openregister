@@ -17,7 +17,9 @@
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -66,7 +68,7 @@ class RecordingDispatcher implements FlowStepDispatcher {
 		foreach ($items as $index => $item) {
 			$json = (array)($item['json'] ?? []);
 			$json['ranBy'] = $name;
-			$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;
@@ -204,9 +206,9 @@ class FlowEngineTest extends TestCase {
 				}
 
 				return [
-					FlowItems::item(json: ['n' => 1], binary: [], fromItemIndex: 0),
-					FlowItems::item(json: ['n' => 2], binary: [], fromItemIndex: 0),
-					FlowItems::item(json: ['n' => 3], binary: [], fromItemIndex: 0),
+					FlowItems::item(json: ['n' => 1], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
+					FlowItems::item(json: ['n' => 2], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
+					FlowItems::item(json: ['n' => 3], options: new FlowItemOptions(binary: [], fromItemIndex: 0)),
 				];
 			}//end dispatch()
 		};
@@ -471,9 +473,7 @@ class FlowEngineTest extends TestCase {
 					$n = (int)($item['json']['n'] ?? 0);
 					$out[] = FlowItems::item(
 						json: $item['json'],
-						binary: [],
-						fromItemIndex: $i,
-						output: ($n > 5 ? 'high' : 'low')
+						options: new FlowItemOptions(binary: [], fromItemIndex: $i, output: ($n > 5 ? 'high' : 'low'))
 					);
 				}
 
@@ -506,7 +506,9 @@ class FlowEngineTest extends TestCase {
 
 		$result = $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $router)),
-			items: $seed
+			origin: new FlowRunOrigin(
+				items: $seed
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -552,8 +554,10 @@ class FlowEngineTest extends TestCase {
 
 		$result = $this->engine->run(
 			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher)),
-			items: $seed,
-			startAt: 'second'
+			origin: new FlowRunOrigin(
+				items: $seed,
+				startAt: 'second'
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
@@ -565,7 +569,9 @@ class FlowEngineTest extends TestCase {
 	public function testRunFromAnUnknownNodeFailsLoudly(): void {
 		$result = $this->engine->run(
 			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: new RecordingDispatcher())),
-			startAt: 'no-such-node'
+			origin: new FlowRunOrigin(
+				startAt: 'no-such-node'
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
@@ -575,7 +581,9 @@ class FlowEngineTest extends TestCase {
 		$dispatcher = new RecordingDispatcher();
 		$result = $this->engine->run(
 			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: $dispatcher)),
-			startAt: ''
+			origin: new FlowRunOrigin(
+				startAt: ''
+			)
 		);
 
 		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);

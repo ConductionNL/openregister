@@ -28,7 +28,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Rules\RelativeTimeCheck;
 use OCA\OpenRegister\Service\Rules\RelativeTimeCondition;
+use OCA\OpenRegister\Service\Rules\RelativeTimeMoment;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\Timer\WorkingCalendarTest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -99,8 +101,8 @@ class RelativeTimeConditionGoldenTest extends TestCase {
 		foreach (['calendar' => WorkingCalendar::fromArray(definition: WorkingCalendarTest::nlNational()), 'none' => null] as $label => $calendar) {
 			$actual[$label] = [
 				'refusalFor' => $this->outcome(fn () => $condition->refusalFor(node: $node, calendar: $calendar)),
-				'compile' => $this->outcome(fn () => $condition->compile(node: $node, now: $now, calendar: $calendar)),
-				'holds' => $this->outcome(fn () => $condition->holds(node: $node, document: $document, now: $now, calendar: $calendar)),
+				'compile' => $this->outcome(fn () => $condition->compile(node: $node, moment: new RelativeTimeMoment(now: $now, calendar: $calendar))),
+				'holds' => $this->outcome(fn () => $condition->holds(node: $node, check: new RelativeTimeCheck(document: $document, moment: new RelativeTimeMoment(now: $now, calendar: $calendar)))),
 			];
 		}
 

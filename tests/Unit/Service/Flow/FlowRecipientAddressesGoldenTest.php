@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Service\Flow\FlowRecipientAddresses;
+use OCA\OpenRegister\Service\Flow\RecipientLookup;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -68,7 +70,8 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 			return in_array($uid, ['alice', 'bob@corp.example', 'carol'], true);
 		});
 		$resolver->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'staff');
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data): array {
+		$resolver->method('resolveFromSource')->willReturnCallback(function (array $recipientsSpec, RecipientSource $source): array {
+			$data = $source->data;
 			$this->resolveCalls[] = ['spec' => $recipientsSpec, 'data' => $data];
 			if ($recipientsSpec[0]['kind'] === 'groups') {
 				return ['uids' => ['dave', 'erin'], 'unresolved' => []];
@@ -211,19 +214,18 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveRecipientsLiteralsWithoutAddresses(): void {
-		$result = $this->addresses->resolveRecipients(
-			[' alice ', 'staff', 'x@y.example', '', '   ', 42, 'alice', 'ghost', 'ghost'],
-			[],
-			false
+		$result = $this->addresses->resolveAll(
+			recipients: [' alice ', 'staff', 'x@y.example', '', '   ', 42, 'alice', 'ghost', 'ghost'],
+			lookup: new RecipientLookup(json: [], acceptAddresses: false)
 		);
 
 		$this->assertSame(['alice', 'dave', 'erin'], $result['uids']);
 		$this->assertSame([], $result['addresses']);
 		$this->assertSame(['x@y.example', 'ghost'], $result['unknown']);
 
-		$single = $this->addresses->resolveRecipients('alice', []);
+		$single = $this->addresses->resolveAll(recipients: 'alice', lookup: new RecipientLookup(json: [], acceptAddresses: false));
 		$this->assertSame(['alice'], $single['uids']);
-		$this->assertSame([], $this->addresses->resolveRecipients(null, [])['uids']);
+		$this->assertSame([], $this->addresses->resolveAll(recipients: null, lookup: new RecipientLookup(json: [], acceptAddresses: false))['uids']);
 
 	}//end testResolveRecipientsLiteralsWithoutAddresses()
 
@@ -242,10 +244,9 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 			'number' => 12,
 		];
 
-		$result = $this->addresses->resolveRecipients(
-			['x@y.example', '{{ item.owner }}', '{{single}}', '{{ map }}', '{{usermap}}', '{{plainmap}}', '{{number}}', '{{missing}}'],
-			$json,
-			true
+		$result = $this->addresses->resolveAll(
+			recipients: ['x@y.example', '{{ item.owner }}', '{{single}}', '{{ map }}', '{{usermap}}', '{{plainmap}}', '{{number}}', '{{missing}}'],
+			lookup: new RecipientLookup(json: $json, acceptAddresses: true)
 		);
 
 		$this->assertSame(['carol'], $result['uids']);

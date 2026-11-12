@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Bpmn;
 
 use DOMDocument;
+use LibXMLError;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 
 /**
@@ -133,6 +134,17 @@ class BpmnSchemaValidator {
 			return null;
 		}
 
+		return $this->violationFrom(errors: $errors);
+	}//end firstViolation()
+
+	/**
+	 * The first violation libxml recorded, or a generic one when it recorded none.
+	 *
+	 * @param array<int, LibXMLError> $errors The errors libxml recorded for a failed validation.
+	 *
+	 * @return array{message: string, line: int, element: string} The violation.
+	 */
+	private function violationFrom(array $errors): array {
 		// `libxml_get_errors()` is typed `LibXMLError[]`, so the guard this
 		// loop used to carry could only ever be true and both analysers said
 		// so. An EMPTY list is the real case to answer: a validation that
@@ -152,7 +164,7 @@ class BpmnSchemaValidator {
 			'line'    => (int)$first->line,
 			'element' => $this->elementIn(message: (string)$first->message),
 		];
-	}//end firstViolation()
+	}//end violationFrom()
 
 	/**
 	 * Validate against the vendored set, with the schema files reachable.

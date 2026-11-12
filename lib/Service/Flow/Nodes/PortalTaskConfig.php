@@ -55,6 +55,8 @@ use UnexpectedValueException;
  * node, which is the split this class exists to keep.
  */
 final class PortalTaskConfig {
+	use TaskConfigReadingsTrait;
+
 
 	/**
 	 * The item key the outcome lands under when the flow does not choose.
@@ -155,20 +157,43 @@ final class PortalTaskConfig {
 	 */
 	private function refuseNonNumericLimits(array $config): void {
 		foreach (['uploadMaxFiles', 'uploadMaxSizeMb', 'heartbeatMinutes'] as $numeric) {
-			$value = ($config[$numeric] ?? null);
-			if ($value !== null && $value !== '' && is_numeric($value) === false) {
+			if (self::isSetButNotNumeric(value: ($config[$numeric] ?? null)) === true) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('%1$s must be a number.', [$numeric])
 				);
 			}
 		}
 
+		$this->refuseTooFewFiles(config: $config);
+	}//end refuseNonNumericLimits()
+
+	/**
+	 * Whether a limit is given (not null, not empty) but is not a number.
+	 *
+	 * @param mixed $value The configured limit.
+	 *
+	 * @return bool
+	 */
+	private static function isSetButNotNumeric(mixed $value): bool {
+		return ($value !== null && $value !== '' && is_numeric($value) === false);
+	}//end isSetButNotNumeric()
+
+	/**
+	 * Refuse a numeric file count below one.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When fewer than one file is allowed.
+	 */
+	private function refuseTooFewFiles(array $config): void {
 		if (isset($config['uploadMaxFiles']) === true && is_numeric($config['uploadMaxFiles']) === true && (int)$config['uploadMaxFiles'] < 1) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('uploadMaxFiles must be at least 1; turn "Upload required" off to allow a completion without a file.')
 			);
 		}
-	}//end refuseNonNumericLimits()
+	}//end refuseTooFewFiles()
 
 	/**
 	 * The party role the node matches on the case.
@@ -242,13 +267,13 @@ final class PortalTaskConfig {
 
 		$data = [
 			'title' => $this->renderedTitle(config: $config, items: $round->items),
-			'description' => $this->renderedOrNull(value: ($config['description'] ?? null), json: $json),
+			'description' => $this->common->renderedOrNull(value: ($config['description'] ?? null), json: $json),
 			'state' => Task::STATE_ACTIVE,
 			'performerType' => Task::PERFORMER_EXTERNAL,
 			'priority' => 'normal',
 			'assignee' => $partyReference,
-			'dueAt' => $this->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
-			'expiresAt' => $this->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
+			'dueAt' => $this->common->renderedOrNull(value: ($config['dueAt'] ?? null), json: $json),
+			'expiresAt' => $this->common->renderedOrNull(value: ($config['expiresAt'] ?? null), json: $json),
 			'onTimeout' => $this->behaviourOrNull(value: ($config['onTimeout'] ?? '')),
 			'onReject' => $this->behaviourOrNull(value: ($config['onReject'] ?? '')),
 			'metadata' => [
@@ -336,46 +361,6 @@ final class PortalTaskConfig {
 	}//end reasonField()
 
 	/**
-	 * The item key the outcome is written under.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return string The key; `portalTask` by default.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
-	 */
-	public function outcomeKey(array $config): string {
-		return $this->common->outcomeKey(config: $config);
-	}//end outcomeKey()
-
-	/**
-	 * The title, templated against the representative item.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 * @param array $items The input items.
-	 *
-	 * @return string The rendered title.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
-	 */
-	public function renderedTitle(array $config, array $items): string {
-		return $this->common->renderedTitle(config: $config, items: $items);
-	}//end renderedTitle()
-
-	/**
-	 * When to wake up and re-check, absent a wake. Never null.
-	 *
-	 * @param array<string, mixed> $config The step configuration.
-	 *
-	 * @return DateTime The next heartbeat.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
-	 */
-	public function heartbeatAt(array $config): DateTime {
-		return $this->common->heartbeatAt(config: $config);
-	}//end heartbeatAt()
-
-	/**
 	 * The uuid of the subject case object the representative item is about.
 	 *
 	 * @param array $items The input items.
@@ -420,29 +405,4 @@ final class PortalTaskConfig {
 		return $behaviour;
 	}//end behaviourOrNull()
 
-	/**
-	 * A templated string, or null when it renders to nothing.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array<string, mixed> $json The representative record.
-	 *
-	 * @return string|null The rendered string, or null.
-	 */
-	private function renderedOrNull(mixed $value, array $json): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		$rendered = FlowValueTemplate::render(value: $value, json: $json);
-		if (is_scalar($rendered) === false) {
-			return null;
-		}
-
-		$rendered = trim((string)$rendered);
-		if ($rendered === '') {
-			return null;
-		}
-
-		return $rendered;
-	}//end renderedOrNull()
 }//end class

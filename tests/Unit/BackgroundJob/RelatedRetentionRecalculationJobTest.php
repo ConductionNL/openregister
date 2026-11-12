@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
@@ -42,7 +43,6 @@ use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
@@ -54,6 +54,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob
@@ -67,6 +69,16 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator
  * @uses \OCA\OpenRegister\Service\Archival\SelectielijstResolver
  * @uses \OCA\OpenRegister\Service\RetentionService
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\RetentionDependantPlace
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Archival\DateSource
+ * @uses \OCA\OpenRegister\Service\Archival\RecordDating
+ * @uses \OCA\OpenRegister\Service\Archival\SelectielijstStorage
+ * @uses \OCA\OpenRegister\Service\RetentionRules
+ * @uses \OCA\OpenRegister\Service\RetentionStores
  */
 class RelatedRetentionRecalculationJobTest extends TestCase {
 
@@ -119,16 +131,14 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 		$settings = $this->createMock(ObjectRetentionHandler::class);
 		$retention = new RetentionService(
 			new RetentionStores(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
 				$settings,
 				$this->createMock(RetentionRowScanner::class),
 				$calculator,
-				new SelectielijstResolver(new SelectielijstStores($this->objectMapper, $this->schemaMapper, $this->registerMapper), $settings, $logger)
+				new SelectielijstResolver(new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $logger)
 			),
 			$this->createMock(IUserSession::class),
 			$logger
@@ -136,7 +146,7 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 
 		$this->job = new RelatedRetentionRecalculationJob(
 			$this->createMock(ITimeFactory::class),
-			new RelatedRetentionLookup($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
 		);
@@ -220,6 +230,51 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 		$this->assertSame(['k1' => ['2028-10-01', 'alice'], 'k2' => ['2028-10-01', 'alice']], $stored);
 		$this->assertArrayNotHasKey('archiefactiedatum', $other->getRetention());
 	}//end testAClientsEndDateRecalculatesItsTwoContactPersons()
+
+	/**
+	 * A dependant that cannot be stored is logged and skipped; the others still follow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testADependantThatFailsToStoreIsSkippedAndTheRestFollow(): void {
+		$client = new ObjectEntity();
+		$client->setUuid(self::CLIENT);
+		$client->setSchema('7');
+		$client->setObject(['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']);
+
+		$register = new Register();
+		$register->setId(3);
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->with(8)->willReturn([3]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$first = $this->contact(uuid: 'k1', client: self::CLIENT);
+		$second = $this->contact(uuid: 'k2', client: self::CLIENT);
+		$rows = [self::CLIENT => $client, 'k1' => $first, 'k2' => $second];
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (string $identifier): ObjectEntity => $rows[$identifier]
+		);
+		$this->objectMapper->method('findByRelationBatchInSchema')
+			->willReturn([$this->slim(row: $first), $this->slim(row: $second)]);
+
+		$stored = [];
+		$this->objectMapper->expects($this->exactly(2))
+			->method('update')
+			->willReturnCallback(
+				static function (ObjectEntity $entity) use (&$stored): ObjectEntity {
+					if ($entity->getUuid() === 'k1') {
+						throw new \RuntimeException('locked');
+					}
+
+					$stored[] = $entity->getUuid();
+					return $entity;
+				}
+			);
+
+		$this->assertSame(1, $this->job->recalculateDependantsOf(uuid: self::CLIENT));
+		$this->assertSame(['k2'], $stored);
+	}//end testADependantThatFailsToStoreIsSkippedAndTheRestFollow()
 
 	/**
 	 * A long-running worker drops the table memos before it looks the source up, so a

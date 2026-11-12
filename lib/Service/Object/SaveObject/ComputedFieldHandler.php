@@ -29,8 +29,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
@@ -149,8 +148,7 @@ class ComputedFieldHandler {
 	 * Constructor for ComputedFieldHandler.
 	 *
 	 * @param MagicObjectFinderInterface $objectMapper Mapper for fetching referenced objects.
-	 * @param MappingExtension $mappingExtension Twig extension with custom filters and functions.
-	 * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
+	 * @param MappingTwigInstallerInterface $mappingTwig Adds the mapping filters, functions and their runtime.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
 	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
@@ -158,8 +156,7 @@ class ComputedFieldHandler {
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly MappingExtension $mappingExtension,
-		private readonly MappingRuntimeLoader $mappingRuntimeLoader,
+		private readonly MappingTwigInstallerInterface $mappingTwig,
 		private readonly LoggerInterface $logger,
 		// The rolled-up concept score. Nullable with a null default so the
 		// unit tests that build this handler positionally keep working; the
@@ -196,8 +193,7 @@ class ComputedFieldHandler {
 		$this->twig = new Environment(new ArrayLoader(), ['autoescape' => false]);
 
 		// Add the mapping extension for custom filters and functions.
-		$this->twig->addExtension($this->mappingExtension);
-		$this->twig->addRuntimeLoader($this->mappingRuntimeLoader);
+		$this->mappingTwig->installOn(twig: $this->twig);
 
 		// Configure sandbox for security.
 		$this->twig->addExtension($this->sandbox());
@@ -233,22 +229,23 @@ class ComputedFieldHandler {
 	 * A field that sits in a dependency cycle is not evaluated: it is set to null
 	 * and the cycle is logged.
 	 *
-	 * @param array $data The object data (used as Twig context).
-	 * @param Schema $schema The schema containing property definitions.
-	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 * @param array        $data The object data (used as Twig context).
+	 * @param ComputedPass $pass The schema containing the property definitions and the mode: 'save' or 'read'.
 	 *
 	 * @return array The object data with computed field values added/updated.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
-	public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn = 'save'): array {
+	public function evaluateComputedFields(array $data, ComputedPass $pass): array {
+		$schema = $pass->schema;
 		$cyclic = $this->cyclicFields(schema: $schema);
 
-		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $evaluateOn) as $propertyName => $expression) {
+		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $pass->evaluateOn) as $propertyName => $expression) {
 			// A field in a cycle is not evaluated.
 			$value = null;
 			if (isset($cyclic[$propertyName]) === false) {
-				$value = $this->evaluateExpression(expression: $expression, data: $data, schema: $schema, propertyName: $propertyName);
+				$computed = new ComputedExpression(schema: $schema, propertyName: $propertyName, expression: $expression);
+				$value = $this->evaluateExpression(computed: $computed, data: $data);
 			}
 
 			$data[$propertyName] = $value;
@@ -289,7 +286,7 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
 	private function cyclicFields(Schema $schema): array {
-		$key = $schema->getId() . ':' . md5((string)json_encode($schema->getProperties()));
+		$key = $schema->getId() . ':' . hash(algo: 'xxh128', data: (string)json_encode($schema->getProperties()));
 		if (isset($this->cyclicBySchema[$key]) === false) {
 			$this->cyclicBySchema[$key] = $this->findCyclicFields(schema: $schema);
 		}
@@ -379,27 +376,27 @@ class ComputedFieldHandler {
 	 * Handles cross-reference resolution (via _ref prefix) and graceful error handling.
 	 * On error, returns null and logs a warning.
 	 *
-	 * @param string $expression The Twig expression to evaluate.
-	 * @param array $data The object data as Twig context.
-	 * @param Schema $schema The schema for cross-reference resolution.
-	 * @param string $propertyName The property name (for logging).
+	 * @param ComputedExpression $computed The property, its expression and the schema for cross-reference resolution.
+	 * @param array              $data     The object data as Twig context.
 	 *
 	 * @return mixed The computed value, or null on error.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function evaluateExpression(string $expression, array $data, Schema $schema, string $propertyName): mixed {
+	private function evaluateExpression(ComputedExpression $computed, array $data): mixed {
 		try {
 			// Build the Twig context: object data + resolved cross-references.
-			$context = $this->buildTwigContext(data: $data, schema: $schema);
-			$result = $this->render(name: 'computed_' . $propertyName . '_' . md5($expression), expression: $expression, context: $context);
+			$context = $this->buildTwigContext(data: $data, schema: $computed->schema);
+			$result = $this->render(computed: $computed, context: $context);
 
 			// Attempt to cast numeric results to their appropriate types.
 			return $this->castResult(result: $result);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: 'Computed field evaluation error: ' . $e->getMessage(),
-				context: $this->failureContext(details: ['propertyName' => $propertyName, 'expression' => $expression, 'error' => $e->getMessage()])
+				context: $this->failureContext(
+					details: ['propertyName' => $computed->propertyName, 'expression' => $computed->expression, 'error' => $e->getMessage()]
+				)
 			);
 
 			return null;
@@ -420,13 +417,13 @@ class ComputedFieldHandler {
 	/**
 	 * Render an expression as a named template in the sandboxed environment, trimmed.
 	 *
-	 * @param string $name       The template name.
-	 * @param string $expression The Twig expression.
-	 * @param array  $context    The Twig context.
+	 * @param ComputedExpression $computed The expression and its template name.
+	 * @param array              $context  The Twig context.
 	 *
 	 * @return string The rendered, trimmed result.
 	 */
-	private function render(string $name, string $expression, array $context): string {
+	private function render(ComputedExpression $computed, array $context): string {
+		$name = $computed->templateName();
 		$twig = $this->getTwig();
 
 		/*
@@ -434,7 +431,7 @@ class ComputedFieldHandler {
 		 */
 
 		$loader = $twig->getLoader();
-		$loader->setTemplate($name, $expression);
+		$loader->setTemplate($name, $computed->expression);
 
 		return trim($twig->render($name, $context));
 	}//end render()

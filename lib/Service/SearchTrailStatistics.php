@@ -64,23 +64,22 @@ final class SearchTrailStatistics {
 	}//end withOutcomeRates()
 
 	/**
-	 * Add organisations, query complexity, the period and (for a period) the daily averages.
+	 * Add organisations, query complexity, the period and (for a bounded period) the daily averages.
 	 *
-	 * @param array         $stats Statistics with total_searches and total_results
-	 * @param DateTime|null $from  Start date of the period
-	 * @param DateTime|null $to    End date of the period
+	 * @param array        $stats  Statistics with total_searches and total_results
+	 * @param SearchPeriod $period The period the statistics cover
 	 *
 	 * @return array The statistics with the derived metrics added
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function withDerivedMetrics(array $stats, ?DateTime $from, ?DateTime $to): array {
+	public function withPeriodMetrics(array $stats, SearchPeriod $period): array {
 		// Unique organizations and query complexity are placeholders for now.
 		$stats['unique_organizations'] = 0;
 		$stats['query_complexity'] = $this->queryComplexity(totalSearches: $stats['total_searches']);
 
-		$days = $this->days(from: $from, to: $to);
-		$stats['period'] = $this->period(from: $from, to: $to) + ['days' => $days];
+		$days = $period->days();
+		$stats['period'] = $period->bounds() + ['days' => $days];
 		if ($days !== null && $days > 0) {
 			$stats['daily_averages'] = [
 				'searches_per_day' => round($stats['total_searches'] / $days, 2),
@@ -89,20 +88,19 @@ final class SearchTrailStatistics {
 		}
 
 		return $stats;
-	}//end withDerivedMetrics()
+	}//end withPeriodMetrics()
 
 	/**
-	 * Popular search terms with their share and effectiveness.
+	 * Popular search terms with their share and effectiveness, over a period.
 	 *
-	 * @param array         $terms Terms with count and avg_results
-	 * @param DateTime|null $from  Start date filter
-	 * @param DateTime|null $to    End date filter
+	 * @param array        $terms  Terms with count and avg_results
+	 * @param SearchPeriod $period The period the terms cover
 	 *
 	 * @return array Popular search terms data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function popularTerms(array $terms, ?DateTime $from, ?DateTime $to): array {
+	public function termsReport(array $terms, SearchPeriod $period): array {
 		$totalSearches = array_sum(array_column($terms, 'count'));
 		$enhancedTerms = array_map(fn ($term) => $this->rateTerm(term: $term, totalSearches: $totalSearches), $terms);
 
@@ -110,22 +108,21 @@ final class SearchTrailStatistics {
 			'terms' => $enhancedTerms,
 			'total_unique_terms' => count($enhancedTerms),
 			'total_searches' => $totalSearches,
-			'period' => $this->period(from: $from, to: $to),
+			'period' => $period->bounds(),
 		];
-	}//end popularTerms()
+	}//end termsReport()
 
 	/**
-	 * Register/schema combinations with their share and performance rating, most used first.
+	 * Register/schema combinations with their share and performance rating, most used first, over a period.
 	 *
-	 * @param array         $stats Combinations with count, avg_results and avg_response_time
-	 * @param DateTime|null $from  Start date filter
-	 * @param DateTime|null $to    End date filter
+	 * @param array        $stats  Combinations with count, avg_results and avg_response_time
+	 * @param SearchPeriod $period The period the combinations cover
 	 *
 	 * @return array Register/schema statistics data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function registerSchemaUsage(array $stats, ?DateTime $from, ?DateTime $to): array {
+	public function combinationsReport(array $stats, SearchPeriod $period): array {
 		$totalSearches = array_sum(array_column($stats, 'count'));
 		$enhancedStats = array_map(fn ($stat) => $this->rateCombination(stat: $stat, totalSearches: $totalSearches), $stats);
 		usort($enhancedStats, fn ($a, $b) => $b['percentage'] <=> $a['percentage']);
@@ -134,29 +131,28 @@ final class SearchTrailStatistics {
 			'statistics' => $enhancedStats,
 			'total_combinations' => count($enhancedStats),
 			'total_searches' => $totalSearches,
-			'period' => $this->period(from: $from, to: $to),
+			'period' => $period->bounds(),
 		];
-	}//end registerSchemaUsage()
+	}//end combinationsReport()
 
 	/**
-	 * User agents with their browser distribution.
+	 * User agents with their browser distribution, over a period.
 	 *
-	 * @param array         $userAgentStats User agent statistics, each with browser_info and count
-	 * @param DateTime|null $from           Start date filter
-	 * @param DateTime|null $to             End date filter
+	 * @param array        $userAgentStats User agent statistics, each with browser_info and count
+	 * @param SearchPeriod $period         The period the user agents cover
 	 *
 	 * @return array User agent statistics data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function userAgentUsage(array $userAgentStats, ?DateTime $from, ?DateTime $to): array {
+	public function userAgentReport(array $userAgentStats, SearchPeriod $period): array {
 		return [
 			'user_agents' => $userAgentStats,
 			'browser_distribution' => $this->browserDistribution(userAgentStats: $userAgentStats),
 			'total_user_agents' => count($userAgentStats),
-			'period' => $this->period(from: $from, to: $to),
+			'period' => $period->bounds(),
 		];
-	}//end userAgentUsage()
+	}//end userAgentReport()
 
 	/**
 	 * The from/to of a period as strings.
@@ -169,10 +165,7 @@ final class SearchTrailStatistics {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function period(?DateTime $from, ?DateTime $to): array {
-		return [
-			'from' => $from?->format('Y-m-d H:i:s'),
-			'to' => $to?->format('Y-m-d H:i:s'),
-		];
+		return (new SearchPeriod(from: $from, to: $to))->bounds();
 	}//end period()
 
 	/**
@@ -209,22 +202,6 @@ final class SearchTrailStatistics {
 
 		return ['simple' => 0, 'medium' => 0, 'complex' => 0];
 	}//end queryComplexity()
-
-	/**
-	 * Number of calendar days a period spans, both ends included; null without both ends.
-	 *
-	 * @param DateTime|null $from Start date
-	 * @param DateTime|null $to   End date
-	 *
-	 * @return int|null
-	 */
-	private function days(DateTime|null $from, DateTime|null $to): ?int {
-		if ($from === null || $to === null) {
-			return null;
-		}
-
-		return $from->diff($to)->days + 1;
-	}//end days()
 
 	/**
 	 * Add share and effectiveness to one search term.

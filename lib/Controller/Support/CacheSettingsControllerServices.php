@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCP\Files\AppData\IAppDataFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -38,6 +39,7 @@ final class CacheSettingsControllerServices {
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IAppConfig $appConfig App configuration.
+	 * @param IAppDataFactory $appDataFactory App data factory.
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
@@ -45,6 +47,7 @@ final class CacheSettingsControllerServices {
 		public readonly AppSettingsInterface $settingsService,
 		public readonly LoggerInterface $logger,
 		public readonly IAppConfig $appConfig,
+		public readonly IAppDataFactory $appDataFactory,
 	) {
 	}//end __construct()
 }//end class

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\Schema;
 
 /**
- * What one decryptProperties() pass decrypts: the schema, the property in
+ * What one decryptInScope() pass decrypts: the schema, the property in
  * hand, and whether a failure is rethrown or replaced by an error marker.
  *
  * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext

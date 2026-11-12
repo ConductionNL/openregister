@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -48,6 +49,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Two learniq enrolments of one course. Saving the first re-saves its sibling
@@ -153,9 +156,10 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->saves[] = (string) $uuid;
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $this->store[$uuid], schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $this->store[$uuid]), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -172,7 +176,7 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
 			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $aggregates),
 			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);

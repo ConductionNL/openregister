@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -20,6 +23,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Branch coverage tests for ReferentialIntegrityService — targets uncovered
@@ -44,7 +49,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->logger
@@ -138,7 +143,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockEmptyBlockers(): void {
@@ -150,7 +155,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', null, $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: null, userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -162,10 +167,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 
 		$result = $this->service->applyDeletionActions(
 			$analysis,
-			'admin',
-			'root-uuid',
-			'org-1',
-			'my-schema'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'my-schema', organisationId: 'org-1')
 		);
 
 		$this->assertSame(['retained' => []], $result);
@@ -178,9 +180,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [['objectUuid' => 'a']],
-			nullifyTargets: [['objectUuid' => 'b']],
-			defaultTargets: [],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'a']], nullifyTargets: [['objectUuid' => 'b']], defaultTargets: []),
 			blockers: [],
 			chainPaths: ['a -> b']
 		);
@@ -239,6 +239,6 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 }

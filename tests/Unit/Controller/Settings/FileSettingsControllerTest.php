@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
@@ -163,16 +164,20 @@ class FileSettingsControllerTest extends TestCase {
 
 		$this->controller = new FileSettingsController(
 			$this->request,
-			$this->container,
-			$this->settingsService,
-			$this->logger
+			new FileSettingsControllerServices(
+				$this->container,
+				$this->settingsService,
+				$this->logger
+			)
 		);
 
 		$this->testableController = new TestableFileSettingsController(
 			$this->request,
-			$this->container,
-			$this->settingsService,
-			$this->logger
+			new FileSettingsControllerServices(
+				$this->container,
+				$this->settingsService,
+				$this->logger
+			)
 		);
 	}
 

@@ -36,9 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -57,16 +55,12 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptLifecycle $lifecycle Answers whether a value is system-defined.
-	 * @param SchemaMapperInterface $schemas Finds the schemas whose properties bind to a scheme.
-	 * @param MagicMapperInterface $objects Counts the objects holding a value.
-	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
+	 * @param ConceptLifecycle  $lifecycle Answers whether a value is system-defined.
+	 * @param CodedSchemaTables $tables    Finds the schemas bound to a scheme, reads their declarations and counts their holders.
 	 */
 	public function __construct(
 		private readonly ConceptLifecycle $lifecycle,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapperInterface $objects,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly CodedSchemaTables $tables,
 	) {
 
 	}//end __construct()
@@ -113,35 +107,58 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function usage(array $concept, string $schemeUri): array {
-		$uri = trim((string)($concept['uri'] ?? ''));
-		$notation = trim((string)($concept['notation'] ?? ''));
-		if ($uri === '' && $notation === '') {
+		$holding = ConceptHolding::fromConcept(concept: $concept, schemeUri: $schemeUri);
+		if ($holding->isAnonymous() === true) {
 			return ['count' => 0, 'holders' => []];
 		}
 
 		try {
-			$all = $this->schemas->findAll(_rbac: false, _multitenancy: false);
+			$all = $this->tables->schemas->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $unreadable) {
 			return ['count' => 0, 'holders' => []];
 		}
 
-		$total = 0;
+		return self::tally(holders: $this->holdersAcross(schemas: $all, holding: $holding));
+	}//end usage()
+
+	/**
+	 * Every holding property of every schema, in schema order.
+	 *
+	 * @param iterable<mixed>  $schemas The schemas on the instance.
+	 * @param ConceptHolding   $holding The concept, as the values that would hold it.
+	 *
+	 * @return array<int,array{schema:string,property:string,count:int}> The non-empty holders.
+	 */
+	private function holdersAcross(iterable $schemas, ConceptHolding $holding): array {
 		$holders = [];
-		foreach ($all as $schema) {
+		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema === false) {
 				continue;
 			}
 
-			foreach ($this->holdersInSchema(schema: $schema, schemeUri: $schemeUri, uri: $uri, notation: $notation) as $holder) {
-				$total += $holder['count'];
-				if (count($holders) < self::BLOCKER_SAMPLE) {
-					$holders[] = $holder;
-				}
+			foreach ($this->holdersInSchema(schema: $schema, holding: $holding) as $holder) {
+				$holders[] = $holder;
 			}
-		}//end foreach
+		}
 
-		return ['count' => $total, 'holders' => $holders];
-	}//end usage()
+		return $holders;
+	}//end holdersAcross()
+
+	/**
+	 * The total count over the holders, and the first BLOCKER_SAMPLE of them.
+	 *
+	 * @param array<int,array{schema:string,property:string,count:int}> $holders The holders.
+	 *
+	 * @return array{count:int,holders:array<int,array{schema:string,property:string,count:int}>}
+	 */
+	private static function tally(array $holders): array {
+		$total = 0;
+		foreach ($holders as $holder) {
+			$total += $holder['count'];
+		}
+
+		return ['count' => $total, 'holders' => array_slice($holders, 0, self::BLOCKER_SAMPLE)];
+	}//end tally()
 
 	/**
 	 * The holding properties of one schema, each with its object count.
@@ -150,44 +167,57 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 	 * properties bound to the scheme, pick the stored value for each, count
 	 * its holders — reads as one block and the caller only accumulates.
 	 *
-	 * @param Schema $schema    The schema to inspect.
-	 * @param string $schemeUri The uri of the scheme the concept belongs to.
-	 * @param string $uri       The concept's uri, used when the property stores uris.
-	 * @param string $notation  The concept's notation, used when the property stores notations.
+	 * @param Schema         $schema  The schema to inspect.
+	 * @param ConceptHolding $holding The concept, as the values that would hold it.
 	 *
 	 * @return array<int,array{schema:string,property:string,count:int}> The non-empty holders.
 	 */
-	private function holdersInSchema(Schema $schema, string $schemeUri, string $uri, string $notation): array {
+	private function holdersInSchema(Schema $schema, ConceptHolding $holding): array {
 		$holders = [];
-		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->tables->declarations->fromProperties(properties: ($schema->getProperties() ?? []));
 		foreach ($declarations as $property => $declaration) {
-			if ($declaration->scheme !== $schemeUri) {
+			$stored = $this->storedValue(declaration: $declaration, holding: $holding);
+			if ($stored === null) {
 				continue;
 			}
 
-			$stored = $uri;
-			if ($declaration->store === 'notation') {
-				$stored = $notation;
+			$count = $this->countHolders(schema: $schema, filters: [$property => $stored]);
+			if ($count !== 0) {
+				$holders[] = ['schema' => (string)$schema->getSlug(), 'property' => $property, 'count' => $count];
 			}
-
-			if ($stored === '') {
-				continue;
-			}
-
-			$count = $this->countHolders(schema: $schema, property: $property, value: $stored);
-			if ($count === 0) {
-				continue;
-			}
-
-			$holders[] = [
-				'schema' => (string)$schema->getSlug(),
-				'property' => $property,
-				'count' => $count,
-			];
-		}//end foreach
+		}
 
 		return $holders;
 	}//end holdersInSchema()
+
+	/**
+	 * The value a property would hold the concept by, or null when it cannot hold it.
+	 *
+	 * A property bound to another scheme cannot hold it, and neither can a
+	 * property storing a form the concept lacks (a notation-stored property
+	 * for a concept without a notation).
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's coded declaration.
+	 * @param ConceptHolding           $holding     The concept, as the values that would hold it.
+	 *
+	 * @return string|null The stored value to look for.
+	 */
+	private function storedValue(CodedPropertyDeclaration $declaration, ConceptHolding $holding): ?string {
+		if ($declaration->scheme !== $holding->schemeUri) {
+			return null;
+		}
+
+		$stored = $holding->uri;
+		if ($declaration->store === 'notation') {
+			$stored = $holding->notation;
+		}
+
+		if ($stored === '') {
+			return null;
+		}
+
+		return $stored;
+	}//end storedValue()
 
 	/**
 	 * The refusal, in words, naming the count.
@@ -240,16 +270,15 @@ class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 	/**
 	 * Count the objects of one schema whose property holds the value.
 	 *
-	 * @param Schema $schema The holding schema.
-	 * @param string $property The coded property's name.
-	 * @param string $value The stored value.
+	 * @param Schema                $schema  The holding schema.
+	 * @param array<string,string> $filters The coded property's name mapped to the stored value, as the mapper filters on it.
 	 *
 	 * @return integer The count, zero when the table cannot be read.
 	 */
-	private function countHolders(Schema $schema, string $property, string $value): int {
+	private function countHolders(Schema $schema, array $filters): int {
 		try {
-			$count = $this->objects->countAll(
-				_filters: [$property => $value],
+			$count = $this->tables->objects->countAll(
+				_filters: $filters,
 				schema: $schema
 			);
 		} catch (Throwable $unreadable) {

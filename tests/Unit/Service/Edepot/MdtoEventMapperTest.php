@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -36,14 +37,14 @@ class MdtoEventMapperTest extends TestCase {
 
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->mapper = new MdtoEventMapper($this->auditTrailMapper, $this->logger);
+		$this->mapper = new MdtoEventMapper(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->auditTrailMapper, $this->logger));
 	}
 
 	/**
 	 * Rows are mapped to EventTypeLijst labels and returned oldest first.
 	 */
 	public function testRowsMapToEventTypeLabelsOldestFirst(): void {
-		$this->auditTrailMapper->method('findAll')->willReturnCallback(
+		$this->auditTrailMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (?int $limit, ?int $offset, ?array $filters): array {
 				if (($filters['action'] ?? '') === 'create') {
 					return [$this->auditRow(id: 1, action: 'create', created: '2026-01-01 09:00:00')];
@@ -55,7 +56,7 @@ class MdtoEventMapperTest extends TestCase {
 					$this->auditRow(id: 1, action: 'create', created: '2026-01-01 09:00:00'),
 				];
 			}
-		);
+		));
 
 		$events = $this->mapper->forObject($this->objectEntity(uuid: 'obj-1'));
 
@@ -70,12 +71,12 @@ class MdtoEventMapperTest extends TestCase {
 	 */
 	public function testOnlyAllowListedActionsAreRequested(): void {
 		$seen = [];
-		$this->auditTrailMapper->method('findAll')->willReturnCallback(
+		$this->auditTrailMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (?int $limit, ?int $offset, ?array $filters) use (&$seen): array {
 				$seen[] = ($filters['action'] ?? '');
 				return [];
 			}
-		);
+		));
 
 		$this->mapper->forObject($this->objectEntity(uuid: 'obj-1'));
 
@@ -90,7 +91,7 @@ class MdtoEventMapperTest extends TestCase {
 	 * An action nobody mapped is dropped rather than exported under a guess.
 	 */
 	public function testUnmappedActionsAreDropped(): void {
-		$this->auditTrailMapper->method('findAll')->willReturnCallback(
+		$this->auditTrailMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (?int $limit, ?int $offset, ?array $filters): array {
 				if (($filters['action'] ?? '') === 'create') {
 					return [];
@@ -100,7 +101,7 @@ class MdtoEventMapperTest extends TestCase {
 					$this->auditRow(id: 2, action: 'update', created: '2026-02-01 09:00:00'),
 				];
 			}
-		);
+		));
 
 		$events = $this->mapper->forObject($this->objectEntity(uuid: 'obj-1'));
 
@@ -111,7 +112,7 @@ class MdtoEventMapperTest extends TestCase {
 	 * The emission is bounded, and truncation keeps the creation event.
 	 */
 	public function testEmissionIsBoundedAndKeepsTheCreationEvent(): void {
-		$this->auditTrailMapper->method('findAll')->willReturnCallback(
+		$this->auditTrailMapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (?int $limit, ?int $offset, ?array $filters): array {
 				if (($filters['action'] ?? '') === 'create') {
 					return [$this->auditRow(id: 1, action: 'create', created: '2020-01-01 09:00:00')];
@@ -128,7 +129,7 @@ class MdtoEventMapperTest extends TestCase {
 
 				return $rows;
 			}
-		);
+		));
 
 		$events = $this->mapper->forObject($this->objectEntity(uuid: 'obj-1'));
 
@@ -144,7 +145,7 @@ class MdtoEventMapperTest extends TestCase {
 	 * An object with no uuid produces no events and no query.
 	 */
 	public function testObjectWithoutUuidProducesNoEvents(): void {
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$this->assertSame([], $this->mapper->forObject($this->objectEntity(uuid: null)));
 	}
@@ -153,7 +154,7 @@ class MdtoEventMapperTest extends TestCase {
 	 * An unreadable audit trail degrades the export rather than failing it.
 	 */
 	public function testUnreadableAuditTrailYieldsNoEventsAndWarns(): void {
-		$this->auditTrailMapper->method('findAll')->willThrowException(new RuntimeException('table gone'));
+		$this->auditTrailMapper->method('findTrail')->willThrowException(new RuntimeException('table gone'));
 		$this->logger->expects($this->once())->method('warning');
 
 		$this->assertSame([], $this->mapper->forObject($this->objectEntity(uuid: 'obj-1')));

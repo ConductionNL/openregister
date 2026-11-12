@@ -155,18 +155,28 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Returns null when the object is absent, the schema is list-only (no id), or
 	 * the driver extension is missing — indistinguishably (no enumeration oracle).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The object id / source key.
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied/list-only.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id));
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findObject(ref: $this->ref(source: $source, id: $id));
 	}//end find()
+
+	/**
+	 * The DBAL reference of a sourced table, optionally addressing one object.
+	 *
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
+	 * @param string|null  $id     The object id, or null for the whole table.
+	 *
+	 * @return DbalObjectRef The reference.
+	 */
+	private function ref(SourcedTable $source, ?string $id=null): DbalObjectRef {
+		return new DbalObjectRef(register: $source->table->register, schema: $source->table->schema, config: $source->config, id: $id);
+	}//end ref()
 
 	/**
 	 * Read the one object a reference addresses.
@@ -265,17 +275,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * A missing driver extension degrades to an empty list; a connection/query
 	 * error surfaces a {@see DbalObjectSourceException} (503/502), never a 500.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search/sort/limit/offset).
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return ObjectEntity[] The matching virtual objects (possibly empty).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listObjects(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listObjects(ref: $this->ref(source: $source), query: $query);
 	}//end findAll()
 
 	/**
@@ -381,17 +389,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Issues `SELECT COUNT(*)` with the same WHERE predicate as findAll(), so the
 	 * pagination dispatch can report a true total.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return $this->countObjects(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), query: $query);
+	public function count(SourcedTable $source, array $query = []): int {
+		return $this->countObjects(ref: $this->ref(source: $source), query: $query);
 	}//end count()
 
 	/**
@@ -476,63 +482,68 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function aggregate(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket,
-		array $config = [],
+		Register $register, Schema $schema, string $metric, ?string $field, array $filter, ?array $groupBy, ?array $dateBucket, array $config=[]
 	): ?array {
-		if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
+		$shape   = new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket);
+		$request = new DbalMetricRequest(metric: $metric, field: $field, filter: $filter, shape: $shape);
+		return $this->aggregateMetric(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), request: $request);
+	}//end aggregate()
+
+	/**
+	 * Compute one metric live against the external table a reference's schema projects.
+	 *
+	 * @param DbalObjectRef     $ref     The register, schema and dbal-source configuration.
+	 * @param DbalMetricRequest $request The metric, field, filter and result shape.
+	 *
+	 * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
+	 *
+	 * @throws DbalObjectSourceException On an unreachable DB (503) or query error (502).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function aggregateMetric(DbalObjectRef $ref, DbalMetricRequest $request): ?array {
+		if (in_array($request->metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
 			return null;
 		}
 
-		$context = $this->resolveContext(config: $config, schema: $schema);
+		$context = $this->resolveContext(config: $ref->config, schema: $ref->schema);
 		if ($context === null) {
 			return null;
 		}
 
-		$aggregation = new DbalAggregation(metric: $metric, field: $field, filter: $filter, columns: $context[1]);
-		$query       = $this->boundAggregation(source: $context[0], config: $config, aggregation: $aggregation);
-		if ($query === null) {
-			return null;
-		}
-
-		return $this->aggregator->run(query: $query, shape: new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket));
-	}//end aggregate()
-
-	/**
-	 * Bind the aggregation to a connection, once its value field is known to be a column.
-	 *
-	 * The value field is checked before connecting, so a misconfigured field
-	 * answers null without touching the external database.
-	 *
-	 * @param Source               $source      The backing database source.
-	 * @param array<string, mixed> $config      The schema's dbal-source configuration.
-	 * @param DbalAggregation      $aggregation The metric, field, filter and columns.
-	 *
-	 * @return DbalAggregationQuery|null Null when the field is not a column or the driver is missing.
-	 *
-	 * @throws DbalObjectSourceException When the external database is unreachable.
-	 */
-	private function boundAggregation(Source $source, array $config, DbalAggregation $aggregation): ?DbalAggregationQuery {
-		if ($aggregation->lacksValueField() === true) {
-			return null;
-		}
-
-		$connection = $this->connectUnlessDriverMissing(source: $source);
+		$aggregation = new DbalAggregation(metric: $request->metric, field: $request->field, filter: $request->filter, columns: $context[1]);
+		$connection  = $this->aggregationConnection(source: $context[0], aggregation: $aggregation);
 		if ($connection === null) {
 			return null;
 		}
 
-		return $this->aggregator->query(
-			connection: $connection,
-			table: $this->fromExpression(connection: $connection, config: $config),
-			aggregation: $aggregation
-		);
-	}//end boundAggregation()
+		$table = $this->fromExpression(connection: $connection, config: $ref->config);
+
+		$query = $this->aggregator->query(from: new DbalFromClause(connection: $connection, table: $table), aggregation: $aggregation);
+
+		return $this->aggregator->run(query: $query, shape: $request->shape);
+	}//end aggregateMetric()
+
+	/**
+	 * The connection an aggregation runs on, once its value field is known to be a column.
+	 *
+	 * The value field is checked before connecting, so a misconfigured field
+	 * answers null without touching the external database.
+	 *
+	 * @param Source          $source      The backing database source.
+	 * @param DbalAggregation $aggregation The metric, field, filter and columns.
+	 *
+	 * @return Connection|null Null when the field is not a column or the driver is missing.
+	 *
+	 * @throws DbalObjectSourceException When the external database is unreachable.
+	 */
+	private function aggregationConnection(Source $source, DbalAggregation $aggregation): ?Connection {
+		if ($aggregation->lacksValueField() === true) {
+			return null;
+		}
+
+		return $this->connectUnlessDriverMissing(source: $source);
+	}//end aggregationConnection()
 
 	/**
 	 * Open the connection an aggregation runs on, or null when the source's driver is not installed.
@@ -956,17 +967,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * the response reflects database-applied defaults. No-PK tables accept
 	 * inserts (append-only) and return the payload as the entity body.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $data The validated object data.
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return ObjectEntity The created virtual object.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
-		return $this->insertObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), data: $data);
+	public function insert(SourcedTable $source, array $data): ObjectEntity {
+		return $this->insertObject(ref: $this->ref(source: $source), data: $data);
 	}//end insert()
 
 	/**
@@ -1010,11 +1019,9 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * columns cannot be changed (400). Zero affected rows surfaces as the same
 	 * 404 an absent native object produces.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The object id (external key).
 	 * @param array<string, mixed> $data The validated object data.
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return ObjectEntity The updated virtual object as re-read.
 	 *
@@ -1022,8 +1029,8 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
-		return $this->updateObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id), data: $data);
+	public function update(SourcedTable $source, string $id, array $data): ObjectEntity {
+		return $this->updateObject(ref: $this->ref(source: $source, id: $id), data: $data);
 	}//end update()
 
 	/**
@@ -1127,17 +1134,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * Executes a parameterized DELETE (hard delete — the external system has no
 	 * OpenRegister soft-delete) with the primary-key predicate.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The object id (external key).
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return bool True when a row was deleted; false when no row matched.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
-		return $this->removeObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id));
+	public function remove(SourcedTable $source, string $id): bool {
+		return $this->removeObject(ref: $this->ref(source: $source, id: $id));
 	}//end remove()
 
 	/**

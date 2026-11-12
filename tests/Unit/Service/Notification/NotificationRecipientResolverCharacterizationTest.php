@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Characterization tests for NotificationRecipientResolver::resolveWithDiagnostics().
+ * Characterization tests for NotificationRecipientResolver::resolveFromSource().
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Notification
@@ -21,6 +21,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -133,12 +134,14 @@ class NotificationRecipientResolverCharacterizationTest extends TestCase {
 		}
 
 		try {
-			return $resolver->resolveWithDiagnostics(
+			return $resolver->resolveFromSource(
 				recipientsSpec: $case['spec'],
-				data: ['assignee' => 'anna', 'ghost' => 'nobody', 'empty' => '', 'num' => 5, 'rel' => ['bram', 'nobody'], 'relOne' => 'chris'],
-				object: $object,
-				context: ['trigger' => 'created'],
-				roleGroups: ($case['roleGroups'] ?? [])
+				source: new RecipientSource(
+					data: ['assignee' => 'anna', 'ghost' => 'nobody', 'empty' => '', 'num' => 5, 'rel' => ['bram', 'nobody'], 'relOne' => 'chris'],
+					object: $object,
+					context: ['trigger' => 'created'],
+					roleGroups: ($case['roleGroups'] ?? [])
+				)
 			);
 		} catch (\Throwable $e) {
 			return ['exception' => get_class($e), 'message' => $e->getMessage()];
@@ -160,7 +163,7 @@ class NotificationRecipientResolverCharacterizationTest extends TestCase {
 	}//end corpusProvider()
 
 	/**
-	 * resolveWithDiagnostics() returns exactly what was recorded.
+	 * resolveFromSource() returns exactly what was recorded.
 	 *
 	 * @param string $name The corpus entry.
 	 *

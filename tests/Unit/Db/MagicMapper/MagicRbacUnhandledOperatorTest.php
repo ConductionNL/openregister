@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
 use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
@@ -42,6 +43,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * The list predicate and the single-object verdict agree on a malformed `match`.
@@ -74,14 +78,20 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 		$conditionMatcher->method('resolveDynamicValue')->willReturnArgument(0);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
@@ -122,7 +132,7 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 		);
 		$schema->setAuthorization(['read' => [['group' => 'members', 'match' => $match]]]);
 
-		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
+		return $this->handler()->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 't', action: 'read'));
 	}//end listPredicateFor()
 
 	/**

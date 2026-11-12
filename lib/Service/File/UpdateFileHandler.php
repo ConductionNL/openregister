@@ -100,10 +100,7 @@ class UpdateFileHandler {
 	 * / `setCategoryForFile` / `setLabelsForFile`, each of which is
 	 * lazy-create-on-miss so no pre-existing OR-side row is required.
 	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $description The new description, empty string to clear, null to skip.
-	 * @param string|null $category The new category, empty string to clear, null to skip.
-	 * @param array<string>|null $labels The new labels, empty array to clear, null to skip.
+	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
 	 * @return \OCA\OpenRegister\Files\Db\File The persisted entity reflecting the updated state.
 	 *
@@ -111,15 +108,9 @@ class UpdateFileHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
-		$values = ['description' => $description, 'category' => $category, 'labels' => $labels];
-		$entity = $this->writeMetadata(fileId: $fileId, values: $values);
-		$this->logMetadataUpdate(fileId: $fileId, values: $values);
+	public function updateFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File {
+		$entity = $this->writeMetadata(fileId: $change->fileId, values: $change->values());
+		$this->logMetadataUpdate(fileId: $change->fileId, values: $change->values());
 		return $entity;
 	}//end updateFileMetadata()
 
@@ -205,38 +196,42 @@ class UpdateFileHandler {
 	 * This method updates the content and/or tags of an existing file. When updating tags,
 	 * it preserves any existing 'object:' tags while replacing other user-defined tags.
 	 *
-	 * @param string|int $filePath The path or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, a readable
-	 *                                      stream resource (streamed straight to storage), or null
-	 *                                      to update only metadata/tags.
-	 * @param array $tags Optional array of tags.
-	 * @param ObjectEntity|null $object Optional object entity.
+	 * @param FileOverwrite $overwrite The path or file ID; the content (a byte string, a readable stream resource
+	 *                                 streamed straight to storage, or null to update only the tags); the tags;
+	 *                                 and the object whose folder is searched first.
 	 *
 	 * @return File The updated file.
 	 *
 	 * @throws Exception If the file doesn't exist or if file operations fail.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function updateFile(FileOverwrite $overwrite): File {
+		$this->note(level: 'debug', message: "Original file path received: '$overwrite->filePath'");
+		$file = $this->findFile(filePath: $overwrite->filePath, object: $overwrite->object);
+		return $this->applyChange(file: $file, change: new FileContentChange(content: $overwrite->content, tags: $overwrite->tags));
+	}//end updateFile()
+
+	/**
+	 * Write the new content when it differs, then replace the user tags.
+	 *
+	 * @param Node              $file   The file found for the update.
+	 * @param FileContentChange $change The new content and tags.
+	 *
+	 * @return Node The updated file.
+	 *
+	 * @throws Exception If file operations fail.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFile(
-		string|int $filePath,
-		mixed $content = null,
-		array $tags = [],
-		?ObjectEntity $object = null,
-	): File {
-		$this->note(level: 'debug', message: "Original file path received: '$filePath'");
-
-		$file = $this->findFile(filePath: $filePath, object: $object);
-		if ($content !== null && $file instanceof File) {
-			$this->writeContentIfChanged(file: $file, content: $content);
+	private function applyChange(Node $file, FileContentChange $change): Node {
+		if ($change->content !== null && $file instanceof File) {
+			$this->writeContentIfChanged(file: $file, content: $change->content);
 		}
 
-		$this->replaceUserTags(file: $file, tags: $tags);
+		$this->replaceUserTags(file: $file, tags: $change->tags);
 		return $file;
-	}//end updateFile()
+	}//end applyChange()
 
 	/**
 	 * Find the file to update by ID or by path.
@@ -257,33 +252,39 @@ class UpdateFileHandler {
 	}//end findFile()
 
 	/**
-	 * Find a file by its ID, first in the object's folder, then in the user folder.
+	 * Find a file by its ID: in the object's folder when an object is given, else in the user folder.
 	 *
 	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object whose folder is searched first
+	 * @param ObjectEntity|null $object The object whose folder holds the file
 	 *
 	 * @return Node The file
 	 *
-	 * @throws Exception When no file has this ID
+	 * @throws Exception When no file has this ID, or the object's folder does not hold it
 	 */
 	private function findFileById(int $fileId, ?ObjectEntity $object): Node {
 		$this->note(level: 'debug', message: "File ID provided: $fileId");
-		return ($this->findInObjectById(fileId: $fileId, object: $object) ?? $this->findInUserFolderById(fileId: $fileId));
+		if ($object === null) {
+			return $this->findInUserFolderById(fileId: $fileId);
+		}
+
+		$file = $this->findInObjectById(fileId: $fileId, object: $object);
+		if ($file === null) {
+			$this->note(level: 'error', message: "No file with ID $fileId in the object's folder");
+			throw new Exception("File with ID $fileId does not exist in the object's folder");
+		}
+
+		return $file;
 	}//end findFileById()
 
 	/**
 	 * Find a file by its ID through the read handler, in the object's folder.
 	 *
-	 * @param int               $fileId The file ID
-	 * @param ObjectEntity|null $object The object, or null to skip this lookup
+	 * @param int          $fileId The file ID
+	 * @param ObjectEntity $object The object
 	 *
-	 * @return Node|null The file, or null when there is no object or it has no such file
+	 * @return Node|null The file, or null when the object has no such file
 	 */
-	private function findInObjectById(int $fileId, ?ObjectEntity $object): ?Node {
-		if ($object === null) {
-			return null;
-		}
-
+	private function findInObjectById(int $fileId, ObjectEntity $object): ?Node {
 		$file = $this->locator->readFileHandler->getFile(object: $object, file: $fileId);
 		if ($file !== null) {
 			$this->noteFound(where: 'Found file by ID in object folder', file: $file);
@@ -623,6 +624,7 @@ class UpdateFileHandler {
 	 */
 	private function contentMd5(mixed $content): string {
 		if (is_resource($content) === false) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- Md5 is the checksum Nextcloud stores for the file, compared to skip an unchanged write.
 			return md5(string: $content);
 		}
 

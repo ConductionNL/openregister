@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -33,6 +34,8 @@ use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -40,6 +43,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The schema check, then the property check, then the write; a refusal stops the rest.
@@ -121,7 +125,8 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (Schema $schema, array $stored, array $input, bool $isCreate): array {
+			function (PropertyWriteCheck $write): array {
+				[$schema, $stored, $input, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$this->calls[] = ['propertyCheck', ($stored['title'] ?? null), $input, $isCreate];
 				return $this->refused;
 			}
@@ -130,15 +135,19 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 
 		$getObject = $this->createMock(GetObject::class);
 		$getObject->method('find')->willReturnCallback(
-			function (mixed $id, mixed $register, mixed $schema, ...$rest): ObjectEntity {
-				$this->calls[] = ['find', $id, ($register === $this->register), ($schema === $this->schema)];
+			function (ObjectFindRequest $request, ReadScope $scope): ObjectEntity {
+				$this->calls[] = ['find', $request->id, ($scope->register === $this->register), ($scope->schema === $this->schema)];
 				return $this->record();
 			}
 		);
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, mixed $extend, mixed $register, mixed $schema, mixed $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$extend = $options->extend;
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->calls[] = ['save', $object, $extend, ($register === $this->register), ($schema === $this->schema), $uuid];
 				return $this->record();
 			}

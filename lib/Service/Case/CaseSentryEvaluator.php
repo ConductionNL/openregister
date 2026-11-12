@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 
 /**
@@ -169,80 +170,77 @@ class CaseSentryEvaluator {
 	}//end validateSentryShape()
 
 	/**
-	 * Which entry sentry admits an item now, if any.
+	 * Which entry sentry admits an item on one occasion, if any. Empty entry
+	 * criteria admit at once ({@see DEFAULT_ENTRY}); the parent check is the
+	 * CALLER's (the tree knows the parent), this method answers the criteria alone.
 	 *
-	 * Empty entry criteria mean "satisfied as soon as the parent is active";
-	 * the parent check is the CALLER's (the tree knows the parent), this
-	 * method answers the criteria alone.
-	 *
-	 * @param CaseItem $item The item.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled, or null.
-	 * @param array<string, mixed> $payload The event's payload.
+	 * @param CaseItem           $item     The item.
+	 * @param CaseSentryOccasion $occasion The plan, the object and the event being handled.
 	 *
 	 * @return string|null The admitting sentry's id, {@see DEFAULT_ENTRY}, or null when none fires.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function entrySentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
+	public function entrySentryOn(CaseItem $item, CaseSentryOccasion $occasion): ?string {
 		$criteria = ($item->getEntryCriteria() ?? []);
 		if ($criteria === []) {
 			return self::DEFAULT_ENTRY;
 		}
 
-		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
-		return $this->firingSentry(criteria: $criteria, moment: new CaseSentryMoment(tree: $tree, event: $event, data: $data));
-	}//end entrySentry()
+		return $this->firingSentry(criteria: $criteria, moment: $this->momentOf(occasion: $occasion));
+	}//end entrySentryOn()
 
 	/**
-	 * Which exit sentry exits an item now, if any. Empty exit criteria never
-	 * fire.
+	 * Which exit sentry exits an item on one occasion, if any. Empty exit
+	 * criteria never fire.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled, or null.
-	 * @param array<string, mixed> $payload The event's payload.
+	 * @param CaseItem           $item     The item.
+	 * @param CaseSentryOccasion $occasion The plan, the object and the event being handled.
 	 *
 	 * @return string|null The firing sentry's id, or null.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function exitSentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
+	public function exitSentryOn(CaseItem $item, CaseSentryOccasion $occasion): ?string {
 		$criteria = ($item->getExitCriteria() ?? []);
 		if ($criteria === []) {
 			return null;
 		}
 
-		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
-		return $this->firingSentry(criteria: $criteria, moment: new CaseSentryMoment(tree: $tree, event: $event, data: $data));
-	}//end exitSentry()
+		return $this->firingSentry(criteria: $criteria, moment: $this->momentOf(occasion: $occasion));
+	}//end exitSentryOn()
 
 	/**
-	 * The document an if-part is evaluated against: `dataFor()`'s shape
-	 * extended with a `case` key. Additive, so a flow expression author
-	 * already knows every other key.
+	 * The document an if-part is evaluated against on one occasion:
+	 * `FlowExpression::dataFor()`'s shape extended with a `case` key. Additive,
+	 * so a flow expression author already knows every other key.
 	 *
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled.
-	 * @param array<string, mixed> $payload The event's payload.
+	 * @param CaseSentryOccasion $occasion The plan, the object and the event being handled.
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function dataFor(CasePlanTree $tree, array $object, ?string $event, array $payload): array {
-		$data = FlowExpression::dataFor(
-			item: [FlowItems::JSON => $object],
-			context: ['event' => $event, 'payload' => $payload],
-			subject: $object
-		);
-		$data['case'] = ['items' => $tree->stateMap(), 'object' => $object, 'event' => $event, 'payload' => $payload];
+	public function dataOn(CaseSentryOccasion $occasion): array {
+		$object = $occasion->object;
+		$context = ['event' => $occasion->event, 'payload' => $occasion->payload];
+		$data = FlowExpression::documentFor(item: [FlowItems::JSON => $object], options: new FlowExpressionDataOptions(context: $context));
+		$data['subject'] = $object;
+		$data['case'] = ['items' => $occasion->tree->stateMap(), 'object' => $object] + $context;
 
 		return $data;
-	}//end dataFor()
+	}//end dataOn()
+
+	/**
+	 * The moment a sentry pass reads on one occasion.
+	 *
+	 * @param CaseSentryOccasion $occasion The occasion.
+	 *
+	 * @return CaseSentryMoment The plan, the event and the evaluation document.
+	 */
+	private function momentOf(CaseSentryOccasion $occasion): CaseSentryMoment {
+		return new CaseSentryMoment(tree: $occasion->tree, event: $occasion->event, data: $this->dataOn(occasion: $occasion));
+	}//end momentOf()
 
 	/**
 	 * OR across the array: the first sentry that fires names itself.

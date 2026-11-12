@@ -72,22 +72,24 @@ class LinkedEntityPropertyHandler {
 	 * reference envelope in the object data, and merges them into the corresponding
 	 * metadata column. Existing ad-hoc links (from sidebar) are preserved.
 	 *
-	 * @param ObjectEntity $object The object entity to update
-	 * @param Schema $schema The schema definition
-	 * @param array $data The object data being saved
+	 * The references are read from the object's own data, which the save has
+	 * already set to the prepared data.
+	 *
+	 * @param ObjectEntity $object The object entity to update, carrying the data being saved
+	 * @param Schema       $schema The schema definition
 	 *
 	 * @return ObjectEntity The updated object entity
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
-	public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity {
+	public function extractAndPopulate(ObjectEntity $object, Schema $schema): ObjectEntity {
 		$properties = $schema->getProperties();
 		if (is_array($properties) === false) {
 			return $object;
 		}
 
 		// Merge extracted IDs into metadata columns, preserving ad-hoc links.
-		foreach ($this->extractIds(properties: $properties, data: $data) as $ncType => $ids) {
+		foreach ($this->extractIds(properties: $properties, data: $object->getObject()) as $ncType => $ids) {
 			$this->mergeIntoMetadataColumn(object: $object, linked: new LinkedEntityIds(ncType: $ncType, ids: $ids));
 		}
 

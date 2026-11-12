@@ -32,15 +32,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCP\IL10N;
 use Throwable;
 
 /**
  * Audit-trail integration provider (read-only, query-time).
  */
-class AuditTrailProvider extends AbstractIntegrationProvider {
+class AuditTrailProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -83,24 +84,6 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -108,15 +91,6 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'query-time';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * The object's audit-trail entries, as its history gives them to this caller.
@@ -128,9 +102,7 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 * read the object, a refused purpose or an ambiguous identifier gets no
 	 * rows: the history is a soft surface and never blocks the detail page.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -139,12 +111,21 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->historyOf(ref: $ref);
+	}//end list()
+
+	/**
+	 * The object's audit entries as this caller may read them; none when the history cannot be read.
+	 *
+	 * @param ObjectRef $ref The object, by the register and schema path it was listed under.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function historyOf(ObjectRef $ref): array {
 		try {
 			$page = $this->history->page(
-				register: $register,
-				schema: $schema,
-				id: $objectId,
+				ref: $ref,
 				params: ['limit' => PHP_INT_MAX]
 			);
 		} catch (Throwable $e) {
@@ -156,5 +137,5 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 		}
 
 		return array_values($page['results']);
-	}//end list()
+	}//end historyOf()
 }//end class

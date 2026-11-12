@@ -26,6 +26,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Tests\Unit\Support\FakeMemcache;
 use OCP\ICacheFactory;
@@ -138,8 +139,7 @@ final class FacetFreshnessTest extends TestCase {
 		// into the key -- the whole subject of this file -- would never be
 		// computed at all.
 		$this->handler = new FacetHandler(
-			$this->mapper,
-			$schemaMapper,
+			new FacetLookups($this->mapper, $schemaMapper),
 			new FacetResponseCache(
 				cacheFactory: $cacheFactory,
 				userSession: $userSession,

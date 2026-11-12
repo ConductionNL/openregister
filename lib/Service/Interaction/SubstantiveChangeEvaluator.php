@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -77,17 +78,35 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	private array $annotationMemo = [];
 
 	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Puts values in the form a reader sees.
+	 *
+	 * @var ValueNormaliser
+	 */
+	private readonly ValueNormaliser $normaliser;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ValueNormaliser $normaliser Puts values in the form a reader sees.
+	 * @param SchemaReading $schemas Resolves the object's schema; logs a failed read.
 	 */
-	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ValueNormaliser $normaliser=new ValueNormaliser(),
-	) {
+	public function __construct(SchemaReading $schemas) {
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->logger = $schemas->logger;
+		$this->normaliser = new ValueNormaliser();
 	}//end __construct()
 
 	/**
@@ -153,36 +172,57 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 		}
 
 		foreach ($declared as $name => $descriptor) {
-			if (is_string($name) === false || $name === '') {
-				continue;
+			$resource = $this->declaredSubResource(name: $name, descriptor: $descriptor);
+			if ($resource !== null) {
+				$resources[$name] = $resource;
 			}
-
-			if (is_array($descriptor) === false) {
-				continue;
-			}
-
-			$kind = (string)($descriptor['kind'] ?? 'property');
-			if ($kind === self::FILES) {
-				$resources[$name] = ['kind' => self::FILES];
-				continue;
-			}
-
-			// A property sub-resource must name the property it counts and the
-			// date field on each entry. Without both there is nothing to
-			// compare against the seen moment, and a badge that cannot be
-			// computed must be absent rather than zero.
-			$property = (string)($descriptor['property'] ?? $name);
-			$dateField = (string)($descriptor['dateField'] ?? '');
-			if ($property === '' || $dateField === '') {
-				continue;
-			}
-
-			$resources[$name] = ['kind' => 'property', 'property' => $property, 'dateField' => $dateField];
-		}//end foreach
+		}
 
 		return $resources;
 
 	}//end subResources()
+
+	/**
+	 * One declared sub-resource, or null when its declaration cannot be counted.
+	 *
+	 * @param mixed $name       The declared name.
+	 * @param mixed $descriptor The declared descriptor.
+	 *
+	 * @return array<string, string>|null The sub-resource, or null to leave it out.
+	 */
+	private function declaredSubResource(mixed $name, mixed $descriptor): ?array {
+		if (is_string($name) === false || $name === '' || is_array($descriptor) === false) {
+			return null;
+		}
+
+		if ((string)($descriptor['kind'] ?? 'property') === self::FILES) {
+			return ['kind' => self::FILES];
+		}
+
+		return $this->propertySubResource(name: $name, descriptor: $descriptor);
+	}//end declaredSubResource()
+
+	/**
+	 * A property sub-resource, or null when it does not name both its property and its date field.
+	 *
+	 * @param string $name       The declared name, which is also the default property.
+	 * @param array  $descriptor The declared descriptor.
+	 *
+	 * @return array<string, string>|null The sub-resource, or null to leave it out.
+	 */
+	private function propertySubResource(string $name, array $descriptor): ?array {
+		// A property sub-resource must name the property it counts and the
+		// date field on each entry. Without both there is nothing to
+		// compare against the seen moment, and a badge that cannot be
+		// computed must be absent rather than zero.
+		$property = (string)($descriptor['property'] ?? $name);
+		$dateField = (string)($descriptor['dateField'] ?? '');
+		if ($property === '' || $dateField === '') {
+			return null;
+		}
+
+		return ['kind' => 'property', 'property' => $property, 'dateField' => $dateField];
+	}//end propertySubResource()
 
 	/**
 	 * The property names whose values differ between two versions.

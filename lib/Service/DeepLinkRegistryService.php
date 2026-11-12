@@ -88,20 +88,6 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	private static bool $appsAsked = false;
 
 	/**
-	 * Container for lazy resolution of mappers (avoids circular DI).
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * Logger for debugging registry operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for DeepLinkRegistryService.
 	 *
 	 * Uses ContainerInterface instead of direct mapper injection to avoid
@@ -113,49 +99,48 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ContainerInterface $container,
-		LoggerInterface $logger,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->container = $container;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
-	 * Register a deep link pattern for a (register, schema) combination.
+	 * Add a deep link registration for its (register, schema) combination.
 	 *
-	 * @param string $appId The consuming app ID (e.g., "procest")
-	 * @param string $registerSlug The register slug
-	 * @param string $schemaSlug The schema slug
-	 * @param string $urlTemplate URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-	 * @param string $icon Optional icon identifier (defaults to "icon-{appId}")
-	 * @param string|null $displayName Optional human-readable label for the app's
-	 *                                 unified-search results (defaults to null → app id)
+	 * The first registration for a combination wins; a later one is ignored.
+	 * A registration without an icon gets `icon-{appId}`.
+	 *
+	 * @param DeepLinkRegistration $registration The app, slugs, URL template, icon and label.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
-	 * @spec openspec/specs/deep-link-registry/spec.md
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function register(
-		string $appId,
-		string $registerSlug,
-		string $schemaSlug,
-		string $urlTemplate,
-		string $icon = '',
-		?string $displayName = null,
-	): void {
-		$this->store(
-			registration: new DeepLinkRegistration(
-				appId: $appId,
-				registerSlug: $registerSlug,
-				schemaSlug: $schemaSlug,
-				urlTemplate: $urlTemplate,
-				icon: $this->effectiveIcon(appId: $appId, icon: $icon),
-				displayName: $displayName,
-			)
+	public function add(DeepLinkRegistration $registration): void {
+		$this->store(registration: $this->withEffectiveIcon(registration: $registration));
+	}//end add()
+
+	/**
+	 * The registration, with `icon-{appId}` as its icon when it names none.
+	 *
+	 * @param DeepLinkRegistration $registration The registration as the app gave it.
+	 *
+	 * @return DeepLinkRegistration The registration to store.
+	 */
+	private function withEffectiveIcon(DeepLinkRegistration $registration): DeepLinkRegistration {
+		if ($registration->icon !== '') {
+			return $registration;
+		}
+
+		return new DeepLinkRegistration(
+			appId: $registration->appId,
+			registerSlug: $registration->registerSlug,
+			schemaSlug: $registration->schemaSlug,
+			urlTemplate: $registration->urlTemplate,
+			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
+			displayName: $registration->displayName
 		);
-	}//end register()
+	}//end withEffectiveIcon()
 
 	/**
 	 * Keep a registration unless its (register, schema) pair is claimed already: first registration wins.
@@ -168,19 +153,43 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 		$key = $registration->registerSlug . '::' . $registration->schemaSlug;
 
 		if (isset(self::$registrations[$key]) === true) {
-			$this->logger->debug(
-				'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
-				[
-					'key' => $key,
-					'appId' => $registration->appId,
-					'existing' => self::$registrations[$key]->appId,
-				]
-			);
+			$this->logDuplicate(registration: $registration, key: $key);
 			return;
 		}
 
 		self::$registrations[$key] = $registration;
 
+		$this->logRegistered(registration: $registration, key: $key);
+	}//end store()
+
+	/**
+	 * Log a registration ignored because another app already claimed its register and schema.
+	 *
+	 * @param DeepLinkRegistration $registration The ignored registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logDuplicate(DeepLinkRegistration $registration, string $key): void {
+		$this->logger->debug(
+			'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
+			[
+				'key' => $key,
+				'appId' => $registration->appId,
+				'existing' => self::$registrations[$key]->appId,
+			]
+		);
+	}//end logDuplicate()
+
+	/**
+	 * Log a stored registration.
+	 *
+	 * @param DeepLinkRegistration $registration The registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logRegistered(DeepLinkRegistration $registration, string $key): void {
 		$this->logger->debug(
 			'[DeepLinkRegistry] Registered deep link for {key} → {appId} ({template})',
 			[
@@ -189,7 +198,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				'template' => $registration->urlTemplate,
 			]
 		);
-	}//end store()
+	}//end logRegistered()
 
 	/**
 	 * The icon of a registration: the given one, or "icon-{appId}" when none is given.
@@ -272,16 +281,9 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function resolveUrl(
-		int $registerId,
-		int $schemaId,
-		array $objectData,
-		array $contactContext = [],
-	): ?string {
-		return $this->resolve(registerId: $registerId, schemaId: $schemaId)?->resolveUrl(
-			objectData: $objectData,
-			contactContext: $contactContext
-		);
+	public function resolveUrl(int $registerId, int $schemaId, array $objectData, array $contactContext = []): ?string {
+		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+		return $registration?->resolveUrl(objectData: $objectData, contactContext: $contactContext);
 	}//end resolveUrl()
 
 	/**
@@ -348,6 +350,17 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 		self::$appsAsked = true;
 
+		$this->dispatchRegistrationEvent(dispatcher: $dispatcher);
+	}//end requestRegistrations()
+
+	/**
+	 * Ask the apps for their deep links; a failure is logged, not thrown.
+	 *
+	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take the container's.
+	 *
+	 * @return void
+	 */
+	private function dispatchRegistrationEvent(?IEventDispatcher $dispatcher): void {
 		try {
 			$dispatcher ??= $this->containerDispatcher();
 			if ($dispatcher === null) {
@@ -361,7 +374,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				['error' => $e->getMessage()]
 			);
 		}
-	}//end requestRegistrations()
+	}//end dispatchRegistrationEvent()
 
 	/**
 	 * The event dispatcher from the app container, or null when it serves something else.

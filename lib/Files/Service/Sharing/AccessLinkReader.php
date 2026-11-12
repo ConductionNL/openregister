@@ -44,6 +44,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -51,14 +53,9 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
-use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
+use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -105,55 +102,6 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	private const MAX_VIEW_OBJECTS = 200;
 
 	/**
-	 * The object read path.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objects;
-
-	/**
-	 * Resolves the schema whose rules apply.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemas;
-
-	/**
-	 * Strips write-only and unreadable properties.
-	 *
-	 * @var PropertyRbacHandlerInterface
-	 */
-	private readonly PropertyRbacHandlerInterface $properties;
-
-	/**
-	 * Reads and projects the public half of the timeline.
-	 *
-	 * @var PublicTimelineInterface
-	 */
-	private readonly PublicTimelineInterface $timeline;
-
-	/**
-	 * Reads which object a subject names.
-	 *
-	 * @var AccessLinkSubjectInterface
-	 */
-	private readonly AccessLinkSubjectInterface $subjects;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Refuses a restricted file to a link. Null only in legacy fixtures.
-	 *
-	 * @var FileRestrictionStore|null
-	 */
-	private readonly ?FileRestrictionStore $restrictions;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param AccessLinkReaderSources $sources The object read path, the subject parser and the optional file restriction store.
@@ -161,17 +109,10 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @param LoggerInterface         $logger  PSR logger.
 	 */
 	public function __construct(
-		AccessLinkReaderSources $sources,
-		AccessLinkReaderFilters $filters,
-		LoggerInterface $logger,
+		private readonly AccessLinkReaderSources $sources,
+		private readonly AccessLinkReaderFilters $filters,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objects = $sources->objects;
-		$this->subjects = $sources->subjects;
-		$this->restrictions = $sources->restrictions;
-		$this->schemas = $filters->schemas;
-		$this->properties = $filters->properties;
-		$this->timeline = $filters->timeline;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -198,7 +139,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
-			$uuid = $this->subjects->objectUuid(
+			$uuid = $this->sources->subjects->objectUuid(
 				subjectType: AccessLink::SUBJECT_FILE,
 				subjectId: (string)$link->getSubjectId()
 			);
@@ -208,12 +149,11 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			$object = $this->objects->find(
+			$object = $this->sources->objects->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(
@@ -269,7 +209,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
 			$body['file'] = $this->fileDescriptor(
 				object: $object,
-				fileId: (string)$this->subjects->fileId(subjectId: (string)$link->getSubjectId())
+				fileId: (string)$this->sources->subjects->fileId(subjectId: (string)$link->getSubjectId())
 			);
 			if ($body['file'] === null) {
 				// A file the object does not carry is a file that is not there.
@@ -297,24 +237,26 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			return null;
 		}
 
+		$minter = $this->minterOf(link: $link);
+		if ($minter === null) {
+			return null;
+		}
+
 		try {
-			// `_viewScopeRequired: true` is not decoration. RBAC and multitenancy
-			// are off here because there is no session to judge, which leaves the
-			// view as the ONLY bound on this query. The shared search path used to
-			// log an unresolvable view and carry on with the query unchanged - and
-			// the view IS unresolvable here, because ViewMapper::find() ran an RBAC
-			// read check against an anonymous caller. The result was a link serving
-			// up to MAX_VIEW_OBJECTS arbitrary objects from any organisation. With
-			// the flag the view is resolved exempt (the link is the authorization,
-			// exactly as for the schema read in filteredProperties()) and every way
-			// of failing to apply it throws, which the catch below turns into "this
-			// link no longer resolves".
-			$results = $this->objects->searchObjects(
-				query: ['_limit' => self::MAX_VIEW_OBJECTS],
-				_rbac: false,
-				_multitenancy: false,
-				views: [$viewId],
-				_viewScopeRequired: true
+			// The rows are resolved as the account that minted the link, with
+			// its own read rules and organisation, so a link never serves more
+			// than its minter may read. `_viewScopeRequired: true` keeps the
+			// view a hard bound: every way of failing to apply it throws, which
+			// the catch below turns into "this link no longer resolves".
+			$results = $this->sources->objects->runAs(
+				$minter,
+				fn () => $this->sources->objects->searchObjects(
+					query: ['_limit' => self::MAX_VIEW_OBJECTS],
+					_rbac: true,
+					_multitenancy: true,
+					views: [$viewId],
+					_viewScopeRequired: true
+				)
 			);
 		} catch (Throwable $missing) {
 			$this->logger->info(
@@ -338,6 +280,32 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 
 		return ['results' => $rows, 'total' => count($rows)];
 	}//end readView()
+
+	/**
+	 * The enabled account that minted a link, or null when it no longer resolves.
+	 *
+	 * @param AccessLinkInterface $link The link.
+	 *
+	 * @return IUser|null
+	 */
+	private function minterOf(AccessLinkInterface $link): ?IUser {
+		$uid = '';
+		if ($link instanceof AccessLink) {
+			$uid = trim((string)$link->getCreatedBy());
+		}
+
+		$minter = null;
+		if ($uid !== '') {
+			$minter = $this->sources->users?->get($uid);
+		}
+
+		if ($minter === null || $minter->isEnabled() === false) {
+			$this->logger->info('[AccessLinkReader] The account that minted a view link no longer resolves; serving nothing.');
+			return null;
+		}
+
+		return $minter;
+	}//end minterOf()
 
 	/**
 	 * One object, reduced to what an anonymous caller may read.
@@ -412,7 +380,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		try {
-			$schema = $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			$schema = $this->filters->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $missing) {
 			$this->logger->warning(
 				'[AccessLinkReader] Refusing to publish an object whose schema does not resolve: '
@@ -423,7 +391,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 
 		$readable = $object->filterAsRecord(
 			data: $data,
-			filter: fn (array $probe): array => $this->properties->filterReadableProperties(schema: $schema, object: $probe)
+			filter: fn (array $probe): array => $this->filters->properties->filterReadableProperties(schema: $schema, object: $probe)
 		);
 
 		// A link never reveals an explicit-reveal value: it reads masked.
@@ -452,7 +420,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
 	private function publicTimeline(ObjectEntity $object): array {
-		return $this->timeline->forObject(object: $object);
+		return $this->filters->timeline->forObject(object: $object);
 	}//end publicTimeline()
 
 	/**
@@ -475,7 +443,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		// A link admits whoever holds it, and a restricted file admits only the people it names.
-		if (ctype_digit($wanted) === true && $this->restrictions?->find(fileId: (int)$wanted) !== null) {
+		if (ctype_digit($wanted) === true && $this->sources->restrictions?->find(fileId: (int)$wanted) !== null) {
 			return null;
 		}
 

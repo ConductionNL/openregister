@@ -43,7 +43,11 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
 use OCA\OpenRegister\Db\FlowTimerEventMapperInterface;
@@ -56,6 +60,8 @@ use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -91,74 +97,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 	public const ACTOR_SWEEP = 'flow-timer-sweep';
 
 	/**
-	 * The timer table.
+	 * The states of a timer that can still be cancelled by its subject.
 	 *
-	 * @var FlowTimerMapperInterface
+	 * @var array<int, string>
 	 */
-	private readonly FlowTimerMapperInterface $timers;
-
-	/**
-	 * The rung dedup ledger.
-	 *
-	 * @var FlowTimerFireMapperInterface
-	 */
-	private readonly FlowTimerFireMapperInterface $fires;
-
-	/**
-	 * The append-only history.
-	 *
-	 * @var FlowTimerEventMapperInterface
-	 */
-	private readonly FlowTimerEventMapperInterface $events;
-
-	/**
-	 * The task table, for the projection and the subject read.
-	 *
-	 * @var TaskMapper
-	 */
-	private readonly TaskMapper $tasks;
-
-	/**
-	 * Applies enforcing outcomes as named task actions.
-	 *
-	 * @var TaskServiceInterface
-	 */
-	private readonly TaskServiceInterface $taskService;
-
-	/**
-	 * Calendar resolution.
-	 *
-	 * @var WorkingCalendarService
-	 */
-	private readonly WorkingCalendarService $calendars;
-
-	/**
-	 * Business-time arithmetic.
-	 *
-	 * @var SlaCalculatorInterface
-	 */
-	private readonly SlaCalculatorInterface $calculator;
-
-	/**
-	 * Rung resolution and validation.
-	 *
-	 * @var EscalationLadderService
-	 */
-	private readonly EscalationLadderService $ladder;
-
-	/**
-	 * Holds the one transaction per operation.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Raises the fired transitions.
-	 *
-	 * @var IEventDispatcher
-	 */
-	private readonly IEventDispatcher $dispatcher;
+	private const OPEN_STATES = [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED];
 
 	/**
 	 * Constructor.
@@ -169,21 +112,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param LoggerInterface     $logger     Diagnostics.
 	 */
 	public function __construct(
-		FlowTimerStorage $storage,
-		FlowTimerSubjects $subjects,
-		FlowTimerArithmetic $arithmetic,
+		private readonly FlowTimerStorage $storage,
+		private readonly FlowTimerSubjects $subjects,
+		private readonly FlowTimerArithmetic $arithmetic,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->timers = $storage->timers;
-		$this->fires = $storage->fires;
-		$this->events = $storage->events;
-		$this->tasks = $subjects->tasks;
-		$this->taskService = $subjects->taskService;
-		$this->calendars = $arithmetic->calendars;
-		$this->calculator = $arithmetic->calculator;
-		$this->ladder = $arithmetic->ladder;
-		$this->db = $storage->db;
-		$this->dispatcher = $subjects->dispatcher;
 	}//end __construct()
 
 	/**
@@ -202,8 +135,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * escalation rule whose preBreach offset resolves before the anchor.
 	 *
 	 * @param array<string, mixed> $config The timer configuration.
-	 * @param string|null $actor The arming identity.
-	 * @param DateTimeInterface|null $now The clock; null means the real clock.
+	 * @param FlowTimerAct         $act    The arming identity and the clock ({@see FlowTimerAct::of()} reads the real clock).
 	 *
 	 * @return FlowTimer The armed timer.
 	 *
@@ -211,38 +143,44 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
 	 */
-	public function arm(array $config, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
-		$now = $this->instant(now: $now);
-		$timer = $this->factory()->build(config: $config, act: new FlowTimerAct(actor: $actor, now: $now));
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+	public function arm(array $config, FlowTimerAct $act): FlowTimer {
+		$timer = $this->factory()->build(config: $config, act: $act);
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
 		$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $timer, calendar: $calendar), firedKeys: []);
-		$this->ladder->validateAgainstTimeline(
-			rungs: $this->ladder->resolveLadder(timer: $timer)['rungs'],
-			anchorAt: $timer->getAnchorAt(),
-			fireAt: $timer->getFireAt(),
-			calendar: $calendar
+		$rungs = $this->arithmetic->ladder->resolveLadder(timer: $timer)['rungs'];
+		$this->arithmetic->ladder->validateAgainstTimeline(
+			timeline: new RungTimeline(rungs: $rungs, fireAt: $timer->getFireAt(), firedKeys: [], calendar: $calendar),
+			anchorAt: $timer->getAnchorAt()
 		);
 
-		return $this->transactional(
-			mutation: function () use ($timer, $actor, $now): FlowTimer {
-				$persisted = $this->timers->insert($timer);
-				$entry = new FlowTimerLedgerEntry(
-					type: FlowTimerEvent::TYPE_ARMED,
-					actor: $actor,
-					reason: sprintf('Armed from anchor %s.', $persisted->getAnchorAt()->format('c')),
-					moment: $now
-				);
-				$entry = $entry->withFireMoments(prior: null, next: $persisted->getFireAt());
-				$this->record(timer: $persisted, entry: $entry->withBasis(basis: (string)($persisted->getMetadata()['basis'] ?? '')));
-				$this->projection()->project(timer: $persisted);
-
-				return $persisted;
-			}
-		);
+		return $this->transactional(mutation: fn (): FlowTimer => $this->insertArmed(timer: $timer, act: $act));
 	}//end arm()
+
+	/**
+	 * Insert a validated timer, record that it was armed and project it.
+	 *
+	 * @param FlowTimer    $timer The validated, unsaved timer.
+	 * @param FlowTimerAct $act   The arming identity and the clock.
+	 *
+	 * @return FlowTimer The persisted timer.
+	 */
+	private function insertArmed(FlowTimer $timer, FlowTimerAct $act): FlowTimer {
+		$persisted = $this->storage->timers->insert($timer);
+		$entry = new FlowTimerLedgerEntry(
+			type: FlowTimerEvent::TYPE_ARMED,
+			actor: $act->actor,
+			reason: sprintf('Armed from anchor %s.', $persisted->getAnchorAt()->format('c')),
+			moment: $act->now
+		);
+		$entry = $entry->withFireMoments(prior: null, next: $persisted->getFireAt());
+		$this->record(timer: $persisted, entry: $entry->withBasis(basis: (string)($persisted->getMetadata()['basis'] ?? '')));
+		$this->projection()->project(timer: $persisted);
+
+		return $persisted;
+	}//end insertArmed()
 
 	/**
 	 * Suspend a running timer (opschorting).
@@ -252,12 +190,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * is set. Business days spent suspended over a weekend add nothing to
 	 * consumption by construction. Evidenced with actor, moment, reason and basis.
 	 *
-	 * @param string $uuid The timer uuid.
-	 * @param string $reason Why the term is suspended (required).
-	 * @param DateTimeInterface|null $until The expected end, display-only.
-	 * @param string|null $actor The acting identity.
-	 * @param string|null $basis The legal ground, e.g. `Awb 4:15`.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerSuspension $suspension The timer, the reason, the expected end and the legal ground.
+	 * @param FlowTimerAct    $act        The acting identity and the clock.
 	 *
 	 * @return FlowTimer The suspended timer.
 	 *
@@ -266,55 +200,51 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function suspend(
-		string $uuid,
-		string $reason,
-		?DateTimeInterface $until,
-		?string $actor,
-		?string $basis = null,
-		?DateTimeInterface $now = null,
-	): FlowTimer {
-		$now = $this->instant(now: $now);
-		if (trim($reason) === '') {
+	public function suspend(TimerSuspension $suspension, FlowTimerAct $act): FlowTimer {
+		if (trim($suspension->reason) === '') {
 			throw new FlowTimerValidationException(
 				message: 'Suspending a term requires a non-empty reason: the suspension is itself a decision that has to be evidenced.'
 			);
 		}
 
-		$timer = $this->timers->findByUuid(uuid: $uuid);
+		$timer = $this->storage->timers->findByUuid(uuid: $suspension->uuid);
 		if ($timer->getState() !== FlowTimer::STATE_ARMED) {
 			throw new FlowTimerStateException(
-				message: sprintf("Timer '%s' cannot be suspended: its state is '%s', not 'armed'.", $uuid, (string)$timer->getState())
+				message: sprintf("Timer '%s' cannot be suspended: its state is '%s', not 'armed'.", $suspension->uuid, (string)$timer->getState())
 			);
 		}
 
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$priorFireAt = $timer->getFireAt();
-		$consumed = $this->calculator->measure(
-			from: $timer->getRunningSince(),
-			to: $now,
-			unit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+		$consumed = $this->arithmetic->calculator->measure(
+			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
+			unit: (string)$timer->getBudgetUnit()
 		);
 
 		return $this->transactional(
-			mutation: function () use ($timer, $calendar, $consumed, $reason, $until, $actor, $basis, $now, $priorFireAt): FlowTimer {
+			mutation: function () use ($timer, $calendar, $consumed, $suspension, $act, $priorFireAt): FlowTimer {
 				$timer->setConsumedValue((float)$timer->getConsumedValue() + max(0.0, $consumed));
 				$timer->setRunningSince(null);
-				$timer->setSuspendedSince($this->mutable(value: $now));
-				$timer->setSuspendReason($reason);
+				$timer->setSuspendedSince($this->mutable(value: $act->now));
+				$timer->setSuspendReason($suspension->reason);
 				$timer->setState(FlowTimer::STATE_SUSPENDED);
 				$this->recomputeFromLedger(timer: $timer, calendar: $calendar);
-				$persisted = $this->timers->update($timer);
+				$persisted = $this->storage->timers->update($timer);
 
 				$untilNote = '';
-				if ($until !== null) {
-					$untilNote = sprintf(' Expected until %s.', $until->format('c'));
+				if ($suspension->until !== null) {
+					$untilNote = sprintf(' Expected until %s.', $suspension->until->format('c'));
 				}
 
-				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_SUSPENDED, actor: $actor, reason: $reason . $untilNote, moment: $now);
-				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: $priorFireAt, next: null)->withBasis(basis: (string)$basis));
-				$this->projection()->project(timer: $persisted, suspendedUntil: $until);
+				$entry = new FlowTimerLedgerEntry(
+					type: FlowTimerEvent::TYPE_SUSPENDED,
+					actor: $act->actor,
+					reason: $suspension->reason . $untilNote,
+					moment: $act->now
+				);
+				$entry = $entry->withFireMoments(prior: $priorFireAt, next: null);
+				$this->record(timer: $persisted, entry: $entry->withBasis(basis: (string)$suspension->basis));
+				$this->projection()->project(timer: $persisted, suspendedUntil: $suspension->until);
 
 				return $persisted;
 			}
@@ -325,10 +255,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * Resume a suspended timer: `running_since = now` and the fire moment is
 	 * re-projected from now across the calendar by the UNCONSUMED remainder.
 	 *
-	 * @param string $uuid The timer uuid.
-	 * @param string|null $reason Why the term resumes.
-	 * @param string|null $actor The acting identity.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerDecision $decision The timer and why the term resumes.
+	 * @param FlowTimerAct  $act      The acting identity and the clock.
 	 *
 	 * @return FlowTimer The running timer.
 	 *
@@ -336,19 +264,19 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function resume(string $uuid, ?string $reason, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
-		$now = $this->instant(now: $now);
-		$timer = $this->timers->findByUuid(uuid: $uuid);
+	public function resume(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
+		$now = $act->now;
+		$timer = $this->storage->timers->findByUuid(uuid: $decision->uuid);
 		if ($timer->getState() !== FlowTimer::STATE_SUSPENDED) {
 			throw new FlowTimerStateException(
-				message: sprintf("Timer '%s' cannot be resumed: its state is '%s', not 'suspended'.", $uuid, (string)$timer->getState())
+				message: sprintf("Timer '%s' cannot be resumed: its state is '%s', not 'suspended'.", $decision->uuid, (string)$timer->getState())
 			);
 		}
 
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 
 		return $this->transactional(
-			mutation: function () use ($timer, $calendar, $reason, $actor, $now): FlowTimer {
+			mutation: function () use ($timer, $calendar, $decision, $act, $now): FlowTimer {
 				$suspendedSince = $timer->getSuspendedSince();
 				if ($suspendedSince !== null) {
 					$timer->setSuspendedTotalSeconds(
@@ -361,8 +289,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$timer->setSuspendReason(null);
 				$timer->setState(FlowTimer::STATE_ARMED);
 				$this->recomputeFromLedger(timer: $timer, calendar: $calendar);
-				$persisted = $this->timers->update($timer);
-				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_RESUMED, actor: $actor, reason: (string)$reason, moment: $now);
+				$persisted = $this->storage->timers->update($timer);
+				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_RESUMED, actor: $act->actor, reason: (string)$decision->reason, moment: $now);
 				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: null, next: $persisted->getFireAt()));
 				$this->projection()->project(timer: $persisted);
 
@@ -374,12 +302,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Extend a timer (verdaging) through the STANDARD path, bounded by `extension_max`.
 	 *
-	 * @param string $uuid The timer uuid.
-	 * @param int $amount The extension amount.
-	 * @param string $unit Its unit; converted into the budget unit when they differ.
-	 * @param string $rationale Why (required, non-empty).
-	 * @param string|null $actor The acting identity.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerExtensionRequest $request The timer, the amount, its unit and the rationale.
+	 * @param FlowTimerAct          $act     The acting identity and the clock.
 	 *
 	 * @return FlowTimer The extended timer.
 	 *
@@ -388,33 +312,22 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extend(
-		string $uuid,
-		int $amount,
-		string $unit,
-		string $rationale,
-		?string $actor,
-		?DateTimeInterface $now = null,
-	): FlowTimer {
-		$now = $this->instant(now: $now);
-		$timer = $this->timers->findByUuid(uuid: $uuid);
-		$this->assertExtendable(timer: $timer, now: $now);
+	public function extend(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
+		$timer = $this->storage->timers->findByUuid(uuid: $request->uuid);
+		$this->assertExtendable(timer: $timer, now: $act->now);
 
 		if ((int)$timer->getExtensionCount() >= (int)$timer->getExtensionMax()) {
 			throw new FlowTimerStateException(
 				message: sprintf(
 					"Timer '%s' has reached its extension bound of %d; a further extension requires the separately authorized override.",
-					$uuid,
+					$request->uuid,
 					(int)$timer->getExtensionMax()
 				)
 			);
 		}
 
-		return $this->applyExtension(
-			timer: $timer,
-			extension: new FlowTimerExtension(amount: $amount, unit: $unit, rationale: $rationale, basis: 'Awb 4:14'),
-			act: new FlowTimerAct(actor: $actor, now: $now)
-		);
+		$grant = new TimerExtensionGrant(extension: $request->extension(basis: 'Awb 4:14'), act: $act);
+		return $this->applyExtension(timer: $timer, grant: $grant);
 	}//end extend()
 
 	/**
@@ -422,12 +335,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * recorded as an override. Not a flag on {@see extend()}, because the flag
 	 * becomes the default caller within a release.
 	 *
-	 * @param string $uuid The timer uuid.
-	 * @param int $amount The extension amount.
-	 * @param string $unit Its unit.
-	 * @param string $rationale Why (required, non-empty).
-	 * @param string $actor The authorizing identity (required).
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerExtensionRequest $request The timer, the amount, its unit and the rationale.
+	 * @param FlowTimerAct          $act     The authorizing identity (required) and the clock.
 	 *
 	 * @return FlowTimer The extended timer.
 	 *
@@ -436,27 +345,16 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extendWithOverride(
-		string $uuid,
-		int $amount,
-		string $unit,
-		string $rationale,
-		string $actor,
-		?DateTimeInterface $now = null,
-	): FlowTimer {
-		$now = $this->instant(now: $now);
-		if (trim($actor) === '') {
+	public function extendWithOverride(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
+		if (trim((string)$act->actor) === '') {
 			throw new FlowTimerValidationException(message: 'An extension override requires an authorizing identity.');
 		}
 
-		$timer = $this->timers->findByUuid(uuid: $uuid);
-		$this->assertExtendable(timer: $timer, now: $now);
+		$timer = $this->storage->timers->findByUuid(uuid: $request->uuid);
+		$this->assertExtendable(timer: $timer, now: $act->now);
 
-		return $this->applyExtension(
-			timer: $timer,
-			extension: new FlowTimerExtension(amount: $amount, unit: $unit, rationale: $rationale, basis: 'override'),
-			act: new FlowTimerAct(actor: $actor, now: $now)
-		);
+		$grant = new TimerExtensionGrant(extension: $request->extension(basis: 'override'), act: $act);
+		return $this->applyExtension(timer: $timer, grant: $grant);
 	}//end extendWithOverride()
 
 	/**
@@ -465,11 +363,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * inheriting a fire row for every rung still in the past under the NEW
 	 * deadline (design D-4). The superseded row never fires.
 	 *
-	 * @param string $uuid The timer to supersede.
-	 * @param DateTimeInterface $anchorEventAt The new instant of the anchoring event.
-	 * @param string $reason Why the anchor moved.
-	 * @param string|null $actor The acting identity.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerAnchorMove $move   The timer to supersede and the new instant of its anchoring event.
+	 * @param TimerChange     $change Why the anchor moved, the acting identity, and the clock.
 	 *
 	 * @return FlowTimer The successor.
 	 *
@@ -477,47 +372,66 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
 	 */
-	public function supersede(
-		string $uuid,
-		DateTimeInterface $anchorEventAt,
-		string $reason,
-		?string $actor,
-		?DateTimeInterface $now = null,
-	): FlowTimer {
-		$now = $this->instant(now: $now);
-		$prior = $this->timers->findByUuid(uuid: $uuid);
+	public function supersede(TimerAnchorMove $move, TimerChange $change): FlowTimer {
+		return $this->reanchor(
+			decision: new TimerDecision(uuid: $move->uuid, reason: $change->reason),
+			act: new FlowTimerAct(actor: $change->actor, now: $this->instant(now: $change->now), when: $move->anchorEventAt)
+		);
+	}//end supersede()
+
+	/**
+	 * Supersede a timer whose anchoring event moved, as {@see supersede()} documents.
+	 *
+	 * @param TimerDecision $decision The timer to supersede and why the anchor moved.
+	 * @param FlowTimerAct  $act      The acting identity, the clock, and as `when` the new instant of the anchoring event.
+	 *
+	 * @return FlowTimer The successor.
+	 *
+	 * @throws FlowTimerStateException When the timer is not open.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
+	 */
+	private function reanchor(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
+		$prior = $this->storage->timers->findByUuid(uuid: $decision->uuid);
 		if ($prior->isOpen() === false) {
 			throw new FlowTimerStateException(
-				message: sprintf("Timer '%s' cannot be superseded: its state is '%s'.", $uuid, (string)$prior->getState())
+				message: sprintf("Timer '%s' cannot be superseded: its state is '%s'.", $decision->uuid, (string)$prior->getState())
 			);
 		}
 
-		$calendar = $this->calendars->resolve(calendarSlug: $prior->getCalendarSlug(), organisation: $prior->getOrganisation());
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $prior->getCalendarSlug(), organisation: $prior->getOrganisation());
 		$successor = $this->factory()->successor(
 			scope: new FlowTimerScope(timer: $prior, calendar: $calendar),
-			act: new FlowTimerAct(actor: $actor, now: $now, when: $anchorEventAt)
+			act: $act
 		);
-		$priorFired = $this->fires->findByTimer(timerUuid: $uuid);
+		$priorFired = $this->storage->fires->findByTimer(timerUuid: $decision->uuid);
 
 		return $this->transactional(
-			mutation: function () use ($prior, $successor, $priorFired, $calendar, $reason, $actor, $now): FlowTimer {
+			mutation: function () use ($prior, $successor, $priorFired, $calendar, $decision, $act): FlowTimer {
 				$priorFireAt = $prior->getFireAt();
 				$prior->setState(FlowTimer::STATE_SUPERSEDED);
 				$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $prior, calendar: $calendar), firedKeys: []);
-				$this->timers->update($prior);
-				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_SUPERSEDED, actor: $actor, reason: $reason, moment: $now);
+				$this->storage->timers->update($prior);
+				$reason = (string)$decision->reason;
+				$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_SUPERSEDED, actor: $act->actor, reason: $reason, moment: $act->now);
 				$this->record(timer: $prior, entry: $entry->withFireMoments(prior: $priorFireAt, next: $successor->getFireAt()));
 
 				// The successor must exist before its inherited fire rows.
-				$persisted = $this->timers->insert($successor);
-				$inherited = $this->inheritFires(successor: $persisted, priorFired: $priorFired, calendar: $calendar, now: $now);
-				$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $persisted, calendar: $calendar), firedKeys: $inherited);
-				$persisted = $this->timers->update($persisted);
+				$persisted = $this->storage->timers->insert($successor);
+				$scope = new FlowTimerScope(timer: $persisted, calendar: $calendar);
+				$inherited = [];
+				if ($priorFired !== []) {
+					$passed = $this->passedRungKeys(scope: $scope, now: $act->now);
+					$inherited = $this->inheritFires(successor: $persisted, fires: $this->firesFor(fires: $priorFired, keys: $passed));
+				}
+
+				$this->deadlines()->recompute(scope: $scope, firedKeys: $inherited);
+				$persisted = $this->storage->timers->update($persisted);
 				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_ARMED,
-					actor: $actor,
+					actor: $act->actor,
 					reason: sprintf("Re-armed from moved anchor; supersedes '%s'.", (string)$prior->getUuid()),
-					moment: $now
+					moment: $act->now
 				);
 				$this->record(timer: $persisted, entry: $entry->withFireMoments(prior: $priorFireAt, next: $persisted->getFireAt()));
 				$this->projection()->project(timer: $persisted);
@@ -525,64 +439,72 @@ class FlowTimerService implements FlowTimerControlInterface {
 				return $persisted;
 			}
 		);
-	}//end supersede()
+	}//end reanchor()
 
 	/**
 	 * Cancel every OPEN timer of a subject, with a reason. Idempotent; never
 	 * deletes; a recorded breach stays recorded. Runs in the CALLER's
 	 * transaction so a terminality listener lands it in the same operation.
 	 *
-	 * @param string $subjectType The subject type.
-	 * @param string $subjectUuid The subject uuid.
-	 * @param string $reason Why, recorded on each timer.
-	 * @param string|null $actor The propagation source recorded as actor.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param TimerSubjectRef $subject The subject type and uuid.
+	 * @param TimerChange     $change  Why, the propagation source recorded as actor, and the clock.
 	 *
 	 * @return int How many timers were cancelled.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function cancelForSubject(
-		string $subjectType,
-		string $subjectUuid,
-		string $reason,
-		?string $actor,
-		?DateTimeInterface $now = null,
-	): int {
-		$open = $this->timers->findBySubject(
-			subjectType: $subjectType,
-			subjectUuid: $subjectUuid,
-			states: [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED]
-		);
-
-		return $this->cancelAll(timers: $open, reason: $reason, actor: $actor, now: $this->instant(now: $now));
+	public function cancelForSubject(TimerSubjectRef $subject, TimerChange $change): int {
+		$open = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subject->type, uuid: $subject->uuid), states: self::OPEN_STATES);
+		$cancellation = $this->cancellation(change: $change);
+		return $this->cancelAll(timers: $open, cancellation: $cancellation);
 	}//end cancelForSubject()
 
 	/**
 	 * Cancel every OPEN timer a run terminality reaches: the run as subject,
 	 * or the run as provenance.
 	 *
-	 * @param string $runUuid The run uuid.
-	 * @param string $reason Why, recorded on each timer.
-	 * @param string|null $actor The propagation source recorded as actor.
-	 * @param DateTimeInterface|null $now The clock.
+	 * @param string      $runUuid The run uuid.
+	 * @param TimerChange $change  Why, the propagation source recorded as actor, and the clock.
 	 *
 	 * @return int How many timers were cancelled.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function cancelForRun(string $runUuid, string $reason, ?string $actor, ?DateTimeInterface $now = null): int {
+	public function cancelForRun(string $runUuid, TimerChange $change): int {
+		return $this->cancelRunTimers(runUuid: $runUuid, cancellation: $this->cancellation(change: $change));
+	}//end cancelForRun()
+
+	/**
+	 * The ledger entry a cancellation records on each timer it closes.
+	 *
+	 * @param TimerChange $change Why, the actor, and the clock.
+	 *
+	 * @return FlowTimerLedgerEntry The cancellation entry.
+	 */
+	private function cancellation(TimerChange $change): FlowTimerLedgerEntry {
+		return new FlowTimerLedgerEntry(
+			type: FlowTimerEvent::TYPE_CANCELLED,
+			actor: $change->actor,
+			reason: $change->reason,
+			moment: $this->instant(now: $change->now)
+		);
+	}//end cancellation()
+
+	/**
+	 * Cancel every open timer a run reaches; nothing for an empty run uuid.
+	 *
+	 * @param string               $runUuid      The run uuid.
+	 * @param FlowTimerLedgerEntry $cancellation The cancelled entry: actor, reason and moment.
+	 *
+	 * @return int How many timers were cancelled.
+	 */
+	private function cancelRunTimers(string $runUuid, FlowTimerLedgerEntry $cancellation): int {
 		if (trim($runUuid) === '') {
 			return 0;
 		}
 
-		return $this->cancelAll(
-			timers: $this->timers->findOpenByRun(runUuid: $runUuid),
-			reason: $reason,
-			actor: $actor,
-			now: $this->instant(now: $now)
-		);
-	}//end cancelForRun()
+		return $this->cancelAll(timers: $this->storage->timers->findOpenByRun(runUuid: $runUuid), cancellation: $cancellation);
+	}//end cancelRunTimers()
 
 	/**
 	 * The derived read API: overdue, remaining and overdue-by, computed from
@@ -633,7 +555,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return null;
 		}
 
-		return $this->calculator->measure(from: $fireAt, to: $now, unit: (string)$timer->getBudgetUnit(), calendar: $scope->calendar);
+		$span = new CalendarSpan(from: $fireAt, to: $now, calendar: $scope->calendar);
+		return $this->arithmetic->calculator->measure(span: $span, unit: (string)$timer->getBudgetUnit());
 	}//end overdueBy()
 
 	/**
@@ -646,7 +569,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function history(string $uuid): array {
-		return $this->events->findByTimer(timerUuid: $uuid);
+		return $this->storage->events->findByTimer(timerUuid: $uuid);
 	}//end history()
 
 	/**
@@ -666,7 +589,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 */
 	public function fireExpiry(FlowTimer $timer, DateTimeInterface $now): bool {
 		$uuid = (string)$timer->getUuid();
-		if ($this->timers->claimFired(uuid: $uuid, firedAt: $now) === false) {
+		if ($this->storage->timers->claimFired(uuid: $uuid, firedAt: $now) === false) {
 			return false;
 		}
 
@@ -674,7 +597,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$timer->setFiredAt($this->mutable(value: $now));
 		$timer->setBreached(true);
 		$timer->setNextRungAt(null);
-		$this->timers->update($timer);
+		$this->storage->timers->update($timer);
 
 		$type = FlowTimerEvent::TYPE_FIRED;
 		if ($timer->getLegalEffect() === FlowTimer::LEGAL_WETTELIJK) {
@@ -690,15 +613,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$this->record(timer: $timer, entry: $entry->withFireMoments(prior: $timer->getFireAt(), next: null));
 
 		$this->applyOutcome(timer: $timer);
-		$this->dispatcher->dispatchTyped(
+		$this->subjects->dispatcher->dispatchTyped(
 			new FlowTimerFiredEvent(
 				timer: $timer,
-				kind: FlowTimerFiredEvent::KIND_EXPIRY,
-				transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none'),
-				rungKey: null,
-				recipients: [],
-				priority: 'critical',
-				message: null
+				firing: new TimerFiring(
+					kind: FlowTimerFiredEvent::KIND_EXPIRY,
+					transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none')
+				),
+				notice: new EscalationNotice(priority: 'critical')
 			)
 		);
 		$this->projection()->project(timer: $timer);
@@ -724,19 +646,20 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return 0;
 		}
 
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
-		$ladder = $this->ladder->resolveLadder(timer: $timer);
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$ladder = $this->arithmetic->ladder->resolveLadder(timer: $timer);
 		$firedKeys = $this->firedKeys(timerUuid: (string)$timer->getUuid());
 		$subject = $this->projection()->subjectTask(timer: $timer);
 		$fired = 0;
 
-		$due = $this->ladder->dueRungs(
+		$due = $this->arithmetic->ladder->dueRungs(
 			timeline: new RungTimeline(rungs: $ladder['rungs'], fireAt: $timer->getFireAt(), firedKeys: $firedKeys, calendar: $calendar),
 			now: $now
 		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
-			$recipients = $this->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: $ladder['roleBindings']);
+			$audience = new EscalationAudience(subject: $subject, roleBindings: $ladder['roleBindings']);
+			$recipients = $this->arithmetic->ladder->resolveRecipients(rung: $rung, audience: $audience);
 			$transition = 'escalation:' . (string)$rung['key'];
 
 			$row = new FlowTimerFire();
@@ -749,29 +672,29 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$row->setInherited(false);
 
 			// The INSERT is the claim; null means another pass owns this rung.
-			if ($this->fires->claim(fire: $row) === null) {
+			if ($this->storage->fires->claim(fire: $row) === null) {
 				$firedKeys[] = (string)$rung['key'];
 				continue;
 			}
 
 			$firedKeys[] = (string)$rung['key'];
 			$fired++;
-			$this->dispatcher->dispatchTyped(
+			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					kind: FlowTimerFiredEvent::KIND_RUNG,
-					transition: $transition,
-					rungKey: (string)$rung['key'],
-					recipients: $recipients,
-					priority: (string)$rung['priority'],
-					message: $rung['message'],
-					consequence: ($rung['consequence'] ?? null)
+					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					notice: new EscalationNotice(
+						recipients: $recipients,
+						priority: (string)$rung['priority'],
+						message: $rung['message'],
+						consequence: ($rung['consequence'] ?? null)
+					)
 				)
 			);
 		}//end foreach
 
 		$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $timer, calendar: $calendar), firedKeys: $firedKeys);
-		$this->timers->update($timer);
+		$this->storage->timers->update($timer);
 
 		return $fired;
 	}//end fireRungs()
@@ -811,23 +734,26 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * The shared body of extend() and extendWithOverride().
 	 *
-	 * @param FlowTimer          $timer     The open timer.
-	 * @param FlowTimerExtension $extension The amount, unit, rationale and basis.
-	 * @param FlowTimerAct       $act       The acting identity and the clock.
+	 * @param FlowTimer           $timer The open timer.
+	 * @param TimerExtensionGrant $grant The extension and the act that grants it.
 	 *
 	 * @return FlowTimer The extended timer.
 	 *
 	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
 	 */
-	private function applyExtension(FlowTimer $timer, FlowTimerExtension $extension, FlowTimerAct $act): FlowTimer {
+	private function applyExtension(FlowTimer $timer, TimerExtensionGrant $grant): FlowTimer {
+		$extension = $grant->extension;
+		$act = $grant->act;
 		$extension->assertValid();
 
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
-		$added = $this->calculator->convert(
-			value: (float)$extension->amount,
-			fromUnit: $this->calculator->validateUnit(unit: $extension->unit),
-			toUnit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$added = $this->arithmetic->calculator->convert(
+			conversion: new UnitConversion(
+				value: (float)$extension->amount,
+				fromUnit: $this->arithmetic->calculator->validateUnit(unit: $extension->unit),
+				toUnit: (string)$timer->getBudgetUnit(),
+				calendar: $calendar
+			)
 		);
 
 		return $this->transactional(
@@ -836,7 +762,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 				$timer->setBudgetValue((float)$timer->getBudgetValue() + $added);
 				$timer->setExtensionCount((int)$timer->getExtensionCount() + 1);
 				$this->recomputeFromLedger(timer: $timer, calendar: $calendar);
-				$persisted = $this->timers->update($timer);
+				$persisted = $this->storage->timers->update($timer);
 				$entry = new FlowTimerLedgerEntry(
 					type: FlowTimerEvent::TYPE_EXTENDED,
 					actor: $act->actor,
@@ -853,51 +779,68 @@ class FlowTimerService implements FlowTimerControlInterface {
 	}//end applyExtension()
 
 	/**
-	 * Copy forward a fire row for every predecessor rung whose instant is
-	 * still in the past under the successor's deadline; none for rungs pushed
-	 * back into the future.
+	 * The successor's rung keys whose instant is already in the past under its
+	 * deadline; a rung pushed back into the future will fire again, legitimately.
 	 *
-	 * @param FlowTimer $successor The persisted successor.
-	 * @param array<int, FlowTimerFire> $priorFired The predecessor's fire rows.
-	 * @param WorkingCalendar $calendar The resolved calendar.
-	 * @param DateTimeImmutable $now The clock.
+	 * @param FlowTimerScope    $scope The persisted successor and its calendar.
+	 * @param DateTimeImmutable $now   The clock.
 	 *
-	 * @return array<int, string> The inherited rung keys.
+	 * @return array<int, string> The rung keys.
 	 */
-	private function inheritFires(FlowTimer $successor, array $priorFired, WorkingCalendar $calendar, DateTimeImmutable $now): array {
-		if ($priorFired === []) {
-			return [];
-		}
-
+	private function passedRungKeys(FlowTimerScope $scope, DateTimeImmutable $now): array {
 		// The successor's fire moment, without the ladder (no ledger yet).
-		$fireAt = $this->deadlines()->landed(scope: new FlowTimerScope(timer: $successor, calendar: $calendar));
+		$fireAt = $this->deadlines()->landed(scope: $scope);
 		$byKey = [];
-		foreach ($this->ladder->resolveLadder(timer: $successor)['rungs'] as $rung) {
+		foreach ($this->arithmetic->ladder->resolveLadder(timer: $scope->timer)['rungs'] as $rung) {
 			$byKey[(string)$rung['key']] = $rung;
 		}
 
+		$timeline = new RungTimeline(rungs: array_values($byKey), fireAt: $fireAt, firedKeys: [], calendar: $scope->calendar);
+		$passed = [];
+		foreach ($byKey as $key => $rung) {
+			if ($this->arithmetic->ladder->rungInstant(rung: $rung, timeline: $timeline) <= $now) {
+				$passed[] = (string)$key;
+			}
+		}
+
+		return $passed;
+	}//end passedRungKeys()
+
+	/**
+	 * The fire rows whose rung key is in the given set, in their original order.
+	 *
+	 * @param array<int, FlowTimerFire> $fires The predecessor's fire rows.
+	 * @param array<int, string>        $keys  The rung keys to keep.
+	 *
+	 * @return array<int, FlowTimerFire> The kept rows.
+	 */
+	private function firesFor(array $fires, array $keys): array {
+		return array_values(
+			array_filter($fires, static fn (FlowTimerFire $fire): bool => in_array((string)$fire->getRungKey(), $keys, true))
+		);
+	}//end firesFor()
+
+	/**
+	 * Copy forward the given fire rows onto the successor, each claimed.
+	 *
+	 * @param FlowTimer                 $successor The persisted successor.
+	 * @param array<int, FlowTimerFire> $fires     The predecessor rows still in the past.
+	 *
+	 * @return array<int, string> The inherited rung keys.
+	 */
+	private function inheritFires(FlowTimer $successor, array $fires): array {
 		$inherited = [];
-		foreach ($priorFired as $fire) {
-			$key = (string)$fire->getRungKey();
-			if (array_key_exists($key, $byKey) === false) {
-				continue;
-			}
-
-			if ($this->ladder->rungInstant(rung: $byKey[$key], fireAt: $fireAt, calendar: $calendar) > $now) {
-				// Pushed back into the future: it will fire again, legitimately.
-				continue;
-			}
-
+		foreach ($fires as $fire) {
 			$row = new FlowTimerFire();
 			$row->setTimerUuid((string)$successor->getUuid());
-			$row->setRungKey($key);
+			$row->setRungKey((string)$fire->getRungKey());
 			$row->setFiredAt($fire->getFiredAt());
 			$row->setTransitionAction($fire->getTransitionAction());
 			$row->setRecipientRoles($fire->getRecipientRoles());
 			$row->setPriority($fire->getPriority());
 			$row->setInherited(true);
-			if ($this->fires->claim(fire: $row) !== null) {
-				$inherited[] = $key;
+			if ($this->storage->fires->claim(fire: $row) !== null) {
+				$inherited[] = (string)$fire->getRungKey();
 			}
 		}
 
@@ -907,14 +850,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Cancel a set of open timers with a reason; never deletes.
 	 *
-	 * @param array<int, FlowTimer> $timers The open timers.
-	 * @param string $reason Why.
-	 * @param string|null $actor The propagation source.
-	 * @param DateTimeImmutable $now The clock.
+	 * @param array<int, FlowTimer> $timers       The open timers.
+	 * @param FlowTimerLedgerEntry  $cancellation The cancelled entry: the propagation source, why, and the clock.
 	 *
 	 * @return int How many were cancelled.
 	 */
-	private function cancelAll(array $timers, string $reason, ?string $actor, DateTimeImmutable $now): int {
+	private function cancelAll(array $timers, FlowTimerLedgerEntry $cancellation): int {
 		$cancelled = 0;
 		foreach ($timers as $timer) {
 			if ($timer->isOpen() === false) {
@@ -923,14 +864,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 			$priorFireAt = $timer->getFireAt();
 			$timer->setState(FlowTimer::STATE_CANCELLED);
-			$timer->setCancelledAt($this->mutable(value: $now));
-			$timer->setCancelReason($reason);
+			$timer->setCancelledAt($this->mutable(value: $cancellation->moment));
+			$timer->setCancelReason($cancellation->reason);
 			$timer->setRunningSince(null);
 			$timer->setFireAt(null);
 			$timer->setNextRungAt(null);
-			$this->timers->update($timer);
-			$entry = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_CANCELLED, actor: $actor, reason: $reason, moment: $now);
-			$this->record(timer: $timer, entry: $entry->withFireMoments(prior: $priorFireAt, next: null));
+			$this->storage->timers->update($timer);
+			$this->record(timer: $timer, entry: $cancellation->withFireMoments(prior: $priorFireAt, next: null));
 			$cancelled++;
 		}
 
@@ -973,11 +913,15 @@ class FlowTimerService implements FlowTimerControlInterface {
 		}
 
 		try {
-			$this->taskService->applyTimerOutcome(
+			$this->subjects->taskService->applyTimerOutcome(
 				uuid: (string)$timer->getSubjectUuid(),
-				outcome: $outcome,
-				source: 'flow-timer:' . (string)$timer->getUuid(),
-				reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+				outcome: new TimerOutcome(
+					outcome: $outcome,
+					trigger: new TaskTrigger(
+						source: 'flow-timer:' . (string)$timer->getUuid(),
+						reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+					)
+				)
 			);
 		} catch (TaskConflictException $race) {
 			// The task closed concurrently: nothing to do, the timer is cancelled by that close.
@@ -1012,7 +956,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 */
 	private function firedKeys(string $timerUuid): array {
 		$keys = [];
-		foreach ($this->fires->findByTimer(timerUuid: $timerUuid) as $fire) {
+		foreach ($this->storage->fires->findByTimer(timerUuid: $timerUuid) as $fire) {
 			$keys[] = (string)$fire->getRungKey();
 		}
 
@@ -1043,7 +987,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$event->setUnrolledAt($timer->getUnrolledAt());
 		$event->setRolledBy($timer->getRolledBy());
 		$event->setCreated($this->mutable(value: $entry->moment));
-		$this->events->insert($event);
+		$this->storage->events->insert($event);
 	}//end record()
 
 	/**
@@ -1056,14 +1000,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @throws Throwable The mutation's failure, after rollback.
 	 */
 	private function transactional(callable $mutation): FlowTimer {
-		$this->db->beginTransaction();
+		$this->storage->db->beginTransaction();
 		try {
 			$result = $mutation();
-			$this->db->commit();
+			$this->storage->db->commit();
 
 			return $result;
 		} catch (Throwable $failure) {
-			$this->db->rollBack();
+			$this->storage->db->rollBack();
 			throw $failure;
 		}
 	}//end transactional()
@@ -1098,7 +1042,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerScope The scope.
 	 */
 	private function scope(FlowTimer $timer): FlowTimerScope {
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		return new FlowTimerScope(timer: $timer, calendar: $calendar);
 	}//end scope()
 
@@ -1108,7 +1052,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerFactory The factory.
 	 */
 	private function factory(): FlowTimerFactory {
-		return new FlowTimerFactory(calendars: $this->calendars, calculator: $this->calculator, ladder: $this->ladder);
+		return new FlowTimerFactory(arithmetic: $this->arithmetic);
 	}//end factory()
 
 	/**
@@ -1117,7 +1061,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerDeadlines The deadlines.
 	 */
 	private function deadlines(): FlowTimerDeadlines {
-		return new FlowTimerDeadlines(calculator: $this->calculator, ladder: $this->ladder);
+		return new FlowTimerDeadlines(calculator: $this->arithmetic->calculator, ladder: $this->arithmetic->ladder);
 	}//end deadlines()
 
 	/**
@@ -1126,6 +1070,6 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerProjection The projection.
 	 */
 	private function projection(): FlowTimerProjection {
-		return new FlowTimerProjection(timers: $this->timers, tasks: $this->tasks, logger: $this->logger);
+		return new FlowTimerProjection(timers: $this->storage->timers, tasks: $this->subjects->tasks, logger: $this->logger);
 	}//end projection()
 }//end class

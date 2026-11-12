@@ -260,6 +260,17 @@ final class NotificationTriggerValidator {
 			return 'not-a-string';
 		}
 
+		return $this->appEventNameFault(event: $event);
+	}//end appEventFault()
+
+	/**
+	 * What is wrong with a non-empty app event name: reserved or misshapen; null when nothing.
+	 *
+	 * @param string $event The declared event name.
+	 *
+	 * @return string|null A key of self::APP_EVENT_FAULTS, or null.
+	 */
+	private function appEventNameFault(string $event): ?string {
 		if (in_array($event, self::VALID_TRIGGERS, true) === true) {
 			return 'reserved';
 		}
@@ -269,7 +280,7 @@ final class NotificationTriggerValidator {
 		}
 
 		return null;
-	}//end appEventFault()
+	}//end appEventNameFault()
 
 	/**
 	 * Errors for a `scheduled` trigger: interval, filter and dedupe fields.

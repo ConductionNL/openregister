@@ -32,14 +32,17 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
+use OCA\OpenRegister\Service\Case\CasePlanMove;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionCause;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -116,8 +119,10 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		);
 
 		$machine = $this->createMock(CasePlanStateMachine::class);
-		$machine->method('transition')->willReturnCallback(
-			function (CaseItem $item, string $to, string $cause, ?string $causeRef, ?string $actor, ?string $reason = null, ?CasePlanTree $tree = null): CaseItem {
+		$machine->method('commit')->willReturnCallback(
+			function (CasePlanMove $move): CaseItem {
+				[$item, $to, $why, $tree] = [$move->item, $move->to, $move->why, $move->tree];
+				[$cause, $causeRef, $actor, $reason] = [$why->cause, $why->causeRef, $why->actor, $why->reason];
 				$this->calls[] = sprintf('transition:%d:%s:%s:%s:%s:%s:%s', $item->getId(), $to, $cause, $causeRef ?? '-', $actor ?? '-', $reason ?? '-', $tree === null ? 'no-tree' : 'tree');
 				if ($this->moves === true) {
 					$item->setState($to);
@@ -130,9 +135,9 @@ class CasePlanCascadeGoldenTest extends TestCase {
 				return $item;
 			}
 		);
-		$machine->method('recordCreation')->willReturnCallback(
-			function (CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-				$this->calls[] = sprintf('created:%d:%s:%s:%s', $item->getId(), $cause, $causeRef ?? '-', $actor ?? '-');
+		$machine->method('recordCreationOf')->willReturnCallback(
+			function (CaseItem $item, CaseTransitionCause $why): void {
+				$this->calls[] = sprintf('created:%d:%s:%s:%s', $item->getId(), $why->cause, $why->causeRef ?? '-', $why->actor ?? '-');
 			}
 		);
 		$machine->method('flushEvents')->willReturnCallback(
@@ -156,8 +161,8 @@ class CasePlanCascadeGoldenTest extends TestCase {
 
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturnCallback(
-			function (string $objectUuid, ?int $registerId, ?int $schemaId): array {
-				$this->calls[] = sprintf('anchor:%s:%s:%s', $objectUuid, $registerId ?? '-', $schemaId ?? '-');
+			function (CaseAnchor $anchor): array {
+				$this->calls[] = sprintf('anchor:%s:%s:%s', $anchor->objectUuid, $anchor->registerId ?? '-', $anchor->schemaId ?? '-');
 				return ['status' => 'withdrawn'];
 			}
 		);
@@ -165,8 +170,11 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		$catalog = $this->createMock(EventCatalogService::class);
 		$catalog->method('aliasesFor')->willReturnCallback(static fn (string $dispatched): array => [$dispatched]);
 
+		$machine->method('store')->willReturn(
+			new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger())
+		);
+
 		return new CasePlanCascade(
-			store: new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger()),
 			machine: $machine,
 			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: $catalog), realiser: $realiser, anchor: $anchor)
 		);

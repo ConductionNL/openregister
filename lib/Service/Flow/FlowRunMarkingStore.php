@@ -102,25 +102,78 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 		// not wrapped: leaving it reachable leaves the lost update reachable.
 		$current = $this->normalise(places: ($this->run->getMarking() ?? []));
 		$next = $this->normalise(places: $marking->getPlaces());
+
+		$this->run->setMarking($this->applied(current: $current, next: $next));
+	}//end setMarking()
+
+	/**
+	 * The current marking with the delta towards `$next` applied, recording that delta.
+	 *
+	 * @param array<string, int> $current The marking the run holds.
+	 * @param array<string, int> $next    The marking Symfony computed.
+	 *
+	 * @return array<string, int> The marking to store.
+	 */
+	private function applied(array $current, array $next): array {
 		$this->lastDelta = ['consumed' => [], 'produced' => []];
 
 		foreach (array_unique(array_merge(array_keys($current), array_keys($next))) as $place) {
 			$diff = (($next[$place] ?? 0) - ($current[$place] ?? 0));
+			if (self::isUnchanged(diff: $diff) === true) {
+				continue;
+			}
+
+			$this->lastDelta[$this->deltaSide(diff: $diff)][] = (string)$place;
+			$current[$place] = (($current[$place] ?? 0) + $diff);
 			if ($diff < 0) {
-				$this->lastDelta['consumed'][] = (string)$place;
-				$current[$place] = (($current[$place] ?? 0) + $diff);
-				if ($current[$place] <= 0) {
-					unset($current[$place]);
-				}
-			} elseif ($diff > 0) {
-				$this->lastDelta['produced'][] = (string)$place;
-				$current[$place] = (($current[$place] ?? 0) + $diff);
+				$current = self::withoutDrained(marking: $current, place: $place);
 			}
 		}
 
-		$this->run->setMarking($current);
+		return $current;
+	}//end applied()
 
-	}//end setMarking()
+	/**
+	 * Whether a place's token count did not move.
+	 *
+	 * @param int|float $diff The change in tokens.
+	 *
+	 * @return bool
+	 */
+	private static function isUnchanged(int|float $diff): bool {
+		return ($diff < 0) === false && ($diff > 0) === false;
+	}//end isUnchanged()
+
+	/**
+	 * The marking without a place that consumption left with no tokens.
+	 *
+	 * @param array<string, int> $marking The marking.
+	 * @param int|string         $place   The place just consumed from.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function withoutDrained(array $marking, int|string $place): array {
+		if ($marking[$place] <= 0) {
+			unset($marking[$place]);
+		}
+
+		return $marking;
+	}//end withoutDrained()
+
+	/**
+	 * Which side of the delta a non-zero difference lands on.
+	 *
+	 * @param integer|float $diff The token difference for one place.
+	 *
+	 * @return string `consumed` for a loss, `produced` for a gain.
+	 */
+	private function deltaSide(int|float $diff): string {
+		if ($diff < 0) {
+			return 'consumed';
+		}
+
+		return 'produced';
+	}//end deltaSide()
 
 	/**
 	 * The delta the last `setMarking()` applied: the places it took a token

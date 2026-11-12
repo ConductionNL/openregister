@@ -51,8 +51,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use Throwable;
 
@@ -354,9 +354,8 @@ class RelativeTimeCondition {
 	 * The walk happens HERE, once, and what comes back is a property, an
 	 * operator and an instant — which is a `WHERE created_at <= ?`, not a loop.
 	 *
-	 * @param mixed                $node     The condition node.
-	 * @param DateTimeInterface    $now      The present moment.
-	 * @param WorkingCalendar|null $calendar The calendar, when the unit needs one.
+	 * @param mixed              $node   The condition node.
+	 * @param RelativeTimeMoment $moment The present moment, and the calendar when the unit needs one.
 	 *
 	 * @return array{property: string, operator: string, value: string}|null The comparison, or null when the node is not one.
 	 *
@@ -364,17 +363,17 @@ class RelativeTimeCondition {
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function compile(mixed $node, DateTimeInterface $now, ?WorkingCalendar $calendar): ?array {
+	public function compile(mixed $node, RelativeTimeMoment $moment): ?array {
 		if ($this->isRelativeTime(node: $node) === false) {
 			return null;
 		}
 
-		$refusal = $this->refusalFor(node: $node, calendar: $calendar);
+		$refusal = $this->refusalFor(node: $node, calendar: $moment->calendar);
 		if ($refusal !== null) {
 			throw new ConditionRefusedException(conditionName: self::KEY, why: $refusal);
 		}
 
-		return $this->compiled(declaration: $node[self::KEY], moment: new RelativeTimeMoment(now: $now, calendar: $calendar));
+		return $this->compiled(declaration: $node[self::KEY], moment: $moment);
 	}//end compile()
 
 	/**
@@ -406,10 +405,8 @@ class RelativeTimeCondition {
 	 * property that matters, because a sweep selects by query and a save
 	 * evaluates in PHP.
 	 *
-	 * @param mixed                $node     The condition node.
-	 * @param array<string, mixed> $document The object.
-	 * @param DateTimeInterface    $now      The present moment.
-	 * @param WorkingCalendar|null $calendar The calendar.
+	 * @param mixed             $node  The condition node.
+	 * @param RelativeTimeCheck $check The object, and the moment and calendar it is judged at.
 	 *
 	 * @return bool True when it holds.
 	 *
@@ -417,13 +414,13 @@ class RelativeTimeCondition {
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function holds(mixed $node, array $document, DateTimeInterface $now, ?WorkingCalendar $calendar): bool {
-		$compiled = $this->compile(node: $node, now: $now, calendar: $calendar);
+	public function holds(mixed $node, RelativeTimeCheck $check): bool {
+		$compiled = $this->compile(node: $node, moment: $check->moment);
 		if ($compiled === null) {
 			throw new ConditionRefusedException(conditionName: self::KEY, why: 'the node is not a relative-time condition');
 		}
 
-		$value = $this->dateIn(document: $document, property: $compiled['property'])->getTimestamp();
+		$value = $this->dateIn(document: $check->document, property: $compiled['property'])->getTimestamp();
 		$threshold = (new DateTimeImmutable($compiled['value']))->getTimestamp();
 		if ($compiled['operator'] === '<=') {
 			return ($value <= $threshold);
@@ -534,10 +531,12 @@ class RelativeTimeCondition {
 		$unit = (string)$offset['unit'];
 		if ($unit === self::UNIT_WORKING_HOURS) {
 			$value = $this->calculator->convert(
-				value: $value,
-				fromUnit: SlaCalculatorInterface::UNIT_HOURS,
-				toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
-				calendar: $moment->calendar
+				conversion: new UnitConversion(
+					value: $value,
+					fromUnit: SlaCalculatorInterface::UNIT_HOURS,
+					toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+					calendar: $moment->calendar
+				)
 			);
 		}
 

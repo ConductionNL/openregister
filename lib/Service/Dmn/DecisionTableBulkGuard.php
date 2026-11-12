@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dmn;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
@@ -87,65 +88,148 @@ class DecisionTableBulkGuard {
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
 	public function refusals(array $objects, Register|string|int|null $register, Schema|string|int|null $schema): array {
-		$defaultSchema   = $this->reference(value: $schema);
-		$defaultRegister = $this->reference(value: $register);
-		$isTable         = [];
-		$claimed         = [];
-		$refused         = [];
+		$run = new DecisionTableBatchRun();
+		$run->defaultSchema   = $this->reference(value: $schema);
+		$run->defaultRegister = $this->reference(value: $register);
+		$refused = array_map(fn (mixed $row): ?string => $this->refusalFor(run: $run, row: $row), $objects);
 
-		foreach ($objects as $position => $row) {
-			$self = [];
-			if (is_array($row['@self'] ?? null) === true) {
-				$self = $row['@self'];
-			}
-
-			$schemaRef   = ($this->reference(value: ($self['schema'] ?? null)) ?? $defaultSchema);
-			$registerRef = ($this->reference(value: ($self['register'] ?? null)) ?? $defaultRegister);
-
-			$memo = ($schemaRef . '|' . $registerRef);
-			if (array_key_exists($memo, $isTable) === false) {
-				$isTable[$memo] = $this->listener()->isDecisionTableRef(schema: $schemaRef, register: $registerRef);
-			}
-
-			if ($isTable[$memo] === false) {
-				continue;
-			}
-
-			$data = $row;
-			unset($data['@self']);
-			$uuid     = $this->uuidOf(row: $row, self: $self);
-			$problems = ($this->listener()->problemsFor(schema: $schemaRef, register: $registerRef, data: $data, uuid: $uuid) ?? []);
-
-			$clash = $this->claim(claimed: $claimed, key: trim((string)($data['key'] ?? '')), uuid: $uuid);
-			if ($clash !== null) {
-				$problems[] = $clash;
-			}
-
-			if ($problems !== []) {
-				$refused[$position] = 'The decision table cannot be saved: ' . implode('; ', $problems) . '.';
-			}
-		}//end foreach
-
-		return $refused;
+		return array_filter($refused, static fn (?string $reason): bool => $reason !== null);
 	}//end refusals()
 
 	/**
-	 * Claim a key for a row, or say that an earlier row of the batch holds it.
+	 * Why one row of the batch must not be stored, or null when it may.
 	 *
-	 * @param array<string, string> $claimed The keys claimed so far, with the uuid of the claiming row.
-	 * @param string                $key     The row's key.
-	 * @param string                $uuid    The row's uuid, '' for a new row.
+	 * @param DecisionTableBatchRun $run The batch run.
+	 * @param mixed                 $row The raw row.
+	 *
+	 * @return string|null The refusal reason, or null.
+	 */
+	private function refusalFor(DecisionTableBatchRun $run, mixed $row): ?string {
+		$problems = $this->problemsOf(run: $run, row: $row);
+		if ($problems === null || $problems === []) {
+			return null;
+		}
+
+		return 'The decision table cannot be saved: ' . implode('; ', $problems) . '.';
+	}//end refusalFor()
+
+	/**
+	 * What is wrong with one row, or null when the row is no decision table.
+	 *
+	 * Sets the run's row cursor (schema, register, uuid) before asking.
+	 *
+	 * @param DecisionTableBatchRun $run The batch run.
+	 * @param mixed                 $row The raw row.
+	 *
+	 * @return array<int, string>|null The problems, or null.
+	 */
+	private function problemsOf(DecisionTableBatchRun $run, mixed $row): ?array {
+		$self = $this->selfOf(row: $row);
+		$this->locate(run: $run, self: $self);
+		if ($this->isTable(run: $run) === false) {
+			return null;
+		}
+
+		$data = $this->withoutSelf(row: $row);
+		$run->uuid = $this->uuidOf(row: $row, self: $self);
+		$problems  = $this->rowProblems(run: $run, data: $data);
+		$clash     = $this->claim(run: $run, key: trim((string)($data['key'] ?? '')));
+		if ($clash !== null) {
+			$problems[] = $clash;
+		}
+
+		return $problems;
+	}//end problemsOf()
+
+	/**
+	 * The row's `@self` block, or an empty one.
+	 *
+	 * @param mixed $row The submitted row.
+	 *
+	 * @return array<string, mixed> The block.
+	 */
+	private function selfOf(mixed $row): array {
+		if (is_array($row['@self'] ?? null) === true) {
+			return $row['@self'];
+		}
+
+		return [];
+	}//end selfOf()
+
+	/**
+	 * The row's data: the row without its `@self` block.
+	 *
+	 * @param mixed $row The submitted row.
+	 *
+	 * @return mixed The data.
+	 */
+	private function withoutSelf(mixed $row): mixed {
+		$data = $row;
+		unset($data['@self']);
+
+		return $data;
+	}//end withoutSelf()
+
+	/**
+	 * Point the run at the row's schema and register, or the batch defaults.
+	 *
+	 * @param DecisionTableBatchRun $run  The batch in progress.
+	 * @param array<string, mixed>  $self The row's `@self` block.
+	 *
+	 * @return void
+	 */
+	private function locate(DecisionTableBatchRun $run, array $self): void {
+		$run->schema   = ($this->reference(value: ($self['schema'] ?? null)) ?? $run->defaultSchema);
+		$run->register = ($this->reference(value: ($self['register'] ?? null)) ?? $run->defaultRegister);
+	}//end locate()
+
+	/**
+	 * The problems the decision-table save check finds in one row's data.
+	 *
+	 * @param DecisionTableBatchRun $run  The batch in progress, at this row.
+	 * @param array<string, mixed>  $data The row's data without `@self`.
+	 *
+	 * @return array<int, string> The problems.
+	 */
+	private function rowProblems(DecisionTableBatchRun $run, array $data): array {
+		return ($this->listener()->problemsOf(
+			row: new ObjectRef(register: (string)$run->register, schema: (string)$run->schema, id: $run->uuid),
+			data: $data
+		) ?? []);
+	}//end rowProblems()
+
+	/**
+	 * Whether the run's current register/schema pair is a decision table, asked once per pair.
+	 *
+	 * @param DecisionTableBatchRun $run The batch run, its cursor on the row.
+	 *
+	 * @return bool|null The listener's answer.
+	 */
+	private function isTable(DecisionTableBatchRun $run): ?bool {
+		$memo = ($run->schema . '|' . $run->register);
+		if (array_key_exists($memo, $run->isTable) === false) {
+			$run->isTable[$memo] = $this->listener()->isDecisionTableRef(schema: $run->schema, register: $run->register);
+		}
+
+		return $run->isTable[$memo];
+	}//end isTable()
+
+	/**
+	 * Claim a key for the run's current row, or say that an earlier row of the batch holds it.
+	 *
+	 * @param DecisionTableBatchRun $run The batch run: the keys claimed so far, and the row's uuid ('' for a new row).
+	 * @param string                $key The row's key.
 	 *
 	 * @return string|null The problem, or null when the key is free or the same row claims it again.
 	 */
-	private function claim(array &$claimed, string $key, string $uuid): ?string {
+	private function claim(DecisionTableBatchRun $run, string $key): ?string {
 		if ($key === '') {
 			return null;
 		}
 
-		$other = ($claimed[$key] ?? null);
-		$claimed[$key] = ($other ?? $uuid);
-		if ($other !== null && ($other !== $uuid || $uuid === '')) {
+		$other = ($run->claimed[$key] ?? null);
+		$run->claimed[$key] = ($other ?? $run->uuid);
+		if ($other !== null && ($other !== $run->uuid || $run->uuid === '')) {
 			return sprintf('the key "%s" is claimed by another row of the same save', $key);
 		}
 

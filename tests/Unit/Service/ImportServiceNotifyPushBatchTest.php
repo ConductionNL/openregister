@@ -51,6 +51,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
 
 /**
  * Tests that bulk imports flush deduplicated notify_push collection events
@@ -158,15 +161,10 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 			->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $this->objectService, $this->createMock(AuditTrailMapper::class), $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 
 	}//end setUp()
@@ -311,7 +309,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			// Default flags — exactly what RegistersController/the UI import sends.
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -376,7 +379,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			$this->expectException(\RuntimeException::class);
-			$this->service->importFromCsv($tmpFile, $register, $schema);
+			$this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 
@@ -417,7 +425,12 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 			);
 
 		try {
-			$this->service->importFromCsv($tmpFile, $register, $schema);
+			$this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -451,12 +464,11 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 
 		try {
 			$this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				false,
-				// events=true.
-				true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(events: true),
+				),
 			);
 		} finally {
 			@unlink($tmpFile);

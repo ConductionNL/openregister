@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Service\CalendarRange;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -121,7 +122,7 @@ class ViewPresentationServiceGoldenTest extends TestCase {
 
 		try {
 			$result = match ($call) {
-				'calendar' => $service->getCalendarObjects($view, '2026-03-01', '2026-03-31'),
+				'calendar' => $service->getCalendarObjects($view, new CalendarRange('2026-03-01', '2026-03-31')),
 				default => $service->getKanbanBoard($view, ['_limit' => '5', '_offset' => 2]),
 			};
 			$recorded = $this->describe($result);

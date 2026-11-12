@@ -32,6 +32,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DsarService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Attributed, scoped persistence for data-subject fulfilment writes.
@@ -88,8 +90,9 @@ class SubjectObjectWriter {
 	public function save(ObjectEntity $object): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema())
+			),
 			_rbac: true,
 			_multitenancy: true
 		);
@@ -99,26 +102,25 @@ class SubjectObjectWriter {
 	/**
 	 * Persist an object update and return its serialised envelope, or null.
 	 *
-	 * @param ObjectEntity $object     Object to persist.
-	 * @param string       $op         Operation label for logging.
-	 * @param string       $identifier Identifier for logging.
+	 * @param ObjectEntity      $object Object to persist.
+	 * @param SubjectWriteLabel $label  The operation and the identifier a failure is logged under.
 	 *
 	 * @return array<string, mixed>|null Null when the save failed.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-immutable-audit-of-request-fulfilment
 	 */
-	public function persist(ObjectEntity $object, string $op, string $identifier): ?array {
+	public function persistAs(ObjectEntity $object, SubjectWriteLabel $label): ?array {
 		try {
 			return $this->save(object: $object)->jsonSerialize();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				message: '[DSR] ' . $op . ' update failed',
-				context: ['object' => $identifier, 'error' => $e->getMessage()]
+				message: '[DSR] ' . $label->op . ' update failed',
+				context: ['object' => $label->identifier, 'error' => $e->getMessage()]
 			);
 			return null;
 		}
 
-	}//end persist()
+	}//end persistAs()
 
 	/**
 	 * Current acting user id, or `system`.

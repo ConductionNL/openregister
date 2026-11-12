@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -36,6 +37,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests the system-row visibility carve-out added to
@@ -109,13 +113,19 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 			);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->container,
-			$this->createMock(LoggerInterface::class)
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->container,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
@@ -224,11 +234,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertContains(
 			't._owner=__system__',
@@ -257,11 +263,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertNotContains(
 			't._owner=__system__',
@@ -286,11 +288,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertNotContains(
 			't._owner=__system__',
@@ -317,11 +315,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		// No conditions captured at all - admin bypass returns immediately.
 		$this->assertSame(

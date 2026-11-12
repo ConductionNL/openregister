@@ -36,13 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
-use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -93,18 +90,14 @@ class SeedVocabularyRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer (register/schema).
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 * @param VocabularyImporterInterface $importService The SKOS/JSON-LD import service (concept data).
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppConfigurationImporterInterface $configurationService,
+		private readonly RegisterDescriptorImport $descriptors,
 		private readonly VocabularyImporterInterface $importService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -144,31 +137,38 @@ class SeedVocabularyRegister implements IRepairStep {
 	 */
 	private function importRegisterDescriptor(IOutput $output): void {
 		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Vocabulary register descriptor not found: ' . $path);
+			$descriptor = new AppRegisterDescriptor(descriptors: $this->descriptors, label: 'Vocabulary');
+			$data = $descriptor->read(relativePath: self::REGISTER_PATH, output: $output);
+			if ($data === null) {
 				return;
 			}
 
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Vocabulary register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			$this->configurationService->importFromApp(
-				appId: self::CONFIG_APP_ID,
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
+			$this->importDescriptor(data: $data);
 
 			$output->info('Vocabulary register imported (conceptScheme, concept)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedVocabularyRegister] register import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedVocabularyRegister] register import failed: ' . $e->getMessage());
 			$output->warning('Vocabulary register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end importRegisterDescriptor()
+
+	/**
+	 * Import the decoded vocabulary register descriptor idempotently (force: false).
+	 *
+	 * @param array $data The decoded descriptor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 */
+	private function importDescriptor(array $data): void {
+		$this->descriptors->configurationService->importFromApp(
+			appId: self::CONFIG_APP_ID,
+			data: $data,
+			version: self::REGISTER_VERSION,
+			force: false
+		);
+	}//end importDescriptor()
 
 	/**
 	 * Seed the bundled TOOI SKOS/JSON-LD fixtures through the idempotent importer.
@@ -183,41 +183,67 @@ class SeedVocabularyRegister implements IRepairStep {
 	 * @return void
 	 */
 	private function seedTooiFixtures(IOutput $output): void {
-		$appPath = $this->appManager->getAppPath('openregister');
+		$appPath = $this->descriptors->appManager->getAppPath('openregister');
 
 		foreach (self::FIXTURE_PATHS as $relativePath) {
 			$path = $appPath . $relativePath;
 
 			try {
-				if (is_file($path) === false) {
-					$output->warning('TOOI vocabulary fixture not found: ' . $path);
-					continue;
-				}
-
-				$jsonLd = json_decode((string)file_get_contents($path), true);
-				if (is_array($jsonLd) === false) {
-					$output->warning('TOOI vocabulary fixture is not valid JSON: ' . $path);
-					continue;
-				}
-
-				$report = SystemOperationContext::run(
-					fn (): array => $this->importService->importJsonLd(jsonLd: $jsonLd)
-				);
-
-				$output->info(
-					sprintf(
-						'Seeded vocabulary scheme %s (created=%d, updated=%d, unchanged=%d, deprecated=%d)',
-						$report['scheme'],
-						$report['created'],
-						$report['updated'],
-						$report['unchanged'],
-						$report['deprecated']
-					)
-				);
+				$this->seedFixture(path: $path, output: $output);
 			} catch (Throwable $e) {
-				$this->logger->warning('[SeedVocabularyRegister] fixture seed failed for ' . $path . ': ' . $e->getMessage());
+				$this->descriptors->logger->warning('[SeedVocabularyRegister] fixture seed failed for ' . $path . ': ' . $e->getMessage());
 				$output->warning('TOOI vocabulary fixture seed skipped (' . $relativePath . '): ' . $e->getMessage());
 			}//end try
 		}//end foreach
 	}//end seedTooiFixtures()
+
+	/**
+	 * Seed one TOOI fixture, or warn why it cannot be read.
+	 *
+	 * @param string  $path   The fixture's absolute path.
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 */
+	private function seedFixture(string $path, IOutput $output): void {
+		if (is_file($path) === false) {
+			$output->warning('TOOI vocabulary fixture not found: ' . $path);
+			return;
+		}
+
+		$jsonLd = json_decode((string)file_get_contents($path), true);
+		if (is_array($jsonLd) === false) {
+			$output->warning('TOOI vocabulary fixture is not valid JSON: ' . $path);
+			return;
+		}
+
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		$report = SystemOperationContext::run(
+			fn (): array => $this->importService->importJsonLd(jsonLd: $jsonLd)
+		);
+
+		$output->info(self::seededLine(report: $report));
+	}//end seedFixture()
+
+	/**
+	 * The line for a seeded fixture: its scheme and the importer's counts.
+	 *
+	 * @param array<string, mixed> $report The importer's report.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 */
+	private static function seededLine(array $report): string {
+		return sprintf(
+			'Seeded vocabulary scheme %s (created=%d, updated=%d, unchanged=%d, deprecated=%d)',
+			$report['scheme'],
+			$report['created'],
+			$report['updated'],
+			$report['unchanged'],
+			$report['deprecated']
+		);
+	}//end seededLine()
 }//end class

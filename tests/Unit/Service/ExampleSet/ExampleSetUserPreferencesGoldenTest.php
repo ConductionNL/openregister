@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts;
+use OCA\OpenRegister\Service\ExampleSet\UserPreferenceKey;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCP\Config\IUserConfig;
 use OCP\IConfig;
@@ -140,16 +141,16 @@ class ExampleSetUserPreferencesGoldenTest extends TestCase {
 		$this->values['ann']['alpha']['flagged'] = 'x';
 
 		$got = [
-			'outsider'  => $this->preferences->refusal(app: 'alpha', uid: 'eve', key: 'tour', users: ['ann']),
-			'admin'     => $this->preferences->refusal(app: 'alpha', uid: 'root', key: 'tour', users: ['ann']),
-			'secret'    => $this->preferences->refusal(app: 'alpha', uid: 'ann', key: 'api_key', users: ['ann']),
-			'sensitive' => $this->preferences->refusal(app: 'alpha', uid: 'ann', key: 'theme', users: ['ann']),
-			'unset'     => $this->preferences->refusal(app: 'alpha', uid: 'ann', key: 'colour', users: ['ann']),
-			'throws'    => $this->preferences->refusal(app: 'alpha', uid: 'ann', key: 'tour', users: ['ann']),
+			'outsider'  => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'eve', 'app' => 'alpha', 'key' => 'tour']), users: ['ann']),
+			'admin'     => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'root', 'app' => 'alpha', 'key' => 'tour']), users: ['ann']),
+			'secret'    => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'api_key']), users: ['ann']),
+			'sensitive' => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'theme']), users: ['ann']),
+			'unset'     => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'colour']), users: ['ann']),
+			'throws'    => $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'tour']), users: ['ann']),
 			'broken'    => '',
 		];
 		$this->broken  = ['ann'];
-		$got['broken'] = $this->preferences->refusal(app: 'alpha', uid: 'ann', key: 'theme', users: ['ann']);
+		$got['broken'] = $this->preferences->refusal(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'theme']), users: ['ann']);
 
 		$this->assertSame(
 			[
@@ -172,18 +173,18 @@ class ExampleSetUserPreferencesGoldenTest extends TestCase {
 	 */
 	public function testApplyAndFollow(): void {
 		$got = [
-			'same'    => $this->preferences->apply(uid: 'ann', app: 'alpha', key: 'tour', value: '1.0'),
-			'changed' => $this->preferences->apply(uid: 'ann', app: 'alpha', key: 'tour', value: '2.0'),
-			'new'     => $this->preferences->apply(uid: 'bob', app: 'alpha', key: 'tour', value: '2.0'),
+			'same'    => $this->preferences->apply(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'tour']), value: '1.0'),
+			'changed' => $this->preferences->apply(preference: new UserPreferenceKey(entry: ['user' => 'ann', 'app' => 'alpha', 'key' => 'tour']), value: '2.0'),
+			'new'     => $this->preferences->apply(preference: new UserPreferenceKey(entry: ['user' => 'bob', 'app' => 'alpha', 'key' => 'tour']), value: '2.0'),
 		];
 
 		$entry               = $got['new']['entry'];
-		$got['notRefreshed'] = $this->preferences->follow(entry: $entry, value: '3.0', refresh: false);
-		$got['sameValue']    = $this->preferences->follow(entry: $entry, value: '2.0', refresh: true);
-		$got['followed']     = $this->preferences->follow(entry: $entry, value: '3.0', refresh: true);
+		$got['notRefreshed'] = $this->preferences->kept(entry: $entry);
+		$got['sameValue']    = $this->preferences->follow(entry: $entry, value: '2.0');
+		$got['followed']     = $this->preferences->follow(entry: $entry, value: '3.0');
 		$this->broken        = ['bob'];
-		$got['failedApply']  = $this->preferences->apply(uid: 'bob', app: 'alpha', key: 'tour', value: '4.0');
-		$got['failedFollow'] = $this->preferences->follow(entry: $entry, value: '4.0', refresh: true);
+		$got['failedApply']  = $this->preferences->apply(preference: new UserPreferenceKey(entry: ['user' => 'bob', 'app' => 'alpha', 'key' => 'tour']), value: '4.0');
+		$got['failedFollow'] = $this->preferences->follow(entry: $entry, value: '4.0');
 
 		$this->assertSame(
 			'{"same":{"error":"","entry":null},'

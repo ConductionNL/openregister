@@ -58,16 +58,14 @@ final class FilePropertyFiles {
 	 * @return array<never>|null An empty array for an array property, else null.
 	 */
 	public function clear(FilePropertyTarget $target): ?array {
-		$this->log->write(
-			level: 'info',
+		$this->log->info(
 			message: '[FilePropertyHandler] File property deletion requested',
 			context: ['propertyName' => $target->name, 'uuid' => $target->objectEntity->getUuid()]
 		);
 		$this->deleteStoredFiles(target: $target);
 
 		$cleared = $this->clearedValue(target: $target);
-		$this->log->write(
-			level: 'info',
+		$this->log->info(
 			message: '[FilePropertyHandler] File property set to null/empty',
 			context: ['propertyName' => $target->name, 'newValue' => $cleared]
 		);
@@ -87,8 +85,7 @@ final class FilePropertyFiles {
 			return false;
 		}
 
-		$this->log->write(
-			level: 'debug',
+		$this->log->debug(
 			message: '[FilePropertyHandler] Using existing file ID {fileId} for property {property}',
 			context: ['fileId' => $fileId, 'property' => $request->propertyName]
 		);
@@ -107,8 +104,7 @@ final class FilePropertyFiles {
 		try {
 			return $this->fileService->getFile(object: $request->objectEntity, file: (int)$fileId);
 		} catch (Exception $e) {
-			$this->log->write(
-				level: 'debug',
+			$this->log->debug(
 				message: '[FilePropertyHandler] Could not retrieve existing file {fileId}: {error}',
 				context: ['fileId' => $fileId, 'error' => $e->getMessage()]
 			);
@@ -155,8 +151,7 @@ final class FilePropertyFiles {
 	 */
 	private function storedFileIds(FilePropertyTarget $target): array {
 		$existingFileIds = ($target->objectEntity->getObject() ?? [])[$target->name] ?? null;
-		$this->log->write(
-			level: 'info',
+		$this->log->info(
 			message: '[FilePropertyHandler] Existing file IDs for deletion',
 			context: ['propertyName' => $target->name, 'existingFileIds' => $existingFileIds]
 		);

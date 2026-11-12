@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Support\ConfigServices;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -43,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * writing through setActiveOrganisationForUser() keeps the memo coherent.
  *
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
+ * @uses \OCA\OpenRegister\Db\Support\ConfigServices
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class OrganisationMapperMemoTest extends TestCase {
 
@@ -121,7 +124,7 @@ class OrganisationMapperMemoTest extends TestCase {
 		return new OrganisationMapper(
 			$this->db,
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IEventDispatcher::class),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end makeMapper()

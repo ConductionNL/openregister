@@ -3,8 +3,8 @@
 /**
  * Golden record of the AuditTrailMapper write path: who a row names, what it holds, when an edit merges.
  *
- * Pins the rows createAuditTrailEntry(), createToolInvocationEntry(),
- * createSharedMasterDataRefusalEntry() and createExportEntry() write into the
+ * Pins the rows createAuditTrailEntry(), recordToolInvocation(),
+ * recordSharedMasterDataRefusal() and recordExport() write into the
  * migrated table, the merge decisions createAuditTrail() takes under an
  * aggregation window (every way an edit is refused a merge, and the merge
  * itself), the multi-row INSERT insertAuditTrails() issues and the rows it
@@ -34,6 +34,11 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -125,20 +130,20 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			'archival ip trimmed' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, ' 10.0.0.1 '),
 			'archival ip blank' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, '   '),
 			'archival ip empty' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, ''),
-			'tool dotted no session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('keepiq.lead.search', 'd1', ['count' => 2]),
-			'tool undotted with session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('search', 'd2', [], new AuditedObject(1, 2, 3, 'o-3')),
-			'tool trailing dot with session' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('keepiq.', 'd3', ['isError' => true]),
-			'refusal minimal' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'register'),
-			'refusal empty actor and reference' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'schema', ['a' => 1], 4, 5, 'o-1', '', ''),
-			'refusal actor no reference' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'schema', [], null, null, null, 'bob'),
-			'refusal actor and reference' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'schema', [], null, null, null, 'bob', 'p-123'),
-			'refusal context cannot override outcome' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'register', ['outcome' => 'allowed', 'holderOrganisation' => 'forged', 'extra' => 'x']),
-			'refusal reference without actor with session' => fn (AuditTrailMapper $m) => $m->createSharedMasterDataRefusalEntry('org-h', 'org-s', 'register', [], null, null, null, null, 'p-9'),
-			'export no actor no session' => fn (AuditTrailMapper $m) => $m->createExportEntry('completed', ['rows' => 3]),
-			'export no actor with session' => fn (AuditTrailMapper $m) => $m->createExportEntry('refused', ['reason' => 'cap'], 1, 2),
-			'export actor' => fn (AuditTrailMapper $m) => $m->createExportEntry('completed', [], null, null, 'svc-export'),
-			'export empty actor' => fn (AuditTrailMapper $m) => $m->createExportEntry('completed', [], null, null, ''),
-			'session user' => fn (AuditTrailMapper $m) => $m->createToolInvocationEntry('a.b', 'd4', []),
+			'tool dotted no session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('keepiq.lead.search', 'd1', ['count' => 2])),
+			'tool undotted with session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('search', 'd2', [], new AuditedObject(1, 2, 3, 'o-3'))),
+			'tool trailing dot with session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('keepiq.', 'd3', ['isError' => true])),
+			'refusal minimal' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'register')),
+			'refusal empty actor and reference' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'schema', new SharedMasterDataRefusalOptions(['a' => 1], new AuditedObject(4, 5, null, 'o-1'), new NamedActor('', '')))),
+			'refusal actor no reference' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'schema', new SharedMasterDataRefusalOptions(actor: new NamedActor('bob')))),
+			'refusal actor and reference' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'schema', new SharedMasterDataRefusalOptions(actor: new NamedActor('bob', 'p-123')))),
+			'refusal context cannot override outcome' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'register', new SharedMasterDataRefusalOptions(['outcome' => 'allowed', 'holderOrganisation' => 'forged', 'extra' => 'x']))),
+			'refusal reference without actor with session' => fn (AuditTrailMapper $m) => $m->recordSharedMasterDataRefusal(new SharedMasterDataRefusal('org-h', 'org-s', 'register', new SharedMasterDataRefusalOptions(actor: new NamedActor(null, 'p-9')))),
+			'export no actor no session' => fn (AuditTrailMapper $m) => $m->recordExport(new ExportOutcome('completed', ['rows' => 3])),
+			'export no actor with session' => fn (AuditTrailMapper $m) => $m->recordExport(new ExportOutcome('refused', ['reason' => 'cap'], new AuditedObject(1, 2))),
+			'export actor' => fn (AuditTrailMapper $m) => $m->recordExport(new ExportOutcome('completed', [], new AuditedObject(), 'svc-export')),
+			'export empty actor' => fn (AuditTrailMapper $m) => $m->recordExport(new ExportOutcome('completed', [], new AuditedObject(), '')),
+			'session user' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('a.b', 'd4', [])),
 		];
 	}//end entryCases()
 
@@ -318,7 +323,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			}
 		);
 
-		$mapper = new AuditTrailMapper($db, $this->session(uid: null), $this->request(), new AuditTrailMapperServices($this->container(window: null), $this->logger()));
+		$mapper = new AuditTrailMapper($db, new AuditTrailMapperServices($this->container(window: null), $this->logger(), $this->session(uid: null), $this->request()));
 		try {
 			$inserted = $mapper->insertAuditTrails($entries(), $chunkSize);
 		} catch (\Throwable $e) {
@@ -394,7 +399,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			$db = $database->idbConnection();
 		}
 
-		return new AuditTrailMapper($db, $this->session(uid: $uid), $this->request(), new AuditTrailMapperServices($this->container(window: $window), $this->logger()));
+		return new AuditTrailMapper($db, new AuditTrailMapperServices($this->container(window: $window), $this->logger(), $this->session(uid: $uid), $this->request()));
 	}//end sqliteMapper()
 
 	/**

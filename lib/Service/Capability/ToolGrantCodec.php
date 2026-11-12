@@ -102,7 +102,7 @@ final class ToolGrantCodec {
 			return $entry;
 		}
 
-		$id = (string)($entry['id'] ?? '');
+		$id   = (string)($entry['id'] ?? '');
 		$args = ($entry['args'] ?? []);
 		if (is_array($args) === false || $args === []) {
 			return $id;
@@ -110,22 +110,33 @@ final class ToolGrantCodec {
 
 		$pairs = [];
 		foreach ($args as $key => $value) {
-			// The array case is handled FIRST. The unconditional `(string)$value`
-			// that used to open this loop ran for arrays too, raising an
-			// "Array to string conversion" warning on a value the next line then
-			// overwrote — the output was right, the warning was noise.
-			if (is_array($value) === true) {
-				// A closed value set, spelled the way the resolver's constraint
-				// grammar reads it back.
-				$pairs[] = $key . '=in:' . implode(',', $value);
-				continue;
-			}
-
-			$pairs[] = $key . '=' . (string)$value;
+			$pairs[] = self::constraintPair(key: $key, value: $value);
 		}
 
 		return $id . '?' . implode('&', $pairs);
 	}//end grantStringFor()
+
+	/**
+	 * One constraint of a grant string: `key=value`, or `key=in:a,b` for a closed value set.
+	 *
+	 * @param string|int $key   The argument name.
+	 * @param mixed      $value The pinned value, or the list of allowed values.
+	 *
+	 * @return string The pair.
+	 */
+	private static function constraintPair(string|int $key, mixed $value): string {
+		// The array case is handled FIRST. The unconditional `(string)$value`
+		// that used to open this loop ran for arrays too, raising an
+		// "Array to string conversion" warning on a value the next line then
+		// overwrote — the output was right, the warning was noise.
+		if (is_array($value) === true) {
+			// A closed value set, spelled the way the resolver's constraint
+			// grammar reads it back.
+			return $key . '=in:' . implode(',', $value);
+		}
+
+		return $key . '=' . (string)$value;
+	}//end constraintPair()
 
 	/**
 	 * Where one legacy grant string belongs in the structure.
@@ -146,24 +157,15 @@ final class ToolGrantCodec {
 	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-the-legacy-grant-grammar-lives-in-exactly-one-place
 	 */
 	public static function coordinatesFor(string $grant): array {
-		$id = $grant;
-		$args = [];
-
-		$queryAt = strpos($grant, '?');
-		if ($queryAt !== false) {
-			$id = substr($grant, 0, $queryAt);
-			$args = self::parseConstraints(query: substr($grant, ($queryAt + 1)));
-		}
+		[$id, $args] = self::splitGrant(grant: $grant);
 
 		$parts = explode('.', $id);
-		$app = ($parts[0] ?? '');
+		$app   = ($parts[0] ?? '');
+		$entry = self::entryFor(id: $id, args: $args);
 
 		// `{app}.{subject}.{action}` — the derived shape, already structured.
 		if (count($parts) >= 3) {
-			$action = (string)array_pop($parts);
-			$subject = implode('.', array_slice($parts, 1));
-
-			return [$app, $subject, $action, self::entryFor(id: $id, args: $args)];
+			return self::derivedCoordinates(parts: $parts, entry: $entry);
 		}
 
 		// `{app}.{name}` — hand-written. The name is BOTH the subject and the
@@ -171,8 +173,40 @@ final class ToolGrantCodec {
 		// otherwise is what produced subjects like "fetch" out of `webFetch`.
 		$name = ($parts[1] ?? $app);
 
-		return [$app, $name, $name, self::entryFor(id: $id, args: $args)];
+		return [$app, $name, $name, $entry];
 	}//end coordinatesFor()
+
+	/**
+	 * A grant string split into its id and its parsed constraints.
+	 *
+	 * @param string $grant The grant string.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The id and the constraints.
+	 */
+	private static function splitGrant(string $grant): array {
+		$queryAt = strpos($grant, '?');
+		if ($queryAt === false) {
+			return [$grant, []];
+		}
+
+		return [substr($grant, 0, $queryAt), self::parseConstraints(query: substr($grant, ($queryAt + 1)))];
+	}//end splitGrant()
+
+	/**
+	 * The coordinates of a derived `{app}.{subject}.{action}` id.
+	 *
+	 * @param array<int, string> $parts The id's dot-separated parts (three or more).
+	 * @param string|array       $entry The grant entry.
+	 *
+	 * @return array{0: string, 1: string, 2: string, 3: string|array} App, subject, action and entry.
+	 */
+	private static function derivedCoordinates(array $parts, string|array $entry): array {
+		$app     = $parts[0];
+		$action  = (string)array_pop($parts);
+		$subject = implode('.', array_slice($parts, 1));
+
+		return [$app, $subject, $action, $entry];
+	}//end derivedCoordinates()
 
 	/**
 	 * Parse the legacy `?key=value&other=in:a,b` constraint syntax.
@@ -226,6 +260,17 @@ final class ToolGrantCodec {
 			return null;
 		}
 
+		return self::sanitisedObjectEntry(entry: $entry);
+	}//end sanitiseEntry()
+
+	/**
+	 * An object entry kept as `{id, args}`, its bare id when it pins nothing, or null without an id.
+	 *
+	 * @param array<string, mixed> $entry The object entry.
+	 *
+	 * @return string|array|null The sanitised entry.
+	 */
+	private static function sanitisedObjectEntry(array $entry): string|array|null {
 		$id = ($entry['id'] ?? '');
 		if (is_string($id) === false || $id === '') {
 			return null;
@@ -237,5 +282,5 @@ final class ToolGrantCodec {
 		}
 
 		return ['id' => $id, 'args' => $args];
-	}//end sanitiseEntry()
+	}//end sanitisedObjectEntry()
 }//end class

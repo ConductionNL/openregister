@@ -27,7 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -128,87 +131,138 @@ class WebhookDeliveryJob extends QueuedJob {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	protected function run($argument): void {
-		// Extract job arguments with defaults.
-		$webhookId = $argument['webhook_id'] ?? null;
-		$eventName = $argument['event_name'] ?? null;
-		$payload = $argument['payload'] ?? [];
-		$attempt = $argument['attempt'] ?? 1;
-
-		if ($webhookId === null || $eventName === null) {
-			$this->logger->error(
-				message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'argument' => $argument,
-				]
-			);
+		if (($argument['webhook_id'] ?? null) === null || ($argument['event_name'] ?? null) === null) {
+			$this->logInvalidArguments(argument: $argument);
 			return;
 		}
 
 		try {
-			$webhook = $this->webhookMapper->find($webhookId);
-
-			$this->logger->info(
-				message: '[WebhookDeliveryJob] Executing webhook delivery job',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhookId,
-					'webhook_name' => $webhook->getName(),
-					'event' => $eventName,
-					'attempt' => $attempt,
-				]
-			);
-
-			// Deliver webhook.
-			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: $eventName,
-				payload: $payload,
-				attempt: $attempt
-			);
-
-			if ($success === true) {
-				$this->logger->info(
-					message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'webhook_id' => $webhookId,
-						'webhook_name' => $webhook->getName(),
-						'event' => $eventName,
-						'attempt' => $attempt,
-					]
-				);
-			}//end if
-
-			if ($success === false) {
-				$this->logger->warning(
-					message: '[WebhookDeliveryJob] Webhook delivery job failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'webhook_id' => $webhookId,
-						'webhook_name' => $webhook->getName(),
-						'event' => $eventName,
-						'attempt' => $attempt,
-					]
-				);
-			}//end if
+			$this->deliverFromArgument(argument: $argument);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhookId,
-					'event' => $eventName,
-					'attempt' => $attempt,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-		}//end try
+			$this->logDeliveryException(argument: $argument, error: $e);
+		}
 	}//end run()
+
+	/**
+	 * Log that the job was queued without a webhook id or event name.
+	 *
+	 * @param mixed $argument The job arguments as queued
+	 *
+	 * @return void
+	 */
+	private function logInvalidArguments(mixed $argument): void {
+		$this->logger->error(
+			message: '[WebhookDeliveryJob] WebhookDeliveryJob called with invalid arguments',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'argument' => $argument,
+			]
+		);
+	}//end logInvalidArguments()
+
+	/**
+	 * Look the webhook up and deliver the job's event to it, logging each step.
+	 *
+	 * @param array<string, mixed> $argument Validated job arguments
+	 *
+	 * @return void
+	 */
+	private function deliverFromArgument(array $argument): void {
+		$webhook = $this->webhookMapper->find($argument['webhook_id']);
+
+		$this->logger->info(
+			message: '[WebhookDeliveryJob] Executing webhook delivery job',
+			context: $this->deliveryContext(argument: $argument, webhook: $webhook)
+		);
+
+		$success = $this->webhookService->deliverWebhook($this->deliveryFor(argument: $argument, webhook: $webhook));
+
+		$this->logDeliveryOutcome(
+			success: $success,
+			context: $this->deliveryContext(argument: $argument, webhook: $webhook)
+		);
+	}//end deliverFromArgument()
+
+	/**
+	 * Build the delivery for the job's event and attempt.
+	 *
+	 * @param array<string, mixed> $argument Validated job arguments
+	 * @param Webhook              $webhook  The webhook to deliver to
+	 *
+	 * @return WebhookDelivery
+	 */
+	private function deliveryFor(array $argument, Webhook $webhook): WebhookDelivery {
+		return new WebhookDelivery(
+			webhook: $webhook,
+			event: new WebhookEvent(name: $argument['event_name'], payload: $argument['payload'] ?? []),
+			attempt: $argument['attempt'] ?? 1
+		);
+	}//end deliveryFor()
+
+	/**
+	 * Log whether the delivery succeeded or failed.
+	 *
+	 * @param bool                 $success Whether the delivery succeeded
+	 * @param array<string, mixed> $context The delivery log context
+	 *
+	 * @return void
+	 */
+	private function logDeliveryOutcome(bool $success, array $context): void {
+		if ($success === true) {
+			$this->logger->info(
+				message: '[WebhookDeliveryJob] Webhook delivery job completed successfully',
+				context: $context
+			);
+		}
+
+		if ($success === false) {
+			$this->logger->warning(
+				message: '[WebhookDeliveryJob] Webhook delivery job failed',
+				context: $context
+			);
+		}
+	}//end logDeliveryOutcome()
+
+	/**
+	 * Log context shared by the delivery messages.
+	 *
+	 * @param array<string, mixed> $argument Validated job arguments
+	 * @param Webhook              $webhook  The webhook delivered to
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function deliveryContext(array $argument, Webhook $webhook): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'webhook_id' => $argument['webhook_id'],
+			'webhook_name' => $webhook->getName(),
+			'event' => $argument['event_name'],
+			'attempt' => $argument['attempt'] ?? 1,
+		];
+	}//end deliveryContext()
+
+	/**
+	 * Log an exception raised while delivering.
+	 *
+	 * @param array<string, mixed> $argument Validated job arguments
+	 * @param \Exception           $error    The exception raised
+	 *
+	 * @return void
+	 */
+	private function logDeliveryException(array $argument, \Exception $error): void {
+		$this->logger->error(
+			message: '[WebhookDeliveryJob] Webhook delivery job encountered an exception',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $argument['webhook_id'],
+				'event' => $argument['event_name'],
+				'attempt' => $argument['attempt'] ?? 1,
+				'error' => $error->getMessage(),
+				'trace' => $error->getTraceAsString(),
+			]
+		);
+	}//end logDeliveryException()
 }//end class

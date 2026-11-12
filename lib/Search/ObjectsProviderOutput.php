@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -35,15 +35,15 @@ final class ObjectsProviderOutput {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IL10N                       $l10n            The localization service.
-	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service.
-	 * @param LoggerInterface             $logger          Logger for debugging search operations.
+	 * @param IL10N                                $l10n            The localization service.
+	 * @param ObjectSearchResultFormatterInterface $resultFormatter Shared result-formatting service.
+	 * @param LoggerInterface                      $logger          Logger for debugging search operations.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		public readonly IL10N $l10n,
-		public readonly ObjectSearchResultFormatter $resultFormatter,
+		public readonly ObjectSearchResultFormatterInterface $resultFormatter,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

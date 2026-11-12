@@ -6,11 +6,6 @@ parameters:
 			path: lib/AppInfo/Application.php
 
 		-
-			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
-			count: 1
-			path: lib/Service/ServiceRegistrar.php
-
-		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\SettingsService constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, OCP\\\\IContainer given\\.$#"
 			count: 1
 			path: lib/Service/Configuration/ConfigurationServiceRegistrar.php
@@ -1765,11 +1760,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\ApiTokenSettingsController\\:\\:\\$logger is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/Settings/ApiTokenSettingsController.php
-
-		-
-			message: "#^Parameter \\$appDataFactory of method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:__construct\\(\\) has invalid type OC\\\\Files\\\\AppData\\\\Factory\\.$#"
-			count: 2
-			path: lib/Controller/Settings/CacheSettingsController.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\ConfigurationSettingsController\\:\\:\\$logger is never read, only written\\.$#"

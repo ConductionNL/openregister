@@ -39,7 +39,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
@@ -165,30 +167,15 @@ class WorkingCalendarYearBoundaryTest extends TestCase {
 
 		// Wed 23 Dec 09:00 + 8 working days. Christmas takes two days, New
 		// Year's Day one, and four weekend days fall in between.
-		$landing = $calculator->add(
-			from: new DateTimeImmutable('2026-12-23 09:00:00', $utc),
-			value: 8.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$landing = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTimeImmutable('2026-12-23 09:00:00', $utc)), value: 8.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $calendar));
 		self::assertSame(expected: '2027-01-06 09:00:00', actual: $landing->format('Y-m-d H:i:s'));
 
 		// And the measurement is its own inverse across the boundary.
-		$measured = $calculator->measure(
-			from: new DateTimeImmutable('2026-12-23 09:00:00', $utc),
-			to: $landing,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$measured = $calculator->measure(span: new CalendarSpan(from: new DateTimeImmutable('2026-12-23 09:00:00', $utc), to: $landing, calendar: $calendar), unit: SlaCalculator::UNIT_BUSINESS_DAYS);
 		self::assertEqualsWithDelta(expected: 8.0, actual: $measured, delta: 0.0001);
 
 		// Wed 30 Dec 09:00 + 5, which consumes New Year's Day.
-		$overNewYear = $calculator->add(
-			from: new DateTimeImmutable('2026-12-30 09:00:00', $utc),
-			value: 5.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$overNewYear = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTimeImmutable('2026-12-30 09:00:00', $utc)), value: 5.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $calendar));
 		self::assertSame(expected: '2027-01-07 09:00:00', actual: $overNewYear->format('Y-m-d H:i:s'));
 	}//end testATermCrossesTheYearBoundary()
 
@@ -222,12 +209,7 @@ class WorkingCalendarYearBoundaryTest extends TestCase {
 	 * @dataProvider feastProvider
 	 */
 	public function testATermStepsOverEach2027Feast(string $start, float $days, string $expected): void {
-		$landing = (new SlaCalculator())->add(
-			from: new DateTimeImmutable($start, new DateTimeZone('UTC')),
-			value: $days,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: self::calendar()
-		);
+		$landing = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTimeImmutable($start, new DateTimeZone('UTC'))), value: $days, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: self::calendar()));
 
 		self::assertSame(expected: $expected, actual: $landing->format('Y-m-d H:i:s'));
 	}//end testATermStepsOverEach2027Feast()

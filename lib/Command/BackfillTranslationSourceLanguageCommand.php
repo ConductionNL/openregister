@@ -98,10 +98,7 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$batchSize = (int)$input->getOption('batch-size');
-		if ($batchSize < 1) {
-			$batchSize = 1000;
-		}
+		$batchSize = self::batchSize(input: $input);
 
 		$pending = $this->translationMapper->countMissingSourceLanguage();
 		$output->writeln(sprintf('<info>Translation rows pending back-fill: %d</info>', $pending));
@@ -112,16 +109,60 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 		}
 
 		if ((bool)$input->getOption('dry-run') === true) {
-			$output->writeln(
-				sprintf(
-					'<comment>Dry-run: would update up to %d rows (batch size %d).</comment>',
-					$pending,
-					$batchSize
-				)
-			);
+			$output->writeln(self::dryRunLine(pending: $pending, batchSize: $batchSize));
 			return Command::SUCCESS;
 		}
 
+		return $this->backfill(output: $output, batchSize: $batchSize);
+	}//end execute()
+
+	/**
+	 * The --batch-size option, or 1000 when it is below one.
+	 *
+	 * @param InputInterface $input The console input.
+	 *
+	 * @return int The batch size.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private static function batchSize(InputInterface $input): int {
+		$batchSize = (int)$input->getOption('batch-size');
+		if ($batchSize < 1) {
+			$batchSize = 1000;
+		}
+
+		return $batchSize;
+	}//end batchSize()
+
+	/**
+	 * What a dry run would update.
+	 *
+	 * @param int $pending   The rows pending back-fill.
+	 * @param int $batchSize The rows a real run updates at most.
+	 *
+	 * @return string The line to print.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private static function dryRunLine(int $pending, int $batchSize): string {
+		return sprintf(
+			'<comment>Dry-run: would update up to %d rows (batch size %d).</comment>',
+			$pending,
+			$batchSize
+		);
+	}//end dryRunLine()
+
+	/**
+	 * Back-fill one batch, then say how many rows are still pending.
+	 *
+	 * @param OutputInterface $output    The console output.
+	 * @param int             $batchSize The rows to update at most.
+	 *
+	 * @return int Always SUCCESS.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private function backfill(OutputInterface $output, int $batchSize): int {
 		$updated = $this->translationMapper->backfillSourceLanguage($this->defaultLanguages(), $batchSize);
 		$output->writeln(sprintf('<info>%d rows updated.</info>', $updated));
 
@@ -136,7 +177,7 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 		}
 
 		return Command::SUCCESS;
-	}//end execute()
+	}//end backfill()
 
 	/**
 	 * Build the register-id -> default-language map.

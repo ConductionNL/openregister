@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use Throwable;
 
 /**
@@ -74,25 +73,6 @@ trait ExampleSetUserObjectRows {
 	protected function isBlank(mixed $value): bool {
 		return is_string($value) === false || trim($value) === '';
 	}//end isBlank()
-
-	/**
-	 * A date and time as written by `{{datetime:...}}`, or null.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	protected function moment(mixed $value): ?DateTime {
-		if ($this->isBlank(value: $value) === true) {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
 
 	/**
 	 * A filled value as text, or null when it is not filled.

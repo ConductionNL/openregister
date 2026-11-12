@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -60,27 +61,6 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	public const TIMELINE_INTEGRATIONS = ['notes', 'activity'];
 
 	/**
-	 * Resolves the object's schema for the permission check.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Current caller.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger for the fail-closed paths.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param TimelineVisibilityPlatform $platform          The schema mapper, the caller's session and the logger.
@@ -90,13 +70,10 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		TimelineVisibilityPlatform $platform,
+		private readonly TimelineVisibilityPlatform $platform,
 		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {
-		$this->schemaMapper = $platform->schemaMapper;
-		$this->userSession = $platform->userSession;
-		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**
@@ -199,13 +176,13 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->platform->schemaMapper->find(
 				id: (string)$object->getSchema(),
 				_rbac: false,
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[TimelineVisibilityService] Schema for object ' . (string)$object->getUuid()
 					. ' could not be resolved; refusing ' . $action,
 				['exception' => $e]
@@ -214,7 +191,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		$userId = null;
-		$user = $this->userSession->getUser();
+		$user = $this->platform->userSession->getUser();
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
@@ -249,12 +226,23 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 			return self::PUBLIC_ENTRY;
 		}
 
+		return $this->requestedFilter(requested: $requested);
+	}//end effectiveFilter()
+
+	/**
+	 * The filter a caller with `update` asked for, or null when it asked for none it could mean.
+	 *
+	 * @param string|null $requested The `visibility` query parameter, when given.
+	 *
+	 * @return string|null `public`, `internal`, or null for the unfiltered view.
+	 */
+	private function requestedFilter(?string $requested): ?string {
 		if ($this->isKnownValue(value: $requested) === false) {
 			return null;
 		}
 
 		return $this->normalise(value: $requested);
-	}//end effectiveFilter()
+	}//end requestedFilter()
 
 	/**
 	 * Keep only the rows a filter admits.
@@ -279,19 +267,27 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		return array_values(
 			array_filter(
 				$rows,
-				function (mixed $row) use ($wanted): bool {
-					$value = null;
-					if (is_array($row) === true && isset($row['visibility']) === true
-						&& is_string($row['visibility']) === true
-					) {
-						$value = $row['visibility'];
-					}
-
-					return $this->normalise(value: $value) === $wanted;
-				}
+				fn (mixed $row): bool => $this->normalise(value: $this->declaredVisibility(row: $row)) === $wanted
 			)
 		);
 	}//end filterRows()
+
+	/**
+	 * The visibility a timeline row declares, when it declares one as a string.
+	 *
+	 * @param mixed $row A timeline row.
+	 *
+	 * @return string|null The declared value, or null.
+	 */
+	private function declaredVisibility(mixed $row): ?string {
+		if (is_array($row) === true && isset($row['visibility']) === true
+			&& is_string($row['visibility']) === true
+		) {
+			return $row['visibility'];
+		}
+
+		return null;
+	}//end declaredVisibility()
 
 	/**
 	 * Whether a leaf renders timeline entries and is therefore filtered.
@@ -312,49 +308,36 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	}//end isTimelineIntegration()
 
 	/**
-	 * Record that someone moved a note across the counter.
+	 * Record a note's move across the counter on the object's audit trail.
 	 *
-	 * Making an internal note public is the act a supervisor will ask about,
-	 * so it is written on the object's own audit trail naming the note and
-	 * both values. Nothing is written when the value did not move.
+	 * Nothing is written when the normalised value did not move. A failed write
+	 * is logged loudly and answers false: the flag has already been written, and
+	 * losing the trail entry must not lose the change itself.
 	 *
-	 * @param ObjectEntity $object The object the note hangs on.
-	 * @param integer      $noteId The note that moved.
-	 * @param string       $from   The value before.
-	 * @param string       $to     The value after.
+	 * @param ObjectEntity       $object The object the note hangs on.
+	 * @param NoteVisibilityMove $move   The note and its values before and after.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function auditVisibilityChange(ObjectEntity $object, int $noteId, string $from, string $to): bool {
-		$before = $this->normalise(value: $from);
-		$after = $this->normalise(value: $to);
-		if ($before === $after) {
+	public function auditNoteMove(ObjectEntity $object, NoteVisibilityMove $move): bool {
+		$context = ['noteId' => $move->noteId, 'from' => $this->normalise(value: $move->from), 'to' => $this->normalise(value: $move->to)];
+		if ($context['from'] === $context['to']) {
 			return false;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: [
-					'noteId' => $noteId,
-					'from' => $before,
-					'to' => $after,
-				]
-			);
+			$this->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: self::AUDIT_ACTION, context: $context));
 		} catch (Throwable $e) {
-			// The flag has already been written; losing the trail entry must
-			// not lose the change itself. It is logged loudly instead.
-			$this->logger->error(
-				'[TimelineVisibilityService] Visibility of note ' . $noteId . ' moved from ' . $before
-					. ' to ' . $after . ' but the audit entry could not be written',
+			$this->platform->logger->error(
+				'[TimelineVisibilityService] Visibility of note ' . $move->noteId . ' moved from ' . $context['from']
+					. ' to ' . $context['to'] . ' but the audit entry could not be written',
 				['exception' => $e]
 			);
 			return false;
-		}//end try
+		}
 
 		return true;
-	}//end auditVisibilityChange()
+	}//end auditNoteMove()
 }//end class

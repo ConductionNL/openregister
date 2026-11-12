@@ -196,7 +196,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -228,6 +227,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-2",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -516,7 +525,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -852,7 +860,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -884,6 +891,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "u-new",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -1213,7 +1230,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -1245,6 +1261,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "chosen-2",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -1618,7 +1644,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -1964,7 +1989,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -2308,7 +2332,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -2535,7 +2558,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -2839,7 +2861,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -3167,7 +3188,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -3199,6 +3219,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "chosen-1",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -3480,7 +3510,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -3512,6 +3541,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -3806,7 +3845,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -3838,6 +3876,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -4130,7 +4178,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -4446,7 +4493,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -4809,7 +4855,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -5159,7 +5204,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -5191,6 +5235,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-1",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -5511,7 +5565,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -5855,7 +5908,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -5887,6 +5939,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "gen-3",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -6167,7 +6229,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -6317,7 +6378,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -6534,7 +6594,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -6824,7 +6883,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -7110,7 +7168,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -7254,7 +7311,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -7286,6 +7342,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -7583,7 +7649,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -7921,7 +7986,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -8243,7 +8307,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -8462,7 +8525,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -8744,7 +8806,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -8905,7 +8966,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -9130,7 +9190,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -9463,7 +9522,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -9495,6 +9553,16 @@
                     false,
                     true,
                     true
+                ]
+            ],
+            [
+                "logger.debug",
+                [
+                    "[ObjectService] Folder binding not re-validated, object not loadable",
+                    {
+                        "uuid": "sid-1",
+                        "exception": "not found"
+                    }
                 ]
             ],
             [
@@ -10150,7 +10218,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -10511,7 +10578,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],
@@ -10970,7 +11036,6 @@
                     {
                         "object": "stdClass"
                     },
-                    0,
                     []
                 ]
             ],

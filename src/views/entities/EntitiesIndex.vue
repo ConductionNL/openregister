@@ -83,38 +83,10 @@
 							</div>
 
 							<!-- Entity Info -->
-							<table class="statisticsTable entityStats">
-								<tbody>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Category')
-											}}</strong>
-										</th>
-										<td>
-											<span class="badge badge-category">{{
-												entity.category
-											}}</span>
-										</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Detected At')
-											}}</strong>
-										</th>
-										<td>{{ formatDate(entity.detectedAt) }}</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Relations')
-											}}</strong>
-										</th>
-										<td>{{ entity.relationCount || 0 }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<EntityStatsTable
+								class="statisticsTable entityStats"
+								:entity="entity"
+								:fields="['category', 'detectedAt', 'relations']" />
 						</div>
 					</div>
 				</template>
@@ -244,12 +216,12 @@ import {
 } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
 import eventBus from '../../eventBus.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
@@ -269,6 +241,7 @@ import { navigationStore } from '../../store/store.js'
 export default {
 	name: 'EntitiesIndex',
 	components: {
+		EntityStatsTable,
 		ViewModeSwitch,
 		ActionMenu,
 		ListActionsBar,
@@ -458,39 +431,63 @@ export default {
 		async loadEntities() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: (this.currentPage - 1) * this.limit,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.typeFilter) {
-					params.type = this.typeFilter
-				}
-
-				if (this.categoryFilter) {
-					params.category = this.categoryFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/entities'),
-					{ params },
+					{ params: this.entityListParams() },
 				)
 
-				if (response.data.success) {
-					this.entitiesList = response.data.data
-					this.totalEntities =
-						response.data.count || this.entitiesList.length
-				}
+				this.showEntityList(response.data)
 			} catch (error) {
 				console.error('Failed to load entities:', error)
 				showError(t('openregister', 'Failed to load entities'))
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Take the page of entities and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityList(data) {
+			if (data.success) {
+				this.entitiesList = data.data
+				this.totalEntities = data.count || this.entitiesList.length
+			}
+		},
+
+		/**
+		 * The page of entities to ask for, narrowed by the filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The query parameters
+		 */
+		entityListParams() {
+			return {
+				limit: this.limit,
+				offset: (this.currentPage - 1) * this.limit,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, type and category filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				type: this.typeFilter,
+				category: this.categoryFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
 		},
 
 		/**
@@ -579,6 +576,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
 
 @include view-container-2;
 
@@ -607,15 +605,7 @@ export default {
 /* Real button that carries the card's action. The ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
 .cardActivator {
-	appearance: none;
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	text-align: left;
-	cursor: pointer;
+	@include card-activator-reset;
 }
 
 .cardActivator::after {
@@ -637,11 +627,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 }
 
 .cardHeader h2 {
@@ -652,33 +638,6 @@ export default {
 	font-size: 16px;
 	font-weight: 600;
 	flex-wrap: wrap;
-}
-
-/* Entity Stats Table */
-.entityStats {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityStats tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityStats tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityStats td,
-.entityStats th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityStats td:first-child,
-.entityStats th:first-child {
-	width: 40%;
-	color: var(--color-text-maxcontrast);
 }
 
 /* Table View */

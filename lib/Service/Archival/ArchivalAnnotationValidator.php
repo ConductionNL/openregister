@@ -89,6 +89,31 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 	private const ALLOWED_RULE_KEYS = ['condition', 'retention', 'reason'];
 
 	/**
+	 * Messages of the annotation-level findings, by code.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ANNOTATION_MESSAGES = [
+		'archival-not-object' => 'x-openregister-archival must be an object.',
+		'archival-retention-missing' => 'x-openregister-archival.retention is required and must be an object.',
+		'archival-retention-default-missing' => 'x-openregister-archival.retention.default is required (ISO-8601 duration, e.g. "P30D").',
+		'archival-rules-not-array' => 'x-openregister-archival.retention.rules must be an array of rule objects.',
+	];
+
+	/**
+	 * Message formats of the rule findings that name only the rule index, by code.
+	 *
+	 * @var array<string, string>
+	 */
+	private const RULE_MESSAGES = [
+		'archival-rule-not-object' => 'x-openregister-archival.retention.rules[%d] must be an object.',
+		'archival-rule-condition-not-string' => 'x-openregister-archival.retention.rules[%d].condition must be a non-empty string.',
+		'archival-rule-condition-empty' => 'x-openregister-archival.retention.rules[%d].condition must not be empty.',
+		'archival-rule-retention-missing' => 'x-openregister-archival.retention.rules[%d].retention is required (ISO-8601 duration).',
+		'archival-rule-reason-not-string' => 'x-openregister-archival.retention.rules[%d].reason must be a string when present.',
+	];
+
+	/**
 	 * Severity marking a finding that SHALL NOT refuse the schema.
 	 *
 	 * A finding without a `severity` key is an error, so every existing check
@@ -147,9 +172,6 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 	 *         (empty = valid). A finding carrying `severity: warning` does NOT refuse the schema;
 	 *         see {@see partition()} and {@see SEVERITY_WARNING}.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
 	 */
 	public function validate(array $schema): array {
@@ -158,83 +180,187 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 		}
 
 		$annotation = $schema['x-openregister-archival'];
-		$errors = [];
+		$refusal    = $this->shapeRefusal(annotation: $annotation);
+		if ($refusal !== []) {
+			return $refusal;
+		}
 
+		return array_merge(
+			$this->retentionFindings(retention: $annotation['retention']),
+			$this->unknownTopLevelKeys(annotation: $annotation),
+			$this->factFindings(annotation: $annotation)
+		);
+	}//end validate()
+
+	/**
+	 * Refuse an annotation that is not an object, or has no `retention` object.
+	 *
+	 * Either refusal is the only finding: nothing else is checked.
+	 *
+	 * @param mixed $annotation The `x-openregister-archival` value.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusal, or empty.
+	 */
+	private function shapeRefusal(mixed $annotation): array {
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'archival-not-object',
-					'message' => 'x-openregister-archival must be an object.',
-				],
-			];
+			return [$this->annotationFinding(code: 'archival-not-object')];
 		}
 
 		// `retention` block is required.
-		$retention = ($annotation['retention'] ?? null);
-		if (is_array($retention) === false) {
-			return [
-				[
-					'code' => 'archival-retention-missing',
-					'message' => 'x-openregister-archival.retention is required and must be an object.',
-				],
-			];
+		if (is_array($annotation['retention'] ?? null) === false) {
+			return [$this->annotationFinding(code: 'archival-retention-missing')];
 		}
 
-		// Reject unknown keys under `retention.` so typos fail loudly.
-		foreach (array_keys($retention) as $key) {
-			if (in_array((string)$key, self::ALLOWED_RETENTION_KEYS, true) === false) {
-				$errors[] = [
-					'code' => 'archival-retention-unknown-key',
-					'message' => sprintf(
-						'x-openregister-archival.retention contains unknown key "%s". Allowed: %s.',
-						(string)$key,
-						implode(', ', self::ALLOWED_RETENTION_KEYS)
-					),
-				];
-			}
-		}
+		return [];
+	}//end shapeRefusal()
 
-		// `default` is required and must be a parseable ISO-8601 duration.
-		if (isset($retention['default']) === false) {
+	/**
+	 * Validate the `retention` block: its keys, its default and its rules, in that order.
+	 *
+	 * @param array<string, mixed> $retention The `retention` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function retentionFindings(array $retention): array {
+		return array_merge(
+			$this->unknownRetentionKeys(retention: $retention),
+			$this->defaultFindings(retention: $retention),
+			$this->ruleListFindings(retention: $retention)
+		);
+	}//end retentionFindings()
+
+	/**
+	 * Reject unknown keys under `retention` so typos fail loudly.
+	 *
+	 * @param array<string, mixed> $retention The `retention` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function unknownRetentionKeys(array $retention): array {
+		$errors = [];
+		foreach ($this->unknownKeys(block: $retention, allowed: self::ALLOWED_RETENTION_KEYS) as $key) {
 			$errors[] = [
-				'code' => 'archival-retention-default-missing',
-				'message' => 'x-openregister-archival.retention.default is required (ISO-8601 duration, e.g. "P30D").',
-			];
-		} elseif ($this->isIsoDuration(value: $retention['default']) === false) {
-			$errors[] = [
-				'code' => 'archival-retention-default-malformed',
+				'code' => 'archival-retention-unknown-key',
 				'message' => sprintf(
-					'x-openregister-archival.retention.default "%s" is not a valid ISO-8601 duration (e.g. "P30D", "PT1H", "P1Y6M").',
-					(string)$retention['default']
+					'x-openregister-archival.retention contains unknown key "%s". Allowed: %s.',
+					$key,
+					implode(', ', self::ALLOWED_RETENTION_KEYS)
 				),
 			];
 		}
 
-		// `rules` is optional but, when present, must be a list of rule objects.
-		if (isset($retention['rules']) === true && is_array($retention['rules']) === false) {
-			$errors[] = [
-				'code' => 'archival-rules-not-array',
-				'message' => 'x-openregister-archival.retention.rules must be an array of rule objects.',
-			];
+		return $errors;
+	}//end unknownRetentionKeys()
+
+	/**
+	 * `default` is required and must be a parseable ISO-8601 duration.
+	 *
+	 * @param array<string, mixed> $retention The `retention` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function defaultFindings(array $retention): array {
+		if (isset($retention['default']) === false) {
+			return [$this->annotationFinding(code: 'archival-retention-default-missing')];
 		}
 
-		if (isset($retention['rules']) === true && is_array($retention['rules']) === true) {
-			foreach ($retention['rules'] as $index => $rule) {
-				$errors = array_merge($errors, $this->validateRule(index: (int)$index, rule: $rule));
-			}
+		if ($this->isIsoDuration(value: $retention['default']) === false) {
+			return [$this->malformedDefault(value: $retention['default'])];
 		}
 
-		$errors = array_merge($errors, $this->unknownTopLevelKeys(annotation: $annotation));
+		return [];
+	}//end defaultFindings()
 
+	/**
+	 * The finding for a `default` that is not an ISO-8601 duration.
+	 *
+	 * @param mixed $value The declared default.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function malformedDefault(mixed $value): array {
+		return [
+			'code' => 'archival-retention-default-malformed',
+			'message' => sprintf(
+				'x-openregister-archival.retention.default "%s" is not a valid ISO-8601 duration (e.g. "P30D", "PT1H", "P1Y6M").',
+				(string)$value
+			),
+		];
+	}//end malformedDefault()
+
+	/**
+	 * `rules` is optional but, when present, must be a list of rule objects; validate each.
+	 *
+	 * @param array<string, mixed> $retention The `retention` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function ruleListFindings(array $retention): array {
+		if (isset($retention['rules']) === false) {
+			return [];
+		}
+
+		if (is_array($retention['rules']) === false) {
+			return [$this->annotationFinding(code: 'archival-rules-not-array')];
+		}
+
+		$errors = [];
+		foreach ($retention['rules'] as $index => $rule) {
+			$errors = array_merge($errors, $this->validateRule(index: (int)$index, rule: $rule));
+		}
+
+		return $errors;
+	}//end ruleListFindings()
+
+	/**
+	 * Validate the MDTO archival facts the annotation declares.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function factFindings(array $annotation): array {
 		$facts = new ArchivalFactsValidator();
 
 		return array_merge(
-			$errors,
 			$facts->validateAggregationLevel(annotation: $annotation),
 			$facts->validateUseRestriction(annotation: $annotation),
 			$facts->validateTemporalCoverage(annotation: $annotation)
 		);
-	}//end validate()
+	}//end factFindings()
+
+	/**
+	 * An annotation-level finding whose message names nothing but the path.
+	 *
+	 * @param string $code A key of ANNOTATION_MESSAGES.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function annotationFinding(string $code): array {
+		return [
+			'code' => $code,
+			'message' => self::ANNOTATION_MESSAGES[$code],
+		];
+	}//end annotationFinding()
+
+	/**
+	 * The keys of a block that are not on its allow-list, as strings, in declaration order.
+	 *
+	 * @param array<string|int, mixed> $block   The block whose keys are checked.
+	 * @param array<int, string>       $allowed The allowed keys.
+	 *
+	 * @return array<int, string>
+	 */
+	private function unknownKeys(array $block, array $allowed): array {
+		$unknown = [];
+		foreach (array_keys($block) as $key) {
+			if (in_array((string)$key, $allowed, true) === false) {
+				$unknown[] = (string)$key;
+			}
+		}
+
+		return $unknown;
+	}//end unknownKeys()
 
 
 
@@ -275,17 +401,13 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 	 */
 	private function unknownTopLevelKeys(array $annotation): array {
 		$warnings = [];
-		foreach (array_keys($annotation) as $key) {
-			if (in_array((string)$key, self::ALLOWED_ANNOTATION_KEYS, true) === true) {
-				continue;
-			}
-
+		foreach ($this->unknownKeys(block: $annotation, allowed: self::ALLOWED_ANNOTATION_KEYS) as $key) {
 			$warnings[] = [
 				'code' => 'archival-unknown-key',
 				'severity' => self::SEVERITY_WARNING,
 				'message' => sprintf(
 					'x-openregister-archival contains unknown key "%s". Allowed: %s.',
-					(string)$key,
+					$key,
 					implode(', ', self::ALLOWED_ANNOTATION_KEYS)
 				),
 			];
@@ -295,95 +417,141 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 	}//end unknownTopLevelKeys()
 
 	/**
-	 * Validate a single rule entry.
+	 * Validate a single rule entry: its keys, condition, retention and reason, in that order.
 	 *
-	 * @param int $index Zero-based rule index for error messages.
-	 * @param mixed $rule Raw rule value.
+	 * @param int   $index Zero-based rule index for error messages.
+	 * @param mixed $rule  Raw rule value.
 	 *
 	 * @return array<int, array{code: string, message: string}>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function validateRule(int $index, mixed $rule): array {
-		$errors = [];
-
 		if (is_array($rule) === false) {
-			return [
-				[
-					'code' => 'archival-rule-not-object',
-					'message' => sprintf('x-openregister-archival.retention.rules[%d] must be an object.', $index),
-				],
-			];
+			return [$this->ruleFinding(index: $index, code: 'archival-rule-not-object')];
 		}
 
-		// Reject unknown keys under each rule.
-		foreach (array_keys($rule) as $key) {
-			if (in_array((string)$key, self::ALLOWED_RULE_KEYS, true) === false) {
-				$errors[] = [
-					'code' => 'archival-rule-unknown-key',
-					'message' => sprintf(
-						'x-openregister-archival.retention.rules[%d] contains unknown key "%s". Allowed: %s.',
-						$index,
-						(string)$key,
-						implode(', ', self::ALLOWED_RULE_KEYS)
-					),
-				];
-			}
-		}
+		return array_merge(
+			$this->unknownRuleKeys(index: $index, rule: $rule),
+			$this->ruleConditionFindings(index: $index, rule: $rule),
+			$this->ruleRetentionFindings(index: $index, rule: $rule),
+			$this->ruleReasonFindings(index: $index, rule: $rule)
+		);
+	}//end validateRule()
 
-		// `condition` MUST be a non-empty string.
-		$condition = ($rule['condition'] ?? null);
-		if (is_string($condition) === false) {
+	/**
+	 * Reject unknown keys under a rule.
+	 *
+	 * @param int                  $index Zero-based rule index.
+	 * @param array<string, mixed> $rule  The rule.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function unknownRuleKeys(int $index, array $rule): array {
+		$errors = [];
+		foreach ($this->unknownKeys(block: $rule, allowed: self::ALLOWED_RULE_KEYS) as $key) {
 			$errors[] = [
-				'code' => 'archival-rule-condition-not-string',
+				'code' => 'archival-rule-unknown-key',
 				'message' => sprintf(
-					'x-openregister-archival.retention.rules[%d].condition must be a non-empty string.',
-					$index
-				),
-			];
-		} elseif (trim($condition) === '') {
-			$errors[] = [
-				'code' => 'archival-rule-condition-empty',
-				'message' => sprintf(
-					'x-openregister-archival.retention.rules[%d].condition must not be empty.',
-					$index
-				),
-			];
-		}
-
-		// `retention` MUST be parseable ISO-8601 duration.
-		if (isset($rule['retention']) === false) {
-			$errors[] = [
-				'code' => 'archival-rule-retention-missing',
-				'message' => sprintf(
-					'x-openregister-archival.retention.rules[%d].retention is required (ISO-8601 duration).',
-					$index
-				),
-			];
-		} elseif ($this->isIsoDuration(value: $rule['retention']) === false) {
-			$errors[] = [
-				'code' => 'archival-rule-retention-malformed',
-				'message' => sprintf(
-					'x-openregister-archival.retention.rules[%d].retention "%s" is not a valid ISO-8601 duration.',
+					'x-openregister-archival.retention.rules[%d] contains unknown key "%s". Allowed: %s.',
 					$index,
-					(string)$rule['retention']
-				),
-			];
-		}
-
-		// `reason` is optional; if present it MUST be a string.
-		if (isset($rule['reason']) === true && is_string($rule['reason']) === false) {
-			$errors[] = [
-				'code' => 'archival-rule-reason-not-string',
-				'message' => sprintf(
-					'x-openregister-archival.retention.rules[%d].reason must be a string when present.',
-					$index
+					$key,
+					implode(', ', self::ALLOWED_RULE_KEYS)
 				),
 			];
 		}
 
 		return $errors;
-	}//end validateRule()
+	}//end unknownRuleKeys()
+
+	/**
+	 * A rule's `condition` MUST be a non-empty string.
+	 *
+	 * @param int                  $index Zero-based rule index.
+	 * @param array<string, mixed> $rule  The rule.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function ruleConditionFindings(int $index, array $rule): array {
+		$condition = ($rule['condition'] ?? null);
+		if (is_string($condition) === false) {
+			return [$this->ruleFinding(index: $index, code: 'archival-rule-condition-not-string')];
+		}
+
+		if (trim($condition) === '') {
+			return [$this->ruleFinding(index: $index, code: 'archival-rule-condition-empty')];
+		}
+
+		return [];
+	}//end ruleConditionFindings()
+
+	/**
+	 * A rule's `retention` MUST be a parseable ISO-8601 duration.
+	 *
+	 * @param int                  $index Zero-based rule index.
+	 * @param array<string, mixed> $rule  The rule.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function ruleRetentionFindings(int $index, array $rule): array {
+		if (isset($rule['retention']) === false) {
+			return [$this->ruleFinding(index: $index, code: 'archival-rule-retention-missing')];
+		}
+
+		if ($this->isIsoDuration(value: $rule['retention']) === false) {
+			return [$this->malformedRuleRetention(index: $index, value: $rule['retention'])];
+		}
+
+		return [];
+	}//end ruleRetentionFindings()
+
+	/**
+	 * The finding for a rule `retention` that is not an ISO-8601 duration.
+	 *
+	 * @param int   $index Zero-based rule index.
+	 * @param mixed $value The declared retention.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function malformedRuleRetention(int $index, mixed $value): array {
+		return [
+			'code' => 'archival-rule-retention-malformed',
+			'message' => sprintf(
+				'x-openregister-archival.retention.rules[%d].retention "%s" is not a valid ISO-8601 duration.',
+				$index,
+				(string)$value
+			),
+		];
+	}//end malformedRuleRetention()
+
+	/**
+	 * A rule's `reason` is optional; if present it MUST be a string.
+	 *
+	 * @param int                  $index Zero-based rule index.
+	 * @param array<string, mixed> $rule  The rule.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function ruleReasonFindings(int $index, array $rule): array {
+		if (isset($rule['reason']) === true && is_string($rule['reason']) === false) {
+			return [$this->ruleFinding(index: $index, code: 'archival-rule-reason-not-string')];
+		}
+
+		return [];
+	}//end ruleReasonFindings()
+
+	/**
+	 * A rule finding whose message names nothing but the rule index.
+	 *
+	 * @param int    $index Zero-based rule index.
+	 * @param string $code  A key of RULE_MESSAGES.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function ruleFinding(int $index, string $code): array {
+		return [
+			'code' => $code,
+			'message' => sprintf(self::RULE_MESSAGES[$code], $index),
+		];
+	}//end ruleFinding()
 
 	/**
 	 * Return true when $value is a string parseable as ISO-8601 duration.

@@ -26,10 +26,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -74,7 +77,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$this->received = null;
-		$reader         = $this->createMock(MagicTableRowReaderInterface::class);
+		$reader         = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
 			function (array $query): array {
 				$this->received = $query;
@@ -89,8 +92,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		);
 
 		return new ViewObjectSourceProvider(
-			new ViewSourceMappers(viewMapper: $views, registerMapper: $registers, schemaMapper: $schemas),
-			$reader,
+			new ViewSourceMappers(viewMapper: $views, catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $reader)),
 			new NullLogger()
 		);
 	}//end provider()
@@ -104,7 +106,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 	 * @return array<string, mixed>|null The composed query, or null when nothing was searched.
 	 */
 	private function composed(?array $viewQuery, array $query): ?array {
-		$this->provider(viewQuery: $viewQuery)->findAll(register: new Register(), schema: new Schema(), query: $query, config: ['view' => 'v']);
+		$this->provider(viewQuery: $viewQuery)->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v']), query: $query);
 		return $this->received;
 	}//end composed()
 
@@ -187,10 +189,8 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		$this->assertSame(
 			0,
 			$this->provider(viewQuery: $this->view(extra: ['facetFilters' => ['status' => ['closed']]]))->count(
-				register: new Register(),
-				schema: new Schema(),
-				query: ['status' => 'open'],
-				config: ['view' => 'v']
+				source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v']),
+				query: ['status' => 'open']
 			)
 		);
 	}//end testDisjointFacetFindsNothing()
@@ -203,10 +203,8 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 
 	public function testCountUsesTheComposedQuery(): void {
 		$count = $this->provider(viewQuery: $this->view())->count(
-			register: new Register(),
-			schema: new Schema(),
-			query: ['_multitenancy' => false, 'a' => 1],
-			config: ['view' => 'v']
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v']),
+			query: ['_multitenancy' => false, 'a' => 1]
 		);
 		$this->assertSame([7, ['_rbac' => true, '_multitenancy' => true, 'a' => 1]], [$count, $this->received]);
 	}//end testCountUsesTheComposedQuery()

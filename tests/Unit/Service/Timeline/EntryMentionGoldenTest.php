@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IURLGenerator;
@@ -120,8 +121,8 @@ class EntryMentionGoldenTest extends TestCase {
 
 		$watchers = $this->createMock(WatcherServiceInterface::class);
 		$watchers->method('subscribeMentioned')->willReturnCallback(
-			function (ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
-				$this->calls[] = 'subscribe ' . $userId . ' ' . json_encode([$object->getUuid(), $register, $schema]);
+			function (AddressedObject $target, string $userId): Watcher {
+				$this->calls[] = 'subscribe ' . $userId . ' ' . json_encode([$target->object->getUuid(), $target->register, $target->schema]);
 				if ($userId === 'carl') {
 					throw new RuntimeException('down');
 				}

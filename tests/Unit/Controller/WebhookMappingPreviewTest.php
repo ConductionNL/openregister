@@ -56,6 +56,14 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Webhook
  * @uses \OCA\OpenRegister\Service\MappingService
  * @uses \OCA\OpenRegister\Twig\MappingRuntimeLoader
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\MappingKeyRewrite
+ * @uses \OCA\OpenRegister\Service\MappingTwigSandbox
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookDispatchServices
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
+ * @uses \OCA\OpenRegister\Service\WebhookStores
+ * @uses \OCA\OpenRegister\Twig\MappingTwigInstaller
  */
 class WebhookMappingPreviewTest extends TestCase {
 
@@ -143,7 +151,7 @@ class WebhookMappingPreviewTest extends TestCase {
 		$webhook = new Webhook();
 		$webhook->setMapping(5);
 		$build = new \ReflectionMethod(WebhookService::class, 'buildPayload');
-		$delivered = $build->invoke($this->service, $webhook, 'OCA\OpenRegister\Event\ObjectCreatedEvent', ['objectUuid' => 'abc', 'action' => 'create'], 1);
+		$delivered = $build->invoke($this->service, new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\OpenRegister\Event\ObjectCreatedEvent', payload: ['objectUuid' => 'abc', 'action' => 'create'])));
 		$this->assertSame($delivered, $data['payload']);
 	}//end testThePreviewIsWhatTheDeliverySends()
 

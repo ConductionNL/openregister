@@ -113,46 +113,44 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 
 		<template #actions>
 			<CloseCancelButton :success="success" @click="closeModal" />
-			<NcButton
+			<BusyButton
 				v-if="!success && isDatabaseType && sourceItem.id"
+				:busy="actionLoading"
 				:disabled="loading || actionLoading"
 				@click="testConnection()">
 				<template #icon>
-					<NcLoadingIcon v-if="actionLoading" :size="20" />
-					<DatabaseCheckOutline v-else :size="20" />
+					<DatabaseCheckOutline :size="20" />
 				</template>
 				{{ t('openregister', 'Test connection') }}
-			</NcButton>
-			<NcButton
+			</BusyButton>
+			<BusyButton
 				v-if="!success && isDatabaseType && sourceItem.id"
+				:busy="actionLoading"
 				:disabled="loading || actionLoading"
 				@click="introspect()">
 				<template #icon>
-					<NcLoadingIcon v-if="actionLoading" :size="20" />
-					<DatabaseImportOutline v-else :size="20" />
+					<DatabaseImportOutline :size="20" />
 				</template>
 				{{ t('openregister', 'Create virtual register') }}
-			</NcButton>
-			<NcButton
+			</BusyButton>
+			<BusyButton
 				v-if="!success"
+				:busy="loading"
 				:disabled="loading || !sourceItem.title"
 				variant="primary"
 				@click="editSource()">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
 					<ContentSaveOutline
-						v-if="!loading && sourceStore.sourceItem?.id"
+						v-if="sourceStore.sourceItem?.id"
 						:size="20" />
-					<Plus
-						v-if="!loading && !sourceStore.sourceItem?.id"
-						:size="20" />
+					<Plus v-else :size="20" />
 				</template>
 				{{
 					sourceStore.sourceItem?.id
 						? t('openregister', 'Save')
 						: t('openregister', 'Create')
 				}}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -160,10 +158,8 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 <script>
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 	NcTextArea,
@@ -173,6 +169,7 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import DatabaseCheckOutline from 'vue-material-design-icons/DatabaseCheckOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { freshState } from '../../services/initialState.js'
 import { authConfigOf, closedForm, connectionOf, optionOf } from './sourceForm.js'
@@ -236,10 +233,9 @@ export default {
 		NcTextField,
 		NcTextArea,
 		NcSelect,
-		NcButton,
 		NcCheckboxRadioSwitch,
-		NcLoadingIcon,
 		NcNoteCard,
+		BusyButton,
 		CloseCancelButton,
 		// Icons
 		ContentSaveOutline,

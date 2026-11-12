@@ -81,38 +81,22 @@ import {
 							</p>
 						</div>
 					</div>
-					<div v-else class="emptyTabContent">
-						<NcEmptyContent
-							:name="t('openregister', 'No registers found')"
-							:description="
-								t(
-									'openregister',
-									'This source has no associated registers.',
-								)
-							">
-							<template #icon>
-								<DatabaseOutline :size="64" />
-							</template>
-						</NcEmptyContent>
-					</div>
+					<TabEmptyContent
+						v-else
+						:name="t('openregister', 'No registers found')"
+						:description="
+							t(
+								'openregister',
+								'This source has no associated registers.',
+							)
+						">
+						<DatabaseOutline :size="64" />
+					</TabEmptyContent>
 				</div>
 
 				<!-- Logs Tab -->
 				<div v-if="activeTab === 1" class="tabPanel">
-					<div class="emptyTabContent">
-						<NcEmptyContent
-							:name="t('openregister', 'No logs found')"
-							:description="
-								t(
-									'openregister',
-									'No logs are available for this source.',
-								)
-							">
-							<template #icon>
-								<PostOutline :size="64" />
-							</template>
-						</NcEmptyContent>
-					</div>
+					<EmptyLogsTab subject="source" />
 				</div>
 			</ViewDialogTabs>
 		</div>
@@ -146,15 +130,15 @@ import {
 	NcActionButton,
 	NcActions,
 	NcDialog,
-	NcEmptyContent,
 } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import EditRegisterFormDialog from '../register/EditRegisterFormDialog.vue'
+import EmptyLogsTab from '../shared/EmptyLogsTab.vue'
+import TabEmptyContent from '../shared/TabEmptyContent.vue'
 import TimestampProperties from '../shared/TimestampProperties.vue'
 import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
 
@@ -167,12 +151,12 @@ export default {
 		NcDialog,
 		NcActions,
 		NcActionButton,
-		NcEmptyContent,
 		CloseCancelButton,
+		TabEmptyContent,
+		EmptyLogsTab,
 		Pencil,
 		TrashCanOutline,
 		DatabaseOutline,
-		PostOutline,
 		Eye,
 	},
 

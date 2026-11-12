@@ -9,6 +9,7 @@ use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 class RegistrationEventsTest extends TestCase {
 	public function testToolRegistrationEventExtendsEvent(): void {
@@ -46,8 +47,8 @@ class RegistrationEventsTest extends TestCase {
 		$registry = $this->createMock(DeepLinkRegistryService::class);
 
 		$registry->expects($this->once())
-			->method('register')
-			->with('procest', 'cases', 'case', '/apps/procest/#/cases/{uuid}', 'icon-case');
+			->method('add')
+			->with(new DeepLinkRegistration('procest', 'cases', 'case', '/apps/procest/#/cases/{uuid}', 'icon-case'));
 
 		$event = new DeepLinkRegistrationEvent($registry);
 		$event->register('procest', 'cases', 'case', '/apps/procest/#/cases/{uuid}', 'icon-case');
@@ -57,8 +58,8 @@ class RegistrationEventsTest extends TestCase {
 		$registry = $this->createMock(DeepLinkRegistryService::class);
 
 		$registry->expects($this->once())
-			->method('register')
-			->with('myapp', 'reg', 'schema', '/apps/myapp/{uuid}', '');
+			->method('add')
+			->with(new DeepLinkRegistration('myapp', 'reg', 'schema', '/apps/myapp/{uuid}', ''));
 
 		$event = new DeepLinkRegistrationEvent($registry);
 		$event->register('myapp', 'reg', 'schema', '/apps/myapp/{uuid}');

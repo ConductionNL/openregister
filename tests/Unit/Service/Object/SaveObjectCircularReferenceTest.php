@@ -64,31 +64,49 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new SaveObject(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			unifiedObjectMapper: $unifiedObjectMapper ?? $this->createMock(MagicMapper::class),
-			metaHydrationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler::class),
-			filePropertyHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler::class),
-			linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			userSession: $session,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			schemaMapper: $schemaMapper ?? $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			urlGenerator: $this->createMock(IURLGenerator::class),
-			organisationService: $this->createMock(OrganisationService::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			settingsService: $this->createMock(SettingsService::class),
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper ?? $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $unifiedObjectMapper ?? $this->createMock(MagicMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $this->createMock(LoggerInterface::class),
+					eventDispatcher: $this->createMock(IEventDispatcher::class)
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					appConfig: $this->createMock(IAppConfig::class)
+				)
+			),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $this->createMock(LoggerInterface::class),
-			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
 			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 

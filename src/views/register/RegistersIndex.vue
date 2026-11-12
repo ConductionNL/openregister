@@ -101,11 +101,7 @@ import {
 						{{ row.title }}
 						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -122,14 +118,11 @@ import {
 				}}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{ listDateTime(row.created) }}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{ listDateTime(row.updated) }}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -154,12 +147,17 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
 import {
 	isExternalConfiguration,
 	isLocalConfiguration,
 	managedRowClass,
 } from '../../composables/managedConfiguration.js'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
@@ -167,10 +165,8 @@ import {
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
-import {
-	BUILTIN_ACTIONS_OFF,
-	timestampColumns,
-} from '../indexPageOptions.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -218,6 +214,43 @@ function warmupSuccessText(data) {
 }
 
 /**
+ * The toast after a warmup, from the endpoint's answer.
+ *
+ * @param {object|null} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupResultText(data) {
+	if (data && data.success) {
+		return warmupSuccessText(data)
+	}
+	return t('openregister', 'Names cache warmup completed')
+}
+
+/**
+ * Ask the server to rebuild the names cache.
+ *
+ * @return {Promise<object>} The axios response
+ */
+function postNamesWarmup() {
+	const baseUrl = window.location.origin
+	// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+	// the server rebuild the entire name cache. That route is gone
+	// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+	// maintenance action on an admin screen should have been calling.
+	const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
+	return axios.post(
+		apiUrl,
+		{},
+		{
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
+/**
  * The reason a request failed: the server's message, else the error's own.
  *
  * @param {object} error The axios error
@@ -227,9 +260,33 @@ function failureText(error) {
 	return error.response?.data?.message || error.message || 'Unknown error'
 }
 
+/**
+ * Whether objects are still attached to a register.
+ *
+ * @param {object} register The register row
+ * @return {boolean} True while it holds objects
+ */
+function hasAttachedObjects(register) {
+	return register.stats?.total > 0
+}
+
+/**
+ * Why the delete entry is locked: '' unless objects are still attached.
+ *
+ * @param {object} register The register row
+ * @return {string} The reason
+ */
+function deleteLockReason(register) {
+	if (!hasAttachedObjects(register)) {
+		return ''
+	}
+	return t('openregister', 'Cannot delete: objects are still attached')
+}
+
 export default {
 	name: 'RegistersIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcActionButton,
 		Upload,
@@ -244,16 +301,10 @@ export default {
 
 	data() {
 		return {
-			builtinActionsOff: BUILTIN_ACTIONS_OFF,
+			...headerListData(),
 			selectedRegisters: [],
-			isRefreshing: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
-			// The header the list is sorted by; null keeps the store's order.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -375,6 +426,8 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => registerStore),
+
 		/**
 		 * The menu of one register.
 		 *
@@ -464,18 +517,31 @@ export default {
 		 * @return {object}
 		 */
 		lockedEdit(register) {
-			const locked = this.isManagedByExternalConfig(register)
-			const title = this.getManagingConfiguration(register)?.title
-			return editAction(() => this.$refs.indexPage.openFormDialog(register), {
-				title: locked
-					? t(
-							'openregister',
-							'Cannot edit: This register is managed by external configuration {title}',
-							{ title },
-						)
-					: '',
-				disabled: locked,
+			const openForm = () => this.$refs.indexPage.openFormDialog(register)
+			return editAction(openForm, {
+				title: this.editLockReason(register),
+				disabled: this.isManagedByExternalConfig(register),
 			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {string}
+		 */
+		editLockReason(register) {
+			if (!this.isManagedByExternalConfig(register)) {
+				return ''
+			}
+			const title = this.getManagingConfiguration(register)?.title
+			return t(
+				'openregister',
+				'Cannot edit: This register is managed by external configuration {title}',
+				{ title },
+			)
 		},
 
 		/**
@@ -487,13 +553,10 @@ export default {
 		 * @return {object}
 		 */
 		lockedDelete(register, selected) {
-			const locked = register.stats?.total > 0
 			const run = selected(() => navigationStore.setDialog('deleteRegister'))
 			return deleteAction(run, {
-				title: locked
-					? t('openregister', 'Cannot delete: objects are still attached')
-					: '',
-				disabled: locked,
+				title: deleteLockReason(register),
+				disabled: hasAttachedObjects(register),
 			})
 		},
 
@@ -507,34 +570,6 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
-		},
-
-		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1.
-		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
-		},
-
-		/**
-		 * Apply a header filter on the loaded list and go back to page 1.
-		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
 		},
 
 		/**
@@ -626,20 +661,8 @@ export default {
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(register)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -651,12 +674,7 @@ export default {
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(register.id)
 		},
 
 		/**
@@ -675,32 +693,10 @@ export default {
 		 * @spec exclude list-view action; POSTs to the names-cache warmup endpoint and reports results via toast
 		 */
 		async warmupNamesCache() {
-			const baseUrl = window.location.origin
-			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
-			// the server rebuild the entire name cache. That route is gone
-			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
-			// maintenance action on an admin screen should have been calling.
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
-
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))
-
-				const response = await axios.post(
-					apiUrl,
-					{},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					showSuccess(warmupSuccessText(response.data))
-				} else {
-					showSuccess(t('openregister', 'Names cache warmup completed'))
-				}
+				const response = await postNamesWarmup()
+				showSuccess(warmupResultText(response.data))
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
 				showError(
@@ -715,22 +711,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
+@use '../managedRowAccents.scss' as *;
 
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed registers (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
+@include managed-row-accents;
 </style>

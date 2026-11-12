@@ -37,6 +37,7 @@ use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
@@ -136,14 +137,11 @@ class OAuth2NoTokenLeakTest extends TestCase {
 	}
 
 	public function testTheOnlyWayOutOfATokenSetIsNamedForCustody(): void {
-		$set = OAuth2TokenSet::fromTokenResponse(
-			response: [
+		$set = OAuth2TokenSet::fromResponse(response: [
 				'access_token' => 'ACCESS_TOKEN_HERE',
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => 3600,
-			],
-			requestedScopes: ['read:accounts']
-		);
+			], options: new TokenResponseOptions(requestedScopes: ['read:accounts']));
 
 		// The method a caller reaches for when it wants the whole document is called
 		// toStoredJson, not toArray or jsonSerialize, because its one destination is

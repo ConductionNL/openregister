@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\NestedPathFilter;
+use OCA\OpenRegister\Db\MagicMapper\NestedPathTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -113,12 +114,12 @@ class NestedPathFilterSplitGoldenTest extends TestCase {
 	 */
 	public function testExpression(): void {
 		$filter = new NestedPathFilter();
-		$this->assertSame("(t.d #>> '{a,b-c,D_9}')", $filter->expression('t.d', ['a', 'b-c', 'D_9'], true));
-		$this->assertSame("JSON_UNQUOTE(JSON_EXTRACT(t.d, '$.a.b-c.D_9'))", $filter->expression('t.d', ['a', 'b-c', 'D_9'], false));
-		$this->assertNull($filter->expression('t.d', [], true));
-		$this->assertNull($filter->expression('t.d', [], false));
-		$this->assertNull($filter->expression('t.d', ['a', ''], true));
-		$this->assertNull($filter->expression('t.d', ['a.b'], false));
-		$this->assertNull($filter->expression('t.d', ['ok', 'x y'], true));
+		$this->assertSame("(t.d #>> '{a,b-c,D_9}')", $filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, true), ['a', 'b-c', 'D_9']));
+		$this->assertSame("JSON_UNQUOTE(JSON_EXTRACT(t.d, '$.a.b-c.D_9'))", $filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, false), ['a', 'b-c', 'D_9']));
+		$this->assertNull($filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, true), []));
+		$this->assertNull($filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, false), []));
+		$this->assertNull($filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, true), ['a', '']));
+		$this->assertNull($filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, false), ['a.b']));
+		$this->assertNull($filter->expression(new NestedPathTarget('t.d', static fn (string $v): string => $v, true), ['ok', 'x y']));
 	}//end testExpression()
 }//end class

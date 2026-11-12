@@ -36,18 +36,23 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -67,6 +72,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * No `covers` metadata, deliberately; see AggregationRunnerNativeBucketTest and #2847.
@@ -208,10 +216,54 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: [], schema: $schema);
 
-		$result = $runner->run(registerRef: 'learniq', schemaRef: 'engagement-score', name: 'byLevel', bypassRbac: true);
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'learniq', schema: 'engagement-score', name: 'byLevel'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
 	}//end testBypassRbacSkipsTheRowPredicate()
+
+	/**
+	 * An ad-hoc system figure never goes through the caller-scoped ad-hoc cache.
+	 *
+	 * The cache key holds the caller's uid and organisation, not bypassRbac:
+	 * storing the system's count there would answer the same caller's own,
+	 * narrower question with it, and reading there would hand the system a
+	 * narrowed figure.
+	 *
+	 * @return void
+	 */
+	public function testAdhocBypassRbacNeitherReadsNorWritesTheCallerScopedCache(): void {
+		$cache = $this->createMock(AggregationCache::class);
+		$cache->expects($this->never())->method('getAdhoc');
+		$cache->expects($this->never())->method('setAdhoc');
+		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: [], cache: $cache);
+
+		$result = $runner->runAdhoc(
+			register: $this->register(),
+			schema: $this->schema(),
+			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']),
+			bypassRbac: true
+		);
+
+		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
+	}//end testAdhocBypassRbacNeitherReadsNorWritesTheCallerScopedCache()
+
+	/**
+	 * An ad-hoc caller-scoped figure still reads and fills the cache.
+	 *
+	 * @return void
+	 */
+	public function testAdhocWithoutBypassStillUsesTheCache(): void {
+		$cache = $this->createMock(AggregationCache::class);
+		$cache->expects($this->once())->method('getAdhoc')->willReturn(null);
+		$cache->expects($this->once())->method('setAdhoc');
+		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: ['read'], cache: $cache);
+
+		$runner->runAdhoc(
+			register: $this->register(),
+			schema: $this->schema(),
+			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level'])
+		);
+	}//end testAdhocWithoutBypassStillUsesTheCache()
 
 	/**
 	 * Where the list waives the organisation boundary for a reader reaching
@@ -366,6 +418,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @param array<string, mixed> $orgScope The organisation scope the handler reports.
 	 * @param bool          $boundaryWaived Whether the list would waive the organisation boundary.
 	 * @param bool          $organisationlessAdmitted Whether the list widens the boundary by org-less rows.
+	 * @param AggregationCache|null $cache The cache, when a test watches it.
 	 *
 	 * @return AggregationRunner The runner.
 	 */
@@ -377,6 +430,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		array $orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL],
 		bool $boundaryWaived = false,
 		bool $organisationlessAdmitted = false,
+		?AggregationCache $cache = null,
 	): AggregationRunner {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($userId);
@@ -394,14 +448,20 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 
 		$rbac = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
@@ -413,7 +473,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql((new RbacAccessCall(schema: $s))->forAction('read'))
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)
@@ -421,7 +481,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		// The PHP fallback must not be what answers: an empty fallback would
 		// turn a broken native query into a plausible "no rows".
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
 				$this->fail('the native SQL path must answer; the fallback was reached');
 			}
 		);
@@ -435,9 +495,11 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));
 		$db->method('prepare')->willReturnCallback(fn (string $sql): IPreparedStatement => $this->statement(sql: $sql));
 
-		$cache = $this->createMock(AggregationCache::class);
-		$cache->method('get')->willReturn(null);
-		$cache->method('getAdhoc')->willReturn(null);
+		if ($cache === null) {
+			$cache = $this->createMock(AggregationCache::class);
+			$cache->method('get')->willReturn(null);
+			$cache->method('getAdhoc')->willReturn(null);
+		}
 
 		$organisationService = $this->createMock(OrganisationService::class);
 		$organisationService->method('getActiveOrganisation')->willReturn(null);
@@ -456,9 +518,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$translationHandler = $this->createMock(TranslationHandler::class);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $cache,

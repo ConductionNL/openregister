@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Switching a rule on or off, as the rules controller uses it. Only the method
@@ -40,11 +39,9 @@ interface RuleEnablementServiceInterface {
 	/**
 	 * Switch one rule on or off.
 	 *
-	 * @param Schema  $schema  The schema the rule is declared on.
-	 * @param string  $ruleId  The derived rule id.
-	 * @param boolean $enabled What to switch it to.
+	 * @param RuleSwitch $switch The schema the rule is declared on, the derived rule id and what to switch it to.
 	 *
 	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
 	 */
-	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array;
+	public function setEnabled(RuleSwitch $switch): array;
 }//end interface

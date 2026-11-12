@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -81,10 +82,10 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 	public function testRestoreWritesOnlyTheLeaf(): void {
 		$walker = new WriteOnlyPathWalker(logger: new NullLogger());
 
-		$this->assertSame(['a' => ['e' => 1, 'b' => ['c' => 's']]], $walker->restore(path: 'a.b.c', prepared: ['a' => ['e' => 1]], value: 's'));
-		$this->assertSame(['a' => ['b' => ['c' => 's']]], $walker->restore(path: 'a.b.c', prepared: ['a' => null], value: 's'));
-		$this->assertSame(['a' => 'flat'], $walker->restore(path: 'a.b.c', prepared: ['a' => 'flat'], value: 's'));
-		$this->assertSame(['a' => ['b' => 'flat']], $walker->restore(path: 'a.b.c', prepared: ['a' => ['b' => 'flat']], value: 's'));
-		$this->assertSame(['top' => 's'], $walker->restore(path: 'top', prepared: [], value: 's'));
+		$this->assertSame(['a' => ['e' => 1, 'b' => ['c' => 's']]], $walker->restore(prepared: ['a' => ['e' => 1]], stored: new WriteOnlyValue(path: 'a.b.c', value: 's')));
+		$this->assertSame(['a' => ['b' => ['c' => 's']]], $walker->restore(prepared: ['a' => null], stored: new WriteOnlyValue(path: 'a.b.c', value: 's')));
+		$this->assertSame(['a' => 'flat'], $walker->restore(prepared: ['a' => 'flat'], stored: new WriteOnlyValue(path: 'a.b.c', value: 's')));
+		$this->assertSame(['a' => ['b' => 'flat']], $walker->restore(prepared: ['a' => ['b' => 'flat']], stored: new WriteOnlyValue(path: 'a.b.c', value: 's')));
+		$this->assertSame(['top' => 's'], $walker->restore(prepared: [], stored: new WriteOnlyValue(path: 'top', value: 's')));
 	}
 }

@@ -45,6 +45,21 @@ use Throwable;
  */
 class MigrationPackErrorResponder implements MigrationPackErrorResponderInterface {
 	/**
+	 * The HTTP status of each fixed error code.
+	 *
+	 * @var array<string, int>
+	 */
+	private const STATUS_OF = [
+		'not-authenticated' => 401,
+		'admin-required' => 403,
+		'pack-not-found' => 404,
+		'pack-changed' => 409,
+		'builtin-slug-locked' => 422,
+		'pack-slug-exists' => 422,
+		'migration-pack-error' => 500,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IL10N           $l10n   Translates the messages.
@@ -67,7 +82,6 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	 */
 	public function notAuthenticated(): JSONResponse {
 		return $this->error(
-			status: 401,
 			error: 'not-authenticated',
 			message: $this->l10n->t('Authentication required')
 		);
@@ -82,7 +96,6 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	 */
 	public function adminRequired(): JSONResponse {
 		return $this->error(
-			status: 403,
 			error: 'admin-required',
 			message: $this->l10n->t('Administrator privileges required')
 		);
@@ -97,7 +110,6 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	 */
 	public function notFound(): JSONResponse {
 		return $this->error(
-			status: 404,
 			error: 'pack-not-found',
 			message: $this->l10n->t('Migration pack not found')
 		);
@@ -120,7 +132,6 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 
 		if ($exception instanceof PackChangedException) {
 			return $this->error(
-				status: 409,
 				error: 'pack-changed',
 				message: $this->l10n->t('The migration pack was saved by someone else after it was read')
 			);
@@ -139,10 +150,9 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
 	 */
 	private function badRequest(MigrationPackRequestException $exception): JSONResponse {
-		return $this->error(
-			status: 400,
-			error: $exception->getErrorCode(),
-			message: $exception->getUserMessage()
+		return new JSONResponse(
+			data: ['message' => $exception->getUserMessage(), 'error' => $exception->getErrorCode()],
+			statusCode: 400
 		);
 	}//end badRequest()
 
@@ -163,7 +173,6 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	private function refusedDefinition(MigrationPackRefusedException $exception): JSONResponse {
 		if ($exception instanceof BuiltinPackSlugLockedException) {
 			return $this->error(
-				status: 422,
 				error: 'builtin-slug-locked',
 				message: $this->l10n->t('The id of a built-in migration pack cannot be changed')
 			);
@@ -171,12 +180,22 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 
 		if ($exception instanceof PackSlugExistsException) {
 			return $this->error(
-				status: 422,
 				error: 'pack-slug-exists',
 				message: $this->l10n->t('A migration pack with this id already exists')
 			);
 		}
 
+		return $this->invalidPack(exception: $exception);
+	}//end refusedDefinition()
+
+	/**
+	 * The 422 for a pack definition that does not validate, carrying its errors.
+	 *
+	 * @param MigrationPackRefusedException $exception The refusal.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function invalidPack(MigrationPackRefusedException $exception): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'message' => $this->l10n->t('The pack definition is invalid'),
@@ -185,7 +204,7 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 			],
 			statusCode: 422
 		);
-	}//end refusedDefinition()
+	}//end invalidPack()
 
 	/**
 	 * 500: log an unexpected failure and answer with a static message.
@@ -199,34 +218,39 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
 	public function unexpected(string $action, Throwable $exception, array $context = []): JSONResponse {
-		$this->logger->error(
-			message: '[MigrationPacksController] Error during migration pack ' . $action . ': ' . $exception->getMessage(),
-			context: array_merge($context, ['exception' => $exception])
-		);
+		$logMessage = '[MigrationPacksController] Error during migration pack ' . $action . ': ' . $exception->getMessage();
+		$this->logger->error(message: $logMessage, context: array_merge($context, ['exception' => $exception]));
+		return $this->error(error: 'migration-pack-error', message: $this->failureMessage(action: $action));
+	}//end unexpected()
 
-		$message = match ($action) {
+	/**
+	 * The static message of an unexpected failure.
+	 *
+	 * @param 'import'|'create'|'update'|'delete'|'preview' $action What the caller tried to do.
+	 *
+	 * @return string The translated message.
+	 */
+	private function failureMessage(string $action): string {
+		return match ($action) {
 			'import' => $this->l10n->t('Failed to import migration pack'),
 			'create' => $this->l10n->t('Failed to create migration pack'),
 			'update' => $this->l10n->t('Failed to update migration pack'),
 			'delete' => $this->l10n->t('Failed to delete migration pack'),
 			'preview' => $this->l10n->t('Failed to preview migration pack'),
 		};
-
-		return $this->error(status: 500, error: 'migration-pack-error', message: $message);
-	}//end unexpected()
+	}//end failureMessage()
 
 	/**
-	 * Build one `{message, error}` response.
+	 * Build one `{message, error}` response, with the status of its fixed error code.
 	 *
-	 * @param int    $status  The HTTP status.
-	 * @param string $error   The kebab-case error code.
+	 * @param string $error   The kebab-case error code, a key of STATUS_OF.
 	 * @param string $message The translated message.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
-	private function error(int $status, string $error, string $message): JSONResponse {
-		return new JSONResponse(data: ['message' => $message, 'error' => $error], statusCode: $status);
+	private function error(string $error, string $message): JSONResponse {
+		return new JSONResponse(data: ['message' => $message, 'error' => $error], statusCode: self::STATUS_OF[$error]);
 	}//end error()
 }//end class

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\EntityRelationsController;
@@ -23,9 +24,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -73,6 +77,20 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
+ * @uses \OCA\OpenRegister\Controller\Support\AuthDenialWarning
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationPatch
+ * @uses \OCA\OpenRegister\Db\DecisionMetadataEdit
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform
+ * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
+ * @uses \OCA\OpenRegister\Service\Decision\RelationDecisionStores
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners
  */
 class DecisionOwnershipTest extends TestCase {
 
@@ -146,7 +164,8 @@ class DecisionOwnershipTest extends TestCase {
 		$relations = $this->createMock(EntityRelationMapper::class);
 		$relations->method('find')->willReturnCallback(fn (): EntityRelation => $this->relation);
 		$relations->method('updateDecisionMetadata')->willReturnCallback(
-			static function (EntityRelation $relation, array $fields): EntityRelation {
+			static function (DecisionMetadataEdit $edit): EntityRelation {
+				[$relation, $fields] = [$edit->relation, $edit->fields];
 				if (array_key_exists('bases', $fields) === true) {
 					$relation->setBases($fields['bases']);
 				}
@@ -196,17 +215,14 @@ class DecisionOwnershipTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$decide = new RelationDecisionService(
-			relationMapper: $relations,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
-			ownership: new DecisionOwnership(groupManager: $groups, eventDispatcher: $this->createMock(IEventDispatcher::class), logger: $logger),
+			stores: new RelationDecisionStores(relationMapper: $relations, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
+			ownership: new DecisionOwnership(groupManager: $groups, platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-				rootFolder: $this->createMock(IRootFolder::class),
-				owners: $this->createMock(ManagedFileOwnerLookup::class),
+				fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 
 		return EntityRelationsControllerFactory::create(
@@ -226,15 +242,14 @@ class DecisionOwnershipTest extends TestCase {
 				resolver: new ReviewPolicyResolver(
 					schemaMapper: $schemas,
 					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-					rootFolder: $this->createMock(IRootFolder::class),
-					owners: $this->createMock(ManagedFileOwnerLookup::class),
+					fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $logger
-			)
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
+			),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end controllerAs()
 

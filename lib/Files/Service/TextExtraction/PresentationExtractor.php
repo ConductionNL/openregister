@@ -87,13 +87,6 @@ class PresentationExtractor {
 	];
 
 	/**
-	 * MIME types too generic to decide on; the file extension decides instead.
-	 *
-	 * @var list<string>
-	 */
-	private const GENERIC_MIME_TYPES = ['', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'];
-
-	/**
 	 * Extensions read when the MIME type is generic.
 	 *
 	 * @var list<string>
@@ -108,6 +101,13 @@ class PresentationExtractor {
 	private readonly PresentationSlideParser $slideParser;
 
 	/**
+	 * The MIME types and extensions this extractor reads.
+	 *
+	 * @var OoxmlFormatFilter
+	 */
+	private readonly OoxmlFormatFilter $formats;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -116,6 +116,7 @@ class PresentationExtractor {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->slideParser = new PresentationSlideParser();
+		$this->formats = new OoxmlFormatFilter(mimeTypes: self::SUPPORTED_MIME_TYPES, extensions: self::SUPPORTED_EXTENSIONS);
 	}//end __construct()
 
 	/**
@@ -129,16 +130,7 @@ class PresentationExtractor {
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-the-supported-formats-can-be-asked-for-req-pptx-007
 	 */
 	public function supports(string $mimeType, string $fileName): bool {
-		$mimeType = strtolower($mimeType);
-		if (in_array($mimeType, self::SUPPORTED_MIME_TYPES, true) === true) {
-			return true;
-		}
-
-		if (in_array($mimeType, self::GENERIC_MIME_TYPES, true) === false) {
-			return false;
-		}
-
-		return in_array(strtolower(pathinfo($fileName, PATHINFO_EXTENSION)), self::SUPPORTED_EXTENSIONS, true);
+		return $this->formats->accepts(mimeType: $mimeType, fileName: $fileName);
 	}//end supports()
 
 	/**

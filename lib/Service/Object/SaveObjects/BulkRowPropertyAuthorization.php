@@ -18,9 +18,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 
 /**
  * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
@@ -89,10 +93,7 @@ final class BulkRowPropertyAuthorization {
 	 */
 	public function refusal(array $object, bool $isCreate): ?string {
 		$unauthorized = $this->propertyRbac->getUnauthorizedProperties(
-			schema: $this->schema,
-			object: $this->record,
-			incomingData: self::incoming(object: $object),
-			isCreate: $isCreate
+			write: new PropertyWriteCheck(schema: $this->schema, request: new PropertyAccessRequest(object: $this->record, isCreate: $isCreate), incoming: self::incoming(object: $object))
 		);
 		if ($unauthorized === []) {
 			return null;
@@ -114,15 +115,13 @@ final class BulkRowPropertyAuthorization {
 		}
 
 		$omitted = $this->propertyRbac->collectOmittedProtectedProperties(
-			schema: $this->schema,
-			incoming: self::incoming(object: $object),
-			stored: $this->record
+			update: new ProtectedCarryForward(schema: $this->schema, incoming: self::incoming(object: $object), stored: $this->record)
 		);
 		if ($omitted === []) {
 			return $object;
 		}
 
-		return $this->propertyRbac->restoreWriteOnlyValues(prepared: $object, stored: $this->stored, omittedPaths: $omitted);
+		return $this->propertyRbac->restoreWriteOnlyValues(prepared: $object, omitted: new OmittedWriteOnly(stored: $this->stored, paths: $omitted));
 	}//end carriedForward()
 
 	/**

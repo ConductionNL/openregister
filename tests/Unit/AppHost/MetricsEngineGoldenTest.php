@@ -31,7 +31,10 @@ use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
@@ -123,7 +126,7 @@ class MetricsEngineGoldenTest extends TestCase {
 		[$descriptors, $available, $cached] = $this->scenarioSetup($scenario);
 
 		$engine = $this->engine(available: $available, cached: $cached, failTable: ($scenario === 'failing'));
-		$output = $engine->render(new ObservabilityManifest('app', [], $descriptors));
+		$output = $engine->render(new ObservabilityManifest('app', new ObservabilityProbes([], $descriptors)));
 
 		return (string)json_encode(
 			[
@@ -200,14 +203,14 @@ class MetricsEngineGoldenTest extends TestCase {
 		});
 
 		return new MetricsEngine(
-			$this->source(ObjectMetricSource::class, 'object', false),
-			$this->source(TableMetricSource::class, 'table', $failTable),
-			$this->source(AppConfigMetricSource::class, 'appConfig', false),
-			$this->source(ProviderMetricSource::class, 'provider', false),
+			new MetricSources(
+				$this->source(ObjectMetricSource::class, 'object', false),
+				$this->source(TableMetricSource::class, 'table', $failTable),
+				$this->source(AppConfigMetricSource::class, 'appConfig', false),
+				$this->source(ProviderMetricSource::class, 'provider', false)
+			),
 			new PrometheusRenderer(),
-			$manifestLoader,
-			$this->cacheFactory($available, $cached),
-			$config,
+			new MetricsRuntime($manifestLoader, $this->cacheFactory($available, $cached), $config),
 			$logger
 		);
 	}//end engine()
@@ -229,7 +232,7 @@ class MetricsEngineGoldenTest extends TestCase {
 				throw new RuntimeException('boom from '.$label);
 			}
 
-			return [MetricSample::single($descriptor->name, $descriptor->type, 'Help for '.$descriptor->name, strlen($descriptor->name), ['src' => $label])];
+			return [new MetricSample($descriptor->name, $descriptor->type, 'Help for '.$descriptor->name, [['labels' => ['src' => $label], 'value' => strlen($descriptor->name)]])];
 		});
 
 		return $source;

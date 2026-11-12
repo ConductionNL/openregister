@@ -25,9 +25,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateCrossing;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateSave;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -107,7 +108,7 @@ class StateConditionEvaluatorGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 		$dialect   = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 		$resolver  = new StateFieldRuleResolver($userSession, $this->createMock(IGroupManager::class), $dialect);
-		$evaluator = new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect));
+		$evaluator = new StateConditionEvaluator($resolver, $dialect);
 
 		$objects = [
 			'empty' => [],
@@ -119,7 +120,7 @@ class StateConditionEvaluatorGoldenTest extends TestCase {
 			foreach (['open', 'besloten', 'gesloten', 'onbekend', '', null] as $from) {
 				foreach (['open', 'besloten', 'gesloten', '', null] as $to) {
 					$key          = sprintf('%s: %s -> %s', $objectName, var_export($from, true), var_export($to, true));
-					$actual[$key] = $evaluator->refusal($annotation, ['status' => $to] + $object, $from, $to);
+					$actual[$key] = $evaluator->refusal(new StateSave($annotation, ['status' => $to] + $object), new StateCrossing($from, $to));
 				}
 			}
 		}

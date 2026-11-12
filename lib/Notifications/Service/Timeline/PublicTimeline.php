@@ -48,11 +48,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Reads and projects the public timeline of one object.
@@ -158,8 +160,7 @@ class PublicTimeline implements PublicTimelineInterface {
 		try {
 			$entries = $this->entries->listForObject(
 				object: $object,
-				visibility: TimelineVisibilityService::PUBLIC_ENTRY,
-				limit: $limit
+				query: new ListQuery(limit: $limit, offset: 0, filters: ['visibility' => TimelineVisibilityService::PUBLIC_ENTRY])
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
@@ -186,11 +187,12 @@ class PublicTimeline implements PublicTimelineInterface {
 	 */
 	private function notesOf(ObjectEntity $object, int $limit): array {
 		try {
-			return $this->notes->getNotesForObject(
-				objectUuid: (string)$object->getUuid(),
-				limit: $limit,
-				offset: 0,
-				visibility: TimelineVisibilityService::PUBLIC_ENTRY
+			return $this->notes->listNotes(
+				query: new ObjectNotesQuery(
+					objectUuid: (string)$object->getUuid(),
+					page: new ListQuery(limit: $limit, offset: 0),
+					visibility: TimelineVisibilityService::PUBLIC_ENTRY
+				)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(

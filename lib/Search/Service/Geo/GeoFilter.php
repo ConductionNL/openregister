@@ -115,10 +115,10 @@ class GeoFilter {
 	/**
 	 * Build a point + radius filter.
 	 *
-	 * @param float|string $lon Center longitude.
-	 * @param float|string $lat Center latitude.
-	 * @param float|string $radius Radius in meters.
-	 * @param ?string $property Property hint.
+	 * @param array{lon: float|string, lat: float|string, radius: float|string} $circle   Center longitude and
+	 *                                                                               latitude, and the radius in
+	 *                                                                               meters, as given.
+	 * @param ?string                                                             $property Property hint.
 	 *
 	 * @return self
 	 *
@@ -126,28 +126,32 @@ class GeoFilter {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
 	 */
-	public static function fromNearAndRadius(
-		float|string $lon,
-		float|string $lat,
-		float|string $radius,
-		?string $property = null,
-	): self {
+	public static function fromNearAndRadius(array $circle, ?string $property = null): self {
+		[$lon, $lat, $radius] = [($circle['lon'] ?? null), ($circle['lat'] ?? null), ($circle['radius'] ?? null)];
 		if (is_numeric($lon) === false || is_numeric($lat) === false || is_numeric($radius) === false) {
 			throw new InvalidArgumentException('near coordinates and radius MUST be numeric');
 		}
 
-		$r = (float)$radius;
-		if ($r <= 0.0) {
+		return self::near(circle: ['lon' => (float)$lon, 'lat' => (float)$lat, 'radius' => (float)$radius], property: $property);
+	}//end fromNearAndRadius()
+
+	/**
+	 * Build a point + radius filter from a numeric circle.
+	 *
+	 * @param array{lon: float, lat: float, radius: float} $circle   Center and radius in meters.
+	 * @param ?string                                      $property Property hint.
+	 *
+	 * @return self
+	 *
+	 * @throws InvalidArgumentException When the radius is not positive.
+	 */
+	private static function near(array $circle, ?string $property): self {
+		if ($circle['radius'] <= 0.0) {
 			throw new InvalidArgumentException('radius MUST be greater than 0 meters');
 		}
 
-		return new self(
-			self::TYPE_NEAR,
-			['lon' => (float)$lon, 'lat' => (float)$lat, 'radius' => $r],
-			$property
-		);
-
-	}//end fromNearAndRadius()
+		return new self(self::TYPE_NEAR, $circle, $property);
+	}//end near()
 
 	/**
 	 * Build a within-polygon filter from a GeoJSON geometry.

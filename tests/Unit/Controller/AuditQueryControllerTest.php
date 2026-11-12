@@ -36,6 +36,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 class AuditQueryControllerTest extends TestCase {
 
@@ -71,7 +72,6 @@ class AuditQueryControllerTest extends TestCase {
 
 	private function buildController(): AuditQueryController {
 		return AuditQueryControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->auditQueryService,
 			$this->userSession,
@@ -90,7 +90,6 @@ class AuditQueryControllerTest extends TestCase {
 		}
 
 		return AuditQueryControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->auditQueryService,
 			$userSession,
@@ -178,9 +177,11 @@ class AuditQueryControllerTest extends TestCase {
 		$this->auditQueryService->expects($this->once())
 			->method('query')
 			->with(
-				filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid'],
-				limit: 25,
-				offset: 10
+				new ListQuery(
+					limit: 25,
+					offset: 10,
+					filters: ['registerId' => 'procest', 'schemaId' => 'aiAuditEntry', 'objectId' => 'case-uuid']
+				)
 			)
 			->willReturn(['entries' => [], 'total' => 0, 'limit' => 25, 'offset' => 10]);
 

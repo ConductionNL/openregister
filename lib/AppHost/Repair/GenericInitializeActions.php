@@ -108,27 +108,51 @@ class GenericInitializeActions implements IRepairStep {
 			return;
 		}
 
+		if ($this->writeMatrix(matrix: array_merge($existing, $missing), output: $output) === true) {
+			$output->info(self::seedReport(existing: $existing, missing: $missing));
+		}
+	}//end run()
+
+	/**
+	 * Store the matrix, reporting a failure.
+	 *
+	 * @param array<string, array<int, string>> $matrix The matrix to store.
+	 * @param IOutput                           $output Repair output channel.
+	 *
+	 * @return bool Whether it was stored.
+	 */
+	private function writeMatrix(array $matrix, IOutput $output): bool {
 		try {
-			$this->actionAuth->setMatrix(array_merge($existing, $missing));
+			$this->actionAuth->setMatrix($matrix);
+			return true;
 		} catch (\JsonException $e) {
 			$output->warning('Failed to write matrix: ' . $e->getMessage());
-			return;
+			return false;
 		}
+	}//end writeMatrix()
 
+	/**
+	 * What a seeding reports: the actions an existing matrix gained, or the size of a fresh one.
+	 *
+	 * On an empty matrix every seeded action is missing, so the missing set is the seed.
+	 *
+	 * @param array<string, array<int, string>> $existing The matrix before seeding.
+	 * @param array<string, array<int, string>> $missing  The seeded actions it lacked.
+	 *
+	 * @return string
+	 */
+	private static function seedReport(array $existing, array $missing): string {
 		if (count($existing) > 0) {
-			$output->info(
-				sprintf(
-					'Action matrix kept its %d entries and gained %d seeded actions: %s.',
-					count($existing),
-					count($missing),
-					implode(', ', array_keys($missing))
-				)
+			return sprintf(
+				'Action matrix kept its %d entries and gained %d seeded actions: %s.',
+				count($existing),
+				count($missing),
+				implode(', ', array_keys($missing))
 			);
-			return;
 		}
 
-		$output->info(sprintf('Seeded action matrix with %d actions (default: admin-only).', count($actions)));
-	}//end run()
+		return sprintf('Seeded action matrix with %d actions (default: admin-only).', count($missing));
+	}//end seedReport()
 
 	/**
 	 * Read the `actions` map from the leaf app's seed file.
@@ -138,6 +162,22 @@ class GenericInitializeActions implements IRepairStep {
 	 * @return array<string, array<int, string>>|null The seeded actions, or null when the seed is missing or unreadable.
 	 */
 	private function readSeedActions(IOutput $output): ?array {
+		$raw = $this->readSeed(output: $output);
+		if ($raw === null) {
+			return null;
+		}
+
+		return $this->seededActions(raw: $raw, output: $output);
+	}//end readSeedActions()
+
+	/**
+	 * The raw content of the leaf app's seed file; null, reported, when it is missing or unreadable.
+	 *
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return string|null
+	 */
+	private function readSeed(IOutput $output): ?string {
 		$seedPath = $this->resolveSeedPath();
 		if ($seedPath === null || file_exists($seedPath) === false) {
 			$output->warning('actions.seed.json not found — matrix left unchanged (default-deny).');
@@ -151,6 +191,18 @@ class GenericInitializeActions implements IRepairStep {
 			return null;
 		}
 
+		return $raw;
+	}//end readSeed()
+
+	/**
+	 * The `actions` map of the seed; null, reported, when it is not valid JSON or has none.
+	 *
+	 * @param string  $raw    The seed file content.
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return array<string, array<int, string>>|null
+	 */
+	private function seededActions(string $raw, IOutput $output): ?array {
 		try {
 			$parsed = json_decode($raw, associative: true, depth: 512, flags: JSON_THROW_ON_ERROR);
 		} catch (\JsonException $e) {
@@ -166,7 +218,7 @@ class GenericInitializeActions implements IRepairStep {
 		}
 
 		return $actions;
-	}//end readSeedActions()
+	}//end seededActions()
 
 	/**
 	 * Resolve the leaf app's `lib/actions.seed.json` path. Overridable hook.

@@ -80,6 +80,8 @@ class SystemEntityObjectAdapterTest extends TestCase {
 
 		$objectData = $adapter->getObject();
 		$this->assertIsArray($objectData);
+		$this->assertSame('uuid-payload', $objectData['uuid']);
+		$this->assertSame('Payload Source', $objectData['title']);
 	}//end testAdapterPopulatesObjectFromJsonSerialize()
 
 	/**

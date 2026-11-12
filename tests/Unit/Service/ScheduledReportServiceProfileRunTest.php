@@ -44,6 +44,10 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
@@ -97,19 +101,14 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		);
 
 		return new ScheduledReportService(
-			$this->mapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->exportService,
-			$this->rootFolder,
-			$this->userManager,
-			$this->createMock(IUserSession::class),
-			$this->notificationManager,
-			new NullLogger(),
-			$this->createMock(IMailer::class),
-			$config,
-			$profiles,
-			$runs
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($this->exportService, $profiles, $runs),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($this->userManager, $this->createMock(IUserSession::class), $this->rootFolder, $this->notificationManager),
+				$this->createMock(IMailer::class),
+				$config
+			),
+			new NullLogger()
 		);
 	}//end service()
 

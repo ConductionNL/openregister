@@ -182,7 +182,7 @@ class CaseTypeAuthorizationService {
 	 *
 	 * Mapping (per the rbac-zaaktype spec "ZGW Autorisaties API concepts" req):
 	 *   - Each ZGW `scope` (e.g. `zaken.lezen`) maps to an OpenRegister action
-	 *     (`read`) granted to the supplied `$group` (the Nextcloud group that
+	 *     (`read`) granted to the grant's `group` (the Nextcloud group that
 	 *     represents the ZGW Applicatie's identity / scope).
 	 *   - A `maxVertrouwelijkheidaanduiding` (when present) attaches an `$in`
 	 *     conditional match to EVERY mapped action so the engine filters objects
@@ -192,34 +192,26 @@ class CaseTypeAuthorizationService {
 	 * it can be merged into a schema's `authorization` and enforced unchanged.
 	 * Unknown scope suffixes are skipped (fail closed: they grant nothing).
 	 *
-	 * @param array<int, string> $scopes ZGW scopes, e.g. ['zaken.lezen', 'zaken.aanmaken'].
-	 * @param string $group The Nextcloud group representing the ZGW Applicatie.
-	 * @param string|null $maxLevel Optional maxVertrouwelijkheidaanduiding.
-	 * @param string $property Confidentiality property name on the schema.
+	 * @param ZgwAutorisatieGrant $grant The scopes, group, clearance limit and confidentiality property.
 	 *
 	 * @return array<string, array<int, mixed>> An `authorization`-shaped block.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function mapZgwAutorisatie(
-		array $scopes,
-		string $group,
-		?string $maxLevel = null,
-		string $property = 'vertrouwelijkheidaanduiding',
-	): array {
+	public function mapGrant(ZgwAutorisatieGrant $grant): array {
 		// A clearance limit turns the grant into a conditional rule; an
 		// unrestricted grant (heeftAlleAutorisaties-style per-zaaktype) is a
 		// bare group string.
-		$entry = $group;
-		if ($maxLevel !== null) {
+		$entry = $grant->group;
+		if ($grant->maxLevel !== null) {
 			$entry = [
-				'group' => $group,
-				'match' => $this->buildConfidentialityMatch(maxLevel: $maxLevel, property: $property),
+				'group' => $grant->group,
+				'match' => $this->buildConfidentialityMatch(maxLevel: $grant->maxLevel, property: $grant->property),
 			];
 		}
 
-		return $this->grantPerAction(actions: $this->scopeActions(scopes: $scopes), entry: $entry);
-	}//end mapZgwAutorisatie()
+		return $this->grantPerAction(actions: $this->scopeActions(scopes: $grant->scopes), entry: $entry);
+	}//end mapGrant()
 
 	/**
 	 * The actions a list of ZGW scopes grants, in scope order.

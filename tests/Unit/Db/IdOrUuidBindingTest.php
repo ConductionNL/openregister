@@ -39,6 +39,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 class IdOrUuidBindingTest extends TestCase {
 
@@ -142,10 +144,12 @@ class IdOrUuidBindingTest extends TestCase {
 		return new ViewMapper(
 			$this->connection($row),
 			new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
-				$this->createMock(OrganisationMapper::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class)
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$this->createMock(OrganisationMapper::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class)
+				),
+				$this->createMock(IAppConfig::class)
 			),
 			$this->createMock(IEventDispatcher::class)
 		);
@@ -184,14 +188,18 @@ class IdOrUuidBindingTest extends TestCase {
 	 */
 	public function testASchemaReferenceBySlugBindsNoTextAsAnInteger(): void {
 		$mapper = new SchemaMapper(
-			$this->connection(['id' => 7, 'uuid' => 'parent-uuid', 'slug' => 'parent', 'title' => 'Parent']),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->connection(['id' => 7, 'uuid' => 'parent-uuid', 'slug' => 'parent', 'title' => 'Parent']),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$load = new \ReflectionMethod(SchemaMapper::class, 'loadSchema');

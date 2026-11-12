@@ -111,7 +111,7 @@ class RegisterServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->db),
+			storage: new RegisterServiceStorage(db: $this->db, catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers(
 				$this->fileService,
 				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
@@ -763,7 +763,7 @@ class RegisterServiceTest extends TestCase {
 		$result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
 		// Should return empty array on exception (error is logged, not thrown).
-		$this->assertIsArray($result);
+		$this->assertSame([10 => ['total' => 0, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 0]], $result);
 	}
 
 	/**

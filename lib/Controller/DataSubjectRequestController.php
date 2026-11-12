@@ -29,7 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
+use OCA\OpenRegister\Service\Gdpr\ProcessingFlag;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,16 +46,14 @@ class DataSubjectRequestController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param DataSubjectRequestServiceInterface $service The consumable DSR service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly DataSubjectRequestServiceInterface $service,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -79,9 +81,11 @@ class DataSubjectRequestController extends Controller {
 		}
 
 		$results = $this->service->findSubjectData(
-			subjectId: $subject,
-			type: $this->optionalType(),
-			mode: (string)($this->request->getParam(key: 'mode') ?? 'exact')
+			query: new SubjectQuery(
+				subjectId: $subject,
+				type: $this->optionalType(),
+				mode: (string)($this->request->getParam(key: 'mode') ?? 'exact')
+			)
 		);
 
 		return new JSONResponse(
@@ -128,7 +132,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::rectify loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); an unauthorised or absent id yields 404 and the write
 	 *   is re-scoped with the same flags.
@@ -160,7 +163,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: each discovered object is loaded via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); unauthorised loads are excluded and saveObject
 	 *   re-enforces _rbac + _multitenancy.
@@ -174,10 +176,12 @@ class DataSubjectRequestController extends Controller {
 		}
 
 		$summary = $this->service->erase(
-			subjectId: $subject,
-			type: $this->optionalType(),
-			eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE),
-			dryRun: filter_var($this->request->getParam(key: 'dryRun'), FILTER_VALIDATE_BOOLEAN)
+			request: new ErasureRequest(
+				subjectId: $subject,
+				type: $this->optionalType(),
+				eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE),
+				dryRun: filter_var($this->request->getParam(key: 'dryRun'), FILTER_VALIDATE_BOOLEAN)
+			)
 		);
 
 		return new JSONResponse(data: $summary);
@@ -191,7 +195,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setRestriction loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
 	 *
@@ -205,8 +208,10 @@ class DataSubjectRequestController extends Controller {
 
 		$result = $this->service->setRestriction(
 			objectIdentifier: $objectId,
-			restricted: filter_var($this->request->getParam(key: 'restricted'), FILTER_VALIDATE_BOOLEAN),
-			reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			flag: new ProcessingFlag(
+				active: filter_var($this->request->getParam(key: 'restricted'), FILTER_VALIDATE_BOOLEAN),
+				reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			)
 		);
 		if ($result === null) {
 			return new JSONResponse(data: ['error' => 'Object not found, not authorised, or immutable'], statusCode: Http::STATUS_NOT_FOUND);
@@ -223,7 +228,6 @@ class DataSubjectRequestController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: DataSubjectRequestService::setObjection loads the object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true); a null result yields 404.
 	 *
@@ -237,8 +241,10 @@ class DataSubjectRequestController extends Controller {
 
 		$result = $this->service->setObjection(
 			objectIdentifier: $objectId,
-			objected: filter_var($this->request->getParam(key: 'objected'), FILTER_VALIDATE_BOOLEAN),
-			reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			flag: new ProcessingFlag(
+				active: filter_var($this->request->getParam(key: 'objected'), FILTER_VALIDATE_BOOLEAN),
+				reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			)
 		);
 		if ($result === null) {
 			return new JSONResponse(data: ['error' => 'Object not found, not authorised, or immutable'], statusCode: Http::STATUS_NOT_FOUND);

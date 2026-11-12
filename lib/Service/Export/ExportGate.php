@@ -61,6 +61,11 @@ class ExportGate implements ExportGateInterface {
 	/**
 	 * The refusal this export should return, or null when it may run.
 	 *
+	 * A refusal is recorded without letting the record fail the refusal. The
+	 * refusal is the control; the entry is the record of it. A trail that
+	 * cannot be written must not turn a refusal into a 500, because a 500 and
+	 * a 403 are acted on very differently by whoever meets them.
+	 *
 	 * @param Schema|null $schema     The schema being exported.
 	 * @param string      $profile    What the audit entry calls this export.
 	 * @param int|null    $registerId The register, for the audit entry.
@@ -76,11 +81,9 @@ class ExportGate implements ExportGateInterface {
 			return null;
 		}
 
-		$this->record(
-			refusal: $refusal,
-			profile: $profile,
-			registerId: $registerId,
-			schemaId: $schema?->getId()
+		$this->recordWithoutFailing(
+			refusal: new ExportRefusal(profile: $profile, rule: $refusal->getRule(), reason: $refusal->getMessage()),
+			scope: new ExportScope(register: $registerId, schema: $schema?->getId(), actorId: null)
 		);
 
 		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
@@ -88,36 +91,20 @@ class ExportGate implements ExportGateInterface {
 	}//end refusalFor()
 
 	/**
-	 * Record the refusal, without letting the record fail the refusal.
+	 * Record a refusal on the trail, letting nothing the trail throws reach the caller.
 	 *
-	 * The refusal is the control; the entry is the record of it. A trail that
-	 * cannot be written must not turn a refusal into a 500, because a 500 and
-	 * a 403 are acted on very differently by whoever meets them.
-	 *
-	 * @param ExportRefusedException $refusal    The refusal.
-	 * @param string                 $profile    What this export is called.
-	 * @param int|null               $registerId The register.
-	 * @param int|null               $schemaId   The schema.
+	 * @param ExportRefusal $refusal What was refused, under which rule, and why.
+	 * @param ExportScope   $scope   The register and schema the export addressed.
 	 *
 	 * @return void
 	 */
-	private function record(
-		ExportRefusedException $refusal,
-		string $profile,
-		?int $registerId,
-		?int $schemaId,
-	): void {
+	private function recordWithoutFailing(ExportRefusal $refusal, ExportScope $scope): void {
 		try {
-			$this->recorder->recordRefused(
-				profile: $profile,
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $registerId,
-				schema: $schemaId
-			);
+			$this->recorder->recordRefusal(refusal: $refusal, scope: $scope);
 		} catch (Throwable $exception) {
-			return;
+			// The refusal below stands whether or not the trail took it.
 		}
 
-	}//end record()
+	}//end recordWithoutFailing()
+
 }//end class

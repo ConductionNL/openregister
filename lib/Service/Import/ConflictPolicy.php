@@ -136,20 +136,8 @@ final class ConflictPolicy implements ConflictPolicyNames {
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null} The decision.
 	 */
 	private static function decideMatched(string $policy, string $candidate): array {
-		if ($policy === self::CREATE_ONLY) {
-			return [
-				'decision' => ImportPreviewRow::DECISION_REFUSE,
-				'reason' => 'Policy create-only, and the match key hits existing object '.$candidate.'.',
-				'targetUuid' => null,
-			];
-		}
-
-		if ($policy === self::REFUSE_ON_CONFLICT) {
-			return [
-				'decision' => ImportPreviewRow::DECISION_REFUSE,
-				'reason' => 'Policy refuse-on-conflict, and the match key hits existing object '.$candidate.'.',
-				'targetUuid' => null,
-			];
+		if ($policy === self::CREATE_ONLY || $policy === self::REFUSE_ON_CONFLICT) {
+			return self::refusedMatch(policy: $policy, candidate: $candidate);
 		}
 
 		return [
@@ -158,4 +146,20 @@ final class ConflictPolicy implements ConflictPolicyNames {
 			'targetUuid' => $candidate,
 		];
 	}//end decideMatched()
+
+	/**
+	 * The refusal of a row whose match key hits an existing object under a policy that does not update.
+	 *
+	 * @param string $policy    The policy: create-only or refuse-on-conflict.
+	 * @param string $candidate The uuid of the existing object.
+	 *
+	 * @return array{decision: string, reason: string, targetUuid: null} The decision.
+	 */
+	private static function refusedMatch(string $policy, string $candidate): array {
+		return [
+			'decision' => ImportPreviewRow::DECISION_REFUSE,
+			'reason' => 'Policy '.$policy.', and the match key hits existing object '.$candidate.'.',
+			'targetUuid' => null,
+		];
+	}//end refusedMatch()
 }//end class

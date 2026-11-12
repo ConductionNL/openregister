@@ -42,7 +42,9 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -101,7 +103,7 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
 		$this->service = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: $this->createMock(IGroupManager::class)),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->createMock(IEventDispatcher::class), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, validateHandler: $this->createMock(ValidateObject::class))
@@ -127,10 +129,9 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		$passed = $method->invokeArgs(
-			$this->service,
-			[$objects, null, $schema, ['rbac' => true, 'validation' => false], &$result]
-		);
+		$batch  = new SafeguardBatchRun(objects: $objects, defaults: new BulkBatchDefaults(null, $schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$passed = $method->invokeArgs($this->service, [$batch]);
+		$result = $batch->result;
 
 		return [$passed, $result];
 	}//end runSafeguards()

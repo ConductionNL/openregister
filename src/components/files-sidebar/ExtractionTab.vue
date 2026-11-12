@@ -155,6 +155,27 @@ import TabErrorState from '../shared/TabErrorState.vue'
 import ExtractNowButton from './ExtractNowButton.vue'
 import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
+/**
+ * The extraction status shown before the file's status has loaded: nothing
+ * extracted, nothing anonymised.
+ *
+ * @return {object} The status
+ */
+function unknownStatus() {
+	return {
+		fileId: 0,
+		extractionStatus: 'none',
+		chunkCount: 0,
+		entityCount: 0,
+		riskLevel: 'none',
+		extractedAt: null,
+		entities: [],
+		anonymized: false,
+		anonymizedAt: null,
+		anonymizedFileId: null,
+	}
+}
+
 export default {
 	name: 'ExtractionTab',
 
@@ -172,18 +193,7 @@ export default {
 		return {
 			extracting: false,
 			entitiesExpanded: false,
-			status: {
-				fileId: 0,
-				extractionStatus: 'none',
-				chunkCount: 0,
-				entityCount: 0,
-				riskLevel: 'none',
-				extractedAt: null,
-				entities: [],
-				anonymized: false,
-				anonymizedAt: null,
-				anonymizedFileId: null,
-			},
+			status: unknownStatus(),
 		}
 	},
 

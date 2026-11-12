@@ -32,8 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\JsonLd;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
@@ -207,42 +206,40 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	}//end outranks()
 
 	/**
-	 * Serialize a single rendered object array as a JSON-LD node document.
+	 * Serialize a single rendered object of one register and schema as a JSON-LD node document.
 	 *
 	 * @param array<string, mixed> $renderedObject The rendered object (top-level data + `@self`).
-	 * @param Schema $schema The object's schema.
-	 * @param Register $register The object's register.
+	 * @param RegisterSchema       $table          The object's register and schema.
 	 *
 	 * @return array<string, mixed> The JSON-LD document.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	public function serialize(array $renderedObject, Schema $schema, Register $register): array {
-		$node = $this->buildNode(renderedObject: $renderedObject, target: new JsonLdTarget(register: $register, schema: $schema));
+	public function serializeIn(array $renderedObject, RegisterSchema $table): array {
+		$node = $this->buildNode(renderedObject: $renderedObject, target: new JsonLdTarget(register: $table->register, schema: $table->schema));
 
 		// Prepend the @context reference (per-schema context document URL).
 		return array_merge(
-			['@context' => $this->contextService->getSchemaContextUrl($register, $schema)],
+			['@context' => $this->contextService->getSchemaContextUrl($table->register, $table->schema)],
 			$node
 		);
-	}//end serialize()
+	}//end serializeIn()
 
 	/**
-	 * Serialize a paginated collection result as a JSON-LD `@graph` document.
+	 * Serialize a paginated collection of one register and schema as a JSON-LD `@graph` document.
 	 *
 	 * @param array<string, mixed> $paginatedResult The `index()` result (results/total/page/...).
-	 * @param Schema $schema The collection's schema.
-	 * @param Register $register The collection's register.
+	 * @param RegisterSchema       $table           The collection's register and schema.
 	 *
 	 * @return array<string, mixed> The JSON-LD `@graph` document.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array {
-		$graph = $this->buildGraph(paginatedResult: $paginatedResult, target: new JsonLdTarget(register: $register, schema: $schema));
+	public function serializeCollectionIn(array $paginatedResult, RegisterSchema $table): array {
+		$graph = $this->buildGraph(paginatedResult: $paginatedResult, target: new JsonLdTarget(register: $table->register, schema: $table->schema));
 
 		$document = [
-			'@context' => $this->contextService->getSchemaContextUrl($register, $schema),
+			'@context' => $this->contextService->getSchemaContextUrl($table->register, $table->schema),
 			'@graph' => $graph,
 		];
 
@@ -259,7 +256,7 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		}
 
 		return $document;
-	}//end serializeCollection()
+	}//end serializeCollectionIn()
 
 	/**
 	 * Build the `@graph` nodes of a paginated result; non-array rows are skipped.
@@ -366,8 +363,8 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		return $this->urlGenerator->linkToRouteAbsolute(
 			'openregister.objects.show',
 			[
-				'register' => $this->slugOf(entity: $target->register),
-				'schema' => $this->slugOf(entity: $target->schema),
+				'register' => JsonLdRouteSlug::of(entity: $target->register),
+				'schema' => JsonLdRouteSlug::of(entity: $target->schema),
 				'id' => (string)$uuid,
 			]
 		);
@@ -475,25 +472,4 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	private function isReservedKey(int|string $key): bool {
 		return is_string($key) === true && str_starts_with($key, '@') === true;
 	}//end isReservedKey()
-
-	/**
-	 * Resolve the slug for an entity, falling back to UUID then id.
-	 *
-	 * @param Register|Schema $entity The entity.
-	 *
-	 * @return string The slug-like identifier.
-	 */
-	private function slugOf(Register|Schema $entity): string {
-		$slug = $entity->getSlug();
-		if (is_string($slug) === true && $slug !== '') {
-			return $slug;
-		}
-
-		$uuid = $entity->getUuid();
-		if (is_string($uuid) === true && $uuid !== '') {
-			return $uuid;
-		}
-
-		return (string)$entity->getId();
-	}//end slugOf()
 }//end class

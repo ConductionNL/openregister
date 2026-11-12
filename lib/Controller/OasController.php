@@ -32,9 +32,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
@@ -57,21 +60,25 @@ class OasController extends Controller {
 	private readonly OasServiceInterface $oasService;
 
 	/**
-	 * OasController constructor
+	 * Optional ETag computer for If-None-Match short-circuit
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request Request object
-	 * @param OasServiceInterface $oasService OAS service instance
-	 * @param ?OasETagComputerInterface $etagComputer Optional ETag computer for If-None-Match short-circuit
+	 * @var ?OasETagComputerInterface
+	 */
+	private readonly ?OasETagComputerInterface $etagComputer;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest              $request  Request object
+	 * @param OasControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		OasServiceInterface $oasService,
-		private readonly ?OasETagComputerInterface $etagComputer = null,
+		OasControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->oasService = $oasService;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->oasService = $services->oasService;
+		$this->etagComputer = $services->etagComputer;
 	}//end __construct()
 
 	/**
@@ -85,7 +92,7 @@ class OasController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404|422|500, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
@@ -107,7 +114,7 @@ class OasController extends Controller {
 	 *
 	 * @PublicPage
 	 *
-	 * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
+	 * @psalm-return JSONResponse<200|404|422|500, array<string, mixed>, array<never, never>>
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
@@ -136,6 +143,8 @@ class OasController extends Controller {
 			$oasData = $this->oasService->createOas($registerId, $strict);
 		} catch (OasValidationException $e) {
 			return $this->strictRejection(e: $e);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}

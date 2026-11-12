@@ -119,15 +119,20 @@ class DraftLifetimeImportExportTest extends TestCase {
 		$this->registerMapper->method('update')->willReturnArgument(0);
 
 		$this->importer = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $objectEntityMapper,
-			configurationMapper: $configurationMapper,
-			mappingMapper:       $mappingMapper,
-			appConfig:           $appConfig,
-			logger:              $logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configurationMapper,
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $logger,
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 		$this->exporter = new ExportHandler(

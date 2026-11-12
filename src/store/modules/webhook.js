@@ -60,7 +60,8 @@ export const useWebhookStore = defineStore('webhook', {
 		 */
 		/* istanbul ignore next */
 		async refreshWebhookList(soft = false) {
-			const request = itemRequest(this, {
+			return itemRequest(this, {
+				clearsError: true,
 				soft,
 				log: (error) => console.error('Error fetching webhooks:', error),
 				run: async () => {
@@ -72,8 +73,6 @@ export const useWebhookStore = defineStore('webhook', {
 					return { response, data }
 				},
 			})
-			this.error = null
-			return request
 		},
 
 		/**
@@ -89,7 +88,8 @@ export const useWebhookStore = defineStore('webhook', {
 			if (!webhookItem) {
 				throw new Error('No webhook to save')
 			}
-			const request = itemRequest(this, {
+			return itemRequest(this, {
+				clearsError: true,
 				log: (error) => console.error('Error saving webhook:', error),
 				run: async () => {
 					const response = await sendWebhook(webhookItem)
@@ -99,8 +99,6 @@ export const useWebhookStore = defineStore('webhook', {
 					return { response, data }
 				},
 			})
-			this.error = null
-			return request
 		},
 
 		/**

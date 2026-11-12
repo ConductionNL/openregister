@@ -40,27 +40,39 @@ class ExampleSetProof {
 	 * Numbers compare by value and moments by the instant they name, because
 	 * a register may store `09:12+02:00` as `07:12Z`.
 	 *
-	 * @param mixed  $declared What was sent.
-	 * @param mixed  $stored   What was read back.
-	 * @param string $path     The path so far.
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
 	 *
 	 * @return array<int, string> Dot paths, such as `verblijfplaats.postcode`.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
-	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
-		$declared = $this->asDeclared(declared: $declared, stored: $stored);
-		$place    = new ExampleSetProofPlace(stored: $stored, path: $path);
+	public function lostPaths(mixed $declared, mixed $stored): array {
+		return $this->lostPathsAt(declared: $declared, place: new ExampleSetProofPlace(stored: $stored, path: ''));
+	}//end lostPaths()
+
+	/**
+	 * Every declared path below a place whose value the stored object does not hold; see {@see lostPaths()}.
+	 *
+	 * @param mixed                $declared What was sent.
+	 * @param ExampleSetProofPlace $place    What was read back there, and the path so far.
+	 *
+	 * @return array<int, string> Dot paths, such as `verblijfplaats.postcode`.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	public function lostPathsAt(mixed $declared, ExampleSetProofPlace $place): array {
+		$declared = $this->asDeclared(declared: $declared, stored: $place->stored);
 		if (is_array($declared) === false) {
 			return $this->lostLeaf(declared: $declared, place: $place);
 		}
 
-		if ($this->readInOneLanguage(declared: $declared, stored: $stored) === true) {
+		if ($this->readInOneLanguage(declared: $declared, stored: $place->stored) === true) {
 			return [];
 		}
 
 		return $this->lostInMap(declared: $declared, place: $place);
-	}//end lostPaths()
+	}//end lostPathsAt()
 
 	/**
 	 * The path of a leaf whose stored value is not the declared one; none when it is.
@@ -91,7 +103,8 @@ class ExampleSetProof {
 		$lost   = [];
 		foreach ($declared as $key => $value) {
 			if (is_array($stored) === true && array_key_exists($key, $stored) === true) {
-				$lost = array_merge($lost, $this->lostPaths(declared: $value, stored: $stored[$key], path: $place->pathOf(key: $key)));
+				$below = new ExampleSetProofPlace(stored: $stored[$key], path: $place->pathOf(key: $key));
+				$lost  = array_merge($lost, $this->lostPathsAt(declared: $value, place: $below));
 				continue;
 			}
 

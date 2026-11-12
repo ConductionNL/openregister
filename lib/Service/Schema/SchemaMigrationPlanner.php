@@ -246,7 +246,7 @@ class SchemaMigrationPlanner {
 			return $this->setDefaultStep(data: $data, step: $step);
 		}
 
-		return $this->castDropOrComputeStep(data: $data, step: $step, op: $op);
+		return $this->castDropOrComputeStep(data: $data, step: $step);
 	}//end applyStep()
 
 	/**
@@ -254,18 +254,17 @@ class SchemaMigrationPlanner {
 	 *
 	 * @param array<string, mixed> $data The data so far.
 	 * @param mixed                $step The step.
-	 * @param mixed                $op   The step's op.
 	 *
 	 * @return array{data: array<string, mixed>, applied: string} The new data and the step's description.
 	 *
 	 * @throws RuntimeException When the op is unknown or the value is uncastable.
 	 */
-	private function castDropOrComputeStep(array $data, mixed $step, mixed $op): array {
-		if ($op === 'cast') {
+	private function castDropOrComputeStep(array $data, mixed $step): array {
+		if ($this->stepOp(step: $step) === 'cast') {
 			return $this->castStep(data: $data, step: $step);
 		}
 
-		return $this->dropOrComputeStep(data: $data, step: $step, op: $op);
+		return $this->dropOrComputeStep(data: $data, step: $step);
 	}//end castDropOrComputeStep()
 
 	/**
@@ -273,13 +272,13 @@ class SchemaMigrationPlanner {
 	 *
 	 * @param array<string, mixed> $data The data so far.
 	 * @param mixed                $step The step.
-	 * @param mixed                $op   The step's op.
 	 *
 	 * @return array{data: array<string, mixed>, applied: string} The new data and the step's description.
 	 *
 	 * @throws RuntimeException When the op is unknown.
 	 */
-	private function dropOrComputeStep(array $data, mixed $step, mixed $op): array {
+	private function dropOrComputeStep(array $data, mixed $step): array {
+		$op = $this->stepOp(step: $step);
 		if ($op === 'drop') {
 			return $this->dropStep(data: $data, step: $step);
 		}
@@ -319,7 +318,13 @@ class SchemaMigrationPlanner {
 	 * @return array{data: array<string, mixed>, applied: string}
 	 */
 	private function renameStep(array $data, array $step): array {
-		$data = $this->applyRename(data: $data, from: (string)$step['from'], to: (string)$step['to']);
+		$from = (string)$step['from'];
+		$to   = (string)$step['to'];
+		if (array_key_exists($from, $data) === true) {
+			$data[$to] = $data[$from];
+			unset($data[$from]);
+		}
+
 		return ['data' => $data, 'applied' => sprintf('rename %s -> %s', $step['from'], $step['to'])];
 	}//end renameStep()
 
@@ -332,7 +337,11 @@ class SchemaMigrationPlanner {
 	 * @return array{data: array<string, mixed>, applied: string}
 	 */
 	private function setDefaultStep(array $data, array $step): array {
-		$data = $this->applySetDefault(data: $data, field: (string)$step['field'], value: $step['value']);
+		$field = (string)$step['field'];
+		if (array_key_exists($field, $data) === false || $data[$field] === null) {
+			$data[$field] = $step['value'];
+		}
+
 		return ['data' => $data, 'applied' => sprintf('setDefault %s', $step['field'])];
 	}//end setDefaultStep()
 
@@ -347,7 +356,12 @@ class SchemaMigrationPlanner {
 	 * @throws RuntimeException When the value is uncastable.
 	 */
 	private function castStep(array $data, array $step): array {
-		$data = $this->applyCast(data: $data, field: (string)$step['field'], toType: (string)$step['to'], format: ($step['format'] ?? null));
+		$field  = (string)$step['field'];
+		$target = new CastTarget(type: (string)$step['to'], format: ($step['format'] ?? null));
+		if (array_key_exists($field, $data) === true && $data[$field] !== null) {
+			$data[$field] = $this->caster->cast(value: $data[$field], target: $target);
+		}
+
 		return ['data' => $data, 'applied' => sprintf('cast %s -> %s', $step['field'], $step['to'])];
 	}//end castStep()
 
@@ -373,86 +387,26 @@ class SchemaMigrationPlanner {
 	 * @return array{data: array<string, mixed>, applied: string}
 	 */
 	private function computeStep(array $data, array $step): array {
-		$data = $this->applyCompute(data: $data, field: (string)$step['field'], template: (string)$step['template']);
+		$field        = (string)$step['field'];
+		$data[$field] = $this->renderTemplate(template: (string)$step['template'], context: $data);
 		return ['data' => $data, 'applied' => sprintf('compute %s', $step['field'])];
 	}//end computeStep()
 
 	/**
-	 * Apply a rename transform.
+	 * Render a compute template via the injected renderer, or the minimal one when none is set.
 	 *
-	 * @param array<string, mixed> $data The data.
-	 * @param string               $from Source property.
-	 * @param string               $to   Target property.
-	 *
-	 * @return array<string, mixed> The transformed data.
-	 */
-	private function applyRename(array $data, string $from, string $to): array {
-		if (array_key_exists($from, $data) === false) {
-			return $data;
-		}
-
-		$data[$to] = $data[$from];
-		unset($data[$from]);
-
-		return $data;
-	}//end applyRename()
-
-	/**
-	 * Apply a setDefault transform (only when missing or null).
-	 *
-	 * @param array<string, mixed> $data  The data.
-	 * @param string               $field Target property.
-	 * @param mixed                $value The default value.
-	 *
-	 * @return array<string, mixed> The transformed data.
-	 */
-	private function applySetDefault(array $data, string $field, mixed $value): array {
-		if (array_key_exists($field, $data) === false || $data[$field] === null) {
-			$data[$field] = $value;
-		}
-
-		return $data;
-	}//end applySetDefault()
-
-	/**
-	 * Apply a cast transform; a missing or null value is left as-is.
-	 *
-	 * @param array<string, mixed> $data   The data.
-	 * @param string               $field  Target property.
-	 * @param string               $toType Target type.
-	 * @param string|null          $format Optional date format.
-	 *
-	 * @return array<string, mixed> The transformed data.
-	 *
-	 * @throws RuntimeException When the value is uncastable.
-	 */
-	private function applyCast(array $data, string $field, string $toType, ?string $format): array {
-		if (array_key_exists($field, $data) === false || $data[$field] === null) {
-			return $data;
-		}
-
-		$data[$field] = $this->caster->cast(value: $data[$field], toType: $toType, format: $format);
-		return $data;
-	}//end applyCast()
-
-	/**
-	 * Apply a compute transform via the template renderer.
-	 *
-	 * @param array<string, mixed> $data     The data.
-	 * @param string               $field    Target property.
 	 * @param string               $template The template string.
+	 * @param array<string, mixed> $context  The object's data.
 	 *
-	 * @return array<string, mixed> The transformed data.
+	 * @return mixed The rendered value.
 	 */
-	private function applyCompute(array $data, string $field, string $template): array {
+	private function renderTemplate(string $template, array $context): mixed {
 		if ($this->templateRenderer !== null) {
-			$data[$field] = ($this->templateRenderer)($template, $data);
-			return $data;
+			return ($this->templateRenderer)($template, $context);
 		}
 
-		$data[$field] = $this->renderSimpleTemplate(template: $template, context: $data);
-		return $data;
-	}//end applyCompute()
+		return $this->renderSimpleTemplate(template: $template, context: $context);
+	}//end renderTemplate()
 
 	/**
 	 * Render a minimal `{{ field }}` template against the object's own data.

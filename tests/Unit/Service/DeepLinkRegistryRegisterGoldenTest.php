@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Golden outcomes of DeepLinkRegistryService::register() and the slug maps.
@@ -113,8 +114,8 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 	public function testAFirstRegistrationIsStoredAndADuplicateIsLoggedAndIgnored(): void {
 		$service = $this->service(registers: [$this->register(1, 'cases')], schemas: [$this->schema(2, 'case')]);
 
-		$service->register('procest', 'cases', 'case', '/apps/procest/#/{uuid}');
-		$service->register('other', 'cases', 'case', '/apps/other/{uuid}', 'icon-x', 'Other');
+		$service->add(new DeepLinkRegistration('procest', 'cases', 'case', '/apps/procest/#/{uuid}'));
+		$service->add(new DeepLinkRegistration('other', 'cases', 'case', '/apps/other/{uuid}', 'icon-x', 'Other'));
 
 		$this->assertSame(
 			[
@@ -149,7 +150,7 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 
 	public function testAGivenIconAndDisplayNameAreKept(): void {
 		$service = $this->service(registers: [$this->register(1, 'r')], schemas: [$this->schema(2, 's')]);
-		$service->register('app', 'r', 's', '/u', 'icon-custom', 'Shown');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/u', 'icon-custom', 'Shown'));
 
 		$this->assertSame('icon-custom', $service->resolveIcon(1, 2));
 		$this->assertSame('Shown', $service->resolveDisplayName(1, 2));
@@ -160,8 +161,8 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 			registers: [$this->register(1, null), $this->register(3, ''), $this->register(5, 'r')],
 			schemas: [$this->schema(2, ''), $this->schema(4, null), $this->schema(6, 's')]
 		);
-		$service->register('app', 'r', 's', '/u');
-		$service->register('blank', '', '', '/b');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/u'));
+		$service->add(new DeepLinkRegistration('blank', '', '', '/b'));
 
 		$this->assertNotNull($service->resolve(5, 6));
 		$this->assertNull($service->resolve(3, 2));
@@ -173,7 +174,7 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 
 	public function testAFailedRegisterReadIsLoggedAndTheSchemasAreStillRead(): void {
 		$service = $this->service(registers: new Exception('db down'), schemas: [$this->schema(2, 's')]);
-		$service->register('app', 'r', 's', '/u');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/u'));
 		$this->logs = [];
 
 		$this->assertNull($service->resolve(1, 2));
@@ -191,7 +192,7 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 
 	public function testAFailedSchemaReadIsLoggedAndTheMapsAreBuiltOnce(): void {
 		$service = $this->service(registers: [$this->register(1, 'r')], schemas: new Exception('gone'));
-		$service->register('app', 'r', 's', '/u');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/u'));
 		$this->logs = [];
 
 		$this->assertNull($service->resolve(1, 2));
@@ -212,7 +213,7 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 		};
 
 		$service = $this->service(registers: [$good, $bad], schemas: [$this->schema(2, 's')]);
-		$service->register('app', 'r', 's', '/u');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/u'));
 		$this->logs = [];
 
 		$this->assertNotNull($service->resolve(1, 2));
@@ -224,7 +225,7 @@ class DeepLinkRegistryRegisterGoldenTest extends TestCase {
 
 	public function testResolveUrlFillsTheTemplateOrReturnsNull(): void {
 		$service = $this->service(registers: [$this->register(1, 'r')], schemas: [$this->schema(2, 's')]);
-		$service->register('app', 'r', 's', '/apps/app/{uuid}');
+		$service->add(new DeepLinkRegistration('app', 'r', 's', '/apps/app/{uuid}'));
 
 		$this->assertSame('/apps/app/abc', $service->resolveUrl(1, 2, ['uuid' => 'abc']));
 		$this->assertNull($service->resolveUrl(1, 9, ['uuid' => 'abc']));

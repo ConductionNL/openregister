@@ -25,8 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * find() and findAll() over the rows readRows() returns.
@@ -47,41 +45,60 @@ trait ReadsRowsById {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string               $id       The row id.
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findSourcedRow(binding: $source->binding(), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent.
+	 */
+	private function findSourcedRow(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		foreach ($this->readRows() as $row) {
 			if ((string)($row['id'] ?? '') === $id) {
-				return $this->rowEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), row: $row);
+				return $this->rowEntity(binding: $binding, row: $row);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findSourcedRow()
 
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query    Query (limit/offset).
-	 * @param array<string, mixed> $config   The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The virtual objects.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->pageSourcedRows(binding: $source->binding(), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The virtual objects.
+	 */
+	private function pageSourcedRows(SourcedObjectBinding $binding, array $query): array {
 		$limit   = (int)($query['limit'] ?? 200);
 		$offset  = (int)($query['offset'] ?? 0);
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 
 		$objects = [];
 		foreach (array_slice($this->readRows(), $offset, $limit) as $row) {
@@ -89,7 +106,7 @@ trait ReadsRowsById {
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end pageSourcedRows()
 
 	/**
 	 * Map a row onto a non-persisted virtual ObjectEntity keyed by its `id`.

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 
 /**
  * The list-rendering calls the objects and trash controllers make. What each
@@ -104,4 +105,20 @@ interface RenderObjectInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array;
+
+	/**
+	 * Render a page of entities with one selection: extensions, filters and field selections.
+	 *
+	 * @param array           $entities      Array of ObjectEntity instances to render.
+	 * @param RenderSelection $selection     What every row shows: extend, filter, fields and unset.
+	 * @param bool            $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool            $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function renderRows(array $entities, RenderSelection $selection, bool $_rbac = true, bool $_multitenancy = true): array;
 }//end interface

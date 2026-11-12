@@ -28,6 +28,10 @@ namespace Unit\Service\Import;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Import\ImportCommit;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
@@ -59,6 +63,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 final class ImportPreviewServiceBranchesTest extends TestCase {
 
@@ -186,7 +191,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				return array_values(
 					array_filter(
 						$this->rows,
@@ -228,7 +234,11 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->service = new ImportPreviewService(
 			new ImportPreviewStore($previewMapper, $rowMapper, new SourceRowReader(), new NullLogger()),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $this->schemaMapper, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 	}
 
@@ -274,7 +284,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 	}
 
 	private function transformAsIs(): void {
-		$this->importService->method('transformCsvRowToObject')->willReturnCallback(
+		$this->importService->method('transformCsvRow')->willReturnCallback(
 			static fn (array $rowData): array => $rowData
 		);
 	}
@@ -357,7 +367,11 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				new NullLogger()
 			),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $throwing, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $throwing, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -412,7 +426,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				],
 			]
 		);
-		$this->importService->expects($this->never())->method('transformCsvRowToObject');
+		$this->importService->expects($this->never())->method('transformCsvRow');
 
 		$preview = $this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -430,7 +444,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->mappingEngine->method('mapRow')->willReturn(['data' => ['bsn' => 'mapped'], 'errors' => []]);
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn(['object-1']);
+		$this->matchResolver->method('matchesOf')->willReturn(['object-1']);
 
 		$this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -442,7 +456,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 
 	public function testATransformThatThrowsRefusesTheRow(): void {
 		$path = $this->file("bsn\n1\n");
-		$this->importService->method('transformCsvRowToObject')->willThrowException(new RuntimeException('bad date'));
+		$this->importService->method('transformCsvRow')->willThrowException(new RuntimeException('bad date'));
 
 		$this->service->preview($this->params($path));
 
@@ -458,7 +472,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$result->method('isValid')->willReturn(false);
 		$this->validateObject->method('validateObject')->willReturn($result);
 		$this->validateObject->method('generateErrorMessage')->willReturn('bsn must be 9 digits');
-		$this->matchResolver->expects($this->never())->method('resolve');
+		$this->matchResolver->expects($this->never())->method('matchesOf');
 
 		$this->service->preview($this->params($path));
 
@@ -474,7 +488,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willThrowException(
+		$this->matchResolver->method('matchesOf')->willThrowException(
 			new MatchLookupFailedException('The match key could not be resolved: db down')
 		);
 
@@ -491,7 +505,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$this->service->preview($this->params($path, ['policy' => ConflictPolicy::UPDATE_ONLY]));
 
@@ -503,7 +517,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n2\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 
 		$user = $this->createMock(IUser::class);
@@ -511,7 +525,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->objectService->expects($this->once())->method('saveObjects')->willThrowException(new RuntimeException('chunk'));
 		$seen = [];
 		$this->objectService->expects($this->exactly(2))->method('saveObject')->willReturnCallback(
-			static function (array $object, ...$rest) use (&$seen, $second): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $second): ObjectEntity {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// Captured, not asserted: writeRow() catches every Throwable.
 				$seen[] = ['id' => $object['@self']['id'], 'validation' => $rest[7], 'user' => $rest[9]];
 				if ($object['@self']['id'] === $second) {
@@ -522,7 +537,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 
-		$committed = $this->service->commit($preview, hash_file('sha256', $path), $user);
+		$committed = $this->service->commit($preview, new ImportCommit(hash_file('sha256', $path), $user));
 
 		$this->assertSame(ImportPreview::STATE_COMMITTED, $committed->getState());
 		$this->assertCount(2, $seen);
@@ -542,13 +557,13 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 		$id = $this->rows[0]->getPayload()['@self']['id'];
 
 		$this->objectService->method('saveObjects')->willReturn(['invalid' => [['@self' => ['id' => $id]]]]);
 
-		$this->service->commit($preview, hash_file('sha256', $path));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 
 		$this->assertSame('The write failed: Validation failed', $this->rows[0]->getReason());
 		$this->assertSame(0, $preview->getApplied());
@@ -564,7 +579,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			'This import is in state "pending". Only a completed preview can be committed.'
 		);
 
-		$this->service->commit($preview, 'abc');
+		$this->service->commit($preview, new ImportCommit('abc'));
 	}
 
 	public function testAnEmptyHashIsRefused(): void {
@@ -576,14 +591,14 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			'A commit must name the source file it is committing. Send the file again, or pass its sha256 as sourceHash.'
 		);
 
-		$this->service->commit($preview, '');
+		$this->service->commit($preview, new ImportCommit(''));
 	}
 
 	public function testAThrowingCommitLeavesThePreviewFailed(): void {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 
 		$this->objectService->method('saveObjects')->willReturn(['saved' => []]);
@@ -598,11 +613,15 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				new NullLogger()
 			),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $this->schemaMapper, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 
 		try {
-			$service->commit($preview, hash_file('sha256', $path));
+			$service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 			$this->fail('The commit must rethrow.');
 		} catch (RuntimeException $exception) {
 			$this->assertSame('db gone', $exception->getMessage());

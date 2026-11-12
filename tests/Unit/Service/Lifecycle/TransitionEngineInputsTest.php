@@ -42,6 +42,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -87,7 +88,7 @@ class TransitionEngineInputsTest extends TestCase {
 			);
 
 		$this->engine = new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->registerMapper),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
 				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
 			), $this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)),
@@ -161,7 +162,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -197,7 +198,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -312,7 +313,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -344,7 +345,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -485,7 +486,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$permission = $this->createMock(PermissionHandler::class);
 		$permission->method('hasPermission')->willReturn(false);
 		$engine = new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->registerMapper),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
 				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
 			), $this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)),

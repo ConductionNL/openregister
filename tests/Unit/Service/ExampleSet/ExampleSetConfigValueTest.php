@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue;
 use PHPUnit\Framework\TestCase;
 
@@ -33,13 +34,13 @@ use PHPUnit\Framework\TestCase;
 class ExampleSetConfigValueTest extends TestCase {
 
 	public function testDefaultsToAnExactTextValue(): void {
-		$value = new ExampleSetConfigValue(app: 'a', key: 'k');
+		$value = new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'k'));
 
 		$this->assertSame(['a', 'k', '', 'string', ExampleSetConfigValue::KIND_EXACT], [$value->app, $value->key, $value->value, $value->type, $value->kind]);
 	}
 
 	public function testCarriesWhatItIsGiven(): void {
-		$value = new ExampleSetConfigValue(app: 'a', key: 'n', value: '8', type: 'int', kind: ExampleSetConfigValue::KIND_FLOOR);
+		$value = new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'n'), value: '8', type: 'int', kind: ExampleSetConfigValue::KIND_FLOOR);
 
 		$this->assertSame(['8', 'int', 'floor'], [$value->value, $value->type, $value->kind]);
 	}

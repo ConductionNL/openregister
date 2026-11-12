@@ -81,6 +81,13 @@ class FacetResponseCache {
 	private ?ICache $facetCache = null;
 
 	/**
+	 * Whether the backend has been opened (or found unavailable) yet; it is opened once, on first use.
+	 *
+	 * @var boolean
+	 */
+	private bool $facetCacheOpened = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ICacheFactory     $cacheFactory      Builds the distributed, then the local, cache.
@@ -94,22 +101,44 @@ class FacetResponseCache {
 		private readonly FacetCacheVersion $facetCacheVersion,
 		private readonly LoggerInterface $logger,
 	) {
+	}//end __construct()
+
+	/**
+	 * The facet cache backend, opened on first use: the distributed cache, else the local one, else none.
+	 *
+	 * @return ICache|null The backend, or null when no caching is available (logged once).
+	 */
+	private function backend(): ?ICache {
+		if ($this->facetCacheOpened === false) {
+			$this->facetCacheOpened = true;
+			$this->facetCache       = $this->openBackend();
+		}
+
+		return $this->facetCache;
+	}//end backend()
+
+	/**
+	 * Open the distributed cache, falling back to the local one; null (logged) when neither is available.
+	 *
+	 * @return ICache|null The opened backend.
+	 */
+	private function openBackend(): ?ICache {
 		try {
-			$this->facetCache = $this->cacheFactory->createDistributed('openregister_facets');
+			return $this->cacheFactory->createDistributed('openregister_facets');
 		} catch (\Exception $e) {
 			// Fallback to local cache if distributed cache unavailable.
 			try {
-				$this->facetCache = $this->cacheFactory->createLocal('openregister_facets');
+				return $this->cacheFactory->createLocal('openregister_facets');
 			} catch (\Exception $e) {
 				// No caching available - cache operations are skipped.
-				$this->facetCache = null;
 				$this->logger->warning(
 					message: '[FacetResponseCache] Facet caching unavailable',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 				);
+				return null;
 			}
 		}
-	}//end __construct()
+	}//end openBackend()
 
 	/**
 	 * Generate cache key for facet responses.
@@ -152,6 +181,7 @@ class FacetResponseCache {
 			'freshness' => $this->facetFreshnessToken(facetQuery: $facetQuery),
 		];
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return 'facet_rbac_' . md5(json_encode($cacheData));
 	}//end keyFor()
 
@@ -176,24 +206,45 @@ class FacetResponseCache {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-an-object-write-must-invalidate-the-facet-response-derived-from-it
 	 */
 	private function facetFreshnessToken(array $facetQuery): string {
-		$registers = $this->scopeIdsFromQuery(
+		return $this->facetCacheVersion->tokenForScope(
+			registers: $this->registerScope(facetQuery: $facetQuery),
+			schemas: $this->schemaScope(facetQuery: $facetQuery)
+		);
+	}//end facetFreshnessToken()
+
+	/**
+	 * The register ids a facet query is scoped to, in every spelling it may use.
+	 *
+	 * @param array<string, mixed> $facetQuery The facet query.
+	 *
+	 * @return array<int, string>
+	 */
+	private function registerScope(array $facetQuery): array {
+		return $this->scopeIdsFromQuery(
 			values: [
 				($facetQuery['@self']['registers'] ?? null),
 				($facetQuery['@self']['register'] ?? null),
 				($facetQuery['_registers'] ?? null),
 			]
 		);
+	}//end registerScope()
 
-		$schemas = $this->scopeIdsFromQuery(
+	/**
+	 * The schema ids a facet query is scoped to, in every spelling it may use.
+	 *
+	 * @param array<string, mixed> $facetQuery The facet query.
+	 *
+	 * @return array<int, string>
+	 */
+	private function schemaScope(array $facetQuery): array {
+		return $this->scopeIdsFromQuery(
 			values: [
 				($facetQuery['@self']['schemas'] ?? null),
 				($facetQuery['@self']['schema'] ?? null),
 				($facetQuery['_schemas'] ?? null),
 			]
 		);
-
-		return $this->facetCacheVersion->tokenForScope(registers: $registers, schemas: $schemas);
-	}//end facetFreshnessToken()
+	}//end schemaScope()
 
 	/**
 	 * Flatten the register/schema positions of a query into a list of id strings.
@@ -279,20 +330,15 @@ class FacetResponseCache {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function get(string $cacheKey): ?array {
-		if ($this->facetCache === null) {
+		$backend = $this->backend();
+		if ($backend === null) {
 			return null;
 		}
 
 		try {
-			$cached = $this->facetCache->get($cacheKey);
+			$cached = $backend->get($cacheKey);
 			if ($cached !== null) {
-				$this->logger->debug(
-					message: '[FacetResponseCache] Facet response cache hit',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]
-				);
-				// Add cache metadata.
-				$cached['performance_metadata']['cache_hit'] = true;
-				return $cached;
+				return $this->cacheHit(cacheKey: $cacheKey, cached: $cached);
 			}
 		} catch (\Exception $e) {
 			// Cache get failed, continue without cache.
@@ -300,6 +346,24 @@ class FacetResponseCache {
 
 		return null;
 	}//end get()
+
+	/**
+	 * A cached facet response, logged and marked as a cache hit.
+	 *
+	 * @param string               $cacheKey The cache key.
+	 * @param array<string, mixed> $cached   The cached facet response.
+	 *
+	 * @return array<string, mixed> The response with `performance_metadata.cache_hit` set.
+	 */
+	private function cacheHit(string $cacheKey, array $cached): array {
+		$this->logger->debug(
+			message: '[FacetResponseCache] Facet response cache hit',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'cacheKey' => $cacheKey]
+		);
+		// Add cache metadata.
+		$cached['performance_metadata']['cache_hit'] = true;
+		return $cached;
+	}//end cacheHit()
 
 	/**
 	 * Cache facet response for future requests.
@@ -312,33 +376,56 @@ class FacetResponseCache {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function put(string $cacheKey, array $result): void {
-		if ($this->facetCache === null) {
+		$backend = $this->backend();
+		if ($backend === null) {
 			return;
 		}
 
 		try {
-			// Use different TTL based on strategy.
-			$fallbackUsed = $result['performance_metadata']['fallback_used'] ?? false;
-			$ttl = self::FACET_CACHE_TTL;
-			if ($fallbackUsed === true) {
-				$ttl = self::COLLECTION_FACET_TTL;
-			}
-
-			$this->facetCache->set($cacheKey, $result, $ttl);
-
-			$this->logger->debug(
-				message: '[FacetResponseCache] Facet response cached',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'cacheKey' => $cacheKey,
-					'ttl' => $ttl,
-					'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
-				]
-			);
+			$backend->set($cacheKey, $result, $this->ttlFor(result: $result));
+			$this->logCached(cacheKey: $cacheKey, result: $result);
 		} catch (\Exception $e) {
 			// Cache set failed, continue without caching.
 		}//end try
 	}//end put()
+
+	/**
+	 * How long a facet response is cached: shorter when it fell back to the collection strategy.
+	 *
+	 * @param array<string, mixed> $result The facet response.
+	 *
+	 * @return int The TTL in seconds.
+	 */
+	private function ttlFor(array $result): int {
+		// Use different TTL based on strategy.
+		$fallbackUsed = $result['performance_metadata']['fallback_used'] ?? false;
+		$ttl = self::FACET_CACHE_TTL;
+		if ($fallbackUsed === true) {
+			$ttl = self::COLLECTION_FACET_TTL;
+		}
+
+		return $ttl;
+	}//end ttlFor()
+
+	/**
+	 * Log a cached facet response with its TTL and strategy.
+	 *
+	 * @param string               $cacheKey The cache key.
+	 * @param array<string, mixed> $result   The facet response.
+	 *
+	 * @return void
+	 */
+	private function logCached(string $cacheKey, array $result): void {
+		$this->logger->debug(
+			message: '[FacetResponseCache] Facet response cached',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'cacheKey' => $cacheKey,
+				'ttl' => $this->ttlFor(result: $result),
+				'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
+			]
+		);
+	}//end logCached()
 
 }//end class

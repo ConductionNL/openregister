@@ -22,8 +22,8 @@ use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -32,7 +32,6 @@ class RegisterCalendarProviderTest extends TestCase {
 	private SchemaMapper $schemaMapper;
 	private RegisterMapper $registerMapper;
 	private MagicMapper $magicMapper;
-	private IUserSession $userSession;
 	private LoggerInterface $logger;
 	private CalendarEventTransformer $transformer;
 
@@ -40,14 +39,15 @@ class RegisterCalendarProviderTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
-		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->transformer = $this->createMock(CalendarEventTransformer::class);
 
 		$this->provider = new RegisterCalendarProvider(
-			$this->schemaMapper,
-			$this->userSession,
-			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
+			new RegisterCalendarSources(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
+				$this->transformer,
+				$this->logger
+			)
 		);
 	}
 
@@ -149,5 +149,36 @@ class RegisterCalendarProviderTest extends TestCase {
 
 		$this->provider->getCalendars('principals/users/admin');
 		$this->provider->getCalendars('principals/users/admin');
+	}
+	public function testASchemaLoadFailureIsLoggedOnceAndRemembered(): void {
+		$failure = new \RuntimeException('DB error');
+		$this->schemaMapper->expects($this->once())->method('findAll')->willThrowException($failure);
+		$this->logger->expects($this->once())->method('warning')
+			->with('[RegisterCalendarProvider] Failed to load schemas: DB error', ['exception' => $failure]);
+
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin'));
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin'));
+	}
+
+	public function testOnlyConfiguredSchemasInRequestedOrderBecomeCalendars(): void {
+		$schemas = [];
+		foreach ([3, 4, 5] as $id) {
+			$schema = new Schema();
+			$schema->setId($id);
+			if ($id !== 4) {
+				$schema->setConfiguration(['calendarProvider' => ['enabled' => true, 'dtstart' => 'datum', 'titleTemplate' => '{naam}']]);
+			}
+
+			$schemas[] = $schema;
+		}
+
+		$this->schemaMapper->method('findAll')->willReturn($schemas);
+
+		$all = $this->provider->getCalendars('principals/users/admin');
+		$picked = $this->provider->getCalendars('principals/users/admin', ['openregister-schema-5', 'openregister-schema-4', 'nope']);
+
+		$this->assertSame(['openregister-schema-3', 'openregister-schema-5'], array_map(static fn ($c) => $c->getKey(), $all));
+		$this->assertSame(['openregister-schema-5'], array_map(static fn ($c) => $c->getKey(), $picked));
+		$this->assertSame([], $this->provider->getCalendars('principals/users/admin', ['openregister-schema-4']));
 	}
 }

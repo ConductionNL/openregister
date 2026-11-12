@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
@@ -26,6 +27,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 /**
  * Golden test for ImportService::importFromJson().
@@ -137,19 +144,14 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 
 		try {
 			$result = @$service->importFromJson(
-				$path,
-				$register,
-				$schema,
-				false,
-				false,
-				$case['rbac'] ?? true,
-				$case['multi'] ?? true,
-				$case['publish'] ?? false,
-				$user,
-				true,
-				$pack,
-				$case['dryRun'] ?? false,
-				$case['slug'] ?? null
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user, registerSlug: $case['slug'] ?? null),
+					options: new ImportOptions(publish: $case['publish'] ?? false),
+					mapping: new ImportMapping(pack: $pack, dryRun: $case['dryRun'] ?? false),
+				),
+				_rbac: $case['rbac'] ?? true,
+				_multitenancy: $case['multi'] ?? true,
 			);
 			$outcome = ['result' => $this->describe(value: $result)];
 		} catch (\Throwable $e) {
@@ -215,8 +217,9 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		});
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(function (array $object, $extend = null, $register = null, $schema = null, ?string $uuid = null) {
-			$this->record(method: 'objectService.saveObject', args: func_get_args());
+		$objectService->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+			$uuid = $options->uuid;
+			$this->record(method: 'objectService.saveObject', args: [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner]);
 			if (($object['title'] ?? null) === 'Fail me') {
 				throw new Exception('Save refused');
 			}
@@ -260,12 +263,17 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$validator->method('generateErrorMessage')->willReturn('title is wrong');
 
 		$importHandler = $this->createMock(ImportHandler::class);
-		$importHandler->method('importSchema')->willReturnCallback(function (array $data) {
-			$this->record(method: 'importHandler.importSchema', args: func_get_args());
+		$importHandler->method('importSchema')->willReturnCallback(function (ImportedSchemaLookup $definition, array $slugsAndIdsMap) {
+			$data = $definition->data;
+			$options = $definition->options;
+			$this->record(
+				method: 'importHandler.importSchema',
+				args: [$data, $slugsAndIdsMap, $options->owner, $options->appId, $options->version, $options->force, $definition->registerSchemaIds]
+			);
 			return $this->schema(id: 30 + strlen((string)($data['slug'] ?? '')), slug: (string)($data['slug'] ?? 'none'));
 		});
-		$importHandler->method('importRegister')->willReturnCallback(function () {
-			$this->record(method: 'importHandler.importRegister', args: func_get_args());
+		$importHandler->method('importRegister')->willReturnCallback(function (array $data, SchemaImportOptions $options) {
+			$this->record(method: 'importHandler.importRegister', args: [$data, $options->owner, $options->appId, $options->version, $options->force]);
 			$register = new Register();
 			$register->setId(40);
 			$register->setSlug('reg');
@@ -276,15 +284,10 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id) => $id === ImportHandler::class ? $importHandler : null);
 
 		return new ImportService(
-			$schemaMapper,
-			$objectService,
-			$logger,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$audit,
-			$mapping,
-			$validator,
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($schemaMapper, $objectService, $audit, $validator),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end buildService()
 

@@ -63,19 +63,18 @@ final class DbalAggregator {
 	/**
 	 * Bind an aggregation to its connection and table expression.
 	 *
-	 * @param Connection      $connection  The DBAL connection.
-	 * @param string          $table       The quoted table (or derived query) expression.
+	 * @param DbalFromClause  $from        The DBAL connection and the table expression on it.
 	 * @param DbalAggregation $aggregation The metric, field, filter and columns.
 	 *
 	 * @return DbalAggregationQuery The bound query.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function query(Connection $connection, string $table, DbalAggregation $aggregation): DbalAggregationQuery {
+	public function query(DbalFromClause $from, DbalAggregation $aggregation): DbalAggregationQuery {
 		return new DbalAggregationQuery(
-			connection: $connection,
-			aggExpr: $this->expression(connection: $connection, aggregation: $aggregation),
-			table: $table,
+			connection: $from->connection,
+			aggExpr: $this->expression(connection: $from->connection, aggregation: $aggregation),
+			table: $from->table,
 			aggregation: $aggregation
 		);
 	}//end query()

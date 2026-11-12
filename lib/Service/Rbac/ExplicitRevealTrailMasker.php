@@ -69,41 +69,103 @@ class ExplicitRevealTrailMasker implements ExplicitRevealTrailMaskerInterface {
 	 */
 	public function mask(array $entries): array {
 		foreach ($entries as $key => $entry) {
-			$row = $entry;
-			if ($entry instanceof JsonSerializable) {
-				$row = $entry->jsonSerialize();
+			$row = $this->maskedRow(entry: $entry);
+			if ($row !== null) {
+				$entries[$key] = $row;
 			}
-
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			// A raw database row carries `changed` as its JSON text.
-			$encoded = is_string($row['changed'] ?? null);
-			$changed = $row['changed'] ?? null;
-			if ($encoded === true) {
-				$changed = json_decode($changed, true);
-			}
-
-			if (is_array($changed) === false) {
-				continue;
-			}
-
-			$masked = $this->maskChanged(schemaId: ($row['schema'] ?? null), changed: $changed);
-			if ($masked === null) {
-				continue;
-			}
-
-			$row['changed'] = $masked;
-			if ($encoded === true) {
-				$row['changed'] = json_encode($masked);
-			}
-
-			$entries[$key] = $row;
 		}
 
 		return $entries;
 	}//end mask()
+
+	/**
+	 * One entry as an array with its explicit-reveal values masked, or null when it is left as it is.
+	 *
+	 * @param mixed $entry An AuditTrail entity or an array.
+	 *
+	 * @return array<string, mixed>|null The masked row.
+	 */
+	private function maskedRow(mixed $entry): ?array {
+		$row = self::rowOf(entry: $entry);
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$changed = self::changesOf(row: $row);
+		if (is_array($changed) === false) {
+			return null;
+		}
+
+		return $this->rowMaskedBySchema(row: $row, changed: $changed);
+	}//end maskedRow()
+
+	/**
+	 * The entry as its serialised form when it is an entity, else as it is.
+	 *
+	 * @param mixed $entry An AuditTrail entity or an array.
+	 *
+	 * @return mixed The row.
+	 */
+	private static function rowOf(mixed $entry): mixed {
+		if ($entry instanceof JsonSerializable) {
+			return $entry->jsonSerialize();
+		}
+
+		return $entry;
+	}//end rowOf()
+
+	/**
+	 * The row with its change set masked by its schema, or null when the schema masks nothing.
+	 *
+	 * @param array<string, mixed> $row     The row.
+	 * @param array<string, mixed> $changed The decoded change set.
+	 *
+	 * @return array<string, mixed>|null The masked row.
+	 */
+	private function rowMaskedBySchema(array $row, array $changed): ?array {
+		$masked = $this->maskChanged(schemaId: ($row['schema'] ?? null), changed: $changed);
+		if ($masked === null) {
+			return null;
+		}
+
+		return self::withChanges(row: $row, masked: $masked);
+	}//end rowMaskedBySchema()
+
+	/**
+	 * The row's change set, decoded when it is JSON text.
+	 *
+	 * A raw database row carries `changed` as its JSON text.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return mixed The change set.
+	 */
+	private static function changesOf(array $row): mixed {
+		$changed = $row['changed'] ?? null;
+		if (is_string($changed) === true) {
+			return json_decode($changed, true);
+		}
+
+		return $changed;
+	}//end changesOf()
+
+	/**
+	 * The row with its masked change set, encoded again when it came as JSON text.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param array<string, mixed> $masked The masked change set.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private static function withChanges(array $row, array $masked): array {
+		$encoded = is_string($row['changed'] ?? null);
+		$row['changed'] = $masked;
+		if ($encoded === true) {
+			$row['changed'] = json_encode($masked);
+		}
+
+		return $row;
+	}//end withChanges()
 
 	/**
 	 * One change set, masked by its schema; null when the schema has no

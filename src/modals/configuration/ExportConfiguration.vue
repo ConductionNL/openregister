@@ -28,16 +28,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 		<template #actions>
 			<CloseCancelButton label="Cancel" @click="closeModal" />
-			<NcButton
+			<BusyButton
+				:busy="loading"
 				:disabled="loading || !isValid"
 				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				Export
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -77,24 +77,58 @@ function downloadExport(response, id) {
 }
 
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+
+/**
+ * Download the export of a configuration, with or without its objects.
+ *
+ * @param {number|string} id The configuration id
+ * @param {boolean} includeObjects Whether the objects are exported too
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(id, includeObjects) {
+	// Generate the export URL with query parameters
+	const url = generateUrl(`/apps/openregister/api/configurations/${id}/export`)
+	const params = { includeObjects }
+
+	// Make the API call
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob', // Important for file download
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureText(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| 'Failed to export configuration'
+	)
+}
 
 export default {
 	name: 'ExportConfiguration',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
+		BusyButton,
 		CloseCancelButton,
 		Export,
 	},
@@ -151,8 +185,7 @@ export default {
 		 * @spec exclude Modal action plumbing — triggers configuration export download.
 		 */
 		async exportConfiguration() {
-			const item = configurationStore.configurationItem
-			if (!item?.id) {
+			if (!configurationStore.configurationItem?.id) {
 				this.error = 'Invalid configuration selected'
 				return
 			}
@@ -161,30 +194,24 @@ export default {
 			this.error = null
 
 			try {
-				// Generate the export URL with query parameters
-				const url = generateUrl(
-					`/apps/openregister/api/configurations/${item.id}/export`,
-				)
-				const params = { includeObjects: this.includeObjects }
-
-				// Make the API call
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob', // Important for file download
-				})
-
-				downloadExport(response, item.id)
-				this.closeModal()
+				await this.downloadConfiguration()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| 'Failed to export configuration'
+				this.error = exportFailureText(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current configuration, save it and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadConfiguration() {
+			const id = configurationStore.configurationItem.id
+			const response = await requestExport(id, this.includeObjects)
+			downloadExport(response, id)
+			this.closeModal()
 		},
 	},
 }

@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The legacy /logs route no longer returns the raw audit rows to a reader who is not an administrator.
@@ -99,7 +100,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->groupManager->method('getUserGroupIds')->willReturn(['staff']);
 		$page = ['results' => [['action' => 'update', 'changed' => ['title' => ['old' => 'a', 'new' => 'b']]]], 'total' => 1, 'page' => null, 'pages' => 1.0, 'limit' => 5, 'offset' => null];
 		$this->history->expects($this->once())->method('page')
-			->with('reg', 'sch', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && ($params['filters']['action'] ?? null) === 'update' && $params['sort'] === ['created' => 'ASC']))
+			->with(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && ($params['filters']['action'] ?? null) === 'update' && $params['sort'] === ['created' => 'ASC']))
 			->willReturn($page);
 		$this->objectService->expects($this->never())->method('getLogs');
 

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
@@ -171,12 +172,7 @@ class TermDiagnosticTest extends TestCase {
 	 */
 	public function testTheDiagnosticAgreesWithTheArmPath(): void {
 		$anchor = new DateTimeImmutable('2026-04-02T09:00:00+02:00');
-		$armed = (new SlaCalculator())->add(
-			from: $anchor,
-			value: 2.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $this->calendar
-		);
+		$armed = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($anchor), value: 2.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $this->calendar));
 
 		$explained = $this->diagnostic->explain(
 			query: new TermQuery(
@@ -399,12 +395,7 @@ class TermDiagnosticTest extends TestCase {
 			'the total is reported even though the rows are not'
 		);
 
-		$armed = (new SlaCalculator())->add(
-			from: new DateTimeImmutable('2026-01-05T09:00:00+01:00'),
-			value: 900.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $this->calendar
-		);
+		$armed = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTimeImmutable('2026-01-05T09:00:00+01:00')), value: 900.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $this->calendar));
 		$this->assertSame(
 			$armed->format(DATE_ATOM),
 			$result['firesAt'],

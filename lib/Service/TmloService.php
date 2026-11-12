@@ -38,6 +38,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use Psr\Log\LoggerInterface;
@@ -197,22 +198,22 @@ class TmloService implements TmloServiceInterface {
 	}//end getSchemaDefaults()
 
 	/**
-	 * Populate TMLO defaults on an object entity.
+	 * Populate TMLO defaults on an object entity of one register and schema.
 	 *
-	 * Merges schema-level TMLO defaults with any explicitly provided TMLO data.
-	 * Sets archiefstatus to 'actief' if not already set.
-	 * Calculates archiefactiedatum from bewaarTermijn if not explicitly provided.
+	 * Merges schema-level TMLO defaults with any explicitly provided TMLO data;
+	 * nothing is set unless the register has TMLO enabled. Sets archiefstatus
+	 * to 'actief' if not already set, and calculates archiefactiedatum from
+	 * bewaarTermijn if not explicitly provided.
 	 *
-	 * @param ObjectEntity $object The object to populate
-	 * @param Register $register The register (must have tmloEnabled=true)
-	 * @param Schema $schema The schema for default values
+	 * @param ObjectEntity   $object The object to populate
+	 * @param RegisterSchema $table  The register (TMLO switch) and schema (default values)
 	 *
 	 * @return ObjectEntity The object with populated TMLO metadata
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
 	 */
-	public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity {
-		if ($this->isTmloEnabled(register: $register) === false) {
+	public function populateDefaults(ObjectEntity $object, RegisterSchema $table): ObjectEntity {
+		if ($this->isTmloEnabled(register: $table->register) === false) {
 			return $object;
 		}
 
@@ -222,7 +223,7 @@ class TmloService implements TmloServiceInterface {
 			$tmlo = [];
 		}
 
-		$tmlo = $this->mergeSchemaDefaults(tmlo: $tmlo, defaults: $this->getSchemaDefaults(schema: $schema));
+		$tmlo = $this->mergeSchemaDefaults(tmlo: $tmlo, defaults: $this->getSchemaDefaults(schema: $table->schema));
 		$object->setTmlo($this->withDerivedDefaults(tmlo: $tmlo));
 
 		return $object;
@@ -408,9 +409,8 @@ class TmloService implements TmloServiceInterface {
 		}
 
 		// Check if the transition is allowed.
-		$allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
-		if (in_array($newStatus, $allowedTargets, true) === false) {
-			return [$this->transitionNotAllowedError(oldStatus: $oldStatus, newStatus: $newStatus, allowedTargets: $allowedTargets)];
+		if (in_array($newStatus, (self::VALID_TRANSITIONS[$oldStatus] ?? []), true) === false) {
+			return [$this->transitionNotAllowedError(oldStatus: $oldStatus, newStatus: $newStatus)];
 		}
 
 		// Validate required fields and nominatie for the target status.
@@ -420,13 +420,13 @@ class TmloService implements TmloServiceInterface {
 	/**
 	 * The error for a transition the state machine does not allow.
 	 *
-	 * @param string $oldStatus      The current/old archiefstatus
-	 * @param mixed  $newStatus      The requested archiefstatus
-	 * @param array  $allowedTargets The statuses reachable from $oldStatus
+	 * @param string $oldStatus The current/old archiefstatus
+	 * @param mixed  $newStatus The requested archiefstatus
 	 *
-	 * @return string The error
+	 * @return string The error, naming the statuses reachable from $oldStatus
 	 */
-	private function transitionNotAllowedError(string $oldStatus, mixed $newStatus, array $allowedTargets): string {
+	private function transitionNotAllowedError(string $oldStatus, mixed $newStatus): string {
+		$allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
 		$allowed = 'none (terminal state)';
 		if (empty($allowedTargets) === false) {
 			$allowed = implode(', ', $allowedTargets);
@@ -455,7 +455,7 @@ class TmloService implements TmloServiceInterface {
 			return [];
 		}
 
-		$errors = $this->missingFieldErrors(tmlo: $tmlo, fields: $requirement['fields'], newStatus: $newStatus);
+		$errors = $this->missingFieldErrors(tmlo: $tmlo, newStatus: $newStatus);
 		if (($tmlo['archiefnominatie'] ?? null) !== $requirement['nominatie']) {
 			$errors[] = "archiefnominatie must be '{$requirement['nominatie']}' for transition to '{$newStatus}'";
 		}
@@ -466,15 +466,14 @@ class TmloService implements TmloServiceInterface {
 	/**
 	 * Errors for required fields that are absent, null or empty.
 	 *
-	 * @param array    $tmlo      The full TMLO metadata (with new archiefstatus)
-	 * @param string[] $fields    The fields the target status requires
-	 * @param string   $newStatus The requested (allowed) archiefstatus
+	 * @param array  $tmlo      The full TMLO metadata (with new archiefstatus)
+	 * @param string $newStatus The requested (allowed) archiefstatus, which has transition requirements
 	 *
-	 * @return array Array of validation errors, in field order
+	 * @return array Array of validation errors, in the order of the required fields
 	 */
-	private function missingFieldErrors(array $tmlo, array $fields, string $newStatus): array {
+	private function missingFieldErrors(array $tmlo, string $newStatus): array {
 		$errors = [];
-		foreach ($fields as $field) {
+		foreach (self::TRANSITION_REQUIREMENTS[$newStatus]['fields'] as $field) {
 			if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
 				$errors[] = "Field '{$field}' is required for transition to '{$newStatus}'";
 			}

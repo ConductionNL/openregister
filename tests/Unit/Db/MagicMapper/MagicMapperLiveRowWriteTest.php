@@ -66,6 +66,18 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  *
  * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md
  */
@@ -186,7 +198,7 @@ class MagicMapperLiveRowWriteTest extends TestCase {
 		$this->liveOnly(mapper: $mapper, refusal: $refusal);
 
 		try {
-			$this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::UUID, ['_status' => 'x'], 'table']);
+			$this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::rowWrite(self::UUID, ['_status' => 'x'], 'table')]);
 			$this->fail('A live-only update that changed nothing must throw the refusal.');
 		} catch (HookStoppedException $e) {
 			$this->assertSame($refusal, $e);
@@ -199,14 +211,14 @@ class MagicMapperLiveRowWriteTest extends TestCase {
 		$mapper = $this->mapper(affected: 1);
 		$this->liveOnly(mapper: $mapper, refusal: new HookStoppedException(message: 'not initial', errors: []));
 
-		$this->assertSame(1, $this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::UUID, ['_status' => 'x'], 'table']));
+		$this->assertSame(1, $this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::rowWrite(self::UUID, ['_status' => 'x'], 'table')]));
 		$this->assertContains('isNull:_deleted', $this->conditions);
 	}//end testALiveOnlyUpdateOfALiveRowIsWritten()
 
 	public function testAnOrdinaryUpdateIsUnconditional(): void {
 		$mapper = $this->mapper(affected: 0);
 
-		$this->assertSame(0, $this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::UUID, ['_status' => 'x'], 'table']));
+		$this->assertSame(0, $this->call(mapper: $mapper, method: 'updateObjectInRegisterSchemaTable', arguments: [self::rowWrite(self::UUID, ['_status' => 'x'], 'table')]));
 		$this->assertNotContains('isNull:_deleted', $this->conditions);
 	}//end testAnOrdinaryUpdateIsUnconditional()
 
@@ -231,4 +243,21 @@ class MagicMapperLiveRowWriteTest extends TestCase {
 		$this->assertSame(9, $this->call(mapper: $mapper, method: 'insertObjectInRegisterSchemaTable', arguments: [['_uuid' => self::UUID], 'table']));
 		$this->assertSame(1, $this->executed);
 	}//end testAnOrdinaryInsertIsWritten()
+
+	/**
+	 * A row write of the given uuid, column values and table.
+	 *
+	 * @param string               $uuid  The object uuid.
+	 * @param array<string, mixed> $row   The prepared column values.
+	 * @param string               $table The table name.
+	 *
+	 * @return \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite The write.
+	 */
+	private static function rowWrite(string $uuid, array $row, string $table): \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite {
+		$write = new \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite(objectData: [], register: new \OCA\OpenRegister\Db\Register(), schema: new \OCA\OpenRegister\Db\Schema(), tableName: $table);
+		$write->uuid = $uuid;
+		$write->row  = $row;
+
+		return $write;
+	}//end rowWrite()
 }//end class

@@ -77,42 +77,50 @@ final class McpScope {
 		}
 
 		$stripped = [];
-
 		foreach ($authorization as $key => $rules) {
-			// Not a rule list (inheritFromPublic, public, objectScope, ...):
-			// carry it through untouched. These are behaviour toggles read at
-			// runtime, and the mcp scope has no business editing them.
-			if (is_array($rules) === false) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			// The deny block is a block of rule lists, not one rule list.
-			// Handing it to the list stripper would ask "is this entry the mcp
-			// scope" of an entire action's list, which is always no, and would
-			// reindex the block's action keys on the way through.
-			if ($key === DenyResolverInterface::DENY_KEY) {
-				$stripped[$key] = self::strip(authorization: $rules);
-				continue;
-			}
-
-			// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
-			// and reading it as one does not fail — it REINDEXES. The reindex
-			// is what made the whole department matrix inert: `matrix` is the
-			// map `{field, userSource, rows}`, and the list stripper walks its
-			// VALUES into a fresh list, dropping every key; the schema then
-			// granted `read` to nobody at all. `roles` has exactly the same
-			// shape and was losing its role names the same way.
-			if (in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === true) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			$stripped[$key] = self::stripFromRuleList(rules: $rules);
-		}//end foreach
+			$stripped[$key] = self::strippedEntry(key: $key, rules: $rules);
+		}
 
 		return $stripped;
 	}//end strip()
+
+	/**
+	 * One entry of a block with the mcp scope taken out of it, when it is a rule list.
+	 *
+	 * @param int|string $key   The entry's key.
+	 * @param mixed      $rules The entry's value.
+	 *
+	 * @return mixed The entry's stripped value.
+	 */
+	private static function strippedEntry(int|string $key, mixed $rules): mixed {
+		// Not a rule list (inheritFromPublic, public, objectScope, ...):
+		// carry it through untouched. These are behaviour toggles read at
+		// runtime, and the mcp scope has no business editing them.
+		if (is_array($rules) === false) {
+			return $rules;
+		}
+
+		// The deny block is a block of rule lists, not one rule list.
+		// Handing it to the list stripper would ask "is this entry the mcp
+		// scope" of an entire action's list, which is always no, and would
+		// reindex the block's action keys on the way through.
+		if ($key === DenyResolverInterface::DENY_KEY) {
+			return self::strip(authorization: $rules);
+		}
+
+		// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
+		// and reading it as one does not fail — it REINDEXES. The reindex
+		// is what made the whole department matrix inert: `matrix` is the
+		// map `{field, userSource, rows}`, and the list stripper walks its
+		// VALUES into a fresh list, dropping every key; the schema then
+		// granted `read` to nobody at all. `roles` has exactly the same
+		// shape and was losing its role names the same way.
+		if (in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === true) {
+			return $rules;
+		}
+
+		return self::stripFromRuleList(rules: $rules);
+	}//end strippedEntry()
 
 	/**
 	 * Read back the actions a block offers to agents.

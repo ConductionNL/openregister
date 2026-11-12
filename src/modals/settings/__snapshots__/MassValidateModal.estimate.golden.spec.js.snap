@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MassValidateModal.estimateValidationDuration estimates a few objects in parallel 1`] = `"~2 seconds"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates a maximum above the total 1`] = `"~12 seconds"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates a maximum below the total 1`] = `"~20 seconds"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates a minute of serial batches 1`] = `"~1 minute"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates exactly an hour 1`] = `"~1h 0m"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates exactly one minute 1`] = `"~1 minute"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates hours 1`] = `"~2h 14m"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates no objects 1`] = `"Unknown"`;
+
+exports[`MassValidateModal.estimateValidationDuration estimates several minutes 1`] = `"~4 minutes"`;

@@ -1,0 +1,53 @@
+# Values for the openregister evaluation chart. Everything under `nextcloud:` is
+# passed to the official Nextcloud chart; see
+# https://github.com/nextcloud/helm/tree/main/charts/nextcloud for all options.
+#
+# The image is ghcr.io/conductionnl/openregister: the official Nextcloud image
+# with openregister and OpenRegister baked in. Its before-starting hook enables
+# both apps, so no hook or app list is needed here.
+#
+#   helm dependency build charts/openregister
+#   helm install openregister charts/openregister \
+#     --set nextcloud.nextcloud.host=openregister.example.org \
+#     --set nextcloud.nextcloud.password=<admin password> \
+#     --set nextcloud.postgresql.global.postgresql.auth.password=<db password>
+#
+# Rendered from ConductionNL/.github templates/app-deploy.
+
+nextcloud:
+  image:
+    registry: ghcr.io
+    repository: conductionnl/openregister
+    # Pin a released version for anything you want to keep.
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  nextcloud:
+    host: openregister.local
+    username: admin
+    # Set your own, or point existingSecret at a Secret you manage.
+    password: changeme
+
+  # OpenRegister needs a real database; SQLite is not supported.
+  internalDatabase:
+    enabled: false
+  externalDatabase:
+    enabled: true
+    type: postgresql
+    user: nextcloud
+    database: nextcloud
+  postgresql:
+    enabled: true
+    global:
+      postgresql:
+        auth:
+          username: nextcloud
+          password: changeme
+          database: nextcloud
+    primary:
+      persistence:
+        enabled: true
+
+  persistence:
+    enabled: true
+    size: 8Gi

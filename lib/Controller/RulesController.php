@@ -28,16 +28,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
+use OCA\OpenRegister\Controller\Support\SchemaRule;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest as ReplayAsk;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -189,12 +197,12 @@ class RulesController extends Controller {
 		}
 
 		$window = (int)($this->request->getParam('idleDays') ?? RuleInventoryServiceInterface::DEFAULT_IDLE_DAYS);
-		$scope = $this->paramOf(name: 'scope', accepts: 'is_array', fallback: []);
+		$scope = $this->arrayParam(name: 'scope');
 
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
+				'rules' => $this->inventory->inventory(schema: $entity, options: new RuleInventoryOptions(idleDays: $window, scope: $scope)),
 			]
 		);
 
@@ -219,10 +227,10 @@ class RulesController extends Controller {
 
 		$enabled = $this->request->getParam('enabled');
 		if (is_bool($enabled) === false) {
-			return $this->refusal(code: 'rule-switch-no-state', message: 'A boolean "enabled" is required.', status: 422);
+			return $this->unprocessable(code: 'rule-switch-no-state', message: 'A boolean "enabled" is required.');
 		}
 
-		return $this->answer(result: $this->enablement->setEnabled(schema: $entity, ruleId: $ruleId, enabled: $enabled));
+		return $this->answer(result: $this->enablement->setEnabled(switch: new RuleSwitch(schema: $entity, ruleId: $ruleId, enabled: $enabled)));
 
 	}//end setEnabled()
 
@@ -253,37 +261,33 @@ class RulesController extends Controller {
 			return $this->notFound(reference: $schema);
 		}
 
-		$override = $this->paramOf(name: 'rule', accepts: 'is_array', fallback: null);
+		$override = $this->optionalArrayParam(name: 'rule');
 
-		return $this->answer(result: $this->trial(schema: $entity, ruleId: $ruleId, override: $override));
+		return $this->answer(result: $this->trial(rule: new SchemaRule(schema: $entity, ruleId: $ruleId), override: $override));
 
 	}//end evaluate()
 
 	/**
 	 * Run the trial against the named stored object, or else against the sample payload.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
+	 * @param SchemaRule $rule The rule and the schema it is declared on.
 	 * @param array<string, mixed>|null $override An unsaved declaration to try instead.
 	 *
 	 * @return array<string, mixed> The trial result.
 	 */
-	private function trial(Schema $schema, string $ruleId, ?array $override): array {
+	private function trial(SchemaRule $rule, ?array $override): array {
 		$register = $this->request->getParam('register');
 		$objectId = $this->request->getParam('objectId');
 		if ($this->isFilled(value: $register) === true && $this->isFilled(value: $objectId) === true) {
 			return $this->trials->tryObject(
-				schema: $schema,
-				ruleId: $ruleId,
-				register: $register,
-				objectId: $objectId,
-				override: $override
+				request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override),
+				ref: new ObjectRef(register: $register, schema: (string)$rule->schema->getId(), id: $objectId)
 			);
 		}
 
-		$sample = $this->paramOf(name: 'object', accepts: 'is_array', fallback: []);
+		$sample = $this->arrayParam(name: 'object');
 
-		return $this->trials->trySample(schema: $schema, ruleId: $ruleId, sample: $sample, override: $override);
+		return $this->trials->trySample(request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override), sample: $sample);
 	}//end trial()
 
 	/**
@@ -311,31 +315,29 @@ class RulesController extends Controller {
 
 		$actor = $this->userSession->getUser();
 		if ($actor === null) {
-			return $this->refusal(
+			return $this->unprocessable(
 				code: 'rule-replay-no-actor',
-				message: 'A replay is an act with an actor, and this request has none.',
-				status: 422
+				message: 'A replay is an act with an actor, and this request has none.'
 			);
 		}
 
-		return $this->previewReplay(schema: $entity, ruleId: $ruleId, actorUid: $actor->getUID());
+		return $this->previewReplay(rule: new SchemaRule(schema: $entity, ruleId: $ruleId), actorUid: $actor->getUID());
 
 	}//end replay()
 
 	/**
 	 * Ask the replay service for a previewed job, mapping its refusals.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
+	 * @param SchemaRule $rule The rule and the schema it is declared on.
 	 * @param string $actorUid The actor the replay runs as.
 	 *
 	 * @return JSONResponse The previewed job, or the refusal.
 	 */
-	private function previewReplay(Schema $schema, string $ruleId, string $actorUid): JSONResponse {
-		$request = $this->replayRequest();
+	private function previewReplay(SchemaRule $rule, string $actorUid): JSONResponse {
+		$request = $this->replayRequest(actorUid: $actorUid);
 
 		try {
-			$result = $this->askPreview(schema: $schema, ruleId: $ruleId, actorUid: $actorUid, request: $request);
+			$result = $this->askPreview(rule: $rule, request: $request);
 		} catch (RuleCeilingException $refusal) {
 			// 409, not 422. The request is well formed and the rule is sound;
 			// the instance's own data is what makes the run refuse, and a
@@ -345,7 +347,7 @@ class RulesController extends Controller {
 		} catch (BulkJobRefusedException $refusal) {
 			return $this->bulkRefusal(refusal: $refusal);
 		} catch (Throwable $failure) {
-			return $this->refusal(code: 'rule-replay-failed', message: $failure->getMessage(), status: 422);
+			return $this->unprocessable(code: 'rule-replay-failed', message: $failure->getMessage());
 		}//end try
 
 		return $this->answer(result: $result);
@@ -354,43 +356,38 @@ class RulesController extends Controller {
 	/**
 	 * Ask the replay service for the preview of one replay request.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
-	 * @param string $actorUid The actor the replay runs as.
-	 * @param array{selection: array<string, mixed>, justification: string|null, registerId: int|null} $request The replay request.
+	 * @param SchemaRule $rule The rule and the schema it is declared on.
+	 * @param RuleReplayRequest $request The replay request.
 	 *
 	 * @return array<string, mixed> The previewed job.
 	 */
-	private function askPreview(Schema $schema, string $ruleId, string $actorUid, array $request): array {
-		return $this->replays->preview(
-			schema: $schema,
-			ruleId: $ruleId,
-			selection: $request['selection'],
-			actorUid: $actorUid,
-			justification: $request['justification'],
-			registerId: $request['registerId']
+	private function askPreview(SchemaRule $rule, RuleReplayRequest $request): array {
+		return $this->replays->previewReplay(
+			request: new ReplayAsk(ruleId: $rule->ruleId, actorUid: $request->actorUid, justification: $request->justification),
+			selection: new RuleReplaySelection(schema: $rule->schema, registerId: $request->registerId, criteria: $request->selection)
 		);
 	}//end askPreview()
 
 	/**
 	 * The selection, justification and register a replay request carries.
 	 *
-	 * @return array{selection: array<string, mixed>, justification: string|null, registerId: int|null} The replay request.
+	 * @param string $actorUid The actor the replay runs as.
+	 *
+	 * @return RuleReplayRequest The replay request.
 	 */
-	private function replayRequest(): array {
-		$justification = $this->paramOf(name: 'justification', accepts: 'is_string', fallback: null);
-
+	private function replayRequest(string $actorUid): RuleReplayRequest {
 		$register = $this->request->getParam('registerId');
 		$registerId = null;
 		if (is_numeric($register) === true) {
 			$registerId = (int)$register;
 		}
 
-		return [
-			'selection' => $this->paramOf(name: 'selection', accepts: 'is_array', fallback: []),
-			'justification' => $justification,
-			'registerId' => $registerId,
-		];
+		return new RuleReplayRequest(
+			selection: $this->arrayParam(name: 'selection'),
+			justification: $this->stringParam(name: 'justification'),
+			registerId: $registerId,
+			actorUid: $actorUid
+		);
 	}//end replayRequest()
 
 	/**
@@ -454,10 +451,9 @@ class RulesController extends Controller {
 		}
 
 		if (is_string($verdict) === true && $verdict !== '') {
-			return $this->refusal(
+			return $this->unprocessable(
 				code: 'rule-runs-unknown-verdict',
-				message: sprintf('"%s" is not a verdict this engine reaches.', $verdict),
-				status: 422
+				message: sprintf('"%s" is not a verdict this engine reaches.', $verdict)
 			);
 		}
 
@@ -465,22 +461,47 @@ class RulesController extends Controller {
 	}//end verdictFilter()
 
 	/**
-	 * A request parameter of the accepted type, or the fallback when it is absent or of another type.
+	 * An array request parameter, or an empty array when it is absent or not an array.
 	 *
 	 * @param string $name The parameter name.
-	 * @param callable(mixed): bool $accepts The type check, such as `is_array`.
-	 * @param mixed $fallback The value for an absent or mistyped parameter.
 	 *
-	 * @return mixed The parameter, or the fallback.
+	 * @return array<mixed> The parameter, or [].
 	 */
-	private function paramOf(string $name, callable $accepts, mixed $fallback): mixed {
-		$value = $this->request->getParam($name, $fallback);
-		if ($accepts($value) === true) {
+	private function arrayParam(string $name): array {
+		return $this->optionalArrayParam(name: $name) ?? [];
+	}//end arrayParam()
+
+	/**
+	 * An array request parameter, or null when it is absent or not an array.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return array<mixed>|null The parameter, or null.
+	 */
+	private function optionalArrayParam(string $name): ?array {
+		$value = $this->request->getParam($name);
+		if (is_array($value) === true) {
 			return $value;
 		}
 
-		return $fallback;
-	}//end paramOf()
+		return null;
+	}//end optionalArrayParam()
+
+	/**
+	 * A string request parameter, or null when it is absent or not a string.
+	 *
+	 * @param string $name The parameter name.
+	 *
+	 * @return string|null The parameter, or null.
+	 */
+	private function stringParam(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === true) {
+			return $value;
+		}
+
+		return null;
+	}//end stringParam()
 
 	/**
 	 * Whether a request value is a non-empty string.
@@ -521,22 +542,24 @@ class RulesController extends Controller {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function notFound(string $reference): JSONResponse {
-		return $this->refusal(code: 'rule-schema-not-found', message: sprintf('No schema "%s".', $reference), status: 404);
+		return new JSONResponse(
+			['ok' => false, 'error' => ['code' => 'rule-schema-not-found', 'message' => sprintf('No schema "%s".', $reference)]],
+			404
+		);
 
 	}//end notFound()
 
 	/**
-	 * A refusal in the shape every rules endpoint returns.
+	 * A 422 refusal in the shape every rules endpoint returns.
 	 *
 	 * @param string $code The machine-readable code.
 	 * @param string $message The sentence the operator reads.
-	 * @param int $status The HTTP status.
 	 *
 	 * @return JSONResponse The refusal.
 	 */
-	private function refusal(string $code, string $message, int $status): JSONResponse {
-		return new JSONResponse(['ok' => false, 'error' => ['code' => $code, 'message' => $message]], $status);
-	}//end refusal()
+	private function unprocessable(string $code, string $message): JSONResponse {
+		return new JSONResponse(['ok' => false, 'error' => ['code' => $code, 'message' => $message]], 422);
+	}//end unprocessable()
 
 	/**
 	 * A service result as a response, with the status it maps onto.

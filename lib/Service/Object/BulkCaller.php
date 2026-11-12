@@ -87,11 +87,8 @@ final class BulkCaller {
 	 */
 	public function keptFromDraft(ObjectEntity $object, Schema $schema): bool {
 		return (new DraftCallerRule())->keptFromCaller(
-			object: $object,
-			schema: $schema,
-			userId: $this->userId,
-			isAdmin: $this->isAdmin,
-			commandLine: $this->commandLine
+			subject: new DraftSubject(object: $object, schema: $schema),
+			caller: new DraftCaller(userId: $this->userId, isAdmin: $this->isAdmin, commandLine: $this->commandLine)
 		);
 	}//end keptFromDraft()
 }//end class

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use DateTime;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 
 /**
  * The methods of RuleRunSummaryMapper that callers outside the Db component use.
@@ -86,21 +86,12 @@ interface RuleRunSummaryMapperInterface {
 	 * an error are always written, because those are the two things an
 	 * administrator is reading the summary for.
 	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string $schemaSlug The schema the rule is declared on.
-	 * @param string $verdict The verdict reached.
-	 * @param DateTime $moment When the evaluation happened.
-	 * @param string|null $error The message, when the verdict was an error.
+	 * @param RuleRun        $run        The run: its derived rule id and the schema the rule is declared on.
+	 * @param RuleEvaluation $evaluation The verdict reached, when, and the message of an error.
 	 *
 	 * @return RuleRunSummary The stored summary, written or not.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $schemaSlug,
-		string $verdict,
-		DateTime $moment,
-		?string $error = null,
-	): RuleRunSummary;
+	public function record(RuleRun $run, RuleEvaluation $evaluation): RuleRunSummary;
 }//end interface

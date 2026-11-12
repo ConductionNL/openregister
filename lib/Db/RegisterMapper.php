@@ -23,10 +23,14 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
@@ -135,6 +139,13 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	private readonly \Psr\Container\ContainerInterface $container;
 
 	/**
+	 * Structured logger for the resolution diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Organisation mapper for multi-tenancy (from trait)
 	 *
 	 * Used to get active organisation and apply organisation filters.
@@ -168,15 +179,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Initializes mapper with database connection and required dependencies
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
-	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
+	 * @param IDBConnection          $db        Database connection for queries
+	 * @param TenancyServices        $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
+	 * @param IAppConfig             $appConfig App configuration for multitenancy settings
+	 * @param RegisterMapperServices $services  The schema mapper, the container, the event dispatcher and the logger
 	 *
 	 * This class carried four `if (isset($this->logger))` logging sites, plus the
 	 * ones it inherits from {@see MultiTenancyTrait}, and never declared or
@@ -196,25 +202,21 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapperInterface $schemaMapper,
-		IEventDispatcher $eventDispatcher,
-		\Psr\Container\ContainerInterface $container,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		RegisterMapperServices $services,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->schemaMapper = $schemaMapper;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->container = $container;
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->eventDispatcher = $services->eventDispatcher;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -489,10 +491,24 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		foreach ($ids as $id) {
 			try {
 				$result[] = $this->find(id: $id, _rbac: $_rbac, _multitenancy: $_multitenancy);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException) {
-				// Catch all exceptions but do nothing.
-			} catch (\OCP\DB\Exception) {
-				// Catch all exceptions but do nothing.
+			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+				// Ids that do not resolve to exactly one register are left out of the result.
+				$this->logger->debug(
+					message: '[RegisterMapper] findMultiple skips a register id that does not resolve',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
+			} catch (\OCP\DB\Exception $e) {
+				// A database error drops this id from the result rather than failing the whole batch.
+				$this->logger->warning(
+					message: '[RegisterMapper] findMultiple skips a register after a database error',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -573,26 +589,53 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			// $this->verifyRbacPermission('read', 'register');
 		}
 
+		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: ($offset ?? 0), filters: ($filters ?? [])));
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+
+		return $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+	}//end findAll()
+
+	/**
+	 * The register list query for one page of column-filtered rows.
+	 *
+	 * @param ListQuery $query The limit (unbounded for every row), the offset and the column filters.
+	 *
+	 * @return IQueryBuilder The query, before search conditions and the organisation filter.
+	 */
+	private function listedQuery(ListQuery $query): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_registers')
-			->setMaxResults($limit)
-			->setFirstResult($offset ?? 0);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset ?? 0);
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
-		// Apply organisation filter.
+		return $qb;
+	}//end listedQuery()
+
+	/**
+	 * The registers a query finds, limited to the caller's organisations when multitenancy applies.
+	 *
+	 * Registers without an organisation stay visible.
+	 *
+	 * @param IQueryBuilder $qb           The query.
+	 * @param bool          $multitenancy Whether to apply the organisation filter.
+	 *
+	 * @return Register[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Register>
+	 */
+	private function findInTenancy(IQueryBuilder $qb, bool $multitenancy): array {
 		$this->applyOrganisationFilter(
 			qb: $qb,
 			columnName: 'organisation',
 			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
+			multiTenancyEnabled: $multitenancy
 		);
 
-		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findInTenancy()
 
 	/**
 	 * OR the raw search conditions into the query and bind their parameters.
@@ -742,9 +785,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
 		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
-			authorization: $authorization,
-			roleDefinitions: $roleDefinitions,
-			subject: $subject
+			declaration: new GrantDeclaration(authorization: $authorization, roleDefinitions: $roleDefinitions, subject: $subject)
 		);
 
 		if ($this->isEmptyAuthorization(authorization: $authorization) === true) {
@@ -908,7 +949,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
-		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
 		}

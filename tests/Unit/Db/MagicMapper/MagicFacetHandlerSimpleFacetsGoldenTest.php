@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -53,6 +54,15 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FacetResults
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableTarget
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TermsFacetTable
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -82,10 +92,8 @@ class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 			$this->events = [];
 			try {
 				$facets = $this->handler(columns: $columns)->getSimpleFacets(
-					tableName: 'openregister_table_3_7',
-					query: $query,
-					register: new Register(),
-					schema: $this->schema()
+					target: self::facetTarget('openregister_table_3_7', new Register(), $this->schema()),
+					query: $query
 				);
 				if (isset($facets['_metrics']) === true) {
 					$facets['_metrics']['total_ms'] = 'T';
@@ -131,13 +139,7 @@ class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 		$groupManager = $this->createMock(IGroupManager::class);
 
-		$rbac = new PropertyRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			new \Psr\Log\NullLogger(),
-			self::stateFieldRuleResolver($userSession, $groupManager)
-		);
+		$rbac = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($userSession, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($userSession, $groupManager)), logger: new \Psr\Log\NullLogger());
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($rbac);
 
@@ -169,6 +171,17 @@ class MagicFacetHandlerSimpleFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }//end class

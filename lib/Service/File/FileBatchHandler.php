@@ -92,10 +92,8 @@ class FileBatchHandler {
 	/**
 	 * Execute a batch operation on multiple files.
 	 *
-	 * @param ObjectEntity $object The object entity owning the files.
-	 * @param string $action The batch action (publish|depublish|delete|label).
-	 * @param array<int> $fileIds Array of file IDs to operate on.
-	 * @param array $params Additional parameters (e.g., labels for label action).
+	 * @param FileBatchRequest $request The object, action and parameters.
+	 * @param array<int>       $fileIds The file IDs to operate on.
 	 *
 	 * @return array{results: array, summary: array{total: int, succeeded: int, failed: int}} Batch results.
 	 *
@@ -103,14 +101,8 @@ class FileBatchHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function executeBatch(
-		ObjectEntity $object,
-		string $action,
-		array $fileIds,
-		array $params = [],
-	): array {
-		$this->assertValidBatch(action: $action, fileIds: $fileIds);
-		$request = new FileBatchRequest(object: $object, action: $action, params: $params);
+	public function runBatch(FileBatchRequest $request, array $fileIds): array {
+		$this->assertValidBatch(action: $request->action, fileIds: $fileIds);
 
 		$results = [];
 		foreach ($fileIds as $fileId) {
@@ -118,7 +110,7 @@ class FileBatchHandler {
 		}
 
 		return ['results' => $results, 'summary' => $this->summary(results: $results)];
-	}//end executeBatch()
+	}//end runBatch()
 
 	/**
 	 * Refuse an unknown action, an oversized batch or an empty one.
@@ -219,11 +211,8 @@ class FileBatchHandler {
 	 * @throws Exception If the FileService is missing or the update fails.
 	 */
 	private function label(FileBatchRequest $request, int $fileId): void {
-		$this->requireFileService()->updateFile(
-			filePath: $fileId,
-			content: null,
-			tags: ($request->params['labels'] ?? []),
-			object: $request->object
+		$this->requireFileService()->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $fileId, content: null, tags: ($request->params['labels'] ?? []), object: $request->object)
 		);
 	}//end label()
 

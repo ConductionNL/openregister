@@ -128,43 +128,94 @@ class FlowRunSubjects implements FlowRunSubjectsInterface {
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function record(FlowRun $run, FlowSubjectClaim $claim): void {
-		$role = trim($claim->role);
-		$uuid = trim($claim->uuid);
-
-		if ($role === '' || $uuid === '') {
-			throw new UnexpectedValueException(
-				'A declared subject needs both a role and an object; "' . $role . '" => "' . $uuid . '" has one of them.'
-			);
-		}
+		$claim = $this->trimmed(claim: $claim);
+		$this->refuseHalfNamed(claim: $claim);
 
 		$subjects = $this->all(run: $run);
-		$held = ($subjects[$role] ?? null);
+		$held = ($subjects[$claim->role] ?? null);
 
-		if (is_array($held) === true && trim((string)($held['uuid'] ?? '')) === $uuid) {
+		if (is_array($held) === true && trim((string)($held['uuid'] ?? '')) === $claim->uuid) {
 			// The same object under the same role. A heartbeat re-entering the
 			// node must not make the run look like it touched it twice.
 			return;
 		}
 
-		if ($held !== null) {
-			$this->logger?->info(
-				message: '[FlowRunSubjects] Run "' . (string)$run->getUuid() . '" re-pointed the role "'
-					. $role . '" from "' . trim((string)($held['uuid'] ?? '')) . '" to "' . $uuid
-					. '". Anything attached to that role from here on addresses the new object.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => (string)$run->getUuid()]
-			);
-		}
-
-		$subjects[$role] = [
-			'uuid' => $uuid,
-			'register' => trim($claim->register),
-			'schema' => trim($claim->schema),
-			'recordedAt' => (new DateTime())->format(DATE_ATOM),
-		];
-
+		$this->noteRepointing(run: $run, claim: $claim);
+		$subjects[$claim->role] = $this->entryFor(claim: $claim);
 		$run->setSubjects($subjects);
 
 	}//end record()
+
+	/**
+	 * The claim with every part trimmed.
+	 *
+	 * @param FlowSubjectClaim $claim The claim as declared.
+	 *
+	 * @return FlowSubjectClaim The trimmed claim.
+	 */
+	private function trimmed(FlowSubjectClaim $claim): FlowSubjectClaim {
+		return new FlowSubjectClaim(
+			role: trim($claim->role),
+			uuid: trim($claim->uuid),
+			register: trim($claim->register),
+			schema: trim($claim->schema)
+		);
+	}//end trimmed()
+
+	/**
+	 * Refuse a claim that names only one of its role and its object.
+	 *
+	 * @param FlowSubjectClaim $claim The trimmed claim.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the role or the object is empty.
+	 */
+	private function refuseHalfNamed(FlowSubjectClaim $claim): void {
+		if ($claim->role === '' || $claim->uuid === '') {
+			throw new UnexpectedValueException(
+				'A declared subject needs both a role and an object; "' . $claim->role . '" => "' . $claim->uuid . '" has one of them.'
+			);
+		}
+	}//end refuseHalfNamed()
+
+	/**
+	 * Say so when a claim re-points a role the run already holds.
+	 *
+	 * @param FlowRun          $run   The run.
+	 * @param FlowSubjectClaim $claim The trimmed claim taking the role over.
+	 *
+	 * @return void
+	 */
+	private function noteRepointing(FlowRun $run, FlowSubjectClaim $claim): void {
+		$held = ($this->all(run: $run)[$claim->role] ?? null);
+		if ($held === null) {
+			return;
+		}
+
+		$this->logger?->info(
+			message: '[FlowRunSubjects] Run "' . (string)$run->getUuid() . '" re-pointed the role "'
+				. $claim->role . '" from "' . trim((string)($held['uuid'] ?? '')) . '" to "' . $claim->uuid
+				. '". Anything attached to that role from here on addresses the new object.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => (string)$run->getUuid()]
+		);
+	}//end noteRepointing()
+
+	/**
+	 * The subject entry a trimmed claim records, stamped now.
+	 *
+	 * @param FlowSubjectClaim $claim The trimmed claim.
+	 *
+	 * @return array{uuid: string, register: string, schema: string, recordedAt: string} The entry.
+	 */
+	private function entryFor(FlowSubjectClaim $claim): array {
+		return [
+			'uuid' => $claim->uuid,
+			'register' => $claim->register,
+			'schema' => $claim->schema,
+			'recordedAt' => (new DateTime())->format(DATE_ATOM),
+		];
+	}//end entryFor()
 
 	/**
 	 * Record the object the run fired on (its `subject_*` columns) under the `trigger` role.

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCP\IUserSession;
@@ -112,10 +113,10 @@ class ConditionTracerGoldenTest extends TestCase {
 		);
 		$actual = [];
 		foreach (['fired', 'no_match', 'refused', 'error'] as $verdict) {
-			$actual[$verdict] = $tracer->trace($condition, $document, $verdict, 'said')->jsonSerialize();
+			$actual[$verdict] = $tracer->trace(new ConditionJudgement($condition, $document, $verdict, 'said'))->jsonSerialize();
 		}
 
-		$actual['no message'] = $tracer->trace($condition, $document, 'no_match')->jsonSerialize();
+		$actual['no message'] = $tracer->trace(new ConditionJudgement($condition, $document, 'no_match'))->jsonSerialize();
 		$this->assertGolden($actual);
 	}//end testMatchesGolden()
 

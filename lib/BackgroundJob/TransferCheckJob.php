@@ -27,9 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
-use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
-use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -55,27 +52,6 @@ class TransferCheckJob extends TimedJob {
 	private const DEFAULT_INTERVAL = 86400;
 
 	/**
-	 * Owns the retention sweep both archival jobs share.
-	 *
-	 * @var RetentionServiceInterface
-	 */
-	private readonly RetentionServiceInterface $retentionService;
-
-	/**
-	 * The transfer list service.
-	 *
-	 * @var TransferListRunInterface
-	 */
-	private readonly TransferListRunInterface $transferListService;
-
-	/**
-	 * Durable transfer-list records.
-	 *
-	 * @var TransferRecordServiceInterface
-	 */
-	private readonly TransferRecordServiceInterface $transferRecords;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
@@ -87,22 +63,26 @@ class TransferCheckJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		TransferCheckServices $services,
+		private readonly TransferCheckServices $services,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->retentionService = $services->retentionService;
-		$this->transferListService = $services->transferListService;
-		$this->transferRecords = $services->transferRecords;
 		parent::__construct(time: $time);
+		$this->setInterval(seconds: $this->configuredInterval());
+	}//end __construct()
 
-		$interval = (int)$this->appConfig->getValueString(
+	/**
+	 * The check interval in seconds: the `edepot_check_interval` setting, by default 24 hours.
+	 *
+	 * @return int The interval.
+	 */
+	private function configuredInterval(): int {
+		return (int)$this->appConfig->getValueString(
 			'openregister',
 			'edepot_check_interval',
 			(string)self::DEFAULT_INTERVAL
 		);
-		$this->setInterval(seconds: $interval);
-	}//end __construct()
+	}//end configuredInterval()
 
 	/**
 	 * Run the transfer check.
@@ -123,37 +103,67 @@ class TransferCheckJob extends TimedJob {
 			return;
 		}
 
+		$this->scanForTransfer();
+	}//end run()
+
+	/**
+	 * Scan for transfer-eligible objects, containing any failure as a logged error.
+	 *
+	 * @return void
+	 */
+	private function scanForTransfer(): void {
 		$this->logger->info(
 			message: '[TransferCheckJob] Starting transfer eligibility scan'
 		);
 
 		try {
-			$eligibleObjects = $this->findEligibleObjects();
-
-			if (empty($eligibleObjects) === true) {
-				$this->logger->info(
-					message: '[TransferCheckJob] No objects eligible for transfer'
-				);
-				return;
-			}
-
-			$transferList = $this->transferListService->createTransferList($eligibleObjects);
-			$this->transferListService->notifyArchivists($transferList);
-
-			$this->logger->info(
-				message: '[TransferCheckJob] Transfer list created',
-				context: [
-					'uuid' => $transferList['uuid'],
-					'objectCount' => count($eligibleObjects),
-				]
-			);
+			$this->listEligibleObjects();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[TransferCheckJob] Error during transfer check',
 				context: ['error' => $e->getMessage()]
 			);
 		}//end try
-	}//end run()
+	}//end scanForTransfer()
+
+	/**
+	 * Put the eligible objects on one transfer list and tell the archivists.
+	 *
+	 * @return void
+	 */
+	private function listEligibleObjects(): void {
+		$eligibleObjects = $this->findEligibleObjects();
+
+		if (empty($eligibleObjects) === true) {
+			$this->logger->info(
+				message: '[TransferCheckJob] No objects eligible for transfer'
+			);
+			return;
+		}
+
+		$transferList = $this->services->transferListService->createTransferList($eligibleObjects);
+		$this->services->transferListService->notifyArchivists($transferList);
+
+		$this->logListCreated(transferList: $transferList, objectCount: count($eligibleObjects));
+	}//end listEligibleObjects()
+
+	/**
+	 * Log a created transfer list.
+	 *
+	 * @param array $transferList The created list.
+	 * @param int   $objectCount  How many objects it holds.
+	 *
+	 * @return void
+	 */
+	private function logListCreated(array $transferList, int $objectCount): void {
+		$this->logger->info(
+			message: '[TransferCheckJob] Transfer list created',
+			context: [
+				'uuid' => $transferList['uuid'],
+				'objectCount' => $objectCount,
+			]
+		);
+	}//end logListCreated()
 
 	/**
 	 * Check if e-Depot is configured.
@@ -192,11 +202,11 @@ class TransferCheckJob extends TimedJob {
 		// Objects already awaiting or approved for transfer are excluded the way
 		// the destruction sweep excludes objects on a pending destruction list,
 		// so a second run does not re-list what an archivist is already holding.
-		$excludeUuids = $this->transferListService->getObjectsOnActiveTransferLists(
-			activeTransferLists: $this->transferRecords->listTransferLists()
+		$excludeUuids = $this->services->transferListService->getObjectsOnActiveTransferLists(
+			activeTransferLists: $this->services->transferRecords->listTransferLists()
 		);
 
-		$eligible = $this->retentionService->findEligibleForTransfer($excludeUuids);
+		$eligible = $this->services->retentionService->findEligibleForTransfer($excludeUuids);
 
 		$this->logger->debug(
 			message: '[TransferCheckJob] Scanned for eligible objects',

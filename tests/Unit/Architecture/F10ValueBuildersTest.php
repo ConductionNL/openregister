@@ -22,9 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Dto\BulkSaveOutcomeInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcomes;
+use OCA\OpenRegister\Dto\StreamedRowCount;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels;
@@ -82,8 +84,8 @@ final class F10ValueBuildersTest extends TestCase {
 	 */
 	public function testTheOutcomeFactoryBuildsWhatTheControllerBuilt(): void {
 		$bulk     = ['invalid' => [['object' => ['id' => 'x'], 'error' => 'bad', 'type' => 'ValidationException']]];
-		$expected = BulkSaveOutcome::fromBulkResult(bulkResult: $bulk, requestedCount: 3, accountedCount: 2);
-		$actual   = BulkSaveOutcomes::fromBulkResult(bulkResult: $bulk, requestedCount: 3, accountedCount: 2);
+		$expected = BulkSaveOutcome::fromSaveResult(bulkResult: $bulk, rows: new BulkRowCount(requested: 3, accounted: 2));
+		$actual   = BulkSaveOutcomes::fromBulkResult(bulkResult: $bulk, rows: new BulkRowCount(requested: 3, accounted: 2));
 		$this->assertSame(expected: BulkSaveOutcome::class, actual: get_class($actual));
 		$this->assertSame(expected: $expected->failedCount, actual: $actual->failedCount());
 		$this->assertSame(expected: $expected->failures, actual: $actual->failures());
@@ -91,8 +93,8 @@ final class F10ValueBuildersTest extends TestCase {
 
 		$status = $this->createMock(originalClassName: BatchOperationStatusInterface::class);
 		$status->method('getFailed')->willReturn([]);
-		$expected = BulkSaveOutcome::fromBatchStatus(status: $status, requestedCount: 2, accountedCount: 2);
-		$actual   = BulkSaveOutcomes::fromBatchStatus(status: $status, requestedCount: 2, accountedCount: 2);
+		$expected = BulkSaveOutcome::fromStreamedBatch(status: $status, rows: new StreamedRowCount(requested: 2, accounted: 2));
+		$actual   = BulkSaveOutcomes::fromBatchStatus(status: $status, rows: new StreamedRowCount(requested: 2, accounted: 2));
 		$this->assertSame(expected: BulkSaveOutcome::class, actual: get_class($actual));
 		$this->assertSame(expected: $expected->failedCount, actual: $actual->failedCount());
 		$this->assertSame(expected: $expected->failures, actual: $actual->failures());

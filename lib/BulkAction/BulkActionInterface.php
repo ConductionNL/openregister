@@ -29,8 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BulkAction;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IUser;
 
 /**
  * The contract every bulk action implements.
@@ -97,18 +95,12 @@ interface BulkActionInterface {
 	 * What the action would do, or does, to one object.
 	 *
 	 * The preview and the commit call this same method, differing only in
-	 * `$commit`. A second implementation for the rehearsal would be a promise
-	 * rather than a rehearsal (D-1).
+	 * the step's `commit`. A second implementation for the rehearsal would be
+	 * a promise rather than a rehearsal (D-1).
 	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The object, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
-	 * rehearsal and the commit is the design property of D-1.
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult;
+	public function apply(BulkStep $step): BulkActionResult;
 }//end interface

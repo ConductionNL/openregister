@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
@@ -37,7 +38,14 @@ use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ExternalLink;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
+use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
+use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectRelationsControllerFactory;
@@ -46,9 +54,38 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\DerivedLineage
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDerivation
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGraph
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGuards
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Controller\Support\ProseReference
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectRelation
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Relation\Derivation
+ * @uses \OCA\OpenRegister\Service\Relation\ExternalLink
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeQuery
+ * @uses \OCA\OpenRegister\Service\Relation\ParentInheritance
+ * @uses \OCA\OpenRegister\Service\Relation\ProseMention
+ * @uses \OCA\OpenRegister\Service\Relation\ProvenanceLink
+ * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
  */
 class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
@@ -241,7 +278,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 	public function testAnExternalLinkIsCreated(): void {
 		$controller = $this->controller(params: ['url' => 'https://x', 'title' => ' T ', 'type' => 'see', 'label' => ''], readable: ['a']);
 		$this->relations->expects($this->once())->method('addExternalLink')
-			->with('a', 'https://x', 'T', 'see', null, 3, 4)
+			->with(new RelationEndpoint('a', 3, 4), new ExternalLink('https://x', 'T', 'see', null))
 			->willReturn($this->row(uuid: 'link'));
 
 		$this->assertSame(
@@ -279,9 +316,8 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$this->assertSame([404, ['error' => 'Object not found']], $this->outcome($hidden->addLink('r', 's', 'a')));
 
 		$seen = $this->controller(params: ['target' => 'b', 'anchor' => 'p1', 'type' => 'mentions'], readable: ['a', 'b']);
-		$scope = ['sourceRegister' => 3, 'sourceSchema' => 4, 'targetRegister' => 3, 'targetSchema' => 4];
 		$this->relations->expects($this->once())->method('recordProseReference')
-			->with('a', 'b', 'p1', 'mentions', $scope)
+			->with(new ProseMention(new RelationEndpoint('a', 3, 4), new RelationEndpoint('b', 3, 4), 'p1', 'mentions'))
 			->willReturn([$this->row(uuid: 'out'), $this->row(uuid: 'in')]);
 		$this->assertSame(
 			[
@@ -349,7 +385,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		);
 
 		$failing = $this->controller(params: ['object' => ['a' => 1]], readable: ['a']);
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['a' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['a' => 1], 'inherited' => []]);
 		$this->objects->method('saveObject')->willThrowException(new \Exception('invalid'));
 		$this->relations->expects($this->never())->method('recordSplit');
 		$this->assertSame([422, ['error' => 'invalid']], $this->outcome($failing->derive('r', 's', 'a')));
@@ -364,14 +400,17 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(params: ['object' => ['t' => 1], 'property' => 'parent', 'entry' => 'e1'], readable: ['a']);
 		$this->relations->expects($this->once())->method('declarationFor')->with(4, 'parent', 'nl')
 			->willReturn(['inherits' => ['zaaktype'], 'type' => 'deelzaak']);
-		$this->relations->expects($this->once())->method('applyInheritance')
-			->with($this->isInstanceOf(ObjectEntity::class), ['t' => 1], ['zaaktype'])
+		$this->relations->expects($this->once())->method('inherit')
+			->with($this->callback(fn (ParentInheritance $i): bool => $i->parent instanceof ObjectEntity && $i->childData === ['t' => 1] && $i->inherits === ['zaaktype']))
 			->willReturn(['data' => ['t' => 1, 'zaaktype' => 'z'], 'inherited' => ['zaaktype' => 'z']]);
 		$created = $this->object(uuid: 'child');
-		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
+		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'r' && $options->target->schema == 's'))->willReturn($created);
 		$this->relations->expects($this->never())->method('recordSplit');
-		$this->relations->expects($this->once())->method('recordDerivation')
-			->with($this->isInstanceOf(ObjectEntity::class), $created, 'deelzaak', ['zaaktype' => 'z'], 'e1')
+		$this->relations->expects($this->once())->method('recordDerived')
+			->with($this->callback(fn (Derivation $derivation): bool => $derivation->parent instanceof ObjectEntity
+				&& $derivation->child === $created
+				&& $derivation->link == new ProvenanceLink('e1', 'deelzaak')
+				&& $derivation->inherited === ['zaaktype' => 'z']))
 			->willReturn($this->row(uuid: 'prov'));
 
 		$response = $controller->derive('r', 's', 'a');
@@ -389,12 +428,12 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 	public function testADeriveThatInheritsNothingIsASplit(): void {
 		$controller = $this->controller(params: ['object' => ['t' => 1], 'type' => 'split-from'], readable: ['a']);
 		$this->relations->expects($this->never())->method('declarationFor');
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$created = $this->object(uuid: 'child');
 		$this->objects->method('saveObject')->willReturn($created);
-		$this->relations->expects($this->never())->method('recordDerivation');
+		$this->relations->expects($this->never())->method('recordDerived');
 		$this->relations->expects($this->once())->method('recordSplit')
-			->with($this->isInstanceOf(ObjectEntity::class), $created, null, 'split-from')
+			->with($this->isInstanceOf(ObjectEntity::class), $created, new ProvenanceLink(null, 'split-from'))
 			->willReturn($this->row(uuid: 'prov'));
 
 		$this->assertSame(201, $controller->derive('r', 's', 'a')->getStatus());
@@ -408,7 +447,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 	public function testTheGraphIsAnsweredOrRefusedForItsPurpose(): void {
 		$controller = $this->controller(params: ['depth' => '0'], readable: ['a']);
 		$graph = ['root' => 'a', 'nodes' => [], 'edges' => []];
-		$this->graphs->expects($this->once())->method('graph')->with('a', 1, 'nl')->willReturn($graph);
+		$this->graphs->expects($this->once())->method('graph')->with('a', new GraphExportOptions(1, 'nl'))->willReturn($graph);
 		$this->assertSame([200, $graph], $this->outcome($controller->graph('r', 's', 'a')));
 
 		$refused = $this->controller(params: [], readable: ['a']);
@@ -433,7 +472,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
 		$allowed = $this->controller(params: ['depth' => '2'], readable: ['a']);
 		$this->exportGate->expects($this->once())->method('refusalFor')->with($this->isInstanceOf(Schema::class), 'relation-graph', 1)->willReturn(null);
-		$this->graphs->method('graph')->with('a', 2, 'nl')->willReturn(['root' => 'a', 'nodes' => [], 'edges' => []]);
+		$this->graphs->method('graph')->with('a', new GraphExportOptions(2, 'nl'))->willReturn(['root' => 'a', 'nodes' => [], 'edges' => []]);
 		$this->graphs->method('rowsOf')->willReturn([['from', 'to'], ['a', 'b "c"']]);
 		$response = $allowed->exportGraph('r', 's', 'a');
 
@@ -457,7 +496,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
 		$good = $this->controller(params: ['direction' => 'both', 'depth' => '3', 'fields' => ' a, ,b '], readable: ['a']);
 		$this->trees->expects($this->once())->method('tree')
-			->with($this->isInstanceOf(ObjectEntity::class), 'both', 3, ['a', 'b'])
+			->with($this->callback(static fn (ObjectTreeQuery $query): bool => [$query->direction, $query->depth, $query->fields] === ['both', 3, ['a', 'b']]))
 			->willReturn(['root' => 'a']);
 		$this->assertSame([200, ['root' => 'a']], $this->outcome($good->tree('r', 's', 'a')));
 	}//end testTheTreeValidatesItsQuery()

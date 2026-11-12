@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\AuditSealInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -70,18 +69,24 @@ class AuditSealJob extends TimedJob {
 	private const PASSES_PER_RUN = 10;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for TimedJob.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param AuditSealInterface $hashes Seals the rows.
-	 * @param LoggerInterface $logger Reports progress and a growing backlog.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly AuditSealInterface $hashes,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()
@@ -106,55 +111,7 @@ class AuditSealJob extends TimedJob {
 	 */
 	protected function run($argument): void {
 		try {
-			$sealed = 0;
-			for ($pass = 0; $pass < self::PASSES_PER_RUN; $pass++) {
-				$thisPass = $this->hashes->sealUnsealed();
-				if ($thisPass === 0) {
-					break;
-				}
-
-				$sealed += $thisPass;
-			}
-
-			$remaining = $this->hashes->countUnsealed();
-
-			// Steady state: nothing sealed because nothing needed sealing. The
-			// only case worth no log line at all.
-			if ($sealed === 0 && $remaining === 0) {
-				return;
-			}
-
-			if ($sealed > 0) {
-				$this->logger->info(
-					message: sprintf(
-						'[AuditSealJob] Sealed %d audit row(s); %d still awaiting a seal.',
-						$sealed,
-						$remaining
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-				);
-			}
-
-			// A backlog that never drains means sealing is failing on the write
-			// path AND here, which is the condition that went unnoticed for as
-			// long as no sweeper existed. Say so at a level somebody sees.
-			//
-			// 🔴 This warning was DEAD until psalm said so. An earlier
-			// `if ($sealed === 0) { return; }` sat above it, so the one branch
-			// that could reach it had already left the method — the alarm for
-			// "the chain has gaps that are not closing" could never fire, which
-			// is the same silence it exists to break. Reading the backlog before
-			// the early exit is what makes it reachable.
-			if ($remaining > 0 && $sealed === 0) {
-				$this->logger->warning(
-					message: sprintf(
-						'[AuditSealJob] %d audit row(s) remain unsealed and this pass sealed none. '
-						. 'The hash chain has gaps that are not closing.',
-						$remaining
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-				);
-			}
+			$this->sealAndReport();
 		} catch (Throwable $e) {
 			// Never let a sweep failure break cron for every other job.
 			$this->logger->error(
@@ -162,6 +119,95 @@ class AuditSealJob extends TimedJob {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 			);
 		}//end try
-
 	}//end run()
+
+	/**
+	 * Seal what is unsealed, then report progress or a backlog that is not closing.
+	 *
+	 * @return void
+	 */
+	private function sealAndReport(): void {
+		$sealed    = $this->sealPasses();
+		$remaining = $this->hashes->countUnsealed();
+
+		// Steady state: nothing sealed because nothing needed sealing. The
+		// only case worth no log line at all.
+		if ($sealed === 0 && $remaining === 0) {
+			return;
+		}
+
+		if ($sealed > 0) {
+			$this->logSealed(sealed: $sealed, remaining: $remaining);
+		}
+
+		// A backlog that never drains means sealing is failing on the write
+		// path AND here, which is the condition that went unnoticed for as
+		// long as no sweeper existed. Say so at a level somebody sees.
+		//
+		// 🔴 This warning was DEAD until psalm said so. An earlier
+		// `if ($sealed === 0) { return; }` sat above it, so the one branch
+		// that could reach it had already left the method — the alarm for
+		// "the chain has gaps that are not closing" could never fire, which
+		// is the same silence it exists to break. Reading the backlog before
+		// the early exit is what makes it reachable.
+		if ($remaining > 0 && $sealed === 0) {
+			$this->warnBacklog(remaining: $remaining);
+		}
+	}//end sealAndReport()
+
+	/**
+	 * Run up to PASSES_PER_RUN seal passes, stopping at the first that seals nothing.
+	 *
+	 * @return int How many rows were sealed.
+	 */
+	private function sealPasses(): int {
+		$sealed = 0;
+		for ($pass = 0; $pass < self::PASSES_PER_RUN; $pass++) {
+			$thisPass = $this->hashes->sealUnsealed();
+			if ($thisPass === 0) {
+				break;
+			}
+
+			$sealed += $thisPass;
+		}
+
+		return $sealed;
+	}//end sealPasses()
+
+	/**
+	 * Log how many rows this run sealed and how many still wait.
+	 *
+	 * @param int $sealed    Rows sealed this run.
+	 * @param int $remaining Rows still unsealed.
+	 *
+	 * @return void
+	 */
+	private function logSealed(int $sealed, int $remaining): void {
+		$this->logger->info(
+			message: sprintf(
+				'[AuditSealJob] Sealed %d audit row(s); %d still awaiting a seal.',
+				$sealed,
+				$remaining
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
+	}//end logSealed()
+
+	/**
+	 * Warn that a backlog remains and this run sealed none of it.
+	 *
+	 * @param int $remaining Rows still unsealed.
+	 *
+	 * @return void
+	 */
+	private function warnBacklog(int $remaining): void {
+		$this->logger->warning(
+			message: sprintf(
+				'[AuditSealJob] %d audit row(s) remain unsealed and this pass sealed none. '
+				. 'The hash chain has gaps that are not closing.',
+				$remaining
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
+	}//end warnBacklog()
 }//end class

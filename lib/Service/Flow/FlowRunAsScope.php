@@ -53,6 +53,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCP\IUser;
 use OCP\IUserManager;
 use RuntimeException;
 
@@ -97,6 +98,19 @@ class FlowRunAsScope {
 			return $operation();
 		}
 
+		return $this->objectService->runAs($this->actingUser(uid: $uid), $operation);
+	}//end call()
+
+	/**
+	 * The enabled account a run's declared identity names.
+	 *
+	 * @param string $uid The declared acting identity.
+	 *
+	 * @return IUser The account.
+	 *
+	 * @throws RuntimeException When it is no account, or a disabled one.
+	 */
+	private function actingUser(string $uid): IUser {
 		$user = $this->userManager->get($uid);
 		if ($user === null) {
 			throw new RuntimeException(
@@ -110,6 +124,6 @@ class FlowRunAsScope {
 			);
 		}
 
-		return $this->objectService->runAs($user, $operation);
-	}//end call()
+		return $user;
+	}//end actingUser()
 }//end class

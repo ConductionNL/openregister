@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use Psr\Log\LoggerInterface;
@@ -46,47 +45,34 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 class ToolManagementHandler {
+	/**
+	 * A tool lookup that found the tool.
+	 *
+	 * @var string
+	 */
+	private const LOADED = 'loaded';
 
 	/**
-	 * Agent mapper
+	 * A tool lookup that found no registered candidate.
 	 *
-	 * @var AgentMapper
+	 * @var string
 	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * Tool registry
-	 *
-	 * @var ToolRegistry
-	 */
-	private ToolRegistry $toolRegistry;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
+	private const NOT_FOUND = 'not_found';
 
 	/**
 	 * Constructor
 	 *
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param ToolRegistry $toolRegistry Tool registry.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ToolRegistry    $toolRegistry Tool registry.
+	 * @param LoggerInterface $logger       Logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		ToolRegistry $toolRegistry,
-		LoggerInterface $logger,
+		private readonly ToolRegistry $toolRegistry,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->agentMapper = $agentMapper;
-		$this->toolRegistry = $toolRegistry;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -166,29 +152,38 @@ class ToolManagementHandler {
 			$tool = $this->toolRegistry->getTool($candidate);
 			if ($tool !== null) {
 				$tool->setAgent($agent);
-				$this->logger->debug(
-					message: '[ToolManagementHandler] Loaded tool',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $candidate,
-					]
-				);
+				$this->logLookup(id: $candidate, outcome: self::LOADED);
 				return $tool;
 			}
 		}
 
-		$this->logger->warning(
-			message: '[ToolManagementHandler] Tool not found',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'id' => $toolId,
-			]
-		);
+		$this->logLookup(id: $toolId, outcome: self::NOT_FOUND);
 
 		return null;
 	}//end loadTool()
+
+	/**
+	 * Log the outcome of a tool lookup: loaded (debug) or not found (warning).
+	 *
+	 * @param mixed  $id      The id the tool was found under, or the stored id none of whose candidates is registered.
+	 * @param string $outcome self::LOADED or self::NOT_FOUND.
+	 *
+	 * @return void
+	 */
+	private function logLookup(mixed $id, string $outcome): void {
+		$context = [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'id' => $id,
+		];
+
+		if ($outcome === self::LOADED) {
+			$this->logger->debug(message: '[ToolManagementHandler] Loaded tool', context: $context);
+			return;
+		}
+
+		$this->logger->warning(message: '[ToolManagementHandler] Tool not found', context: $context);
+	}//end logLookup()
 
 	/**
 	 * The ids to try for a stored tool id.

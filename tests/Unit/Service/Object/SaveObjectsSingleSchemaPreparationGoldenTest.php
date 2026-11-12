@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -82,7 +83,7 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		);
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $save),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $save),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()
@@ -96,7 +97,10 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string'], 'parent' => ['type' => 'string', 'format' => 'uuid']]);
 
 		$method = new ReflectionMethod(SaveObjects::class, 'prepareSingleSchemaObjectsOptimized');
-		return $method->invoke($handler, $objects, $register, $schema)[0];
+		$run           = new BulkSaveRun();
+		$run->register = $register;
+		$run->schema   = $schema;
+		return $method->invoke($handler, $objects, $run)[0];
 	}//end prepare()
 
 	public function testProvidedIdOwnerOrganisationMetadataAndRelations(): void {

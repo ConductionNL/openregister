@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -133,9 +134,11 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 		return new ListenerDeferralService(
 			userSession: $this->createMock(IUserSession::class),
 			organisation: $this->createMock(OrganisationService::class),
-			jobList: $jobList,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
+			queue: new DeferralQueueServices(
+				jobList: $jobList,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $logger
+			),
 			argumentLimit: $limit,
 		);
 	}//end deferral()
@@ -313,9 +316,11 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 		$service = new ListenerDeferralService(
 			userSession: $this->createMock(IUserSession::class),
 			organisation: $this->createMock(OrganisationService::class),
-			jobList: $this->createMock(IJobList::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
+			queue: new DeferralQueueServices(
+				jobList: $this->createMock(IJobList::class),
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
 		);
 
 		$serverConstant = 'OC\\BackgroundJob\\JobList::MAX_ARGUMENT_JSON_LENGTH';

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\FilledRow;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use ReflectionMethod;
@@ -137,6 +138,6 @@ class ExampleSetGrantsGoldenTest extends TestCase {
 		$container->expects($this->never())->method('get');
 		$grants = new ExampleSetGrants(container: $container);
 		$this->assertSame($refusal, $grants->refusal(data: $data, users: $users));
-		$this->assertSame($refusalIn, (new ReflectionMethod($grants, 'refusalIn'))->invoke($grants, $data, $users, $context));
+		$this->assertSame($refusalIn, (new ReflectionMethod($grants, 'refusalIn'))->invoke($grants, new FilledRow(data: $data, users: $users), $context));
 	}//end testRefusal()
 }//end class

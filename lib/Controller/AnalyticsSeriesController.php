@@ -36,6 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\AnalyticsSeriesDraft;
 use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -52,18 +54,16 @@ class AnalyticsSeriesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param AnalyticsSeriesServiceInterface $seriesService Series register/fetch service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private AnalyticsSeriesServiceInterface $seriesService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -130,7 +130,7 @@ class AnalyticsSeriesController extends Controller {
 	}//end fetch()
 
 	/**
-	 * Map the request params onto AnalyticsSeriesService::register().
+	 * Map the request params onto an AnalyticsSeriesDraft and register it.
 	 *
 	 * @param array<string, mixed> $params The request params.
 	 *
@@ -139,16 +139,17 @@ class AnalyticsSeriesController extends Controller {
 	 * @throws \InvalidArgumentException When the service rejects the series.
 	 */
 	private function storeSeries(array $params): array {
-		return $this->seriesService->register(
+		$draft = (new AnalyticsSeriesDraft(
 			seriesKey: (string)($params['seriesKey'] ?? ''),
-			labels: (array)($params['labels'] ?? []),
-			datasets: (array)($params['datasets'] ?? []),
-			title: $this->stringOrNull(value: ($params['title'] ?? null)),
-			chartType: (string)($params['chartType'] ?? 'line'),
-			visibility: (string)($params['visibility'] ?? 'private'),
-			registerId: $this->intOrNull(value: ($params['registerId'] ?? null)),
-			schemaId: $this->intOrNull(value: ($params['schemaId'] ?? null))
-		);
+			title: $this->stringOrNull(value: ($params['title'] ?? null))
+		))->withData(labels: (array)($params['labels'] ?? []), datasets: (array)($params['datasets'] ?? []))
+			->shownAs(chartType: (string)($params['chartType'] ?? 'line'), visibility: (string)($params['visibility'] ?? 'private'))
+			->inScope(
+				registerId: $this->intOrNull(value: ($params['registerId'] ?? null)),
+				schemaId: $this->intOrNull(value: ($params['schemaId'] ?? null))
+			);
+
+		return $this->seriesService->registerSeries(draft: $draft);
 	}//end storeSeries()
 
 	/**

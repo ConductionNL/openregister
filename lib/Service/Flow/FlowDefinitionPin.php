@@ -150,7 +150,7 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 	 */
 	private function store(array $canonical, string $flowId): bool {
 		try {
-			$stored = $this->mapper->store(hash: $canonical['hash'], definition: $canonical['json'], flowUuid: $flowId);
+			$stored = $this->mapper->store(definition: self::definitionOf(canonical: $canonical, flowId: $flowId));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[FlowDefinitionPin] Could not store the definition for flow "' . $flowId
@@ -161,6 +161,23 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 
 		return $stored !== null;
 	}//end store()
+
+	/**
+	 * The definition row a canonical form is stored as.
+	 *
+	 * @param array{hash: string, json: string} $canonical The canonical form.
+	 * @param string                            $flowId    The flow uuid, for provenance.
+	 *
+	 * @return FlowDefinition The unsaved row.
+	 */
+	private static function definitionOf(array $canonical, string $flowId): FlowDefinition {
+		$definition = new FlowDefinition();
+		$definition->setHash($canonical['hash']);
+		$definition->setDefinition($canonical['json']);
+		$definition->setFlowUuid($flowId);
+
+		return $definition;
+	}//end definitionOf()
 
 	/**
 	 * The graph a hash names, or null when it is not there.
@@ -180,7 +197,7 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphFor(?string $hash): ?array {
-		if ($hash === null || trim($hash) === '') {
+		if (self::isBlank(hash: $hash) === true) {
 			return null;
 		}
 
@@ -191,6 +208,19 @@ class FlowDefinitionPin implements FlowDefinitionPinInterface {
 
 		return $this->readable(pinned: $pinned, hash: $hash);
 	}//end graphFor()
+
+	/**
+	 * Whether no hash was given.
+	 *
+	 * @param string|null $hash The definition hash.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-false string $hash
+	 */
+	private static function isBlank(?string $hash): bool {
+		return ($hash === null || trim($hash) === '');
+	}//end isBlank()
 
 	/**
 	 * The stored definition row for a hash, logging when there is none.
