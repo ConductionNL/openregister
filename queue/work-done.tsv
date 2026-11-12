@@ -851,3 +851,4 @@ fix:pipelinq:3575:6d34ed3a	resolved: renamed clashing tests, new head 0750f0fb; 
 cover:pipelinq:f67520ec:js0b48e3d3	PR #3588: 31 vitest tests, RequestConversionSection 80.8->93.2%, RequestForm 77.0->87.7%	session-20261112T224530-d70ae278	2026-11-12T23:18:06Z
 review:openregister:10057:13b28283	APPROVE: tests-only, 140 log-view tests pass on merge with main	session-20261112T231637-60fd49c4	2026-11-12T23:18:06Z
 review:openregister:10062:34c12d76	APPROVE: openspec-only, JSON valid	session-20261112T224529-41d77a96	2026-11-12T23:18:27Z
+review:openregister:10056:eea10fac	APPROVE: test-only jest spec, 84/84 pass merged with main, eslint clean	session-20261112T231637-27871bfa	2026-11-12T23:18:45Z
