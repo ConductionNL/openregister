@@ -9,9 +9,12 @@
  * the keywords that may still be used as an identifier (MariaDB `keyword_ident`,
  * MySQL `ident_keyword`). A reserved word is a lexer keyword that this rule
  * cannot reach. This class downloads both files for a branch of the upstream
- * repository, derives the words that way and falls back to the committed
- * snapshot (`fixtures/reserved-words-<engine>-<series>.txt`) when the download
- * fails, so a test that uses it stays deterministic without network.
+ * repository and derives the words that way. The committed snapshot
+ * (`fixtures/reserved-words-<engine>-<series>.txt`) is always part of the
+ * result: words() is the online list merged with the snapshot, and the snapshot
+ * alone when the download fails, so a test that uses it stays deterministic
+ * without network. A word upstream stops reserving therefore stays in the list
+ * until the snapshot is regenerated.
  * `fixtures/update-reserved-words.php` rewrites the snapshots from the same code.
  *
  * Environment: RESERVED_WORDS_BASE_URL replaces https://raw.githubusercontent.com

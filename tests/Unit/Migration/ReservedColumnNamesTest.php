@@ -13,10 +13,11 @@
  *
  * The lists come from the upstream server sources, one per series
  * (ReservedWordSource::SOURCES), so a new point release or a word a coming
- * series reserves is picked up without an edit. The snapshots in fixtures/ back
- * them up: a series whose download fails is checked against its snapshot, and
- * the test never needs network. A word upstream starts to reserve that a
- * migration already uses fails this test; rename the column in a new migration
+ * series reserves is picked up without an edit. The snapshots in fixtures/ are
+ * always merged into those lists, so a word upstream stops reserving stays
+ * checked until the snapshot is regenerated, and when a download fails the
+ * snapshot alone is used: the test never needs network. A word upstream starts
+ * to reserve that a migration already uses fails this test; rename the column in a new migration
  * or, for a column that is already released, add the word to ALREADY_IN_USE.
  * The development branches (`main`, `trunk`; ReservedWordSource::SOURCES marks
  * them) are not a gate: a word only they reserve is reported as an incomplete
