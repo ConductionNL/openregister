@@ -95,3 +95,4 @@ gap:keepiq:19:e1afb1db	PR #1676 @0ca2a382: root openapi.json for /api/v1 (adr21 
 cover:buildiq:8ca317f6:d33a91b0	opened buildiq#1455 (11 tests, CopilotPlanValidator constraints; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:27:52Z
 cover:dossiq:6ca0231e:28cccfd9	PR #6092: 3 classes, 9 tests (Repair/Support); suite 11970->11979, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:28:11Z
 review:openregister:10029:bdd094ea	APPROVE: tests only, 29 jest green on merge with main, eslint clean	session-20261112T192506-e25bbcef	2026-11-12T19:28:24Z
+gap:keepiq:14:067d4939	failed: the over-30 functions are ItemDetail (CCN 45, mobile/android/.../ui/ItemDetailScreen.kt:207, Compose) and vendored argon2 C (leave). No Android SDK in this worker, so a Compose split cannot be compiled or tested; needs a worker with the Android toolchain	session-20261112T184455-8702e064	2026-11-12T19:28:37Z
