@@ -51,8 +51,33 @@ class ReservedColumnNamesTest extends TestCase {
 	 * (`groups` is reserved on MySQL 8 only, `offset` on MariaDB only), so
 	 * the migrations run. Renaming them would touch released tables for no
 	 * failure; a new column takes a name that is not reserved.
+	 *
+	 * The allowance is one list for both engines and every series, which would
+	 * hide the #4909 failure if an engine started to reserve one of these words
+	 * and Doctrine did not know it there. That is why
+	 * testDoctrineQuotesEveryAllowedWordWhereItIsReserved() asserts the premise
+	 * per engine: the allowance is only as wide as Doctrine's own keyword lists.
 	 */
 	private const ALREADY_IN_USE = ['cursor', 'groups', 'limit', 'offset', 'schema', 'schemas', 'trigger'];
+
+	/**
+	 * Doctrine's keyword lists per engine; a column is quoted when the platform's list has its name.
+	 *
+	 * Every list a supported Nextcloud (32 to 35, all on doctrine/dbal 3.10) can
+	 * pick for a MariaDB or MySQL 8 server. The classes a bare host lacks are
+	 * skipped; the test is skipped when none of an engine's classes loads.
+	 */
+	private const DOCTRINE_KEYWORDS = [
+		'mariadb' => [
+			'Doctrine\DBAL\Platforms\Keywords\MariaDBKeywords',
+			'Doctrine\DBAL\Platforms\Keywords\MariaDb102Keywords',
+			'Doctrine\DBAL\Platforms\Keywords\MariaDb117Keywords',
+		],
+		'mysql'   => [
+			'Doctrine\DBAL\Platforms\Keywords\MySQL80Keywords',
+			'Doctrine\DBAL\Platforms\Keywords\MySQL84Keywords',
+		],
+	];
 
 	/**
 	 * The words one series reserves, lower case.
@@ -209,4 +234,47 @@ class ReservedColumnNamesTest extends TestCase {
 			$this->assertArrayHasKey($word, $names, $word.' is no longer a column; drop it from ALREADY_IN_USE');
 		}
 	}//end testTheAllowanceOnlyHoldsReservedColumnsInUse()
+
+	/**
+	 * The allowance's premise holds: Doctrine's keyword list for an engine has every allowed word that engine reserves.
+	 *
+	 * Doctrine quotes a column only when its list has the name, so an allowed word that
+	 * an engine reserves and Doctrine does not list would be created unquoted there.
+	 *
+	 * @return void
+	 */
+	public function testDoctrineQuotesEveryAllowedWordWhereItIsReserved(): void {
+		$lists = [];
+		foreach (self::DOCTRINE_KEYWORDS as $engine => $classes) {
+			foreach ($classes as $class) {
+				if (class_exists($class) === true) {
+					$lists[$engine][$class] = new $class();
+				}
+			}
+
+			if (isset($lists[$engine]) === false) {
+				$this->markTestSkipped('Doctrine\'s '.$engine.' keyword classes are not loadable here ('.implode(', ', $classes).'), so the allowance cannot be checked');
+			}
+		}
+
+		$reserved = array_merge_recursive(self::reservers(development: false), self::reservers(development: true));
+		$missing  = [];
+		foreach (self::ALREADY_IN_USE as $word) {
+			foreach (($reserved[$word] ?? []) as $entry) {
+				$engine = explode(' ', $entry)[0];
+				foreach ($lists[$engine] as $class => $list) {
+					if ($list->isKeyword($word) === false) {
+						$missing[$word.' ('.$entry.')'][] = substr($class, (strrpos($class, '\\') + 1));
+					}
+				}
+			}
+		}
+
+		$this->assertSame(
+			[],
+			$missing,
+			'These allowed words are reserved by the series shown, but the Doctrine list named is without them, '
+			.'so Doctrine would not quote them there: rename the column instead of allowing it.'
+		);
+	}//end testDoctrineQuotesEveryAllowedWordWhereItIsReserved()
 }//end class
