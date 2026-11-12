@@ -30,7 +30,7 @@ All endpoints are scoped under `/api/objects/{register}/{schema}/{id}/files` unl
 | GET | `.../files/{fileId}` | `files#show` | Get single file metadata | Yes |
 | POST | `.../files` | `files#create` | Upload file (JSON body) | Yes |
 | POST | `.../files/save` | `files#save` | Save file content | Yes |
-| POST | `.../filesMultipart` | `files#createMultipart` | Upload via multipart form | Yes |
+| POST | `.../files-multipart` (legacy alias `.../filesMultipart`) | `files#createMultipart` | Upload via multipart form | Yes |
 | PUT | `.../files/{fileId}` | `files#update` | Update file metadata | Yes |
 | DELETE | `.../files/{fileId}` | `files#delete` | Delete a file | Yes |
 | POST | `.../files/{fileId}/publish` | `files#publish` | Publish a file | Yes |
