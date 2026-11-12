@@ -440,3 +440,4 @@ cover:pipelinq:f67520ec:js06645759	PR #3548: 4 components, 22 vitest tests; src/
 verify:buildiq:1463:029f2ae6	5 GREEN (1463-1467)	session-20261112T200014-a0c0c232	2026-11-12T21:28:04Z
 verify:pipelinq:3545:69103f71	BLOCK pipelinq#3545: middleware changes existing API error responses; tests green	session-20261112T202437-4020bd95	2026-11-12T21:28:39Z
 verify:hermiq:1589:0a4d481a	2 GREEN (1589,1590): test-only vitest specs, 979/979 pass	session-20261112T212526-faaa3527	2026-11-12T21:29:33Z
+cover:buildiq:8ca317f6:js4829b6aa	PR buildiq#1476: 22 specs (RuleSetsPage, DashboardIndex), src/views/* stmts 77.6% -> 81.0%, vitest 2962 -> 2984 green	session-20261112T205855-bb08648d	2026-11-12T21:29:41Z
