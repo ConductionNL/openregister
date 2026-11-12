@@ -949,3 +949,4 @@ cover:integriq:9b0f5894m2367:js2fbf11bd	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:js4f1edf62	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:26Z
 cover:integriq:9b0f5894m2367:jsaae6d66c	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:35Z
 cover:integriq:9b0f5894m2367:js9dc6d594	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:44Z
+cover:dossiq:6ca0231e:d1fb07ad	opened dossiq#6196 (RecordSeal + FreezeRegistry edges, 10 tests; full suite 12980 run, 19 inherited failures, 0 new)	session-20261112T231639-4c562de9	2026-11-12T23:51:49Z
