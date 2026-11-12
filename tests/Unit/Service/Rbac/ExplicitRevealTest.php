@@ -285,6 +285,32 @@ class ExplicitRevealTest extends TestCase {
 	}//end testFilterAndSortOnItAreRefused()
 
 	/**
+	 * A key spelling its column another way is refused too: a cross-schema search orders on the column.
+	 *
+	 * @return void
+	 */
+	public function testFilterAndSortOnItsColumnSpellingAreRefused(): void {
+		$reveal = new ExplicitReveal();
+		$queries = [
+			['citizen_service_number' => self::BSN],
+			['_order' => ['citizen_service_number' => 'asc']],
+			['_order' => 'citizen_service_number:desc'],
+			['_order' => ['CitizenServiceNumber' => 'asc']],
+		];
+		foreach ($queries as $query) {
+			try {
+				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
+				$this->fail('refused: ' . json_encode($query));
+			} catch (ExplicitRevealQueryException $refused) {
+				$this->assertStringContainsString('citizenServiceNumber', $refused->getMessage());
+			}
+		}
+
+		$reveal->refuseOracleQuery(query: ['display_name' => 'Sanne', '_order' => ['citizen' => 'asc']], schema: $this->schema());
+		$this->addToAssertionCount(1);
+	}//end testFilterAndSortOnItsColumnSpellingAreRefused()
+
+	/**
 	 * It takes no part in free-text search.
 	 *
 	 * @return void

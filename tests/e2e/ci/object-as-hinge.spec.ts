@@ -114,6 +114,11 @@ test.describe('an object is the hinge several cases turn on', () => {
 			data: {
 				title: `${title} ${RUN}`,
 				description: 'e2e',
+				// Linked to the register. The reverse view resolves the schema
+				// inside the register the path names and refuses one the
+				// register does not carry, as every shipped configuration's
+				// schemas are carried.
+				register: registerId,
 				properties,
 				configuration: options.configuration ?? {},
 				authorization: {
@@ -497,7 +502,7 @@ test.describe('an object is the hinge several cases turn on', () => {
 		// The intake-sources register is seeded by SeedIntakeSourceRegister on
 		// install and upgrade. Assert it is there first, so a skipped repair
 		// step reports itself rather than surfacing as a confusing 404.
-		const registers = await admin.get(`${API}/registers?limit=500`)
+		const registers = await admin.get(`${API}/registers?_limit=500`)
 		expect(
 			registers.ok(),
 			`register listing failed: ${await registers.text()}`,
@@ -515,7 +520,7 @@ test.describe('an object is the hinge several cases turn on', () => {
 		).toBeTruthy()
 
 		const intakeRegisterId = String((intake as Record<string, unknown>).id)
-		const schemaRes = await admin.get(`${API}/schemas?limit=500`)
+		const schemaRes = await admin.get(`${API}/schemas?_limit=500`)
 		expect(schemaRes.ok()).toBeTruthy()
 
 		const schemaResults = ((await schemaRes.json()).results ?? []) as Array<
@@ -558,7 +563,7 @@ test.describe('an object is the hinge several cases turn on', () => {
 		// Both are there, which is the whole difference from a mailbox in a
 		// settings screen.
 		const listed = await admin.get(
-			`${API}/objects/${intakeRegisterId}/${intakeSchemaId}?limit=500`,
+			`${API}/objects/${intakeRegisterId}/${intakeSchemaId}?_limit=500`,
 		)
 		expect(listed.ok()).toBeTruthy()
 
@@ -569,7 +574,10 @@ test.describe('an object is the hinge several cases turn on', () => {
 		expect(slugs).toContain(`e2e-postbus-2-${RUN}`)
 
 		// Switching one off leaves it listed, carrying the reason it is quiet.
-		const disabled = await admin.put(
+		// PATCH, not PUT: a PUT replaces the whole object, and dropping the
+		// lifecycle field it carries is refused ("state must be a non-empty
+		// string") before `enabled` is ever read.
+		const disabled = await admin.patch(
 			`${API}/objects/${intakeRegisterId}/${intakeSchemaId}/${sources[1]}`,
 			{
 				data: {

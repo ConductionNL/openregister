@@ -64,7 +64,7 @@ final class SaveObjectCascadeListFailuresTest extends TestCase {
 			->onlyMethods(['saveObject', 'assertMayCascadeCreate'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			function (array $data): ObjectEntity {
 				if (($data['text'] ?? null) === 'boom') {
 					throw new Exception('storage');
 				}

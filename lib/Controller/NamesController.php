@@ -168,8 +168,6 @@ class NamesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @throws \Exception If name lookup fails
 	 *
 	 * @return JSONResponse JSON response with object names or error
@@ -182,7 +180,6 @@ class NamesController extends Controller {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// SEC-CTRL-2: require authentication — per-ids name resolution must not be
 		// reachable anonymously. Dropped @PublicPage.

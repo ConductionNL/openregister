@@ -32,6 +32,7 @@ use stdClass;
 /**
  * @covers \OCA\OpenRegister\Middleware\OasValidationMiddleware
  * @uses   \OCA\OpenRegister\Middleware\OasValidationFailureException
+ * @uses \OCA\OpenRegister\Service\Oas\ProblemDescription
  */
 class OasValidationMiddlewareTest extends TestCase {
 

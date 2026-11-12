@@ -42,6 +42,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeServiceRelinkCharacterisationTest extends TestCase {
 
@@ -123,7 +124,7 @@ class MergeServiceRelinkCharacterisationTest extends TestCase {
 
 		$saved = new \ArrayObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object) use ($saved): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($saved): ObjectEntity {
 				$saved[] = $object;
 				if ($object instanceof ObjectEntity) {
 					return $object;

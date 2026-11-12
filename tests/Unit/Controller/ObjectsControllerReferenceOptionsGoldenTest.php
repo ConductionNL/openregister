@@ -19,6 +19,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IAppConfig;
@@ -56,6 +57,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
  * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader
  * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaders
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferencePick
  */
 class ObjectsControllerReferenceOptionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-reference-options-golden.json';
@@ -150,7 +157,7 @@ class ObjectsControllerReferenceOptionsGoldenTest extends TestCase {
 		$stored = (array_key_exists('stored', $setup) ? $setup['stored'] : ['org' => 'o9']);
 		$service = $this->createMock(ObjectService::class);
 		$service->method('find')->willReturnCallback(function (...$args) use ($stored) {
-			$this->calls[] = ['find' => $args];
+			$this->calls[] = ['find' => FindCallShape::find(args: $args)];
 			if ($stored === 'ambiguous') {
 				throw new MultipleObjectsReturnedException('two');
 			}

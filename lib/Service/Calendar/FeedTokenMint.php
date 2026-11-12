@@ -42,7 +42,7 @@ final readonly class FeedTokenMint {
 	 *
 	 * @param string            $userId     The principal the token will name.
 	 * @param CalendarFeedToken $draft      The unsaved token: scopeType, scopeId and label.
-	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null or less than one takes the configured default.
 	 */
 	public function __construct(
 		public string $userId,

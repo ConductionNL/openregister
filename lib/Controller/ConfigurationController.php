@@ -387,8 +387,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created configuration
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -453,8 +451,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id The configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated configuration
 	 *
@@ -524,8 +520,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function destroy(int $id): JSONResponse {
@@ -563,8 +557,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id The configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with version comparison
 	 *
@@ -652,8 +644,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -723,15 +713,16 @@ class ConfigurationController extends Controller {
 	}//end export()
 
 	/**
-	 * Export a configuration; its objects only when `includeObjects` is
-	 * exactly true.
+	 * Export a configuration; its objects only when `includeObjects` is true,
+	 * as a boolean or as the query string `true` the export modal sends.
 	 *
 	 * @param Configuration $configuration The configuration
 	 *
 	 * @return JSONResponse The export data, for download
 	 */
 	private function exported(Configuration $configuration): JSONResponse {
-		$includeObjects = ($this->request->getParams()['includeObjects'] ?? false) === true;
+		$flag           = ($this->request->getParams()['includeObjects'] ?? false);
+		$includeObjects = ($flag === true || $flag === 'true');
 		$exportData     = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
 		return new JSONResponse(data: $exportData, statusCode: 200);
@@ -1622,8 +1613,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1647,8 +1636,6 @@ class ConfigurationController extends Controller {
 	 * @since 0.2.10
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with import result
 	 *
@@ -1674,8 +1661,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1700,8 +1685,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id Configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-suppress InvalidReturnType
 	 * @psalm-suppress InvalidReturnStatement

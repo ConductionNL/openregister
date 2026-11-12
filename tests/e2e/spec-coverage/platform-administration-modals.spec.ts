@@ -297,6 +297,7 @@ test.describe('platform-administration-modals — clear cache idle on success', 
 				headers: {
 					'Content-Type': 'application/json',
 					Accept: 'application/json',
+					'OCS-APIRequest': 'true',
 					Authorization: `Basic ${Buffer.from('admin:admin').toString('base64')}`,
 				},
 				data: { type: 'all' },

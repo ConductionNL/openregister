@@ -1,4 +1,15 @@
 {
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+                ]
+            }
+        }
+    ],
     "info": {
         "name": "AppHost Declarative Observability — Contract",
         "description": "Engine-owned contract for the AppHost observability endpoints (ADR-040). Guards every adopting app at once: public health endpoint + ADR-006 shape, statusCodePolicy HTTP codes, admin-gated metrics (anonymous rejected), Prometheus 0.0.4 content-type, implicit {app}_info/{app}_up presence. Parameterised by {{health_path}} / {{metrics_path}} / {{app_prefix}} so per-app adopt-apphost specs reuse it by overriding the variables.",
