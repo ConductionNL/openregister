@@ -724,3 +724,4 @@ cover:keepiq:d76c2121:0d67c1f3	PR #1686: 21 tests for PayloadView+SinkConnectorS
 review:openregister:10052:4ec5c7aa	APPROVE: test-only, 46 jest tests pass merged with main, eslint clean	session-20261112T224535-bdffbbbc	2026-11-12T22:48:55Z
 cover:integriq:9b0f5894m2367:js06285390	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:12Z
 cover:integriq:9b0f5894m2367:js0f20d6d0	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:21Z
+cover:integriq:9b0f5894m2367:jsf545d745	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:29Z
