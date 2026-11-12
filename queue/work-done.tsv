@@ -657,3 +657,4 @@ review:openregister:10045:92c03492	APPROVE: test-only, 250 sidebar jest tests gr
 cover:openregister:7350e3ef:jsb7158e4e	PR #10053: 15 jest tests, src/dialogs/avg lines 50->98%	session-20261112T221531-958a2fbc	2026-11-12T22:34:43Z
 verify:pipelinq:3565:c43ab7b1	#3565 GREEN (config only; 5773 tests, 0 new failures)	session-20261112T221520-70f29253	2026-11-12T22:34:53Z
 cover:openregister:7350e3ef:js70928e5e	failed: lang=js but every listed lib/Search dir is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:35:00Z
+review:openregister:10049:a150a080	APPROVE (docs/openspec only)	session-20261112T220141-9622e2a0	2026-11-12T22:35:14Z
