@@ -3562,3 +3562,4 @@ dossiq	5880	d89b2e63818e64e345a8c958ba1b70e101a572af	GREEN	fv11-16:d2	unit 11843
 dossiq	5882	569621bf84ff9c81d5e6d14639a4b8fafb1ee2a9	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
 dossiq	5883	d96cf3c37771c80b8a687a6cd948b54bc1cf19f4	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
 dossiq	5897	1d99681e0b49123150ab9232a417e680f0c5002b	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
+dossiq	5524	6ed0ebde648ebde4748d31c3891c54012b412b73	GREEN	fv11-03:d3	unit 11818 tests, 19 failures all inherited (baseline 19), no new; diff review clean (tenant migration split into steps: uuid-first lookup, slug refusal, repair and outcome flags unchanged)
