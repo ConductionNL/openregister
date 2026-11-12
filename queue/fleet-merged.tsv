@@ -166,3 +166,4 @@ decidiq	2041	fe108f18cdda3fa46214d319cb8b77479a83a7aa	MERGED	worker-19	GATE OK s
 decidiq	2060	29f702e3ea4170ee7e8f19a59c5d242f7b9799da	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail; score: 91 -> 89
 learniq	2185	f412e75438eaf9da9eae61a6c07eeeade1e03763	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2061	1c7a84fe89783426637f8e1a0f9cba46258cb701	SKIP	worker-19	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	2186	fa2c74c43e373182249bd3a7d82a966ce20e15aa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
