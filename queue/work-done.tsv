@@ -966,4 +966,5 @@ cover:integriq:9b0f5894m2367:jsfd3f82d2	failed: lang=js but dirs points into lib
 cover:dossiq:6ca0231e:aede7575	PR #6199: 13 tests for OpenRegisterRowNormaliser (0 -> 28/28 lines); suite 12970->12983, 19 inherited failures	session-20261112T231633-96ffe7b8	2026-11-12T23:53:07Z
 cover:integriq:9b0f5894m2367:jsfd0946f1	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:53:36Z
 fix:keepiq:1680:2abefb9d	fixed: scoped API contract to new aliases, OpenAPI route login-only; new head ac4cb6b7, REVERIFY recorded	session-20261112T234653-efce95ba	2026-11-12T23:53:44Z
+cover:dossiq:6ca0231e:b6ce9cdd	PR #6197: Service/Termijn 93.0->97.9% (WorkingDayRoll 56->104/106, TermDefinitions 59->79/79), 22 tests; 0 new failures	session-20261112T224530-d70ae278	2026-11-12T23:54:22Z
 verify:pipelinq:3588:ad66d6c5	9 GREEN (3588-3596), tests only, no new failures	session-20261112T234648-144479e8	2026-11-12T23:54:34Z
