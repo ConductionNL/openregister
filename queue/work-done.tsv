@@ -753,6 +753,8 @@ cover:pipelinq:f67520ecm9d2c:jsd4326ecd	failed: lang=js but dirs are PHP-only li
 cover:integriq:9b0f5894m2367:jsa42697be	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:37Z
 cover:integriq:9b0f5894m2367:js17bbac84	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:47Z
 cover:integriq:9b0f5894m2367:js1191da39	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:56Z
+cover:buildiq:8ca317f6m6d54:0d8702e3	PR #1484: 26 tests for 6 template classes (autoloader, InitializeSettings, Settings/Dashboard controllers, AdminSettings, SettingsSection); suite 2234->2260, baseline 5E/1F unchanged	session-20261112T221528-d486fac0	2026-11-12T22:53:33Z
+verify:shillinq:2800:ce163956	stale	session-20261112T224530-faaec44c	2026-11-12T22:53:18Z
 verify:hermiq:1606:147d7a76	1606-1614 GREEN; phpunit 3689 (base 3555), vitest 949 (base 944), 0 new failures, tests-only	session-20261112T215819-2dd7b64e	2026-11-12T22:54:22Z
 cover:keepiq:d76c2121:d3522ea6	PR keepiq#1687: 44 tests, 8 Db mappers to 100% via RecordingDatabase support trait, suite 3722->3766 green	session-20261112T221532-ade53a05	2026-11-12T22:54:32Z
 cover:integriq:9b0f5894m2367:js9910e837	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:54:59Z
