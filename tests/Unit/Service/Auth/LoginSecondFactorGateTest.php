@@ -63,6 +63,23 @@ class LoginSecondFactorGateTest extends TestCase {
 		$this->assertTrue($this->gate(system: ['twofactor_enforced' => 'true'])->requiresSecondFactor($this->user()));
 	}
 
+	public function testEnforcementAsABooleanTrueNeedsASecondFactor(): void {
+		$this->assertTrue($this->gate(system: ['twofactor_enforced' => true])->requiresSecondFactor($this->user()));
+	}
+
+	public function testEnforcementSwitchedOffDoesNotNeedASecondFactor(): void {
+		$this->assertFalse($this->gate(system: ['twofactor_enforced' => 'false'])->requiresSecondFactor($this->user()));
+		$this->assertFalse($this->gate(system: ['twofactor_enforced' => false])->requiresSecondFactor($this->user()));
+		$this->assertFalse($this->gate()->requiresSecondFactor($this->user()));
+	}
+
+	public function testEnforcedWithoutAnActiveProviderNeedsASecondFactor(): void {
+		$providers = ['totp' => false, 'backup_codes' => true];
+
+		$this->assertTrue($this->gate(providers: $providers, system: ['twofactor_enforced' => 'true'])->requiresSecondFactor($this->user()));
+		$this->assertTrue($this->gate(providers: $providers, system: ['twofactor_enforced' => true])->requiresSecondFactor($this->user()));
+	}
+
 	public function testAnExcludedGroupIsNotEnforced(): void {
 		$gate = $this->gate(system: ['twofactor_enforced' => 'true', 'twofactor_enforced_excluded_groups' => ['guests']], groups: ['guests']);
 

@@ -94,7 +94,9 @@ class LoginSecondFactorGate {
 	 * @return bool True when two-factor authentication is mandatory for the user.
 	 */
 	private function isEnforcedFor(IUser $user): bool {
-		if ($this->config->getSystemValue('twofactor_enforced', 'false') !== 'true') {
+		// Core writes the string 'true', but a hand-edited config.php may hold a
+		// boolean; both mean enforced, anything else means not enforced.
+		if (in_array($this->config->getSystemValue('twofactor_enforced', 'false'), [true, 'true'], true) === false) {
 			return false;
 		}
 
