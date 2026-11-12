@@ -300,4 +300,5 @@ verify:dossiq:6117:4a4f7d19	GREEN: 6117-6125 (9 test-only PRs; 12133 tests, 0 ne
 cover:dossiq:6ca0231e:0c7c4f5d	PR #6149: 17 tests for ThresholdShares, TermStatusClock, FirstResponseOutcome; suite 11976->11993, failures 19 inherited	session-20261112T202912-56c18a61	2026-11-12T20:41:16Z
 verify:thematiq:1661:b54fc704	GREEN thematiq#1661	session-20261112T202437-4020bd95	2026-11-12T20:41:28Z
 merge:portaliq:2305:018fc716	2305 MERGED 2314 MERGED 2315 MERGED 2316 MERGED 2317 MERGED 2318 MERGED 2319 MERGED 2320 MERGED 2321 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T20:41:42Z
+cover:dossiq:6ca0231e:38b0eba1	PR #6150: 21 tests for SubsidieService, TussenrapportageService, TerugvorderingService persistence; 19 inherited failures unchanged	session-20261112T202914-c73e3765	2026-11-12T20:42:03Z
 fix:portaliq:2366:73507c85	lockfile resynced, npm ci OK, sbom regen; pushed 7406159f; REVERIFY queued	session-20261112T175557-37d60f4f	2026-11-12T20:42:13Z
