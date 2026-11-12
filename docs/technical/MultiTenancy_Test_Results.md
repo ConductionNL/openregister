@@ -50,7 +50,7 @@ Validate that the OpenRegister multi-tenancy system correctly isolates object ac
 
 ### Configuration Check
 ```bash
-curl -u 'admin:admin' -H 'Content-Type: application/json' 'http://localhost/index.php/apps/openregister/api/settings'
+curl -H 'OCS-APIRequest: true' -u 'admin:admin' -H 'Content-Type: application/json' 'http://localhost/index.php/apps/openregister/api/settings'
 ```
 
 ### Organization Membership
@@ -61,9 +61,9 @@ curl -u 'user1:user1' -H 'OCS-APIREQUEST: true' 'http://localhost/index.php/apps
 
 ### Object Access Tests
 ```bash
-curl -u 'admin:admin' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'
-curl -u 'user1:user1' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'  
-curl -u 'user2:user2' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'
+curl -H 'OCS-APIRequest: true' -u 'admin:admin' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'
+curl -H 'OCS-APIRequest: true' -u 'user1:user1' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'  
+curl -H 'OCS-APIRequest: true' -u 'user2:user2' 'http://localhost/index.php/apps/openregister/api/objects?_limit=1'
 ```
 
 ## ✅ **Test Scenarios Validated**

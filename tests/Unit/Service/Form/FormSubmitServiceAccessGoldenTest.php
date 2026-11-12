@@ -54,6 +54,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -182,21 +183,15 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 	 */
 	private function save(
 		array|ObjectEntity $object,
-		?array $extend = [],
-		Register|string|int|null $register = null,
-		Schema|string|int|null $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		bool $_dedupOverride = false,
-		?string $_owner = null,
 	): ObjectEntity {
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$currentUser = $options->actor->currentUser;
+		$_unowned = $options->actor->unowned;
+		$_owner = $options->actor->owner;
 		$data = (array)$object;
 		$status = ($data['@self']['status'] ?? null);
 		$this->calls[] = ['save', $schema->getSlug(), $uuid, $_rbac, $_multitenancy, $currentUser?->getUID(), $_unowned, $_owner, $status];

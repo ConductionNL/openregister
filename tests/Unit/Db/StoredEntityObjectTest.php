@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Db\AccessLink
  * @covers \OCA\OpenRegister\Files\Service\NoteService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
  */
 class StoredEntityObjectTest extends TestCase
 {
@@ -67,9 +69,9 @@ class StoredEntityObjectTest extends TestCase
     {
         $object   = new ObjectEntity();
         $versions = $this->createMock(NoteVersionService::class);
-        $versions->expects($this->once())->method('auditEdit')->with($object, 7, 2)->willReturn(true);
+        $versions->expects($this->once())->method('auditEdit')->with($object, ['id' => 7, 'versionCount' => 2])->willReturn(true);
 
-        $this->assertTrue($this->noteService(versions: $versions)->auditEdit(object: $object, noteId: 7, versions: 2));
+        $this->assertTrue($this->noteService(versions: $versions)->auditEdit(object: $object, note: ['id' => 7, 'versionCount' => 2]));
     }//end testANoteEditIsAuditedOnTheStoredRow()
 
     public function testANoteEditOnAForeignObjectWritesNoAuditEntry(): void
@@ -81,8 +83,7 @@ class StoredEntityObjectTest extends TestCase
 
         $this->noteService(versions: $versions)->auditEdit(
             object: $this->createMock(ObjectEntityInterface::class),
-            noteId: 7,
-            versions: 2
+            note: ['id' => 7, 'versionCount' => 2]
         );
     }//end testANoteEditOnAForeignObjectWritesNoAuditEntry()
 

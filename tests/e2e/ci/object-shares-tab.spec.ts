@@ -550,6 +550,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		const anon = await browser.newContext({
 			baseURL: BASE,
 			storageState: undefined,
+			// Without this the context inherits the suite's Authorization
+			// header from playwright.config.ts and is not anonymous at all.
+			extraHTTPHeaders: {},
 		})
 		try {
 			const live = await anon.request.get(
@@ -643,6 +646,9 @@ test.describe('the Shares tab, driven through the browser', () => {
 		const anon = await browser.newContext({
 			baseURL: BASE,
 			storageState: undefined,
+			// Without this the context inherits the suite's Authorization
+			// header from playwright.config.ts and is not anonymous at all.
+			extraHTTPHeaders: {},
 		})
 		try {
 			const live = await anon.request.get(

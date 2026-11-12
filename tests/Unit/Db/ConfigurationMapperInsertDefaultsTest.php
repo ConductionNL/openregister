@@ -39,6 +39,11 @@ use TypeError;
  * Insert defaults, without a database.
  *
  * @covers \OCA\OpenRegister\Db\ConfigurationMapper
+ * @uses \OCA\OpenRegister\Db\ApplicationMapper
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 final class ConfigurationMapperInsertDefaultsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

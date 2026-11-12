@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Corrects a value on a record and records that it was a correction.
@@ -143,7 +145,13 @@ class CorrectionService implements CorrectionServiceInterface {
 		$existing  = $this->storedRecord(target: $target);
 		$before    = ($existing->getObject() ?? []);
 		$merged    = array_merge($before, $correction->values);
-		$corrected = $this->objectService->saveObject(object: $merged, register: $target->register, schema: $target->schema, uuid: $existing->getUuid());
+		$corrected = $this->objectService->saveObject(
+			object: $merged,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target->register, schema: $target->schema),
+				uuid: $existing->getUuid()
+			)
+		);
 
 		$fields  = self::fieldChanges(before: $before, values: $correction->values);
 		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];

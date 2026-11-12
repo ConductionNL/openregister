@@ -34,7 +34,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUser;
@@ -116,14 +115,12 @@ class FlowRunMigrationController extends Controller {
 	 * @return JSONResponse The outcome, or a 4xx naming what stood in the way.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function migrate(string $uuid): JSONResponse {
 		if ($this->migrations === null) {
 			// Fail CLOSED, like `refuseUnlessRunnable`: without the collaborator
@@ -232,14 +229,12 @@ class FlowRunMigrationController extends Controller {
 	 * @return JSONResponse The report, or a 4xx naming what stood in the way.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-runs-can-be-migrated-in-bulk-per-version
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function migrateRuns(string $flow): JSONResponse {
 		if ($this->migrations === null) {
 			return $this->migrationUnavailable();

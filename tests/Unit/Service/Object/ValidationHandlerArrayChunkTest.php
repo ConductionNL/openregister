@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 
 /**
  * A chunk may hold magic-table rows as arrays next to ObjectEntity instances; both reach the bulk save.
@@ -75,11 +76,10 @@ class ValidationHandlerArrayChunkTest extends TestCase {
 			 */
 			public function saveObjects(
 				array $objects,
-				mixed $register = null,
-				mixed $schema = null,
+				BulkSaveOptions $options = new BulkSaveOptions(),
 				mixed ...$flags,
 			): array {
-				$this->calls[] = [$objects, $register, $schema];
+				$this->calls[] = [$objects, $options->defaults->register, $options->defaults->schema];
 				return ['statistics' => ['saved' => count($objects), 'updated' => 0, 'failed' => 0]];
 			}//end saveObjects()
 		};

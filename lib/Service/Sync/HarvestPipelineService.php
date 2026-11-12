@@ -39,6 +39,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Runs the gather -> fetch -> import pipeline for one source.
@@ -415,9 +417,10 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		$existingUuid = $item->trackedUuid();
 		$saved        = $this->importServices->objectService->saveObject(
 			object: $item->mapped,
-			register: $source->getTargetRegister(),
-			schema: $source->getTargetSchema(),
-			uuid: $existingUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $source->getTargetRegister(), schema: $source->getTargetSchema()),
+				uuid: $existingUuid
+			)
 		);
 
 		$savedUuid = $this->savedUuidOf(saved: $saved);

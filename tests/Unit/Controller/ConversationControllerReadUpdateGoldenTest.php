@@ -46,6 +46,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Notifications\Db\Message
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationChange
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope
  */
 class ConversationControllerReadUpdateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/conversation-read-update-golden.json';

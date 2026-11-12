@@ -57,6 +57,7 @@ use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -649,8 +650,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $arguments,
-			register: $register,
-			schema: $schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		return $object->jsonSerialize();
@@ -678,9 +678,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $data,
-			register: $register,
-			schema: $schema,
-			uuid: $id
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
 		);
 
 		return $object->jsonSerialize();

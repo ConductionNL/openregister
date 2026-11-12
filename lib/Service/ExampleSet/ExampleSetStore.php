@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -45,8 +46,10 @@ use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Register access for the example-set loader.
@@ -115,6 +118,12 @@ class ExampleSetStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function refusalsFor(RegisterSchemaRef $table, ObjectCheck $check): array {
+		// A draft declaration is the object's state, not its data (example-set-draft-objects).
+		$draft = (new ExampleSetDraft())->split(data: $check->object);
+		if ($draft['refusal'] !== '') {
+			return [$draft['refusal']];
+		}
+
 		$schemaId = $this->schemaId(register: (string) $table->register, schema: (string) $table->schema);
 		if ($schemaId === null) {
 			return ['this instance has no schema "'.$table->schema.'" in a register "'.$table->register.'"'];
@@ -123,7 +132,7 @@ class ExampleSetStore {
 		try {
 			$validator = $this->container->get(ValidateObject::class);
 			$result    = $validator->validateWithPlannedAccounts(
-				object: $check->object,
+				object: $draft['data'],
 				check: new PlannedAccountsCheck(schema: $schemaId, plannedUsers: $check->plannedUsers)
 			);
 			if ($result->isValid() === true) {
@@ -311,6 +320,10 @@ class ExampleSetStore {
 	/**
 	 * Write one row.
 	 *
+	 * A row whose data declares `@self: {status: "draft", owner: "<scope>:<reference>"}`
+	 * is written in status draft for that scoped owner, as a saved portal form is. It
+	 * may not also name an account owner: the two owners would contradict each other.
+	 *
 	 * @param string               $register The register slug.
 	 * @param string               $schema   The schema slug.
 	 * @param array<string, mixed> $data     The row.
@@ -326,9 +339,32 @@ class ExampleSetStore {
 			return ['id' => '', 'error' => 'OpenRegister\'s object service is not available'];
 		}
 
+		$draft = (new ExampleSetDraft())->split(data: $data);
+		if ($draft['refusal'] !== '') {
+			return ['id' => '', 'error' => $draft['refusal']];
+		}
+
+		$data = $draft['data'];
+		if ($draft['owner'] !== null) {
+			if ($owner !== null) {
+				return ['id' => '', 'error' => 'a draft names its own owner; it may not also name an owner from the cast'];
+			}
+
+			$data['@self'] = ['status' => ObjectEntity::STATUS_DRAFT];
+			$owner         = $draft['owner']->value();
+		}
+
 		try {
 			$saved = $service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _owner: $owner)
+				fn () => $service->saveObject(
+					object: $data,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $register, schema: $schema),
+						actor: new SaveActor(owner: $owner)
+					),
+					_rbac: false,
+					_multitenancy: false
+				)
 			);
 		} catch (Throwable $e) {
 			return ['id' => '', 'error' => $e->getMessage()];
@@ -363,7 +399,15 @@ class ExampleSetStore {
 		$actions?->enterDeclaredState(uuid: $ref->id);
 		try {
 			$service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $ref->register, schema: $ref->schema, uuid: $ref->id, _rbac: false, _multitenancy: false)
+				fn () => $service->saveObject(
+					object: $data,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema),
+						uuid: $ref->id
+					),
+					_rbac: false,
+					_multitenancy: false
+				)
 			);
 		} catch (Throwable $e) {
 			return $e->getMessage();

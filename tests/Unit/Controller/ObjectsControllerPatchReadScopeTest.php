@@ -48,6 +48,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -68,6 +69,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Db\LockTerms
  */
 class ObjectsControllerPatchReadScopeTest extends TestCase {
 
@@ -127,7 +135,8 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves[] = $args[0];
 				$saved = new ObjectEntity();
 				$saved->setUuid('uuid-b');
@@ -249,6 +258,24 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 		$this->controller()->postPatch('1', '2', 'uuid-b', $this->objectService);
 
 		$this->assertSame([[true, true], [true, true]], $this->reads);
+	}
+
+	public function testANonAdminPutReadsWithRbacAndMultitenancy(): void {
+		$this->sends(['amount' => 1]);
+
+		$result = $this->controller()->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame([[true, true]], $this->reads);
+		$this->assertSame([], $this->saves, 'PUT saved an object the caller may not read');
+	}
+
+	public function testAnAdministratorPutStillReadsUnscoped(): void {
+		$this->sends(['amount' => 1]);
+
+		$this->controller(isAdmin: true)->update('1', '2', 'uuid-b', $this->objectService);
+
+		$this->assertSame([[false, false]], $this->reads);
 	}
 
 	public function testAnAdministratorStillReadsUnscoped(): void {

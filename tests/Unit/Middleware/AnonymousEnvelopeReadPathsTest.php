@@ -120,6 +120,21 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntry
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects
+ * @uses \OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights
+ * @uses \OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class AnonymousEnvelopeReadPathsTest extends TestCase {
 

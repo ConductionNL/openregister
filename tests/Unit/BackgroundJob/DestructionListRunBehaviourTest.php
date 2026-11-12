@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Behaviour of DestructionListRun::execute().
@@ -249,7 +250,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$saver = $this->createMock(SaveObjectWriterInterface::class);
 		$saver->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($certFails): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($certFails): ObjectEntity {
 				if ($certFails === true) {
 					throw new RuntimeException('cert store down');
 				}
@@ -258,7 +259,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 				$saved = new ObjectEntity();
 				$saved->setUuid('cert-uuid');
 				return $saved;
-			}
+			})
 		);
 
 		$notifications = $this->createMock(INotificationManager::class);
