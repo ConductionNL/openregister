@@ -278,3 +278,4 @@ portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	worker-19	GATE UNMEA
 portaliq	2287	acc890bc8e1c639fb657566a13410f3bae3c9585	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2321	d739dc35bddc0d0f82e955e37a34aced72bf774f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2288	d01b991cb7650abb3b8e5fef8402c7b836eae48d	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+portaliq	2290	c572f47e91f519fc091d4cbfeb35336a3b535d21	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
