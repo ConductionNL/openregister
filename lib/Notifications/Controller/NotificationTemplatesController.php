@@ -152,8 +152,6 @@ class NotificationTemplatesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
-	 *
-	 * @NoCSRFRequired
 	 */
 	public function update(string $event): JSONResponse {
 		$userId = $this->resolveUserId();

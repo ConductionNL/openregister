@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
@@ -326,18 +328,11 @@ class ObjectWriteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateAsksTheSaveToRefuseATakenIdentifierOnlyUnderOnConflictFail(): void {
-		$position = null;
-		foreach ((new \ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters() as $parameter) {
-			if ($parameter->getName() === 'failIfExists') {
-				$position = $parameter->getPosition();
-			}
-		}
-
-		$this->assertNotNull($position, 'saveObject() takes failIfExists');
+		$this->assertTrue(property_exists(SavePolicy::class, 'failIfExists'), 'saveObject() takes failIfExists');
 		$flags = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use (&$flags, $position): ObjectEntity {
-				$flags[] = (func_get_args()[$position] ?? null);
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$flags): ObjectEntity {
+				$flags[] = $options->policy->failIfExists;
 				return $this->entity('uuid-' . count($flags), []);
 			}
 		);
@@ -353,7 +348,11 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testEachItemProducesOneAttributedCreate(): void {
 		$seen = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$silent = $options->policy->silent;
+				$currentUser = $options->actor->currentUser;
 				$seen[] = [
 					'object' => $object,
 					'register' => $register,
@@ -402,7 +401,8 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testBypassKeysInTheConfigurationAreNeverForwarded(): void {
 		$seen = null;
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
+				$silent = $options->policy->silent;
 				$seen = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'silent' => $silent];
 
 				return $this->entity('uuid-1', $object);
@@ -452,7 +452,7 @@ class ObjectWriteNodeTest extends TestCase {
 	private function payloadFor(array $fields, array $json, array $extraConfig = []): array {
 		$payload = null;
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object) use (&$payload): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$payload): ObjectEntity {
 				$payload = $object;
 
 				return $this->entity('uuid-1', []);
@@ -816,7 +816,8 @@ class ObjectWriteNodeTest extends TestCase {
 		$seenUuid = null;
 		$this->objects->expects($this->never())->method('patchObject');
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null) use (&$seenUuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seenUuid): ObjectEntity {
+				$uuid = $options->uuid;
 				$seenUuid = $uuid;
 
 				return $this->entity('u-1', $object);
@@ -1208,7 +1209,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testExceedingTheCapFailsNamingTheCapAndTheWritesPerformed(): void {
 		$writes = 0;
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use (&$writes): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$writes): ObjectEntity {
 				$writes++;
 
 				return $this->entity('u-' . $writes, []);
@@ -1359,7 +1360,7 @@ class ObjectWriteNodeTest extends TestCase {
 	 */
 	public function testAnOutputKeyPreservesTheIncomingRecord(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				return $this->entity('uuid-1', $object);
 			}
 		);
@@ -1389,7 +1390,7 @@ class ObjectWriteNodeTest extends TestCase {
 	 */
 	public function testWithoutAnOutputKeyTheWrittenObjectStillReplacesTheRecord(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				return $this->entity('uuid-1', $object);
 			}
 		);
@@ -1756,7 +1757,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testOnlyUnskippedItemsAreWrittenAndOrderIsKept(): void {
 		$written = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
 				$written[] = $object['title'] ?? null;
 
 				return $this->entity('u', $object);

@@ -60,6 +60,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Every case runs the real SaveObject::saveObject. The mapper finds a row by uuid or slug, as
@@ -397,7 +399,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		SaveLookupsAccess::set($handler, 'registerCache', ['10' => $register]);
 
 		try {
-			$handler->saveObject(register: $register, schema: $incident, data: ['notes' => $notes] + $this->extra['data'], uuid: $uuid, _rbac: $rbac, persist: $this->persist);
+			$handler->saveObject(data: ['notes' => $notes] + $this->extra['data'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $incident), uuid: $uuid), _rbac: $rbac, persist: $this->persist);
 		} catch (NotAuthorizedException $e) {
 			$this->refused = true;
 		}

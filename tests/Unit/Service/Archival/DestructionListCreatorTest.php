@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 class DestructionListCreatorTest extends TestCase {
 
@@ -107,13 +108,13 @@ class DestructionListCreatorTest extends TestCase {
 		/** @var SaveObject&MockObject $saveObject */
 		$saveObject = $this->createMock(SaveObject::class);
 		$saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				$this->saved[] = ['register' => $register, 'schema' => $schema, 'data' => $data];
 				$list = new ObjectEntity();
 				$list->setUuid('list-' . count($this->saved));
 				$list->setObject($data);
 				return $list;
-			}
+			})
 		);
 
 		$this->creator = new DestructionListCreator(

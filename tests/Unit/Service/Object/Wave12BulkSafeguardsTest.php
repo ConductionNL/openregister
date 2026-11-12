@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;

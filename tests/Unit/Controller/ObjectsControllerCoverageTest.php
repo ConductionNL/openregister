@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -1692,7 +1693,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			->method('find')
 			->willReturnCallback(
 				function (...$args) use (&$findArgs, $objectEntity): ObjectEntity {
-					$findArgs = $args;
+					$findArgs = FindCallShape::find(args: $args);
 					return $objectEntity;
 				}
 			);

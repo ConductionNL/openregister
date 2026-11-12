@@ -190,7 +190,7 @@ class DecisionTableBulkGuardTest extends TestCase {
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null, rowRules: new BulkRowRules(decisionTables: $this->guard([$other])))
 		);
 
-		$result = $service->saveObjects([3 => $this->table()]);
+		$result = $service->saveObjects(objects: [3 => $this->table()]);
 
 		$this->assertSame([], $result['saved']);
 		$this->assertCount(1, $result['invalid']);

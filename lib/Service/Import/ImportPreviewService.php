@@ -52,6 +52,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Previews an import, then commits the preview.
@@ -456,10 +462,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
-				register: $destination->register,
-				schema: $destination->schema,
-				validation: false,
-				events: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $destination->register, schema: $destination->schema),
+					validation: false,
+					events: false
+				)
 			);
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
@@ -526,10 +533,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $run->destination->register,
-				schema: $run->destination->schema,
-				_validation: false,
-				currentUser: $run->currentUser
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $run->destination->register, schema: $run->destination->schema),
+					policy: new SavePolicy(validation: false),
+					actor: new SaveActor(currentUser: $run->currentUser)
+				)
 			);
 
 			$this->stampApplied(preview: $run->preview, rows: [$row]);

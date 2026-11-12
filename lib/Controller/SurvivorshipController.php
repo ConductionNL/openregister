@@ -52,6 +52,8 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Controller\Support\SurvivorshipControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Source records and attribute overrides of a master object.
@@ -163,7 +165,6 @@ class SurvivorshipController extends Controller {
 	 * @return JSONResponse JSON response with the recomputed object.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
 	 *
@@ -217,9 +218,10 @@ class SurvivorshipController extends Controller {
 
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+				uuid: $object->getUuid()
+			)
 		);
 	}//end overrideAndSave()
 

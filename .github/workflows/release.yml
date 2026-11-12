@@ -15,6 +15,9 @@ on:
         type: choice
         options: [beta, rc, stable]
 
+permissions:
+  contents: read
+
 jobs:
   unstable:
     if: github.event_name == 'push'

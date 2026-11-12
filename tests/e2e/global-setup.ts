@@ -297,6 +297,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 		const apiContext = await request.newContext({
 			baseURL,
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
 			},
 		})

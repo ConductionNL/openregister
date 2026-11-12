@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -272,7 +273,7 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
 		}
 
-		$writer = new Csv($this->spreadsheetFor(request: $request));
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
 
 		ob_start();
 		$writer->save('php://output');
@@ -650,7 +651,7 @@ class ExportService implements ObjectExporterInterface {
 		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
 
 		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . '1', value: $header);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
 		return $spreadsheet;
@@ -688,7 +689,7 @@ class ExportService implements ObjectExporterInterface {
 	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
 	 */
 	public function templateCsvFor(ExportRequest $request): string {
-		$writer = new Csv($this->templateSpreadsheetFor(request: $request));
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->templateSpreadsheetFor(request: $request)));
 		$writer->setUseBOM(true);
 
 		ob_start();
@@ -742,7 +743,7 @@ class ExportService implements ObjectExporterInterface {
 
 		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . '1', value: $header);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
 		$objects = $this->fetchObjectsForExport(request: $request);
@@ -1007,7 +1008,7 @@ class ExportService implements ObjectExporterInterface {
 		$row = self::FIRST_DATA_ROW;
 		foreach ($table->objects as $object) {
 			foreach ($this->rowValues(table: $table, object: $object) as $col => $value) {
-				$sheet->setCellValue(coordinate: $col . $row, value: $value);
+				SpreadsheetCell::set(sheet: $sheet, coordinate: $col . $row, value: $value);
 			}
 
 			$row++;

@@ -51,6 +51,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -86,12 +87,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->store->expects($this->once())->method('put')
 			->with('minted-uuid', 'hunter2', 'personal');
 
-		$entity = $this->makeBroker()->mint(
-			name: 'My GitHub',
-			provider: 'github',
-			owner: 'alice',
-			allowedApps: ['openconnector'],
-			secret: 'hunter2'
+		$entity = $this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(allowedApps: ['openconnector'], secret: 'hunter2')
 		);
 
 		// The mint returns the persisted entity — its uuid is the credentialRef.
@@ -115,11 +113,9 @@ class CredentialBrokerMintTest extends TestCase {
 	public function testMintNeverPersistsTheSecretToTheObject(): void {
 		$this->stubSaveObject(uuid: 'minted-uuid');
 
-		$this->makeBroker()->mint(
-			name: 'My GitHub',
-			provider: 'github',
-			owner: 'alice',
-			secret: 'super-secret-value'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: 'super-secret-value')
 		);
 
 		$this->assertArrayNotHasKey('secret', $this->savedObject);
@@ -134,14 +130,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->store->expects($this->once())->method('put')
 			->with('org-cred-uuid', 'org-secret', 'organisation');
 
-		$this->makeBroker()->mint(
-			name: 'Tender GitHub',
-			provider: 'github',
-			owner: 'admin-uid',
-			allowedApps: [],
-			secret: 'org-secret',
-			scope: 'organisation',
-			organisation: 'org-target'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Tender GitHub', provider: 'github', owner: 'admin-uid'),
+			options: new CredentialMintOptions(allowedApps: [], secret: 'org-secret', scope: 'organisation', organisation: 'org-target')
 		);
 
 		$this->assertSame('organisation', $this->savedObject['scope']);
@@ -159,13 +150,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->store->expects($this->once())->method('put')
 			->with('odd-scope', 'secret', 'personal');
 
-		$this->makeBroker()->mint(
-			name: 'Odd scope',
-			provider: 'github',
-			owner: 'alice',
-			secret: 'secret',
-			scope: 'tenant',
-			organisation: 'org-ignored'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Odd scope', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: 'secret', scope: 'tenant', organisation: 'org-ignored')
 		);
 
 		$this->assertArrayNotHasKey('scope', $this->savedObject);
@@ -192,11 +179,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
 
-		$entity = $this->makeBroker()->mint(
-			name: 'Metadata only',
-			provider: 'github',
-			owner: 'alice',
-			secret: null
+		$entity = $this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Metadata only', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: null)
 		);
 
 		$this->assertSame('metadata-only', $entity->getUuid());
@@ -212,11 +197,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->store->expects($this->once())->method('put')
 			->with('minted-uuid', 'gho_hunter2', 'personal');
 
-		$this->makeBroker()->mint(
-			name: 'My GitHub',
-			provider: 'github',
-			owner: 'alice',
-			secret: "gho_hunter2\n"
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: "gho_hunter2\n")
 		);
 	}
 
@@ -228,11 +211,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
 
-		$this->makeBroker()->mint(
-			name: 'Metadata only',
-			provider: 'github',
-			owner: 'alice',
-			secret: "  \n\t "
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Metadata only', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: "  \n\t ")
 		);
 	}
 
@@ -240,11 +221,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->stubSaveObject(uuid: 'metadata-only');
 		$this->store->expects($this->never())->method('put');
 
-		$this->makeBroker()->mint(
-			name: 'Metadata only',
-			provider: 'github',
-			owner: 'alice',
-			secret: ''
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Metadata only', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: '')
 		);
 
 		$this->assertSame('Metadata only', $this->savedObject['name']);
@@ -262,11 +241,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('vault down');
 
-		$this->makeBroker()->mint(
-			name: 'My GitHub',
-			provider: 'github',
-			owner: 'alice',
-			secret: 'hunter2'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: 'hunter2')
 		);
 	}
 
@@ -280,11 +257,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('vault down');
 
-		$this->makeBroker()->mint(
-			name: 'My GitHub',
-			provider: 'github',
-			owner: 'alice',
-			secret: 'hunter2'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'My GitHub', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: 'hunter2')
 		);
 	}
 
@@ -295,12 +270,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->store->expects($this->once())->method('put')
 			->with('job-minted-uuid', 'migrated-secret', 'personal');
 
-		$entity = $this->makeBroker()->mint(
-			name: 'Migrated source secret',
-			provider: 'generic-api-key',
-			owner: 'asserted-owner',
-			allowedApps: ['openconnector'],
-			secret: 'migrated-secret'
+		$entity = $this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Migrated source secret', provider: 'generic-api-key', owner: 'asserted-owner'),
+			options: new CredentialMintOptions(allowedApps: ['openconnector'], secret: 'migrated-secret')
 		);
 
 		$this->assertSame('job-minted-uuid', $entity->getUuid());
@@ -322,14 +294,9 @@ class CredentialBrokerMintTest extends TestCase {
 		$this->stubSaveObject(uuid: 'sys-minted-uuid');
 		$this->store->expects($this->once())->method('put');
 
-		$this->makeBroker()->mint(
-			name: 'Sessionless mint',
-			provider: 'generic-api-key',
-			owner: 'asserted-owner',
-			allowedApps: ['openconnector'],
-			secret: 'a-secret',
-			scope: 'organisation',
-			organisation: 'org-uuid'
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Sessionless mint', provider: 'generic-api-key', owner: 'asserted-owner'),
+			options: new CredentialMintOptions(allowedApps: ['openconnector'], secret: 'a-secret', scope: 'organisation', organisation: 'org-uuid')
 		);
 
 		$this->assertFalse($this->savedScope['_rbac'], 'mint() must create the credential object with _rbac:false');
@@ -342,7 +309,10 @@ class CredentialBrokerMintTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->makeBroker()->mint(name: '   ', provider: 'github', owner: 'alice', secret: 'x');
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: '   ', provider: 'github', owner: 'alice'),
+			options: new CredentialMintOptions(secret: 'x')
+		);
 	}
 
 	public function testOrganisationScopeWithoutOrganisationIsRejected(): void {
@@ -351,14 +321,9 @@ class CredentialBrokerMintTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->makeBroker()->mint(
-			name: 'Tender GitHub',
-			provider: 'github',
-			owner: 'admin-uid',
-			allowedApps: [],
-			secret: 'x',
-			scope: 'organisation',
-			organisation: null
+		$this->makeBroker()->mintCredential(
+			mint: new CredentialMint(name: 'Tender GitHub', provider: 'github', owner: 'admin-uid'),
+			options: new CredentialMintOptions(allowedApps: [], secret: 'x', scope: 'organisation', organisation: null)
 		);
 	}
 
@@ -369,15 +334,9 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				$register = null,
-				$schema = null,
-				?string $incomingUuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->savedObject = $object;
 				$this->savedScope = [
 					'register' => $register,

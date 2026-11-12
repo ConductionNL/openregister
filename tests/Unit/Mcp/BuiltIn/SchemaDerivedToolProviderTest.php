@@ -32,11 +32,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -421,7 +423,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, null, $entry['schema'], true, true)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, null, $entry['schema'], true, true))
 			->willReturn($this->mockObject(['id' => 'uuid-1']));
 
 		$result = $provider->invokeTool('pipelinq.lead.get', ['id' => 'uuid-1']);
@@ -447,7 +449,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed $object) use (&$captured) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured) {
 				$captured = $object;
 				return $this->mockObject(['id' => 'new-uuid', 'name' => 'X']);
 			});
@@ -466,7 +468,8 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed ...$args) use (&$capturedArgs) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedArgs) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$capturedArgs = $args;
 				return $this->mockObject(['id' => 'uuid-2', 'name' => 'Edited']);
 			});

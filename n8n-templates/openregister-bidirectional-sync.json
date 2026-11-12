@@ -155,6 +155,15 @@
         "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.uuid}}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OCS-APIRequest",
+              "value": "true"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{$json}}",

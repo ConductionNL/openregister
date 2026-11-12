@@ -37,7 +37,7 @@ jobs:
       # this branch against the merge base with `development`, and a depth-1
       # checkout has no merge base to find — it would report "no verdict" on
       # every run, which is the silent skip the check exists to remove.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -70,7 +70,7 @@ jobs:
           fi
           echo "No conflict markers."
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           coverage: none

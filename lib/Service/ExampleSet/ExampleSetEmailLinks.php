@@ -225,15 +225,13 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-link-mail-to-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
-		$key = $row->key;
 		$data = $row->data;
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
 		}
 
-		return $this->insert(link: $this->newLink(app: $app, key: $key, object: $object, data: $data));
+		return $this->insert(link: $this->newLink(row: $row, object: $object));
 	}//end write()
 
 	/**
@@ -256,20 +254,21 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	/**
 	 * The link of the mail to the object, as the set writes it.
 	 *
-	 * @param string               $app    The app that ships the fragment, the linker unless linkedBy names one.
-	 * @param string               $key    The link's key in the fragment.
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The filled link fields.
+	 * @param ExampleSetRow $row    The link row: the app that ships the fragment (the linker unless linkedBy names one),
+	 *                              the link's key in the fragment and the filled link fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return EmailLink
 	 */
-	private function newLink(string $app, string $key, ObjectEntity $object, array $data): EmailLink {
+	private function newLink(ExampleSetRow $row, ObjectEntity $object): EmailLink {
+		$app  = $row->app;
+		$data = $row->data;
 		$link = new EmailLink();
 		$link->setObjectUuid((string) $data['object']);
 		$link->setRegisterId((int) $object->getRegister());
 		$link->setSchemaId((int) $object->getSchema());
 		$this->setMail(link: $link, data: $data);
-		$link->setMetadata((string) json_encode($this->metadata(source: 'example-set:'.$app.'/'.$key, data: $data)));
+		$link->setMetadata((string) json_encode($this->metadata(source: 'example-set:'.$app.'/'.$row->key, data: $data)));
 		$link->setLinkedBy((string) ($data['linkedBy'] ?? $app));
 		$link->setLinkedAt(new DateTime());
 

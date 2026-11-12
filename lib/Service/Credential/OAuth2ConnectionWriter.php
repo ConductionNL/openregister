@@ -170,15 +170,19 @@ class OAuth2ConnectionWriter {
 	 */
 	private function mintNew(OAuth2FlowClaims $flow, OAuth2TokenSet $tokenSet): string {
 		$providerId = $flow->string(key: 'p');
-		$minted = $this->broker->mint(
-			name: $flow->string(key: 'nm', default: $providerId),
-			provider: $providerId,
-			owner: $flow->string(key: 'u'),
-			allowedApps: $flow->allowedApps(),
-			secret: $tokenSet->toStoredJson(),
-			scope: $flow->string(key: 's', default: 'personal'),
-			organisation: $flow->organisation(),
-			metadata: $this->metadata(flow: $flow, tokenSet: $tokenSet)
+		$minted = $this->broker->mintCredential(
+			mint: new CredentialMint(
+				name: $flow->string(key: 'nm', default: $providerId),
+				provider: $providerId,
+				owner: $flow->string(key: 'u'),
+				metadata: $this->metadata(flow: $flow, tokenSet: $tokenSet)
+			),
+			options: new CredentialMintOptions(
+				allowedApps: $flow->allowedApps(),
+				secret: $tokenSet->toStoredJson(),
+				scope: $flow->string(key: 's', default: 'personal'),
+				organisation: $flow->organisation()
+			)
 		);
 
 		return (string)$minted->getUuid();

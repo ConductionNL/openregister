@@ -77,3 +77,10 @@ updates:
         - "*"
       exclude:
         - "conduction/*"
+
+  # Keeps the commit-SHA pins of the workflow actions current; the version
+  # comment next to each pin is what dependabot reads and rewrites.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

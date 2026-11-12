@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * LockRequest: what a caller asks for when it takes an object lock.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/object-interactions/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
+
+
+/**
+ * The arguments of LockHandler::lock(), carried together through its steps.
+ */
+final class LockRequest {
+
+	/**
+	 * Flow run taking the lock, for a run-scoped lock.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $runUuid;
+
+	/**
+	 * Flow node that took it, recorded for the sweep.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $nodeId;
+
+	/**
+	 * Constructor
+	 *
+	 * @param string      $identifier Object ID or UUID.
+	 * @param string|null $process    What the lock is taken for.
+	 * @param int|null    $duration   Lock duration in seconds.
+	 * @param LockRunStep $runStep    The flow run and node taking it, both null outside a run.
+	 */
+	public function __construct(
+		public readonly string $identifier,
+		public readonly ?string $process=null,
+		public readonly ?int $duration=null,
+		LockRunStep $runStep=new LockRunStep(runUuid: null, nodeId: null),
+	) {
+		$this->runUuid = $runStep->runUuid;
+		$this->nodeId = $runStep->nodeId;
+	}//end __construct()
+}//end class

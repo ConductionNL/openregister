@@ -1687,6 +1687,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * POST the firing to a declared, non-persistent webhook with a valid URL.
 	 *
+	 * The URL must be http or https. The call goes through Nextcloud's HTTP client,
+	 * which pins the address it resolves and refuses local and private addresses at
+	 * connect time, so the address checked is the address called; redirects are not
+	 * followed.
+	 *
 	 * @param array<string, mixed> $hook   The rule's `webhook` block.
 	 * @param RuleFiring           $firing The rule, the object, its recipients and the default-locale subject.
 	 *
@@ -1696,6 +1701,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$url = (string)($hook['url'] ?? '');
 		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
 			return 'webhook url missing or malformed';
+		}
+
+		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+		if ($scheme !== 'http' && $scheme !== 'https') {
+			return 'webhook url refused: only http and https are allowed';
 		}
 
 		return $this->sendWebhook(hook: $hook, options: $this->webhookOptions(hook: $hook, firing: $firing));
@@ -1719,6 +1729,8 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			'json' => $this->webhookPayload(firing: $firing),
 			'headers' => array_merge(['Content-Type' => 'application/json'], $headers),
 			'timeout' => 5,
+			'allow_redirects' => false,
+			'nextcloud' => ['allow_local_address' => false],
 		];
 	}//end webhookOptions()
 

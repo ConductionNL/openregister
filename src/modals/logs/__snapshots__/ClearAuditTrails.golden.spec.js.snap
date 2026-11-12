@@ -9,6 +9,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -42,6 +43,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -75,6 +77,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -108,6 +111,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -141,6 +145,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -174,6 +179,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -207,6 +213,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -240,6 +247,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -273,6 +281,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -309,6 +318,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -346,6 +356,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -382,6 +393,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -419,6 +431,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -452,6 +465,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -485,6 +499,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -518,6 +533,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -551,6 +567,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -584,6 +601,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -617,6 +635,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -650,6 +669,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -683,6 +703,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -719,6 +740,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -756,6 +778,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -792,6 +815,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering 
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -829,6 +853,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering b
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -862,6 +887,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering b
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -895,6 +921,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering r
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -928,6 +955,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering r
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -961,6 +989,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering r
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -994,6 +1023,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering r
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1027,6 +1057,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1060,6 +1091,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1093,6 +1125,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1129,6 +1162,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1166,6 +1200,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -1202,6 +1237,7 @@ exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering s
       {
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
