@@ -313,3 +313,4 @@ cover:stackiq:8cfacb29:jsea7197ec	already done: src/utils/* now at 99.34% lines 
 cover:dossiq:6ca0231e:4c817077	PR #6154: 16 tests for RequesterNoticeSender, ApplicantMessage; suite 11976->11992, failures 19 inherited	session-20261112T202912-56c18a61	2026-11-12T20:46:22Z
 merge:portaliq:2295:42369d15	2295 MERGED 2296 MERGED 2297 MERGED 2298 FAIL 2300 MERGED 2301 MERGED 2303 FAIL 2304 MERGED already merged 2305;	session-20261112T184502-4ecd6072	2026-11-12T20:46:47Z
 cover:stackiq:8cfacb29:js17dfdc2e	PR #1754 @1c314099: 26 vitest tests for Migration/Upload/DownloadObject; dir coverage 26.7%->37.6%, 1619 tests green	session-20261112T175557-37d60f4f	2026-11-12T20:47:11Z
+cover:dossiq:6ca0231e:80b3d955	PR #6155: 1 class, 2 tests (Catalogue thin; rest already covered); suite 11976->11978, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:47:14Z
