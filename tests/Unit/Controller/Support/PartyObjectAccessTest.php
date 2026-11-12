@@ -42,6 +42,8 @@ use PHPUnit\Framework\TestCase;
  * Party routes resolve the object, ask the update right on writes and map failures to statuses.
  *
  * @covers \OCA\OpenRegister\Controller\Support\PartyObjectAccess
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PartyObjectAccessTest extends TestCase {
 	/**

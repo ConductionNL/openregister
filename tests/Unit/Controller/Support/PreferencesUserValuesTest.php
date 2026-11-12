@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * A user preference resolves to a sanitised per-user slot that reads, writes and clears.
  *
  * @covers \OCA\OpenRegister\Controller\Support\PreferencesUserValues
+ * @uses \OCA\OpenRegister\Controller\Support\PreferenceSlot
  */
 class PreferencesUserValuesTest extends TestCase {
 	/**

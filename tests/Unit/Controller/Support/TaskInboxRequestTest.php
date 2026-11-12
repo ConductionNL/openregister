@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * The task inbox query string becomes a scope plus a list query of filters, paging and one sort.
  *
  * @covers \OCA\OpenRegister\Controller\Support\TaskInboxRequest
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TaskInboxRequestTest extends TestCase {
 	public function testDefaultsAreTheAssignedScopeSortedByDueDateAscending(): void {

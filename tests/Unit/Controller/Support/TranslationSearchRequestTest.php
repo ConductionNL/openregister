@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Controller\Support\TranslationSearchRequest
  * @covers \OCA\OpenRegister\Controller\Support\TranslationSearchOptions
+ * @uses \OCA\OpenRegister\Controller\Support\TranslationFilter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TranslationSearchRequestTest extends TestCase {
 	public function testFilterFieldsAreReadAndCastToString(): void {

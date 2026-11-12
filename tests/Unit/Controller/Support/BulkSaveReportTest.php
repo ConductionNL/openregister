@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Controller\Support\BulkSaveReport
  * @covers \OCA\OpenRegister\Controller\Support\BulkSaveSummary
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveCounts
  */
 class BulkSaveReportTest extends TestCase {
 	/**
