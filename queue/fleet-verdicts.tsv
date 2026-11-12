@@ -4250,3 +4250,4 @@ shillinq	2799	ca07f8d05f4c916cbbd802c0232f94bd6812e655	GREEN	worker-45	9031 test
 thematiq	1662	20a34d0033f2e68531e7c89c25c7d515a7f84465	GREEN	worker-24	unit 2858 tests, baseline 1 failure (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow, inherited), 0 new; additive api-contract middleware/aliases, existing routes and body keys unchanged
 keepiq	1678	d8b203903df132cde38d17b3749fcaf172754f8b	GREEN	worker-29	3763 tests run (baseline 3722, 0 failures), 0 new failures; tests-only PR
 larpinq	1005	623ed4fa204e82222e9ab91f40476f7762bae59c	GREEN	worker-24	unit 697 tests, baseline 682 green, 0 new failures; additive versioned aliases and deprecation headers, existing routes unchanged
+pipelinq	3565	15e3e445b184248dd9eb1d64a583c42015f73cff	GREEN	worker-10	5773 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest), 0 new; quality-tool config only
