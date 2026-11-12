@@ -3946,3 +3946,5 @@ dossiq	6096	7be207b85160ce1e5cc61020911f83df4722ac5c	GREEN	worker-44	12136 tests
 dossiq	6097	856c057083edac18e944061515829e2698bcf602	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
 dossiq	6098	fcfdc5810c4d5955fd153a00a70c7dcacdca8d8c	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
 dossiq	6099	8068ae3c9155599636c23cb473d2064acf619d20	GREEN	worker-44	12136 tests on 9-PR tree, baseline 11970 with 19 inherited failures, 0 new; tests only
+launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	GREEN	worker-33	PHP 3266 tests on tree (baseline 3256 OK), vitest 1186/1186, 0 new failures; additive endpoint, header and v1 route copies
+launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	GREEN	worker-33	PHP 3266 tests on tree (baseline 3256 OK), vitest 1186/1186, 0 new failures; constant renames with aliases, same values
