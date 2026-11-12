@@ -7307,7 +7307,7 @@
    "feature": "automation-flows",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrFlowTriggerKalender"
    }
   },
   {
@@ -7337,7 +7337,7 @@
    "feature": "automation-flows",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrFlowTriggerWebhook"
    }
   },
   {
