@@ -1,4 +1,5 @@
 # app	pr	head	MERGED|RED|FAIL|SKIP	worker	reason
 humaniq	1070	4e1898e0892937c1958fbcd6e72b398b2837e0bd	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	5908	d690d97f068490a8bab56704d03e24e4144f8950	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5524	6ed0ebde648ebde4748d31c3891c54012b412b73	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold
 humaniq	1071	88f25d6d8702bed20ccfe866d081707b23ce686b	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold
