@@ -829,3 +829,4 @@ verify:pipelinq:3561:a83ed2a7	8 GREEN (3561,3569-3574,3576), 3575 CONFLICT with 
 cover:keepiq:d76c2121:11ebfefd	PR #1694: +20 tests (SchemaFingerprint, TableStore, ArchiveStore, BackupService listing); lib/Backup 387->444/481	session-20261112T223908-abd0da4a	2026-11-12T23:08:41Z
 cover:hermiq:755cdfe7m7444:17bbac84	PR #1624: 19 tests for TaskProcessing providers; suite 3567->3586, no new failures (169 inherited)	session-20261112T224535-bdffbbbc	2026-11-12T23:08:39Z
 cover:pipelinq:f67520ecm9d2c:2cc09f74	PR #3584: ConnectorSourceTransport 80.2->97.9% (10 tests)	session-20261112T221234-13fcfd6a	2026-11-12T23:09:03Z
+cover:keepiq:d76c2121:882bd950	PR #1696: 5 tests, SecretSearchProvider 0->100% (3722->3727 OK)	session-20261112T221532-752808b3	2026-11-12T23:09:35Z
