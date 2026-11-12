@@ -3559,3 +3559,6 @@ hermiq	1529	225b2bcd55ca8a88d2614bca323cc05296b70157	CONFLICT	fv11-25:hermiq-t1	
 hermiq	1532	227ca9a92e8db6f4cf913ca7011e4f4ddb152052	CONFLICT	fv11-25:hermiq-t1	conflict in lib/Service/ScheduleService.php tests/Unit/Service/ScheduleServiceTest.php after tree PRs (clean vs development alone; needs rebase onto the tree)
 dossiq	5879	37188db1d23db547f2ecd4e10554a1752021d84f	GREEN	fv11-16:d2	unit 11843 tests, 19 failures all baseline (no new); no JS touched; diff review clean (read/mutation gates extracted, same responses)
 dossiq	5880	d89b2e63818e64e345a8c958ba1b70e101a572af	GREEN	fv11-16:d2	unit 11843 tests, 19 failures all baseline (no new); no JS touched; diff review clean (read/mutation gates extracted, same responses)
+dossiq	5882	569621bf84ff9c81d5e6d14639a4b8fafb1ee2a9	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
+dossiq	5883	d96cf3c37771c80b8a687a6cd948b54bc1cf19f4	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
+dossiq	5897	1d99681e0b49123150ab9232a417e680f0c5002b	GREEN	fv11-03:d2	unit 11890 tests, 19 failures all inherited (baseline 19), no new; diff review clean (shared helper, same results and messages)
