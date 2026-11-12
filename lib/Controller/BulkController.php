@@ -62,6 +62,8 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -622,12 +624,13 @@ class BulkController extends Controller {
 
 		$savedObjects = $this->objectService->saveObjects(
 			objects: $batch->objects,
-			register: $batch->register,
-			schema: $batch->schema,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $batch->register, schema: $batch->schema),
+				validation: true,
+				events: false
+			),
 			_rbac: true,
-			_multitenancy: true,
-			validation: true,
-			events: false
+			_multitenancy: true
 		);
 
 		$statistics = ($savedObjects['statistics'] ?? []);

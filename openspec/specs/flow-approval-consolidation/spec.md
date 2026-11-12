@@ -21,6 +21,13 @@ position with an approving outcome SHALL enable the next, in the same request
 as the completing decision. A sequence whose last position completes with an
 approving outcome SHALL itself complete with an approving outcome.
 
+An outcome SHALL be approving only when it is in the sequence's approving set,
+compared trimmed and case-insensitive. The approving set SHALL be the list the
+frozen template declares under `approvingOutcomes`, or `approved` and `done`
+when the template declares none. A completed position whose outcome is not in
+the approving set SHALL NOT enable the next position and SHALL NOT complete the
+sequence. A rejecting outcome SHALL reject, also when the approving set names it.
+
 A sequence SHALL NOT require a flow run. `run_uuid` and `node_id` SHALL be
 optional provenance on a sequence exactly as they are on a task: a sequence
 opened by a schema-declared gate has neither, and is first-class.
@@ -29,8 +36,8 @@ Position order SHALL be stable and SHALL NOT be inferred from creation
 timestamps, task ids or inbox ordering. Two positions SHALL NOT share an
 ordinal within one sequence.
 
-A sequence SHALL be terminal in exactly one way per outcome — `completed` with
-an approving outcome, `rejected`, or `terminated` — and SHALL NOT be
+A sequence SHALL be terminal in exactly one way per outcome: `completed` with
+an approving outcome, `rejected`, `undecided` or `terminated`. It SHALL NOT be
 re-opened. A further attempt at the same approval SHALL open a NEW sequence.
 
 #### Scenario: Provisioning enables only the first position
@@ -40,7 +47,7 @@ re-opened. A further attempt at the same approval SHALL open a NEW sequence.
 - **THEN** three tasks MUST exist
 - **AND** exactly one of them, at the first position, MUST be enabled
 - **AND** the other two MUST be non-terminal and not enabled
-- @e2e exclude sequence provisioning contract — covered by TaskSequenceService unit tests
+- @e2e exclude sequence provisioning contract, covered by TaskSequenceService unit tests
 
 #### Scenario: An approving decision enables the next position in the same request
 
@@ -48,7 +55,7 @@ re-opened. A further attempt at the same approval SHALL open a NEW sequence.
 - **WHEN** that task is completed with an approving outcome
 - **THEN** the second position MUST be enabled before the completing request returns
 - **AND** the third position MUST still not be enabled
-- @e2e exclude in-request advance — covered by TaskSequenceService unit tests
+- @e2e exclude in-request advance, covered by TaskSequenceService unit tests
 
 #### Scenario: The last approving decision completes the sequence
 
@@ -56,14 +63,44 @@ re-opened. A further attempt at the same approval SHALL open a NEW sequence.
 - **WHEN** that task is completed with an approving outcome
 - **THEN** the sequence MUST become terminal with an approving outcome
 - **AND** no further position MUST be enabled
-- @e2e exclude terminality — covered by TaskSequenceService unit tests
+- @e2e exclude terminality, covered by TaskSequenceService unit tests
 
 #### Scenario: A sequence with no run is first-class
 
 - **GIVEN** a sequence provisioned by a schema-declared gate, with no run uuid and no node id
 - **WHEN** it is provisioned, advanced and completed
 - **THEN** every step MUST behave identically to a sequence created from a flow
-- @e2e exclude fleet-generic requirement — covered by unit tests without a run
+- @e2e exclude fleet-generic requirement, covered by unit tests without a run
+
+#### Scenario: Done from the task inbox approves a chain that declares no set
+
+- **GIVEN** a running sequence whose template declares no `approvingOutcomes`
+- **WHEN** the enabled task is completed with outcome `done`
+- **THEN** the next position MUST be enabled
+- @e2e exclude default vocabulary, covered by TaskSequenceService unit tests
+
+#### Scenario: An empty outcome does not advance
+
+- **GIVEN** a running sequence whose first of three positions is enabled
+- **WHEN** that task is completed with an empty outcome
+- **THEN** the second position MUST NOT be enabled
+- **AND** the sequence MUST NOT complete
+- @e2e exclude backend rule, covered by TaskSequenceService unit tests
+
+#### Scenario: A declared set replaces the default
+
+- **GIVEN** a running sequence whose template declares `approvingOutcomes: ["approved"]`
+- **WHEN** the enabled task is completed with outcome `done`
+- **THEN** the next position MUST NOT be enabled
+- **AND** a completion with outcome ` Approved ` on such a sequence MUST enable the next position
+- @e2e exclude backend rule, covered by TaskSequenceService unit tests
+
+#### Scenario: A rejecting outcome in a declared set still rejects
+
+- **GIVEN** a running sequence whose template declares `approvingOutcomes: ["approved", "rejected"]`
+- **WHEN** the enabled task is completed with outcome `rejected` and a comment
+- **THEN** the sequence MUST become terminal as rejected
+- @e2e exclude backend rule, covered by TaskSequenceService unit tests
 
 ### Requirement: A rejection terminates the sequence and every task it still owns
 
@@ -396,7 +433,7 @@ the field or verb that handles it.
 
 The rejection outcome vocabulary SHALL be preserved with the meaning its
 declaration always promised, including the outcome that skips rather than
-errors — the retired implementation collapsed two of its three declared
+errors. The retired implementation collapsed two of its three declared
 outcomes onto one behaviour, and the migration SHALL NOT carry that defect
 forward as if it were the contract.
 
@@ -404,12 +441,21 @@ An approved decision that has been consumed SHALL NOT authorize a second
 consumption. Consumption SHALL be recorded on the decided work, and a second
 attempt to rely on the same approval SHALL be refused.
 
+Only an approving decision SHALL be consumed. A decision approves only when
+the task is completed with an outcome in its approving set: the task's own
+`templateSnapshot.approvingOutcomes`, or `approved` and `done` when it
+declares none, compared trimmed and case-insensitive. A completed task whose
+outcome neither approves nor rejects SHALL be refused as undecided, naming the
+outcome. A rejecting outcome SHALL be refused as not an approving decision,
+also when the approving set names it. A task sequence SHALL copy its chain's
+declared approving set onto every position task it provisions.
+
 #### Scenario: The retirement inventory is complete before the runner moves
 
 - **GIVEN** the retirement inventory for the openconnector approval runner
 - **WHEN** it is checked against the `approval_request` declaration
 - **THEN** every declared property MUST name either a target field or verb, or an explicit decision not to carry it with a reason
-- @e2e exclude documentation contract — covered by a fixture test over the inventory
+- @e2e exclude documentation contract, covered by a fixture test over the inventory
 
 #### Scenario: The skip outcome skips
 
@@ -417,14 +463,36 @@ attempt to rely on the same approval SHALL be refused.
 - **WHEN** the outcome is applied
 - **THEN** the subject MUST be skipped
 - **AND** it MUST NOT be recorded as an error
-- @e2e exclude harvested semantic — covered by outcome unit tests
+- @e2e exclude harvested semantic, covered by outcome unit tests
 
 #### Scenario: A consumed approval cannot authorize twice
 
 - **GIVEN** an approving decision that has already been consumed by the work it authorized
 - **WHEN** a later run attempts to rely on the same approval
 - **THEN** the attempt MUST be refused
-- @e2e exclude idempotency of authorization — covered by consumption unit tests
+- @e2e exclude idempotency of authorization, covered by consumption unit tests
+
+#### Scenario: An undecided completion cannot be consumed
+
+- **GIVEN** a task completed with an empty, unknown or `resolved` outcome
+- **WHEN** a run attempts to consume it
+- **THEN** the attempt MUST be refused as undecided, naming the outcome
+- **AND** no consumption MUST be recorded
+- @e2e exclude backend verb, covered by consumption unit tests
+
+#### Scenario: A task's declared set replaces the default
+
+- **GIVEN** a task completed with outcome `done` whose snapshot declares `approvingOutcomes: ["approved"]`
+- **WHEN** a run attempts to consume it
+- **THEN** the attempt MUST be refused as undecided
+- @e2e exclude backend verb, covered by consumption unit tests
+
+#### Scenario: A sequence task carries its chain's set
+
+- **GIVEN** a chain declaring `approvingOutcomes: ["approved"]`
+- **WHEN** a sequence is provisioned from it
+- **THEN** every position task's snapshot MUST carry `approvingOutcomes: ["approved"]`
+- @e2e exclude provisioning, covered by TaskSequenceService unit tests
 
 ### Requirement: A leaf app consumes the task service and ships no approval engine of its own
 
@@ -502,3 +570,95 @@ app's contributed nodes cannot change the graph a suspended run resumes on.
 - **WHEN** the anti-pattern check runs
 - **THEN** the check MUST report it as a flow-definition mirror
 - @e2e exclude gate behaviour — covered by the gate's own fixture suite
+
+### Requirement: A completion that neither approves nor rejects ends the sequence as undecided
+
+When the enabled position completes with an outcome that is neither approving
+nor rejecting, the system SHALL close the sequence with status `undecided` and
+outcome `undecided`. It SHALL terminate every non-terminal task the sequence
+still owns, with a reason naming the position and the outcome. It SHALL
+dispatch `TaskSequenceUndecidedEvent` carrying the sequence and the completed
+task. It SHALL NOT dispatch `TaskSequenceCompletedEvent`.
+
+An undecided sequence, its tasks and its audit SHALL remain readable. A gated
+transition SHALL treat an undecided sequence as not approved: the next attempt
+SHALL open a new sequence beside it.
+
+A chain in `x-openregister-approval-chains` MAY declare `approvingOutcomes`, a
+list of outcomes. The compiled template SHALL carry the list trimmed and
+lowercased, without empty entries, and SHALL omit the key when the chain
+declares no usable entry.
+
+#### Scenario: An unknown outcome on the last position ends the sequence undecided
+
+- **GIVEN** a running sequence on its final position
+- **WHEN** that task is completed with outcome `resolved`
+- **THEN** the sequence MUST become terminal as undecided
+- **AND** `TaskSequenceUndecidedEvent` MUST be dispatched
+- **AND** `TaskSequenceCompletedEvent` MUST NOT be dispatched
+- @e2e exclude backend rule, covered by TaskSequenceService unit tests
+
+#### Scenario: The remaining positions are terminated with a reason
+
+- **GIVEN** a running sequence with three positions and the first enabled
+- **WHEN** the first task is completed with an empty outcome
+- **THEN** the second and third tasks MUST be terminated with a reason naming the first position
+- **AND** none of them MUST be enabled
+- @e2e exclude propagation, covered by TaskSequenceService unit tests
+
+#### Scenario: A new attempt after an undecided sequence opens a new one
+
+- **GIVEN** a gated transition whose newest sequence is undecided
+- **WHEN** the transition is attempted again
+- **THEN** a new sequence MUST be provisioned
+- **AND** the transition MUST be refused as pending approval
+- @e2e exclude gate rule, covered by ApprovalChainGateListener unit tests
+
+#### Scenario: A declared approving set is compiled into the template
+
+- **GIVEN** a chain declaring `approvingOutcomes: [" Approved ", ""]`
+- **WHEN** the chain is compiled
+- **THEN** the template MUST carry `approvingOutcomes: ["approved"]`
+- **AND** a chain without the key MUST compile to a template without it
+- @e2e exclude compiler rule, covered by ApprovalChainGateListener unit tests
+
+### Requirement: Only the task sequence sets a task's sequence fields
+
+A task's `sequenceUuid`, `sequencePosition` and `legacyStepId`, and the
+`approvingOutcomes` in its `templateSnapshot`, SHALL be written only by the
+task sequence when it provisions a position, or by the approval migration.
+
+Creating a task through the task routes SHALL refuse any of these fields that
+carries a value, naming the field, before anything is written. The refusal
+SHALL apply to administrators too. A field sent as `null` SHALL set nothing and
+SHALL NOT be refused. A `templateSnapshot` without `approvingOutcomes` SHALL
+still be accepted.
+
+#### Scenario: A forged sequence step is refused
+
+- **GIVEN** a running sequence on an object a user may read
+- **WHEN** the user creates a task on that object with `sequenceUuid` set to the sequence, `sequencePosition` 2 and state `enabled`
+- **THEN** the creation MUST be refused naming `sequenceUuid`
+- **AND** no task MUST be written
+- @e2e exclude backend refusal, covered by TaskService unit tests
+
+#### Scenario: An administrator cannot forge a position either
+
+- **GIVEN** an administrator
+- **WHEN** they create a task with `sequencePosition` 0
+- **THEN** the creation MUST be refused naming `sequencePosition`
+- @e2e exclude backend refusal, covered by TaskService unit tests
+
+#### Scenario: A caller cannot choose what approves their task
+
+- **GIVEN** a user creating a task
+- **WHEN** the payload's `templateSnapshot` carries `approvingOutcomes`
+- **THEN** the creation MUST be refused naming `templateSnapshot.approvingOutcomes`
+- @e2e exclude backend refusal, covered by TaskService unit tests
+
+#### Scenario: The sequence still provisions its positions
+
+- **GIVEN** a chain declaring two positions
+- **WHEN** the task sequence provisions them
+- **THEN** each task MUST carry its `sequenceUuid`, `sequencePosition` and position snapshot
+- @e2e exclude trusted path, covered by TaskService and TaskSequenceService unit tests

@@ -29,6 +29,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
@@ -422,8 +424,17 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		});
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(function (string $name, string $provider, string $owner, array $allowedApps = [], ?string $secret = null, string $scope = 'personal', ?string $organisation = null, array $metadata = []): ObjectEntity {
-			$this->mints[] = compact('name', 'provider', 'owner', 'allowedApps', 'secret', 'scope', 'organisation', 'metadata');
+		$broker->method('mintCredential')->willReturnCallback(function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+			$this->mints[] = [
+				'name' => $mint->name,
+				'provider' => $mint->provider,
+				'owner' => $mint->owner,
+				'allowedApps' => $options->allowedApps,
+				'secret' => $options->secret(),
+				'scope' => $options->scope,
+				'organisation' => $options->organisation,
+				'metadata' => $mint->metadata,
+			];
 			$minted = new ObjectEntity();
 			$minted->setUuid('minted-uuid');
 			return $minted;
