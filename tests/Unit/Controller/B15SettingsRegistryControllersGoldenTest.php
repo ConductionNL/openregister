@@ -41,20 +41,20 @@ final class B15SettingsRegistryControllersGoldenTest extends TestCase {
 		$expected = [
 			CacheSettingsController::class => [
 				'getCacheStats' => ['@NoCSRFRequired'],
-				'clearCache' => ['@NoCSRFRequired'],
-				'warmupNamesCache' => ['@NoCSRFRequired'],
+				'clearCache' => [],
+				'warmupNamesCache' => [],
 				'getWarmupInterval' => ['@NoCSRFRequired'],
-				'setWarmupInterval' => ['@NoCSRFRequired'],
-				'clearAppStoreCache' => ['@NoCSRFRequired'],
+				'setWarmupInterval' => [],
+				'clearAppStoreCache' => [],
 			],
 			ApplicationsController::class => [
 				'page' => ['@NoAdminRequired', '@NoCSRFRequired'],
 				'index' => ['@NoAdminRequired', '@NoCSRFRequired'],
 				'show' => ['@NoAdminRequired', '@NoCSRFRequired'],
-				'create' => ['@NoAdminRequired', '@NoCSRFRequired'],
-				'update' => ['@NoAdminRequired', '@NoCSRFRequired'],
-				'patch' => ['@NoAdminRequired', '@NoCSRFRequired'],
-				'destroy' => ['@NoAdminRequired', '@NoCSRFRequired'],
+				'create' => ['@NoAdminRequired'],
+				'update' => ['@NoAdminRequired'],
+				'patch' => ['@NoAdminRequired'],
+				'destroy' => ['@NoAdminRequired'],
 			],
 			ManifestController::class => [
 				'index' => ['NoAdminRequired', 'NoCSRFRequired', 'PublicPage', 'AnonRateLimit', '@NoAdminRequired', '@NoCSRFRequired', '@PublicPage'],

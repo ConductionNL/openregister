@@ -41,6 +41,11 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectGrantsControllerFactory
  *
  * @covers \OCA\OpenRegister\Controller\ObjectGrantsController
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGrantsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowsQuery
  */
 class ObjectGrantsControllerTest extends TestCase {
 

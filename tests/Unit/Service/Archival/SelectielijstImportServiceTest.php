@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Tests for SelectielijstImportService.
@@ -72,10 +73,10 @@ class SelectielijstImportServiceTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$this->saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) {
 				$this->saved[] = $data;
 				return new ObjectEntity();
-			}
+			})
 		);
 
 		$this->settingsHandler = $this->createMock(ObjectRetentionHandler::class);

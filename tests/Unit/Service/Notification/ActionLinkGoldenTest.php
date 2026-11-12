@@ -283,9 +283,7 @@ final class ActionLinkGoldenTest extends TestCase {
 				httpClient: $this->createMock(IClientService::class),
 				serverContainer: $this->createMock(IServerContainer::class)
 			),
-			ledger: new DeliveryLedger(
-				logger: $logger
-			),
+			ledger: new DeliveryLedger(logger: $logger),
 			audience: new RuleAudience(
 				schemaMapper: $this->createMock(SchemaMapper::class),
 				recipientResolver: new NotificationRecipientResolver(
@@ -296,9 +294,7 @@ final class ActionLinkGoldenTest extends TestCase {
 				)
 			),
 			rendering: new MessageRendering(
-				templating: new NotificationTemplating(
-					logger: $logger
-				),
+				templating: new NotificationTemplating(logger: $logger),
 				urlGenerator: $wired === true ? $this->urlGenerator() : null,
 				objectService: $wired === true ? $this->objectService() : null,
 				deepLinkRegistry: $wired === true ? $this->registry() : null

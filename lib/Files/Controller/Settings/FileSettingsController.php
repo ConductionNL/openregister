@@ -132,8 +132,6 @@ class FileSettingsController extends Controller {
 	/**
 	 * Update File Management settings
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated file settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
@@ -172,8 +170,6 @@ class FileSettingsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
 	 *     message?: 'Dolphin connection successful'}, array<never, never>>
 	 *
@@ -207,8 +203,6 @@ class FileSettingsController extends Controller {
 	 * @param string $apiEndpoint Presidio API endpoint URL
 	 *
 	 * @return JSONResponse
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string,
 	 *     message?: string, capabilities?: array}, array<never, never>>
@@ -252,8 +246,6 @@ class FileSettingsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @deprecated OpenAnonymiser is now detected via AppAPI, not an HTTP endpoint.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|500, array{success: bool, error?: string,
 	 *     message?: string}, array<never, never>>

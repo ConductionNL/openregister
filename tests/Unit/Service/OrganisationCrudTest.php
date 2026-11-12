@@ -915,6 +915,7 @@ class OrganisationCrudTest extends TestCase {
 		// Arrange: Mock user session.
 		$this->mockUser->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
+		$this->groupManager->method('isAdmin')->with('alice')->willReturn(true);
 
 		// Mock: No existing default organisation.
 		$this->appConfig->method('getValueString')
@@ -945,6 +946,32 @@ class OrganisationCrudTest extends TestCase {
 
 		// Assert.
 		$this->assertEquals('first-org-uuid', $result->getUuid());
+	}
+
+	/**
+	 * Test createOrganisation by a regular user never makes it the default
+	 *
+	 * @return void
+	 */
+	public function testCreateOrganisationByARegularUserDoesNotBecomeTheDefault(): void {
+		$this->mockUser->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($this->mockUser);
+		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+		$this->groupManager->method('get')->willReturn(null);
+		$this->appConfig->method('getValueString')
+			->with('openregister', 'defaultOrganisation', '')
+			->willReturn('');
+
+		$savedOrg = new Organisation();
+		$savedOrg->setName('Bob Org');
+		$savedOrg->setUuid('bob-org-uuid');
+		$this->organisationMapper->method('save')->willReturn($savedOrg);
+
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Bob Org', description: 'desc'));
+
+		$this->assertEquals('bob-org-uuid', $result->getUuid());
 	}
 
 	/**

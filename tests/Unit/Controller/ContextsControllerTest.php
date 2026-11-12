@@ -29,11 +29,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContextsControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -41,12 +44,16 @@ class ContextsControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
+	private IUserSession&MockObject $userSession;
+	private PermissionCheckInterface&MockObject $permissions;
 	private ContextsController $controller;
 
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->permissions = $this->createMock(PermissionCheckInterface::class);
 
 		$urlGenerator = $this->createMock(IURLGenerator::class);
 		$urlGenerator->method('linkToRouteAbsolute')->willReturnCallback(
@@ -62,8 +69,26 @@ class ContextsControllerTest extends TestCase {
 		$this->controller = ContextsControllerFactory::create(
 			$this->request,
 			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
-			$contextService
+			$contextService,
+			$this->userSession,
+			$this->permissions
 		);
+	}
+
+	private function signedIn(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+	}
+
+	private function anonymous(bool $published): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->permissions->method('hasPermission')->willReturn($published);
+	}
+
+	private function stubRegisterAndSchema(): void {
+		$this->registerMapper->method('find')->willReturn($this->makeRegister());
+		$this->schemaMapper->method('findInIds')->willReturn($this->makeSchema());
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
+		$this->request->method('getHeader')->willReturn('');
 	}
 
 	private function makeRegister(): Register {
@@ -84,6 +109,7 @@ class ContextsControllerTest extends TestCase {
 	}
 
 	public function testSchemaContextShape(): void {
+		$this->signedIn();
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
 		// The `{register}` segment is now the boundary: the schema ref resolves
 		// among the ids the register carries (findInIds), not instance-wide.
@@ -110,6 +136,7 @@ class ContextsControllerTest extends TestCase {
 	}
 
 	public function testRegisterContextZeroConfig(): void {
+		$this->signedIn();
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
 		$this->schemaMapper->method('findInIds')->willReturn($this->makeSchema());
 		$this->schemaMapper->method('find')->willReturn($this->makeSchema());
@@ -124,6 +151,7 @@ class ContextsControllerTest extends TestCase {
 	}
 
 	public function testConditionalGetReturns304(): void {
+		$this->signedIn();
 		if ($this->hasOcServer() === false) {
 			$this->markTestSkipped('Reading the ETag header requires the Nextcloud container (\OC::$server).');
 		}
@@ -156,6 +184,7 @@ class ContextsControllerTest extends TestCase {
 	private string $ifNoneMatch = '';
 
 	public function testUnknownRegisterReturns404(): void {
+		$this->signedIn();
 		$this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
 		$this->request->method('getHeader')->willReturn('');
 
@@ -165,6 +194,7 @@ class ContextsControllerTest extends TestCase {
 	}
 
 	public function testUnknownSchemaReturns404(): void {
+		$this->signedIn();
 		$this->registerMapper->method('find')->willReturn($this->makeRegister());
 		$this->schemaMapper->method('findInIds')->willReturn(null);
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
@@ -173,5 +203,62 @@ class ContextsControllerTest extends TestCase {
 		$response = $this->controller->schema('personen', 'does-not-exist');
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}
+
+	public function testAnonymousCallerReadsAPublishedSchemaContext(): void {
+		$this->anonymous(published: true);
+		$this->stubRegisterAndSchema();
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->schema('personen', 'persoon')->getStatus());
+		$this->assertSame(Http::STATUS_OK, $this->controller->register('personen')->getStatus());
+	}
+
+	public function testAnonymousCallerGetsNoContextOfAnUnpublishedSchema(): void {
+		$this->anonymous(published: false);
+		$this->stubRegisterAndSchema();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->schema('personen', 'persoon')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->register('personen')->getStatus());
+	}
+
+	public function testAFailingPublicationCheckRefusesTheAnonymousCaller(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->permissions->method('hasPermission')->willThrowException(new \RuntimeException('unresolvable'));
+		$this->stubRegisterAndSchema();
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->schema('personen', 'persoon')->getStatus());
+	}
+
+	public function testSignedInCallerReadsAnUnpublishedSchemaContext(): void {
+		$this->signedIn();
+		$this->permissions->expects($this->never())->method('hasPermission');
+		$this->stubRegisterAndSchema();
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->schema('personen', 'persoon')->getStatus());
+		$this->assertSame(Http::STATUS_OK, $this->controller->register('personen')->getStatus());
+	}
+
+	public function testAnonymousRegisterContextCoversOnlyPublishedSchemas(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$published = $this->makeSchema();
+		$hidden = new Schema();
+		$hidden->setId(2);
+		$hidden->setSlug('geheim');
+		$hidden->setProperties(['secretTerm' => ['type' => 'string']]);
+		$register = $this->makeRegister();
+		$register->setSchemas([1, 2]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			fn ($id): Schema => ((int) $id === 2 ? $hidden : $published)
+		);
+		$this->permissions->method('hasPermission')->willReturnCallback(
+			fn (Schema $schema): bool => $schema->getId() === 1
+		);
+		$this->request->method('getHeader')->willReturn('');
+
+		$context = $this->controller->register('personen')->getData()['@context'];
+
+		$this->assertArrayHasKey('name', $context);
+		$this->assertArrayNotHasKey('secretTerm', $context);
 	}
 }

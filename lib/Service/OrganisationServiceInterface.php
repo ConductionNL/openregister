@@ -180,6 +180,41 @@ interface OrganisationServiceInterface {
 	public function hasAccessToOrganisation(string $organisationUuid): bool;
 
 	/**
+	 * Check whether a named user has access to an organisation (administrator or member).
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check.
+	 *
+	 * @return bool True when the user is an administrator or a member of the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function userHasAccessToOrganisation(string $organisationUuid, string $userId): bool;
+
+	/**
+	 * Check whether a named user is on an organisation's own member list (no administrator pass).
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId           The user to check.
+	 *
+	 * @return bool True only when the organisation lists the user as a member.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function isMemberOfOrganisation(string $organisationUuid, string $userId): bool;
+
+	/**
+	 * The organisations a user may manage shared resources for.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return Organisation[] The organisations.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function getManageableOrganisations(string $userId): array;
+
+	/**
 	 * Whether a user administers an organisation (may manage its shared resources).
 	 *
 	 * Owner-level authority: a Nextcloud administrator, or the organisation's

@@ -380,7 +380,7 @@ Expected output:
 
 ```bash
 # Test semantic search API.
-docker exec master-nextcloud-1 curl -s -u 'admin:admin' \\
+docker exec master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \\
   -H 'Content-Type: application/json' \\
   'http://localhost/index.php/apps/openregister/api/objects/search?query=document%20management&semantic=true' \\
   | jq .
@@ -390,7 +390,7 @@ docker exec master-nextcloud-1 curl -s -u 'admin:admin' \\
 
 ```bash
 # Test full-text search.
-docker exec master-nextcloud-1 curl -s -u 'admin:admin' \\
+docker exec master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \\
   -H 'Content-Type: application/json' \\
   'http://localhost/index.php/apps/openregister/api/objects/search?query=invoice' \\
   | jq .

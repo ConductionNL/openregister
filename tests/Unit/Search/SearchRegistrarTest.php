@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Search\SearchRegistrar
  * @uses   \OCA\OpenRegister\Search\Service\VectorizationService
+ * @uses \OCA\OpenRegister\Search\SearchWiring
  */
 final class SearchRegistrarTest extends TestCase {
 
