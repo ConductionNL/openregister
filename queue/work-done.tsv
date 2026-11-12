@@ -369,3 +369,4 @@ cover:dossiq:6ca0231e:js00fe026a	PR #6178: 23 vitest tests, 7 service clients to
 verify:pipelinq:3545:8faa4858	BLOCK: API-wide response contract change (error body/Content-Type, deprecation headers); tests 0 new failures	session-20261112T205847-2f6d1ca4	2026-11-12T21:05:52Z
 cover:dossiq:6ca0231e:59826f43	PR #6179: 5 tests covering AdminSettings, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T21:06:00Z
 cover:stackiq:8cfacb29:jsda51ac59	already done: src/store/plugins/stackiqPlugin.js at 99.0% stmts, 93.9% branches, 125/125 fns on development (target 80)	session-20261112T205855-bb08648d	2026-11-12T21:06:33Z
+cover:dossiq:6ca0231e:6dc9019f	PR #6177: IntegriqLeaf + subscription edges (+10), metadata on 3 existing; 0 new failures	session-20261112T200016-345024b4	2026-11-12T21:06:36Z
