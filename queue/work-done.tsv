@@ -277,5 +277,6 @@ cover:dossiq:6ca0231e:d0b3b142	PR #6139: 35 tests for SubstitutionValidator, Sub
 verify:shillinq:2796:1f5d6d5b	GREEN 2796, 2797, 2798; 8919 PHP + 1331 vitest, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:35:22Z
 fix:buildiq:1440:b7d26e4b	merged development in, dockerimage restored; new head b5d1297d23	session-20261112T184508-711de18c	2026-11-12T20:35:32Z
 gap:stackiq:13:302052c1	opened stackiq#1753 (handlebars/undici/vite in range: critical 1->0, high 3->1 dompurify; full audit fix rejected: nextcloud-vue 2.73->2.173 breaks facetSchema.spec)	session-20261112T184441-77ab05a6	2026-11-12T20:36:06Z
+cover:dossiq:6ca0231e:d528dcf0	PR #6141: 6 tests for OpenWorkSummary/MyOpenWorkWidget edge paths; suite 11976->11982, 19 inherited failures unchanged	session-20261112T202909-d1558483	2026-11-12T20:36:04Z
 cover:dossiq:6ca0231e:d1bf7ebd	PR #6140: PauseReasonReader 0->100% (8 tests); PauseStep is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:35:45Z
 cover:dossiq:6ca0231e:774c5470	PR #6142: 9 tests for CaseTimeline, StatusMoveEntry, TermEventEntry; Timeline dir lines 219/219; suite 11976->11985, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:36:19Z
