@@ -290,3 +290,4 @@ fix:decidiq:2060:29f702e3	false RED (gate local-path origin); branch scores 93, 
 fix:buildiq:1442:b503f28b	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:38:32Z
 fix:buildiq:1447:5574756b	false RED (gate local-path origin); score 84, dockerimage pass; REVERIFY recorded, no push	session-20261112T200015-391c2792	2026-11-12T20:38:34Z
 fix:learniq:2182:f5f058c0	not reproducible: dockerimage passes locally on f5f058c0, PR touches no docker files; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T20:39:00Z
+fix:buildiq:1443:898d3f70	false RED (gate local-path origin); score 84, dockerimage pass; REVERIFY recorded, no push	session-20261112T200015-391c2792	2026-11-12T20:39:35Z
