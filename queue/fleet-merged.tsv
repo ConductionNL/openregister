@@ -155,3 +155,4 @@ decidiq	2027	6824a8a705b36b2b3d3ae2ec09eff6c97a0d3fff	MERGED	worker-19	GATE OK s
 buildiq	1315	8c404fe79e65bc7c0eb189135d56df75d732c2fe	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2181	c0dec059e649584534a351985996fbac2c61fad0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2028	2aeb2cc5100e16d058ded7c0d1967544e280b068	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2182	f5f058c0e1d89a609e94e6974804108d6ce2665c	RED	merge-local	GATE RED checker floor: dockerimage: pass -> fail
