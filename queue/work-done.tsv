@@ -137,3 +137,4 @@ gap:larpinq:1:e16dc70b	failed: #988 verified GREEN at aa3c5d02 (recorded in flee
 merge:keepiq:1647:a689c3ce	merged 8 (1648-1655); 1647 already merged in previous task	session-20261112T184502-4ecd6072	2026-11-12T19:45:28Z
 review:openregister:10035:deba9134	APPROVE: tests only, 20 new tests pass, suites match main	session-20261112T184508-711de18c	2026-11-12T19:45:26Z
 gap:opencatalogi:3:475d3f06	failed: no opencatalogi route answers on /api/v{major} (all /api/...), so a versioned servers URL would misdescribe it; same URI-versioning owner decision as openregister gap 3	session-20261112T175557-37d60f4f	2026-11-12T19:45:49Z
+cover:dossiq:6ca0231e:c402b143	PR #6103: 11 tests for PartyIndicatorReader and PartyVocabulary; suite 11970->11981, 19 inherited failures unchanged	session-20261112T192858-87c9f218	2026-11-12T19:45:43Z
