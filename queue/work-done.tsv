@@ -971,3 +971,4 @@ verify:pipelinq:3588:ad66d6c5	9 GREEN (3588-3596), tests only, no new failures	s
 cover:filinq:8ecceb86:8ed5443b	failed: lib/Kernel/Contracts holds 123 interfaces only, no executable lines to cover	session-20261112T234653-57d11a5b	2026-11-12T23:54:56Z
 cover:dossiq:6ca0231e:f8ba5a90	PR dossiq#6200: 43 tests for 7 Task classes, suite 12964->13007, 19 inherited failures, 0 new	session-20261112T231645-3f0591a5	2026-11-12T23:54:55Z
 verify:stackiq:1779:6acda396	1779 GREEN, 1780 RED (test ctor ArgumentCountError), 1781 CONFLICT, 1782 GREEN	session-20261112T233856-8f2d924b	2026-11-12T23:55:37Z
+cover:integriq:9b0f5894m2367:jsd98de5aa	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:55:42Z
