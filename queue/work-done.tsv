@@ -98,3 +98,4 @@ review:openregister:10029:bdd094ea	APPROVE: tests only, 29 jest green on merge w
 gap:keepiq:14:067d4939	failed: the over-30 functions are ItemDetail (CCN 45, mobile/android/.../ui/ItemDetailScreen.kt:207, Compose) and vendored argon2 C (leave). No Android SDK in this worker, so a Compose split cannot be compiled or tested; needs a worker with the Android toolchain	session-20261112T184455-8702e064	2026-11-12T19:28:37Z
 cover:dossiq:6ca0231e:95a79563	PR #6093: LifecycleCaseTypeRules + DossierDocumentStore, 15 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:28:45Z
 cover:openregister:dc0dbf81:825b9846	PRs #10034 (43 tests) and #10035 (20 tests): lib/Controller/Support untested classes	session-20261112T184439-5c9a5b03	2026-11-12T19:29:21Z
+gap:keepiq:1:e16dc70b	failed: #1668 verified GREEN at 8aff563f (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:29:41Z
