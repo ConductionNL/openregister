@@ -651,3 +651,4 @@ cover:pipelinq:f67520ecm9d2c:jsa13d1ab7	failed: payload lang=js but dirs=lib/Ser
 cover:pipelinq:f67520ecm9d2c:jsab7f3595	failed: payload lang=js but dirs=lib/Service/Provider/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:33:33Z
 cover:pipelinq:f67520ec:a3bb9eeb	PR #3572: 43 tests for 7 Portal classes; dir coverage 85.8 -> 95.8%; suite 5773 -> 5816, 1 inherited failure	session-20261112T221537-97382091	2026-11-12T22:33:46Z
 review:openregister:10047:b8a05839	APPROVE: docs/openspec only, capabilities.json valid	session-20261112T221235-91821e68	2026-11-12T22:34:15Z
+cover:keepiq:d76c2121:aae6d66c	PR #1682: 24 tests for 11 lib/Exception classes (all with logic), suite 3722->3746, 0 failures	session-20261112T221530-7c794770	2026-11-12T22:34:26Z
