@@ -107,4 +107,5 @@ merge:humaniq:1041:69c686b9	stale	feeder	2026-11-12T19:30:22Z
 gap:dossiq:19:e1afb1db	failed: a route-derived openapi.json (656 ops) lints with 1217 ADR 2.2 errors (missing API-Version header on all responses, no problem-details input errors, no major version in server URI); committing it would turn adrvalidator warn->fail. Needs the API to send API-Version + problem+json first (as filinq 5c6a25d8 did); not pushed	session-20261112T182617-a12dc411	2026-11-12T19:31:09Z
 merge:integriq:3358:4f4b84f9	merged=2 (3358, 3359)	session-20261112T192853-8e213d5f	2026-11-12T19:31:46Z
 cover:dossiq:6ca0231e:8f99c0f1	PR #6094: 5 classes, 21 tests (Woo); suite 11970->11991, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:32:11Z
+cover:buildiq:8ca317f6:568ec52a	opened buildiq PR (7 tests, ApplicationVersionOwnerGuard parent lookup; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:32:15Z
 fix:humaniq:1093:3ac478ed	not reproducible: dockerimage pass->pass, score 93->93; REVERIFY recorded, no push	session-20261112T182617-a12dc411	2026-11-12T19:32:33Z
