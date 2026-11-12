@@ -974,3 +974,4 @@ cover:integriq:9b0f5894m2367:jsd98de5aa	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:js59f49d26	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:55:59Z
 cover:integriq:9b0f5894m2367:jsc210cc74	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:56:09Z
 cover:integriq:9b0f5894m2367:js075ad59c	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:56:18Z
+cover:dossiq:6ca0231e:9d3a1784	PR dossiq#6201: 4 job tests (+15), suite 12970->12985, same 19 inherited failures	session-20261112T231640-f6dda86c	2026-11-12T23:56:26Z
