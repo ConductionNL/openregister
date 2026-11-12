@@ -305,4 +305,15 @@ merge:buildiq:1443:a27a8fc6	merged 0; gate RED x5 dockerimage (branches behind d
 cover:dossiq:6ca0231e:38b0eba1	PR #6150: 21 tests for SubsidieService, TussenrapportageService, TerugvorderingService persistence; 19 inherited failures unchanged	session-20261112T202914-c73e3765	2026-11-12T20:42:03Z
 fix:portaliq:2366:73507c85	lockfile resynced, npm ci OK, sbom regen; pushed 7406159f; REVERIFY queued	session-20261112T175557-37d60f4f	2026-11-12T20:42:13Z
 cover:dossiq:6ca0231e:b12f5203	PR #6152: 2 classes, 10 tests (Import thin); suite 11976->11986, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:43:45Z
+gap:dossiq:opensourcehealth:baa6a862	failed: stars come from ~390 transitive npm deps (activity, freshness; licence use from GPL/AGPL Nextcloud libraries); no bounded app-level change lifts it to 4 stars	session-20261112T200014-a0c0c232	2026-11-12T20:43:47Z
 verify:stackiq:1737:948db7de	GREEN 1737,1739,1740,1741; RED 1738 (2 route tests)	session-20261112T202437-4020bd95	2026-11-12T20:44:14Z
+cover:dossiq:6ca0231e:38e8c328	PR #6153: dirs already 91% lines; thinnest two (CaseActNotices 62.5%, ScanVerdictReader 87.5%) now 100%, 8 tests; suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:44:19Z
+verify:dossiq:6125:66068c8d	9/9 GREEN: tests-only, 12087 tests, 19 inherited failures, 0 new	session-20261112T202914-c73e3765	2026-11-12T20:45:54Z
+cover:stackiq:8cfacb29:jsea7197ec	already done: src/utils/* now at 99.34% lines (target 80); no PR	session-20261112T202437-4020bd95	2026-11-12T20:45:56Z
+cover:dossiq:6ca0231e:4c817077	PR #6154: 16 tests for RequesterNoticeSender, ApplicantMessage; suite 11976->11992, failures 19 inherited	session-20261112T202912-56c18a61	2026-11-12T20:46:22Z
+merge:portaliq:2295:42369d15	2295 MERGED 2296 MERGED 2297 MERGED 2298 FAIL 2300 MERGED 2301 MERGED 2303 FAIL 2304 MERGED already merged 2305;	session-20261112T184502-4ecd6072	2026-11-12T20:46:47Z
+cover:stackiq:8cfacb29:js17dfdc2e	PR #1754 @1c314099: 26 vitest tests for Migration/Upload/DownloadObject; dir coverage 26.7%->37.6%, 1619 tests green	session-20261112T175557-37d60f4f	2026-11-12T20:47:11Z
+cover:dossiq:6ca0231e:80b3d955	PR #6155: 1 class, 2 tests (Catalogue thin; rest already covered); suite 11976->11978, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:47:14Z
+cover:dossiq:6ca0231e:83885cb7	PR #6156: 11 tests for routing strategies, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:47:18Z
+cover:stackiq:8cfacb29:jsd48eb217	already done: src/store/modules at 85.39% lines / 84.27% branches (target 80); uncovered rest is setter-only catalog store and library wrapper; no PR	session-20261112T202437-4020bd95	2026-11-12T20:47:55Z
+cover:dossiq:6ca0231e:5706f9f2	PR #6157: 3 NoteEnvelope tests (43/43 statements); Notes dir otherwise already covered; suite 11976->11979, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:48:18Z

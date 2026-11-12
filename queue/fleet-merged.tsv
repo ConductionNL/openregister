@@ -215,3 +215,12 @@ portaliq	2296	6ccdaaccb3d237034bae9ab154e9e0593997678f	MERGED	worker-19	GATE OK 
 learniq	2317	0efd9c038dedaeb54dd8ecb107cf56e97ce6f5d6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2297	b9f6a5bd4d18ed9945297149473b6839d5d34e11	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2298	46bc20ac14874530db54c629a2eed747b7bad3f3	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+learniq	2318	86a2d3d3c1b60fda51c5d3fcc4b137471360c6b3	FAIL	merge-local	{"message":"Merge already in progress","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Merge already in progress (HTTP 405)
+portaliq	2300	4cb21a275747aa432ebfa2060ba7f20b51af05f9	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2301	d6daede60aed62fccdae828f9d951a70930becc2	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2337	9b5b2b888242f02668ce0e7fd60b17d9c921f462	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2303	778639bfb489df3f33a35186779017c006850619	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+portaliq	2304	b107d73ba8a2896887a1227e12a50a1de7e481c3	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2339	5475c65df6722e7789207b454a5127ab7447186d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2002	87c170d2c95e8a6bd218d4b9528068303c46a35e	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+learniq	2340	b9f0ae51c959dbac36ff5bbc9e37dfc7e9020552	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
