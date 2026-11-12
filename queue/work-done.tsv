@@ -218,4 +218,5 @@ merge:buildiq:1308:76ed18d2	merged 6 (1309-1312,1314,1315); 1313 FAIL: merge con
 cover:dossiq:6ca0231e:f308a4bd	PR #6118: 19 tests for TransferRegisterGateway, TransferShareBroker, FederatedIdempotency (100% lines each, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:17:11Z
 cover:stackiq:8cfacb29:6f346b68	opened stackiq#1744 (2 tests, Sections\StackiqAdmin; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T20:17:21Z
 cover:dossiq:6ca0231e:67b69054	PR #6119: 28 tests for 3 Conversation classes, suite 19 inherited failures unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:17:40Z
+cover:stackiq:8cfacb29:692f8a78	PR #1745 @5249e224: 3 tests for ContactPersonUserDetails; suite 2334->2337, no failures	session-20261112T175557-37d60f4f	2026-11-12T20:17:58Z
 cover:dossiq:6ca0231e:f0c02922	PR #6117: 3 classes, 12 tests (External); suite 11970->11982, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:18:00Z
