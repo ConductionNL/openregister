@@ -53,3 +53,4 @@ integriq	3286	7ade92cd69f71b54c75ed8b5c36e1127771832c5	MERGED	worker-25	GATE OK 
 keepiq	1545	3af03ea520ebdbb06218bd2eb5314eb12164721e	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	worker-19	GATE UNMEASURED fetch failed
 launchpad	1072	b1af8c3f16a1e4e6bce07bd944ee66299ca3b61c	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
+integriq	3287	c9e300ba961521df09621420d2824ef86f06c250	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold
