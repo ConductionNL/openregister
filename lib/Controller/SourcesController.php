@@ -237,8 +237,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -264,8 +262,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -290,8 +286,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -312,8 +306,6 @@ class SourcesController extends Controller {
 	 * @throws Exception If there is an error deleting the source
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
 	 *
@@ -345,8 +337,6 @@ class SourcesController extends Controller {
 	 * @return JSONResponse The sync execution summary
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
@@ -473,8 +463,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
 	 *   which applies the active-organisation filter and 404s on a foreign
@@ -526,8 +514,6 @@ class SourcesController extends Controller {
 	 * @return JSONResponse The introspection summary, or a 502/503 error.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),

@@ -188,7 +188,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function updateControls(): JSONResponse {
 		$body = $this->request->getParams();
 
@@ -263,7 +262,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function updateFloors(): JSONResponse {
 		$body = $this->request->getParams();
 		$requested = ($body['floors'] ?? []);
@@ -327,7 +325,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	#[BruteForceProtection(action: ThrottledSurfacesInterface::ELEVATION)]
 	public function elevate(): JSONResponse {
 		$password = (string)($this->request->getParam('password') ?? '');

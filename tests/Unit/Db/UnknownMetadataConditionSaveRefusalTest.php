@@ -58,6 +58,13 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses \OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantDeclaration
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 

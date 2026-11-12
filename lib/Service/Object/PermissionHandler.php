@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -455,6 +456,47 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->permits(ask: $ask, _rbac: $_rbac);
 	}//end hasPermission()
+
+	/**
+	 * Whether an update rule marked `crossOrganisation: true` lets the signed-in caller change a row.
+	 *
+	 * The ordinary update question, asked of the marked update rules only. The
+	 * verdict is not cached: it answers a narrower question than the update rule.
+	 *
+	 * @param Schema       $schema The row's schema.
+	 * @param ObjectEntity $row    The stored row.
+	 *
+	 * @return bool True when a marked update rule admits the caller.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function updateCrossesOrganisations(Schema $schema, ObjectEntity $row): bool {
+		$check = (new PermissionAsk(schema: $schema, action: 'update'))
+			->askedBy(userId: null, objectOwner: $row->getOwner())
+			->about(object: $row, register: null)
+			->check();
+
+		if ($this->resolveCheckAuthorization(check: $check) === false
+			|| $this->deniedByRule(check: $check) === true
+		) {
+			return false;
+		}
+
+		$tenancy = new ReadRuleTenancy();
+		$marked  = array_values(
+			array_filter(
+				(array)($check->authorization['update'] ?? []),
+				static fn (mixed $rule): bool => $tenancy->isMarked(rule: $rule)
+			)
+		);
+		if ($marked === []) {
+			return false;
+		}
+
+		$check->authorization = ['update' => $marked];
+
+		return $this->grantVerdict(check: $check);
+	}//end updateCrossesOrganisations()
 
 	/**
 	 * Whether a permission question is answered yes, or RBAC is bypassed for it.

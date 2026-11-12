@@ -87,6 +87,8 @@ final class FakeTimerFiredEvent extends Event {
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\FlowTimer
  * @uses \OCA\OpenRegister\Event\FlowTimerFiredEvent
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationNotice
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerFiring
  */
 class PortalTaskReminderListenerTest extends TestCase {
 

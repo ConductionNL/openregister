@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
  * alone never marks a row, and a notice of somebody else reports nothing marked.
  *
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper
+ * @uses \OCA\OpenRegister\Notifications\Db\RecipientNotice
  */
 class NotificationHistoryMarkReadAccessTest extends TestCase {
 

@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\ProcessingLogEntry
  * @covers \OCA\OpenRegister\Db\Verwerkingsactiviteit
  * @covers \OCA\OpenRegister\Db\ProcessingPurpose
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class ProcessingEntitiesSerialisationGoldenTest extends TestCase {
 

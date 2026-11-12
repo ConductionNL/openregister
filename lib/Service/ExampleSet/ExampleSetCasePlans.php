@@ -165,7 +165,6 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
 		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
@@ -174,7 +173,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 		}
 
 		try {
-			$created = $this->ensureItems(app: $app, object: $object, data: $data);
+			$created = $this->ensureItems(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -185,20 +184,20 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
 	 * Put the plan's items on the object, through the case plan service.
 	 *
-	 * @param string               $app    The app that ships the fragment.
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The filled plan fields.
+	 * @param ExampleSetRow $row    The plan row: the app that ships the fragment and the filled plan fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return array<int, string> The ids of the items the service created.
 	 */
-	private function ensureItems(string $app, ObjectEntity $object, array $data): array {
+	private function ensureItems(ExampleSetRow $row, ObjectEntity $object): array {
+		$data   = $row->data;
 		$result = $this->container->get(CasePlanService::class)->ensureItems(
 			objectUuid: (string) $data['object'],
 			registerId: (int) $object->getRegister(),
 			schemaId: (int) $object->getSchema(),
 			definition: (array) $data['definition'],
 			history: (array) ($data['history'] ?? []),
-			app: $app
+			app: $row->app
 		);
 
 		return array_values(array_map('strval', $result['created']));

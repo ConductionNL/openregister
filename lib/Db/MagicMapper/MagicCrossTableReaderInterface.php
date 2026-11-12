@@ -136,6 +136,17 @@ interface MagicCrossTableReaderInterface {
 	public function findFolderIdsByOrganisation(string $organisationUuid): array;
 
 	/**
+	 * The stored folder file id of each live object, by uuid.
+	 *
+	 * @param string[] $uuids The object uuids.
+	 *
+	 * @return array<string, int> Uuid => folder file id; objects without a numeric folder are absent.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function findFolderIdsByUuids(array $uuids): array;
+
+	/**
 	 * Count an organisation's live objects across the magic tables, of the
 	 * given schemas only when ids are given.
 	 *

@@ -34,11 +34,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -46,6 +49,9 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -123,7 +129,10 @@ class GraphQLResolver {
 			$this->objects->objectService->setRegister($register);
 			$this->objects->objectService->setSchema($schema);
 
-			$object = $this->objects->getObject->find($id, $register, $schema);
+			$object = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: true),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
 
 			// Apply property-level RBAC filtering.
 			return $this->filterProperties(schema: $schema, item: $object);
@@ -153,7 +162,7 @@ class GraphQLResolver {
 
 		// Multitenancy is handled by the query context (ObjectService checks active org).
 		// RBAC is handled by checkSchemaPermission above.
-		$result = $this->objects->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		$result = $this->searchPage(query: $query);
 
 		// Convert results to arrays and apply property-level RBAC.
 		$filteredResults = [];
@@ -222,7 +231,10 @@ class GraphQLResolver {
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -250,14 +262,20 @@ class GraphQLResolver {
 
 		try {
 			// Check property-level write RBAC against the stored record.
-			$stored = $this->objects->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
+			$stored = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: false),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
 			$this->refuseForbiddenFields(
 				fields: $this->rights->propertyRbac->getUnauthorizedProperties(
 					new PropertyWriteCheck($schema, new PropertyAccessRequest($stored->getMatchEnvelope(), false), $input)
 				)
 			);
 
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+			));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
@@ -309,7 +327,7 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'delete');
 
 		try {
-			return $this->objects->objectService->deleteObject($args['id']);
+			return $this->objects->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $args['id']));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}
@@ -399,6 +417,26 @@ class GraphQLResolver {
 
 		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
 	}//end notFoundError()
+
+	/**
+	 * One page of a list query, RBAC and multitenancy on.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return array<string, mixed> The paginated result.
+	 *
+	 * @throws Error When the query filters or sorts on an encrypted property.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 */
+	private function searchPage(array $query): array {
+		try {
+			return $this->objects->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		} catch (EncryptedFieldFilterException $e) {
+			$extensions = ['code' => 'BAD_REQUEST', 'reason' => $e->getReason(), 'property' => $e->getProperty()];
+			throw new Error($e->getMessage(), null, null, [], null, null, $extensions);
+		}
+	}//end searchPage()
 
 	/**
 	 * The VALIDATION_ERROR error for a failed save.

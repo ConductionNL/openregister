@@ -94,6 +94,35 @@ class AffectedSetAndExposureTest extends TestCase {
 	}//end testTheWalkNamesWhoIsAffectedAndHowTheyWereReached()
 
 	/**
+	 * A record that references the root is affected too: an incoming edge is walked from its target to its source.
+	 *
+	 * @return void
+	 */
+	public function testARecordThatReferencesTheRootIsAffected(): void {
+		$graph = $this->graph();
+		$graph['nodes'][] = ['uuid' => 'r', 'schema' => 'besluit', 'distance' => 1, 'resolved' => true];
+		$graph['nodes'][] = ['uuid' => 's', 'schema' => 'besluit', 'distance' => 2, 'resolved' => true];
+		$graph['edges'][] = ['from' => 'r', 'to' => 'root', 'type' => 'betreft', 'direction' => 'incoming'];
+		$graph['edges'][] = ['from' => 's', 'to' => 'r', 'type' => 'betreft', 'direction' => 'incoming'];
+
+		$result = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery());
+
+		$objects = array_column($result['objects'], null, 'uuid');
+		$this->assertArrayHasKey('r', $objects);
+		$this->assertSame(
+			[
+				['from' => 'r', 'to' => 'root', 'type' => 'betreft', 'direction' => 'incoming'],
+				['from' => 's', 'to' => 'r', 'type' => 'betreft', 'direction' => 'incoming'],
+			],
+			$objects['s']['path']
+		);
+
+		$pruned = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery(prune: ['betreft']));
+		$this->assertContains(['type' => 'betreft', 'at' => 'root', 'to' => 'r'], $pruned['pruned']);
+		$this->assertNotContains('s', array_column($pruned['objects'], 'uuid'));
+	}//end testARecordThatReferencesTheRootIsAffected()
+
+	/**
 	 * Filtering to named types drops the rest.
 	 *
 	 * @return void

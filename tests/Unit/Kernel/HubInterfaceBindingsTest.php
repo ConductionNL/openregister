@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\ContractBindings
  * @uses   \OCA\OpenRegister\Notifications\NotificationsRegistrar
  * @uses   \OCA\OpenRegister\Search\SearchRegistrar
+ * @uses \OCA\OpenRegister\Notifications\NotificationsWiring
+ * @uses \OCA\OpenRegister\Search\SearchWiring
  */
 class HubInterfaceBindingsTest extends TestCase {
 

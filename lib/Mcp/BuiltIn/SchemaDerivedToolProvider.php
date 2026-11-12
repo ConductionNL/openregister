@@ -51,11 +51,15 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * SchemaDerivedToolProvider
@@ -623,8 +627,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $arguments['id'],
-			register: $register,
-			schema: $schema
+			options: new ObjectFindOptions(register: $register, schema: $schema)
 		));
 
 		return $object->jsonSerialize();
@@ -647,8 +650,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $arguments,
-			register: $register,
-			schema: $schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		return $object->jsonSerialize();
@@ -676,9 +678,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $data,
-			register: $register,
-			schema: $schema,
-			uuid: $id
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
 		);
 
 		return $object->jsonSerialize();
@@ -707,9 +707,10 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$id = $arguments['id'];
 		$this->objectService->deleteObject(
-			uuid: $id,
-			register: $register,
-			schema: $schema
+			deletion: new ObjectDeletion(
+				uuid: $id,
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
 		);
 
 		return ['deleted' => true, 'id' => $id];

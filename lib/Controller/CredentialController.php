@@ -41,8 +41,11 @@ use OCA\OpenRegister\Controller\Support\CredentialCaller;
 use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
@@ -66,6 +69,9 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * HTTP controller for owner-scoped credentials and the constrained broker call.
@@ -142,7 +148,7 @@ class CredentialController extends Controller {
 		}
 
 		if ($this->requestedScope() === self::SCOPE_ORGANISATION) {
-			return $this->indexOrganisation();
+			return $this->indexOrganisation(uid: $uid);
 		}
 
 		$objects = $this->listCredentialObjects();
@@ -197,20 +203,34 @@ class CredentialController extends Controller {
 	}//end ownPersonal()
 
 	/**
-	 * List the caller's active organisation's credential metadata (members may read).
+	 * List one organisation's credential metadata (members may read).
 	 *
-	 * Returns the organisation-scoped credentials whose `organisation` equals the
-	 * caller's active organisation UUID. The caller is a member of their own active
-	 * organisation by construction, so any member may read this metadata; no secret
-	 * is ever included (design D4).
+	 * Without an `organisation` param this is the caller's active organisation, of which
+	 * the caller is a member by construction. With one (the organisation picker of the
+	 * credential form), the caller must have access to that organisation, checked here
+	 * rather than trusted from the client. No secret is ever included (design D4).
 	 *
-	 * @return JSONResponse The active organisation's credential metadata.
+	 * @param string $uid The caller's UID.
+	 *
+	 * @return JSONResponse The organisation's credential metadata, or a static 403.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
 	 */
-	private function indexOrganisation(): JSONResponse {
-		$activeOrg = $this->services->tokens->organisationService->getActiveOrganisation()?->getUuid();
-		if ($activeOrg === null || $activeOrg === '') {
+	private function indexOrganisation(string $uid): JSONResponse {
+		$organisations = $this->services->tokens->organisationService;
+		$activeOrg = trim((string)$this->request->getParam('organisation', ''));
+		if ($activeOrg !== ''
+			&& $organisations->userHasAccessToOrganisation(organisationUuid: $activeOrg, userId: $uid) === false
+		) {
+			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+		}
+
+		if ($activeOrg === '') {
+			$activeOrg = (string)($organisations->getActiveOrganisation()?->getUuid() ?? '');
+		}
+
+		if ($activeOrg === '') {
 			return new JSONResponse(['results' => []]);
 		}
 
@@ -351,7 +371,7 @@ class CredentialController extends Controller {
 	 *
 	 * This method owns only the REQUEST half — parsing, provider-catalogue validation,
 	 * and the organisation-administrator gate. The mint itself (metadata object + vault
-	 * secret, atomic) belongs to {@see CredentialBrokerService::mint()} so an in-process
+	 * secret, atomic) belongs to {@see CredentialBrokerService::mintCredential()} so an in-process
 	 * caller without an HTTP session mints through the exact same path (ADR-022).
 	 *
 	 * Personal (scope absent / `personal`): unchanged — any authenticated user may
@@ -447,15 +467,19 @@ class CredentialController extends Controller {
 		try {
 			// The single mint path (metadata object + vault secret) lives in the broker so
 			// an in-process caller can mint identically without an HTTP session.
-			$saved = $this->services->vault->broker->mint(
-				name: $mint['name'],
-				provider: $mint['provider'],
-				owner: $mint['owner'],
-				allowedApps: $mint['allowedApps'],
-				secret: $mint['secret'],
-				scope: $mint['scope'],
-				organisation: $mint['organisation'],
-				metadata: $this->connectionMetadataParams()
+			$saved = $this->services->vault->broker->mintCredential(
+				mint: new CredentialMint(
+					name: $mint['name'],
+					provider: $mint['provider'],
+					owner: $mint['owner'],
+					metadata: $this->connectionMetadataParams()
+				),
+				options: new CredentialMintOptions(
+					allowedApps: $mint['allowedApps'],
+					secret: $mint['secret'],
+					scope: $mint['scope'],
+					organisation: $mint['organisation']
+				)
 			);
 		} catch (InvalidArgumentException $invalid) {
 			// The only InvalidArgumentException a mint raises for a well-formed
@@ -573,9 +597,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: $target->uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: $target->uuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->services->session->logger->error(
@@ -676,9 +701,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: (string) $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: (string) $existing->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -818,9 +844,10 @@ class CredentialController extends Controller {
 
 		try {
 			$this->objectService->deleteObject(
-				uuid: $uuid,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA)
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -1071,8 +1098,7 @@ class CredentialController extends Controller {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
+				options: new ObjectFindOptions(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
 				_rbac: false
 			));
 		} catch (Throwable $e) {

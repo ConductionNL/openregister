@@ -50,8 +50,11 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * One sweep over every schema that sets a draft lifetime.
@@ -617,12 +620,9 @@ class DraftExpiry implements DraftExpiryInterface {
 		try {
 			$current = $this->objects->find(
 				id: $uuid,
-				register: $register,
-				schema: $schema,
+				options: new ObjectFindOptions(register: $register, schema: $schema, render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 			if ($this->isExpired(candidate: $current, cutoff: $pair->cutoff) === false) {
 				$this->logger->info(
@@ -639,7 +639,11 @@ class DraftExpiry implements DraftExpiryInterface {
 			// on; the path itself makes a draft's delete permanent and writes
 			// its audit-trail entry. DraftExpiryJob runs the sweep under its
 			// own name, so that entry says which job removed the draft.
-			return $this->objects->deleteObject(uuid: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			return $this->objects->deleteObject(
+				deletion: new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: $register, schema: $schema)),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[DraftExpiry] An expired draft was not removed',

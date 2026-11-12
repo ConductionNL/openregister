@@ -41,6 +41,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachedView
  */
 class ViewsControllerWriteGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/views-write-golden.json';

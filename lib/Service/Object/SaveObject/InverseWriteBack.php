@@ -26,7 +26,10 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCP\IURLGenerator;
 
 /**
@@ -43,16 +46,18 @@ use OCP\IURLGenerator;
 final class InverseWriteBack {
 
 	/**
-	 * @param MagicObjectFinderInterface $objects Reads the targets.
-	 * @param SaveObjectWriterInterface  $saver   Saves the targets.
-	 * @param SaveLookups          $lookups Resolves the target schema.
-	 * @param IURLGenerator        $urls    Builds the schema object.
+	 * @param MagicObjectFinderInterface            $objects Reads the targets.
+	 * @param SaveObjectWriterInterface             $saver   Saves the targets.
+	 * @param SaveLookups                           $lookups Resolves the target schema.
+	 * @param IURLGenerator                         $urls    Builds the schema object.
+	 * @param SaveObjectRelatedUpdateGuardInterface $guard   Refuses a target the caller may not update.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
 		private readonly SaveObjectWriterInterface $saver,
 		private readonly SaveLookups $lookups,
 		private readonly IURLGenerator $urls,
+		private readonly SaveObjectRelatedUpdateGuardInterface $guard,
 	) {
 	}//end __construct()
 
@@ -285,8 +290,9 @@ final class InverseWriteBack {
 	 * Add the parent to one target's inverse property and save the target.
 	 *
 	 * The target is saved by the uuid of the row found: the reference may be its
-	 * id, which as a uuid would name another row. A target that cannot be read or
-	 * saved does not stop the other targets.
+	 * id, which as a uuid would name another row. A target the caller may not
+	 * update is left as it is. A target that cannot be read, updated or saved
+	 * does not stop the other targets.
 	 *
 	 * @param string $reference The target's uuid or id, as the parent holds it.
 	 * @param array  $link      The inverse relation.
@@ -301,6 +307,7 @@ final class InverseWriteBack {
 				return;
 			}
 
+			$this->guard->assertMayUpdateRelated(target: $target);
 			$this->saveTarget(target: $target, link: $link);
 		} catch (Exception $e) {
 			return;
@@ -317,10 +324,8 @@ final class InverseWriteBack {
 	 */
 	private function saveTarget(ObjectEntity $target, array $link): void {
 		$this->saver->saveObject(
-			register: $link['register'],
-			schema: $link['schema'],
 			data: array_replace($target->getObject(), [$link['inverseProperty'] => self::withSource(target: $target, link: $link)]),
-			uuid: $target->getUuid()
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $link['register'], schema: $link['schema']), uuid: $target->getUuid())
 		);
 	}//end saveTarget()
 

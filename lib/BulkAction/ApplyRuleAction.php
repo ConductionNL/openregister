@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use Throwable;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Applying a rule to objects that already exist.
@@ -260,11 +262,12 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 		$object = $step->object;
 		try {
 			$this->access->objects->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $patch,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $step->actor
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $patch,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $step->actor
+				)
 			);
 		} catch (Throwable $failure) {
 			$this->access->logger->warning(

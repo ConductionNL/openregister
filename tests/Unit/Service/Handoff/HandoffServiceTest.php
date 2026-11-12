@@ -72,6 +72,7 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * HandoffServiceTest.
@@ -181,13 +182,8 @@ class HandoffServiceTest extends TestCase {
 		$savedSourceData = null;
 		$savedTargetData = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				$object,
-				$extend = [],
-				$register = null,
-				$schema = null,
-				$uuid = null,
-			) use ($target, $source, &$savedSourceData, &$savedTargetData) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$savedSourceData, &$savedTargetData) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					$savedSourceData = $object;
 					return $source;
@@ -432,7 +428,8 @@ class HandoffServiceTest extends TestCase {
 		$target = $this->targetObject();
 		$sourceSaves = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target, $source, &$sourceSaves) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$sourceSaves) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					$sourceSaves[] = $object;
 					return $source;
@@ -556,7 +553,8 @@ class HandoffServiceTest extends TestCase {
 
 		$target = $this->targetObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target, $source) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					return $source;
 				}
@@ -826,7 +824,8 @@ class HandoffServiceTest extends TestCase {
 
 		$target = $this->targetObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target, $source, &$log) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$log) {
+				$uuid = $options->uuid;
 				$log[] = ['save', $uuid];
 				if ($uuid === 'src-uuid') {
 					return $source;
@@ -960,7 +959,8 @@ class HandoffServiceTest extends TestCase {
 
 		$target = $this->targetObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					throw new \RuntimeException('source update failed');
 				}

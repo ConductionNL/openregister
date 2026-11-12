@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ExportProfile
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class ExportProfileTest extends TestCase {
 
