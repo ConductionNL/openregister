@@ -227,3 +227,4 @@ cover:stackiq:8cfacb29:c2bb21fa	PR #1747: OrganizationHandler 18.6->99.5%, Group
 fix:buildiq:1451:5fbc2a41	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:19:30Z
 fix:buildiq:1450:7acddd26	merged development in, dockerimage restored; new head 342188a463	session-20261112T184508-711de18c	2026-11-12T20:19:53Z
 verify:learniq:2416:18557865	GREEN: 2416 (lockfile+sbom; 0 new failures, 2 inherited)	session-20261112T200018-e68ecbf8	2026-11-12T20:20:07Z
+review:openregister:10036:6450f94e	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T20:20:29Z
