@@ -1,84 +1,84 @@
 {
  "app": "launchpad",
  "commit": "91492abcaa93298402349f3a9e5f540e0a710877",
- "measured_at": "2026-11-12T22:49:23Z",
+ "measured_at": "2026-11-12T22:50:46Z",
  "php": {
   "tool": "pcov",
-  "pct": 0.0,
-  "statements": 21992,
-  "covered": 0,
+  "pct": 84.03,
+  "statements": 21987,
+  "covered": 18476,
   "dirs": {
    "lib/Activity/": [
     337,
-    0
+    320
    ],
    "lib/Activity/Settings/": [
     22,
-    0
+    22
    ],
    "lib/AppInfo/": [
     131,
-    0
+    99
    ],
    "lib/BackgroundJob/": [
     136,
-    0
+    128
    ],
    "lib/Command/": [
-    1359,
-    0
+    1357,
+    1308
    ],
    "lib/Controller/": [
-    4609,
-    0
+    4607,
+    3953
    ],
    "lib/Db/": [
     2102,
-    0
+    791
    ],
    "lib/Event/": [
     6,
-    0
+    6
    ],
    "lib/Exception/": [
     55,
-    0
+    48
    ],
    "lib/Job/": [
     48,
-    0
+    47
    ],
    "lib/Listener/": [
-    268,
-    0
+    267,
+    241
    ],
    "lib/Notification/": [
     85,
-    0
+    83
    ],
    "lib/Repair/": [
     313,
-    0
+    266
    ],
    "lib/Search/": [
     202,
-    0
+    190
    ],
    "lib/Service/": [
     11530,
-    0
+    10328
    ],
    "lib/Service/Cleanup/": [
     42,
-    0
+    26
    ],
    "lib/Service/Confluence/": [
     474,
-    0
+    417
    ],
    "lib/Service/Connection/": [
     172,
-    0
+    157
    ],
    "lib/Service/InitialState/": [
     0,
@@ -90,7 +90,7 @@
    ],
    "lib/Support/": [
     46,
-    0
+    46
    ]
   }
  },
