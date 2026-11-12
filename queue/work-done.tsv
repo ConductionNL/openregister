@@ -771,3 +771,4 @@ cover:hermiq:755cdfe7m7444:9910e837	PR #1619: 10 tests for OutsideCall, OutsideC
 cover:pipelinq:f67520ecm9d2c:jse19add4c	failed: payload lang=js but dirs=lib/Service/Consent/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:30Z
 cover:pipelinq:f67520ecm9d2c:js0a24f15f	failed: payload lang=js but dirs=lib/Service/Letter/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:41Z
 cover:pipelinq:f67520ecm9d2c:jsf0c02922	failed: payload lang=js but dirs=lib/Service/External/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:50Z
+cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Service/Lifecycle/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:58:00Z
