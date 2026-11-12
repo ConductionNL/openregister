@@ -734,4 +734,5 @@ cover:integriq:9b0f5894m2367:js0f20d6d0	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:jsf545d745	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:29Z
 cover:integriq:9b0f5894m2367:js93e5f5a4	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:38Z
 cover:openregister:7350e3ef:jsa4a0d35b	PR #10058: 16 PHPUnit tests over 6 classes (CasePayload, EvidenceMerge, SeamStatusSet, ErasureRun, MdtoBegrip, ListConnection); row said js but dirs are PHP	session-20261112T220141-9622e2a0	2026-11-12T22:50:38Z
+cover:integriq:9b0f5894m2367:jsd0c160ad	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:47Z
 measure:launchpad:20261112h18	php 84.0% (pcov, pcov.directory=lib), js 66.2%	session-20261112T224530-faaec44c	2026-11-12T22:50:49Z
