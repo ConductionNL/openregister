@@ -3557,3 +3557,5 @@ hermiq	1539	7cde0b8734d742bb57c67dcaa2c20541665c75cc	GREEN	fv11-25:hermiq-t1	uni
 hermiq	1540	798d82d832990239f52d7458ff9976a2b172c2b6	GREEN	fv11-25:hermiq-t1	unit 3561 tests, 6 errors all baseline (dev 51dc237a), 0 new; php -l clean; diff review: refactor-only, messages/guards preserved
 hermiq	1529	225b2bcd55ca8a88d2614bca323cc05296b70157	CONFLICT	fv11-25:hermiq-t1	conflict in tests/Unit/Service/ContextAgent/ContextAgentInteractionServiceTest.php after tree PRs (clean vs development alone; needs rebase onto the tree)
 hermiq	1532	227ca9a92e8db6f4cf913ca7011e4f4ddb152052	CONFLICT	fv11-25:hermiq-t1	conflict in lib/Service/ScheduleService.php tests/Unit/Service/ScheduleServiceTest.php after tree PRs (clean vs development alone; needs rebase onto the tree)
+dossiq	5879	37188db1d23db547f2ecd4e10554a1752021d84f	GREEN	fv11-16:d2	unit 11843 tests, 19 failures all baseline (no new); no JS touched; diff review clean (read/mutation gates extracted, same responses)
+dossiq	5880	d89b2e63818e64e345a8c958ba1b70e101a572af	GREEN	fv11-16:d2	unit 11843 tests, 19 failures all baseline (no new); no JS touched; diff review clean (read/mutation gates extracted, same responses)
