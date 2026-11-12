@@ -4032,3 +4032,4 @@ thematiq	1661	329da1dbf7ef62bfe2edda1c96e58e249c5341df	GREEN	worker-39	phpunit 2
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 stackiq	1737	5db0fd1fddfd06ae29bfed62283f0148e82018c7	GREEN	worker-39	tree without 1738: phpunit 2362 ok (phpunit baseline 2334 ok); new failures 0; tests only
 stackiq	1738	e394d2fabfcccbd1dc952a112628e3a37e597b37	RED	worker-39	new failures 2: CmdbImportControllerTest::testTheRoutesAreRegistered, SettingsControllerCmdbImportMappingTest::testTheRouteIsRegistered (v1 aliases change the route table these tests assert); phpunit baseline 2334 ok
+stackiq	1739	6836af1edaa6ea2d86ac2e465355f5b75bdfdcf3	GREEN	worker-39	tree without 1738: phpunit 2362 ok (phpunit baseline 2334 ok); new failures 0; tests only
