@@ -4390,3 +4390,4 @@ pipelinq	3596	58d4a62bb73347ddf475471cc5f5ae45118e5faa	GREEN	worker-54	tests onl
 stackiq	1779	f466d0f0d7202f23683e77fc7a1b667f663e286d	GREEN	worker-24	2572 tests run on tree 1779+1782, baseline 2539 0 failures, new failures 0; tests only
 stackiq	1780	0a28fb0969cc5ecb65c8171e9a6453ecf54e764b	RED	worker-24	OrganizationContactSyncJobLinkRefreshTest (6 tests) error: SettingsService::__construct() argument roleGroupSettings not passed; fails alone on development
 stackiq	1781	566ac7065b53ac03970daece958be1bcea8f2039	CONFLICT	worker-24	merge conflict with development+1779+1780 in tests (ContactPersonOrganisationListenerTest / OrganisationUserWorkflowTest / ContactPersonOrganisationGuardTest)
+stackiq	1782	f2632b2c6745214cddd32bf68ffefc66272f3812	GREEN	worker-24	2572 tests run on tree 1779+1782, baseline 2539 0 failures, new failures 0; tests only
