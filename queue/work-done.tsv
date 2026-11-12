@@ -495,6 +495,7 @@ merge:learniq:2178:5076553b	merge-local run over 12 learniq tasks: merged=63 red
 cover:integriq:9b0f5894:js3ad0f4bb	partial: PR #3411 (23 tests, ruleConfiguration 70%->100%); dir 25.8%->35.2%, target unreachable: EditRule.vue is dead code importing a deleted module	session-20261112T184505-d34a144f	2026-11-12T21:45:53Z
 merge:learniq:2204:df6b1654	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:45:54Z
 cover:integriq:9b0f5894:js4fd5cf68	PR #3412: 16 vitest tests for SubscriptionActionFields + BrokerConnectionFields; dir 55.44->90.09%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:46:01Z
+cover:openregister:7350e3ef:js5794e9fc	PR openregister#10041: 54 jest tests for WorkingCalendars, LogIntegrity, StatisticsOverview; suite 7075 -> 7129 passed	session-20261112T205850-5f960ec2	2026-11-12T21:46:18Z
 merge:shillinq:2748:9e5eec07	stale	feeder	2026-11-12T21:45:17Z
 merge:learniq:2309:3c12a4e0	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:46:30Z
 merge:learniq:2337:fafed222	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:46:36Z
