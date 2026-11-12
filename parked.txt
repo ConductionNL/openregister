@@ -200,3 +200,4 @@ openregister#7741 a665246e7b807ee320fbf62f84d392599a89642f precheck-park: sbom: 
 openregister#8918 9fcd20e6a168e282760d03f6d10b0ad5cd46dc16 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#9888 fbde467dbf042b42b5c779ed5a56bd0cbcadba24 fails on main: ObjectServiceDraftWriteTest new cases call saveObject(register: ...), a named parameter main no longer has since SaveObject takes options (#9764)
 openregister#9919 1656cac2e8c66e8e7788402431961a6a81949511 fails on main: ObjectServiceDraftWriteTest new cases call saveObject(register: ...), a named parameter main no longer has since SaveObject takes options (#9764)
+openregister#9971 817922566eae2758481439e567458de704e497cf fails on main: WriteRoutesRequireRequestTokenTest, configurationBundle#bind/#unbind/#copy skip the request-token check without a listed reason (main pins this since #9955)
