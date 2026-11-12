@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ConfigurationBinding;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -187,7 +186,7 @@ class ConfigurationBundleController extends Controller {
 				prefix: (string)($this->request->getParam(key: 'prefix') ?? ''),
 				fromRef: (string)($this->request->getParam(key: 'from') ?? ''),
 				toRef: (string)($this->request->getParam(key: 'to') ?? ''),
-				layer: ($this->optional(key: 'layer') ?? ConfigurationLayer::SUBJECT)
+				layer: $this->optional(key: 'layer')
 			);
 		} catch (DeploymentRefusedException $exception) {
 			return new JSONResponse(

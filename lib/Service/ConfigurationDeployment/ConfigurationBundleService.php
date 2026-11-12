@@ -294,7 +294,7 @@ class ConfigurationBundleService {
 	 * @param string      $prefix   The key prefix naming the matrix.
 	 * @param string      $fromRef  The subject or bundle to copy from.
 	 * @param string      $toRef    The subject or bundle to copy onto.
-	 * @param string      $layer    The layer both addresses live at.
+	 * @param string|null $layer    The layer both addresses live at; the subject layer when null.
 	 *
 	 * @return array<int, array<string, mixed>> The keys drafted onto the target.
 	 *
@@ -307,8 +307,9 @@ class ConfigurationBundleService {
 		string $prefix,
 		string $fromRef,
 		string $toRef,
-		string $layer = ConfigurationLayer::SUBJECT
+		?string $layer = null
 	): array {
+		$layer = ($layer ?? ConfigurationLayer::SUBJECT);
 		$this->requireCopyable(prefix: $prefix, fromRef: $fromRef, toRef: $toRef, layer: $layer);
 
 		$rows = $this->values->findAtLayer(layer: $layer, layerRef: $fromRef, prefix: $prefix);
