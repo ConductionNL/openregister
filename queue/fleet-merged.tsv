@@ -375,3 +375,4 @@ stackiq	1684	8280775059492bd87b2e38663cb935be88b61c3e	SKIP	worker-19	GATE UNMEAS
 dossiq	5863	c9b871a2d68b40d3bcbf2630e23e5d739f8bab66	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	5865	f10f78b583ed48f1de578056aed52d6dd6650890	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	5870	74f82ea226b347a5c29c8ba55f45f7da6c7b266b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5873	35041753e2c0c3007769ae2310d7ea3ad0532114	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
