@@ -229,3 +229,4 @@ fix:buildiq:1450:7acddd26	merged development in, dockerimage restored; new head 
 verify:learniq:2416:18557865	GREEN: 2416 (lockfile+sbom; 0 new failures, 2 inherited)	session-20261112T200018-e68ecbf8	2026-11-12T20:20:07Z
 cover:dossiq:6ca0231e:9951e799	PR #6120: 8 tests for CaseDecisionLink (only untested class), suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:20:27Z
 review:openregister:10036:6450f94e	APPROVE: openspec docs only	session-20261112T175557-37d60f4f	2026-11-12T20:20:29Z
+cover:stackiq:8cfacb29:d528dcf0	opened stackiq#1748 (2 tests, ConceptOrganisatiesWidget panel; load() needs server, untested)	session-20261112T184441-77ab05a6	2026-11-12T20:20:41Z
