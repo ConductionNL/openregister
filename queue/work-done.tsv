@@ -407,3 +407,4 @@ cover:stackiq:8cfacb29:js0671a85c	PR #1765: 25 vitest tests for Settings.vue, St
 cover:buildiq:8ca317f6:js678e2c14	opened buildiq#1468 (7 vitest tests, manifestSchemas lookup; suite 2962->2969 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:16:42Z
 merge:portaliq:2363:0d1a48e0	2363 SKIP 2365 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T21:16:58Z
 cover:stackiq:8cfacb29:jsf1ce0969	PR #1767: 8 vitest tests, organisations dir 69.2% -> 81.5% statements	session-20261112T200014-a0c0c232	2026-11-12T21:17:06Z
+verify:portaliq:2366:e35d0a8a	1/1 GREEN: lockfile+sbom bump, unit 4501 green, npm build passes	session-20261112T202914-c73e3765	2026-11-12T21:17:11Z
