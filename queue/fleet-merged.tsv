@@ -350,3 +350,4 @@ stackiq	1708	0ba2f25fc399d5eedd39d5aedebdb695d65fdec0	MERGED	worker-19	GATE OK s
 stackiq	1726	8b4ce47c9b652d2a2fa008c31d7f7b1db6b93e37	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail
 stackiq	1731	ada62127141f9e0f21a45ed36707428b6127a647	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail
 stackiq	1539	991a71df041b9af0ea4e654c8f46e77afa444a3e	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail
+stackiq	1542	69e306bb1fd600b807c20d41242916836e2328fa	SKIP	worker-19	stack: #1539 was not merged
