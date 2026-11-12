@@ -1068,7 +1068,7 @@ class FlowController extends Controller {
 	 *
 	 * @param string $id The flow uuid.
 	 *
-	 * @return JSONResponse An empty 200, or 404.
+	 * @return JSONResponse An empty 200, 404, or 409 while a run has not finished.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -1085,6 +1085,8 @@ class FlowController extends Controller {
 			$this->flows->delete(uuid: $id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 
 		return new JSONResponse([]);
