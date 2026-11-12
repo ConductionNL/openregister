@@ -977,3 +977,4 @@ cover:integriq:9b0f5894m2367:js075ad59c	failed: lang=js but dirs points into lib
 cover:integriq:9b0f5894m2367:jsd74bee87	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:56:28Z
 cover:dossiq:6ca0231e:9d3a1784	PR dossiq#6201: 4 job tests (+15), suite 12970->12985, same 19 inherited failures	session-20261112T231640-f6dda86c	2026-11-12T23:56:26Z
 cover:integriq:9b0f5894m2367:js3f68c935	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:56:45Z
+cover:dossiq:6ca0231e:3b1fd60e	PR #6202: lib/Review line cov 90.8->94.5% (+13 tests, 3 classes to 100%); 19 inherited failures unchanged	session-20261112T231637-60fd49c4	2026-11-12T23:56:44Z
