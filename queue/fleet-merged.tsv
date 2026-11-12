@@ -98,3 +98,4 @@ keepiq	1502	401b4b757a03be7eeea5267b246721b66a16b3de	SKIP	worker-19	GATE UNMEASU
 buildiq	1317	87b0506380ab4cbf81be2970098e034d029c5532	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	worker-19	GATE UNMEASURED fetch failed
 keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
+buildiq	1318	5d206e3c5878030832fa5ef713e5177973931d0c	FAIL	worker-53	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
