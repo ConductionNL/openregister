@@ -1,0 +1,172 @@
+{
+ "app": "launchpad",
+ "commit": "91492abcaa93298402349f3a9e5f540e0a710877",
+ "measured_at": "2026-11-12T22:49:23Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 0.0,
+  "statements": 21992,
+  "covered": 0,
+  "dirs": {
+   "lib/Activity/": [
+    337,
+    0
+   ],
+   "lib/Activity/Settings/": [
+    22,
+    0
+   ],
+   "lib/AppInfo/": [
+    131,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    136,
+    0
+   ],
+   "lib/Command/": [
+    1359,
+    0
+   ],
+   "lib/Controller/": [
+    4609,
+    0
+   ],
+   "lib/Db/": [
+    2102,
+    0
+   ],
+   "lib/Event/": [
+    6,
+    0
+   ],
+   "lib/Exception/": [
+    55,
+    0
+   ],
+   "lib/Job/": [
+    48,
+    0
+   ],
+   "lib/Listener/": [
+    268,
+    0
+   ],
+   "lib/Notification/": [
+    85,
+    0
+   ],
+   "lib/Repair/": [
+    313,
+    0
+   ],
+   "lib/Search/": [
+    202,
+    0
+   ],
+   "lib/Service/": [
+    11530,
+    0
+   ],
+   "lib/Service/Cleanup/": [
+    42,
+    0
+   ],
+   "lib/Service/Confluence/": [
+    474,
+    0
+   ],
+   "lib/Service/Connection/": [
+    172,
+    0
+   ],
+   "lib/Service/InitialState/": [
+    0,
+    0
+   ],
+   "lib/Settings/": [
+    55,
+    0
+   ],
+   "lib/Support/": [
+    46,
+    0
+   ]
+  }
+ },
+ "js": {
+  "pct": 66.2,
+  "statements": 7243,
+  "covered": 4795,
+  "dirs": {
+   "src/": [
+    44,
+    30
+   ],
+   "src/components/": [
+    464,
+    326
+   ],
+   "src/components/Widgets/": [
+    234,
+    205
+   ],
+   "src/components/Widgets/Renderers/": [
+    1302,
+    921
+   ],
+   "src/components/Workspace/": [
+    324,
+    279
+   ],
+   "src/components/Workspace/config/": [
+    126,
+    106
+   ],
+   "src/components/admin/": [
+    1056,
+    548
+   ],
+   "src/components/admin/tabs/": [
+    233,
+    173
+   ],
+   "src/composables/": [
+    378,
+    357
+   ],
+   "src/constants/": [
+    47,
+    46
+   ],
+   "src/dialogs/": [
+    267,
+    182
+   ],
+   "src/modals/": [
+    638,
+    381
+   ],
+   "src/services/": [
+    526,
+    317
+   ],
+   "src/stores/": [
+    715,
+    454
+   ],
+   "src/utils/": [
+    132,
+    125
+   ],
+   "src/views/": [
+    717,
+    308
+   ],
+   "src/views/settings/": [
+    40,
+    37
+   ]
+  }
+ }
+}
