@@ -77,7 +77,7 @@ class MagicColumnRetyperTest extends TestCase {
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
-		foreach (['debug', 'warning'] as $level) {
+		foreach (['debug', 'info', 'warning'] as $level) {
 			$logger->method($level)->willReturnCallback(
 				function (string|\Stringable $message, array $context = []) use ($level): void {
 					$this->log[] = $level . ' ' . $message . ' ' . json_encode($context);
@@ -161,4 +161,70 @@ class MagicColumnRetyperTest extends TestCase {
 		$this->assertStringStartsWith('warning [MagicMapper] Could not retype relation column to VARCHAR; it still holds data that is not a UUID reference.', $this->log[0]);
 		$this->assertStringEndsWith('{"tableName":"openregister_table_1_2","columnName":"owner","error":"cannot cast"}', $this->log[0]);
 	}//end testARefusedRelationRetypeKeepsTheOthers()
+
+	/**
+	 * A table whose encrypted and plain string properties need TEXT while some columns are still VARCHAR.
+	 *
+	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return TableStructureSync The sync.
+	 */
+	private function textSync(bool $isPostgres): TableStructureSync {
+		$varchar = 'varchar';
+		if ($isPostgres === true) {
+			$varchar = 'character varying';
+		}
+
+		$current = [
+			'secret' => ['type' => $varchar, 'nullable' => true],
+			'code' => ['type' => 'varchar', 'nullable' => false],
+			'notes' => ['type' => 'text', 'nullable' => true],
+			'name' => ['type' => 'varchar', 'nullable' => true],
+		];
+		$required = [
+			'secret' => ['type' => 'text'],
+			'code' => ['type' => 'text'],
+			'notes' => ['type' => 'text'],
+			'name' => ['type' => 'string'],
+		];
+
+		return new TableStructureSync('openregister_table_1_2', 'oc_openregister_table_1_2', new MagicColumnDrift($current, $required), $isPostgres);
+	}//end textSync()
+
+	public function testTextWidensVarcharColumnsOnPostgres(): void {
+		$retyped = $this->retyper()->text($this->textSync(true));
+
+		$this->assertSame(['secret', 'code'], $retyped);
+		$this->assertSame(
+			[
+				'ALTER TABLE "oc_openregister_table_1_2" ALTER COLUMN "secret" TYPE TEXT',
+				'ALTER TABLE "oc_openregister_table_1_2" ALTER COLUMN "code" TYPE TEXT',
+			],
+			$this->statements
+		);
+		$this->assertSame(
+			'info [MagicMapper] Widened a VARCHAR column to TEXT, as its property now requires {"tableName":"openregister_table_1_2","columnName":"secret"}',
+			$this->log[0]
+		);
+	}//end testTextWidensVarcharColumnsOnPostgres()
+
+	public function testTextWidensVarcharColumnsOnMySqlKeepingNullability(): void {
+		$retyped = $this->retyper()->text($this->textSync(false));
+
+		$this->assertSame(['secret', 'code'], $retyped);
+		$this->assertSame(
+			[
+				'ALTER TABLE `oc_openregister_table_1_2` MODIFY `secret` TEXT NULL',
+				'ALTER TABLE `oc_openregister_table_1_2` MODIFY `code` TEXT NOT NULL',
+			],
+			$this->statements
+		);
+	}//end testTextWidensVarcharColumnsOnMySqlKeepingNullability()
+
+	public function testARefusedTextWideningIsLoggedAndNotReported(): void {
+		$retyped = $this->retyper(['secret'])->text($this->textSync(true));
+
+		$this->assertSame(['code'], $retyped);
+		$this->assertStringStartsWith('warning [MagicMapper] Could not widen a VARCHAR column to TEXT', $this->log[0]);
+	}//end testARefusedTextWideningIsLoggedAndNotReported()
 }//end class

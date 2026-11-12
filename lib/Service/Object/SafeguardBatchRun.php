@@ -20,6 +20,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+
 /**
  * One batch of bulk rows going through the Wave-12 safeguards: the rows, the batch defaults,
  * the caller's flags, and the result the refused rows land in.

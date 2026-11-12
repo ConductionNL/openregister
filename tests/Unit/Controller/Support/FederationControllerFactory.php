@@ -25,6 +25,7 @@ final class FederationControllerFactory {
 	 * @param FederationShareService $shareService Constructor argument.
 	 * @param IThrottler $throttler Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param \OCA\OpenRegister\Service\Federation\CreatorPropertyFilter|null $creatorProperties Defaults to one that serves every property.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -36,6 +37,7 @@ final class FederationControllerFactory {
 		\OCA\OpenRegister\Service\FederationShareService $shareService,
 		\OCP\Security\Bruteforce\IThrottler $throttler,
 		\Psr\Log\LoggerInterface $logger,
+		?\OCA\OpenRegister\Service\Federation\CreatorPropertyFilter $creatorProperties = null,
 	): array {
 		return [
 			$appName,
@@ -45,9 +47,26 @@ final class FederationControllerFactory {
 				objectService: $objectService,
 				shareService: $shareService,
 				throttler: $throttler,
+				creatorProperties: ($creatorProperties ?? self::servingEveryProperty()),
 			),
 			$logger,
 		];
+	}
+
+	/**
+	 * A property filter that serves the rendered object unchanged.
+	 *
+	 * @return \OCA\OpenRegister\Service\Federation\CreatorPropertyFilter
+	 */
+	private static function servingEveryProperty(): \OCA\OpenRegister\Service\Federation\CreatorPropertyFilter {
+		return new class extends \OCA\OpenRegister\Service\Federation\CreatorPropertyFilter {
+			public function __construct() {
+			}
+
+			public function readable(\OCA\OpenRegister\Db\FederatedShare $share, \OCA\OpenRegister\Db\ObjectEntity $object, array $rendered): array {
+				return $rendered;
+			}
+		};
 	}
 
 	/**

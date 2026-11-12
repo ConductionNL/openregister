@@ -42,6 +42,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -52,6 +53,13 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Db\FederatedShare
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
  */
 class FederationControllerScopeTest extends TestCase {
 
@@ -239,7 +247,8 @@ class FederationControllerScopeTest extends TestCase {
 		$this->writableObjectBySlug(storedUuid: 'stored-uuid');
 		$written = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$written[] = ($args['uuid'] ?? $args[4] ?? null);
 				return new ObjectEntity();
 			}

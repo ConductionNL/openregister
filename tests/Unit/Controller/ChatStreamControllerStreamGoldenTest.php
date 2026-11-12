@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ChatStreamController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
@@ -122,6 +123,8 @@ class GoldenChatStreamController extends ChatStreamController {
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamChat
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ChatStreamPlatform
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels
  */
 class ChatStreamControllerStreamGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/chat-stream-golden.json';
@@ -311,8 +314,8 @@ class ChatStreamControllerStreamGoldenTest extends TestCase {
 		}
 
 		$mapper->method('findAll')->willReturnCallback(
-			function (...$args) use ($case, $agents): array {
-				$this->calls[] = ['findAllAgents' => $args];
+			function (ListQuery $query) use ($case, $agents): array {
+				$this->calls[] = ['findAllAgents' => [$query->limitOrNull(), $query->offset, $query->filters, $query->sort]];
 				if (($case['agentsThrow'] ?? false) === true) {
 					throw new RuntimeException('agents table gone');
 				}

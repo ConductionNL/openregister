@@ -36,6 +36,13 @@ use PHPUnit\Framework\TestCase;
  * only checked for their prefix and extension.
  *
  * @covers \OCA\OpenRegister\Controller\SearchTrailController
+ * @uses \OCA\OpenRegister\Controller\Support\AdministratorOnlyGate
+ * @uses \OCA\OpenRegister\Controller\Support\ResultWindow
+ * @uses \OCA\OpenRegister\Controller\Support\SearchTrailControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\SearchTrailPageLinks
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
+ * @uses \OCA\OpenRegister\Db\SearchTrail
+ * @uses \OCA\OpenRegister\Service\SearchPeriod
  */
 class SearchTrailControllerA24GoldenTest extends TestCase {
 	/** @var SearchTrailService&MockObject */

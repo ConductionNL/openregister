@@ -67,6 +67,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Class ImportHandler
@@ -1310,35 +1313,58 @@ class ImportHandler {
 			return $orphan;
 		}
 
-		// Visibility only: a same-slug row exists but is not (yet) in the
-		// target register's own set. The caller still (correctly) creates its
-		// own schema rather than binding to this one.
+		$this->noteSlugOutsideRegisterScope(slug: $data['slug']);
+		return null;
+	}//end resolveSchemaWithinRegisterScope()
+
+	/**
+	 * Visibility only: log a same-slug row that is not (yet) in the target register's own set.
+	 *
+	 * The caller still (correctly) creates its own schema rather than binding to this one.
+	 *
+	 * @param mixed $slug The schema slug.
+	 *
+	 * @return void
+	 */
+	private function noteSlugOutsideRegisterScope(mixed $slug): void {
 		try {
-			$foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-			if ($foreign->getId() !== null) {
-				$this->logger->debug(
-					message: sprintf(
-						"[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but "
-						. "not in the target register's schema set; creating this register's OWN schema.",
-						$data['slug'],
-						$foreign->getId()
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
-				);
-			}
+			$foreign = $this->schemaMapper->find($slug, _multitenancy: false);
+			$this->noteForeignSchemaId(slug: $slug, foreignId: $foreign->getId());
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema anywhere (or ambiguous) — nothing to note.
 			$this->logger->debug(
 				message: '[ImportHandler] No unambiguous pre-existing schema outside the register scope',
 				context: [
-					'slug' => $data['slug'],
+					'slug' => $slug,
 					'exception' => $ignore->getMessage(),
 				]
 			);
 		}
+	}//end noteSlugOutsideRegisterScope()
 
-		return null;
-	}//end resolveSchemaWithinRegisterScope()
+	/**
+	 * Log the id of a same-slug schema outside the target register's set, when it has one.
+	 *
+	 * @param mixed    $slug      The schema slug.
+	 * @param int|null $foreignId The id of the row found elsewhere.
+	 *
+	 * @return void
+	 */
+	private function noteForeignSchemaId(mixed $slug, ?int $foreignId): void {
+		if ($foreignId === null) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: sprintf(
+				"[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but "
+				. "not in the target register's schema set; creating this register's OWN schema.",
+				$slug,
+				$foreignId
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug]
+		);
+	}//end noteForeignSchemaId()
 
 	/**
 	 * The importing app's own schema row with this slug that no register
@@ -1398,37 +1424,57 @@ class ImportHandler {
 			return $existingSchema;
 		}
 
-		// Visibility: if we own none but a DIFFERENT app already owns the
-		// slug, surface the collision instead of silently forking. The
-		// caller still (correctly) creates its own schema.
+		$this->warnIfSlugOwnedByAnotherApp(data: $data, appId: $appId);
+		return null;
+	}//end resolveSchemaByApplication()
+
+	/**
+	 * Visibility: if the importing app owns none but a DIFFERENT app already owns the slug,
+	 * surface the collision instead of silently forking. The caller still (correctly) creates its own schema.
+	 *
+	 * @param array  $data  The schema data (MUST carry a non-empty `slug`).
+	 * @param string $appId The importing application id.
+	 *
+	 * @return void
+	 */
+	private function warnIfSlugOwnedByAnotherApp(array $data, string $appId): void {
+		$foreignApp = $this->owningAppOfSlug(slug: $data['slug']);
+		if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
+			$this->logger->warning(
+				message: sprintf(
+					"[ImportHandler] Schema slug '%s' is already owned by app '%s'; "
+					. "app '%s' will create its OWN schema to avoid a cross-app collision.",
+					$data['slug'],
+					$foreignApp,
+					$appId
+				),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
+			);
+		}
+	}//end warnIfSlugOwnedByAnotherApp()
+
+	/**
+	 * The app owning the pre-existing schema with a slug; null when it has none or there is no unambiguous row.
+	 *
+	 * @param mixed $slug The schema slug.
+	 *
+	 * @return string|null The owning app.
+	 */
+	private function owningAppOfSlug(mixed $slug): ?string {
 		try {
-			$foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-			$foreignApp = $foreign->getApplication();
-			if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
-				$this->logger->warning(
-					message: sprintf(
-						"[ImportHandler] Schema slug '%s' is already owned by app '%s'; "
-						. "app '%s' will create its OWN schema to avoid a cross-app collision.",
-						$data['slug'],
-						$foreignApp,
-						$appId
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
-				);
-			}
+			return $this->schemaMapper->find($slug, _multitenancy: false)->getApplication();
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema (or ambiguous) — nothing to warn about.
 			$this->logger->debug(
 				message: '[ImportHandler] No unambiguous pre-existing schema to check the owning app of',
 				context: [
-					'slug' => $data['slug'],
+					'slug' => $slug,
 					'exception' => $ignore->getMessage(),
 				]
 			);
+			return null;
 		}
-
-		return null;
-	}//end resolveSchemaByApplication()
+	}//end owningAppOfSlug()
 
 	/**
 	 * Historical global (organisation-scoped) fallback: resolve via
@@ -3575,12 +3621,13 @@ class ImportHandler {
 	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $save['data'],
-			register: $seed->register,
-			schema: $seed->schema,
-			uuid: $save['uuid'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $seed->register, schema: $seed->schema),
+				uuid: $save['uuid'],
+				actor: new SaveActor(currentUser: $seed->actingUser)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			currentUser: $seed->actingUser
+			_multitenancy: false
 		);
 	}//end saveListedObject()
 

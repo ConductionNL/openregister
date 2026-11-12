@@ -34,12 +34,15 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(NotificationTemplatesController::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\ControllerSession::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices::class)]
 class NotificationTemplatesControllerBehaviourTest extends TestCase {
 
 	private NotificationTemplatesInterface&MockObject $registry;

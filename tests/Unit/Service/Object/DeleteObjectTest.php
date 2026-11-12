@@ -112,12 +112,10 @@ class DeleteObjectTest extends TestCase {
 		$this->handler = new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger)
 		);
 	}
 
@@ -136,12 +134,10 @@ class DeleteObjectTest extends TestCase {
 		return new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
 			$files
 		);
 	}
@@ -441,12 +437,10 @@ class DeleteObjectTest extends TestCase {
 		$handler = new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
 			eventDispatcher: $events
 		);
 
@@ -478,12 +472,10 @@ class DeleteObjectTest extends TestCase {
 		$handler = new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
 			eventDispatcher: $events
 		);
 		$this->objectMapper->method('update')->willReturn($object);

@@ -141,7 +141,6 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 */
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();

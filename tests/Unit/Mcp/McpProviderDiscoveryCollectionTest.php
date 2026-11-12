@@ -39,6 +39,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpLeafApp
+ * @uses \OCA\OpenRegister\Mcp\McpSchemaOwnership
  */
 class McpProviderDiscoveryCollectionTest extends TestCase {
 

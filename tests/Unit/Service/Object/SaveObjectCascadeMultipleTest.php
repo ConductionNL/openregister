@@ -28,6 +28,7 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Records every nested save of cascadeMultipleObjects as [register, schema, data].
@@ -70,12 +71,12 @@ class SaveObjectCascadeMultipleTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				$this->saves[] = [$register, $schema, $data];
 				$created = new ObjectEntity();
 				$created->setUuid('created-' . count($this->saves));
 				return $created;
-			}
+			})
 		);
 
 		$note = new Schema();
