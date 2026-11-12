@@ -4306,3 +4306,4 @@ pipelinq	3572	b2cfd1332d80a0cd7b1d4ca66c18c156694aa14a	GREEN	worker-58	unit 5925
 pipelinq	3573	d5e2f3f6613bbcb4bdcb32cf427846067f706ca4	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
 pipelinq	3574	3ade8202a2d3067240b650c018f46d5af5eb1600	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
 pipelinq	3576	c7fa75b3515130ab33fd99f2604856db739dd7c9	GREEN	worker-58	unit 5925 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), vitest 3222 pass; 0 new failures; tests only
+pipelinq	3575	6d34ed3ac459461bd8fb5b4c06aeee6c1cef28ca	CONFLICT	worker-58	add/add conflict with 3569 on tests/Unit/Service/Export/Export{Job,Run}ServiceTest.php
