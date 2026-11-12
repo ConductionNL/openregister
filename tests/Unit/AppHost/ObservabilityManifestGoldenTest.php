@@ -22,6 +22,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Observability\MetricDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Observability\ObservabilityValidationException
+ * @uses \OCA\OpenRegister\AppHost\Observability\DescriptorValue
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthCheckTarget
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy
+ * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityProbes
  */
 class ObservabilityManifestGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/observability-manifest-golden.json';

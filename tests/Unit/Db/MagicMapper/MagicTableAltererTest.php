@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicNumberWidening
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicObsoleteColumns
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableStructureSync
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicTableAltererTest extends TestCase {
 

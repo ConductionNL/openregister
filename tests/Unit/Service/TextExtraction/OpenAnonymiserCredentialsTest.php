@@ -7,7 +7,7 @@
  * behind HTTP Basic. Open Register posted to `/api/v1/analyze` with only a
  * Content-Type and an Accept header, so requiring a login there would have
  * sent every redaction run to the regex fallback. These tests drive the real
- * curl request against a local PHP server that records what it received.
+ * request, through the Nextcloud HTTP client, against a local PHP server that records what it received.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\TextExtraction
@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
+use OCA\OpenRegister\Tests\Unit\Files\Service\TextExtraction\GuzzleClientServiceTrait;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -47,6 +48,8 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
+	use GuzzleClientServiceTrait;
+
 
 	/**
 	 * The directory holding the router script and what it recorded.
@@ -190,7 +193,7 @@ class OpenAnonymiserCredentialsTest extends TestCase {
 				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
 				db: $this->createMock(IDBConnection::class)
 			),
-			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend, clientService: $this->guzzleClientService()),
 			logger: $logger
 		);
 

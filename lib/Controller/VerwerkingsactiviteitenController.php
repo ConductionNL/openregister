@@ -205,8 +205,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @return JSONResponse The persisted activity (201) or a 422 envelope.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -230,8 +228,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @param string $id Identifier (id|uuid|code).
 	 *
 	 * @return JSONResponse The updated activity, 404, 403, or 422.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -260,8 +256,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @param string $id Identifier (id|uuid|code).
 	 *
 	 * @return JSONResponse 204 on success, 404, or 403.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */

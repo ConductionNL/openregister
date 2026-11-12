@@ -33,9 +33,11 @@ use OCA\OpenRegister\Notifications\Controller\GraphQLSubscriptionController;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(GraphQLSubscriptionController::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter::class)]
 class GraphQLSubscriptionControllerBehaviourTest extends TestCase {
 
 	public function testEventsArrivingDuringThePollAreStreamedAfterTheFirstHeartbeat(): void {

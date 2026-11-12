@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\StateHistoryMapper
+ * @uses \OCA\OpenRegister\Db\StateChangePeriod
  */
 final class StateHistoryMapperChangedBetweenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

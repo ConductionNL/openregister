@@ -48,6 +48,15 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectIntegrationsController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\RelationsObjectLookup
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 final class ObjectIntegrationsControllerGuardAddressTest extends TestCase {
 
