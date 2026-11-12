@@ -6,3 +6,4 @@ humaniq	1071	88f25d6d8702bed20ccfe866d081707b23ce686b	MERGED	worker-36	GATE OK s
 humaniq	1072	d3996bb06bad53cfd69b310cd0f7deb0b0094f81	MERGED	worker-36	GATE OK sbom, checker floor and maintainability floor hold
 humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	RED	worker-36	GATE RED checker floor: dockerimage: pass -> fail; score: 93 -> 89
 dossiq	5696	ce56d9d68be74b2dd8ba9fb418c367ceff71a13f	FAIL	worker-38	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+dossiq	5909	51df02c53316b17932fbf0f6e7e2ab92d025044e	MERGED	worker-45	GATE OK sbom, checker floor and maintainability floor hold
