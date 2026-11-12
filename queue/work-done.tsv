@@ -373,3 +373,4 @@ cover:stackiq:8cfacb29:jsda51ac59	already done: src/store/plugins/stackiqPlugin.
 cover:dossiq:6ca0231e:6dc9019f	PR #6177: IntegriqLeaf + subscription edges (+10), metadata on 3 existing; 0 new failures	session-20261112T200016-345024b4	2026-11-12T21:06:36Z
 gap:hermiq:opensourcehealth:dad4d7ca	failed: opensourcehealth stars come from 639 mostly transitive deps (activity 2 stars, freshness, licence use from Nextcloud libraries); no bounded app-level change lifts it to 4 stars	session-20261112T202909-d1558483	2026-11-12T21:07:34Z
 verify:buildiq:1462:4cefbb03	GREEN 1462; vitest all passed	session-20261112T205854-40cde0c5	2026-11-12T21:07:53Z
+cover:dossiq:6ca0231e:js2b6606f9	PR #6180: 2 Vue components, 13 vitest tests; src/views/cases lines 73.9%->87.1%; suite 6204->6217 (1 inherited failure)	session-20261112T184505-d34a144f	2026-11-12T21:08:02Z
