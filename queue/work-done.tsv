@@ -471,6 +471,7 @@ cover:pipelinq:f67520ec:js0be8c659	PR #3552: 15 vitest tests for 4 modals at 0% 
 cover:pipelinq:f67520ec:js16d0f1b3	PR pipelinq#3553: 30 specs (3 xwiki components, LeadAnalyticsSection), dirs stmts 68.8% -> 80.7%, vitest 3158 -> 3188 green	session-20261112T205855-bb08648d	2026-11-12T21:38:10Z
 verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response behaviour change); 0 new failures	session-20261112T205854-40cde0c5	2026-11-12T21:38:20Z
 merge:shillinq:2796:1f5d6d5b	2796 RED 2797 SKIP 2798 RED 	session-20261112T184502-4ecd6072	2026-11-12T21:38:55Z
+cover:buildiq:8ca317f6:js20c69fa2	PR #1481: 16 vitest tests (WalkthroughRecorder 3/39 -> 36/39, Designer edges); dir 183/284 -> 231/284 (81%; PR body says 216 as the start, which is wrong); suite 2962 -> 2978 passing	session-20261112T200018-e68ecbf8	2026-11-12T21:39:27Z
 merge:buildiq:1437:bee6449f	failed: tree contains heads/PRs authored by this worker (1437,1440,1450 fixes; 1464,1467); merge needs another worker	session-20261112T184508-711de18c	2026-11-12T21:39:25Z
 cover:pipelinq:f67520ec:js4570fd16	PR #3551: 4 POS views, 32 vitest tests; src/views/pos stmts 73.2%->88.3%	session-20261112T200016-345024b4	2026-11-12T21:39:44Z
 cover:decidiq:13261b1b:0f859653	PR #2079: 6 tests for DecidiqRequestDecisionNode branches, suite all green	session-20261112T200014-a0c0c232	2026-11-12T21:40:04Z
