@@ -56,3 +56,4 @@ launchpad	1072	b1af8c3f16a1e4e6bce07bd944ee66299ca3b61c	MERGED	worker-29	GATE OK
 integriq	3287	c9e300ba961521df09621420d2824ef86f06c250	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1073	0efe8318f6284ac3f5df18abfea1a8e5ba14e234	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
+launchpad	1075	4bf932f43f8dc61a520c15784e528648300806f6	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
