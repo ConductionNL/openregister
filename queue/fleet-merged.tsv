@@ -211,3 +211,4 @@ buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	RED	worker-53	GATE RED che
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 learniq	2316	47d909a5f7a918cb4c874849a7679fff4b5c95cc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2295	feb35cb98319dbb6af00e0a5cf4a6be4ff6b8b46	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2296	6ccdaaccb3d237034bae9ab154e9e0593997678f	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
