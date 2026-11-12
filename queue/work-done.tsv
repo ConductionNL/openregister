@@ -945,3 +945,4 @@ cover:keepiq:d76c2121m70b5:f91e7417	PR keepiq#1704: +4 tests, lib/Service/Connec
 cover:integriq:9b0f5894m2367:js102ac6fb	failed: lang=js but dirs=lib/Service/Security/*.php is PHP; task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:50:48Z
 cover:dossiq:6ca0231e:a215617b	PR #6194: 8 tests (CaseLeafReader, CaseLeafProvider deadline order), Integration 100% lines, suite 12964->12972, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-12T23:50:58Z
 cover:integriq:9b0f5894m2367:js19badfa5	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:50:58Z
+cover:integriq:9b0f5894m2367:js0d678885	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:51:07Z
