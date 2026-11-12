@@ -119,7 +119,9 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	 *
 	 * The old key is retained in the table (status = 'retired') so that
 	 * verifiers can still re-check evidence records signed under it.
-	 * A fresh key is inserted with status = 'active'.
+	 * A fresh key is inserted with status = 'active'. Both happen in one
+	 * transaction, so a failed insert never leaves the tenant without an
+	 * active key.
 	 *
 	 * Returns metadata ONLY — never the plaintext key material. Callers that
 	 * legitimately need the new active key after rotation must call
@@ -143,10 +145,16 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md#new-active-keys-must-be-stored-encrypted-with-status-active
 	 */
 	public function rotateTenantKey(string $tenantId): array {
-		$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
-
 		$rotatedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
+		$this->db->beginTransaction();
+		try {
+			$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
+			$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
+			$this->db->commit();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
 
 		$this->logger->info('Rotated tenant HMAC key', ['tenant_id' => $tenantId, 'rotated_at' => $rotatedAt]);
 
