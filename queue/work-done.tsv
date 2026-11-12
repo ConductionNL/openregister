@@ -858,3 +858,4 @@ fix:filinq:1972:76465151	fixed: protocol paths keep API-Version and problem deta
 cover:openregister:7350e3efm0e99:jsa1252b57	failed: lib/Service/Confluence/ does not exist on main (and lang=js targets a PHP path); nothing to cover	session-20261112T231637-27871bfa	2026-11-12T23:19:52Z
 review:openregister:10061:c8d3817d	APPROVE: lockfile-only minor bump, consistent	session-20261112T231639-173f6289	2026-11-12T23:19:50Z
 cover:openregister:7350e3efm0e99:jsf545d745	failed: malformed row, lang=js but dirs=lib/Repair/*.php holds only PHP; no JS subject to cover	session-20261112T231639-173f6289	2026-11-12T23:20:22Z
+cover:openregister:7350e3efm0e99:js38e80a9f	failed: lang=js but dirs=lib/Command/*.php is PHP; malformed row, requeue as lang=php	session-20261112T231637-27871bfa	2026-11-12T23:20:25Z
