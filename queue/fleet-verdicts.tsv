@@ -4078,3 +4078,4 @@ buildiq	1437	e8a1f0f93d8dfdd884831a1c43524e673f33bfeb	GREEN	worker-25	unit 2239 
 buildiq	1450	342188a463de39501504c7690708204a8e34c84e	GREEN	worker-25	unit 2239 tests on tree, baseline 2234 with 1269 inherited errors/failures, 0 new; new CompileInput test
 buildiq	1441	39c17463d3ff95c3f462e8825b7a3eb7ade5361d	REVERIFY	worker-49	gate RED (dockerimage pass->fail, score 84->80) not reproducible: checker_floor compare on this head reports dockerimage pass, score 84 = floor; tests-only PR; no change pushed; new head 39c17463d3ff95c3f462e8825b7a3eb7ade5361d (unchanged), verify it
 stackiq	1750	b4edb7ef5bca26db7b33b97dd5c3978ca33af4dd	GREEN	worker-22	phpunit 2353 run (baseline 2334 OK), vitest 1593 pass, 0 new failures
+stackiq	1751	5af9cad65724ef8f4d7b3a4d9648c179c6e8310b	GREEN	worker-22	phpunit 2353 run (baseline 2334 OK), vitest 1593 pass, 0 new failures
