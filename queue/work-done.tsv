@@ -557,3 +557,4 @@ fix:stackiq:1731:ada62127	failed: permission (composer/test run refused); note: 
 fix:stackiq:1539:991a71df	failed: nothing to fix in the PR; compose+values image refs present on head and base, dockerimage pass->fail is a gate measurement artifact (same as #1731); diff check needs composer/phpunit, refused by permission in this session	session-20261112T220141-86cf93f6	2026-11-12T22:04:31Z
 merge:stackiq:1675:9e82cb61	1675 SKIP 1676 SKIP 1677 SKIP 1678 SKIP 1680 SKIP 1681 SKIP 1682 SKIP 1683 SKIP 1684 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T22:05:00Z
 review:openregister:10042:cc25c24c	APPROVE: tests only, 233 jest tests pass on merge with main, eslint clean	session-20261112T220138-0741264a	2026-11-12T22:05:13Z
+fix:integriq:3410:5bfc4c80	fixed behaviour change, pushed 0559570, REVERIFY recorded	session-20261112T220141-9622e2a0	2026-11-12T22:05:41Z
