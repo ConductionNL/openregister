@@ -924,3 +924,4 @@ cover:stackiq:8cfacb29m2f4b:efa2a923	PR stackiq#1782: 3 new listener tests (+11)
 verify:keepiq:1698:852994f1	GREEN 1698: tests only, unit 3722->3751, 0 failures	session-20261112T231637-60fd49c4	2026-11-12T23:41:42Z
 merge:stackiq:1742:20a07765	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:42:09Z
 merge:stackiq:1738:11514d4f	merge-local over 9 stackiq tasks: merged=37 red=0 fail=0 skip=4; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T23:42:15Z
+cover:keepiq:d76c2121m70b5:js6925f818	PR #1702: SetupCheck name + success text translated (PHP; dir has no JS), suite 3722->3723 OK	session-20261112T231639-4c562de9	2026-11-12T23:42:25Z
