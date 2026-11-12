@@ -135,10 +135,12 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 			// its payload instead of an object: a non-object trigger (a file, a
 			// user) puts what it is about under `payload` on the run context, and
 			// that becomes the first item, so the flow reads a file's path or a
-			// user's id exactly as it would an object's fields.
+			// user's id exactly as it would an object's fields. A subject that
+			// named an object but could not be re-resolved (a deletion) takes the
+			// same path, on the same payload slot.
 			$seed = null;
 			$payload = (array)(($run->getContext() ?? [])['payload'] ?? []);
-			if ($this->hasSubject(run: $run) === false && $payload !== []) {
+			if ($this->walksPayload(pass: $pass) === true && $payload !== []) {
 				$seed = [FlowItems::item(json: $payload)];
 			}
 
@@ -242,6 +244,26 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	}//end hasSubject()
 
 	/**
+	 * Whether the pass walks the run's payload instead of an object.
+	 *
+	 * True for a subjectless run, and for an object.deleted run whose subject
+	 * could not be re-resolved and so walks a bare holder (see resolvedPass()).
+	 *
+	 * @param FlowRunPass $pass The pass.
+	 *
+	 * @return bool
+	 */
+	private function walksPayload(FlowRunPass $pass): bool {
+		if ($this->hasSubject(run: $pass->run) === false) {
+			return true;
+		}
+
+		return $pass->run->hasDeletedSubjectSnapshot() === true
+			&& $pass->subject instanceof stdClass
+			&& get_object_vars($pass->subject) === [];
+	}//end walksPayload()
+
+	/**
 	 * The run's flow and subject as a pass, or why the run cannot proceed.
 	 *
 	 * A subjectless run gets a bare holder as its subject, since the marking
@@ -268,6 +290,13 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 					id: (string)$run->getSubjectUuid()
 				)
 			);
+
+			// An object.deleted run can never re-resolve its subject; it walks
+			// the snapshot under `payload` instead (see FlowRun::hasDeletedSubjectSnapshot()).
+			// Every other unresolved subject still fails the run.
+			if ($subject === null && $run->hasDeletedSubjectSnapshot() === true) {
+				$subject = new stdClass();
+			}
 
 			if ($subject === null) {
 				return sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid());

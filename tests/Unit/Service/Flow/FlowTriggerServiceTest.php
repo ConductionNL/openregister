@@ -246,6 +246,76 @@ class FlowTriggerServiceTest extends TestCase {
 	}//end testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker()
 
 	/**
+	 * `object.deleted` is the one event whose subject can never be
+	 * re-resolved — the object is already gone. A `sync` flow wired to it must
+	 * still run INLINE, from the snapshot `FlowTriggerListener` recorded as
+	 * `payload`, rather than silently falling through to the worker and
+	 * breaking `sync`'s one guarantee (it runs inside the triggering call) for
+	 * this trigger only.
+	 */
+	public function testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveObject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-3');
+		$run->setTrigger('object.deleted');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$seen = null;
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queueRun')->willReturn($run);
+		$runner->expects($this->once())->method('executePass')->willReturnCallback(
+			function (FlowRunPass $pass, FlowRunOrigin $origin) use (&$seen, $run): FlowRun {
+				$seen = $origin->items;
+				return $run;
+			}
+		);
+
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.deleted', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+		// executePass(pass, origin): the origin's seed items carry the snapshot.
+		$this->assertSame('K-1', $seen[0]['json']['kenmerk']);
+	}//end testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload()
+
+	/**
+	 * The payload fallback is scoped to `object.deleted` specifically, not to
+	 * "any trigger with an unresolved subject and a payload". A sub-flow
+	 * fire-and-forget child, for instance, queues with both a real subject
+	 * and a payload snapshot; on another trigger, an unresolved subject is a
+	 * genuine resolution failure and must still fall through to the worker's
+	 * ordinary (failing) handling rather than run inline on stale data.
+	 */
+	public function testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForEvent')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveObject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-4');
+		$run->setTrigger('object.updated');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queueRun')->willReturn($run);
+		$runner->expects($this->never())->method('executePass');
+
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.updated', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+	}//end testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker()
+
+	/**
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
 	 * never thrown into that action.
