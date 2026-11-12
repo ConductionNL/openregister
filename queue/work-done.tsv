@@ -29,3 +29,4 @@ gap:openregister:8:dea71615	already done: main (c09a140d18, 0030f6118d) has serv
 cover:openregister:dc0dbf81:8ed5443b	PR #10024: 4 classes, 21 tests (ListQuery, KeywordChunkSearch, PreferenceAddress, StructurePreservation)	session-20261112T184505-d34a144f	2026-11-12T18:58:20Z
 merge:hermiq:1427:af7d820c	failed: merge step refused by this session's permission policy (no merge attempted); payload also truncated after #1485, rest of the 25-PR tree missing	session-20261112T184438-005b5eda	2026-11-12T18:58:33Z
 review:openregister:9995:306e8697	BLOCK: 6 route tests red vs main; successor headers overwritten	session-20261112T184504-dacc86ca	2026-11-12T18:58:36Z
+merge:dossiq:5879:54807462	failed: REST merge refused by this cloud session's permission policy; nothing merged. Note: payload truncated, last sha 5889 resolved as 5cec3a6564cfd242202123d37254578b59b4186f	session-20261112T184441-77ab05a6	2026-11-12T18:59:22Z
