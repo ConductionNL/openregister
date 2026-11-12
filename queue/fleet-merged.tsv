@@ -319,3 +319,4 @@ learniq	2333	dc6c4ce423e5cbbed5c067feb173c9d742adfb45	MERGED	merge-local	GATE OK
 shillinq	2739	af22f376a134155c05c6b769f05ca825758c5c10	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2203	5c12b073b83c23eb0878d88ded254e6d438aed87	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 shillinq	2740	d8163e13a7f759af9708b3f2b4f3bd22b2917db3	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2293	c92f7419cbf88dff06a3d86e92af27fe04d0b596	RED	merge-local	GATE RED checker floor: dockerimage: pass -> fail
