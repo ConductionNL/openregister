@@ -610,3 +610,4 @@ cover:openregister:7350e3ef:js913a213e	failed: lang=js but dirs=lib/Service/Flow
 cover:openregister:7350e3ef:js0c3677df	failed: row inconsistent: lang=js but dirs=lib/Service/ExampleSet/*.php (PHP); needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:24:27Z
 cover:openregister:7350e3ef:js5a1ec62c	failed: lang=js but every listed lib/Service/* dir holds only PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:24:35Z
 measure:buildiq:20261112h18	php 79.08% (pcov, needs openregister sibling + pcov.directory=lib), js 78.41% @5495c2c	session-20261112T221532-ade53a05	2026-11-12T22:25:10Z
+cover:openregister:7350e3ef:js3421d638	failed: payload lang=js but dirs lib/Service/Flow/Nodes/ holds only PHP files; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:25:18Z
