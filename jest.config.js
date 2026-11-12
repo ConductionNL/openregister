@@ -32,7 +32,7 @@ module.exports = {
 	// babel-jest so the test suite can import store modules that
 	// transitively pull NC vue components.
 	transformIgnorePatterns: [
-		'/node_modules/(?!(@nextcloud|@conduction|tributejs|escape-html|webdav|p-cancelable|p-limit|p-queue|p-timeout|node-fetch|fetch-blob|formdata-polyfill|data-uri-to-buffer|filesize|nanoid|pinia|toastify-js|vue-material-design-icons|axios|zod|cancelable-promise)/)',
+		'/node_modules/(?!(@nextcloud|@conduction|tributejs|escape-html|webdav|p-cancelable|p-limit|p-queue|p-timeout|node-fetch|fetch-blob|formdata-polyfill|data-uri-to-buffer|filesize|nanoid|pinia|nostics|perfect-debounce|toastify-js|vue-material-design-icons|axios|zod|cancelable-promise)/)',
 	],
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/src/$1',
