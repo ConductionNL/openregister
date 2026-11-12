@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Handles validation operations for ObjectService.
@@ -576,14 +578,13 @@ class ValidationHandler {
 		// Validation and enrichment update metadata like _name; events are off for performance.
 		return $objectService->saveObjects(
 			objects: $objectsData,
-			register: $run->registerId,
-			schema: $run->schemaId,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $run->registerId, schema: $run->schemaId),
+				validation: true,
+				events: false
+			),
 			_rbac: false,
-			_multitenancy: false,
-			validation: true,
-			events: false,
-			deduplicateIds: false,
-			enrich: true
+			_multitenancy: false
 		);
 	}//end bulkSave()
 

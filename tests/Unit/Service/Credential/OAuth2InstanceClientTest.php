@@ -34,6 +34,8 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -231,15 +233,9 @@ class OAuth2InstanceClientTest extends TestCase {
 		}
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(
-			function (
-				string $name,
-				string $provider,
-				string $owner,
-				array $allowedApps = [],
-				?string $secret = null,
-			): ObjectEntity {
-				$this->mints[] = ['provider' => $provider, 'allowedApps' => $allowedApps, 'secret' => $secret];
+		$broker->method('mintCredential')->willReturnCallback(
+			function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+				$this->mints[] = ['provider' => $mint->provider, 'allowedApps' => $options->allowedApps, 'secret' => $options->secret()];
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;
