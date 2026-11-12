@@ -78,6 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -238,14 +239,14 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
 		$this->saveHandler->method('seedLifecycleFieldOnCreate')->willReturnArgument(1);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ...$rest): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ...$rest): ObjectEntity {
 				$this->saveScope = ['register' => $register, 'schema' => $schema];
 
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-uuid');
 				$entity->setObject($data);
 				return $entity;
-			}
+			})
 		);
 
 		// New object: no row exists yet, so the save is a CREATE. A test that

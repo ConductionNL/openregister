@@ -453,68 +453,88 @@ function looksLikeNonDisplayContext(expr, start, end) {
  * until it finds the nearest unmatched `(`, then checks the call target.
  */
 function isInsideStoreCall(expr, pos) {
-	// Walk back to find the nearest enclosing unmatched `(`.
+	const open = findEnclosingParen(expr, pos)
+	if (open < 0) return false
+	const baseIdent = readCallBaseIdent(expr, open)
+	return baseIdent !== null && /Store$/.test(baseIdent)
+}
+
+/**
+ * Walk back from a closing quote at `i` to just before its opening quote.
+ * Returns the index of the opening quote.
+ */
+function skipStringBackwards(expr, i) {
+	const quote = expr[i]
+	i--
+	while (i >= 0 && expr[i] !== quote) {
+		if (i > 0 && expr[i - 1] === '\\') i -= 2
+		else i--
+	}
+	return i
+}
+
+/**
+ * Index of the nearest unmatched `(` before `pos`, or -1 when the nearest
+ * unmatched opener is a `[` / `{` or there is none.
+ */
+function findEnclosingParen(expr, pos) {
 	let depth = 0
-	let i = pos - 1
-	while (i >= 0) {
+	for (let i = pos - 1; i >= 0; i--) {
 		const c = expr[i]
 		if (c === ')' || c === ']' || c === '}') {
 			depth++
 		} else if (c === '(' || c === '[' || c === '{') {
-			if (depth === 0) {
-				// Found the enclosing opener. We only care if it's `(`.
-				if (c !== '(') return false
-				break
-			}
+			if (depth === 0) return c === '(' ? i : -1
 			depth--
 		} else if (c === "'" || c === '"' || c === '`') {
-			// Skip string contents (going backward is awkward — find the matching
-			// opening quote). Walk back one quote-pair.
-			const quote = c
-			i--
-			while (i >= 0 && expr[i] !== quote) {
-				if (i > 0 && expr[i - 1] === '\\') i -= 2
-				else i--
-			}
+			i = skipStringBackwards(expr, i)
 		}
-		i--
 	}
-	if (i < 0) return false // no enclosing `(` — top-level literal
+	return -1
+}
 
-	// `i` is at the `(`. Walk back through chained `.method` segments to find
-	// the base identifier of the call target.
-	let j = i - 1
+/**
+ * Read identifier characters backwards from `from`. Returns [start, end).
+ */
+function readIdentBackwards(expr, from) {
+	let k = from
+	while (k >= 0 && /[\w$]/.test(expr[k])) k--
+	return { start: k + 1, end: from + 1 }
+}
+
+/**
+ * When a `.` or `?.` member separator precedes `start` (whitespace allowed),
+ * return the index of the last character before it; otherwise -1.
+ */
+function memberSeparatorBefore(expr, start) {
+	let k = start - 1
+	while (k >= 0 && /\s/.test(expr[k])) k--
+	if (k < 0 || expr[k] !== '.') return -1
+	k--
+	if (k >= 0 && expr[k] === '?') k--
+	while (k >= 0 && /\s/.test(expr[k])) k--
+	return k
+}
+
+/**
+ * Base identifier of the call whose `(` sits at `open`, stepping over chained
+ * `.method` / `?.method` segments. Returns null when there is no identifier.
+ */
+function readCallBaseIdent(expr, open) {
+	let j = open - 1
 	while (j >= 0 && /\s/.test(expr[j])) j--
 
-	// Read identifier characters back.
-	const readIdentBackwards = (from) => {
-		let k = from
-		while (k >= 0 && /[\w$]/.test(expr[k])) k--
-		return { start: k + 1, end: from + 1 } // [start, end)
-	}
+	let ident = readIdentBackwards(expr, j)
+	if (ident.end <= ident.start) return null
 
-	let ident = readIdentBackwards(j)
-	if (ident.end <= ident.start) return false
-
-	// Step over zero or more `.<ident>` segments to reach the base.
-	while (true) {
-		const before = ident.start - 1
-		// Allow optional whitespace then a `.` (or `?.`)
-		let k = before
-		while (k >= 0 && /\s/.test(expr[k])) k--
-		if (k < 0 || expr[k] !== '.') break
-		// Optional `?` for optional chaining `obj?.method`
-		k--
-		if (k >= 0 && expr[k] === '?') k--
-		while (k >= 0 && /\s/.test(expr[k])) k--
+	for (;;) {
+		const k = memberSeparatorBefore(expr, ident.start)
 		if (k < 0) break
-		const next = readIdentBackwards(k)
+		const next = readIdentBackwards(expr, k)
 		if (next.end <= next.start) break
 		ident = next
 	}
-
-	const baseIdent = expr.slice(ident.start, ident.end)
-	return /Store$/.test(baseIdent)
+	return expr.slice(ident.start, ident.end)
 }
 
 /**
