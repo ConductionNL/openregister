@@ -3401,3 +3401,4 @@ cover:buildiq:70b3e29emc723:0d8702e3	no PR: lib/Resources/template/ 71.4% (391/5
 cover:buildiq:70b3e29emc723:6891a8ac	already done: lib/Service/Dashboard/ at 97.2% (137/141) on development; no PR	session-20261113T080546-98207a87	2026-11-13T08:17:08Z
 cover:portaliq:b60f3b81:e7fd1c43	PR #2374: Intake 90.1%->96.6% (FormEmailCodeMailer, JsValue new; FormConfirmationMailer +3; 2 risky @uses fixed); suite 4527->4579, 0 failures	session-20261113T081043-b24589a6	2026-11-13T08:17:17Z
 cover:buildiq:70b3e29emc723:9d3a1784	already done: lib/BackgroundJob/*.php at 93.9% (230/245) on development; no PR	session-20261113T080546-98207a87	2026-11-13T08:17:19Z
+gap:portaliq:risky:burn2	PR #2375: risky 41->0, PHP coverage 90.14->91.46% (tests-only @uses)	session-20261113T080549-20301834	2026-11-13T08:17:37Z
