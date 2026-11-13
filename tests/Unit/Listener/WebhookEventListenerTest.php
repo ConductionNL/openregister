@@ -65,12 +65,42 @@ class WebhookEventListenerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->webhookService = $this->createMock(WebhookService::class);
+		// Every case below is about an event that has a subscribed webhook;
+		// the no-webhook guard has its own tests.
+		$this->webhookService->method('hasWebhooksFor')->willReturn(true);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->listener = new WebhookEventListener(
 			$this->webhookService,
 			$this->logger,
 		);
+	}
+
+	// --- No webhook for the event: nothing is serialised or dispatched ---
+
+	public function testAnEventWithoutWebhooksIsNotSerialised(): void {
+		$service = $this->createMock(WebhookService::class);
+		$service->expects($this->once())
+			->method('hasWebhooksFor')
+			->with(ObjectCreatedEvent::class)
+			->willReturn(false);
+		$service->expects($this->never())->method('dispatchEvent');
+
+		$object = $this->createMock(ObjectEntity::class);
+		$object->expects($this->never())->method('jsonSerialize');
+
+		$listener = new WebhookEventListener($service, $this->logger);
+		$listener->handle(new ObjectCreatedEvent($object));
+	}
+
+	public function testAnUnknownEventWithoutWebhooksLogsNothing(): void {
+		$service = $this->createMock(WebhookService::class);
+		$service->method('hasWebhooksFor')->willReturn(false);
+		$service->expects($this->never())->method('dispatchEvent');
+		$this->logger->expects($this->never())->method('warning');
+
+		$listener = new WebhookEventListener($service, $this->logger);
+		$listener->handle($this->createMock(Event::class));
 	}
 
 	// --- Unknown event returns null payload, logs warning, no dispatch ---

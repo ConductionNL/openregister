@@ -890,6 +890,8 @@ final class ContractBindings {
 		FormLinkServiceInterface::class => FormLinkService::class,
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
+		\OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStoreInterface::class
+			=> \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		\OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\GitHubGuards::class,

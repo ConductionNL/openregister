@@ -43,6 +43,24 @@ blocker is unmet requirements, not malformed ones.
 change so only what shipped (`ObjectCleanupListener` deferral + filtered event
 subscription) is archived and the rest carries into a follow-on.
 
+## Status — build pass 2026-11-13
+
+Re-audited against `main`, which moved a long way since the audit above:
+
+- `HookListener`, `FlowActionListener`, `ActionListener` and
+  `OpenRegisterFlowResolver` no longer exist: the one native flow engine
+  (#3382) replaced them. Tasks 1.1, 1.2, 2.2, 2.3, 2.5 and 4.4 have no subject
+  left; flow triggers resolve through the indexed trigger store, not a
+  `findAll()`. They are marked OBSOLETE below rather than ticked.
+- `SourceRecordChangeListener` already defers to `SourceRecordRecomputeJob`,
+  deduped on the master uuid (#2420); 2.6 and 4.3 are left for a check of the
+  org-drift clause, not re-done.
+- Listener registrations moved from `lib/AppInfo/Application.php` to
+  `lib/Listener/ListenerRegistrar.php`. Gate 61 only parses `lib/AppInfo`, so
+  `--all` now checks zero registrations; it also recognises deferral only by
+  the literal `ListenerDeferralService`, not `ListenerDeferralInterface`. 5.1
+  and 5.2 need the gate updated first (it lives in the hydra-gates package).
+
 ## Classification — 21 listener classes, 51 registrations
 
 Recorded here so the sync/async verdict is auditable rather than folklore.
@@ -92,9 +110,12 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 
 ## 1. Query-level fixes (remove work, do not relocate it)
 
-- [ ] 1.1 Rewrite `OpenRegisterFlowResolver::flowsForTrigger()` (`lib/Service/Flow/OpenRegisterFlowResolver.php:181`) to filter by trigger + register + schema at query time, apply a bound, skip rendering, and memoize the resolved set per (trigger, register, schema) for the request. Do NOT defer `FlowTriggerService::runInline()`.
-- [ ] 1.2 Parity test for 1.1: for a fixture set covering matching and non-matching triggers/registers/schemas, the filtered query result must equal the previous PHP-side filtered result.
-- [ ] 1.3 Move `dispatchEvent`'s zero-webhook guard **before** `extractPayload()` in `lib/Service/WebhookService.php:660`, so a write on an instance with no webhooks pays no `jsonSerialize()`.
+- [ ] 1.1 OBSOLETE (resolver removed in #3382). Rewrite `OpenRegisterFlowResolver::flowsForTrigger()` (`lib/Service/Flow/OpenRegisterFlowResolver.php:181`) to filter by trigger + register + schema at query time, apply a bound, skip rendering, and memoize the resolved set per (trigger, register, schema) for the request. Do NOT defer `FlowTriggerService::runInline()`.
+- [ ] 1.2 OBSOLETE (with 1.1). Parity test for 1.1: for a fixture set covering matching and non-matching triggers/registers/schemas, the filtered query result must equal the previous PHP-side filtered result.
+- [x] 1.3 Move `dispatchEvent`'s zero-webhook guard **before** `extractPayload()` in `lib/Service/WebhookService.php:660`, so a write on an instance with no webhooks pays no `jsonSerialize()`.
+      DONE: `WebhookService::hasWebhooksFor()`; `WebhookEventListener::handle()`
+      asks it before `extractPayload()`. Tests in `WebhookEventListenerTest`
+      (the entity's `jsonSerialize()` is never called) and `WebhookServiceTest`.
 
 ## 2. Deferred post-event listeners (existing contract only)
 
@@ -104,22 +125,32 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
       with the inline fallback documented. Tests:
       `tests/Unit/Listener/ObjectCleanupListenerTest.php` +
       `tests/Unit/BackgroundJob/ObjectCleanupJobTest.php` (#2243).
-- [ ] 2.2 Split `HookListener` registrations in `lib/AppInfo/Application.php`: L2624-2626 (Creating/Updating/Deleting) stay inline and veto-capable; L2627-2629 (Created/Updated/Deleted) → `HookDispatchJob`. Deleted entry carries the serialized object. Comment the split with an ADR-078 reference so a future edit cannot silently re-merge it.
-- [ ] 2.3 `FlowActionListener` (C/U/D) → `FlowActionJob`; Deleted entry carries payload; verify `CalendarEventService` resolves the forwarded actor.
-- [ ] 2.4 `ContextChatSubmissionListener` (C/U/D) → `ContextChatSubmissionJob`; the `deleteContent` path MUST check object existence before removing (same-uuid re-create race).
-- [ ] 2.5 `ActionListener` (C/U/D) → `ActionDispatchJob`; Deleted entry carries payload; keep `ActionRetryJob` as the failure path unchanged.
+- [ ] 2.2 OBSOLETE (`HookListener` removed in #3382). Split `HookListener` registrations in `lib/AppInfo/Application.php`: L2624-2626 (Creating/Updating/Deleting) stay inline and veto-capable; L2627-2629 (Created/Updated/Deleted) → `HookDispatchJob`. Deleted entry carries the serialized object. Comment the split with an ADR-078 reference so a future edit cannot silently re-merge it.
+- [ ] 2.3 OBSOLETE (`FlowActionListener` removed in #3382). `FlowActionListener` (C/U/D) → `FlowActionJob`; Deleted entry carries payload; verify `CalendarEventService` resolves the forwarded actor.
+- [x] 2.4 `ContextChatSubmissionListener` (C/U/D) → `ContextChatSubmissionJob`; the `deleteContent` path MUST check object existence before removing (same-uuid re-create race).
+      DONE: `lib/BackgroundJob/ContextChatSubmissionJob.php`. The entry carries
+      the uuid and schema id, deduped on the uuid; the job reads the object as
+      it is then: live → submit (which removes when no longer public), gone or
+      soft-deleted → remove. A re-created uuid therefore resolves and is never
+      removed. Opted-out schemas enqueue nothing; `listenerDeferral=inline`
+      runs the old inline path.
+- [ ] 2.5 OBSOLETE (`ActionListener` removed in #3382). `ActionListener` (C/U/D) → `ActionDispatchJob`; Deleted entry carries payload; keep `ActionRetryJob` as the failure path unchanged.
 - [ ] 2.6 `SourceRecordChangeListener` (C/U/D) → `SourceRecordRecomputeJob` under the D3 payload contract: resolve new + old master UUIDs **inline**, carry those (not the source uuid), dedupe on masterUuid, log captured-vs-current org drift and no-op rather than partially writing.
 
 ## 3. Inline exceptions
 
-- [ ] 3.1 Annotate the six inline-by-exception post-event handlers with `@listener-placement inline <category> — <reason>` using the categories in the classification table above (`realtime` ×2, `sapi-memory` ×1, `cheap-bounded` ×2, `correctness` ×1).
+- [x] 3.1 Annotate the six inline-by-exception post-event handlers with `@listener-placement inline <category> — <reason>` using the categories in the classification table above (`realtime` ×2, `sapi-memory` ×1, `cheap-bounded` ×2, `correctness` ×1).
+      DONE: on the `handle()` of `FlowTriggerListener`, `NotifyPushListener`,
+      `GraphQLSubscriptionListener`, `AggregationCacheInvalidationListener`,
+      `ObjectMetricsListener` and `NotificationDedupePruneListener`; each
+      parses as `ok` with gate 61's own `analyse_listener()`.
 
 ## 4. Tests
 
-- [ ] 4.1 Job unit tests for the six new jobs: forwarded-actor execution, stale/gone entry no-op, and — for `ContextChatSubmissionJob` — the same-uuid re-create existence check.
-- [ ] 4.2 Listener unit tests: request path enqueues instead of running heavy work; interest gates suppress the enqueue; `listenerDeferral=inline` runs the full inline path.
+- [ ] 4.1 (ContextChatSubmissionJob part done: `tests/Unit/BackgroundJob/ContextChatSubmissionJobTest.php`) Job unit tests for the six new jobs: forwarded-actor execution, stale/gone entry no-op, and — for `ContextChatSubmissionJob` — the same-uuid re-create existence check.
+- [ ] 4.2 (ContextChatSubmissionListener part done: `tests/Unit/Listener/ContextChatSubmissionDeferralTest.php`) Listener unit tests: request path enqueues instead of running heavy work; interest gates suppress the enqueue; `listenerDeferral=inline` runs the full inline path.
 - [ ] 4.3 `SourceRecordChangeListener` payload tests: re-parenting refreshes **both** masters; a bulk edit of 500 source records on one master collapses to one recompute; deleted-path master uuid resolved inline.
-- [ ] 4.4 `HookListener` split test: a pre-event hook veto still aborts the save and enqueues **no** post-event job.
+- [ ] 4.4 OBSOLETE (with 2.2). `HookListener` split test: a pre-event hook veto still aborts the save and enqueues **no** post-event job.
 
 ## 4b. Filtered subscription (D6 — resolves hydra Open Question 2)
 

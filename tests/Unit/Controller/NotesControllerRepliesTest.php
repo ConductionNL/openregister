@@ -41,6 +41,14 @@ use PHPUnit\Framework\TestCase;
  * The controller reads parentId, passes the caller's readable view, and answers a bad parent with 422.
  *
  * @covers \OCA\OpenRegister\Notifications\Controller\NotesController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\InvalidNoteParentException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\AddressedObject
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotePath
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NoteStep
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection
  */
 class NotesControllerRepliesTest extends TestCase {
 

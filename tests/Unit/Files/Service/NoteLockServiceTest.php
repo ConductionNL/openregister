@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\NoteLockService
+ * @uses \OCA\OpenRegister\Exception\NoteEditForbiddenException
+ * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
  */
 class NoteLockServiceTest extends TestCase {
 

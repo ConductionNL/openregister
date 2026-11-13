@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Task\ApprovingOutcomeSet;
+use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -255,8 +256,54 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
-		return $this->templateRules(spec: $spec, tiers: $tiers) + ['positions' => $positions];
+		$body = $this->templateRules(spec: $spec, tiers: $tiers) + ['positions' => $positions];
+		if (ChangeGateDeclaration::declaredIn(chain: $spec) === false) {
+			return $body;
+		}
+
+		$changeGate = $this->changeGate(spec: $spec, chainKey: $chainKey);
+		if ($changeGate === null) {
+			return null;
+		}
+
+		$body['changeGate'] = $changeGate->toArray();
+
+		return $body;
 	}//end templateBody()
+
+	/**
+	 * The change gate a chain declares, when it is usable.
+	 *
+	 * A chain gates either a transition or a change, never both: one sequence
+	 * cannot both hold a write and release a lifecycle step. A malformed gate
+	 * or an entry that names both is a misconfiguration and fails closed.
+	 *
+	 * @param array<string, mixed> $spec     The declared chain.
+	 * @param string               $chainKey The declarative chain key.
+	 *
+	 * @return ChangeGateDeclaration|null The gate, or null when it is malformed or combined with a transition (logged).
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private function changeGate(array $spec, string $chainKey): ?ChangeGateDeclaration {
+		if ((string)($spec['transition'] ?? '') !== '') {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] A chain gates either a transition or a change, not both; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+			return null;
+		}
+
+		$gate = ChangeGateDeclaration::fromChain(chain: $spec);
+		if ($gate === null) {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] Malformed change gate; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+		}
+
+		return $gate;
+	}//end changeGate()
 
 	/**
 	 * How a chain's amount tiers combine.

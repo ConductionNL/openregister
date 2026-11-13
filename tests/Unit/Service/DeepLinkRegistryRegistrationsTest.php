@@ -86,9 +86,9 @@ class DeepLinkRegistryRegistrationsTest extends TestCase {
 
 		$registrations = $registry->registrations();
 
-		self::assertSame(['zaken::zaak'], array_keys($registrations));
-		self::assertSame('dossiq', $registrations['zaken::zaak']->appId);
-		self::assertSame('icon-dossiq', $registrations['zaken::zaak']->icon);
+		self::assertSame(['zaken::zaak'], self::claims(registrations: $registrations));
+		self::assertSame('dossiq', $registrations[0]->appId);
+		self::assertSame('icon-dossiq', $registrations[0]->icon);
 
 		$registry->registrations();
 		self::assertSame(1, $dispatched);
@@ -104,7 +104,21 @@ class DeepLinkRegistryRegistrationsTest extends TestCase {
 		$registry = $this->registry($dispatched);
 		$registry->add(new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'crm', schemaSlug: 'client', urlTemplate: '/apps/pipelinq/clients/{uuid}'));
 
-		self::assertSame(['crm::client'], array_keys($registry->registrations()));
+		self::assertSame(['crm::client'], self::claims(registrations: $registry->registrations()));
 		self::assertSame(0, $dispatched);
 	}//end testAFilledRegistryDoesNotAskTheApps()
+
+	/**
+	 * The `{registerSlug}::{schemaSlug}` each registration claims, in order.
+	 *
+	 * @param array<int, DeepLinkRegistration> $registrations The registrations.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function claims(array $registrations): array {
+		return array_map(
+			static fn (DeepLinkRegistration $registration): string => $registration->registerSlug.'::'.$registration->schemaSlug,
+			$registrations
+		);
+	}//end claims()
 }//end class

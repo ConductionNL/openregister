@@ -1062,6 +1062,7 @@ export default {
 		 * CnIndexSidebar @columns-change: persist visible columns.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @spec openspec/changes/records-api-and-table-stated/specs/zoeken-filteren/spec.md#REQ-RAT-002
 		 * @param {Array<string>} columns
 		 */
 		onColumnsChange(columns) {

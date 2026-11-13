@@ -37,10 +37,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
@@ -104,12 +108,14 @@ class ScopesController extends Controller {
 	 * @param ScopesControllerServices $services Register and schema lookups.
 	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
+	 * @param IUserManager|null $userManager Finds the user a matrix preview is for.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ControllerSession $session,
 		ScopesControllerServices $services,
 		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly ?IUserManager $userManager = null,
 	) {
 		$this->registerMapper = $services->registerMapper;
 		$this->schemaMapper = $services->schemaMapper;
@@ -187,6 +193,52 @@ class ScopesController extends Controller {
 		return new JSONResponse(['user' => $userId, 'isAdmin' => $isAdmin, 'groups' => array_values($groups), 'scopes' => $scopes]);
 
 	}//end index()
+
+	/**
+	 * Preview the scopes a schema's department matrix compiles to for one user.
+	 *
+	 * Administrators only: the answer names another user's departments. It
+	 * runs the matrix compiler for that user and reads no objects.
+	 *
+	 * 200 `{schema, user, values, scopes}`; 403 for a caller who is not an
+	 * administrator; 404 for an unknown schema or user. A matrix row the
+	 * compiler cannot use compiles to nothing, as it does on the authorization
+	 * path, so the preview shows exactly what enforcement will do.
+	 *
+	 * @param string $id   The schema (id|uuid|slug).
+	 * @param string $user The user previewed.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/tasks.md
+	 */
+	public function matrixPreview(string $id, string $user = ''): JSONResponse {
+		$caller = $this->userSession->getUser();
+		if ($caller === null || $this->groupManager->isAdmin($caller->getUID()) === false) {
+			return new JSONResponse(['error' => 'Only an administrator can preview a rights matrix'], Http::STATUS_FORBIDDEN);
+		}
+
+		$target = null;
+		if (trim($user) !== '') {
+			$target = $this->userManager?->get(trim($user));
+		}
+
+		if ($target === null) {
+			return new JSONResponse(['error' => 'User not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException | MultipleObjectsReturnedException) {
+			return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		$preview = $this->permissionHandler->previewDepartmentMatrix($schema, $target);
+
+		return new JSONResponse(['schema' => $schema->getId(), 'user' => $target->getUID()] + $preview);
+	}//end matrixPreview()
 
 	/**
 	 * The caller's group ids; none for an unauthenticated caller.

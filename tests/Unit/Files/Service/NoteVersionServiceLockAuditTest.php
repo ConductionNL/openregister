@@ -36,6 +36,11 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\NoteVersionService
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class NoteVersionServiceLockAuditTest extends TestCase {
 

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCP\AppFramework\Db\Entity;
 
 /**
  * The federated share lookup the federation endpoints use.
@@ -98,4 +99,16 @@ interface FederatedShareMapperInterface {
 	 * @return FederatedShare The updated share.
 	 */
 	public function updateFromArray(int $id, array $data): FederatedShare;
+
+	/**
+	 * Store a share already in hand, refreshing its updated timestamp.
+	 *
+	 * Writes without the organisation filter: the caller found the share by a
+	 * credential, not through a session.
+	 *
+	 * @param Entity $entity The share to update.
+	 *
+	 * @return FederatedShare The updated share.
+	 */
+	public function update(Entity $entity): FederatedShare;
 }//end interface

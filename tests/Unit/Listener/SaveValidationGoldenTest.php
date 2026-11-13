@@ -34,6 +34,7 @@ use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
+use OCA\OpenRegister\BulkAction\TransitionActionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -322,14 +323,14 @@ class SaveValidationGoldenTest extends TestCase {
 		);
 
 		$listener = new BulkActionRegistrationListener(
-			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule')),
+			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule'), $make(TransitionActionInterface::class, 'transition')),
 			new BulkSetActions($make(ExportWholeSetAction::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
 			$this->logger()
 		);
 		$listener->handle(new Event());
 		$listener->handle(new BulkActionRegistrationEvent($registry));
 
-		self::assertSame(['set', 'rule', 'export', 'restore', 'run'], $registered);
+		self::assertSame(['set', 'rule', 'export', 'restore', 'run', 'transition'], $registered);
 		self::assertSame(['[BulkActionRegistration] Could not register a built-in action {"action":"assign","error":"taken"}'], $this->warnings);
 	}//end testBulkActionsRegisterInOrder()
 }//end class

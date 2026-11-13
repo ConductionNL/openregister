@@ -51,6 +51,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWidgetEntry
  * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
  * @uses \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class ReportRenderServiceCharacterisationTest extends TestCase {
 

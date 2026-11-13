@@ -331,19 +331,38 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end resolveDisplayName()
 
 	/**
-	 * Every registration, keyed `{registerSlug}::{schemaSlug}`.
+	 * Every registration, one per claimed (register, schema) combination.
 	 *
-	 * @return array<string, DeepLinkRegistration> The registrations.
+	 * Like resolve(), a process that never booted OpenRegister asks the apps
+	 * for their registrations first.
 	 *
-	 * @spec openspec/changes/platform-capability/specs/deep-link-registry/spec.md#requirement-the-instance-publishes-a-capability-block-with-one-block-per-claiming-app-req-pca-001
+	 * @return array<int,DeepLinkRegistration> The registrations, in the order they were added.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.1
 	 */
 	public function registrations(): array {
 		if (empty(self::$registrations) === true) {
 			$this->requestRegistrations();
 		}
 
-		return self::$registrations;
+		return array_values(self::$registrations);
+
 	}//end registrations()
+
+	/**
+	 * The app that claimed a register and schema.
+	 *
+	 * @param int $registerId The register's id.
+	 * @param int $schemaId   The schema's id.
+	 *
+	 * @return string|null The claiming app's id, or null when no app claimed the pair.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.2
+	 */
+	public function resolveAppId(int $registerId, int $schemaId): ?string {
+		return $this->resolve(registerId: $registerId, schemaId: $schemaId)?->appId;
+
+	}//end resolveAppId()
 
 	/**
 	 * Ask the apps for their deep links, once per process.

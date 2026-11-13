@@ -53,6 +53,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Files\Service\NoteReplies
  * @covers \OCA\OpenRegister\Exception\InvalidNoteParentException
  * @covers \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
+ * @uses \OCA\OpenRegister\Files\Service\NoteLockService
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery
+ * @uses \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform
+ * @uses \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService
  */
 class NoteRepliesTest extends TestCase {
 

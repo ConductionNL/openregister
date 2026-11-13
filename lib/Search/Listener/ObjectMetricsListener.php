@@ -90,6 +90,9 @@ class ObjectMetricsListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * @listener-placement inline cheap-bounded — one fail-soft metric insert; a job-list insert plus a
+	 *   cron round trip to save it is strictly more work and blurs the metric timestamp.
+	 *
 	 * @spec openspec/specs/production-observability/spec.md#crud-operation-counters
 	 */
 	public function handle(Event $event): void {

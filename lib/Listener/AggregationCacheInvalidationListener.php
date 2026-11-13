@@ -76,6 +76,9 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * @listener-placement inline cheap-bounded — one cache eviction per write; deferred, a read later in
+	 *   the same request would see stale aggregations.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
 	 */

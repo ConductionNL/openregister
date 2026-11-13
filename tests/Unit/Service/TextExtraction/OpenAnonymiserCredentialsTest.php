@@ -62,6 +62,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
+ * @uses \OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
 	use GuzzleClientServiceTrait;

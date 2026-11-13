@@ -60,6 +60,11 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Files\Service\File\DocxTextMatch
+ * @uses \OCA\OpenRegister\Files\Service\File\DocxTextReplacer
+ * @uses \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
+ * @uses \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
  */
 final class PipelineStepReportTest extends TestCase {
 	private const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

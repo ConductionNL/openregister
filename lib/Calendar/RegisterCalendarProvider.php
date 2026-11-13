@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
+use OCP\Calendar\ICalendar;
 use OCP\Calendar\ICalendarProvider;
 
 /**
@@ -54,10 +55,14 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterCalendarSources $sources Schema/register/object lookup, transformer and logger
+	 * @param RegisterCalendarSources $sources       Schema/register/object lookup, transformer and logger
+	 * @param DeclaredDateCalendars   $declaredDates The calendars of declared object dates and saved calendar views
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
 	public function __construct(
 		private readonly RegisterCalendarSources $sources,
+		private readonly DeclaredDateCalendars $declaredDates,
 	) {
 	}//end __construct()
 
@@ -90,29 +95,31 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	}//end getCalendars()
 
 	/**
-	 * The calendars of every calendar-enabled schema, narrowed to the requested URIs.
+	 * The calendars of every calendar-enabled schema and every saved calendar view, narrowed to the requested URIs.
 	 *
 	 * @param string             $principalUri The user principal
 	 * @param array<int, string> $calendarUris The requested calendar URIs; empty for all
 	 *
-	 * @return array<int, RegisterCalendar> The calendars
+	 * @return array<int, ICalendar> The calendars
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
 	private function calendarsFor(string $principalUri, array $calendarUris): array {
-		$enabledSchemas = $this->getCalendarEnabledSchemas();
-
-		if (empty($enabledSchemas) === true) {
-			return [];
-		}
-
 		$calendars = [];
 
-		foreach ($enabledSchemas as $schemaData) {
+		foreach ($this->getCalendarEnabledSchemas() as $schemaData) {
 			$calendarUri = 'openregister-schema-' . $schemaData['schema']->getId();
 			if ($this->isRequested(calendarUri: $calendarUri, calendarUris: $calendarUris) === false) {
 				continue;
 			}
 
 			$calendars[] = $this->calendarFor(schemaData: $schemaData, principalUri: $principalUri);
+		}
+
+		foreach ($this->declaredDates->viewCalendars(principalUri: $principalUri) as $viewCalendar) {
+			if ($this->isRequested(calendarUri: $viewCalendar->getUri(), calendarUris: $calendarUris) === true) {
+				$calendars[] = $viewCalendar;
+			}
 		}
 
 		return $calendars;
@@ -133,12 +140,25 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * The calendar of one calendar-enabled schema for a principal.
 	 *
+	 * A schema that declares date kinds renders through the feed's event
+	 * generator; one that declares none keeps today's virtual calendar.
+	 *
 	 * @param array{schema: \OCA\OpenRegister\Db\Schema, config: array} $schemaData   The schema and its calendar configuration
 	 * @param string                               $principalUri The user principal
 	 *
-	 * @return RegisterCalendar The calendar
+	 * @return ICalendar The calendar
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
-	private function calendarFor(array $schemaData, string $principalUri): RegisterCalendar {
+	private function calendarFor(array $schemaData, string $principalUri): ICalendar {
+		if ($this->declaredDates->declaresDates(schema: $schemaData['schema'], config: $schemaData['config']) === true) {
+			return $this->declaredDates->schemaCalendar(
+				schema: $schemaData['schema'],
+				config: $schemaData['config'],
+				principalUri: $principalUri
+			);
+		}
+
 		return new RegisterCalendar(
 			definition: new CalendarDefinition(schema: $schemaData['schema'], config: $schemaData['config']),
 			principalUri: $principalUri,

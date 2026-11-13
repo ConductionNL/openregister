@@ -56,6 +56,8 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @param IURLGenerator $urlGenerator The URL generator service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
 	 * @param ObjectPreviewFormatter $formatter Shared schema icon/name resolution service
+	 * @param SearchResultDeclarations|null $declarations What each schema declares a result shows;
+	 *     absent keeps the derived title and subline for every schema
 	 *
 	 * @return void
 	 *
@@ -65,6 +67,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 		private readonly IURLGenerator $urlGenerator,
 		private readonly DeepLinkRegistryService $deepLinkRegistry,
 		private readonly ObjectPreviewFormatter $formatter,
+		private readonly ?SearchResultDeclarations $declarations = null,
 	) {
 	}//end __construct()
 
@@ -88,10 +91,12 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(hit: $hit);
 
+		$declared = $this->declarations?->forSchema(schemaId: $hit->schemaId());
+
 		return new SearchResultEntry(
 			$thumbnailUrl,
-			self::titleOf(hit: $hit),
-			$this->buildSubline(hit: $hit, term: $term),
+			($declared?->title(object: $hit->object()) ?? self::titleOf(hit: $hit)),
+			$this->buildSubline(hit: $hit, term: $term, declared: $declared),
 			$objectUrl,
 			$icon,
 			$rounded
@@ -272,13 +277,21 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @param ObjectSearchHit $hit  The search hit.
 	 * @param string|null     $term The search term, or null for filter-only.
+	 * @param SearchResultDeclaration|null $declared What the hit's schema declares, or null.
 	 *
 	 * @return string The composed subline.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
-	private function buildSubline(ObjectSearchHit $hit, ?string $term): string {
+	private function buildSubline(ObjectSearchHit $hit, ?string $term, ?SearchResultDeclaration $declared = null): string {
 		$subline = implode(' · ', $this->sublineParts(hit: $hit));
+
+		// A declared subline takes the excerpt's place; the owner, register
+		// and schema in front of it stay, so the result still says whose it is.
+		$declaredSubline = $declared?->subline(object: $hit->object());
+		if ($declaredSubline !== null) {
+			return $subline . ' — ' . $declaredSubline;
+		}
 
 		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
 		if ($excerpt !== '') {

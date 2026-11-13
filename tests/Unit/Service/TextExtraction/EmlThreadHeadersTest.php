@@ -36,6 +36,7 @@ use ZBateson\MailMimeParser\MailMimeParser;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlHeaderParser
  */
 final class EmlThreadHeadersTest extends TestCase {
 

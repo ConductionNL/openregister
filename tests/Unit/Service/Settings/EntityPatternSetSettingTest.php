@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(UnknownPatternSetException::class)]
 #[UsesClass(JurisdictionPatternSets::class)]
 #[UsesClass(FileSettingsHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Service\File\ArchiveBounds::class)]
 final class EntityPatternSetSettingTest extends TestCase {
 
 	private function setting(string $region): EntityPatternSetSetting {
