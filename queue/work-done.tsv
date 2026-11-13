@@ -4732,3 +4732,4 @@ cover:buildiq:70b3e29embf07:js4829b6aa	PR #1541: TemplateGallery GitHub/install 
 build:openregister:flow-portal-task	already done: 19 tasks built on main (f9c4b10f15, 442120ab44); the one open task (9.1) is a follow-up in portaliq's repo	session-20261113T101609-bc51215d	2026-11-13T12:09:06Z
 build:openregister:flow-parity-mapping-and-webhooks	failed: 31 tasks spanning openconnector (its MappingService must be diffed/ported/deleted; that repository is outside this session's access); the webhook auth/response tasks need a dedicated build	session-20261113T104529-f43c7561	2026-11-13T12:09:14Z
 cover:keepiq:c967a31fm1bed:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5)	session-20261113T044737-f37de8e3	2026-11-13T12:09:22Z
+cover:keepiq:c967a31fm1bed:7ddabe24	already done: lib/Federation/*.php at 100% lines (13/13)	session-20261113T044737-f37de8e3	2026-11-13T12:09:36Z
