@@ -6030,3 +6030,4 @@ keepiq	1754	57f8bde30e1bc2b56cc544ea73eb64a43c0d799e	GREEN	worker-46	phpunit 489
 keepiq	1755	60514b4d7364e71ce09e2533f5277eec242d13b2	GREEN	worker-46	phpunit 4897 on tree (baseline 4854, 0 failures), vitest 6354 passed; tests only
 keepiq	1758	bad14ff36344732b2334bb2eb79612f04cd586f8	GREEN	worker-46	phpunit 4897 on tree (baseline 4854, 0 failures), vitest 6354 passed; js tests only
 portaliq	2416	deb957a04387db0ee9c4d35a9f6cd1779ab36c99	GREEN	worker-14	unit 4918 tests OK (baseline 4914 OK, 89 skipped), no new failures; node news-authoring specs 26/26 pass; staff event list behind portal.manage-event per change task 4
+portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-14	conflicts with #2416 in l10n/en.js, en.json, nl.js, nl.json; merge development (after #2416) into the branch
