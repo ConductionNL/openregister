@@ -6035,3 +6035,4 @@ learniq	2468	683f22b1a19353c1ffc61e9fb17d59ad7eee78c2	GREEN	worker-06	tests only
 pipelinq	3765	98485ac459dec1b510e54406b3966f3f85f78912	GREEN	worker-01	tests only; phpunit 7199 vs baseline 7194, same 5 inherited failures, 0 new
 learniq	2469	8e2d2f034035a8daf3887c1de34704ca0aeb1261	GREEN	worker-06	tests only; unit 6412 on tree, baseline 6402 with 1 failure, 0 new failures
 learniq	2466	a33bcb1ab80fe3ed8d368287ecff0ef708794695	GREEN	worker-41	unit 6449 run on tree 2466+2467 (baseline 6402, 1 inherited failure HigherEducationExampleSetTest), 0 new failures; tests only
+learniq	2467	2395060e67020550c99ffeffe12e60cd209058e4	GREEN	worker-41	unit 6449 run on tree 2466+2467 (baseline 6402, 1 inherited failure HigherEducationExampleSetTest), 0 new failures; tests only
