@@ -1043,3 +1043,4 @@ cover:integriq:9b0f5894m2367:js81d0803d	PR #3434: Service/Consumer 86.7->95.6% (
 cover:learniq:1ae7757e:js0023cfc7	PR #2424: 24 tests for dialogNotice.js + dialogRequests.js (0->100% lines); suite 1101->1125, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:10:01Z
 cover:stackiq:8cfacb29m2f4b:f545d745	PR stackiq#1795: 10 tests for 3 Repair classes, suite 2539->2549 OK	session-20261112T231645-3f0591a5	2026-11-13T00:10:08Z
 cover:stackiq:8cfacb29m2f4b:34f5c300	PR #1794: 18 tests for 5 lib/Service classes, suite 2539->2557 OK	session-20261112T224529-41d77a96	2026-11-13T00:10:41Z
+cover:filinq:8ecceb86:f545d745	opened filinq#1981 (print job mapping + UnownEvidenceRecords edges, 17 tests; suite 5318->5335 OK)	session-20261112T231639-4c562de9	2026-11-13T00:10:52Z
