@@ -49,7 +49,7 @@ use Throwable;
  * Making the host configurable would reintroduce the whole SSRF surface for
  * the sake of a case nobody has asked for.
  *
- * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-github-source-must-discover-by-topic-against-a-compile-time-host
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-github-source-must-discover-by-topic-against-a-compile-time-host
  */
 class GitHubStoreSource implements StoreSourceInterface {
 	/**
@@ -153,7 +153,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 *
-	 * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
 	 */
 	public function find(StoreManifest $manifest, StoreSearch $search): array {
 		$topics = $this->topicsFor(manifest: $manifest, kind: $search->kind);

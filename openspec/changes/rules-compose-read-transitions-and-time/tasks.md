@@ -26,7 +26,7 @@
       references only, deliberately: an administrator asking "what does
       correcting this break" wants the rules that name it, and a transitive
       list buries those among conditions that merely compose it.
-- [ ] 1.4b Joining it into `RuleInventoryService`'s output.
+- [x] 1.4b Joining it into `RuleInventoryService`'s output. (13 Nov: `RuleInventoryService::namedConditions()`, served as `conditions` beside `rules` by `GET` on the rule inventory route: each condition with the rule ids that name it directly, administered validations included, and a referenced but undeclared name listed as `declared: false`. `RuleInventoryNamedConditionsTest`, red before the change.)
 - [x] 1.5a A refusal, as `ConditionRefusedException` carrying the name and
       the reason. 🔴 It is an exception and not a `false` because a `false`
       fails OPEN one negation later: `{"not": {"$condition": "x"}}` with `x`

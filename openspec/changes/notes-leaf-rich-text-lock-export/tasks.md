@@ -7,9 +7,9 @@
 
 ## 2. Lock
 
-- [ ] 2.1 `POST .../notes/{id}/lock` sets verb `note-locked`, records actor
+- [x] 2.1 `POST .../notes/{id}/lock` sets verb `note-locked`, records actor
       and time, audits on the object.
-- [ ] 2.2 Edit and delete refused with 423 on a locked note.
+- [x] 2.2 Edit and delete refused with 423 on a locked note.
 
 ## 3. Export
 

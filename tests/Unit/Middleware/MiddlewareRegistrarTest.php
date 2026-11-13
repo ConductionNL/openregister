@@ -49,6 +49,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\RateLimitMiddleware',
 				'OCA\OpenRegister\Middleware\PublicApiCorsMiddleware',
 				'OCA\OpenRegister\Middleware\ChatCompatMiddleware',
+				'OCA\OpenRegister\Middleware\LoadSheddingMiddleware',
 				'OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware',
 				'OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware',
 				'OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware',
@@ -57,6 +58,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\ApiVersionMiddleware',
 				'OCA\OpenRegister\Middleware\UnversionedPathDeprecationMiddleware',
 				'OCA\OpenRegister\Middleware\ApiCallerMiddleware',
+				'OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware',
 				'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware',
 			],
 			actual: $registered

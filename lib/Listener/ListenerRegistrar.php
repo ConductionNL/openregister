@@ -349,7 +349,7 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private static function registerPublishListener(IRegistrationContext $context): void {
 		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
@@ -548,6 +548,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
 
+		// A conditionally required property (modelling-required-when-enforced):
+		// the form shows and checks the rule, this refuses a client that skips
+		// the form, on the same two events and for the same reason.
+		$context->registerEventListener(ObjectCreatingEvent::class, RequiredWhenListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, RequiredWhenListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
@@ -567,6 +573,11 @@ final class ListenerRegistrar {
 		// refuses a second bezwaar and only reports a repeated e-mail.
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
+
+		// A schema's identity values do not change once an object exists:
+		// outside software addresses the record by them. Only the audited
+		// schema migration path rewrites them.
+		$context->registerEventListener(ObjectUpdatingEvent::class, IdentityGuardListener::class);
 
 		// A schema may cap how many of its objects one organisation holds
 		// (`x-openregister-quota.perOrganisation`); a create past it is
@@ -756,6 +767,10 @@ final class ListenerRegistrar {
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
 		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
+
+		// A state that declares `freezesObject: true` freezes the object on entry,
+		// so a closed phase's data stops changing without anybody clicking Freeze.
+		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()

@@ -299,6 +299,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // it carries a calendar definition and an SLA, not because it writes:
         // it arms nothing, and nothing on its path holds a mapper.
         ['name' => 'flowTimerDiagnostic#explain', 'url' => '/api/flow-timers/diagnostic', 'verb' => 'POST'],
+        // Action rights, including the rights flow steps need (flow-powerful-steps-need-a-right). Administrators only.
+        ['name' => 'actionRights#index', 'url' => '/api/settings/action-rights', 'verb' => 'GET'],
+        ['name' => 'actionRights#update', 'url' => '/api/settings/action-rights', 'verb' => 'PUT'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],
@@ -314,6 +317,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
+        // The last report of the operator's seed directory (administrator only).
+        ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -353,6 +358,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Anonymisation backend selection (admin-only).
         ['name' => 'anonymisationBackend#getBackendState', 'url' => '/api/admin/anonymisation/backend-state', 'verb' => 'GET'],
         ['name' => 'anonymisationBackend#testConnection', 'url' => '/api/admin/anonymisation/test-connection', 'verb' => 'POST'],
+        ['name' => 'anonymisationPipeline#index', 'url' => '/api/admin/anonymisation/pipeline', 'verb' => 'GET'],
 
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET', 'postfix' => 'vectorize'],
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
@@ -459,6 +465,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // anon health, an intentional improvement over the login-gated bespoke
         // controller) and the standard {status, app, version, checks} shape.
         ['name' => 'AppHost\Controller\GenericHealth#index', 'url' => '/api/health', 'verb' => 'GET'],
+        // Readiness probe (production-observability): 503 while this app's migrations are pending or the
+        // database does not answer, so an orchestrator keeps the pod out of rotation instead of restarting it.
+        ['name' => 'AppHost\Controller\GenericReadiness#index', 'url' => '/api/ready', 'verb' => 'GET'],
         // URN resolution endpoints (RFC 8141 system-independent identifiers).
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
@@ -1230,6 +1239,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // BEFORE objects#postPatch (POST /{register}/{schema}/{id}), which would read `validate` as an id.
+        ['name' => 'objects#validateSample', 'url' => '/api/objects/{register}/{schema}/validate', 'verb' => 'POST'],
         // Decision 179 (ADR-117): a form submits into its destination object.
         ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
@@ -1238,6 +1249,11 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
+        // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
+        ['name' => 'objects#showByKey', 'url' => '/api/objects/{register}/{schema}/by-key', 'verb' => 'GET'],
+        ['name' => 'objects#updateByKey', 'url' => '/api/objects/{register}/{schema}/by-key', 'verb' => 'PUT'],
+        ['name' => 'objects#patchByKey', 'url' => '/api/objects/{register}/{schema}/by-key', 'verb' => 'PATCH'],
+        ['name' => 'objects#destroyByKey', 'url' => '/api/objects/{register}/{schema}/by-key', 'verb' => 'DELETE'],
         ['name' => 'objects#referenceOptions', 'url' => '/api/objects/{register}/{schema}/{id}/reference-options', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
@@ -1597,6 +1613,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+'],
         ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#lock', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its
         // kind, its fields, the pin, the follow-up and the raw inbound
@@ -1726,6 +1743,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Schema versioning & object migration (schema-versioning-and-object-migration).
         ['name' => 'schemaMigration#changelog', 'url' => '/api/schemas/{id}/changelog', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        // Follow a schema's breaking changes (schema-breaking-change-notice).
+        ['name' => 'schemaChangeFollowers#follow', 'url' => '/api/schemas/{id}/change-followers', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaChangeFollowers#unfollow', 'url' => '/api/schemas/{id}/change-followers', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
@@ -1936,6 +1956,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// Manual entity addition - operator-supplied value, chunk-aware string matching, persists catalogue + relations.
 		['name' => 'fileText#addManualEntity', 'url' => '/api/files/{fileId}/manual-entities', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+
+		// Text disclosures - every external service a file's text was sent to (REQ-ADI-005).
+		['name' => 'fileDisclosures#index', 'url' => '/api/files/{fileId}/anonymisation/disclosures', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
 
 		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
 		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],

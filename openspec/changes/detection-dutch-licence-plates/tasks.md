@@ -2,17 +2,17 @@
 
 ## 1. Rules in lib/Formats
 
-- [ ] 1.1 Add `lib/Formats/LicensePlateNlFormat.php` holding the fourteen sidecodes and letter rules as data, returning the matched sidecode; register it as format `license-plate-nl` in `ValidateObject`. Verify: `tests/Unit/Formats/LicensePlateNlFormatTest.php`, one valid plate per sidecode, C, Q and vowel rejections, sources and check date in the docblock.
+- [x] 1.1 Add `lib/Formats/LicensePlateNlFormat.php` holding the fourteen sidecodes and letter rules as data, returning the matched sidecode; register it as format `license-plate-nl` in `ValidateObject`. Verify: `tests/Unit/Formats/LicensePlateNlFormatTest.php`, one valid plate per sidecode, C, Q and vowel rejections, sources and check date in the docblock. The sidecode list follows the design's source (read 2026-09-27); it has not been checked against the RDW yet, and the docblock says so.
 
 ## 2. Type and pattern set
 
-- [ ] 2.1 Add `ENTITY_TYPE_LICENSE_PLATE` and wire it into `getCategoryForType()`, `RiskLevelService::ENTITY_RISK_MAP` (medium) and `DocumentProcessingHandler::LOCALIZABLE_ENTITY_TYPES`; add `LICENSE_PLATE` to `l10n/en.json` and `l10n/nl.json` (`KENTEKEN`). Verify: `RiskLevelServiceTest` asserts medium for a file with only a plate.
-- [ ] 2.2 Add the `JurisdictionPatternSet` interface and `NlPatternSet` with the plate (via `LicensePlateNlFormat`) and BSN (via `BsnFormat`) and the D-3 guard. Verify: `tests/Unit/Service/TextExtraction/PatternSet/NlPatternSetTest.php`, including a list of at least ten plate-shaped non-plates that yield nothing.
-- [ ] 2.3 Run enabled sets after every method in `detectEntities()` and merge with the backend-wins overlap rule. Verify: `EntityRecognitionHandlerTest` cases for regex, a stubbed Presidio result overlapping a plate, and a disabled set.
+- [x] 2.1 Add `ENTITY_TYPE_LICENSE_PLATE` and wire it into `getCategoryForType()`, `RiskLevelService::ENTITY_RISK_MAP` (medium) and `DocumentProcessingHandler::LOCALIZABLE_ENTITY_TYPES`; add `LICENSE_PLATE` to `l10n/en.json` and `l10n/nl.json` (`KENTEKEN`). Verify: `RiskLevelServiceTest` asserts medium for a file with only a plate.
+- [x] 2.2 Add the `JurisdictionPatternSet` interface and `NlPatternSet` with the plate (via `LicensePlateNlFormat`) and BSN (via `BsnFormat`) and the D-3 guard. Verify: `tests/Unit/Service/TextExtraction/PatternSet/NlPatternSetTest.php`, including a list of at least ten plate-shaped non-plates that yield nothing.
+- [x] 2.3 Run enabled sets after every method in `detectEntities()` and merge with the backend-wins overlap rule. Verify: `EntityRecognitionHandlerTest` cases for regex, a stubbed Presidio result overlapping a plate, and a disabled set.
 
 ## 3. Setting
 
-- [ ] 3.1 Add `entityPatternSets` to `FileSettingsHandler` with the `default_phone_region` default and 400 on an unknown code; add the multi-select to `FileConfiguration.vue`. Verify: `FileSettingsHandlerTest` for NL default, other-region default and unknown code; `PATCH /api/settings/files` with `["xx"]` answers 400.
+- [ ] 3.1 Add `entityPatternSets` to `FileSettingsHandler` with the `default_phone_region` default and 400 on an unknown code; add the multi-select to `FileConfiguration.vue`. Verify: `FileSettingsHandlerTest` for NL default, other-region default and unknown code; `PATCH /api/settings/files` with `["xx"]` answers 400. PARTIAL: the setting, its `default_phone_region` default, the 400 naming the code and the tests are in (`EntityPatternSetSetting`, `FileSettingsHandler`, `FileSettingsController`). The multi-select in `FileConfiguration.vue` is not: its labels are new user-visible strings, which this repository's l10n gate requires in every locale, so it lands with its translations in its own change.
 
 ## 4. Tests and docs
 

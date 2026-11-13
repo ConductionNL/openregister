@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 
 declare(strict_types=1);
@@ -95,7 +95,7 @@ class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['rules', 'default'];

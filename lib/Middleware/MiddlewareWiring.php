@@ -82,6 +82,14 @@ final class MiddlewareWiring {
 		// Any failure falls back to serving the request locally unchanged.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
 
+		// Register the LoadSheddingMiddleware (operate-load-shedding D-5): maps
+		// DependencyUnavailableException — thrown when a dependency's circuit
+		// breaker is open — onto 503 with a Retry-After and a problem document
+		// that names only the dependency class. BEFORE ObjectSourceErrorMiddleware
+		// so an open source breaker's refusal is not rewritten into a plain
+		// source error.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\LoadSheddingMiddleware::class);
+
 		// Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):
 		// maps DbalObjectSourceException thrown during reads against an
 		// external-database-backed schema onto its declared 502/503 status —
@@ -139,6 +147,10 @@ final class MiddlewareWiring {
 		// only refuses a caller an administrator actually bound, and the record
 		// swallows its own failures.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// Names a breaking change of the last 30 days on that schema's object
+		// read and list responses (schema-breaking-change-notice).
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.

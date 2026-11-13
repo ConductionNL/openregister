@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 /**
  * Turns seconds into the cron expression firing at exactly that interval.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class IntervalCron {
 	private const MINUTE = 60;
@@ -53,7 +53,7 @@ final class IntervalCron {
 	 *
 	 * @return string|null The five-field cron expression.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function cronFor(int $seconds): ?string {
 		if (isset(self::CALENDAR[$seconds]) === true) {

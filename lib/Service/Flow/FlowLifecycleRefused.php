@@ -86,6 +86,8 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 	 */
 	public const REASON_RUNS_IN_FLIGHT = 'runs-in-flight';
 
+	public const REASON_UNKNOWN_CHANGED_FIELD = 'unknown-changed-field';
+
 	/**
 	 * The sentence each reason reads as.
 	 *
@@ -105,6 +107,8 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 			. 'to it.',
 		self::REASON_RUNS_IN_FLIGHT => 'This flow cannot be deleted while one of its runs has not '
 			. 'finished. Wait for the run to finish or cancel it first.',
+		self::REASON_UNKNOWN_CHANGED_FIELD => 'This version cannot be published while a trigger watches a '
+			. 'field its schema does not have: that trigger would never start.',
 	];
 
 	/**

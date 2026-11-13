@@ -111,6 +111,13 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	private readonly FlowSemanticVersion $semver;
 
 	/**
+	 * The publish-time check of the properties an object trigger watches.
+	 *
+	 * @var FlowTriggerFieldsCheck|null
+	 */
+	private readonly ?FlowTriggerFieldsCheck $fields;
+
+	/**
 	 * Wraps each transition in one transaction.
 	 *
 	 * @var IDBConnection
@@ -139,6 +146,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		$this->guard    = $graphs->guard;
 		$this->triggers = $graphs->triggers;
 		$this->semver   = $graphs->semver;
+		$this->fields   = $graphs->fields;
 
 	}//end __construct()
 
@@ -507,6 +515,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		$flowId = (string)$flow->getUuid();
 		$this->guard->refusePublishUnlessDraft(flowId: $flowId, state: $flow->getLifecycleStatus());
 		$this->guard->refusePublishOnDeadEnd(flowId: $flowId, graph: $graph);
+		$this->fields?->refuseUnknownChangedFields(flowId: $flowId, graph: $graph);
 
 		$hash = $this->pin->pin(flow: $graph, flowId: $flowId);
 		if ($hash === null) {

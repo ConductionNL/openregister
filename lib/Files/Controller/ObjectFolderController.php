@@ -16,7 +16,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ use Throwable;
  * Signed-in callers only: none of these is a public page, so Nextcloud refuses
  * an anonymous call before it gets here.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderController extends Controller {
 	/**
@@ -123,7 +123,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-listing-an-objects-folder-and-its-subfolders-follows-the-objects-read-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -163,7 +163,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id): JSONResponse {
@@ -195,7 +195,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function upload(string $register, string $schema, string $id): JSONResponse {
@@ -240,7 +240,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function rename(string $register, string $schema, string $id, int $nodeId): JSONResponse {
@@ -265,7 +265,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, int $nodeId): JSONResponse {

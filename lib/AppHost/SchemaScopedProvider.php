@@ -75,7 +75,7 @@ trait SchemaScopedProvider {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	private function schemaTitle(): string {
 		$schemaId = $this->resolveSchemaId();

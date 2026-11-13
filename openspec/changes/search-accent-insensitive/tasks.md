@@ -2,8 +2,10 @@
 
 ## 1. Folding
 
-- [ ] 1.1 Migration creating `unaccent` and `openregister_fold()` on PostgreSQL, no-op elsewhere, degrading on failure. Verify: migration test on PostgreSQL and MariaDB in the CI matrix.
-- [ ] 1.2 `SearchFolding` for PostgreSQL, MariaDB and exact mode. Verify: `tests/Unit/Db/MagicMapper/SearchFoldingTest.php` asserting the SQL per platform and mode.
+- [x] 1.1 Migration creating `unaccent` and `openregister_fold()` on PostgreSQL, no-op elsewhere, degrading on failure. Verify: migration test on PostgreSQL and MariaDB in the CI matrix.
+  - `lib/Migration/Version1Date20261113140000.php`; unit-tested in `tests/Unit/Migration/Version1Date20261113140000Test.php` (create, refused-but-present, absent, failed wrapper, non-PostgreSQL). The run on real PostgreSQL and MariaDB in the CI matrix is not done here.
+- [x] 1.2 `SearchFolding` for PostgreSQL, MariaDB and exact mode. Verify: `tests/Unit/Db/MagicMapper/SearchFoldingTest.php` asserting the SQL per platform and mode.
+  - `lib/Db/MagicMapper/SearchFolding.php` (column, pattern, operator, match, similarity, `_accents=exact` check) and `lib/Db/MagicMapper/MagicUnaccentProbe.php` (availability and reason per platform, the folding for a connection); `SearchFoldingTest`, `MagicUnaccentProbeTest`.
 - [ ] 1.3 `columnMatchSql()`, `applyFullTextSearch()`, the fuzzy path and `MagicFacetHandler` on the helper. Verify: integration test on both databases: `cafe` finds `Café`, `reunie` finds `reünie`, and the facet count equals the result count.
 - [ ] 1.4 Searchable-property indexes on the folded expression when available. Verify: `EXPLAIN` in the integration test shows the trigram index on PostgreSQL.
 

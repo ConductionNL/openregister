@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -405,7 +405,7 @@ class FlowRun extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when no further progress is possible.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function isTerminal(): bool {
 		return in_array($this->status, self::TERMINAL, true);
@@ -434,7 +434,7 @@ class FlowRun extends Entity implements JsonSerializable {
 	 * @return boolean True when this run's trigger is `object.deleted` and its
 	 *                  context carries a payload snapshot.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function hasDeletedSubjectSnapshot(): bool {
 		if ($this->trigger !== 'object.deleted') {
@@ -479,7 +479,7 @@ class FlowRun extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The run as plain data.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function jsonSerialize(): array {
 		$typed = new TypedFieldsJson();

@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+ * @spec openspec/specs/flow-triggers/spec.md
  */
 
 declare(strict_types=1);
@@ -97,7 +97,7 @@ class FlowTriggerListener implements IEventListener {
 	 *   triggering request, a published read-after-write contract; async flows already leave the request
 	 *   through FlowRunWorker, and the trigger lookup is an indexed query.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	public function handle(Event $event): void {
 		// A plan item reaching a terminal state (flow-cmmn-case-semantics)
@@ -255,8 +255,46 @@ class FlowTriggerListener implements IEventListener {
 			return ['payload' => $event->getObject()->jsonSerialize()];
 		}
 
+		if ($event instanceof ObjectUpdatedEvent) {
+			return ['changedFields' => $this->changedFields(event: $event)];
+		}
+
 		return [];
 	}//end contextFor()
+
+	/**
+	 * The top-level properties whose values differ between the old and new object.
+	 *
+	 * `@self` metadata is left out. Without the old object nothing proves a
+	 * field changed, so the list is empty and a watching trigger does not start.
+	 *
+	 * @param ObjectUpdatedEvent $event The update.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function changedFields(ObjectUpdatedEvent $event): array {
+		$old = $event->getOldObject();
+		if ($old === null) {
+			return [];
+		}
+
+		$before = ($old->getObject() ?? []);
+		$after = ($event->getNewObject()->getObject() ?? []);
+		$changed = [];
+		foreach (array_keys($before + $after) as $key) {
+			if ((string)$key === '@self') {
+				continue;
+			}
+
+			if (array_key_exists($key, $before) !== array_key_exists($key, $after) || ($before[$key] ?? null) !== ($after[$key] ?? null)) {
+				$changed[] = (string)$key;
+			}
+		}
+
+		return $changed;
+	}//end changedFields()
 
 	/**
 	 * Map an event class to the trigger id flows are wired to.
@@ -265,7 +303,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return string|null The trigger id, or null when this is not an object event.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	private function eventIdFor(Event $event): ?string {
 		foreach (self::EVENT_IDS as $class => $eventId) {

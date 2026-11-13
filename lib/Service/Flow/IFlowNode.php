@@ -51,7 +51,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +71,7 @@ interface IFlowNode {
 	 *
 	 * @return string The type identifier.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string;
 
@@ -80,7 +80,7 @@ interface IFlowNode {
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string;
 
@@ -89,7 +89,7 @@ interface IFlowNode {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string;
 
@@ -98,7 +98,7 @@ interface IFlowNode {
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string;
 
@@ -113,7 +113,7 @@ interface IFlowNode {
 	 *
 	 * @return bool Whether it is available.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function isAvailableForScope(int $scope): bool;
 
@@ -130,7 +130,7 @@ interface IFlowNode {
 	 *
 	 * @throws \UnexpectedValueException When the configuration is unusable.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void;
 
@@ -154,7 +154,7 @@ interface IFlowNode {
 	 *
 	 * @return array The output items.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function execute(FlowNodeCall $call): array;
 }//end interface

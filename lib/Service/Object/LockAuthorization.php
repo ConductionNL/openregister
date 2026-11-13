@@ -72,7 +72,7 @@ class LockAuthorization {
 	 *
 	 * @throws NotAuthorizedException If the caller may not update the object, or nothing can tell.
 	 *
-	 * @spec openspec/changes/lock-needs-update-permission/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
+	 * @spec openspec/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
 	 */
 	public function assertMayLock(array $context): void {
 		$object = $context['object'];

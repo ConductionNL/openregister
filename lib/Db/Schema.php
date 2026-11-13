@@ -360,9 +360,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	protected bool $appendOnly = false;
 
 	/**
-	 * Whether objects of this schema should be indexed in SOLR for searching
+	 * Whether objects of this schema are included in search
 	 *
-	 * When set to false, objects of this schema will be excluded from SOLR indexing,
+	 * When set to false, objects of this schema are excluded from search,
 	 * making them unsearchable through the search functionality but still accessible
 	 * through direct API calls.
 	 *
@@ -655,6 +655,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const ARCHIVE_ANNOTATION = 'x-openregister-archive';
+
+	/**
+	 * Annotation that declares this schema offers the preservation (statisch) state.
+	 *
+	 * @var string
+	 */
+	public const PRESERVE_ANNOTATION = 'x-openregister-preserve';
 
 	/**
 	 * The property-level keyword that makes a value immutable once set.
@@ -991,7 +998,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> Declared action keys.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function declaredActionNames(): array {
 		return (new DeclaredActions())->names(configuration: $this->configuration);
@@ -1454,7 +1461,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getUpsertKeys(): array {
 		$keys = [];
@@ -1541,7 +1548,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
 		return (new ObjectSourceDeclaration())->declared(configuration: $this->getConfiguration());
@@ -1916,18 +1923,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getLinkedTypes()
 
 	/**
-	 * Check whether this schema should be searchable in SOLR
+	 * Check whether this schema's objects are included in search
 	 *
-	 * @return bool True if schema objects should be indexed in SOLR
+	 * @return bool True if schema objects are included in search
 	 */
 	public function isSearchable(): bool {
 		return $this->searchable;
 	}//end isSearchable()
 
 	/**
-	 * Set whether this schema should be searchable in SOLR
+	 * Set whether this schema's objects are included in search
 	 *
-	 * @param bool $searchable Whether schema objects should be indexed in SOLR
+	 * @param bool $searchable Whether schema objects are included in search
 	 *
 	 * @return void
 	 */
@@ -2035,6 +2042,33 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return ($annotation['enabled'] ?? false) === true;
 	}//end isArchivingEnabled()
+
+	/**
+	 * Whether this schema offers the preservation (statisch) regime.
+	 *
+	 * The preservation state is distinct from the archive state
+	 * {@see self::isArchivingEnabled()} declares: the archive takes a finished
+	 * object out of the working views while it still has business use; the
+	 * preservation regime is where a dossier enters once that business use ends
+	 * and the Archiefwet clock governs it. A schema may offer the archive state,
+	 * the preservation state, both or neither, so a product can tell "closed"
+	 * from "statisch" (REQ-APS-006). Declared once on the schema (ADR-031), like
+	 * the archive annotation, so no caller re-reads it.
+	 *
+	 * @return bool True when the schema declares `x-openregister-preserve` with `enabled: true`.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreservationEnabled(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::PRESERVE_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return false;
+		}
+
+		return ($annotation['enabled'] ?? false) === true;
+	}//end isPreservationEnabled()
 
 	/**
 	 * The reasons this schema accepts for a value that was not supplied.

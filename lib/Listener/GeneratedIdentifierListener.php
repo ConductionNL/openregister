@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -203,13 +204,43 @@ class GeneratedIdentifierListener implements IEventListener {
 			return null;
 		}
 
-		$scopeKey = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now));
-		return $declaration->render(
-			sequenceValue: $this->sequences->reserveNext(new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $scopeKey)),
-			moment: $run->now
+		$scope = new SequenceScope(
+			registerId: 0,
+			schemaId: 0,
+			scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now))
 		);
 
+		return $this->firstUnreserved(declaration: $declaration, scope: $scope, moment: $run->now);
+
 	}//end numberFor()
+
+	/**
+	 * Take numbers from the counter until one renders to a value that is not reserved.
+	 *
+	 * A skipped number is spent, never handed out later, so a reserved value
+	 * stays unissued for good. A reserved pattern that matches every value would
+	 * spin forever; after MAX_RESERVED_SKIPS the issue fails and the create is refused.
+	 *
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The identifier's declaration.
+	 * @param SequenceScope                           $scope       The counter to take from.
+	 * @param DateTimeImmutable                       $moment      The moment of the create.
+	 *
+	 * @return string The first unreserved value.
+	 *
+	 * @throws RuntimeException When every value tried is reserved.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
+	 */
+	private function firstUnreserved(GeneratedIdentifierDeclarationInterface $declaration, SequenceScope $scope, DateTimeImmutable $moment): string {
+		for ($tried = 0; $tried <= GeneratedIdentifierDeclarationInterface::MAX_RESERVED_SKIPS; $tried++) {
+			$value = $declaration->render(sequenceValue: $this->sequences->reserveNext($scope), moment: $moment);
+			if ($declaration->isReserved(value: $value) === false) {
+				return $value;
+			}
+		}
+
+		throw new RuntimeException(sprintf('every value of sequence "%s" tried was reserved', $declaration->sequence()));
+	}//end firstUnreserved()
 
 	/**
 	 * Refuse the write because a number could not be issued.

@@ -198,8 +198,43 @@ class EmlParser {
 			'subject' => $message->getSubject(),
 			'date' => (new EmlHeaderParser())->date(raw: $rawDate),
 			'messageId' => $message->getMessageId(),
+			// RFC 5322 reply-threading headers (REQ-RTH-010): the one message a
+			// reply answers, and the whole ancestry. Angle brackets are stripped
+			// and the names matched case-insensitively, the same normalisation
+			// ReplyThreadResolver applies, so a stored id threads whether it was
+			// written `<a1@x>` or `A1@X`.
+			// `In-Reply-To` is a single id; zbateson's IdHeader already strips
+			// its angle brackets. `References` is a list and getHeaderValue()
+			// yields only its first id, so the whole chain is read from the raw
+			// header and the brackets stripped here.
+			'inReplyTo' => trim((string)$message->getHeaderValue(name: 'In-Reply-To')),
+			'references' => self::messageIds(message: $message, name: 'References'),
 		];
 	}//end extractHeaders()
+
+	/**
+	 * Every RFC message id in a header, angle brackets stripped, in order.
+	 *
+	 * @param IMessage $message The message.
+	 * @param string   $name    The header name.
+	 *
+	 * @return array<int, string> The ids, without their brackets.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+	 */
+	private static function messageIds(IMessage $message, string $name): array {
+		$header = $message->getHeader($name);
+		if ($header === null) {
+			return [];
+		}
+
+		$raw = (string)$header->getRawValue();
+		if (preg_match_all('/<([^<>\\s]+)>/', $raw, $matches) < 1) {
+			return [];
+		}
+
+		return array_values($matches[1]);
+	}//end messageIds()
 
 	/**
 	 * Split an RFC 2822 address-list into individual address tokens.

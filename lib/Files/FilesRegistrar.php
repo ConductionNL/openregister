@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files;
 
+use OCA\OpenRegister\Service\File\AntivirusScannerAdapter;
+use OCA\OpenRegister\Service\File\AntivirusScannerInterface;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
@@ -82,6 +84,7 @@ final class FilesRegistrar
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
+        AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
         FileSharingHandlerInterface::class        => FileSharingHandler::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,

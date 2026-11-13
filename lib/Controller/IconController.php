@@ -70,7 +70,7 @@ class IconController extends Controller {
 	 *
 	 * @return DataDisplayResponse The SVG image, or a 404 for an unknown icon.
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

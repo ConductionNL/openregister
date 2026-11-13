@@ -121,8 +121,8 @@ which is the half `@conduction/nextcloud-vue` and every app on it consume.
   **files**: `tests/Unit/Db/RunObjectLockMapperTest.php`, `tests/Unit/Listener/FlowRunLockReleaseListenerTest.php`
 - [x] 7.4 TTL backstop.)
   **files**: `tests/Unit/Db/ObjectEntityRunLockTest.php` (verified: tests/Unit/Db/ObjectEntityRunLockTest.php (testAnExpiredRunLockBlocksNobody)
-- [ ] 7.5 A human write refused while a run holds the lock; the admin break
+- [x] 7.5 A human write refused while a run holds the lock; the admin break
   works and is audited.
-  **files**: `tests/Unit/Service/Object/SaveObjectTest.php`, `tests/Unit/Service/Object/LockHandlerBreakLockTest.php`
+  **files**: `tests/Unit/Service/Object/SaveObjectTest.php`, `tests/Unit/Service/Object/LockHandlerBreakLockTest.php` (the break half: `LockHandlerBreakLockTest` — a non-admin is refused, an admin breaks a run-held lock and it is audited under `lock.broken` naming the displaced run, and a break with no lock answers false without auditing. The human-write-refused half is covered by `SaveObjectTest` via the predicate (task 2.1).)
 - [x] 7.6 Node config validation and the park/retry/budget behaviour.
   **files**: `tests/Unit/Service/Flow/LockObjectNodeTest.php`, `tests/Unit/Service/Flow/UnlockObjectNodeTest.php` (verified: tests/Unit/Service/Flow/LockObjectNodeTest.php, tests/Unit/Service/Flow/UnlockObjectNodeTest.php)

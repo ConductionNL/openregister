@@ -18,6 +18,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\WriteCause;
 
 require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 
@@ -292,5 +294,55 @@ class ListenerDeferralServiceTest extends TestCase {
 
 		// Buffer was reset before the enqueue attempt: no retry storm.
 		$service->flushAll();
+	}
+
+	public function testAnEntryDeferredUnderAnImportCarriesTheImportIntoItsJob(): void {
+		$this->actAs('alice', 'org-1');
+		$service = $this->makeService();
+
+		$captured = [];
+		$this->jobList->expects($this->once())->method('add')
+			->willReturnCallback(function (string $jobClass, $argument) use (&$captured): void {
+				$captured = $argument;
+			});
+
+		WriteCause::runAs(
+			frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-7'),
+			operation: fn () => $service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'a'])
+		);
+		// Flushed after the frame is gone, as at shutdown.
+		$service->flushAll();
+
+		$this->assertSame('import', $captured['cause']);
+		$this->assertSame('run-7', $captured['causeRun']);
+		$this->assertSame('alice', $captured['userId']);
+	}
+
+	public function testEntriesUnderDifferentCausesGoOutInSeparateJobsInOrder(): void {
+		$this->actAs('alice', null);
+		$service = $this->makeService();
+
+		$arguments = [];
+		$this->jobList->expects($this->exactly(3))->method('add')
+			->willReturnCallback(function (string $jobClass, $argument) use (&$arguments): void {
+				$arguments[] = $argument;
+			});
+
+		$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'a']);
+		WriteCause::runAs(
+			frame: new CauseFrame(cause: WriteCause::RULE),
+			operation: function () use ($service): void {
+				$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'b']);
+				$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'c']);
+			}
+		);
+		$service->defer(jobClass: 'Some\\Job', entry: ['uuid' => 'd']);
+		$service->flushAll();
+
+		$this->assertSame([[['uuid' => 'a']], [['uuid' => 'b'], ['uuid' => 'c']], [['uuid' => 'd']]], array_column($arguments, 'entries'));
+		$this->assertArrayNotHasKey('cause', $arguments[0]);
+		$this->assertSame('rule', $arguments[1]['cause']);
+		$this->assertNull($arguments[1]['causeRun']);
+		$this->assertArrayNotHasKey('cause', $arguments[2]);
 	}
 }
