@@ -233,6 +233,11 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules</step>
+			<!-- Reports stored objects without an organisation; writes nothing
+			     (occ openregister:adopt-organisationless-rows with apply writes). -->
+			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
+			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
+			<step>OCA\OpenRegister\Repair\WithholdRevealValuesFromRelations</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -425,9 +430,18 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
 			<!-- A schedule in an app's own manifest has no publisher: say so, it does not run. -->
 			<step>OCA\OpenRegister\Repair\ReportUnpublishedSchedules</step>
+			<!-- Special rights are enforced (decision 239). Until then nobody's
+			     agent_use or llm_use was read, so everybody could; the stored
+			     lists say [] or ["admin"]. Writes "*" beside them, ONCE (an app
+			     config flag), so nothing is refused until an administrator or
+			     the owner narrows a list. Also under <install>, so a fresh install
+			     records that it ran and its first upgrade leaves narrowed lists alone. -->
+			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
 			<!-- Encrypts webhook and consumer secrets stored in clear and hashes stored
 			     calendar feed tokens; idempotent. -->
 			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
+			<!-- A schema stored before saves refused reference loops keeps its loop: name it. -->
+			<step>OCA\OpenRegister\Repair\ReportReferenceLoopSchemas</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -500,6 +514,8 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedIntakeSourceRegister</step>
 			<!-- A fresh install keys the audit chain from its first row. -->
 			<step>OCA\OpenRegister\Repair\KeyAuditHashChain</step>
+			<!-- Sets the run-once flag on a fresh install (see post-migration). -->
+			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
 		</install>
 	</repair-steps>
 
@@ -511,6 +527,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Files\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
@@ -523,6 +540,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
 		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
+		<command>OCA\OpenRegister\Command\FederationSharesExpiringCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
 		     it never adds members, so an unpopulated group still denies every

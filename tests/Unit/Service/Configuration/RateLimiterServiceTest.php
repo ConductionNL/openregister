@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * @package OCA\OpenRegister\Tests\Unit\Service\Configuration
  *
  * @covers \OCA\OpenRegister\Service\Configuration\RateLimiterService
+ * @uses \OCA\OpenRegister\Service\Configuration\DistinctKeyBudget
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
  */

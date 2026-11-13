@@ -31,6 +31,14 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleActionMap
  */
 final class RoleActionsGoldenTest extends TestCase {
 

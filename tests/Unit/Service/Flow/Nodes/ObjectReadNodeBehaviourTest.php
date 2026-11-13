@@ -59,6 +59,11 @@ use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadQuery
  * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadRun
  */
 class ObjectReadNodeBehaviourTest extends TestCase {
 

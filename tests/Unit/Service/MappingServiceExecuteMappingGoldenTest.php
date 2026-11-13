@@ -29,6 +29,9 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Twig\MappingExtension
  * @uses   \OCA\OpenRegister\Twig\MappingRuntimeLoader
  * @uses   \OCA\OpenRegister\Twig\MappingRuntime
+ * @uses \OCA\OpenRegister\Service\MappingKeyRewrite
+ * @uses \OCA\OpenRegister\Service\MappingTwigSandbox
+ * @uses \OCA\OpenRegister\Twig\MappingTwigInstaller
  */
 class MappingServiceExecuteMappingGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/mapping-execute-golden.json';

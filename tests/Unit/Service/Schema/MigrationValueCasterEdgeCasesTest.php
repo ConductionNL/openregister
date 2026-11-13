@@ -34,6 +34,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\MigrationValueCaster
+ * @uses \OCA\OpenRegister\Service\Schema\CastTarget
  */
 class MigrationValueCasterEdgeCasesTest extends TestCase {
 

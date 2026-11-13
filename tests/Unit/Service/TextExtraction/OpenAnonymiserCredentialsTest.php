@@ -46,6 +46,21 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeResponse
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeResponse
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
 	use GuzzleClientServiceTrait;

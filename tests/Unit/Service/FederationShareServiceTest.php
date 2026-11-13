@@ -102,7 +102,8 @@ class FederationShareServiceTest extends TestCase {
 			$this->grantor,
 			$this->secureRandom,
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class)
+			$this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class),
+			(new \OCA\OpenRegister\Tests\Unit\Service\Federation\Support\FixedClock($this))->lifetime()
 		);
 	}//end setUp()
 
@@ -335,7 +336,7 @@ class FederationShareServiceTest extends TestCase {
 				return new FederatedShare();
 			}
 		);
-		$service = new FederationShareService($this->shareMapper, $grantor, $this->secureRandom, $this->createMock(LoggerInterface::class), $this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class));
+		$service = new FederationShareService($this->shareMapper, $grantor, $this->secureRandom, $this->createMock(LoggerInterface::class), $this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class), (new \OCA\OpenRegister\Tests\Unit\Service\Federation\Support\FixedClock($this))->lifetime());
 
 		$service->createOutgoingShare(['scope' => 'schema', 'schema' => 'zaak', 'permissions' => 'read']);
 

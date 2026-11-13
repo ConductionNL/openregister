@@ -22,6 +22,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
@@ -170,7 +171,20 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 				$history,
 			),
 			$logger,
+			$this->allRights(),
 		);
+	}
+
+	/**
+	 * A reader of special rights that lets everybody use everything; ChatSpecialRightsTest covers refusals.
+	 *
+	 * @return OrganisationSpecialRights
+	 */
+	private function allRights(): OrganisationSpecialRights {
+		$rights = $this->createMock(OrganisationSpecialRights::class);
+		$rights->method('mayUse')->willReturn(true);
+
+		return $rights;
 	}
 
 	/**

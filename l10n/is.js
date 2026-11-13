@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Allir",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Aðeins stjórnandi eða eigandi þessarar stofnunar getur breytt sérréttindum hennar.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Forritið sem útvegar eða á þessa töflu, til dæmis `dossiq`. Autt fyrir töflu sem stjórnandi bjó til.",

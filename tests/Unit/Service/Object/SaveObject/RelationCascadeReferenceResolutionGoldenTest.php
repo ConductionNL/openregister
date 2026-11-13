@@ -31,6 +31,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EntityLookup
  */
 class RelationCascadeReferenceResolutionGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/relation-cascade-reference-golden.json';

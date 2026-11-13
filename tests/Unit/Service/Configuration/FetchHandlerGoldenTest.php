@@ -35,6 +35,7 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\FetchHandler
+ * @uses \OCA\OpenRegister\Db\Configuration
  */
 class FetchHandlerGoldenTest extends TestCase {
 	/**

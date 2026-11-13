@@ -36,6 +36,10 @@ use PHPUnit\Framework\TestCase;
  * Pins the output of PresentationSlideParser's three public reads.
  *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\PresentationSlideParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideParagraphReader
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideWalk
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SlideParagraphReader
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SlideWalk
  */
 class PresentationSlideParserGoldenTest extends TestCase {
 

@@ -50,6 +50,9 @@ class TalkRoomFieldsTestRoom {
  * @uses   \OCA\OpenRegister\Service\TalkLink\RoomPickerQuery
  * @uses   \OCA\OpenRegister\Service\TalkLink\RoomPickerRun
  * @uses   \OCA\OpenRegister\Service\TalkLink\TalkViewer
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerQuery
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerRun
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkViewer
  */
 class TalkRoomFieldsTest extends TestCase {
 

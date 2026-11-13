@@ -56,4 +56,26 @@ class HookStoppedException extends Exception {
 	public function getErrors(): array {
 		return $this->errors;
 	}//end getErrors()
+
+	/**
+	 * The refusal a cascade answers when a guard stops the delete of a dependent object.
+	 *
+	 * The caller addressed the root, not the dependent, so the answer keeps the
+	 * guard's code and status and names neither the dependent nor who holds it.
+	 *
+	 * @param self $refusal The dependent's refusal.
+	 *
+	 * @return self The refusal for the root.
+	 */
+	public static function forDependent(self $refusal): self {
+		$message = 'Cannot delete object: an object that depends on it cannot be deleted now.';
+		$errors  = ['message' => $message];
+		foreach (['code', 'status'] as $key) {
+			if (array_key_exists($key, $refusal->getErrors()) === true) {
+				$errors[$key] = $refusal->getErrors()[$key];
+			}
+		}
+
+		return new self(message: $message, errors: $errors);
+	}//end forDependent()
 }//end class

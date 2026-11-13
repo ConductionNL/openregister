@@ -41,6 +41,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
  */
 class SaveObjectDraftStatusTest extends TestCase {
 

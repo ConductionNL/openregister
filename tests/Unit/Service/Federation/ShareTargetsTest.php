@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses   \OCA\OpenRegister\Db\HydrationKey
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions

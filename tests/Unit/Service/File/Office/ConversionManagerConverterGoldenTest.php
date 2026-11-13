@@ -42,8 +42,10 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter
- * @uses   \OCA\OpenRegister\Exception\OfficeServerRequiredException
+ * @uses \OCA\OpenRegister\Exception\OfficeServerRequiredException
+ * @uses \OCA\OpenRegister\Files\Service\File\Office\ConversionJob
  * @uses   \OCA\OpenRegister\Files\Service\File\Office\ConversionJob
+ * @uses   \OCA\OpenRegister\Exception\OfficeServerRequiredException
  */
 class ConversionManagerConverterGoldenTest extends TestCase {
 

@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register
  */
 class RegisterConfigurationLocatorTest extends TestCase {
 

@@ -158,6 +158,7 @@ Capabilities/CapabilityRegistrar.php,23,Capabilities,Platform,Platform/Capabilit
 Capabilities/IntegrationsCapability.php,80,Capabilities,Platform,Platform/Capabilities/IntegrationsCapability.php,0,,Platform
 Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/UrnCapability.php,0,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
+Command/AdoptOrganisationlessRowsCommand.php,,Command,,,,,Core
 Command/AdoptionRun.php,,Command,,,,,Processes
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
@@ -211,6 +212,7 @@ Controller/ApiCallersController.php,174,Controller,Integrations,Integrations/Con
 Controller/ApiSurfaceController.php,98,Controller,Service,Service/Controller/ApiSurfaceController.php,0,,Core
 Controller/ApplicationsController.php,198,Controller,Configuration,Configuration/Controller/ApplicationsController.php,0,,Configuration
 Controller/ArchivalController.php,698,Controller,Compliance,Compliance/Controller/ArchivalController.php,0,,Compliance
+Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
@@ -230,6 +232,7 @@ Controller/CompanyLookupController.php,63,Controller,Integrations,Integrations/C
 Controller/ConfigurationBundleController.php,,Controller,,,,,Configuration
 Controller/ConfigurationController.php,1118,Controller,Configuration,Configuration/Controller/ConfigurationController.php,0,,Configuration
 Controller/ConfigurationDeploymentController.php,208,Controller,Configuration,Configuration/Controller/ConfigurationDeploymentController.php,0,,Configuration
+Controller/ConfigurationSeedController.php,,Controller,,,,,Configuration
 Controller/ConfigurationsController.php,213,Controller,Configuration,Configuration/Controller/ConfigurationsController.php,0,,Configuration
 Controller/ConsumersController.php,68,Controller,Integrations,Integrations/Controller/ConsumersController.php,0,,Integrations
 Controller/ContactsController.php,273,Controller,Integrations,Integrations/Controller/ContactsController.php,0,,Integrations
@@ -1571,6 +1574,7 @@ Reference/ObjectReferenceProvider.php,62,Reference,Platform,Platform/Reference/O
 Repair/AbstractRegisterImportStep.php,46,Repair,Platform,Platform/Repair/AbstractRegisterImportStep.php,0,,Platform
 Repair/AddObjectStateColumns.php,55,Repair,Platform,Platform/Repair/AddObjectStateColumns.php,0,,Platform
 Repair/AdminUserIds.php,,Repair,,,,,Platform
+Repair/AdoptOrganisationlessRows.php,,Repair,,,,,Core
 Repair/AppRegisterDescriptor.php,,Repair,,,,,Platform
 Repair/BackfillFlowSemanticVersions.php,114,Repair,Flows,Flows/Repair/BackfillFlowSemanticVersions.php,0,,Processes
 Repair/BackfillFlowTriggerIndex.php,86,Repair,Flows,Flows/Repair/BackfillFlowTriggerIndex.php,0,,Processes
@@ -1942,11 +1946,14 @@ Service/ConfigurationDeployment/ConfigurationDraftService.php,225,Service,Config
 Service/ConfigurationDeployment/ConfigurationExplainer.php,127,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationExplainer.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,103,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationLayer.php,28,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationLayer.php,0,,Configuration
+Service/ConfigurationDeployment/ConfigurationSeedService.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/ConfigurationSnapshot.php,39,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationSnapshot.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationValueStore.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
+Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration
 Service/ConfigurationServiceInterface.php,40,Service,Configuration,Configuration/Service/ConfigurationServiceInterface.php,0,,Configuration
 Service/Connection/ConnectionReporter.php,162,Service,Integrations,Integrations/Service/Connection/ConnectionReporter.php,0,163,Integrations
@@ -3612,6 +3619,7 @@ Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Processes
 Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
+Repair/OpenSpecialRightsToEveryone.php,,Repair,,,,,Core
 Repair/PerformerField.php,,Repair,,,,,Core
 Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes
@@ -3879,8 +3887,13 @@ Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
 Service/ZgwAutorisatieGrant.php,,Service,,,,,Core
+Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
+Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
+Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
+Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
+Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform

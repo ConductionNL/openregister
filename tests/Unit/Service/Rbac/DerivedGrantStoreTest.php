@@ -42,6 +42,8 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DerivedGrantStore
  * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantConfig
+ * @uses   \OCA\OpenRegister\Service\Rbac\DerivedGrantConfig
  */
 class DerivedGrantStoreTest extends TestCase {
 

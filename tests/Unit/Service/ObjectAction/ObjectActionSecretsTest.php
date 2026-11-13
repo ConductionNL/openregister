@@ -48,6 +48,10 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStreamStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunWalkServices
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SecretCopies
  */
 class ObjectActionSecretsTest extends TestCase {
 

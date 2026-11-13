@@ -188,31 +188,17 @@ exports[`EditOrganisation markup renders a stored organisation 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;}]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -379,31 +365,17 @@ exports[`EditOrganisation markup renders an error 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -570,31 +542,17 @@ exports[`EditOrganisation markup renders create another 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -775,31 +733,17 @@ exports[`EditOrganisation markup renders loading 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;}]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1083,31 +1027,17 @@ exports[`EditOrganisation markup renders loading users 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;}]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1267,31 +1197,17 @@ exports[`EditOrganisation markup renders no members 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1472,31 +1388,17 @@ exports[`EditOrganisation markup renders removing a user 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;}]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1703,31 +1605,17 @@ exports[`EditOrganisation markup renders the empty create form 1`] = `
                                 </thead>
                                 <tbody>
                                   <tr>
-                                    <td class="right-name"><span class="right-badge">object_publish</span></td>
-                                    <td class="right-description">Publish objects to make them publicly available</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Object Publish" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
                                     <td class="right-name"><span class="right-badge">agent_use</span></td>
                                     <td class="right-description">Use AI agents for processing and analysis</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td class="right-name"><span class="right-badge">dashboard_view</span></td>
-                                    <td class="right-description">Access organisation dashboard and analytics</td>
-                                    <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Dashboard View" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                   <tr>
                                     <td class="right-name"><span class="right-badge">llm_use</span></td>
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
-                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1803,19 +1691,7 @@ exports[`EditOrganisation quota updateUserQuota creates a missing quota 1`] = `
 exports[`EditOrganisation special rights loads the rights a stored organisation grants 1`] = `
 {
   "agent_use": [],
-  "dashboard_view": [],
   "llm_use": [],
-  "object_publish": [
-    {
-      "id": "admin",
-      "name": "Admins",
-      "userCount": 2,
-    },
-    {
-      "id": "gone",
-      "name": "gone",
-    },
-  ],
 }
 `;
 
@@ -1865,17 +1741,13 @@ exports[`EditOrganisation special rights passes each select of the table on to i
     "admin",
     "staff",
   ],
-  "dashboard_view": [
-    "admin",
-    "staff",
-  ],
   "llm_use": [
     "admin",
     "staff",
   ],
   "object_publish": [
     "admin",
-    "staff",
+    "gone",
   ],
   "register": {
     "read": [

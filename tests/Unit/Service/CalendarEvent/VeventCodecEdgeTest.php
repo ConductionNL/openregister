@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
  * All dates are UTC, so the encoded lines do not depend on the machine's timezone.
  *
  * @covers \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventDraft
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress
  */
 class VeventCodecEdgeTest extends TestCase
 {

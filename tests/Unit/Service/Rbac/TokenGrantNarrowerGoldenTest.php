@@ -38,6 +38,18 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\TokenGrantNarrower
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantReach
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTarget
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantUse
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenNarrowing
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantReach
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantTarget
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantUse
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenNarrowing
  */
 final class TokenGrantNarrowerGoldenTest extends TestCase {
 
