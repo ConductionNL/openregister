@@ -10,10 +10,11 @@
 
 ## 2. Property keyword `referenceSemanticType`
 
-- [ ] 2.1 Add a `PropertySemanticReferenceValidator` (mirror
+- [x] 2.1 Add a `PropertySemanticReferenceValidator` (mirror
   `PropertyReferenceTypeValidator`): a property may declare
   `referenceSemanticType` (absolute IRI) and optional `referenceSemanticApp`
   (string hint). Validate on schema write. (code exists, test missing: lib/Service/Integration/PropertySemanticReferenceValidator.php)
+  > second pass: the validator was registered but no save path called it. `SemanticReferenceDeclaration` now runs in `PropertyValidatorHandler::assertDeclarations()`, so every schema save refuses a non-IRI `referenceSemanticType` with a 422 naming the property (`SemanticReferenceDeclarationTest`).
 - [x] 2.2 Unit-test valid/invalid `referenceSemanticType`.
 
 ## 3. Resolver (OpenRegister)
@@ -55,4 +56,5 @@
   `referenceSemanticApp: shillinq`). Verify: with shillinq → vendor picker
   lists Payees; without shillinq → vendor disabled + tooltip, product still
   editable.
-- [ ] 6.3 Document the pattern in OR schema-config docs; cross-link ADR-048.
+- [x] 6.3 Document the pattern in OR schema-config docs; cross-link ADR-048.
+  > `docs/Features/json-ld.md`, "Referencing a type another app provides".

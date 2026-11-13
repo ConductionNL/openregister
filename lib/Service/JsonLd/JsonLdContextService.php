@@ -720,12 +720,26 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 	 * @return bool True when the value is an absolute IRI.
 	 */
 	public function isAbsoluteIri(mixed $value): bool {
+		return self::isAbsoluteIriValue(value: $value);
+	}//end isAbsoluteIri()
+
+	/**
+	 * Whether a value is an absolute IRI (it has a scheme), for callers without
+	 * an instance, such as schema-save validation. The same rule as isAbsoluteIri().
+	 *
+	 * @param mixed $value The candidate value.
+	 *
+	 * @return bool True when the value is a non-empty string with a scheme.
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
+	 */
+	public static function isAbsoluteIriValue(mixed $value): bool {
 		if (is_string($value) === false || $value === '') {
 			return false;
 		}
 
 		return preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $value) === 1;
-	}//end isAbsoluteIri()
+	}//end isAbsoluteIriValue()
 
 	/**
 	 * Whether a value is a resolvable JSON-LD term: an absolute IRI, or a
