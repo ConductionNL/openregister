@@ -4561,3 +4561,4 @@ cover:pipelinq:7f9dc8e6m84dd:6925f818	already covered: lib/SetupCheck/*.php 100%
 cover:keepiq:c967a31fm1bed:60c2c265	PR #1754: 17 tests, Controller/*.php 97.9%->98.9% local, no new failures	session-20261113T104530-961e9992	2026-11-13T11:36:08Z
 review:openregister:10131:9be4d64c	APPROVE: frontend per spec 7.4/7.5, checks green or same as main	session-20261113T051703-1b54bfba	2026-11-13T11:36:15Z
 cover:keepiq:c967a31fm1bed:d3522ea6	PR #1755: 18 tests over 6 mappers, lib/Db/*.php 88.9%->92.7%	session-20261113T074533-3e2a2da6	2026-11-13T11:36:24Z
+fix:keepiq:1748:b7d70473	fixed floor: import.js units simplified, unit_complexity 4.44->4.46 PASS; pushed 67c60618, REVERIFY recorded	session-20261113T081046-f0858dc4	2026-11-13T11:36:23Z
