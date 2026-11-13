@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "7cd10138f5e6288db4f99cc2c8b2d16993a17760",
- "measured_at": "2026-11-13T04:17:50Z",
+ "commit": "a05c3ddde0ce041e4c485ec1d34eb92ad3bd3a4c",
+ "measured_at": "2026-11-13T06:23:49Z",
  "php": {
   "tool": "pcov",
-  "pct": 64.97,
-  "statements": 31787,
-  "covered": 20651,
+  "pct": 80.21,
+  "statements": 31801,
+  "covered": 25506,
   "dirs": {
    "lib/AppInfo/": [
     564,
@@ -14,7 +14,7 @@
    ],
    "lib/BackgroundJob/": [
     198,
-    135
+    196
    ],
    "lib/Command/": [
     282,
@@ -22,7 +22,7 @@
    ],
    "lib/Controller/": [
     3839,
-    2900
+    3453
    ],
    "lib/Controller/Settings/": [
     74,
@@ -30,11 +30,11 @@
    ],
    "lib/Dashboard/": [
     12,
-    6
+    12
    ],
    "lib/EventListener/": [
     982,
-    915
+    974
    ],
    "lib/Examples/": [
     93,
@@ -46,11 +46,11 @@
    ],
    "lib/Middleware/": [
     57,
-    0
+    57
    ],
    "lib/Middleware/Support/": [
     62,
-    56
+    57
    ],
    "lib/Portal/": [
     23,
@@ -58,15 +58,15 @@
    ],
    "lib/Repair/": [
     1234,
-    1135
+    1229
    ],
    "lib/Sections/": [
     6,
     6
    ],
    "lib/Service/": [
-    18350,
-    10529
+    18363,
+    13451
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -77,8 +77,8 @@
     202
    ],
    "lib/Service/Cmdb/": [
-    1519,
-    842
+    1520,
+    1481
    ],
    "lib/Service/Contactpersoon/": [
     205,
@@ -86,7 +86,7 @@
    ],
    "lib/Service/Federation/": [
     388,
-    342
+    362
    ],
    "lib/Service/Itsm/": [
     49,
@@ -94,11 +94,11 @@
    ],
    "lib/Service/Settings/": [
     1296,
-    1226
+    1265
    ],
    "lib/Service/Stackiq/": [
     2274,
-    1555
+    1959
    ],
    "lib/Settings/": [
     11,
@@ -106,135 +106,5 @@
    ]
   }
  },
- "js": {
-  "pct": 80.46,
-  "statements": 8787,
-  "covered": 7070,
-  "dirs": {
-   "src/": [
-    91,
-    89
-   ],
-   "src/assets/": [
-    0,
-    0
-   ],
-   "src/components/": [
-    442,
-    411
-   ],
-   "src/components/ai/": [
-    29,
-    18
-   ],
-   "src/components/cards/": [
-    65,
-    64
-   ],
-   "src/components/cells/": [
-    8,
-    8
-   ],
-   "src/components/contracts/": [
-    115,
-    115
-   ],
-   "src/components/maintenance/": [
-    34,
-    34
-   ],
-   "src/components/organisations/": [
-    146,
-    140
-   ],
-   "src/components/portfolio/": [
-    63,
-    59
-   ],
-   "src/components/reviews/": [
-    34,
-    25
-   ],
-   "src/components/roadmap/": [
-    23,
-    22
-   ],
-   "src/components/sbom/": [
-    122,
-    119
-   ],
-   "src/components/vulnerabilities/": [
-    46,
-    45
-   ],
-   "src/composables/": [
-    37,
-    32
-   ],
-   "src/dialogs/": [
-    209,
-    202
-   ],
-   "src/dialogs/SuiteWizard/": [
-    50,
-    50
-   ],
-   "src/modals/": [
-    368,
-    329
-   ],
-   "src/modals/object/": [
-    2026,
-    936
-   ],
-   "src/services/": [
-    32,
-    32
-   ],
-   "src/sidebars/directory/": [
-    85,
-    78
-   ],
-   "src/sidebars/search/": [
-    26,
-    20
-   ],
-   "src/store/modules/": [
-    782,
-    682
-   ],
-   "src/store/plugins/": [
-    420,
-    416
-   ],
-   "src/utils/": [
-    1099,
-    1091
-   ],
-   "src/views/": [
-    456,
-    408
-   ],
-   "src/views/cmdb/": [
-    52,
-    49
-   ],
-   "src/views/organisaties/": [
-    208,
-    203
-   ],
-   "src/views/settings/": [
-    207,
-    180
-   ],
-   "src/views/settings/sections/": [
-    1486,
-    1187
-   ],
-   "src/views/widgets/": [
-    26,
-    26
-   ]
-  }
- }
+ "js": null
 }
