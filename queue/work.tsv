@@ -2638,3 +2638,10 @@ cover:decidiq:a5f973bbma14b:9d3a1784	cover	decidiq	development	quality/test-cove
 cover:decidiq:a5f973bbma14b:58192586	cover	decidiq	development	quality/test-coverage-58192586	lang=php;dirs=lib/Service/Records/;focus=thin;weight=1562;coverage=82.1;target=85.0	2026-11-13T01:24:41Z
 cover:decidiq:a5f973bbma14b:d39f9857	cover	decidiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=549;coverage=82.1;target=85.0	2026-11-13T01:41:34Z
 cover:launchpad:fb10c50fm2ceb:js979145b9	cover	launchpad	development	quality/test-coverage-js-979145b9	lang=js;dirs=src/stores/*;focus=uncovered;weight=369;coverage=84.14;target=85.0	2026-11-13T03:47:01Z
+verify:dossiq:6276:883b3c25	verify	dossiq	development	merge	prs=6276@0894beca223aa90fe0c42b83bc44a838e06634b6,6277@df2fc6c8664733fe28737535196ab484b78ffb40	2026-11-13T04:45:10Z
+verify:pipelinq:3652:7f62d9a4	verify	pipelinq	development	merge	prs=3652@f2256d70f4dfb084639fa5d058c39ea031391025,3653@d93493c5caffd981f2486515202438e4ce89763b,3654@9a1611fe1e741a323200d811af24b2dabc9508d4,3655@21445534997a1f18ae740596d31204cdefd8cb56,3656@e4beb1a0c8a09448b962b10e662895f6e0860670,3657@dd095410daeab5b79f0a58e8461dc931b6391b3c,3658@33bd63b5d13d5f25287076b7c92b5afe2aea0fc5,3659@ce88ead8048aa3a0bd2799451a7ddb3a97eecc3d,3660@cdacc052ba25579f192c2ce9e53	2026-11-13T04:45:10Z
+verify:filinq:2032:d98b2430	verify	filinq	development	merge	prs=2032@b8275669bc666e02ffb49de3ae19882310773ccf	2026-11-13T04:45:10Z
+merge:learniq:2436:3be84c67	merge	learniq	development	development	prs=2436@c487c8c3f3268f7edce46f86878a9686ecc01d2f	2026-11-13T04:45:10Z
+merge:filinq:2031:d9212694	merge	filinq	development	development	prs=2031@2158ae1a17850fa9fa5607580803635d653fd004	2026-11-13T04:45:10Z
+merge:keepiq:1733:3825bcec	merge	keepiq	development	development	prs=1733@07d687d91041563d762c21c2e20c05ed96b528cc	2026-11-13T04:45:10Z
+cover:decidiq:a5f973bbma14b:d528dcf0	cover	decidiq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=297;coverage=82.1;target=85.0	2026-11-13T01:46:48Z
