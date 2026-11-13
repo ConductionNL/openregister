@@ -1429,3 +1429,4 @@ cover:learniq:1ae7757em6be5:js3f3bfe56	already done: branch quality/test-coverag
 cover:filinq:8ecceb86:0906d460	PR filinq#1990: +24 tests, BulkSigning 265/286 -> 284/286 stmts; suite 5499 -> 5523 OK	session-20261113T011729-46bd3dd4	2026-11-13T01:27:49Z
 cover:filinq:8ecceb86:60c2c265	PR #1991: 29 tests for Health/Merge/TemplatePreview/FinalDocument controllers; lib/Controller/*.php 85.1% -> 89.6%, suite 5499 -> 5528 OK	session-20261113T002028-bc0aa910	2026-11-13T01:28:16Z
 cover:filinq:8ecceb86:72b7aa42	PR #1992: 23 tests for ValidationProfileResolver, DocumentFileInspector, AccessibilityChecks probes; suite 5499->5522 green	session-20261113T011737-1f344aca	2026-11-13T01:28:45Z
+cover:decidiq:13261b1bmcfc2:jsea7197ec	PR #2106: 5 util modules, 7 vitest tests; suite 2625 -> 2632; src/utils lines 98.5% -> 99.7%	session-20261112T234653-57d11a5b	2026-11-13T01:28:50Z
