@@ -2960,3 +2960,4 @@ measure:filinq:20261113h06	filinq @90be525f: php 94.11%, js 93.34% (6251 PHPUnit
 cover:filinq:7a9ef677m5ffe:05630945	already done: lib/Middleware/Support at 94.9% lines (56/59) under the full unit suite on development, target 90; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:45:10Z
 cover:integriq:92114ab0m658d:js5a3cabaa	PR #3493: 25 vitest tests (RuleDetailPage 0->102/107, six action forms); views/Rule 53.4->85.92%, suite 1898->1923	session-20261113T041646-2c1d764f	2026-11-13T06:45:42Z
 verify:pipelinq:3688:141c7ba3	2 GREEN (3688, 3689); baseline 1 inherited failure	session-20261113T063948-afebd30c	2026-11-13T06:45:49Z
+cover:decidiq:a5f973bbmb22b:58192586	already done: pcov on development shows lib/Service/Records 97.9% lines (371/379), target 90; suite OK 3684 tests	session-20261113T053904-36dcee67	2026-11-13T06:45:52Z
