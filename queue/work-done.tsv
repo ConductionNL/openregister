@@ -2594,3 +2594,4 @@ cover:filinq:7a9ef677m5ffe:js00fe026a	PR #2036: 50 vitest tests, src/services no
 cover:buildiq:9930949bm5861:1b97f731	PR #1513: Listener already 90.52% under phpunit.xml; unit bootstrap missed OR contracts (1355 errors) - fixed, unit config now 2505 tests/1 inherited failure	session-20261113T054517-06ee2c47	2026-11-13T05:59:49Z
 review:openregister:10106:b7607f51	APPROVE: tests-only spec, 16/16 jest green merged with main	session-20261113T054516-5d7b6bc4	2026-11-13T05:59:52Z
 cover:filinq:7a9ef677m5ffe:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines on development 4ff0b7c1b (pcov), no PR	session-20261113T054516-469bb7f6	2026-11-13T06:00:13Z
+verify:integriq:3482:4d08eabe	3482 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:00:27Z
