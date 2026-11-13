@@ -1,0 +1,516 @@
+{
+ "app": "shillinq",
+ "commit": "d33c9cc69e340e4a01cf1bef8141ede7d318f9ae",
+ "measured_at": "2026-11-13T05:45:27Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 85.47,
+  "statements": 79867,
+  "covered": 68260,
+  "dirs": {
+   "lib/AppInfo/": [
+    269,
+    197
+   ],
+   "lib/BackgroundJob/": [
+    1727,
+    1387
+   ],
+   "lib/BackgroundJob/Support/": [
+    12,
+    12
+   ],
+   "lib/Budget/": [
+    237,
+    232
+   ],
+   "lib/Command/": [
+    208,
+    146
+   ],
+   "lib/Controller/": [
+    9881,
+    9217
+   ],
+   "lib/Dashboard/": [
+    158,
+    147
+   ],
+   "lib/Enums/": [
+    23,
+    6
+   ],
+   "lib/Event/": [
+    96,
+    95
+   ],
+   "lib/Guard/": [
+    1933,
+    1887
+   ],
+   "lib/Integration/": [
+    256,
+    217
+   ],
+   "lib/Lifecycle/": [
+    6921,
+    5570
+   ],
+   "lib/Lifecycle/Action/": [
+    616,
+    572
+   ],
+   "lib/Listener/": [
+    2842,
+    2529
+   ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    56
+   ],
+   "lib/Notification/": [
+    85,
+    81
+   ],
+   "lib/PaymentPlan/": [
+    513,
+    470
+   ],
+   "lib/PaymentRun/": [
+    505,
+    484
+   ],
+   "lib/PaymentRun/Generator/": [
+    209,
+    208
+   ],
+   "lib/Portal/": [
+    157,
+    157
+   ],
+   "lib/Repair/": [
+    3923,
+    2071
+   ],
+   "lib/Repair/Support/": [
+    113,
+    108
+   ],
+   "lib/Reporting/": [
+    342,
+    242
+   ],
+   "lib/Reporting/Feed/": [
+    30,
+    22
+   ],
+   "lib/Reporting/Generator/": [
+    1528,
+    1387
+   ],
+   "lib/Reporting/Schedule/": [
+    235,
+    219
+   ],
+   "lib/Request/": [
+    47,
+    47
+   ],
+   "lib/Sections/": [
+    5,
+    0
+   ],
+   "lib/Service/": [
+    32533,
+    28782
+   ],
+   "lib/Service/Asset/": [
+    564,
+    551
+   ],
+   "lib/Service/Bank/": [
+    681,
+    637
+   ],
+   "lib/Service/BbvMigration/": [
+    102,
+    101
+   ],
+   "lib/Service/Booking/": [
+    377,
+    126
+   ],
+   "lib/Service/Commitment/": [
+    541,
+    475
+   ],
+   "lib/Service/Dunning/": [
+    825,
+    763
+   ],
+   "lib/Service/EInvoice/": [
+    349,
+    324
+   ],
+   "lib/Service/External/Bunq/": [
+    41,
+    0
+   ],
+   "lib/Service/External/Cbs/": [
+    45,
+    0
+   ],
+   "lib/Service/External/CcmRuleEngine/": [
+    51,
+    0
+   ],
+   "lib/Service/External/CsrdEsrsXbrl/": [
+    75,
+    0
+   ],
+   "lib/Service/External/DepositPayment/": [
+    89,
+    26
+   ],
+   "lib/Service/External/Digipoort/": [
+    24,
+    0
+   ],
+   "lib/Service/External/Ib47/": [
+    41,
+    0
+   ],
+   "lib/Service/External/Kvk/": [
+    23,
+    0
+   ],
+   "lib/Service/External/Mollie/": [
+    25,
+    25
+   ],
+   "lib/Service/External/RvO/": [
+    27,
+    0
+   ],
+   "lib/Service/External/Salarisbureau/": [
+    36,
+    0
+   ],
+   "lib/Service/External/Sisa/": [
+    24,
+    0
+   ],
+   "lib/Service/External/TreasuryRate/": [
+    53,
+    1
+   ],
+   "lib/Service/External/Uwv/": [
+    43,
+    0
+   ],
+   "lib/Service/Extraction/": [
+    272,
+    243
+   ],
+   "lib/Service/Import/": [
+    898,
+    727
+   ],
+   "lib/Service/Import/ImportProfile/": [
+    116,
+    105
+   ],
+   "lib/Service/Ledger/": [
+    86,
+    83
+   ],
+   "lib/Service/Lifecycle/": [
+    11,
+    5
+   ],
+   "lib/Service/Migration/": [
+    283,
+    276
+   ],
+   "lib/Service/Payment/": [
+    263,
+    261
+   ],
+   "lib/Service/Peppol/": [
+    65,
+    64
+   ],
+   "lib/Service/Pipelinq/": [
+    817,
+    684
+   ],
+   "lib/Service/Pivot/": [
+    185,
+    176
+   ],
+   "lib/Service/Platform/": [
+    160,
+    148
+   ],
+   "lib/Service/Project/": [
+    113,
+    105
+   ],
+   "lib/Service/PublicSector/": [
+    462,
+    439
+   ],
+   "lib/Service/PurchaseOrder/": [
+    126,
+    113
+   ],
+   "lib/Service/Purchasing/": [
+    91,
+    88
+   ],
+   "lib/Service/Relation/": [
+    258,
+    246
+   ],
+   "lib/Service/Sales/": [
+    477,
+    444
+   ],
+   "lib/Service/Seed/": [
+    70,
+    63
+   ],
+   "lib/Service/Signing/": [
+    193,
+    185
+   ],
+   "lib/Service/Sms/": [
+    134,
+    125
+   ],
+   "lib/Service/Tax/": [
+    59,
+    50
+   ],
+   "lib/Service/Treasury/": [
+    538,
+    452
+   ],
+   "lib/Service/Usage/": [
+    100,
+    95
+   ],
+   "lib/Service/Vat/": [
+    220,
+    210
+   ],
+   "lib/Settings/": [
+    12,
+    0
+   ],
+   "lib/Sort/": [
+    17,
+    17
+   ],
+   "lib/Standards/": [
+    269,
+    231
+   ],
+   "lib/Standards/Checks/": [
+    3759,
+    2755
+   ],
+   "lib/Support/": [
+    48,
+    32
+   ],
+   "lib/Util/": [
+    155,
+    152
+   ],
+   "lib/Validation/": [
+    51,
+    51
+   ]
+  }
+ },
+ "js": {
+  "pct": 51.96,
+  "statements": 6285,
+  "covered": 3266,
+  "dirs": {
+   "src/": [
+    3,
+    3
+   ],
+   "src/api/": [
+    21,
+    4
+   ],
+   "src/components/": [
+    172,
+    75
+   ],
+   "src/components/BudgetBBVMapping/": [
+    457,
+    229
+   ],
+   "src/components/Dashboard/": [
+    45,
+    35
+   ],
+   "src/components/ar-invoice/": [
+    7,
+    7
+   ],
+   "src/components/banking-cashflow/": [
+    15,
+    15
+   ],
+   "src/components/bbv-provincie/": [
+    102,
+    87
+   ],
+   "src/components/bookkeeping/": [
+    29,
+    29
+   ],
+   "src/components/budget-charts/": [
+    171,
+    84
+   ],
+   "src/components/cluster-overview/": [
+    10,
+    4
+   ],
+   "src/components/dashboard/financial/": [
+    262,
+    227
+   ],
+   "src/components/goods-receipt-note/": [
+    115,
+    31
+   ],
+   "src/components/import/": [
+    6,
+    1
+   ],
+   "src/components/inventory/": [
+    296,
+    218
+   ],
+   "src/components/invoice/": [
+    72,
+    15
+   ],
+   "src/components/period-close/": [
+    167,
+    75
+   ],
+   "src/components/pipelinq/": [
+    45,
+    2
+   ],
+   "src/components/purchase-order/": [
+    82,
+    23
+   ],
+   "src/components/purchasing/": [
+    24,
+    24
+   ],
+   "src/components/reporting/": [
+    2,
+    2
+   ],
+   "src/components/sales/": [
+    20,
+    20
+   ],
+   "src/components/spend-analytics/": [
+    83,
+    64
+   ],
+   "src/components/taxes/": [
+    18,
+    18
+   ],
+   "src/components/three-way-match/": [
+    178,
+    77
+   ],
+   "src/components/vendor-performance/": [
+    59,
+    17
+   ],
+   "src/components/widget/": [
+    132,
+    77
+   ],
+   "src/composables/": [
+    294,
+    146
+   ],
+   "src/integrations/": [
+    405,
+    157
+   ],
+   "src/manifest.d/": [
+    4,
+    4
+   ],
+   "src/modals/": [
+    1230,
+    400
+   ],
+   "src/store/": [
+    3,
+    0
+   ],
+   "src/store/modules/": [
+    128,
+    98
+   ],
+   "src/utils/": [
+    638,
+    574
+   ],
+   "src/views/": [
+    316,
+    152
+   ],
+   "src/views/bookings/": [
+    211,
+    79
+   ],
+   "src/views/bookkeeping/": [
+    77,
+    4
+   ],
+   "src/views/bookkeeping/dimensions/": [
+    119,
+    49
+   ],
+   "src/views/bookkeeping/multi-currency/": [
+    33,
+    15
+   ],
+   "src/views/import/": [
+    122,
+    74
+   ],
+   "src/views/invoice/": [
+    17,
+    2
+   ],
+   "src/views/settings/": [
+    95,
+    49
+   ]
+  }
+ }
+}
