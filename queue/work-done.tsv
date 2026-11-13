@@ -4206,3 +4206,4 @@ cover:decidiq:a5f973bbm1507:81b1241f	already done: lib/Portal/*.php at 100% line
 cover:pipelinq:7f9dc8e6m916f:f3231970	already done: lib/Service/ScheduledTask 92/92 stmts (100%)	session-20261113T091527-72c58830	2026-11-13T10:16:56Z
 cover:decidiq:a5f973bbm1507:0f859653	failed: permission	session-20261113T101604-1c0ced4c	2026-11-13T10:17:14Z
 cover:decidiq:a5f973bbm1507:9d3a1784	already done: lib/BackgroundJob/*.php at 99.79% (478/479) on development after batches -1/-2; no PR	session-20261113T071633-17de823f	2026-11-13T10:17:29Z
+verify:pipelinq:3706:2c63ddaa	1/1 GREEN (3706): clean merge, lint ok, phpunit +23 no new failures, vitest 3964 pass; existing behaviour unchanged	session-20261113T044737-f37de8e3	2026-11-13T10:17:28Z
