@@ -5929,3 +5929,5 @@ merge:dossiq:6321:6c78b4e7	merge	dossiq	development	development	prs=6321@bc60777
 measure:stackiq:20261113h14	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T11:20:46Z
 measure:pipelinq:20261113h14	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T15:50:21Z
 measure:shillinq:20261113h16	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T16:05:08Z
+merge:pipelinq:3602:648c26a0	merge	pipelinq	development	development	prs=3602@d28667fb1df455d1b16f790053f93d332148c1e4,3614@e56b0d3e983a0d6b2e4234af8d5dcf5cafa05164,3685@54fa55d46f6424e459b7aff7a05eaa0e09d34376,3691@e3fecc47411af13f67e1b036e108d71be561fd18,3694@93cdbede425f26b5da6fcfdc897c8861cc7a0286,3707@52402cf243bd1496262608ab2e76e81cc89c08c5,3708@d1e03085fcab9ad7df2b8309c2dca6ebfb9b94c2,3713@102b99c87bb4a3eab6d9a470c5833413314a50c8,3721@f846326553ca8ca0ed4c03160ec	2026-11-13T17:15:22Z
+merge:launchpad:1189:a57b0a02	merge	launchpad	development	development	prs=1189@a9e9b073962a3f7d7607039e2d06a34e25fc326d	2026-11-13T17:15:22Z
