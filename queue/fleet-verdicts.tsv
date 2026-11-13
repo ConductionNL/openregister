@@ -6277,3 +6277,4 @@ opencatalogi	2605	1865cf88cfc31f7ca42f7396ff9ade3555a8de2d	GREEN	worker-54	tests
 opencatalogi	2606	bc0f3b6c3c9419d44d769a322dfd3a2fa99dbceb	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
 portaliq	2457	78305320d196311a9c241b6842a27f8285d38524	GREEN	worker-27	tests only; unit 4931 run on tree, baseline 4914 OK (89 skipped), 0 new failures
 portaliq	2458	bceb48c711d463325126e68c9c972db05e15fa1a	GREEN	worker-27	tests only; unit 4931 run on tree, baseline 4914 OK (89 skipped), 0 new failures
+dossiq	6445	6354b6115e0ac76cb88f25e43d7b73ca7a6d61fa	GREEN	worker-49	phpunit 16530 tests, 20 failures = baseline 20; vitest 6849 passed, 1 failed = inherited capabilityComparison; tests only, no new failures
