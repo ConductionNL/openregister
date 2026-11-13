@@ -5622,3 +5622,4 @@ cover:stackiq:9ac19b3amc14f:6f346b68	already done: lib/Sections 100% (6/6), cove
 cover:stackiq:9ac19b3amc14f:aae6d66c	already done: lib/Exception 100% at fb3c61bb (branch quality/test-coverage-aae6d66c-1 exists)	session-20261113T171153-e1c17962	2026-11-13T17:17:41Z
 measure:pipelinq:20261113h14	php 87.68% js 93.17% @4c67daf	session-20261113T171149-8b9ea523	2026-11-13T17:19:48Z
 cover:pipelinq:7f9dc8e6mcebb:a3bb9eeb	already done: lib/Service/Portal/*.php at 99.7% (10 uncovered stmts) @4c67daf, above target 90	session-20261113T171149-8b9ea523	2026-11-13T17:20:38Z
+cover:pipelinq:7f9dc8e6mcebb:8f2b650b	PR #3761: 11 tests (Search/Relevance/Feed), suite 7194->7205, same 5 inherited failures	session-20261113T171154-27186e77	2026-11-13T17:20:50Z
