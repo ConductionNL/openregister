@@ -4921,3 +4921,5 @@ build:openregister:connections-daily-report-mail	partial: PR #10196 backend (kin
 build:openregister:reply-threading-by-headers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:42Z
 build:openregister:remove-file-ownership-storage-rename	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:52Z
 build:openregister:redaction-release-safeguards	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:58Z
+build:openregister:records-saved-templates	partial: #10197 docs (3.1); 1.x live pass, 2.1-2.2 frontend dialogs, 2.3 nextcloud-vue	session-20261113T084521-fd8a31c7	2026-11-13T12:37:03Z
+verify:portaliq:2388:856b3bfe	2388 GREEN	session-20261113T071633-17de823f	2026-11-13T12:37:15Z
