@@ -1,12 +1,12 @@
 {
  "app": "learniq",
- "commit": "ca0282cfb1220bd3df23abe179bfd658fb902e43",
- "measured_at": "2026-11-13T02:35:33Z",
+ "commit": "1590aaa7f77b7599c5df7aa045d313d3157ee1ff",
+ "measured_at": "2026-11-13T05:28:44Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.94,
+  "pct": 91.09,
   "statements": 37601,
-  "covered": 34193,
+  "covered": 34250,
   "dirs": {
    "lib/AppInfo/": [
     26,
@@ -30,7 +30,7 @@
    ],
    "lib/Controller/": [
     3658,
-    3249
+    3246
    ],
    "lib/Event/": [
     10,
@@ -54,7 +54,7 @@
    ],
    "lib/Listener/": [
     6069,
-    5557
+    5572
    ],
    "lib/Mcp/": [
     1,
@@ -90,7 +90,7 @@
    ],
    "lib/Service/": [
     12540,
-    11182
+    11228
    ],
    "lib/Service/Accessibility/": [
     141,
@@ -118,7 +118,7 @@
    ],
    "lib/Service/CoursePackage/": [
     842,
-    720
+    716
    ],
    "lib/Service/CourseStore/": [
     156,
@@ -174,7 +174,7 @@
    ],
    "lib/Timetabling/": [
     529,
-    497
+    500
    ],
    "lib/Timetabling/Source/": [
     147,
