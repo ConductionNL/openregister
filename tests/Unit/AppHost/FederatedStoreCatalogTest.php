@@ -110,6 +110,37 @@ class FederatedStoreCatalogTest extends TestCase {
 	}//end type()
 
 	/**
+	 * Only the declared types an installed app registers are owned, in
+	 * declaration order: a type an optional, disabled app would own is left out.
+	 *
+	 * @return void
+	 */
+	public function testOwnedTypesKeepsOnlyRegisteredTypesInOrder(): void {
+		$registered = [
+			'openregister.configset' => $this->type(id: 'openregister.configset', topic: 'c', name: 'Configuration set'),
+			'openregister.flows'     => $this->type(id: 'openregister.flows', topic: 'f', name: 'Flows'),
+		];
+		$this->registry->expects($this->exactly(3))
+			->method('get')
+			->willReturnCallback(static fn (string $id) => ($registered[$id] ?? null));
+
+		$owned = $this->catalog->ownedTypes(typeIds: ['openregister.flows', 'nldesign.theme', 'openregister.configset']);
+
+		$this->assertSame(['openregister.flows', 'openregister.configset'], $owned);
+	}//end testOwnedTypesKeepsOnlyRegisteredTypesInOrder()
+
+	/**
+	 * With nothing registered, no declared type is owned.
+	 *
+	 * @return void
+	 */
+	public function testOwnedTypesIsEmptyWhenNothingIsRegistered(): void {
+		$this->registry->method('get')->willReturn(null);
+
+		$this->assertSame([], $this->catalog->ownedTypes(typeIds: ['nldesign.theme']));
+	}//end testOwnedTypesIsEmptyWhenNothingIsRegistered()
+
+	/**
 	 * A discovered configuration set becomes one card naming its type.
 	 *
 	 * @return void

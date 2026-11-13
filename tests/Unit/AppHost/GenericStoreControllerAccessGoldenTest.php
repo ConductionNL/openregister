@@ -88,7 +88,9 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
         $service = $this->getMockBuilder(GenericStoreService::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'publish'])->getMock();
         $service->method('resolve')->willReturnCallback($resolver);
         $service->method('search')->willReturnCallback($searcher);
-        $catalog = $this->getMockBuilder(FederatedStoreCatalog::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
+        $catalog = $this->getMockBuilder(FederatedStoreCatalog::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install', 'ownedTypes'])->getMock();
+        // Every declared type is owned here: this golden records access outcomes, not ownership.
+        $catalog->method('ownedTypes')->willReturnCallback(static fn (array $typeIds): array => $typeIds);
         $catalog->method('resolve')->willReturnCallback($resolver);
         $catalog->method('search')->willReturnCallback($searcher);
         $catalog->method('install')->willReturnCallback(
