@@ -5679,3 +5679,4 @@ build:portaliq:capability-rows-without-a-requirement	partial: PR #2414 (T05 DNT 
 cover:learniq:e6498dddm0533:aed80a0c	PR #2468: 3 tests, lib/Lifecycle/Action 138/146 -> 146/146 lines; suite 6402->6405, same 1 inherited failure	session-20261113T172349-00278d9d	2026-11-13T17:41:42Z
 verify:hermiq:1688:c9237d02	6 GREEN (1688-1692,1694), 1693 CONFLICT with 1690; no new failures	session-20261113T171154-27186e77	2026-11-13T17:42:05Z
 review:openregister:10283:feda6d0d	BLOCK #10283: failing architecture test from maintenance-reachable addition	session-20261113T171141-a3907367	2026-11-13T17:42:19Z
+build:portaliq:change-proposals-reach-the-case-page	PR #2415: T01-T05 built (server allow-list, own-proposals and context routes, colleague withdraw, widget reader view); T06-T09 left (dossiq, e2e, validate); suite 4914->4927 green	session-20261113T172329-e224a4f0	2026-11-13T17:42:23Z
