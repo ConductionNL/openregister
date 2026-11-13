@@ -1947,3 +1947,4 @@ fix:keepiq:1714:aa5475c9	fixed: PEM armour literal in keyProof.spec.js built at 
 cover:keepiq:d76c2121m88ca:js3287a408	already done: src/components/settings/** is at 85.5% lines under vitest on development (target 85%), suite 5885/0	session-20261113T021703-063c80f1	2026-11-13T03:55:45Z
 cover:shillinq:801aab65:59826f43	PR shillinq#2854: AdminSettings 6 tests, suite 9004->9010, no new failures	session-20261113T034631-5fd77fa7	2026-11-13T03:55:56Z
 review:openregister:10094:2a59707a	APPROVE: tests only, all targeted suites green	session-20261113T034634-857dbcc2	2026-11-13T03:56:31Z
+cover:launchpad:fb10c50fm31b6:60c2c265	PR #1163: 15 tests, Acknowledgement 87->101/108, DashboardTranslationApi 165->183/189, VisibilityPreview 57->73/73; suite green	session-20261113T024656-2f332446	2026-11-13T03:57:11Z
