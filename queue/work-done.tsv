@@ -4866,3 +4866,4 @@ build:openregister:people-on-objects	failed: worker rules forbid build tasks on 
 build:openregister:or-flow-connectivity-and-last-run	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:14Z
 cover:openregister:7350e3efmea52:fa416b31	PR #10186: GraphQLRequestGuard 0 -> covered (+6 tests, 64 stmts); lib/Search/Service 90.47% -> ~91.7%	session-20261113T071633-17de823f	2026-11-13T12:31:18Z
 build:openregister:or-form-and-journey-registry	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:20Z
+build:openregister:platform-caldav-backend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:30Z
