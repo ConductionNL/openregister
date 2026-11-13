@@ -3145,3 +3145,4 @@ cover:dossiq:f8a113c5m7e79:0f859653	PR dossiq#6321: metadata fix (UsesClass Acti
 cover:integriq:92114ab0m658d:0f859653	already done: lib/Flow/*.php at 98.9% lines (2485/2514) under the full unit suite on development; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:25:20Z
 gap:integriq:spdx:burn1	PR #3498: SPDX headers added to the 6 lib/ files lacking one; none left under lib/src/tests	session-20261113T051705-4f5ad12a	2026-11-13T07:26:08Z
 cover:dossiq:f8a113c5m7e79:63eef43f	already done: lib/Service/Mandaat at 141/142 lines (99%) on development; only a one-line delegate uncovered, no PR	session-20261113T064519-30004ad4	2026-11-13T07:26:19Z
+verify:shillinq:2901:adede82c	1/1 GREEN (2901): clean merge, lint ok, phpunit +8 tests, 1 inherited failure, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:26:27Z
