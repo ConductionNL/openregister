@@ -2806,3 +2806,4 @@ cover:filinq:7a9ef677m5ffe:72b7aa42	already done: lib/Service/Validation/ at 99.
 cover:pipelinq:7f9dc8e6m1e6e:js4c63a0a9	already done: open branches quality/test-coverage-js-4c63a0a9-1/-2 (KeywordIntelligence, WeeklyReview specs) bring src/views/marketing 77.2%->88.1% lines when merged (548 files/3920 tests pass); no further PR	session-20261113T053904-36dcee67	2026-11-13T06:29:49Z
 measure:keepiq:20261113h06	php/js pct: 89.12 90.45 (commit 8a5d84f3)	session-20261113T034634-f20a8d77	2026-11-13T06:29:59Z
 cover:shillinq:05639debmd8ee:b94a5e48	PR opened: 3 tests for LogBzkSisaUploadAdapter (only untested class in dirs); 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:30:16Z
+verify:integriq:3485:0dd32de1	stale	session-20261113T034634-f20a8d77	2026-11-13T06:30:31Z
