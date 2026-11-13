@@ -2016,3 +2016,4 @@ cover:hermiq:065f1631m7444:js77cf3af4	already above target: src/widgets measures
 cover:keepiq:c967a31fm88ca:be0dcca9	already done: lib/Mcp/*.php 139/139 statements covered on development (earlier -1 branch merged)	session-20261113T034634-857dbcc2	2026-11-13T04:07:56Z
 cover:hermiq:065f1631m7444:d0c160ad	already done: the 10 dirs measure 4102/4339 (94.5%) with openregister sibling after merged -1/-2 PRs, above target 85	session-20261113T024656-2f332446	2026-11-13T04:07:51Z
 cover:pipelinq:f67520ecm8c58:js06645759	PR #3640: 15 vitest tests, components 1292->1330/1457 (ContactRelationships, PartyIndicatorPanel full); suite 3477->3492 passing	session-20261113T031700-46f75510	2026-11-13T04:08:14Z
+measure:pipelinq:20261113h04	php 83.33%, js 80.72% at b363909e6	session-20261113T031704-4f12cb78	2026-11-13T04:08:26Z
