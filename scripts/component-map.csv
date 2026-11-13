@@ -250,6 +250,7 @@ Controller/CospendLinksController.php,106,Controller,Integrations,Integrations/C
 Controller/CredentialController.php,506,Controller,Integrations,Integrations/Controller/CredentialController.php,0,,Integrations
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
 Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
+Controller/CredentialProviderApprovalController.php,63,Controller,Integrations,Integrations/Controller/CredentialProviderApprovalController.php,0,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations
@@ -2030,6 +2031,8 @@ Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integratio
 Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
 Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
 Service/Credential/DeclaredProviderApprovals.php,47,Service,Integrations,Integrations/Service/Credential/DeclaredProviderApprovals.php,0,,Integrations
+Service/Credential/DeclaredProviderDecisionRefused.php,12,Service,Integrations,Integrations/Service/Credential/DeclaredProviderDecisionRefused.php,0,,Integrations
+Service/Credential/DeclaredProviderDecisions.php,102,Service,Integrations,Integrations/Service/Credential/DeclaredProviderDecisions.php,0,,Integrations
 Service/Credential/DeclaredProviderLoader.php,101,Service,Integrations,Integrations/Service/Credential/DeclaredProviderLoader.php,0,,Integrations
 Service/Credential/DeclaredProviderResolver.php,90,Service,Integrations,Integrations/Service/Credential/DeclaredProviderResolver.php,0,,Integrations
 Service/Credential/ProviderCatalogue.php,47,Service,Integrations,Integrations/Service/Credential/ProviderCatalogue.php,5,,Integrations
