@@ -1008,3 +1008,14 @@ pipelinq	3625	564ba049e0027c5ad449a376119f795474ad7998	MERGED	merge-local	GATE O
 pipelinq	3626	125044e8fb8dfac8dd5be96715e9b49424de64f7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6224	f0c51db6befd60e4ebaa809d4738f34b3714cd20	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
 pipelinq	3636	89fe21a66d182cc20dedccc4a05cec4c1bd01a32	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+decidiq	2098	4c96686d6809aaa436ce2b7738d8c7811d2d1263	RED	merge-local	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	2099	5c20d9f9147f975b20eda0c756b697a0c218c29a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2100	a22b19b074c0f5b9399e2b74b782b29880e56d36	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2101	6a2f61976798fcf33508406089a5374bb1aac581	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2102	0f39dcdccadc227bed3babce5bff6997a008ac72	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2103	b36c973da390eca8e1e52e6a19ccd7071f317cd4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2104	dd75c7b9f8d57266c5e4e16b336ef51e6ff66fff	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2105	a28355b3c1d4684c1c2ac07d4ca72638f0b2115f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2106	e36901354332ab55dc19411b201e598c7f4cbb93	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2107	96873588ff9ef18e5703b4996407b9dec3f20554	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2109	27ae309286f2f3d57a0645a1ee6bc0123e74968a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
