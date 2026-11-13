@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
+use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
@@ -1234,6 +1235,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$advisory->checkQuality(schema: $schema);
 		$advisory->checkDedup(schema: $schema);
 		$records->checkUniqueHint(schema: $schema);
+		(new IdentityDeclarationCheck())->check(schema: $schema);
 		$advisory->checkHinge(schema: $schema);
 		$advisory->checkSurvivorship(schema: $schema);
 		$advisory->checkMerge(schema: $schema);

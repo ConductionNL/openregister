@@ -567,6 +567,11 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
 
+		// A schema's identity values do not change once an object exists:
+		// outside software addresses the record by them. Only the audited
+		// schema migration path rewrites them.
+		$context->registerEventListener(ObjectUpdatingEvent::class, IdentityGuardListener::class);
+
 		// A schema may cap how many of its objects one organisation holds
 		// (`x-openregister-quota.perOrganisation`); a create past it is
 		// refused with the count and the cap. Updates never count.

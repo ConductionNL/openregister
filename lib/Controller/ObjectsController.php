@@ -103,6 +103,7 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\MoveAddress;
+use OCA\OpenRegister\Service\Object\ObjectKeyResolver;
 use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -3008,6 +3009,180 @@ class ObjectsController extends Controller {
 
 		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
 	}//end show()
+
+	/**
+	 * Show the object a schema's identity points at: `GET .../by-key?<property>=<value>&...`.
+	 *
+	 * Resolves the identity values to one uuid and hands it to show(), so RBAC,
+	 * multitenancy, read logging and rendering stay in the one path they live in.
+	 *
+	 * @param string                       $register      The register slug or identifier.
+	 * @param string                       $schema        The schema slug or identifier.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
+	 * @param ObjectKeyResolver            $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 120, period: 60)]
+	public function showByKey(string $register, string $schema, ObjectHandlerAccessInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->show(id: $id, register: $register, schema: $schema, objectService: $objectService);
+	}//end showByKey()
+
+	/**
+	 * Replace the object a schema's identity points at: `PUT .../by-key?...`.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The updated object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function updateByKey(string $register, string $schema, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->update(register: $register, schema: $schema, id: $id, objectService: $objectService);
+	}//end updateByKey()
+
+	/**
+	 * Patch the object a schema's identity points at: `PATCH .../by-key?...`.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The patched object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function patchByKey(string $register, string $schema, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->patch(register: $register, schema: $schema, id: $id, objectService: $objectService);
+	}//end patchByKey()
+
+	/**
+	 * Delete the object a schema's identity points at: `DELETE .../by-key?...`.
+	 *
+	 * @param string                       $register      The register slug or identifier.
+	 * @param string                       $schema        The schema slug or identifier.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
+	 * @param ObjectKeyResolver            $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The deletion's answer, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function destroyByKey(string $register, string $schema, ObjectHandlerAccessInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->destroy(id: $id, register: $register, schema: $schema, objectService: $objectService);
+	}//end destroyByKey()
+
+	/**
+	 * The uuid the request's identity values point at, or the answer that says why there is none.
+	 *
+	 * The values are read from the query string only, so a PUT or PATCH body
+	 * cannot steer which object it writes to. A schema without an identity and
+	 * a key no readable object carries are both 404; a missing value is 400;
+	 * two matches (data from before the identity) are 409 with both uuids.
+	 *
+	 * @param array{0:string,1:string}  $path          The register and schema from the path.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @return string|JSONResponse The uuid, or the refusal.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	private function idByKey(array $path, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): string|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $path[0], schema: $path[1]), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		$identity = $keys->identityOf(schema: $resolved['schemaEntity']);
+		if ($identity === null) {
+			return new JSONResponse(data: ['message' => 'This schema declares no identity, so its objects have no key.'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		$values = $this->keyQuery();
+		$missing = $keys->missing(identity: $identity, values: $values);
+		if ($missing !== []) {
+			return new JSONResponse(
+				data: ['message' => 'The key needs a value for: ' . implode(', ', $missing) . '.', 'missing' => $missing],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$uuids = $keys->resolve(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'], values: $values);
+
+		return match (count($uuids)) {
+			0 => new JSONResponse(data: ['message' => 'No object has this key.'], statusCode: Http::STATUS_NOT_FOUND),
+			1 => $uuids[0],
+			default => new JSONResponse(
+				data: ['message' => 'More than one object has this key.', 'objects' => $uuids],
+				statusCode: Http::STATUS_CONFLICT
+			),
+		};
+	}//end idByKey()
+
+	/**
+	 * The request's query-string parameters.
+	 *
+	 * @return array<string,mixed> The parameters.
+	 */
+	private function keyQuery(): array {
+		$query = [];
+		parse_str((string)parse_url($this->request->getRequestUri(), PHP_URL_QUERY), $query);
+
+		return $query;
+	}//end keyQuery()
 
 	/**
 	 * What show() asks of the request's object service.

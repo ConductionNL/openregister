@@ -244,4 +244,15 @@ final class SchemaDeclarationValidators {
 	public static function extendingForm(): ExtendingFormValidatorInterface {
 		return new ExtendingFormDeclaration();
 	}//end extendingForm()
+
+	/**
+	 * A fresh reader of the uniqueness constraints and the identity among them.
+	 *
+	 * @return UniqueConstraintEvaluatorInterface
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public static function uniqueConstraints(): UniqueConstraintEvaluatorInterface {
+		return new UniqueConstraintEvaluator();
+	}//end uniqueConstraints()
 }//end class

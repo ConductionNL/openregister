@@ -183,7 +183,8 @@
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
-		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener"
+		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
+		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
