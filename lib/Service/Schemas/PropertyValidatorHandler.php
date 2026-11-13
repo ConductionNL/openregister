@@ -491,6 +491,11 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	 */
 	public const MODIFIERS = [
 		'title' => ['value' => 'string', 'description' => 'The label a person reads above the field.'],
+		'titles' => [
+			'value' => 'object',
+			'description' => 'The label in other languages, by language tag: {"nl": "Einddatum contract", "en": "Contract end date"}. '
+				. 'A schema read with _lang or Accept-Language answers title in that language when it is here.',
+		],
 		'description' => ['value' => 'string', 'description' => 'The sentence under the field.'],
 		'example' => ['value' => 'any', 'description' => 'A sample answer, shown in the API documentation.'],
 		'order' => ['value' => 'number', 'description' => 'Where the field sits in the form.'],
@@ -907,6 +912,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		PropertyTitles::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**
