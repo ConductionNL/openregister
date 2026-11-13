@@ -2140,3 +2140,5 @@ cover:pipelinq:f67520ecmc4ba:197c84b8	already done: lib/Adapter/*.php 58/58 stat
 cover:shillinq:05639deb:c37ad97a	PR #2864: 16 tests, lib/PaymentPlan 91.62->95.13%	session-20261113T015005-da194c88	2026-11-13T04:29:50Z
 cover:pipelinq:f67520ecmc4ba:568ec52a	already done: lib/Lifecycle/*.php 227/229 covered; the 2 open lines in PosTransactionConfirmGuard are unreachable defensive returns, no PR	session-20261113T041646-adfbb291	2026-11-13T04:29:59Z
 review:openregister:10095:82312bf4	APPROVE openregister#10095: coverage metadata only, all required suites green	session-20261113T034631-5fd77fa7	2026-11-13T04:30:01Z
+merge:integriq:3411:3393bdbb	stale	feeder	2026-11-13T04:30:13Z
+merge:versioniq:660:e05e562e	stale	feeder	2026-11-13T04:30:13Z
