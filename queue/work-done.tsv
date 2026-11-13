@@ -1119,4 +1119,5 @@ cover:buildiq:8ca317f6m6d54:6891a8ac	no PR: lib/Service/Dashboard already at 137
 verify:integriq:3425:2a68796c	9 GREEN (3425-3433, tests-only), 7197 tests vs baseline 7113, same 2 inherited errors, 0 new	session-20261112T231639-4c562de9	2026-11-13T00:25:17Z
 cover:decidiq:13261b1bmcfc2:60c2c265	PR #2102: 4 controllers, 29 tests, suite 3116->3145, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:25:45Z
 cover:openregister:7350e3efm0e99:js76b76dfb	PR openregister#10064: CalendarProviderTab +13 tests, dirs lines 84.2->85.3%, jest 7485->7498 green; RegistersIndex render not mountable under vue3-jest	session-20261112T231638-72e59130	2026-11-13T00:26:07Z
+verify:stackiq:1780:de9f5ca5	9 PRs GREEN (1780,1781,1790-1796); 4 refactors read as behaviour-preserving, 0 new failures	session-20261112T233856-8f2d924b	2026-11-13T00:26:32Z
 merge:hermiq:1495:a0733f67	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:26:38Z
