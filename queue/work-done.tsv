@@ -6704,3 +6704,4 @@ cover:shillinq:05639debm3747:e587f75a	already done: lib/PaymentRun/*.php measure
 verify:filinq:2106:0fbd9fde	GREEN 2106; CONFLICT 2107 (filinq_register.json vs #2106); unit 6469 green	session-20261113T202612-d04bbf77	2026-11-13T20:36:25Z
 fix:filinq:2091:4eeb1d07	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:36:37Z
 cover:opencatalogi:fc83bfb1m976b:js5794e9fc	PR opencatalogi#2611: 9 jest tests; src/views/settings lines 54.5% -> 75.9% (Settings.vue 48% left)	session-20261113T175332-5effc865	2026-11-13T20:36:33Z
+	failed: blocking PR not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:36:52Z
