@@ -1,76 +1,76 @@
 {
  "app": "keepiq",
- "commit": "4034d61899f87957c2986d53a8a7df7a3e45f12f",
- "measured_at": "2026-11-12T22:46:47Z",
+ "commit": "f48bdc30fc670ff120fb7f3bb86c2eb479137d26",
+ "measured_at": "2026-11-13T02:07:25Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.2,
-  "statements": 25032,
-  "covered": 20076,
+  "pct": 0.0,
+  "statements": 25104,
+  "covered": 0,
   "dirs": {
    "lib/AppInfo/": [
-    145,
-    143
+    146,
+    0
    ],
    "lib/Attribute/": [
     5,
-    5
+    0
    ],
    "lib/BackgroundJob/": [
     407,
-    201
+    0
    ],
    "lib/Backup/": [
     481,
-    387
+    0
    ],
    "lib/Command/": [
     181,
-    72
+    0
    ],
    "lib/Controller/": [
-    4097,
-    3654
+    4127,
+    0
    ],
    "lib/Db/": [
     3212,
-    1253
+    0
    ],
    "lib/Event/": [
     43,
-    41
+    0
    ],
    "lib/Event/Audit/": [
     19,
-    19
+    0
    ],
    "lib/Exception/": [
     30,
-    30
+    0
    ],
    "lib/Federation/": [
     13,
-    13
+    0
    ],
    "lib/Listener/": [
     418,
-    293
+    0
    ],
    "lib/Mcp/": [
-    139,
-    134
+    173,
+    0
    ],
    "lib/Middleware/": [
-    156,
-    143
+    162,
+    0
    ],
    "lib/Notification/": [
     396,
-    389
+    0
    ],
    "lib/Repair/": [
     1051,
-    856
+    0
    ],
    "lib/Search/": [
     31,
@@ -78,39 +78,39 @@
    ],
    "lib/Sections/": [
     5,
-    5
+    0
    ],
    "lib/Service/": [
     13236,
-    11500
+    0
    ],
    "lib/Service/Connection/": [
     150,
-    142
+    0
    ],
    "lib/Service/ShareSave/": [
     399,
-    391
+    0
    ],
    "lib/Service/ShareSync/": [
     174,
-    171
+    0
    ],
    "lib/Service/Siem/": [
     193,
-    186
+    0
    ],
    "lib/Settings/": [
-    28,
-    28
+    29,
+    0
    ],
    "lib/SetupCheck/": [
     8,
-    7
+    0
    ],
    "lib/Support/": [
     15,
-    13
+    0
    ]
   }
  },
