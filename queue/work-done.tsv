@@ -2187,3 +2187,4 @@ cover:pipelinq:f67520ecmc4ba:e372e6ff	PR #3662: ExpenseApprovedEvent fan-out tes
 cover:integriq:92114ab0m1534:jsaa0cdbe3	PR #3475: 4 vitest tests, Otel/DsoPki/OpenFormulieren forms full; views/admin 392->412/481; complements open -2 PR	session-20261113T031700-46f75510	2026-11-13T04:38:35Z
 cover:stackiq:df113dffm2c76:692f8a78	already done: lib/Service/Contactpersoon/ is at 205/205 lines on development	session-20261113T021703-063c80f1	2026-11-13T04:38:45Z
 verify:hermiq:1656:bb910746	2/2 GREEN; phpunit 4210 (172 inherited red on development), vitest 1234 pass	session-20261113T041652-f9df3e85	2026-11-13T04:39:08Z
+cover:keepiq:c967a31fm0090:js6183fa3a	PR #1734: src/migration 72.5% -> 97.9% (16 tests, worker protocol + driver edges); vitest 5891 -> 5907 green	session-20261113T034634-857dbcc2	2026-11-13T04:39:14Z
