@@ -5930,3 +5930,4 @@ portaliq	2402	60d0c02009190d6ce03c23c8ab18fdfaccf827ac	GREEN	worker-32	tree veri
 portaliq	2403	e912f9ebb1f2345329e0d86c5749747e32c1f854	GREEN	worker-32	tree verify; tests-only (PortalOverviewEdges +4), no production code, 0 new failures
 portaliq	2404	2bd67109e534d02a009d28cdd5ce668ab52616fb	GREEN	worker-32	tree verify; tests-only (AdminSettings), no production code, 0 new failures
 portaliq	2408	50b414c5348a35bf085b980486fcc2b8faa3c4cf	GREEN	worker-32	tree verify; tests-only (5 Notifications helpers +17), no production code, 0 new failures
+buildiq	1542	741d037cfa7d8b50ec6310b1d7ca1785b1923a7d	GREEN	worker-03	tree of 2 on 12f5af00f: PHP 2799 run, baseline 2784 with 1 inherited failure, new failures 0; vitest 4011 passed; JS spec only
