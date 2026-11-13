@@ -66,7 +66,7 @@ class FlowTimerRepairStepsTest extends TestCase {
 				// already holds the register, and administrator edits survive.
 				// The commit moved the constant and left this expectation
 				// behind, which is the one test this branch broke.
-				'1.2.0',
+				'1.4.0',
 				false
 			)
 			->willReturn([]);

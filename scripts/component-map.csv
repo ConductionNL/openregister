@@ -2381,8 +2381,11 @@ Service/Flow/Principal/UserPrincipalResolver.php,18,Service,Flows,Flows/Service/
 Service/Flow/RegisterFlowNodesEvent.php,14,Service,Service,Service/Flow/RegisterFlowNodesEvent.php,62,,Processes
 Service/Flow/RegisterFlowOversightEvent.php,14,Service,Service,Service/Flow/RegisterFlowOversightEvent.php,7,,Processes
 Service/Flow/RegistryStepDispatcher.php,91,Service,Flows,Flows/Service/Flow/RegistryStepDispatcher.php,0,,Processes
+Service/Flow/Timer/CalendarBlackoutRefusal.php,22,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackoutRefusal.php,0,,Processes
+Service/Flow/Timer/CalendarBlackouts.php,74,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackouts.php,0,,Processes
 Service/Flow/Timer/CalendarDependency.php,35,Service,Work,Work/Service/Flow/Timer/CalendarDependency.php,0,,Processes
 Service/Flow/Timer/CalendarRecompute.php,126,Service,Work,Work/Service/Flow/Timer/CalendarRecompute.php,0,,Processes
+Service/Flow/Timer/CalendarWeekNumbering.php,57,Service,Flows,Flows/Service/Flow/Timer/CalendarWeekNumbering.php,0,,Processes
 Service/Flow/Timer/EscalationLadderService.php,275,Service,Flows,Flows/Service/Flow/Timer/EscalationLadderService.php,0,,Processes
 Service/Flow/Timer/FlowTimerDefinitionStore.php,101,Service,Flows,Flows/Service/Flow/Timer/FlowTimerDefinitionStore.php,0,,Processes
 Service/Flow/Timer/FlowTimerLedgerEntry.php,42,Service,Flows,Flows/Service/Flow/Timer/FlowTimerLedgerEntry.php,0,,Processes
