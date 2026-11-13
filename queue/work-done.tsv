@@ -3103,3 +3103,4 @@ cover:keepiq:c967a31fmb40c:05630945	already done: lib/Middleware/Support/ at 91.
 cover:keepiq:c967a31fmb40c:d39f9857	already done: lib/Support/*.php at 100% lines (15/15) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:13:28Z
 cover:shillinq:05639debmd8ee:87821f2f	PR #2901: VatLineBackfill edge cases, 8 tests, suite 9400->9408 (inherited 1F unchanged)	session-20261113T064518-860c039d	2026-11-13T07:13:54Z
 cover:dossiq:f8a113c5m7e79:c97e6ec3	PR #6318: 3 phpunit tests, Queue/Source 335->350/351	session-20261113T051709-e616bf69	2026-11-13T07:14:00Z
+cover:dossiq:f8a113c5m7e79:f0c02922	already done: lib/Service/External 401/401 lines under strict metadata (PRs -1/-2 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:14:06Z
