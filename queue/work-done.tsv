@@ -3131,3 +3131,4 @@ cover:shillinq:05639debmd8ee:b1a94ae2	already done: lib/Service/Seed/ at 98.5% l
 cover:keepiq:c967a31fmb40c:6925f818	already done: lib/SetupCheck/*.php at 100% lines (8/8) on development 8a5d84f3; 3 existing tests assert both outcomes, category and translated texts	session-20261113T071636-117504ad	2026-11-13T07:22:22Z
 cover:dossiq:f8a113c5m7e79:a07ceba0	PR dossiq#6320: 3 tests + 1 metadata fix, Dso 286->295/298 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:22:34Z
 cover:keepiq:c967a31fmb40c:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5) at 8a5d84f3; the 89.12 is the app-wide figure	session-20261113T071636-117504ad	2026-11-13T07:22:39Z
+verify:dossiq:6317:73469cb8	6317 GREEN, 6318 GREEN; 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:22:55Z
