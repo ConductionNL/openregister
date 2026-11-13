@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTimeInterface;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -116,4 +118,47 @@ class FlowRunStepMapper extends QBMapper implements FlowRunStepMapperInterface {
 
 		return (int)$qb->executeStatement();
 	}//end deleteByRun()
+
+	/**
+	 * The most recent steps of one node type, optionally of one status: "which runs failed at this node".
+	 *
+	 * @param string      $nodeType The namespaced node type, e.g. `openregister.set-fields`.
+	 * @param string|null $status   Only steps with this status (null: any).
+	 * @param int         $limit    The most rows to return.
+	 *
+	 * @return array<int, FlowRunStep> The steps, newest first.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+	 */
+	public function findByNodeType(string $nodeType, ?string $status = null, int $limit = 100): array {
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'node_type', value: $nodeType));
+		if ($status !== null) {
+			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
+		}
+
+		$qb->orderBy('id', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+	}//end findByNodeType()
+
+	/**
+	 * Delete every step recorded before a moment, whatever run it belongs to.
+	 *
+	 * The retention sweep removes a run's steps with its run; this catches
+	 * steps whose run row is already gone.
+	 *
+	 * @param DateTimeInterface $before Steps created before this moment are removed.
+	 *
+	 * @return integer The number of rows removed.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+	 */
+	public function deleteOlderThan(DateTimeInterface $before): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->lt('created', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)));
+
+		return (int)$qb->executeStatement();
+	}//end deleteOlderThan()
 }//end class
