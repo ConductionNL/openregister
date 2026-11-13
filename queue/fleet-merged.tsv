@@ -864,3 +864,5 @@ launchpad	1158	b474d64daa995219058cd48368336db463978f01	MERGED	merge-local	GATE 
 keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	merge-local	GATE UNMEASURED fetch failed
 keepiq	1714	79e77cf1f5426117c830b6bf6cd9ca375522645c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1726	8cece26113c4782458f5b99456e8b8bfa752bc17	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1165	87827f55d73d0ab50e1b37367a346a4a0a9895d7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1166	b0969553fb754e42fead5c60c89526c34b7ff11c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
