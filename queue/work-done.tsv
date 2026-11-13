@@ -1628,3 +1628,4 @@ cover:dossiq:6ca0231ema7d4:74111b6d	PR #6229: +18 tests, lib/Service/Status 95.0
 cover:launchpad:755175ffm31b6:js0be8c659	already done: src/modals/* 545/638 (85.4%) on development, above the 85% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:24:42Z
 cover:dossiq:6ca0231ema7d4:28cccfd9	PR #6230: 19 tests for CaseTimerSweeper, MovesShardColumns, ColumnMoveTally/ColumnMove, RunsUnderSystemIdentity; suite 13840->13859, same 19 inherited failures	session-20261113T021702-a5aabca2	2026-11-13T02:24:49Z
 cover:dossiq:6ca0231ema7d4:a07ceba0	PR #6231: 5 DSO edge tests; Dso dir 283->291/298; suite 13867->13872, same 19 inherited failures	session-20261112T234655-0bdbf2be	2026-11-13T02:25:01Z
+cover:dossiq:6ca0231ema7d4:5ebe3eb6	PR #6232: lib/Service/Mcp 235/246 -> 246/246, 8 tests	session-20261113T015005-030aa10a	2026-11-13T02:25:10Z
