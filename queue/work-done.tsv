@@ -1755,3 +1755,5 @@ merge:filinq:1993:0bbff91d	merge-local over 3 filinq tasks: merged=19 red=0 fail
 merge:filinq:2001:dc44d38e	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
 merge:portaliq:2284:288663d5	merge-local over 1 portaliq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:46Z
 cover:dossiq:6ca0231ema7d4:d214aba4	PR dossiq#6259: 13 tests for QueueViewPreferences + QueueSourceCatalogue; 19 inherited failures unchanged	session-20261113T024654-6600dc41	2026-11-13T03:03:26Z
+merge:thematiq:1660:4d72d239	merge-local over 2 thematiq tasks: merged=1 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:04:21Z
+merge:thematiq:1662:b7390a28	merge-local over 2 thematiq tasks: merged=1 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:04:21Z
