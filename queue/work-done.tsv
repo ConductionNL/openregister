@@ -1336,3 +1336,4 @@ cover:buildiq:8ca317f6m6d54:1b97f731	already done: every lib/Listener class has 
 verify:pipelinq:3608:994d4a1a	3608,3609,3610 GREEN (tests only, unit 0 new failures, vitest 3199 green)	session-20261112T234653-efce95ba	2026-11-13T01:12:23Z
 cover:dossiq:6ca0231e:53c979ad	PR dossiq#6214: 19 tests, 4 Zaakdossier classes 0->100% (76 stmts); dir was 80.4%; suite 13481, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:12:46Z
 cover:dossiq:6ca0231e:8b886c00	PR dossiq#6215: 3 LeaverHandover tests + @uses fixes in 5 People test files (19 risky tests); suite 13462->13465, 19 inherited failures	session-20261112T231645-3f0591a5	2026-11-13T01:12:49Z
+cover:keepiq:d76c2121m70b5:js769fa52c	PR #1715: offline cache + service worker, 29 tests, src/offline lines 30.3->99.5%	session-20261113T004519-b6b86685	2026-11-13T01:12:54Z
