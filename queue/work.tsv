@@ -3645,3 +3645,15 @@ merge:shillinq:2901:adede82c	merge	shillinq	development	development	prs=2901@65e
 merge:decidiq:2120:56e91b9d	merge	decidiq	development	development	prs=2120@48e09f39306c35beddc14352d7af26a86300da26	2026-11-13T07:30:17Z
 cover:shillinq:05639debmd8ee:d39f9857	cover	shillinq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=436;coverage=85.47;target=90.0	2026-11-13T02:52:17Z
 measure:learniq:20261113h06	measure	learniq	development	queue/coverage/learniq.json	why=slices need per-directory coverage	2026-11-13T07:30:17Z
+verify:dossiq:6322:7277cbc2	verify	dossiq	development	merge	prs=6322@75d1559d210fc13dfeda25f129ae514d83064646,6323@910e407ea1b066eeabd07af5cebffafe84e68810,6324@e811a9a2cc4637d2fa8933ececcd0554f27cb311,6325@13775766a5dd4e1e81c4a10f65f9b0c3a30e2600,6326@4f39baf6d118eaa8b31bfb917490d57fb829ee68,6327@64c678209ff076951fe235f999afde0d2824bbb5	2026-11-13T07:35:12Z
+verify:integriq:3500:263818c4	verify	integriq	development	merge	prs=3500@4a680cf0d4e12bac3b1602168a09194da6b543d1,3501@71635abf199f94850e9edd12a1a35bc04ecc80c6	2026-11-13T07:35:12Z
+verify:shillinq:2905:e1d62568	verify	shillinq	development	merge	prs=2905@67fa783b030a6ec5bc76fa6c982f99fb44846371,2906@de0e6cc0d1ddc53408cd898ce1affb4befd1e575	2026-11-13T07:35:12Z
+verify:decidiq:2121:8c25ecc0	verify	decidiq	development	merge	prs=2121@d094c2d61d91cedc67c0b6a907ae41dcc0fb2d20,2122@fa8d0eb66b8b8d5df1d5b065238cec0090d9520b,2123@8f07c6bc32eabaf49caa35ea3e8c3f0294d94316	2026-11-13T07:35:12Z
+verify:versioniq:665:894d8e9b	verify	versioniq	development	merge	prs=665@20e904c0d2fdad86e171403e2eea550a524007f2	2026-11-13T07:35:12Z
+merge:dossiq:6321:6a3f9251	merge	dossiq	development	development	prs=6321@bc6077730537d26c28332055dc3048b293be62a8	2026-11-13T07:35:12Z
+merge:shillinq:2902:c910ddca	merge	shillinq	development	development	prs=2902@993c5eabd91571afd542b36df9f4bdb261537dc1	2026-11-13T07:35:12Z
+cover:shillinq:05639debmd8ee:2bda60fb	cover	shillinq	development	quality/test-coverage-2bda60fb	lang=php;dirs=lib/Service/Project/;focus=thin;weight=415;coverage=85.47;target=90.0	2026-11-13T02:57:21Z
+cover:shillinq:05639debmd8ee:ebd2cb70	cover	shillinq	development	quality/test-coverage-ebd2cb70	lang=php;dirs=lib/Service/External/Cbs/;focus=thin;weight=356;coverage=85.47;target=90.0	2026-11-13T02:58:20Z
+cover:versioniq:1b35eed9m70ae:js3f3bfe56	cover	versioniq	development	quality/test-coverage-js-3f3bfe56	lang=js;dirs=src/*;focus=uncovered;weight=834;coverage=74.17;target=90.0	2026-11-12T15:32:27Z
+cover:versioniq:1b35eed9m70ae:js06645759	cover	versioniq	development	quality/test-coverage-js-06645759	lang=js;dirs=src/components/*;focus=uncovered;weight=435;coverage=74.17;target=90.0	2026-11-12T15:39:06Z
+cover:versioniq:1b35eed9m70ae:js0023cfc7	cover	versioniq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=129;coverage=74.17;target=90.0	2026-11-12T15:44:12Z
