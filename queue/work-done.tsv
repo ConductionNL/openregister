@@ -5192,3 +5192,4 @@ build2:openregister:put-preserve-key-order	failed: worker rules forbid build tas
 build2:openregister:platform-share-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:39Z
 build2:openregister:platform-capability	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:44Z
 build2:openregister:property-source-vocabulary	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:51Z
+build2:openregister:rbac-department-role-matrix	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:32:11Z
