@@ -1548,3 +1548,4 @@ cover:keepiq:d76c2121m70b5:11ebfefd	already done: lib/Backup/*.php 454/481 (94.4
 cover:openregister:7350e3efm0e99:js0f44bcf4	PR openregister#10089: RegisterSideBar DOM spec (+5), sidebars 83.9%->85.9%	session-20261112T231640-f6dda86c	2026-11-13T02:07:38Z
 cover:buildiq:8ca317f6mefda:d39f9857	already done: lib/Support/*.php 372/389 (95.6%) on development; no PR (note: unit suite has 1328 inherited errors at HEAD)	session-20261112T221237-836ed3f0	2026-11-13T02:07:43Z
 cover:buildiq:8ca317f6mefda:d528dcf0	already done: lib/Dashboard at 80/81 statements from tests/Unit/Dashboard (same dir as d528dcf0 measured earlier this run)	session-20261112T231640-f6dda86c	2026-11-13T02:07:52Z
+cover:keepiq:d76c2121m70b5:ecbab48a	PR #1719: 9 refusal tests for ShareSaveScope/Stages; ShareSave dir 393->398/399; suite 4036->4045, no failures	session-20261112T234655-0bdbf2be	2026-11-13T02:08:08Z
