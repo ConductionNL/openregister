@@ -6857,3 +6857,4 @@ build:buildiq:app-delta-override	partial: PR #1575, 0.1/0.2/2.1-2.4 (PHP Manifes
 verify:hermiq:1716:7bc48ba9	1716 GREEN (tests only)	session-20261113T202607-6c22f6b2	2026-11-13T21:06:04Z
 verify:opencatalogi:2631:fd57fa8c	7 GREEN (2631-2637); PHP 5274 tests, 2 inherited failures; jest new specs pass	session-20261113T182404-f2c28226	2026-11-13T21:06:33Z
 verify:learniq:2486:61914b95	BLOCK #2486: stray committed __pycache__ .pyc; code otherwise per spec, no new failures	session-20261113T205323-a7434fd6	2026-11-13T21:06:41Z
+build:decidiq:insight-decisions-report-by-period-and-body	partial: PR #2148 - task 1 (decidingBody field, fill-on-save listener, idempotent repair) built; tasks 2-5 (newman, period/body pickers, list link) left; php 3919 OK	session-20261113T202624-e1abf1c1	2026-11-13T21:06:50Z
