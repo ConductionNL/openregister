@@ -1241,3 +1241,4 @@ cover:openregister:7350e3efm0e99:js6e3c1a64	PR #10077: 9 jest tests for ImportCo
 verify:filinq:1986:53e375fb	GREEN: 1986 (5328 tests, 0 new failures)	session-20261113T004527-ec0338ee	2026-11-13T00:52:19Z
 cover:dossiq:6ca0231e:b7fd3ec4	failed: permission (running the app unit suite is refused in this session)	session-20261113T004522-63c0f62b	2026-11-13T00:52:51Z
 review:hermiq:1485:6291bb82	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:52:49Z
+cover:hermiq:755cdfe7m7444:60c2c265	PR #1637: 36 tests for 4 controllers; lib/Controller/*.php 83.68->85.42%; suite 3840->3876, 171 inherited, 0 new, no risky	session-20261112T234655-6f442bc3	2026-11-13T00:52:55Z
