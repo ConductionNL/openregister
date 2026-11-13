@@ -2767,3 +2767,4 @@
 10122 e0498191bcd014a0a3b817ec77c6fd4d1de339d8 APPROVE Tests only; adds SearchSideBar.facetControls.dom.spec.js (8 tests) under src/sidebars/search. No production code changed. Spec passes 8/8, eslint clean.
 10121 733fa491724e00b4463378c8a72746243322550c APPROVE Tests only; 5 new unit test files under tests/Unit/Db/SchemaMapper (PropertyMerge, PropertyDelta, SchemaLookup, AnnotationFaults, AdvisoryAnnotationChecks). 23 tests pass (phpunit-unit-local.xml), no risky, covers tags match subjects, assertions model real behaviour, phpstan clean. No production code changed.
 10124 31c241456eba1afe15ccd509aa551069958b07cf APPROVE tests only (2 jest specs); 27 tests pass on the PR merged with main, eslint clean, no production code changed
+10123 c903b74cfdfa82d4e80f806240c66bb9fadfdb53 APPROVE tests only (4 jest mount specs); 40 tests pass on the PR merged with main, eslint clean, date test uses fake timers and UTC
