@@ -6009,3 +6009,4 @@ shillinq	2944	c7766ce864946891ee6b710915f3b5afb8737555	BLOCK	worker-10	rewrites 
 pipelinq	3763	f0d5c846e7f0f9cccf8a646314841c60f36378d7	GREEN	worker-01	tests only; phpunit 7219 run vs baseline 7194, same 5 inherited failures, 0 new
 pipelinq	3764	e013ce9e547e33d3fe657b1078f51941dc18bc67	GREEN	worker-01	tests only; phpunit 7219 run vs baseline 7194, same 5 inherited failures, 0 new
 shillinq	2940	c07ee284504a1be0eb68b25dfa44e00c59a83ff1	GREEN	worker-39	tests-only; phpunit 10394->10412, baseline 1 inherited failure (PaymentWebhookIntakeCharacterisationTest clock-bound), no new failures
+hermiq	1688	e8a49480e6cf7233a128ee786424738b72cc97f8	GREEN	worker-54	tree of 6: phpunit 4632 tests vs baseline 4562 (146 errors, 26 failures inherited), no new failures; vitest 1329/1329 (baseline 1306); test-only
