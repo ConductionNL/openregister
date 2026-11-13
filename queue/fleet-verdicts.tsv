@@ -5359,3 +5359,4 @@ versioniq	665	20e904c0d2fdad86e171403e2eea550a524007f2	GREEN	worker-43	unit-only
 integriq	3498	595009e754213dc827e01ffc542276f719b669c6	GREEN	worker-39	unit 7738 run on tree (baseline 7736 on development a3eb4afee: 2 errors + 2 failures inherited), 0 new; SPDX header comment lines only
 integriq	3499	31b846259ed0a629124d8a3fae3fbb59ea85cca8	GREEN	worker-39	unit 7738 run on tree (baseline 7736, same 4 inherited), 0 new; adds PropertySourceBindingsTest only (2 tests)
 shillinq	2905	67fa783b030a6ec5bc76fa6c982f99fb44846371	GREEN	worker-29	9511 tests on tree, baseline 9508 with 1 inherited failure, no new failures; behaviour-preserving extraction
+shillinq	2906	de0e6cc0d1ddc53408cd898ce1affb4befd1e575	GREEN	worker-29	9511 tests on tree, baseline 9508 with 1 inherited failure, no new failures; SPDX header lines only
