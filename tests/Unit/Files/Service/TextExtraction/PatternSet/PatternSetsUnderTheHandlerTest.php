@@ -42,6 +42,15 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\JurisdictionPatternSets
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlLicensePlates
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet
+ * @uses \OCA\OpenRegister\Formats\BsnFormat
+ * @uses \OCA\OpenRegister\Formats\IdentifierFormats
+ * @uses \OCA\OpenRegister\Formats\LicensePlateNlFormat
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
  */
 final class PatternSetsUnderTheHandlerTest extends TestCase {
 
