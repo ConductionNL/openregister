@@ -9,7 +9,7 @@
 ## 2. The preservation regime
 
 - [~] 2.1 A preservation state beside the archive state of `object-archive-state`: out of working views, refusing content writes, keeping references (D-3). `object-archive-state` has now shipped (`@self.archived`, the write guard and `x-openregister-archive` are on main), so the regime is built beside it: `ObjectEntity::isPreserved()` reads the `semi_statisch` archival status, `SaveObject` refuses a content write to a preserved object whose schema offers the regime (`ObjectStateWriteException::preserved`, references still resolve and the object stays readable because neither passes the write path), and the object stays distinct from the archive state. **Left**: taking a preserved object out of the working views (the search-default exclusion, like `_archived`) — a separate pass on the search/aggregation path.
-- [x] 2.2 The two states are declared side by side and a schema may offer either, both or neither. Done: `x-openregister-preserve` is an accepted annotation (`AnnotationVocabulary`) with `Schema::isPreservationEnabled()` beside `isArchivingEnabled()`, independent of each other, and `@self.preserved` is rendered beside `@self.archived` so the two are reported separately.
+- [x] 2.2 The two states are declared side by side and a schema may offer either, both or neither. Done: `x-openregister-preserve` is an accepted annotation (`AnnotationVocabulary`) with `Schema::isPreservationEnabled()` beside `isArchivingEnabled()`, independent of each other. The two states are reported separately on every read: the archive state as `@self.archived`, the preservation state as the archival status `tmlo.archiefstatus` (`semi_statisch`), which the object already carries; no second copy is rendered, so exports, SIP packages and audit snapshots keep their shape.
 
 ## 3. The reviewer and the worklist
 
@@ -71,8 +71,8 @@ What is left, and why:
   with its diff.
 
 Task 2 is now mostly built: `object-archive-state` shipped, so the
-preservation regime sits beside it with its opt-in content-write guard, its
-distinct `@self.preserved` fact and the two annotations a schema declares
-independently. What remains of 2.1 is taking a preserved object out of the
+preservation regime sits beside it with its opt-in content-write guard and
+the two annotations a schema declares independently, each state reported on
+its own field. What remains of 2.1 is taking a preserved object out of the
 working views (the search-default exclusion), which is a separate pass on the
 search and aggregation path and is left unchecked.

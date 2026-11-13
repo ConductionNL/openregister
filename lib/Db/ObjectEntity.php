@@ -1444,7 +1444,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'deleted' => $this->getDeleted(),
 			'archived' => $this->getArchived(),
 			'frozen' => $this->getFrozen(),
-			'preserved' => $this->isPreserved(),
 			'status' => $this->status,
 			'source' => $this->source,
 		];
