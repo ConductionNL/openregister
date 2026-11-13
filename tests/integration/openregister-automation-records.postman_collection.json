@@ -1,0 +1,646 @@
+{
+  "info": {
+    "_postman_id": "openregister-automation-records",
+    "name": "OpenRegister - Automation run records",
+    "description": "@newman exclude not yet passed live; drop this marker after its first green run on a stack (automation-run-records task 3.1).\n\nautomation-run-records task 3.1: `GET /api/automation-records`. Seeds a non-admin user, a register and an admin-only schema whose `submit` transition declares a keyed `set-fields` action and a keyed transition notification. Submitting one item must leave one `succeeded` lifecycle-action record and one `sent` notification record, both found by key prefix; the non-admin user, who may not read the schema, sees none of them; an anonymous caller gets 401.\n\nThe notification record needs the notifications app and a background worker for `AnnotationNotificationDispatchJob`; tests/integration/ci/seed.sh provides both in CI.\n\nEverything it creates is removed in `99 teardown`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 setup",
+      "item": [
+        {
+          "name": "create the reader",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/ocs/v2.php/cloud/users?format=json",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userid\": \"{{readerId}}\", \"password\": \"{{readerPassword}}\", \"displayName\": \"Automation records reader {{stamp}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('stamp', String(Date.now()));",
+                  "pm.collectionVariables.set('readerId', 'ar-reader-' + pm.collectionVariables.get('stamp'));",
+                  "pm.collectionVariables.set('readerPassword', 'Ar-' + pm.collectionVariables.get('stamp') + '-pw!');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reader created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "create the register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"slug\": \"ar-register-{{stamp}}\", \"title\": \"Automation records {{stamp}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                  "pm.collectionVariables.set('registerId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "create the keyed schema",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"ar-item-{{stamp}}\",\n  \"title\": \"Automation records item {{stamp}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"submittedAt\": {\n      \"type\": \"string\"\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"admin\"\n    ],\n    \"create\": [\n      \"admin\"\n    ],\n    \"update\": [\n      \"admin\"\n    ],\n    \"delete\": [\n      \"admin\"\n    ]\n  },\n  \"x-openregister-lifecycle\": {\n    \"field\": \"status\",\n    \"initial\": \"draft\",\n    \"states\": [\n      \"draft\",\n      \"submitted\"\n    ],\n    \"terminal\": [\n      \"submitted\"\n    ],\n    \"transitions\": {\n      \"submit\": {\n        \"from\": [\n          \"draft\"\n        ],\n        \"to\": \"submitted\",\n        \"actions\": [\n          {\n            \"action\": \"set-fields\",\n            \"key\": \"aut-{{stamp}}-l\",\n            \"actionParameters\": {\n              \"submittedAt\": \"@now\"\n            }\n          }\n        ]\n      }\n    }\n  },\n  \"x-openregister-notifications\": {\n    \"submitted\": {\n      \"key\": \"aut-{{stamp}}-n\",\n      \"trigger\": {\n        \"type\": \"transition\",\n        \"action\": \"submit\"\n      },\n      \"enabled\": true,\n      \"channels\": [\n        \"nc-notification\"\n      ],\n      \"recipients\": [\n        {\n          \"kind\": \"users\",\n          \"users\": [\n            \"{{username}}\"\n          ]\n        }\n      ],\n      \"subject\": {\n        \"en\": \"Submitted: {{title}}\",\n        \"nl\": \"Ingediend: {{title}}\"\n      }\n    }\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                  "pm.collectionVariables.set('schemaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "attach the schema",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"schemas\": [{{schemaId}}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema attached', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 records",
+      "item": [
+        {
+          "name": "create an item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"first {{stamp}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                  "pm.collectionVariables.set('itemId', pm.response.json().id);",
+                  "pm.test('the item starts in draft', () => pm.expect(pm.response.json().status).to.eql('draft'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "submit the item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{itemId}}/transition",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\": \"submit\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('submit answers 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "pm.test('the set-fields action ran', () => pm.expect(pm.response.json().submittedAt).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "the lifecycle action left a succeeded record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?kind=lifecycle-action&key=aut-{{stamp}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('records answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "const b = pm.response.json();",
+                  "const mine = b.results.filter((r) => r.object === pm.collectionVariables.get('itemId'));",
+                  "pm.test('one record for the item', () => pm.expect(mine.length).to.eql(1));",
+                  "const r = mine[0] || {};",
+                  "pm.test('it is the declared set-fields action', () => {",
+                  "    pm.expect(r.kind).to.eql('lifecycle-action');",
+                  "    pm.expect(r.key).to.eql('aut-' + pm.collectionVariables.get('stamp') + '-l');",
+                  "    pm.expect(r.name).to.eql('set-fields');",
+                  "    pm.expect(r.transition).to.eql('submit');",
+                  "});",
+                  "pm.test('it succeeded', () => pm.expect(r.outcome).to.eql('succeeded'));",
+                  "pm.test('a lifecycle-action filter returns no notification', () => pm.expect(b.results.every((x) => x.kind === 'lifecycle-action')).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "the notification left a sent record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?kind=notification&key=aut-{{stamp}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (Number(pm.collectionVariables.get('recordTries') || 0) > 0) {",
+                  "    setTimeout(() => {}, 2000);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Notifications are dispatched by a background job, so this polls for a while.",
+                  "const tries = Number(pm.collectionVariables.get('recordTries') || 0) + 1;",
+                  "pm.collectionVariables.set('recordTries', tries);",
+                  "const b = pm.response.code === 200 ? pm.response.json() : { results: [] };",
+                  "const mine = b.results.filter((r) => r.object === pm.collectionVariables.get('itemId'));",
+                  "if (mine.length === 0 && tries < 30) {",
+                  "    pm.execution.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "pm.test('one notification record for the item', () => pm.expect(mine.length, 'none after ' + tries + ' tries').to.eql(1));",
+                  "const r = mine[0] || {};",
+                  "pm.test('it is the declared notification', () => {",
+                  "    pm.expect(r.kind).to.eql('notification');",
+                  "    pm.expect(r.key).to.eql('aut-' + pm.collectionVariables.get('stamp') + '-n');",
+                  "    pm.expect(r.name).to.eql('submitted');",
+                  "});",
+                  "pm.test('it was sent', () => pm.expect(r.outcome).to.eql('sent'));",
+                  "pm.test('it counts and does not name recipients', () => pm.expect(JSON.stringify(r)).to.not.include(pm.collectionVariables.get('username') + '\"'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "both kinds by key prefix",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?key=aut-{{stamp}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('records answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "const b = pm.response.json();",
+                  "const mine = b.results.filter((r) => r.object === pm.collectionVariables.get('itemId'));",
+                  "pm.test('both kinds are returned', () => pm.expect(mine.map((r) => r.kind).sort()).to.eql(['lifecycle-action', 'notification']));",
+                  "pm.test('the page is echoed', () => { pm.expect(b.limit).to.eql(50); pm.expect(b.offset).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "a caller without read access sees nothing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?key=aut-{{stamp}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{readerId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{readerPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('records answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "pm.test('no record of the admin-only schema is returned', () => pm.expect(pm.response.json().results).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "an anonymous caller is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?key=aut-{{stamp}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('anonymous answers 401', () => pm.expect(pm.response.code, pm.response.text()).to.eql(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 teardown",
+      "item": [
+        {
+          "name": "remove the item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{itemId}}"
+          }
+        },
+        {
+          "name": "remove the schema",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+          }
+        },
+        {
+          "name": "remove the register",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+          }
+        },
+        {
+          "name": "remove the reader",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/ocs/v2.php/cloud/users/{{readerId}}?format=json"
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+          "// The quality workflow passes base_url, admin_user and admin_password; take",
+          "// them for this collection's own names when those are not given.",
+          "[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+          "    var given = pm.environment.get(pair[1]);",
+          "    if (given !== undefined && pm.environment.get(pair[0]) === undefined) {",
+          "        pm.collectionVariables.set(pair[0], given);",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin"
+    },
+    {
+      "key": "stamp",
+      "value": ""
+    },
+    {
+      "key": "readerId",
+      "value": ""
+    },
+    {
+      "key": "readerPassword",
+      "value": ""
+    },
+    {
+      "key": "registerId",
+      "value": ""
+    },
+    {
+      "key": "schemaId",
+      "value": ""
+    },
+    {
+      "key": "itemId",
+      "value": ""
+    },
+    {
+      "key": "recordTries",
+      "value": "0"
+    }
+  ]
+}

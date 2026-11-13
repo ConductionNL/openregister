@@ -4,7 +4,7 @@
 
 ### Requirement: Every dispatch of a declared notification leaves a readable record
 
-A notification declaration MAY carry a `key`. Each evaluation of a declared notification for one object event SHALL write one automation record with kind `notification`, the key, the notification slug, the schema, the object uuid, the event id, the time, counts per channel and an outcome `sent`, `partial`, `failed` or `skipped`, with the reason when skipped. The record SHALL NOT name recipients. `GET /api/automation-records` SHALL return these records filtered by key prefix, schema, object and time range, only for objects the caller may read.
+A notification declaration MAY carry a `key`. Each evaluation of a declared notification for one object event SHALL write one automation record with kind `notification`, the key, the notification slug, the schema, the object uuid, the event id, the time, counts per channel and an outcome `sent`, `partial`, `failed` or `skipped`, with the reason when skipped. The record SHALL NOT name recipients.
 
 #### Scenario: an app's automation shows its sends
 
@@ -19,6 +19,10 @@ A notification declaration MAY carry a `key`. Each evaluation of a declared noti
 - **WHEN** the same event fires twice within the dedup window
 - **THEN** the second record has outcome `skipped` with reason `duplicate`
 - @e2e exclude {backend; covered by a unit test on the dispatcher}
+
+### Requirement: Automation records are read by key prefix under the object's read access
+
+`GET /api/automation-records` SHALL return automation records filtered by kind, key prefix, schema, object and time range, and SHALL return only records of objects the caller may read.
 
 #### Scenario: a reader sees only what they may read
 
