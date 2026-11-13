@@ -1263,3 +1263,4 @@ cover:dossiq:6ca0231e:33af3743	already done: lib/Service/Bezwaar/*.php measured 
 review:hermiq:1529:c0cafc44	GREEN: faithful move of reviewer inbox/check, access behaviour unchanged, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:57:10Z
 verify:buildiq:1486:78803af7	1486,1487 GREEN (tests only); no new failures	session-20261112T231640-f6dda86c	2026-11-13T00:57:26Z
 review:hermiq:1483:fea5911b	GREEN: identical-behaviour refactor, vitest 1076 pass	session-20261113T004527-ec0338ee	2026-11-13T00:57:40Z
+review:openregister:10068:385b8604	APPROVE: tests only, settings specs 355 green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T00:57:49Z
