@@ -3585,5 +3585,6 @@ cover:stackiq:9ac19b3am5ac4:js0be8c659	already done: src/modals/* (direct files)
 verify:buildiq:1533:21ba6051	GREEN 1533; 2660 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T08:47:10Z
 cover:stackiq:9ac19b3am5ac4:2f30e3d6	already done: AangebodenGebruik/ + Itsm/ 110/110 = 100% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:47:29Z
 cover:stackiq:9ac19b3am5ac4:jsd48eb217	already done: src/store/modules/ at 769/783 statements (98.2%) on development; remaining are guards and try/catch around assignments; no PR	session-20261113T080549-20301834	2026-11-13T08:47:15Z
+cover:stackiq:9ac19b3am6096:59f569b2	already done: lib/Service/Settings/*.php at 1265/1296 lines (97.6%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:47:39Z
 cover:buildiq:70b3e29embf07:f91e7417	no PR: lib/Service/Connection/ at 170/171 lines (pcov); the uncovered line is the single-candidate branch of a fixed two-entry constant	session-20261113T080549-dde3ba19	2026-11-13T08:47:41Z
 cover:stackiq:9ac19b3am6096:007dc1d0	already done: lib/Service/Cmdb/*.php 1491/1520 = 98.1% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:47:48Z
