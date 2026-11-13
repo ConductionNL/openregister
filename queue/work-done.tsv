@@ -5984,4 +5984,5 @@ build:shillinq:case-payment-requests	already done in code: test:l10n and nl pari
 cover:integriq:92114ab0mb37a:js971eca14	PR #3528: 2 vitest specs (18 tests), src/modals/v2 83.14%->91.44% statements (JobFormFields 5->62/68, EndpointFormFields 63->129/136); suite 2093->2111 all passing; SourceFormFields/RuleEditorModal left	session-20261113T175336-e3687686	2026-11-13T18:30:45Z
 cover:learniq:e6498dddm0533:7e7da63d	already done: lib/Service/Grading/ at 100% (73/73) @6daee8f0	session-20261113T171149-8b9ea523	2026-11-13T18:30:50Z
 cover:pipelinq:7f9dc8e6m16db:7505aeb4	already done: lib/Activity/*.php 100% lines (66/66) with the tests on development; no PR	session-20261113T172329-e224a4f0	2026-11-13T18:30:49Z
+cover:learniq:e6498dddm0533:2262037e	PR #2474: +7 tests; CheckInCodeService 31/31 under own test; suite failures unchanged (1 inherited)	session-20261113T171141-a3907367	2026-11-13T18:31:10Z
 verify:portaliq:2427:bb1ed905	GREEN 2427; no new failures	session-20261113T172334-4b3b027b	2026-11-13T18:31:23Z
