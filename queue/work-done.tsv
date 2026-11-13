@@ -6210,3 +6210,4 @@ cover:keepiq:c967a31fm10bf:aae6d66c	already done: lib/Exception/*.php is 100% li
 cover:dossiq:069ee2d6m2deb:67b69054	already done: lib/Service/Conversation/ measured 374/375 (99.7%) on dcd16f5978 (target 95); earlier -1/-2 PRs merged	session-20261113T185328-a5a717bc	2026-11-13T19:07:49Z
 cover:portaliq:b60f3b81m4ccb:34f5c300	PR #2453: 12 tests, OidcClientService 65%->90%, EventFeedReader 73%->100%	session-20261113T172329-0b6220f9	2026-11-13T19:07:46Z
 cover:opencatalogi:fc83bfb1:9d3a1784	PR #2601: 6 tests (PlooiDelivery, WooReadinessCheckNow, WooReadinessCheck, SavedSearchMatchingJob); lib/BackgroundJob 68/90 -> 90/90; suite 5254->5260, same 2 inherited failures	session-20261113T172334-4b3b027b	2026-11-13T19:08:16Z
+build3:openregister:a-leaf-that-cannot-render-refuses-to-register	PR #10298: tasks.md audit (2.1 and 3.3 already on main via #3955/#3956, ticked with tests; 3.1/3.2 other repos)	session-20261113T171137-8f22ecb0	2026-11-13T19:08:26Z
