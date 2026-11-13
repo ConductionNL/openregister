@@ -6904,6 +6904,7 @@ build:integriq:gateway-declared-data-feeds	partial: PR #3557, tasks 1-2 done, ta
 build4:dossiq:social-domain-consent-and-safeguards	partial: PR #6460 - task 1.1 (caseType safeguard flags 1.48.0, four social packages set consent/classification/identifyingFields, 9 tests); 2.x-4.1 remain (2.2 must extend the existing CaseTransferConsentGate, 3.2 may need OpenRegister RBAC), 5.x live	session-20261113T205337-4c32e19e	2026-11-13T21:15:10Z
 verify:opencatalogi:2646:4a0bf4b5	2646-2649 GREEN; 2650, 2651 CONFLICT (ListenerRegistrar/ComponentRegistrarsTest, l10n vs 2646/2648)	session-20261113T204551-fafe539e	2026-11-13T21:15:36Z
 verify:versioniq:684:10f67c07	684 GREEN (tests-only, vitest 2895->2910, 0 failures)	session-20261113T204536-22cfbae0	2026-11-13T21:15:34Z
+build:hermiq:chat-translate-a-recording	PR #1719: tasks 1-6 implemented with PHPUnit+vitest; Newman/Playwright/live checks left; suite 4596 tests, no new failures	session-20261113T205332-17038cbf	2026-11-13T21:15:54Z
 verify:learniq:2487:44caf9cd	GREEN #2487: 6404 tests, 0 new failures (1 inherited)	session-20261113T210940-b751519f	2026-11-13T21:15:49Z
 verify:integriq:3551:0c53eaed	3551 GREEN, 3553 GREEN, 3552 CONFLICT (l10n with 3551); no new failures	session-20261113T205330-0e50ee62	2026-11-13T21:16:05Z
 build:opencatalogi:oai-pmh-endpoint	PR #2654: changed-since route (6.1-6.3), 14 tests, suite 5254->5268 no new failures; 6.4 live and 7.3 check:strict left	session-20261113T204539-805bb895	2026-11-13T21:16:15Z
