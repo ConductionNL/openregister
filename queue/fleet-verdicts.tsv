@@ -6184,4 +6184,5 @@ dossiq	6436	ee766c9af7db5de1562e35a6d6ed51a804a49999	GREEN	worker-12	unit suite 
 keepiq	1764	0d24aa534c1d77f030b5af9c78ae243bd4dd6789	GREEN	worker-51	tests-only; PHP 4913 run (baseline 4854, 0 fail), vitest 6361 pass; no new failures
 keepiq	1765	82f3934464652febe5744065e8b3d4c014b5a9a9	GREEN	worker-51	tests-only; PHP 4913 run (baseline 4854, 0 fail), vitest 6361 pass; no new failures
 buildiq	1556	f53788ab6e779f7522ecf5eda040bb3f3d529bf2	GREEN	worker-15	phpunit 2917 tests, baseline 1 failure (ExportZipGoldenTest, inherited), new 0; vitest 4102/4102 pass (baseline 4077); tests only
+hermiq	1699	2ae2caf440e7bfbec653b58f1d65bf6b6974bcf5	GREEN	worker-55	tests only; unit 4590 on the tree (baseline 4564, 0 failures), no new failures
 portaliq	2423	53e7632237b8537d1e74566831a9d303cdc87870	GREEN	worker-52	php unit 4914 (baseline 4914, 0 new); help/page-tabs specs 11 pass; check:specs only records-list (inherited); manifest error count unchanged (1, inherited)
