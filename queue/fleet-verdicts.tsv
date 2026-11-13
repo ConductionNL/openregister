@@ -6304,3 +6304,4 @@ filinq	2070	ec8b99e350099a5e01ea1168f36ac85cb1238a20	CONFLICT	worker-15	conflict
 filinq	2071	ac22463428ce23bbe434b37db1c82ef3294dc611	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds mcp-generation-tools, tools check file readability first
 filinq	2072	63ad4767c635daf03d40c49d4adc5ce949c96b5d	CONFLICT	worker-15	conflicts with development + 2068..2071
 filinq	2073	a72f8a207420eabcee5644608b41e538384ab97f	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds intake-paper-archive-digitisation
+filinq	2074	38456639505319b2cf210ecbd471f6b1a8451645	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds leaf-integrations (frontend)
