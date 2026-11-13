@@ -1339,3 +1339,4 @@ cover:dossiq:6ca0231e:8b886c00	PR dossiq#6215: 3 LeaverHandover tests + @uses fi
 cover:buildiq:8ca317f6m6d54:d528dcf0	already done: lib/Dashboard at 80/81 statements from tests/Unit/Dashboard	session-20261112T231640-f6dda86c	2026-11-13T01:12:57Z
 cover:keepiq:d76c2121m70b5:js769fa52c	PR #1715: offline cache + service worker, 29 tests, src/offline lines 30.3->99.5%	session-20261113T004519-b6b86685	2026-11-13T01:12:54Z
 verify:hermiq:1584:ebd71ac7	9 GREEN (1584 additive OpenAPI/versioning, 8 tests-only); 0 new failures	session-20261113T002031-7b3e41b2	2026-11-13T01:13:41Z
+review:openregister:10066:eea5b1bb	APPROVE: tests only, all green; Controller errors inherited from main	session-20261112T234655-0bdbf2be	2026-11-13T01:13:47Z
