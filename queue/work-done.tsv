@@ -3904,3 +3904,4 @@ build:dossiq:task-dependencies-and-the-next-planned-action	already building: bui
 build:dossiq:woo-decision-records-what-was-withheld	already done: built on development (ab763bfeec); open tasks are the live check 4.1 and PR-process items 5.3-5.5	session-20261113T091531-dc489d35	2026-11-13T09:30:21Z
 review:openregister:10118:7a35c2de	APPROVE: tests only; merged-with-main touched dirs, Architecture, Rules, Rbac, Controller, Contract green	session-20261113T074532-3dc49c57	2026-11-13T09:30:39Z
 cover:dossiq:069ee2d6m7275:eb8f684c	already done: lib/Service/Reporting/ at 98.16% (533/543) on development ed104aa6	session-20261113T073916-e9f11dfa	2026-11-13T09:30:42Z
+build:dossiq:woo-case-screens-and-objections	already done: code tasks built on development; open items are 1.1 page section (waits for its board, decision 162), e2e 3.2/6.1, live 6.2 and delivery 7.x, none buildable here; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:30:55Z
