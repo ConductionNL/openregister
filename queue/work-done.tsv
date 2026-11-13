@@ -1201,3 +1201,4 @@ fix:hermiq:1500:33afafc7	merged development in (docblock conflicts), no new fail
 fix:hermiq:1427:e16485c3	conflict resolved (development merged in, mixin kept); new head b307d69e, REVERIFY recorded	session-20261112T234653-57d11a5b	2026-11-13T00:44:02Z
 cover:pipelinq:f67520ecm9d2c:js5cb5a0d3	PR #3607 (-2): ServiceStepsEditor cells 4 tests; bookings dir 74.5->78.4% alone, 84.6->88.5% with existing -1 branch	session-20261112T234653-efce95ba	2026-11-13T00:44:08Z
 fix:hermiq:1496:5ec772b2	conflict resolved (spec-tag-only change on dev side), pushed 2271f36d, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:44:23Z
+fix:hermiq:1527:20970732	conflict resolved, pushed 102d5f61, REVERIFY recorded	session-20261112T234655-c333a6f8	2026-11-13T00:44:35Z
