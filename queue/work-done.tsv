@@ -5721,3 +5721,4 @@ cover:pipelinq:7f9dc8e6m16db:ea81adeb	already done: lib/Service/Zgw/*.php at 99.
 verify:shillinq:2944:5a00747c	2945 GREEN; 2944 skipped (head moved to 1db10ef)	session-20261113T171149-8b9ea523	2026-11-13T17:52:23Z
 build:portaliq:hermiq-ai-tooling	failed: blocked: depends on portaliq-mcp-adoption, which is not built yet (all its tasks open, no lib/Mcp); build that change first	session-20261113T172328-c860ad55	2026-11-13T17:52:34Z
 verify:pipelinq:3736:4884dd28	GREEN 3736; no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:52:35Z
+cover:shillinq:05639debm4eb8:2befd24e	already done: lib/Service/Asset/ measured 562/564 lines (99.6%, target 95) after -1..-3 merged; no PR	session-20261113T172329-5f4feaba	2026-11-13T17:52:48Z
