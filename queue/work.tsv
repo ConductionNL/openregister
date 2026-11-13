@@ -3411,3 +3411,17 @@ cover:shillinq:05639debmd8ee:50cc8442	cover	shillinq	development	quality/test-co
 cover:shillinq:05639debmd8ee:6d382880	cover	shillinq	development	quality/test-coverage-6d382880	lang=php;dirs=lib/Reporting/Schedule/;focus=thin;weight=839;coverage=85.47;target=90.0	2026-11-13T02:20:18Z
 cover:keepiq:c967a31fmb40c:f91e7417	cover	keepiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=685;coverage=89.12;target=90.0	2026-11-13T06:01:55Z
 cover:keepiq:c967a31fmb40c:e372e6ff	cover	keepiq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=599;coverage=89.12;target=90.0	2026-11-13T06:03:21Z
+verify:dossiq:6315:fcd7fc7c	verify	dossiq	development	merge	prs=6315@e779507ecdb87ba4c23d52a8cf9ab5571f2daced,6316@95a280b35ab2c02e3542cd4762648a4a42880312	2026-11-13T07:10:24Z
+verify:integriq:3496:d828e105	verify	integriq	development	merge	prs=3496@8455f1a08ec752fd6d2b644ac5470edc9b5715f0	2026-11-13T07:10:24Z
+merge:dossiq:6306:b381390b	merge	dossiq	development	development	prs=6306@ce1960223700d552c45ee8e7c23723346244e832,6307@f6a3a9d6f4104a88bcd429152ef60f4ce6a93be3,6308@6c7122e7a7cce7a19bc1fab48b9b9521e2f40cd2	2026-11-13T07:10:24Z
+gap:humaniq:19:4c6ff92f	gap	humaniq	development	19	criterion=complexity FAIL (informative, weight 0);row=humaniq (33);fix=Split the function over CCN 30 (`lizard -C 30 -w`). portaliq clears with row 6. No score effect.	2026-11-13T07:10:24Z
+cover:dossiq:f8a113c5m7e79:f0c02922	cover	dossiq	development	quality/test-coverage-f0c02922	lang=php;dirs=lib/Service/External/;focus=thin;weight=2148;coverage=87.99;target=90.0	2026-08-15T04:34:42Z
+cover:dossiq:f8a113c5m7e79:bf05c668	cover	dossiq	development	quality/test-coverage-bf05c668	lang=php;dirs=lib/BulkAction/*.php;focus=thin;weight=1392;coverage=87.99;target=90.0	2026-08-15T04:47:18Z
+cover:integriq:92114ab0m658d:38e80a9f	cover	integriq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=uncovered;weight=318;coverage=88.97;target=90.0	2026-10-14T06:04:01Z
+cover:shillinq:05639debmd8ee:4387d378	cover	shillinq	development	quality/test-coverage-4387d378	lang=php;dirs=lib/Budget/*.php;focus=thin;weight=757;coverage=85.47;target=90.0	2026-11-13T02:26:42Z
+cover:shillinq:05639debmd8ee:84e9293a	cover	shillinq	development	quality/test-coverage-84e9293a	lang=php;dirs=lib/Service/PurchaseOrder/;focus=thin;weight=690;coverage=85.47;target=90.0	2026-11-13T02:27:49Z
+cover:shillinq:05639debmd8ee:dfaef732	cover	shillinq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=617;coverage=85.47;target=90.0	2026-11-13T02:29:02Z
+cover:keepiq:c967a31fmb40c:59826f43	cover	keepiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=492;coverage=89.12;target=90.0	2026-11-13T06:10:09Z
+cover:keepiq:c967a31fmb40c:05630945	cover	keepiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=364;coverage=89.12;target=90.0	2026-11-13T06:12:17Z
+cover:keepiq:c967a31fmb40c:d39f9857	cover	keepiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=269;coverage=89.12;target=90.0	2026-11-13T06:13:52Z
+cover:keepiq:c967a31fmb40c:882bd950	cover	keepiq	development	quality/test-coverage-882bd950	lang=php;dirs=lib/Search/*.php;focus=thin;weight=165;coverage=89.12;target=90.0	2026-11-13T06:15:36Z
