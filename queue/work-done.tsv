@@ -3113,3 +3113,4 @@ cover:hermiq:065f1631mfaac:6f346b68	already done: lib/Sections/*.php at 100% lin
 gap:humaniq:19:4c6ff92f	already done (lizard -C 30: no function over CCN 30 on development 791176d5; max 27)	session-20261113T071640-3ba6da34	2026-11-13T07:17:17Z
 cover:integriq:92114ab0m658d:38e80a9f	already done: lib/Command/*.php at 100% lines (901/901) under the full unit suite on development; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:17:27Z
 verify:dossiq:6315:fcd7fc7c	GREEN #6315, #6316 (tests only, no new failures)	session-20261113T051709-e616bf69	2026-11-13T07:17:29Z
+cover:shillinq:05639debmd8ee:84e9293a	PR #2902: LogPurchaseOrderMailerTest (3 tests); mailer 1->9/9 lines; lib/Service/PurchaseOrder 89.68->96.0%; suite 9400->9403, 1 inherited failure unchanged	session-20261113T044737-f37de8e3	2026-11-13T07:17:32Z
