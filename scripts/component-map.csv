@@ -3954,3 +3954,11 @@ BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
 Service/Lifecycle/GraphMoveCatalogue.php,402,Service,Flows,Flows/Service/Lifecycle/GraphMoveCatalogue.php,0,,Processes
 Service/Lifecycle/LifecycleGraphMovesValidator.php,314,Service,Flows,Flows/Service/Lifecycle/LifecycleGraphMovesValidator.php,0,,Processes
+Service/Import/BaseColumn.php,27,Service,Configuration,Configuration/Service/Import/BaseColumn.php,0,,Configuration
+Service/Import/BaseTable.php,14,Service,Configuration,Configuration/Service/Import/BaseTable.php,0,,Configuration
+Service/Import/BaseSet.php,33,Service,Configuration,Configuration/Service/Import/BaseSet.php,0,,Configuration
+Service/Import/BaseSetReaderInterface.php,8,Service,Configuration,Configuration/Service/Import/BaseSetReaderInterface.php,0,,Configuration
+Service/Import/BaserowBaseReader.php,160,Service,Configuration,Configuration/Service/Import/BaserowBaseReader.php,0,,Configuration
+Service/Import/BaserowCells.php,41,Service,Configuration,Configuration/Service/Import/BaserowCells.php,0,,Configuration
+Service/Import/BaseSetReader.php,29,Service,Configuration,Configuration/Service/Import/BaseSetReader.php,0,,Configuration
+Service/Import/BaseSchemaProposer.php,134,Service,Configuration,Configuration/Service/Import/BaseSchemaProposer.php,0,,Configuration
