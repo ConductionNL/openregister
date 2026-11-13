@@ -3444,3 +3444,4 @@ cover:portaliq:b60f3b81:018cb40a	PR #2381: 12 tests, lib/Contribution/*.php 96.3
 cover:buildiq:70b3e29emc723:b65a63c3	already done: lib/Service/GitHub/ at 98.7% (74/75); no PR	session-20261113T080546-98207a87	2026-11-13T08:24:18Z
 cover:buildiq:70b3e29emc723:bede5e5d	already done: Service/Automation 100% (9/9), Service/Credential 91.2% (52/57); no PR	session-20261113T080546-98207a87	2026-11-13T08:24:31Z
 cover:openregister:7350e3efmea52:913a213e	PR openregister#10113: @uses metadata for 99 flow test classes, risky 312->0; lib/Service/Flow/*.php 91.2->96.8%, 2606 tests green	session-20261113T074532-3dc49c57	2026-11-13T08:24:48Z
+cover:integriq:92114ab0m658d:36cd350f	PR #3510: 16 tests, Ebms2 and XmlDsigLookup to 100%, signer 99.2%; suite 7805->7821, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:25:10Z
