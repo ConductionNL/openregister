@@ -3641,3 +3641,4 @@ cover:pipelinq:7f9dc8e6m916f:197c84b8	already done: lib/Adapter/*.php 100% lines
 verify:launchpad:1179:942cef47	GREEN 1179	session-20261113T081040-5e814df2	2026-11-13T08:54:18Z
 cover:stackiq:9ac19b3am6096:34763eb4	already done: lib/Middleware/*.php is one class with 17 tests over every branch; batches -1..-3 merged; no pcov here to measure the residue; no PR	session-20261113T072715-cf04db4e	2026-11-13T08:54:21Z
 cover:launchpad:fb10c50fm911d:60c2c265	PR #1184: 7 controllers, 43 tests, lib/Controller 92.61% -> 94.81%, suite 3789 -> 3832 green	session-20261113T084525-9d890807	2026-11-13T08:54:21Z
+cover:pipelinq:7f9dc8e6m916f:2cc09f74	no PR: lib/Service/Marketing/Transport/ already 330/335 (98.5%, target 90) with 6 test files; left: extractProviderId object branch, unreachable (body decoded as array), and a mail-app-absent guard	session-20261113T071640-3ba6da34	2026-11-13T08:54:34Z
