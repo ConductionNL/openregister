@@ -1666,3 +1666,7 @@ cover:keepiq:d76c2121m88ca:js769fa52c	already done: unmerged branch quality/test
 cover:integriq:9b0f5894md8cd:f545d745	PR #3457: 17 tests across 5 repair steps; lib/Repair 82.5%->~90%; suite 7113->7130, same 2 inherited errors	session-20261113T011731-be978a55	2026-11-13T02:30:32Z
 cover:launchpad:755175ffm31b6:38e80a9f	already done: lib/Command/*.php at 1354/1357 statements (99.8%) on development	session-20261113T015002-115b579d	2026-11-13T02:31:02Z
 cover:launchpad:755175ffm31b6:js0023cfc7	PR launchpad#1157: 10 mounted dialog tests, src/dialogs/* 68.2% -> 85.8%; vitest 1442->1452 green	session-20261112T221237-836ed3f0	2026-11-13T02:31:06Z
+merge:larpinq:1005:9d190ca5	stale	feeder	2026-11-13T02:30:26Z
+merge:thematiq:1665:df6b35f5	stale	feeder	2026-11-13T02:30:26Z
+merge:thematiq:1665:ee48871d	stale	feeder	2026-11-13T02:30:26Z
+merge:stackiq:1784:11e3c140	stale	feeder	2026-11-13T02:30:26Z
