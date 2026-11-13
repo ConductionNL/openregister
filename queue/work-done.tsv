@@ -3468,4 +3468,5 @@ cover:stackiq:9ac19b3am5ac4:efa2a923	already done: lib/EventListener/*.php at 99
 cover:stackiq:9ac19b3am5ac4:007dc1d0	already done: lib/Service/Cmdb/*.php at 98.1% (1491/1520); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:45Z
 cover:stackiq:9ac19b3am5ac4:05630945	already done: lib/Middleware/Support/ at 91.9% (57/62); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:58Z
 verify:portaliq:2378:35141d5b	4 GREEN (2378,2379,2380,2381); tree 4579 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:32:02Z
+cover:integriq:92114ab0m658d:921a1004	already done: lib/Twig/*.php 100% except MappingRuntime getFileContents/getFiles (11 lines), untestable here: FileService stub lacks getFilesForEntity/formatFile and OC\Files\Node\File is absent	session-20261113T081046-f0858dc4	2026-11-13T08:32:12Z
 verify:buildiq:1529:b9be700a	2 GREEN (1529,1530); 2693 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T08:32:12Z
