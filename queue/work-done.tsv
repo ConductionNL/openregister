@@ -3128,3 +3128,4 @@ cover:shillinq:05639debmd8ee:50cc8442	already done: lib/Util/*.php at 98.06% lin
 cover:integriq:92114ab0m658d:9d3a1784	already done: lib/BackgroundJob/*.php at 93.3% lines (846/907) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:19:48Z
 cover:dossiq:f8a113c5m7e79:3641032a	already done: lib/Service/Pipelinq 521/521 covered	session-20261113T051709-e616bf69	2026-11-13T07:20:03Z
 cover:shillinq:05639debmd8ee:b1a94ae2	already done: lib/Service/Seed/ at 98.5% lines (69/70) on development e0fbc72a after quality/test-coverage-b1a94ae2-1 merged; only the unreachable unreadable-file branch remains	session-20261113T071636-117504ad	2026-11-13T07:20:54Z
+cover:keepiq:c967a31fmb40c:6925f818	already done: lib/SetupCheck/*.php at 100% lines (8/8) on development 8a5d84f3; 3 existing tests assert both outcomes, category and translated texts	session-20261113T071636-117504ad	2026-11-13T07:22:22Z
