@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * fixtures/query-complexity-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\QueryComplexityAnalyzer
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SelectionContext
  */
 class QueryComplexityAnalyzerGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/query-complexity-golden.json';

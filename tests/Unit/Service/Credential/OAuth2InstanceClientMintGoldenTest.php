@@ -45,6 +45,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMint
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMintOptions
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration
  */
 class OAuth2InstanceClientMintGoldenTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every mint call, with all its named arguments. */

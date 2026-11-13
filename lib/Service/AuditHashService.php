@@ -76,7 +76,8 @@ use Psr\Log\LoggerInterface;
  *     brokenAt: int|null,
  *     entriesVerified: int,
  *     skippedNullHashes: int,
- *     purgedTombstones: int
+ *     purgedTombstones: int,
+ *     unkeyedEntries: int
  * }
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
@@ -201,6 +202,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		'entriesVerified' => 0,
 		'skippedNullHashes' => 0,
 		'purgedTombstones' => 0,
+		'unkeyedEntries' => 0,
 	];
 
 	/**
@@ -226,12 +228,14 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @param ILockingProvider $lockingProvider Advisory lock provider serializing seal passes
 	 * @param LoggerInterface $logger Logger for fail-soft lock warnings
 	 * @param IAppConfig $appConfig Records when the seal lock was taken, to detect an abandoned one
+	 * @param AuditChainKey|null $chainKey Keys the chain from its keyed-from row on; without it every link is unkeyed
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ILockingProvider $lockingProvider,
 		private readonly LoggerInterface $logger,
 		private readonly IAppConfig $appConfig,
+		private readonly ?AuditChainKey $chainKey = null,
 	) {
 	}//end __construct()
 
@@ -273,21 +277,87 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	}//end getCanonicalJson()
 
 	/**
-	 * Compute the SHA-256 hash for an audit trail entry.
+	 * Compute the chain link for an audit trail entry.
+	 *
+	 * From the keyed-from row on, the link is an HMAC-SHA256 under the chain
+	 * key, so it cannot be recomputed by someone who can only write the table.
+	 * Rows before it keep their unkeyed SHA-256 link.
 	 *
 	 * @param AuditTrail $entry The audit trail entry to hash
 	 * @param string $previousHash The hash of the previous entry in the chain
 	 *
-	 * @return string The SHA-256 hex digest
+	 * @return string The hex digest
 	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function computeHash(AuditTrail $entry, string $previousHash): string {
 		$canonicalJson = $this->getCanonicalJson(entry: $entry);
 
+		if ($this->isKeyedRow(id: $entry->getId()) === true) {
+			return $this->chainKey->hmac(data: $previousHash . $canonicalJson);
+		}
+
 		return hash('sha256', $previousHash . $canonicalJson);
 	}//end computeHash()
+
+	/**
+	 * Whether a row is chained with the key.
+	 *
+	 * @param int|null $id The row id.
+	 *
+	 * @return bool
+	 */
+	private function isKeyedRow(?int $id): bool {
+		return $this->chainKey?->isKeyed(id: $id) === true;
+	}//end isKeyedRow()
+
+	/**
+	 * Start the keyed chain after the last existing row, once.
+	 *
+	 * The existing rows keep their unkeyed links and are verified first, so the
+	 * verdict on them is on record; the next row links onto the last of them
+	 * under the key. Runs under the seal lock, so no row is sealed in between.
+	 *
+	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
+	 *
+	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function startKeyedChain(): array {
+		if ($this->chainKey === null || $this->chainKey->keyedFrom() !== null) {
+			return ['started' => false, 'keyedFrom' => $this->chainKey?->keyedFrom(), 'unkeyedChain' => null];
+		}
+
+		if ($this->acquireSealLock() === false) {
+			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+		}
+
+		try {
+			$unkeyedChain = $this->verifyChain();
+			$keyedFrom    = ($this->maxAuditId() + 1);
+			$this->chainKey->startAt(id: $keyedFrom);
+
+			return ['started' => true, 'keyedFrom' => $keyedFrom, 'unkeyedChain' => $unkeyedChain];
+		} finally {
+			$this->releaseSealLock();
+		}
+	}//end startKeyedChain()
+
+	/**
+	 * The highest audit row id, or 0 when there are none.
+	 *
+	 * @return int
+	 */
+	private function maxAuditId(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->max('id'))->from('openregister_audit_trails');
+		$result = $qb->executeQuery();
+		$max = $result->fetchOne();
+		$result->closeCursor();
+
+		return (int)$max;
+	}//end maxAuditId()
 
 	/**
 	 * Seal a batch of already-inserted audit-trail rows into the hash chain.
@@ -1314,6 +1384,9 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
@@ -1450,6 +1523,9 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 
 		$walk['previousHash'] = $row['hash'];
 		$walk['entriesVerified']++;
+		if ($this->isKeyedRow(id: (int)$row['id']) === false) {
+			$walk['unkeyedEntries']++;
+		}
 
 		return $walk;
 	}//end verifySealedRow()
@@ -1520,17 +1596,24 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int|null, to: int|null}
 	 * }
 	 */
 	private function buildChainReport(array $walk): array {
 		$brokenAt = $walk['brokenAt'];
+		$boundaryIntact = ($this->chainKey?->boundaryIntact() ?? true);
 		$response = [
-			'valid' => ($brokenAt === null),
+			'valid' => ($brokenAt === null && $boundaryIntact === true),
 			'entriesVerified' => $walk['entriesVerified'],
 			'brokenAt' => $brokenAt,
 			'skippedNullHashes' => $walk['skippedNullHashes'],
 			'purgedTombstones' => $walk['purgedTombstones'],
+			'unkeyedEntries' => $walk['unkeyedEntries'],
+			'keyedFrom' => $this->chainKey?->keyedFrom(),
+			'keyBoundaryIntact' => $boundaryIntact,
 		];
 
 		return self::withRange(response: $response, walk: $walk);

@@ -10487,6 +10487,42 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end countAll()
 
 	/**
+	 * Count the rows with no organisation in every table of a schema that match the filters.
+	 *
+	 * Ignores RBAC and any active organisation context; see MagicSearchHandler::countOrganisationless().
+	 *
+	 * @param array  $filters The filters.
+	 * @param Schema $schema  The schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	public function countOrganisationless(array $filters, Schema $schema): int {
+		$total = 0;
+		foreach ($this->pairsInScope(register: null, schema: $schema) as $pair) {
+			try {
+				$pairRegister = $this->registerMapper->find($pair['registerId'], _multitenancy: false, _rbac: false);
+				$pairSchema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
+			} catch (\Exception $e) {
+				continue;
+			}
+
+			$target = $this->resolveCountTable(register: $pairRegister, schema: $pairSchema);
+			if ($target === null) {
+				continue;
+			}
+
+			$total += $this->searchHandler->countOrganisationless(
+				query: $filters,
+				tableSearch: new TableSearch(table: new RegisterSchema(register: $pairRegister, schema: $pairSchema), tableName: $target->tableName)
+			);
+		}
+
+		return $total;
+	}//end countOrganisationless()
+
+	/**
 	 * The register+schema pairs of every magic table, narrowed to a register and a schema when given.
 	 *
 	 * @param Register|null $register Register filter.

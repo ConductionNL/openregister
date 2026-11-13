@@ -46,6 +46,15 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\ObjectRelation
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Relation\Derivation
+ * @uses \OCA\OpenRegister\Service\Relation\ExternalLink
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectRelationStores
+ * @uses \OCA\OpenRegister\Service\Relation\ParentInheritance
+ * @uses \OCA\OpenRegister\Service\Relation\ProseMention
+ * @uses \OCA\OpenRegister\Service\Relation\ProvenanceLink
+ * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
+ * @uses \OCA\OpenRegister\Service\Relation\RelationRowFields
  */
 class ObjectRelationServiceTest extends TestCase {
 	private ObjectRelationService $service;

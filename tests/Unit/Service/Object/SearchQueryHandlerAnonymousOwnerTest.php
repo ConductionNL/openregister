@@ -39,6 +39,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SearchQueryHandler
+ * @uses \OCA\OpenRegister\Service\Object\DottedParamTree
+ * @uses \OCA\OpenRegister\Service\Object\SearchQueryParts
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses \OCA\OpenRegister\Service\SearchPeriod
  */
 class SearchQueryHandlerAnonymousOwnerTest extends TestCase {
 

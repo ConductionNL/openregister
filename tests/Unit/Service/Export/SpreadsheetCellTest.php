@@ -38,6 +38,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Export\SpreadsheetCell
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportContent
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
+ * @uses \OCA\OpenRegister\Service\Import\ImportErrorsCsv
  */
 class SpreadsheetCellTest extends TestCase {
 

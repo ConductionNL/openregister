@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientSource
  */
 final class NotificationRecipientResolverExpressionTest extends TestCase {
 
