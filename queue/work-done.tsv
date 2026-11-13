@@ -2611,3 +2611,4 @@ merge:buildiq:1506:6f59a194	merge-local over 10 buildiq tasks: merged=21 red=0 f
 merge:buildiq:1508:43c2897e	merge-local over 10 buildiq tasks: merged=21 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:01:14Z
 merge:buildiq:1510:d14b752c	merge-local over 10 buildiq tasks: merged=21 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:01:14Z
 cover:filinq:7a9ef677m5ffe:efa2a923	already above target: lib/EventListener/*.php measures 98.3% (1100/1119) on development; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:01:33Z
+verify:buildiq:1512:599be3bc	GREEN #1512: +51 tests, no new failures (phpunit.xml); unit-config errors are the inherited bootstrap gap fixed by #1513	session-20261113T054517-06ee2c47	2026-11-13T06:01:30Z
