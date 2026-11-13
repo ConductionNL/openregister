@@ -7210,3 +7210,4 @@ verify:learniq:2489:85b194ce	GREEN #2489	session-20261113T202603-6c9ef72f	2026-1
 verify:portaliq:2475:55352372	2475 GREEN	session-20261113T204551-fafe539e	2026-11-13T22:34:01Z
 build:learniq:attendance-warns-before-the-threshold	partial: PR #2493 (T1,T5; T2 change-wiring only)	session-20261113T202611-3b383b96	2026-11-13T22:34:23Z
 build4:openregister:redaction-release-safeguards	partial: PR openregister#10451 - task 3.1 XLSX/PPTX sanitisers (9 tests); 3.2 and sections 1,2,4,5,6,V left	session-20261113T202612-d04bbf77	2026-11-13T22:34:35Z
+review:openregister:10424:6922cd65	APPROVE: additive admin-only settings field + occ command; suites green	session-20261113T204539-805bb895	2026-11-13T22:34:35Z
