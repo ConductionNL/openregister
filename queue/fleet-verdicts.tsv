@@ -5014,3 +5014,4 @@ hermiq	1649	7dcb704c2b9fed86bbe265a0244100f017ea8cf1	GREEN	worker-37	tests only;
 hermiq	1650	1816cb6548725fcf5c97c84a0687156cacb04c8a	GREEN	worker-37	tests only; phpunit-unit 4255 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
 hermiq	1651	6216f8144fe55ee93d994ed2d3dbc8328c20c0c4	GREEN	worker-37	tests only; phpunit-unit 4255 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
 hermiq	1652	ec1e28f066f81739a6e4423f142a74e95cbf9c75	GREEN	worker-37	tests only; phpunit-unit 4255 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
+hermiq	1653	10c6db1787307a53bd1a3bac6c8d88eea5316133	CONFLICT	worker-37	clean against development alone, but conflicts with #1649 in the tree: both add tests/Unit/Service/Engine/ConversationTitleWriterTest.php
