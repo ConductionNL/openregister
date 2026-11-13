@@ -1384,6 +1384,7 @@ cover:launchpad:755175ffm7412:b67d52c3	no PR: lib/Job/*.php already at 48/48 lin
 cover:launchpad:755175ffm7412:1b97f731	PR #1152: 30 tests for 7 Listener classes (cleanup listeners, base, TreeListener); suite 3579->3609 green	session-20261113T011801-de2bfa9d	2026-11-13T01:21:47Z
 cover:launchpad:755175ffm7412:7505aeb4	PR #1153: ActivityRow forRecipient, 7 tests; rest of lib/Activity already covered; pcov unavailable, gaps judged by reading	session-20261113T011737-1f344aca	2026-11-13T01:21:52Z
 cover:launchpad:755175ffm7412:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines (136/136)	session-20261113T004524-55adaa63	2026-11-13T01:21:59Z
+cover:launchpad:755175ffm7412:aae6d66c	already done: lib/Exception/*.php at 100% lines (55/55)	session-20261113T004524-55adaa63	2026-11-13T01:22:22Z
 cover:launchpad:755175ffm7412:882bd950	no PR: lib/Search/*.php already at 202/202 lines (24 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:22:21Z
 cover:integriq:9b0f5894m2367:bae82dd6	already done: lib/WorkflowEngine/*.php 130/131 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:22:17Z
 cover:launchpad:755175ffm7412:d39f9857	already done: lib/Support/FleetAppId.php 46/46 statements (100%) on development; no PR (84% figure likely pcov.directory defaulting to src/)	session-20261113T011729-46bd3dd4	2026-11-13T01:22:23Z
