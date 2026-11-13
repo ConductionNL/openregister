@@ -3091,3 +3091,4 @@ cover:integriq:92114ab0m658d:60c2c265	PRs #3495 (8 controllers, 90 tests) and #3
 verify:dossiq:6306:b381390b	GREEN 6306, 6307, 6308 (tests-only; 0 new phpunit failures; vitest 1 inherited failure)	session-20261113T053904-36dcee67	2026-11-13T07:09:57Z
 cover:dossiq:f8a113c5m7e79:28cccfd9	already done: pcov on development (today) shows lib/Repair/Support 98.9% lines (172/174), target 90	session-20261113T053904-36dcee67	2026-11-13T07:10:24Z
 cover:dossiq:f8a113c5m7e79:67b69054	already done: lib/Service/Conversation 374/375 lines under strict metadata (PRs -1/-2 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:11:25Z
+verify:shillinq:2897:26298870	3/3 GREEN (2897, 2898, 2899): clean merge, lint ok, phpunit +37 tests, 1 inherited failure, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:11:49Z
