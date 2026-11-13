@@ -4839,3 +4839,4 @@ dossiq	6231	b9869b27feb5d6eab0c4e34c659cb010cf1aeab7	GREEN	worker-08	tree of 9: 
 dossiq	6232	15377715da32addc24005d6640a64098780a84e7	GREEN	worker-08	tree of 9: tests 14126 (baseline 13919, 19 inherited failures), new failures 0; tests-only
 dossiq	6233	1aa6aeb7857de0d7ff17355feafa6a05049975ec	GREEN	worker-08	tree of 9: tests 14126 (baseline 13919, 19 inherited failures), new failures 0; tests-only
 dossiq	6234	59b9bb95dabfc15040e5d64b420a2fd51783a310	GREEN	worker-08	tree of 9: tests 14126 (baseline 13919, 19 inherited failures), new failures 0; tests-only
+integriq	3456	1c0b1bb34f90a40f62bf5ab9b838decdb629090d	GREEN	worker-37	unit 7161 on tree (baseline 7113, 2 inherited network errors), 0 new failures; tests only
