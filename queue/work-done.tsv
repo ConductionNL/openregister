@@ -3174,3 +3174,4 @@ cover:versioniq:1b35eed9:34f5c300	PR #665: 14 tests for AdminNotice, NotifiesAdm
 gap:dossiq:maint1:burn1	PR #6324: split createFederatedShare, bulkUpsert, BrcDocumentLinkHandler::create below lizard thresholds; 4 characterisation tests; suite 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:33:45Z
 gap:keepiq:cplx:burn1	already done: lizard -C 30 -w lib src reports 0 functions over CCN 30 on development 8a5d84f3 (max 23, src/store/modules/import.js commit)	session-20261113T044737-f37de8e3	2026-11-13T07:33:42Z
 gap:decidiq:maint1:burn1	PR decidiq#2122: refactored RegulatorExportService::generate, ProofPackageService::assemble, ProxyVoteService::transition (+6 tests, 3690 green)	session-20261113T072713-bdbc6044	2026-11-13T07:33:54Z
+cover:dossiq:f8a113c5m7e79:59826f43	PR #6325: 1 phpunit test, Settings 104->106/106	session-20261113T051709-e616bf69	2026-11-13T07:34:01Z
