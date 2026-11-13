@@ -5053,4 +5053,5 @@ review:openregister:10192:d6b98a8e	APPROVE: comment-only @spec retarget, suites 
 review:openregister:10199:95de0f89	APPROVE: bulk quota per change 4.1; no new failures vs main	session-20261113T124805-1586d4f8	2026-11-13T12:59:15Z
 review:openregister:10186:7bd57cef	APPROVE: GraphQLRequestGuardTest, 6 tests pass, behaviour-faithful, mutation-checked	session-20261113T091533-03405ea6	2026-11-13T13:00:10Z
 build:openregister:record-star-follow-and-unread-on-screen	partial: PR openregister#10219, task 1.2 (manage in @self.can) with tests; 1.1 2.x 3.x frontend, newman and docs left	session-20261113T104531-16da055e	2026-11-13T13:00:50Z
+review:openregister:10183:73088b48	APPROVE: nested required message names full path (spec-asked), all suites green	session-20261113T074535-8a2067c2	2026-11-13T13:01:09Z
 review:openregister:10184:6960ab19	APPROVE: tests only, green	session-20261113T081048-4978ac57	2026-11-13T13:01:21Z
