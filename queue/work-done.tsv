@@ -3743,3 +3743,4 @@ fix:planninq:1131:4b8eae2e	failed: permission (close refused); PR obsolete: deve
 cover:shillinq:05639debmd8ee:6f346b68	already done: batch -1 merged; lib/Sections/*.php at 5/5 statements (100%); no PR	session-20261113T080556-d189f150	2026-11-13T09:10:12Z
 cover:dossiq:069ee2d6m7e79:js5794e9fc	PR #6348: 18 vitest tests (SearchIndexFacts, SubstitutionSettings, ZgwMappingSettings), suite 6445->6463, 1 inherited failure unchanged	session-20261113T080551-294c2aa6	2026-11-13T09:10:17Z
 cover:buildiq:70b3e29embf07:568ec52a	already done: Lifecycle/*.php 84/85 lines (only a non-array jsonSerialize branch left), covered by quality/test-coverage-568ec52a-1 already on development	session-20261113T084521-fd8a31c7	2026-11-13T09:10:16Z
+verify:versioniq:674:e19b46e3	GREEN 674: 1356 tests, 0 new failures; docs-only	session-20261113T080552-2a8a5ff1	2026-11-13T09:10:34Z
