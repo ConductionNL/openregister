@@ -998,3 +998,4 @@ cover:integriq:9b0f5894m2367:jsb89b25f9	PR #3421: 9 tests for SafeXml (dir alrea
 cover:integriq:9b0f5894m2367:jsd91b4ca5	PR #3422: 8 PHPUnit tests (dir is PHP) for CtiSourceResolver and MappedPayload, no new failures	session-20261112T224529-41d77a96	2026-11-12T23:59:27Z
 cover:integriq:9b0f5894m2367:jsa4a15698	PR #3423: PdokHttpGet direct tests (PHP; dir has no JS), 5 tests; suite 7111->7116, 3 inherited, 0 new	session-20261112T231639-4c562de9	2026-11-12T23:59:49Z
 cover:integriq:9b0f5894m2367:js36cd350f	PR #3424: PkiOverheidCredentialResolver 23->36/37, Digikoppeling 93.3->97.5% (7 tests); 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:00:05Z
+cover:filinq:8ecceb86:6079ce8f	PR #1978: 5 Signing/Wizard classes, 30 tests; suite 5318 -> 5348 OK	session-20261112T234653-57d11a5b	2026-11-13T00:00:27Z
