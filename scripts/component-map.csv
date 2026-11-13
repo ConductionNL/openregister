@@ -4105,3 +4105,5 @@ Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDat
 Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
 Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
 Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
+Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
+Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications

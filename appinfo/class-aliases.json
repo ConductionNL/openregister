@@ -391,6 +391,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\NotificationRecipientAnswerController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationRecipientAnswerController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController": {
 			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController",
 			"eager": false,

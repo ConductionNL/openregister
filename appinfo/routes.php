@@ -1489,6 +1489,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Notification Preferences — override-only, per-(schema, notification) user preferences.
         ['name' => 'notificationPreferences#index',  'url' => '/api/notification-preferences', 'verb' => 'GET'],
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
+        // What one recipient gets for one kind, and which layer decided it: an
+        // administrator's read of another person's preferences (REQ-NKF-003).
+        ['name' => 'notificationRecipientAnswer#show', 'url' => '/api/notification-preferences/recipient-answer', 'verb' => 'GET'],
         // Notification Templates — the shipped text per platform event, the
         // events that have none, and an administrator's edit of either.
         ['name' => 'notificationTemplates#index',  'url' => '/api/notification-templates', 'verb' => 'GET'],
