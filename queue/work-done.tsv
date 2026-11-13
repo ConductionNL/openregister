@@ -2495,3 +2495,4 @@ merge:dossiq:6187:e9049bcb	stale	feeder	2026-11-13T05:40:13Z
 cover:shillinq:05639deb:05630945	PR shillinq#2868: 14 tests, StandardProtocolPaths 10/10; ApiPathAliases 3 lines unreachable (empty RENAMED)	session-20261113T051703-1b54bfba	2026-11-13T05:41:35Z
 review:openregister:10101:d928d27c	APPROVE	session-20261113T051707-6c971ec6	2026-11-13T05:41:45Z
 cover:buildiq:9930949bm5861:f545d745	PR #1511: 49 tests for 7 Repair classes (4 to 100%, MigrateToVersionedModel 92%); suite 2444->2493, same 1 inherited failure	session-20261113T051704-8c56f5b7	2026-11-13T05:42:07Z
+cover:openregister:7350e3efmaea4:js33227456	PR #10104: 31 jest tests (ImportConfiguration, JoinOrganisation); modals lines 86.8% -> 90.3%	session-20261113T051705-4f5ad12a	2026-11-13T05:42:23Z
