@@ -1575,3 +1575,4 @@ cover:integriq:9b0f5894md8cd:jsaa0cdbe3	already done: open branches quality/test
 cover:integriq:9b0f5894md8cd:js0023cfc7	PR #3455: 28 vitest tests for RegistryLookup/ImportPreview/ExportConfiguration dialog failure paths; vitest 1392 -> 1420 passed; src/dialogs 84.15% lines (EditMappingRule/DsoActivity left to open -1 branch)	session-20261113T015003-d56b074c	2026-11-13T02:13:04Z
 cover:shillinq:801aab65:d528dcf0	PR #2837: Dashboard 147/158 -> 156/158 statements, +4 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:13:31Z
 cover:pipelinq:f67520ecm8c58:jsd48eb217	already done: src/store/modules at 337/385 (87.5%) on development, above target; branch -1 (settings/xwiki specs) still pending	session-20261112T231640-f6dda86c	2026-11-13T02:13:28Z
+cover:shillinq:801aab65:4387d378	PR #2838: 13 tests for lib/Budget, BudgetEditingService lines 97.86->99.57%	session-20261113T015005-da194c88	2026-11-13T02:14:04Z
