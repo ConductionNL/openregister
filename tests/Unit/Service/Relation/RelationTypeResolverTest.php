@@ -30,6 +30,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
+ * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
  */
 class RelationTypeResolverTest extends TestCase {
 	private RelationTypeResolver $resolver;
