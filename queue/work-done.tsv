@@ -6605,3 +6605,4 @@ cover:shillinq:05639debm7b6b:87821f2f	already covered: lib/Service/Vat - every V
 build:filinq:office-template-authoring	partial: PR filinq#2105 (tasks 1.1, 2.1, 2.2; 31 tests; suite 6443->6474 OK)	session-20261113T192704-f298034f	2026-11-13T20:13:42Z
 cover:pipelinq:7f9dc8e6m8ce9:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php holds only interfaces, 0 executable statements; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:14:17Z
 review:openregister:10319:195e1747	APPROVE #10319	session-20261113T185328-da819141	2026-11-13T20:14:17Z
+fix:filinq:2059:876e3d8e	failed: nothing to fix on the branch; it already contains development and merges cleanly. It conflicts only with open #2053 (both append to l10n/en|nl .json/.js and the two register JSONs); verify #2059 before #2053, or merge development into it once #2053 lands	session-20261113T171213-10021a1d	2026-11-13T20:14:37Z
