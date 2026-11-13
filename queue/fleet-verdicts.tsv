@@ -5251,3 +5251,4 @@ integriq	3490	781879a6dc178141162f484a36769a0d1b709c53	GREEN	worker-34	phpunit 7
 shillinq	2883	e8b6e9c54755adf252f3fa0ed3ae2a57a9454ed6	GREEN	worker-38	phpunit 9241 on the 3-PR tree, 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only, no deletions
 shillinq	2884	8101864c45677768845f33b64bbed9e13da1aed5	GREEN	worker-38	phpunit 9241 on the 3-PR tree, 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only, no deletions
 shillinq	2885	2e0febdaddc614b633124ada0da5685f0415b115	GREEN	worker-38	phpunit 9241 on the 3-PR tree, 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only, no deletions
+pipelinq	3687	9ccf26a2a05c80578b3f91b0c601630e96b36ec7	GREEN	worker-47	tests-only (+5 vitest specs, no PHP); vitest 3893->3962 tests, baseline 0 failures, 0 new; eslint clean
