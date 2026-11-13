@@ -2476,3 +2476,4 @@ cover:hermiq:065f1631m312d:34763eb4	already done: lib/Middleware/*.php 10/10 lin
 cover:hermiq:065f1631m312d:d81d2d49	already done: lib/Service/Speech/ 57/57 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:37Z
 cover:hermiq:065f1631m312d:28cccfd9	already done: lib/Repair/Support/ 52/53 lines (98.1%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:43Z
 cover:dossiq:f8a113c5mac88:6f346b68	already done: lib/Sections/*.php 5/5 lines (100.0%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:49Z
+cover:integriq:92114ab0m1534:dffb5af6	PR #3481: 11 tests (DirectorySource, ScimProvisioningService); lib/Directory 83.17->91.33%, suite 7175->7186 (2 inherited errors)	session-20261113T041646-2c1d764f	2026-11-13T05:39:56Z
