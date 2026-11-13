@@ -2833,3 +2833,4 @@ cover:filinq:7a9ef677m5ffe:45998467	already done: lib/Service/Classification/ at
 verify:learniq:2437:d4f62977	GREEN 2437 (JS tests only; 1338/1339, 1 inherited)	session-20261113T051704-8c56f5b7	2026-11-13T06:32:48Z
 cover:filinq:7a9ef677m5ffe:ec6c2450	already done: lib/Service/Extraction/ at 96.25% (154/160, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:52Z
 cover:stackiq:df113dffm5ac4:js089660b5	already done: src/dialogs/ (incl. SuiteWizard) at 99.23% statements (257/259) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:32:58Z
+cover:shillinq:05639debmd8ee:dc834159	PR #2892: 28 tests over 10 classes (5 adapters, 5 results); suite 9235, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:33:01Z
