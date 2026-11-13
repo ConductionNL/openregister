@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Controller\CredentialOrganisationController
  *
+ * @uses \OCA\OpenRegister\Db\Organisation
+ *
  * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
  */
 class CredentialOrganisationControllerTest extends TestCase {
