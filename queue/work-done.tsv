@@ -1740,3 +1740,4 @@ cover:dossiq:6ca0231ema7d4:b4753aef	PR #6251: +8 tests PdokLocatieserverService;
 cover:dossiq:6ca0231ema7d4:00494271	PR #6252: 16 tests for DocumentSeries edge cases, no new failures	session-20261113T024656-2f332446	2026-11-13T02:56:44Z
 cover:dossiq:6ca0231ema7d4:b12f5203	PR dossiq#6253: 12 tests for RecordImportStore; other Import classes already tested; 19 inherited failures unchanged	session-20261113T024654-6600dc41	2026-11-13T02:57:06Z
 cover:dossiq:6ca0231ema7d4:aae6d66c	already covered: every lib/Exception class has behavioural tests (tests/Unit/Exception); no PR	session-20261113T024654-6600dc41	2026-11-13T02:57:52Z
+cover:dossiq:6ca0231ema7d4:2aa8dc21	PR #6254: 3 tests, lib/Service/Actions 198/202 -> 201/202 stmts	session-20261113T024653-d22c13a3	2026-11-13T02:58:18Z
