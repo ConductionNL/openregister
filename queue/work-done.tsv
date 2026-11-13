@@ -6809,3 +6809,4 @@ build:buildiq:built-app-connections-page	failed: spec does not match the data: m
 verify:hermiq:1714:7936aebe	GREEN 1714: 4591 tests, 0 new failures, vitest 1309 passed	session-20261113T205332-17038cbf	2026-11-13T20:57:10Z
 build:integriq:dso-activity-mapping-table	failed: nothing buildable; all code tasks are ticked on development, the open ones are 1.1 (needs a real STAM verzoekbericht from DSO pre-production, which 1.2 waits on), 4.3 hydra gate run and 6.2 check runs	session-20261113T202603-6c9ef72f	2026-11-13T20:57:35Z
 build:opencatalogi:data-file-import-failure-alert	failed: blocked on depends_on open-data-table-query-and-dictionary, not on development (no publishedTable schema or PublishedTableService, no build branch); build that change first	session-20261113T204539-e70be1ed	2026-11-13T20:57:38Z
+review:openregister:10322:26173695	APPROVE: tests only, all suites green merged with main	session-20261113T202612-d930c905	2026-11-13T20:57:56Z
