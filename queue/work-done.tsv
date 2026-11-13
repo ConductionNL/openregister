@@ -6420,3 +6420,4 @@ gap:opencatalogi:19:4c6ff92f	already done: lizard -C 30 -w lib src reports no fu
 cover:integriq:92114ab0m0593:2b49da71	already done: lib/Adapters/Slo/*.php measured ~99% (only 7 defensive-guard lines uncovered), above the 95 target	session-20261113T171141-a3907367	2026-11-13T19:47:42Z
 cover:portaliq:b60f3b81m4ccb:e372e6ff	already done: lib/Event 113/114 statements (99%) on development	session-20261113T175332-5effc865	2026-11-13T19:47:37Z
 gap:keepiq:19:4c6ff92f	already done: lizard -C 30 -w finds no function over CCN 30 in keepiq development	session-20261113T172328-c860ad55	2026-11-13T19:47:47Z
+cover:portaliq:b60f3b81m4ccb:5bae1f47	PR #2458: 8 tests over 3 Cms classes; suite 4914->4922, no failures	session-20261113T182349-6568f680	2026-11-13T19:47:59Z
