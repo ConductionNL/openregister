@@ -96,7 +96,7 @@ components:
       - ".*/lib/Service/Vocabulary/[^/]*"
   - name: Processes
     include:
-      - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RuleRunRetentionJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"
+      - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RuleRunRetentionJob|ScheduledMessageSweepJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"
       - ".*/lib/BulkAction/(AbstractPropertyWriteAction|ApplyRuleAction|AssignAction|BulkActionInterface|BulkActionResult|BulkObjectAccess|BulkStep|RestorePriorValuesAction|ReversibleBulkActionInterface|RunActionAction|RunActionActionInterface|SetPropertiesAction)[.]php"
       - ".*/lib/Command/(AdoptionRun|RematerialiseCalculationsCommand|RematerialiseRun)[.]php"
       - ".*/lib/Controller/(AutomationRecordsController|BulkJobsController|CalculationsController|CalendarEventsController|CalendarFeedController|CaseController|EntityRelationsController|FlowController|FlowDryRunController|FlowLinksController|FlowNodeRunController|FlowPrincipalController|FlowRunController|FlowRunMigrationController|FlowTestRunController|FlowTimerDiagnosticController|FormsController|GdprEntitiesController|NamesController|ObjectActionsController|ObjectFavouriteController|OrganisationHaltController|PartyController|PersonLookupController|PortalTaskController|RulesController|TaskController|TaskEventsController|TaskNotesController|TasksController|TransitionController|TranslationController|WorkingCalendarController)[.]php"
@@ -378,6 +378,7 @@ components:
     include:
       - ".*/lib/AppInfo/[^/]*"
       - ".*/lib/Capabilities/[^/]*"
+      - ".*/lib/Collaboration/[^/]*"
       - ".*/lib/Controller/(AgentsController|ChatController|ChatHealthController|ChatStreamController|ConversationController)[.]php"
       - ".*/lib/Dashboard/[^/]*"
       - ".*/lib/Db/(Feedback|FeedbackMapper|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php"
