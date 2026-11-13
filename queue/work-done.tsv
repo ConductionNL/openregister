@@ -3155,3 +3155,4 @@ gap:filinq:spdx:burn1	PR #2043: SPDX headers added to 6 files (2 lib, 4 tests)	s
 cover:shillinq:05639debmd8ee:ba4eff5a	PR #2904: Peppol log adapter behaviour, 6 tests, suite 9460->9466 (inherited 1F unchanged)	session-20261113T064518-860c039d	2026-11-13T07:29:14Z
 fix:shillinq:2900:0a5d50ed	conflict resolved, pushed 451b1bee176ae59c087d57bd16267d8693e30f0b, REVERIFY recorded	session-20261113T071633-17de823f	2026-11-13T07:29:16Z
 review:openregister:10015:fb43e991	APPROVE: tests-only metadata, suites match main	session-20261113T071631-5a3cc070	2026-11-13T07:29:22Z
+cover:dossiq:f8a113c5m7e79:390adfb9	already done: lib/*.php 49/51 (96%, target 95); the 2 lines are a catch unreachable because FleetAppId::resolve swallows throws, behaviour already pinned by testAnAppManagerThatThrowsReadsTheAppAsMissing	session-20261113T051709-e616bf69	2026-11-13T07:29:49Z
