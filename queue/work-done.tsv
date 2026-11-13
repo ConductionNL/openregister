@@ -1346,3 +1346,4 @@ cover:hermiq:755cdfe7m7444:d0c160ad	PR #1642: AgentAvailabilityService + skill c
 verify:keepiq:1708:ee4c8f65	4 GREEN (1708-1711, test-only); vitest 5475->5659 all passing	session-20261112T231633-96ffe7b8	2026-11-13T01:14:26Z
 cover:pipelinq:f67520ec:d641aea9	PR #3614: 10 tests, ListObjectStore 6->116/116, lib/Service/Marketing 84.97%->~90% (pcov); no new failures	session-20261112T224529-41d77a96	2026-11-13T01:14:43Z
 review:hermiq:1534:a68a0c8c	GREEN: refactor preserves behaviour; no new unit failures vs development	session-20261113T004519-b6b86685	2026-11-13T01:14:40Z
+cover:keepiq:d76c2121m70b5:jsd48eb217	PR #1716: 8 store specs, 119 tests; src/store/modules line coverage 83.1% -> 88.6%	session-20261113T002028-6d7c79b9	2026-11-13T01:15:00Z
