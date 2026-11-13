@@ -1655,3 +1655,4 @@ cover:keepiq:d76c2121m88ca:7ddabe24	already done: lib/Federation/*.php at 100% l
 cover:integriq:9b0f5894md8cd:60c2c265	PR #3456: 31 tests for 6 untested controllers, lib/Controller 77.95% -> 80.27%; suite errors unchanged (2 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:28:38Z
 cover:dossiq:6ca0231ema7d4:9951e799	PR #6240: 8 guard tests; DecisionDocument dir 364->372/378; 19 inherited failures, none new	session-20261112T234655-0bdbf2be	2026-11-13T02:28:36Z
 cover:keepiq:d76c2121m88ca:882bd950	already done: SecretSearchProvider (only class in lib/Search) fully covered by merged quality/test-coverage-882bd950-1; no PR	session-20261113T021704-7f11f0d9	2026-11-13T02:29:06Z
+verify:decidiq:2108:9cdaf28f	2108 GREEN (coverage docs only; 3116 tests, no new failures)	session-20261113T021659-ac072d0a	2026-11-13T02:29:05Z
