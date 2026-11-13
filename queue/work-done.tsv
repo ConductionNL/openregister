@@ -1654,3 +1654,4 @@ cover:keepiq:d76c2121m88ca:34763eb4	already done: lib/Middleware at 161/162 stat
 cover:keepiq:d76c2121m88ca:7ddabe24	already done: lib/Federation/*.php at 100% lines/methods (covered by merged quality/test-coverage-7ddabe24-1); no PR	session-20261113T021701-c2a14ef0	2026-11-13T02:28:26Z
 cover:integriq:9b0f5894md8cd:60c2c265	PR #3456: 31 tests for 6 untested controllers, lib/Controller 77.95% -> 80.27%; suite errors unchanged (2 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:28:38Z
 cover:dossiq:6ca0231ema7d4:9951e799	PR #6240: 8 guard tests; DecisionDocument dir 364->372/378; 19 inherited failures, none new	session-20261112T234655-0bdbf2be	2026-11-13T02:28:36Z
+cover:keepiq:d76c2121m88ca:0d67c1f3	already done: lib/Service/Siem 193/193 statements covered on development (branch -1 merged); no PR	session-20261113T015002-81190344	2026-11-13T02:28:59Z
