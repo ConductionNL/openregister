@@ -6338,3 +6338,4 @@ build3:openregister:notification-kinds-an-administrator-forces	PR #10309: task 3
 cover:buildiq:70b3e29em7beb:be0dcca9	already covered: BuildiqToolProvider dispatch to all 8 handlers, unknown-tool and catalogue tested on development (-1 merged); no PR	session-20261113T190954-c894781f	2026-11-13T19:29:11Z
 verify:hermiq:1705:3a5448de	1705 GREEN, 1706 GREEN; 0 new failures	session-20261113T192700-f21ebd18	2026-11-13T19:29:11Z
 cover:buildiq:70b3e29em7beb:f91e7417	already done: lib/Service/Connection at 171/172 stmts covered (earlier -1/-2 PRs merged); only miss is a const-dependent branch (ConnectionReporter:254) unreachable without prod change; no PR	session-20261113T192701-f224cbcf	2026-11-13T19:29:46Z
+cover:buildiq:70b3e29em7beb:05630945	already covered: ApiPathAliases/StandardProtocolPaths have data-driven tests for every reachable branch (rename/no-successor loops iterate empty constants); no PR	session-20261113T190954-c894781f	2026-11-13T19:29:43Z
