@@ -2168,3 +2168,4 @@ cover:integriq:92114ab0m1534:2b49da71	already done: lib/Adapters/Slo 736/743 sta
 cover:pipelinq:f67520ecmc4ba:db675bd6	already covered: each of the 4 lib/Activity/Setting classes has a dedicated test plus ActivitySettingsGoldenTest; no PR	session-20261113T024654-6600dc41	2026-11-13T04:35:24Z
 cover:pipelinq:f67520ecmc4ba:e19add4c	PR #3653: 14 tests for consent value objects; suite 6223->6237, same 1 inherited failure	session-20261113T041649-bbede304	2026-11-13T04:35:37Z
 cover:pipelinq:f67520ecmc4ba:js7de78384	PR #3654: manifest fragment contract spec (8 tests); src/manifest.d 28% -> 100%	session-20261113T031700-211f0599	2026-11-13T04:35:46Z
+cover:pipelinq:f67520ecmc4ba:0a8f160f	already done: lib/Service/Sla at 212/212 stmts under 81 existing tests; no PR	session-20261113T024653-d22c13a3	2026-11-13T04:35:47Z
