@@ -2750,3 +2750,4 @@ verify:pipelinq:3681:acf7a728	GREEN 3681-3685 (tests only; no new PHP failures; 
 cover:learniq:e6498dddmf689:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:21:16Z
 verify:shillinq:2881:51a8663e	2881 GREEN, 2882 GREEN (tests-only, vitest 1393 pass)	session-20261113T054516-5d7b6bc4	2026-11-13T06:21:18Z
 cover:pipelinq:7f9dc8e6m1e6e:a215617b	already done: lib/Integration/*.php 302/302 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:21:38Z
+cover:pipelinq:7f9dc8e6m1e6e:2cc09f74	already done: lib/Service/Marketing/Transport/ 330/335 lines (98.5%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:21:43Z
