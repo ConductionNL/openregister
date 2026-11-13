@@ -307,15 +307,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	private array $folderAccessRevalidationCache = [];
 
 	/**
-	 * Root folder name for all OpenRegister files.
-	 *
-	 * @var string
-	 * @readonly
-	 * @psalm-readonly
-	 */
-	private const ROOT_FOLDER = 'Open Registers';
-
-	/**
 	 * Application group name.
 	 *
 	 * @var string

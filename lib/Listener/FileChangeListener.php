@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\File\DocumentStore;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\BackgroundJob\IJobList;
@@ -100,6 +101,7 @@ class FileChangeListener implements IEventListener {
 	 * @param AppSettingsInterface $settingsService Settings service
 	 * @param IJobList $jobList Job list for queuing background jobs
 	 * @param LoggerInterface $logger Logger
+	 * @param DocumentStore|null $documentStore The document store root, for the managed-file check
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -107,6 +109,7 @@ class FileChangeListener implements IEventListener {
 		private readonly AppSettingsInterface $settingsService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly ?DocumentStore $documentStore = null,
 	) {
 	}//end __construct()
 
@@ -224,7 +227,7 @@ class FileChangeListener implements IEventListener {
 	private function isInExtractionScope(string $filePath): bool {
 		// Checked before the settings load so most files (e.g. skeleton files) cost no DB read.
 		$isOpenRegisterFile = strpos($filePath, 'OpenRegister/files') !== false
-			|| strpos($filePath, '/Open Registers/') !== false;
+			|| strpos($filePath, '/' . $this->documentRoot() . '/') !== false;
 
 		$this->loadExtractionSettings();
 		$extractionScope = self::$cachedExtractScope;
@@ -235,6 +238,21 @@ class FileChangeListener implements IEventListener {
 
 		return $extractionScope !== 'objects' || $isOpenRegisterFile === true;
 	}//end isInExtractionScope()
+
+	/**
+	 * The document store root, the default for a listener built without the store.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		if ($this->documentStore === null) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+
+		return $this->documentStore->root();
+	}//end documentRoot()
 
 	/**
 	 * Load the extraction scope and mode once per request.
