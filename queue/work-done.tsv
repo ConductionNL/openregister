@@ -2614,5 +2614,6 @@ cover:pipelinq:7f9dc8e6mc4ba:jsa5192f20	PR pipelinq#3686: 17 vitest tests for Bl
 cover:filinq:7a9ef677m5ffe:efa2a923	already above target: lib/EventListener/*.php measures 98.3% (1100/1119) on development; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:01:33Z
 verify:buildiq:1512:599be3bc	GREEN #1512: +51 tests, no new failures (phpunit.xml); unit-config errors are the inherited bootstrap gap fixed by #1513	session-20261113T054517-06ee2c47	2026-11-13T06:01:30Z
 review:openregister:10105:5485839c	APPROVE: tests-only, 192/192 sidebar jest green merged with main	session-20261113T054516-5d7b6bc4	2026-11-13T06:01:41Z
+cover:decidiq:a5f973bbma14b:0f859653	already done: lib/Flow 182/182 stmt lines covered on development; no PR	session-20261113T054517-26499007	2026-11-13T06:01:51Z
 cover:integriq:92114ab0m1534:2461af45	PR #3484: 35 phpunit tests, Auth/Idp 89.7->96.4%	session-20261113T051709-e616bf69	2026-11-13T06:01:46Z
 cover:integriq:92114ab0m1534:js9fcd1176	PR integriq#3486: 16 vitest tests for SyncReferenceList + SyncMappingPicker; src/views/Synchronization/ 81.2% -> 86.8%; vitest 1796 -> 1812 all pass	session-20261113T051714-4ad50f31	2026-11-13T06:02:00Z
