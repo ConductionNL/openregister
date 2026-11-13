@@ -1083,3 +1083,23 @@ buildiq	1513	7ba380d85a93fb298cbec60b3347950757218772	MERGED	merge-local	GATE OK
 buildiq	1514	f6e59a65812a030b9d7779f48cbc1fdab5865e8c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2098	a2a5fd1b727c733952af0290dec7a68881de0dda	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2116	20f29e9d3adf765f45e2465d96ae9dded49cb334	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	RED	merge-local	GATE RED checker floor: secretscanning: pass -> fail
+dossiq	6204	b8a990511615dce52fe32fc16502a9daf25ef26f	SKIP	merge-local	GATE UNMEASURED b8a9905116 does not merge cleanly onto development
+dossiq	6207	0eee3b00378eaa3e779d4052c0eccb09b72ed4c9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6208	4b8f9f9811961af57e9f4f1291b22b9dd35b3612	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6209	c1b9d4e9598562c920faa7296c3ac8ae4c9e934f	SKIP	merge-local	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+dossiq	6210	3842924d1cf271f4cabeb773c520fabf23a94baf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6211	8e9885ed3a8a1cb18f111cba18518e1c18985cf9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6212	2f8b9a893cca9cb33836ce2e1e1f35728c058b6b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6213	22fe37df84d3d0798de48d1744e04dfdae510b2b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6214	bdd4a587dee0903c35c9a7c611c9df3ce2a7339b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6215	492b1642ef85e3e8d421cfbf2e8f8bbbdd89c4ce	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+dossiq	6216	1449e11a150e6ba8b89f37d7e2da66fd8f6388da	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+dossiq	6217	c4980ae16ff12b5f1e8e365dccee9906e0903e6d	SKIP	merge-local	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+dossiq	6218	0691d7457ef4d4200bb461f2aa3d8635afd70122	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6219	cff9d24e05aa8f496be68bf4c37ef5a303d6bfd1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6220	8eed34076b39eb17a13d1ce5e9cfa6882839dec1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6221	b648c6bd54f8ab14140ac98633407f0c1a725f25	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6222	54c8981cec22a6bc6b0d2d45d01eab76a8872fb6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6223	0798d7432a600bb3d6275079871620f00c2fb711	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6225	5a667dcafa8a5873b32617a79fc1c5882a8d6fc3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
