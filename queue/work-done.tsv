@@ -4706,3 +4706,4 @@ merge:portaliq:2389:1cfdf9fe	merge-local over 7 portaliq tasks: merged=21 red=1 
 merge:portaliq:2388:d9b41f2e	merge-local over 7 portaliq tasks: merged=21 red=1 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:02:41Z
 cover:keepiq:c967a31fm1bed:59826f43	already done: lib/Settings/*.php at 100% on development 4932b8a9; no PR	session-20261113T074533-3e2a2da6	2026-11-13T12:02:55Z
 build:openregister:calendar-time-zone	partial: PR #10154 (2.1 isWorkingDay in calendar zone, 2.2 SlaCalculator walks local midnights; 7 tests, golden re-recorded); left 1.1 timeZone field, 1.2 TimeZoneFormat, 1.3 migration, 2.3 describe	session-20261113T104529-f43c7561	2026-11-13T12:03:07Z
+build:openregister:capability-rows-verified-b	partial: PR #10155 — GitLab publish backend + tests, LLM provider test; left: GitLab UI target (needs 37-locale strings), Playwright flow test	session-20261113T114524-3c44fc56	2026-11-13T12:03:22Z
