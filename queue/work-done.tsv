@@ -7132,3 +7132,4 @@ review:openregister:10404:690dd38d	APPROVE: frontend per spec; full jest 8329 gr
 review:openregister:10397:ad134761	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:19:09Z
 build4:openregister:virtual-schema-semantic-providers	already built on main; PR #10425 ticks 1.x-3.x and 4.4 (tests + phpstan/psalm green); 4.1-4.3 live checks left	session-20261113T214350-9762e143	2026-11-13T22:19:45Z
 build4:openregister:object-write-sub-500ms	partial: PR #10426 builds task 9 (consistency contract, X-OpenRegister-Effects: sync); tasks 2-4, 6, 7 and live 10-13 left	session-20261113T205329-39b9195a	2026-11-13T22:19:56Z
+review:openregister:10414:88c34433	APPROVE 10414 (frontend 2.2; parity note: other locales +2 missing on an already-red gate)	session-20261113T202626-976dcdac	2026-11-13T22:20:01Z
