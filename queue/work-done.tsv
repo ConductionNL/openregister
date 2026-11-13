@@ -2811,3 +2811,4 @@ cover:shillinq:05639debmd8ee:9d3a1784	PR shillinq#2890: 28 tests, 4 jobs (Horizo
 cover:pipelinq:7f9dc8e6m1e6e:28cccfd9	already done: lib/Repair/Support/ at 100% lines (95/95)	session-20261113T044737-f37de8e3	2026-11-13T06:30:42Z
 cover:pipelinq:7f9dc8e6m1e6e:09cc8f24	already done: lib/Service/Cti 365/368 statements (99.2%) with pcov on development; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:30:38Z
 cover:filinq:7a9ef677m5ffe:12f19218	PR #2041: 9 tests, envelope repository 40/49 -> 49/49 lines; dir now ~97%; suite 6112->6121 green	session-20261113T054519-189b2666	2026-11-13T06:30:53Z
+cover:pipelinq:7f9dc8e6m1e6e:f0c02922	already done: open PR on quality/test-coverage-f0c02922-1 covers the only gap (LogBerichtenboxAdapter::isDormant); no new PR	session-20261113T061518-90540a48	2026-11-13T06:30:56Z
