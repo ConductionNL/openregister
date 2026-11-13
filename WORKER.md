@@ -24,3 +24,5 @@ build (target=<change>; change, open): build an openspec change of an app. Fleet
 If any command is refused by a permission check, do not retry or work around it: mark that task `failed: permission`, then CONTINUE with the next task (do not stop the session for it).
 
 FINAL MESSAGE (under 12 lines): tasks per type and result, PRs opened, merged, failed.
+
+PUBLISHED CONTRACTS (13 Nov): never change the signature of a public method in openregister lib/Contract/**, lib/Api/** or any class another fleet app calls (parameter names, order, types, defaults, removal). Fleet apps call these with named arguments and break at runtime. Refactors add a NEW method or accept an extra union-typed form while the old call keeps working; anything else: result `failed: would break a published contract`.
