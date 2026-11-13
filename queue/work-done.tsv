@@ -2859,6 +2859,7 @@ cover:pipelinq:7f9dc8e6m1e6e:js3f7698d2	PR #3689: 7 vitest tests, PipelineCard.v
 measure:integriq:20261113h06	php/js pct: 88.97 74.8 (commit 46d1bb08; unit suite 7280 tests, 2 errors on development)	session-20261113T034634-f20a8d77	2026-11-13T06:35:15Z
 cover:stackiq:df113dffm5ac4:2f30e3d6	already done: lib/Service/AangebodenGebruik 61/61 and lib/Service/Itsm 49/49 statements on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:35:30Z
 cover:buildiq:9930949bmc723:1106b038	already done: lib/Mcp/Handler/ at 95.92% (775/808, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:32Z
+cover:buildiq:9930949bmc723:1b97f731	already done: lib/Listener/*.php at 90.5% (487/538, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:47Z
 cover:stackiq:df113dffm5ac4:js3f3bfe56	already done: src/*.js 49/50 statements (98%) under vitest on development a05c3ddd; suite 2253 passed	session-20261113T061516-58aa7364	2026-11-13T06:35:49Z
 cover:buildiq:9930949bmc723:d528dcf0	already done: lib/Dashboard/*.php at 98.8% lines (80/81) under the full unit suite on development; queued 33% is stale; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:35:50Z
 cover:shillinq:05639debmd8ee:bad4accf	PR #2894: CcmRuleEngine 50->51/51 (metadata + result assertions)	session-20261113T051709-e616bf69	2026-11-13T06:35:47Z
@@ -2871,9 +2872,15 @@ cover:buildiq:9930949bmc723:38e80a9f	already above target: lib/Command/*.php mea
 cover:buildiq:9930949bmc723:390adfb9	already done: lib/Capabilities.php 11/11 covered (CapabilitiesCheckTest, -1 merged)	session-20261113T051709-e616bf69	2026-11-13T06:36:42Z
 cover:buildiq:9930949bmc723:9d3a1784	already done pending #1516: with its unit-bootstrap fix lib/BackgroundJob/*.php is 230/245 statements (>=85%); the low figure comes from development's broken phpunit-unit.xml bootstrap; no PR	session-20261113T061518-90540a48	2026-11-13T06:36:22Z
 cover:buildiq:9930949bmc723:f545d745	already above target: lib/Repair/*.php measures 96.38% (931/966) with strict metadata on development fc2670d; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:36:28Z
+cover:buildiq:9930949bmc723:568ec52a	already done: lib/Lifecycle/*.php at 98.82% lines (84/85) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:36:46Z
+cover:buildiq:9930949bmc723:d39f9857	already done: lib/Support/*.php at 99% lines (386/389) on development fc2670dab, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:36:47Z
 cover:buildiq:9930949bmc723:6891a8ac	already done: lib/Service/Dashboard 137/141 statements (97.2%) with pcov on development; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:36:47Z
 cover:buildiq:9930949bmc723:05630945	already done pending #1516: with its unit-bootstrap fix lib/Middleware/Support/ is 53/60 statements (>=85%); the low figure comes from development's broken phpunit-unit.xml bootstrap; no PR	session-20261113T061518-90540a48	2026-11-13T06:36:47Z
 cover:buildiq:9930949bmc723:js37c784b6	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:36:53Z
 cover:pipelinq:7f9dc8e6m1e6e:jsccb0cd24	already done: open branch quality/test-coverage-js-ccb0cd24-2 brings src/views/export 80.9%->95.5% lines when merged (546 files/3904 tests pass); no further PR	session-20261113T053904-36dcee67	2026-11-13T06:36:57Z
 cover:buildiq:9930949bmc723:f91e7417	already done pending #1516: with its unit-bootstrap fix lib/Service/Connection/ is 170/171 statements (>=85%); the low figure comes from development's broken phpunit-unit.xml bootstrap; no PR	session-20261113T061518-90540a48	2026-11-13T06:36:59Z
+cover:buildiq:9930949bmc723:a215617b	already done: lib/Integration measured with pcov at 216/220 statements (98%); queued 33% figure is stale	session-20261113T051707-6c971ec6	2026-11-13T06:37:08Z
 fix:dossiq:6203:31cc59e4	failed: permission (gitleaks download refused); note: diff is 7 test files, no secret-like strings by grep, same pass->fail seen on launchpad/keepiq PRs at once, likely inherited	session-20261113T054517-06ee2c47	2026-11-13T06:37:10Z
+cover:buildiq:9930949bmc723:bede5e5d	already done: Automation+Credential at 92.42% (61/66) under phpunit.xml on development f1c5b5564; low figure is the unit-bootstrap gap fixed by PR #1513; no PR	session-20261113T054517-06ee2c47	2026-11-13T06:37:28Z
+cover:stackiq:df113dffm5ac4:68d2b5ba	PR stackiq#1846: 3 tests, Cmdb+Settings 2746->2756/2816 lines; rest defensive/unreachable; 3129 tests passing	session-20261113T051703-1b54bfba	2026-11-13T06:37:22Z
+verify:shillinq:2887:f9ea0900	2887/2888/2889 GREEN (tests-only; 9289 run, 0 new failures)	session-20261113T054516-5d7b6bc4	2026-11-13T06:37:46Z
