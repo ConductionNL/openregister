@@ -2939,6 +2939,7 @@ cover:buildiq:9930949bmc723:js678e2c14	already done: src/services/manifestValida
 cover:dossiq:f8a113c5mac88:7593a315	already done: lib/Service/Relation/*.php 695/714 (97.34%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:43:05Z
 cover:buildiq:9930949bmc723:jsc41b6099	already done: src/mixins/* at 99.51% statements (205/206) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:43:03Z
 cover:buildiq:9930949bmc723:js10b588fb	already done: src/components/applicationDetail 93.7% lines, 90.5% branches on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:43:40Z
+cover:dossiq:f8a113c5mac88:39189253	PRs #6303 (34 tests) + #6304 (25 tests): lib/Service/Transitions 93.1->99.6%, same 19 inherited failures	session-20261113T054517-26499007	2026-11-13T06:43:32Z
 cover:dossiq:f8a113c5mac88:b6fccd13	already done: lib/Service/Access/*.php 1114/1137 (97.98%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:43:27Z
 cover:shillinq:05639debmd8ee:568ec52a	PRs #2893 (7 guards, 73 tests) and #2896 (4 guards, 27 tests); suite 9142->9242 combined, 1 inherited failure	session-20261113T054521-2b588c68	2026-11-13T06:43:20Z
 cover:pipelinq:7f9dc8e6m1e6e:fdb25f89	already done: pcov on development (today) shows lib/Service/Access/RegisterAccessSync 100% lines (86/86)	session-20261113T053904-36dcee67	2026-11-13T06:43:33Z
