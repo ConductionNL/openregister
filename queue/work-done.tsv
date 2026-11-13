@@ -6328,3 +6328,4 @@ fix:shillinq:3005:7df04548	failed: conflict is with an earlier open tree PR in l
 verify:shillinq:3009:114d5dcb	2 GREEN (3009,3010); 10439 tests, 1 inherited failure; vitest 2295 passed	session-20261113T182404-f2c28226	2026-11-13T19:25:57Z
 fix:shillinq:3008:67bfab3c	failed: conflict is with an earlier open tree PR in l10n/en.js, en.json, nl.js, nl.json, not development; branch already contains development; merge development again after that PR lands	session-20261113T185327-0dc82b88	2026-11-13T19:26:07Z
 fix:shillinq:3006:917592f5	failed: no conflict with development; conflicts are only with an earlier unmerged PR in the verify tree (info.xml version, l10n, register-versions.lock.json); merge development in once that PR lands	session-20261113T182404-f2c28226	2026-11-13T19:26:32Z
+review:openregister:10297:2e036b1d	APPROVE	session-20261113T172328-c860ad55	2026-11-13T19:26:43Z
