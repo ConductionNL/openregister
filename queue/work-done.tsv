@@ -3686,3 +3686,4 @@ cover:stackiq:9ac19b3am5ac4:js0b5eefce	PR #1863: src/modals/object 66.94% -> 75.
 cover:openregister:7350e3efmea52:901d9bcc	PR #10118: 5 new test files (54 tests) + @uses fixes in 18 risky tests; target dirs 94.94->96.15%	session-20261113T074533-5d842142	2026-11-13T09:00:51Z
 review:openregister:10113:2769b568	APPROVE: uses metadata only, suites green	session-20261113T081048-4978ac57	2026-11-13T09:00:52Z
 cover:dossiq:069ee2d6m7e79:9d3a1784	PR #6341: 5 tests (ReportGroupingJob, TriageWakeJob), suite 15331->15336, 19 inherited failures unchanged	session-20261113T080551-294c2aa6	2026-11-13T09:00:57Z
+verify:learniq:2454:60467ee9	GREEN 2454, tests only, 0 new failures	session-20261113T084527-a728978e	2026-11-13T09:01:06Z
