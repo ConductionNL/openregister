@@ -5958,3 +5958,4 @@ cover:learniq:e6498dddm0533:2f64931a	nothing to cover: lib/Plagiarism/*.php is o
 cover:integriq:92114ab0mb37a:js1f9fa0a2	PR #3526: 4 vitest specs (35 tests), Rule+Synchronization 92.85%->97.79% statements; suite 2093->2128 all passing	session-20261113T175336-e3687686	2026-11-13T18:26:14Z
 cover:pipelinq:7f9dc8e6m16db:4d8f122a	already done: lib/Service/MailAddIn/ at 98.8% lines (85/86, only a defensive no-uuid fallback left), above target 90; no PR	session-20261113T175328-b5db3663	2026-11-13T18:26:27Z
 verify:keepiq:1760:58991a29	1760 GREEN (vitest 6369 passed, php 4854 0 failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:26:34Z
+verify:portaliq:2423:3591190b	GREEN 2442,2447; RED 2423,2443 (one node test each); CONFLICT 2444,2445,2446,2448,2449 (l10n/package.json vs 2442)	session-20261113T172334-4b3b027b	2026-11-13T18:27:33Z
