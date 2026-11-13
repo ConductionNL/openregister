@@ -2364,3 +2364,4 @@ cover:pipelinq:f67520ecmc4ba:be0dcca9	already done: lib/Mcp/*.php at 100% lines 
 cover:pipelinq:f67520ecmc4ba:168f7791	already done: lib/Dossiq/CaseTypeContributionProvider.php at 100% lines (26/26)	session-20261113T044737-f37de8e3	2026-11-13T05:13:23Z
 cover:pipelinq:f67520ecmc4ba:bec85fb4	already done: lib/Service/Zgw/ has no subdirs; its only gaps are covered by open PR #3670 (97.25->99.73% lines)	session-20261113T044737-f37de8e3	2026-11-13T05:13:37Z
 cover:pipelinq:f67520ecmc4ba:bc26df70	already done: lib/Service/Labels/ at 100% lines (LabelRenameService 94/94, LabelRenameException 2/2)	session-20261113T044737-f37de8e3	2026-11-13T05:13:49Z
+cover:keepiq:c967a31fm0090:be0dcca9	already done: lib/Mcp/*.php 6 classes at 100% lines with a dedicated test per class	session-20261113T034634-f20a8d77	2026-11-13T05:14:21Z
