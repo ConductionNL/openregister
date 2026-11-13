@@ -4753,3 +4753,4 @@ build:openregister:flow-trigger-transitions-and-changed-fields	failed: build tas
 build:openregister:generated-identifier	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:11:55Z
 build:openregister:files-leaf-save-to-object	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:12:01Z
 build:openregister:flow-task-inbox-projections	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:12:06Z
+build:openregister:flow-designer-parallel-paths-and-waits	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:12:12Z
