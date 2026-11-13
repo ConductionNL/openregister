@@ -2726,3 +2726,4 @@ cover:shillinq:05639debmd8ee:34763eb4	PR #2885: 33 middleware edge-case tests; s
 cover:pipelinq:7f9dc8e6mc4ba:28cccfd9	already done: lib/Repair/Support at 100% lines (95/95) under the full unit suite on development; branch -1 already exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:18:06Z
 verify:integriq:3484:f25052a5	GREEN 3484, CONFLICT 3485 (same test files as 3484), GREEN 3486, GREEN 3487	session-20261113T041646-2c1d764f	2026-11-13T06:18:08Z
 merge:learniq:2435:764e4beb	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:18:21Z
+cover:keepiq:c967a31fm0090:05630945	already done: StandardProtocolPaths 100%, ApiPathAliases 89.8%; the 5 uncovered lines are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable without production changes; 4 test classes cover the rest	session-20261113T034634-f20a8d77	2026-11-13T06:18:33Z
