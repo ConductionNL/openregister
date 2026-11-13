@@ -5420,6 +5420,7 @@ review:openregister:10270:1462b41e	APPROVE #10270 (frontend green; l10n parity +
 fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by routing the stopping-rule reconcile through ReviewWrites; floor_check PASS on every property; pushed cea13ccf, REVERIFY recorded	session-20261113T074532-3dc49c57	2026-11-13T14:09:16Z
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
 build2:openregister:records-draft-versions	partial: PR #10276 (draft store + DraftService, task 1.2 done, 1.1 code done but DB-engine verify left; 21 tests); routes, promotion, preview, UI left	session-20261113T104650-72c03e13	2026-11-13T14:09:44Z
+review:openregister:10260:db1bb620	BLOCK: golden PropertyValidatorValidatePropertyGoldenTest red (format list grew), green on main	session-20261113T091530-f20014fb	2026-11-13T14:10:20Z
 build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 done; 3.1 e2e and 3.2 docs+screenshot left); 37 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T14:10:26Z
 review:openregister:10258:0e3583ea	APPROVE	session-20261113T094606-b7da8c7f	2026-11-13T14:10:25Z
 cover:launchpad:fb10c50fm2d1d:a1252b57	already done: lib/Service/Confluence 97.47% (462/474) on development d6a7f892 after the merged -1 batch; 12-23 tests per class	session-20261113T091533-b7a00bc3	2026-11-13T14:11:01Z
