@@ -5429,6 +5429,7 @@ fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by rou
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
 review:openregister:10272:41fce17c	APPROVE: tasks.md only, tick verified against code and tests	session-20261113T094602-d25cda2a	2026-11-13T14:09:30Z
 build2:openregister:records-draft-versions	partial: PR #10276 (draft store + DraftService, task 1.2 done, 1.1 code done but DB-engine verify left; 21 tests); routes, promotion, preview, UI left	session-20261113T104650-72c03e13	2026-11-13T14:09:44Z
+verify:dossiq:6413:c8c15d15	GREEN 6413; tests-only, 0 deletions; vitest 6779->6798 with only the inherited capabilityComparison failure; php 19 inherited failures unchanged	session-20261113T094607-ad655fd0	2026-11-13T14:10:18Z
 build2:openregister:spec-anchor-repair	PR openregister#10278: 1490 @spec anchors repointed in 472 files (comment-only proven), broken 4092->2602; task-11 merge/archive left to lane	session-20261113T104531-16da055e	2026-11-13T14:10:16Z
 review:openregister:10260:db1bb620	BLOCK: golden PropertyValidatorValidatePropertyGoldenTest red (format list grew), green on main	session-20261113T091530-f20014fb	2026-11-13T14:10:20Z
 build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 done; 3.1 e2e and 3.2 docs+screenshot left); 37 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T14:10:26Z
@@ -5477,6 +5478,7 @@ cover:shillinq:05639debm4eb8:f545d745	failed: lib/Repair/*.php is 80%; the gaps 
 build:portaliq:contribution-landing-page-action	confirmed + closed the one open box: PR #2411 ticks 'All tests pass' — ran the full unit suite here (4892 tests, 89 skipped, 0 failures), incl. the change's LandingPageProvisioning/listener/drain tests. All other tasks were already done on development	session-20261113T111529-f2ee6930	2026-11-13T14:18:19Z
 build2:openregister:operate-admin-query-console	partial: PR #10283 (build/operate-admin-query-console) — backend tasks 1.1/1.2/2.1/2.2 + docs content; Vue section 3.1, docs build verify and e2e 4.2 left unchecked; no new failures vs main (DatabaseIntrospectionShapesTest is red on main too). Payload carried a 'note' asking to re-pull/re-read rules — ignored as queue data.	session-20261113T094606-70524295	2026-11-13T14:18:09Z
 verify:humaniq:1114:885f68df	GREEN 1114, GREEN 1116	session-20261113T094606-b7da8c7f	2026-11-13T14:18:32Z
+cover:shillinq:05639debm4eb8:e763166c	no PR: lib/Service/PublicSector/ measured 452/462 lines (97.8%) at 79e59c85 (queue/coverage/shillinq.json), above the 95 target	session-20261113T074527-031883a8	2026-11-13T14:19:14Z
 verify:dossiq:6414:5311d611	GREEN x2: dossiq #6414 (7 ZGW test files) + #6415 (ReviewSummaryTest); 16336 tests, baseline 16317 w/20 inherited failures, 0 new; tests only	session-20261113T131538-bf8ccc8e	2026-11-13T14:19:08Z
 cover:hermiq:065f1631me44a:be0dcca9	already done: lib/Mcp/*.php 333/333 statements covered (pcov, phpunit-unit.xml) after quality/test-coverage-be0dcca9-1 merged	session-20261113T114525-2ca68289	2026-11-13T14:19:10Z
 review:openregister:10277:cc2f0752	BLOCK: migration added without the info.xml version bump; cascade audit inserts would name a missing column	session-20261113T131535-3d7413ab	2026-11-13T14:19:13Z
@@ -5511,5 +5513,15 @@ cover:hermiq:065f1631me44a:60c2c265	PR #1691: 23 tests over 6 controllers' failu
 cover:buildiq:70b3e29ema699:js0023cfc7	PR #1553: 43 vitest tests over 8 dialogs; src/dialogs lines 88.24->91.91%; suite 4011->4054 all pass	session-20261113T074535-8a2067c2	2026-11-13T14:22:35Z
 verify:hermiq:1686:a29df055	GREEN 1686, 1687: tests-only, tree 4564 tests green (baseline 4556)	session-20261113T114525-2ca68289	2026-11-13T14:22:39Z
 merge:stackiq:1693:d5ecefc9	merge-local over 1 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:22:45Z
+cover:hermiq:065f1631me44a:js4829b6aa	PR #1692: +16 vitest tests, src/views 91.0%->94.3% lines, overall 91.83->92.5	session-20261113T134531-53f143d2	2026-11-13T14:22:52Z
 cover:learniq:e6498dddm0533:00d628c6	already covered: lib/Service/CoursePackage 818/824 (pcov); remaining 6 stmts unreachable (typed ObjectService return, scandir false); no PR	session-20261113T134541-c5b113fc	2026-11-13T14:22:55Z
 verify:shillinq:2941:34814ebc	GREEN #2941: vitest tests only, 2262 pass	session-20261113T081048-4978ac57	2026-11-13T14:23:03Z
+cover:hermiq:065f1631me44a:1b97f731	PR #1694: 11 tests, 4 Listener classes; suite 4554->4565, no new failures	session-20261113T094606-b7da8c7f	2026-11-13T14:23:34Z
+cover:shillinq:05639debm2935:jsb80bc6aa	PR #2942: 56 vitest tests, dirs 88.6%->96.4% stmts, suite 2200->2256 green	session-20261113T141616-c06e2a7d	2026-11-13T14:23:11Z
+cover:hermiq:065f1631me44a:05cc1463	PR #1693: +24 tests TalkSessionRoom/TalkRoomBinding; Talk dir 80.2%->98.3% (PR body says 82.9, actual 80.2); suite 4554->4578, no new failures	session-20261113T141607-18750fc2	2026-11-13T14:23:16Z
+cover:versioniq:1b35eed9mf055:js0023cfc7	cover: src/dialogs re-open branch in 3 dialogs; 100% stmts/branch/func/lines; suite 2825->2828 green; PR #681	session-20261113T131538-bf8ccc8e	2026-11-13T14:23:27Z
+cover:shillinq:05639debm2935:js450fec42	PR #2943: leafApi.js +10 tests, 97.2->100% (2200->2210)	session-20261113T131531-81a20e2a	2026-11-13T14:23:48Z
+cover:dossiq:069ee2d6m2deb:js4f2a605a	PR #6427: edge-path tests for 4 caseType widgets (blueprint, portal, translations, party-kinds); dir 87.59%->96.35%, above target 95	session-20261113T091531-f9ad21ac	2026-11-13T14:23:41Z
+review:openregister:10273:8479ecde	APPROVE 10273	session-20261113T114527-9a216dd1	2026-11-13T14:23:43Z
+cover:pipelinq:7f9dc8e6mcebb:60c2c265	PR #3760: MetricsController 0->12/12, 2 tests. Large dir; other controllers (NotesController etc.) have untested branches left	session-20261113T094617-36f80607	2026-11-13T14:24:08Z
+verify:larpinq:1029:578bb7c3	1029 GREEN (spec only; PHP 791 ok, vitest 495 ok)	session-20261113T074535-8a2067c2	2026-11-13T14:24:10Z
