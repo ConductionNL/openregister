@@ -4999,3 +4999,4 @@ dossiq	6266	8c3bfdc12e93b156c9a3d2f53706bc786abcb99a	GREEN	worker-10	phpunit 142
 dossiq	6267	4539939601990735792ff1e7d87af933dd26a31c	GREEN	worker-10	phpunit 14292 tests on tree (baseline 14246, 19 inherited failures); 0 new failures; tests only
 dossiq	6268	212561dc668b87760bc748254751eeb04d8138d9	GREEN	worker-10	phpunit 14292 tests on tree (baseline 14246, 19 inherited failures); 0 new failures; tests only
 integriq	3466	5930a910f81986d6cb981e3d9591a9e4551431d8	GREEN	worker-35	7134 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests only (one @uses line became @covers)
+integriq	3467	484c778914d34658118251ce28720fbd01c737c6	GREEN	worker-35	7134 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests and a test helper only
