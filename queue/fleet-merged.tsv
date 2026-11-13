@@ -1066,3 +1066,6 @@ learniq	2433	10358e9fcc87fd53b2cafd01b3bccaa6dbdbc0fe	MERGED	merge-local	GATE OK
 learniq	2435	24dae66bbcdf3034ca82787dd709f398e3b635b3	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
 learniq	2436	c487c8c3f3268f7edce46f86878a9686ecc01d2f	SKIP	merge-local	GATE UNMEASURED c487c8c3f3 does not merge cleanly onto development
 decidiq	2110	cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3672	ba210f5711ce9cd32257d1c7ae234f3479f136ef	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3673	d39bc73fb6a27fc07068468ece01822432f4fdf6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3674	f32f90dab9517c1408db762715fd3421ff3b0694	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
