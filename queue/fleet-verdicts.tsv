@@ -6293,3 +6293,4 @@ filinq	2060	c02f868ba31f0ad846dfc41f3313419fbef635bc	GREEN	worker-58	baseline 64
 filinq	2061	0c60fc726b440780afa42c949004dd7c5d5c8975	RED	worker-58	new failure UnifiedSearchConsistencyTest::testDeepLinkUrlTemplatesMapToManifestRoutes: pages move out of src/manifest.json (46 -> 6), so deepLink /apps/filinq/templates/{uuid} maps onto no manifest detail route; tree rebuilt without it
 filinq	2062	baea435f0ea63b1e9b0c164a4655135e5b98fdf6	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
 filinq	2063	67e09430480e320f7beafecb87e4b39c1346f72f	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2064	15940c2fb9d65fd90dfc751c82be8babc0748924	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
