@@ -187,7 +187,8 @@
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
-		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener"
+		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
+		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
