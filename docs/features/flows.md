@@ -798,6 +798,8 @@ model. Flows still on it are the ones to re-author.
 
 ## Related Features
 
+- [Put a task on a record](record-tasks.md): the record page's Tasks tab over
+  the same task inbox
 - [Workflow Automation](workflow-automation.md): handing work to external tools
   (n8n, Windmill), schema hooks and declarative lifecycles
 - [Webhooks & Notifications](webhooks-and-notifications.md): notification rules,

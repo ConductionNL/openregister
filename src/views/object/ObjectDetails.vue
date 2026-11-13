@@ -370,6 +370,28 @@
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
+						<!--
+							Tasks (record-tasks-tab): the flow tasks anchored on this
+							record, from the library's tab with the flow-task source.
+							It lists GET /api/flow-tasks?objectUuid=, creates with the
+							record as anchor and shows only the verbs each row's `can`
+							allows. VTODO reminders stay in the Integrations tab (D-3).
+						-->
+						<AppTab v-if="relationContext" data-testid="record-tasks-tab">
+							<template #title>
+								{{ t('openregister', 'Tasks') }}
+								<NcCounterBubble
+									v-if="openTaskCount"
+									:count="openTaskCount"
+									data-testid="record-tasks-count" />
+							</template>
+							<CnTasksTab
+								source="flow-tasks"
+								:objectId="String(relationContext.id)"
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								@count="onTaskCount" />
+						</AppTab>
 						<AppTab
 							v-if="
 								relationContext
@@ -515,9 +537,12 @@ import {
 	CnObjectAccessTab,
 	CnObjectMetadataWidget,
 	CnPagination,
+	CnTasksTab,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcActionButton,
 	NcActions,
@@ -636,6 +661,7 @@ export default {
 		AppTabs,
 		AppTab,
 		CnPagination,
+		CnTasksTab,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -704,6 +730,8 @@ export default {
 			activeAttachment: null,
 			fileLoading: false,
 			pagination: initialPagination(),
+			// Open flow tasks on this record, for the Tasks tab badge; null until known.
+			openTaskCount: null,
 		}
 	},
 
@@ -830,6 +858,7 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.countOpenTasks()
 		}
 		this.syncLiveSubscription()
 	},
@@ -846,6 +875,7 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.countOpenTasks()
 			this.syncLiveSubscription()
 		}
 	},
@@ -861,6 +891,45 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Count the open flow tasks on this record for the Tasks tab badge.
+		 *
+		 * Asks the server rather than the tab: the tab only mounts when it is
+		 * opened, and which states are terminal is the server's to say. Same
+		 * audience as the tab (`scope=all`), one row fetched, `total` read.
+		 * A failure leaves the badge off rather than showing a wrong number.
+		 *
+		 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md#requirement-a-records-page-lists-and-creates-the-flow-tasks-anchored-on-it
+		 * @return {Promise<void>}
+		 */
+		async countOpenTasks() {
+			const context = this.relationContext
+			if (!context) {
+				this.openTaskCount = null
+				return
+			}
+
+			try {
+				const { data } = await axios.get(generateUrl('/apps/openregister/api/flow-tasks'), {
+					params: { objectUuid: String(context.id), scope: 'all', isTerminal: 'false', limit: 1 },
+				})
+				this.openTaskCount = Number(data?.total) || 0
+			} catch {
+				this.openTaskCount = null
+			}
+		},
+
+		/**
+		 * Take the open count the Tasks tab reports once it has loaded or changed.
+		 *
+		 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md#requirement-a-records-page-lists-and-creates-the-flow-tasks-anchored-on-it
+		 * @param {number} count The open tasks the tab lists.
+		 * @return {void}
+		 */
+		onTaskCount(count) {
+			this.openTaskCount = Number(count) || 0
+		},
+
 		/**
 		 * Subscribe to live updates for the currently opened object
 		 * (adopt-live-updates-ui): or-object-{uuid} via notify_push with
