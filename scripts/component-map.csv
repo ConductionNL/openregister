@@ -3859,6 +3859,9 @@ Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
 Service/TranslationSearch.php,,Service,,,,,Configuration
 Service/TranslationStatusServiceInterface.php,,Service,,,,,Platform
 Service/TranslationStores.php,,Service,,,,,Platform
+Service/Translation/GlossaryService.php,,Service,,,,,Configuration
+Service/Translation/TaskProcessingTranslationProvider.php,,Service,,,,,Configuration
+Service/Translation/TranslationOutcome.php,,Service,,,,,Configuration
 Service/UnclassifiedProcessing.php,,Service,,,,,Compliance
 Service/UrnServiceInterface.php,,Service,,,,,Core
 Service/UserDirectory.php,,Service,,,,,Integrations
