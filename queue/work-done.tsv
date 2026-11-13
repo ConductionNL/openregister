@@ -3389,3 +3389,4 @@ gap:planninq:16:614b0a03	no action: advisory with no score effect; a dependency 
 verify:stackiq:1854:86b625c8	GREEN #1854, GREEN #1855 (3167 tests, 0 failures)	session-20261113T080549-20301834	2026-11-13T08:14:51Z
 gap:stackiq:maint1:burn1	PR stackiq#1856: 3 units split (CCN 26/16/17 -> under 15), 11 characterization tests, suite 3154->3165 green	session-20261113T080549-dde3ba19	2026-11-13T08:15:00Z
 gap:stackiq:risky:burn2	PR #1857: risky 1 -> 0, PHP coverage 81.31% -> 81.31%	session-20261113T080556-d189f150	2026-11-13T08:15:11Z
+cover:portaliq:b60f3b81:34f5c300	PR #2373: 5 classes, 33 tests, suite 4527->4560 green, 0 risky	session-20261113T072715-8f8a14e9	2026-11-13T08:15:41Z
