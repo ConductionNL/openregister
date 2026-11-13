@@ -4315,3 +4315,5 @@ cover:filinq:7a9ef677mb01f:4b9c088d	PR #2051: 16 tests over 9 Editing classes; s
 fix:filinq:2049:dd2c0c59	sbom regenerated, pushed e2f33998d2584880c845531a586368d2033d8933, REVERIFY recorded	session-20261113T104531-274f72f7	2026-11-13T10:52:08Z
 cover:humaniq:a18a13fb:b2e6293a	PR #1111: +36 test methods, lib/Standards/Checks 2315->2364/2365	session-20261113T081040-5e814df2	2026-11-13T10:52:35Z
 verify:dossiq:6390:238173c5	6390,6391 GREEN (tests-only)	session-20261113T064518-860c039d	2026-11-13T10:52:55Z
+merge:integriq:3343:1688ce01	merge-local over 2 integriq tasks: merged=7 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:53:09Z
+merge:integriq:3521:bb4e09c2	merge-local over 2 integriq tasks: merged=7 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:53:09Z
