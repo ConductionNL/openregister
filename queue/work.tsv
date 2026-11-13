@@ -5628,3 +5628,16 @@ review:openregister:10222:6ec25b23	review	openregister	main	10222	sha=6ec25b23d6
 review:openregister:10223:ad2e7e32	review	openregister	main	10223	sha=ad2e7e3295021a04a1de379b57c72c94ba8cee66;last_approved=;title=feat(openregister): build flow-task-search-provider	2026-11-13T13:05:11Z
 review:openregister:10224:65feedd0	review	openregister	main	10224	sha=65feedd05acd9d722738d5bb01ec400a8095ea41;last_approved=;title=feat(openregister): build redaction-policy-as-data	2026-11-13T13:05:11Z
 verify:buildiq:1543:d1915b96	verify	buildiq	development	merge	prs=1543@22709fae85f7d2171ac636f1737ab76c7a0afc42	2026-11-13T13:05:11Z
+review:openregister:10225:ba2a5542	review	openregister	main	10225	sha=ba2a5542a133342187bf06a0d0afd5c946ee5a7a;last_approved=;title=feat(openregister): build archival-frozen-refuses-delete-and-dates-follow	2026-11-13T13:10:23Z
+review:openregister:10226:c9fb0bd7	review	openregister	main	10226	sha=c9fb0bd73cbad3d25870e2ec1ec0fa98ef0ffcbb;last_approved=;title=test(openregister): cover object modal rendering	2026-11-13T13:10:23Z
+review:openregister:10227:bdaa165c	review	openregister	main	10227	sha=bdaa165c704323f8b77ae04619595cc62de4b3fa;last_approved=;title=test(openregister): cover untested lib/Service helpers	2026-11-13T13:10:23Z
+review:openregister:10228:c970030b	review	openregister	main	10228	sha=c970030b958febda3df28a594de6cf292f09decd;last_approved=;title=feat(openregister): build modelling-required-when-enforced	2026-11-13T13:10:23Z
+review:openregister:10229:91b334dd	review	openregister	main	10229	sha=91b334dd563f017b9375ea715eb03eb99081298b;last_approved=;title=feat(openregister): build webhooks-for-owners	2026-11-13T13:10:23Z
+verify:buildiq:1544:6c19482f	verify	buildiq	development	merge	prs=1544@56f466d07cc4ba7baa3565d818a32996cfa0ea09	2026-11-13T13:10:23Z
+cover:larpinq:c4471360mcb1b:js3f3bfe56	cover	larpinq	development	quality/test-coverage-js-3f3bfe56	lang=js;dirs=src/*;focus=uncovered;weight=153;coverage=65.35;target=90.0	2026-11-12T12:29:16Z
+review:openregister:10230:a1e89986	review	openregister	main	10230	sha=a1e899861a419a3d5b35849f796214009277349d;last_approved=;title=feat(openregister): build rights-administration-hardening	2026-11-13T13:15:33Z
+review:openregister:10231:11faf452	review	openregister	main	10231	sha=11faf4526c73ca064ec891934476352c5b744c69;last_approved=;title=feat(openregister): build flow-node-taxonomy	2026-11-13T13:15:33Z
+verify:portaliq:2400:8ad3016b	verify	portaliq	development	merge	prs=2400@93a719a60a694bf60eeac6f06b9e7c1b32f2c368	2026-11-13T13:15:33Z
+merge:larpinq:1012:10040d6a	merge	larpinq	development	development	prs=1012@ef4abe687e638b6310d495b0a7ec7304d4e22d7a,1024@b09265c2d7813f7eb698b72638c136147f71c7e5	2026-11-13T13:15:33Z
+cover:larpinq:c4471360mcb1b:js0023cfc7	cover	larpinq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=312;coverage=65.35;target=90.0	2026-11-12T12:31:48Z
+cover:larpinq:c4471360mcb1b:js00fe026a	cover	larpinq	development	quality/test-coverage-js-00fe026a	lang=js;dirs=src/services/*;focus=uncovered;weight=96;coverage=65.35;target=90.0	2026-11-12T12:35:24Z
