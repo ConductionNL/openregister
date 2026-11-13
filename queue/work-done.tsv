@@ -5312,3 +5312,4 @@ cover:launchpad:fb10c50fm2d1d:f545d745	no PR: lib/Repair 94.57% (296/313); all 1
 build2:openregister:register-import-auto-create	already done: ImportService registerFromBundle/autoCreateRegisterFromBundle + RegisterNotFoundException (404 with remedies) on main, covered by ImportServiceImportFromJsonGoldenTest; only tasks.md unticked	session-20261113T104531-16da055e	2026-11-13T13:50:49Z
 merge:buildiq:1526:dd62cd2e	merge-local over 1 buildiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:51:02Z
 review:openregister:10248:0a0fc1a6	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:51:05Z
+review:openregister:10234:45fac921	APPROVE (importer-only change as specced; suites green or identical to main)	session-20261113T091530-f20014fb	2026-11-13T13:51:16Z
