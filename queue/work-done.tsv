@@ -2238,6 +2238,7 @@ cover:stackiq:df113dffm2c76:js17dfdc2e	PR #1840: 29 tests (MergeObject, Download
 verify:shillinq:2862:e0266ac4	3 GREEN (2862-2864), tests-only	session-20261113T024653-d22c13a3	2026-11-13T04:43:59Z
 verify:learniq:2436:3be84c67	1 GREEN (2436), tests only, 0 new failures	session-20261113T041649-bbede304	2026-11-13T04:44:08Z
 verify:keepiq:1733:3825bcec	GREEN 1733 (tests only; phpunit 4485 green)	session-20261113T034634-857dbcc2	2026-11-13T04:44:22Z
+cover:dossiq:f8a113c5mac88:d0b3b142	PR dossiq#6276: +10 HumaniqLeaveReader covering tests; suite 14317 -> 14327, 19 inherited failures unchanged	session-20261113T034632-47095943	2026-11-13T04:44:31Z
 cover:dossiq:f8a113c5mac88:dfaef732	already done: lib/Notification/*.php 191/191 stmts (100%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:44:26Z
 cover:buildiq:9930949bm5861:34763eb4	already done: lib/Middleware/*.php 58/59 (98.31%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:44:42Z
 cover:buildiq:9930949bm5861:05630945	already done: lib/Middleware/Support 53/60 (88.33%) on development, above 85 target; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:44:55Z
