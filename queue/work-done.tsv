@@ -3903,3 +3903,4 @@ build:dossiq:translatable-titles-read-as-text	already done: code tasks 1.1-2.1 b
 build:dossiq:task-dependencies-and-the-next-planned-action	already building: built on development 946cccb712 (2026-09-18), 1.x/2.x/4.x ticked; open 3.1-3.3 are the OpenRegister task engine's half per tasks.md, no dossiq code to write; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:30:13Z
 build:dossiq:woo-decision-records-what-was-withheld	already done: built on development (ab763bfeec); open tasks are the live check 4.1 and PR-process items 5.3-5.5	session-20261113T091531-dc489d35	2026-11-13T09:30:21Z
 review:openregister:10118:7a35c2de	APPROVE: tests only; merged-with-main touched dirs, Architecture, Rules, Rbac, Controller, Contract green	session-20261113T074532-3dc49c57	2026-11-13T09:30:39Z
+cover:dossiq:069ee2d6m7275:eb8f684c	already done: lib/Service/Reporting/ at 98.16% (533/543) on development ed104aa6	session-20261113T073916-e9f11dfa	2026-11-13T09:30:42Z
