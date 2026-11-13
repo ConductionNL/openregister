@@ -38,12 +38,14 @@ final class GrantTerms {
 	 * @param string[]      $verbs       Extension verbs (e.g. `use`, `run`) carried in the share's attribute bag (ADR-010).
 	 * @param DateTime|null $expiresAt   When the grant ends; null for no end.
 	 * @param DateTime|null $sharedAt    The share time to record; null for now.
+	 * @param string|null   $note        The note the sharer leaves the recipient, the platform share's own field; null for none.
 	 */
 	public function __construct(
 		public readonly int $permissions = 1,
 		public readonly array $verbs = [],
 		public readonly ?DateTime $expiresAt = null,
 		public readonly ?DateTime $sharedAt = null,
+		public readonly ?string $note = null,
 	) {
 	}//end __construct()
 
@@ -64,7 +66,8 @@ final class GrantTerms {
 			permissions: $this->permissions,
 			verbs: $this->verbs,
 			expiresAt: $this->moment(value: $expiresAt),
-			sharedAt: $this->moment(value: $sharedAt)
+			sharedAt: $this->moment(value: $sharedAt),
+			note: $this->note
 		);
 	}//end dated()
 
