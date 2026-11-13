@@ -4806,3 +4806,4 @@ cover:openregister:7350e3efmea52:92213340	already done: lib/Service/Configuratio
 verify:pipelinq:3754:a2c8bcab	CONFLICT: l10n en/nl with development	session-20261113T051703-1b54bfba	2026-11-13T12:21:28Z
 review:openregister:10163:aade2aff	APPROVE	session-20261113T104531-274f72f7	2026-11-13T12:21:38Z
 build:openregister:mcp-output-schema-payload	already built on main; PR #10173 ticks the tasks with evidence (budget test passes)	session-20261113T104527-c302106c	2026-11-13T12:22:00Z
+build:openregister:lifecycle-guards-see-the-stored-object	done (tasks); 1.6 already landed via create-over-taken-identifier-runs-update-path, ticked in PR; 2.1 is app lanes	session-20261113T121536-3cb7eb71	2026-11-13T12:22:17Z
