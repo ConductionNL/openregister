@@ -1,8 +1,14 @@
-# Workflow Automation
+# Workflow Automation (external tools)
+
+> For built-in automation, see [Flows](flows.md). OpenRegister has its own flow
+> engine: a canvas, triggers, steps, approvals and run history. That is the
+> way to automate processes in OpenRegister. This page covers the other thing:
+> handing work to an external automation tool such as n8n or Windmill, plus
+> schema hooks and declarative lifecycles.
 
 ## Overview
 
-OpenRegister integrates BPMN-style workflow automation with register operations via n8n (primary engine) and a pluggable interface for additional engines (Windmill, others). Register events trigger configurable workflows for process automation, data enrichment, validation, escalation, approval chains, and scheduled tasks. None of it requires a code change to OpenRegister itself.
+OpenRegister can hand register events to an external workflow tool. n8n and Windmill have adapters, and the engine interface admits any HTTP-callable system. Use this when an organisation already runs such a tool and wants it to react to register changes. For a process that should live in OpenRegister itself, build a [flow](flows.md) instead.
 
 **Tender demand**: 38% of analyzed government tenders require workflow/process automation capabilities.
 
@@ -12,7 +18,7 @@ The workflow automation system has three layers:
 
 1. **Schema Hooks**: per-schema configuration of workflow callbacks on object lifecycle events
 2. **Workflow Engine Abstraction**: engine-agnostic interface (`WorkflowEngineInterface`) with per-engine adapters
-3. **Workflow Integration**: n8n as primary engine, auto-discovered when installed as a Nextcloud ExApp
+3. **Workflow Integration**: external engines, with n8n auto-discovered when installed as a Nextcloud ExApp
 
 ## Schema Hooks
 
@@ -120,8 +126,8 @@ interface WorkflowEngineInterface {
 
 | Engine | Adapter | Notes |
 |--------|---------|-------|
-| n8n | `N8nAdapter` | Primary; runs as Nextcloud ExApp; routes through `/index.php/apps/app_api/proxy/n8n/` |
-| Windmill | `WindmillAdapter` | Secondary; also runs as ExApp |
+| n8n | `N8nAdapter` | Runs as Nextcloud ExApp; routes through `/index.php/apps/app_api/proxy/n8n/` |
+| Windmill | `WindmillAdapter` | Also runs as ExApp |
 | Custom | Implement interface | Any HTTP-callable workflow system |
 
 The `WorkflowEngineRegistry` service manages multiple simultaneous engine configurations. Each schema hook specifies which engine it uses, so a single schema can have hooks targeting different engines.
@@ -542,6 +548,7 @@ instead of firing.
 
 ## Related Features
 
+- [Flows](flows.md): the built-in flow engine, for automation inside OpenRegister
 - [Event-Driven Architecture](event-driven-architecture.md): hooks consume PSR-14 lifecycle events
 - [Registers & Schemas](registers-and-schemas.md): hooks are configured on schema definitions
 - [Data Import & Export](data-import-export.md): workflow-in-import triggers
