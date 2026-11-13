@@ -2680,3 +2680,4 @@ cover:buildiq:9930949bm5861:js0023cfc7	PR #1515: 8 vitest tests for AutomationEd
 cover:integriq:92114ab0m1534:3f68c935	already done: lib/Intake/Adapter/ 360/372 lines (96.8%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:06Z
 cover:integriq:92114ab0m1534:bec85fb4	already done: lib/Service/Zgw/ 214/218 lines (98.2%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:13Z
 cover:pipelinq:7f9dc8e6mc4ba:js8f1ea935	PR #3687 (branch -2; -1 already open from another run): 69 vitest tests; views lines 81.6% -> 85.5%	session-20261113T051705-4f5ad12a	2026-11-13T06:12:20Z
+cover:filinq:7a9ef677m5ffe:4b9c088d	already done: lib/Service/Editing/*.php at 97% lines on development 265db8360; 35 left are I/O-failure/malformed-markup branches, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:12:18Z
