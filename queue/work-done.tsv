@@ -1433,3 +1433,4 @@ cover:filinq:8ecceb86:72b7aa42	PR #1992: 23 tests for ValidationProfileResolver,
 cover:decidiq:13261b1bmcfc2:jsea7197ec	PR #2106: 5 util modules, 7 vitest tests; suite 2625 -> 2632; src/utils lines 98.5% -> 99.7%	session-20261112T234653-57d11a5b	2026-11-13T01:28:50Z
 cover:shillinq:801aab65:c37ad97a	already done: lib/PaymentPlan/*.php at 91.6% (470/513) >= target 90	session-20261112T224530-d70ae278	2026-11-13T01:28:48Z
 cover:learniq:1ae7757em6be5:jsd48eb217	PR #2430: 7 tests for the settings store, src/store/modules 57.1%->100%, JS suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:29:22Z
+cover:shillinq:801aab65:e587f75a	PR #2818: PaymentRunExportService 160/172 -> 169/172 lines (lib/PaymentRun/*.php 484/505 -> 493/505); 5 tests; suite 9004 -> 9009, same inherited failure	session-20261113T004521-223ef947	2026-11-13T01:30:11Z
