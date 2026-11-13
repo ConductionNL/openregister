@@ -4034,3 +4034,21 @@ cover:shillinq:05639debmd8ee:c37ad97a	cover	shillinq	development	quality/test-co
 measure:decidiq:20261113h08	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-13T08:25:18Z
 measure:hermiq:20261113h08	measure	hermiq	development	queue/coverage/hermiq.json	why=slices need per-directory coverage	2026-11-13T08:25:18Z
 measure:stackiq:20261113h08	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T04:26:00Z
+review:openregister:10114:fb0951d0	review	openregister	main	10114	sha=fb0951d09ba450f9df1dab2e0cfb090cf59da32c;last_approved=;title=test(openregister): cover upload, export and clear-audit modal state	2026-11-13T08:30:22Z
+verify:portaliq:2376:bb25ac34	verify	portaliq	development	merge	prs=2376@b197ca02bb5283f629bbb91c48fd956192c7d4ab,2382@c66615f8ddcd48b920a8298ef297ec0b50144f02,2383@80f33cec6d7f21f2a67ea3e19ab26526fe1d40ef,2384@6bddb1d3558732f121d1f093e2f328db066f4d5a,2385@606449f75ddfa729acaa54575844664e880cbf65,2386@9cf19378e66479bb6ecc344d0d955f9fe1d854f5	2026-11-13T08:30:22Z
+verify:launchpad:1178:68556454	verify	launchpad	development	merge	prs=1178@363f9903b19e1d7eecdd8e75cace7df2622fd739	2026-11-13T08:30:22Z
+merge:buildiq:1526:cb139c2b	merge	buildiq	development	development	prs=1526@2ab00cf5eec7706a83146c6418b6e3aa926ac0bd,1527@4e8dfa26f031242a99953f1089984830752d3b3f,1528@98b52c496f8816b047005c4fc0f55cfbdde23d9c	2026-11-13T08:30:22Z
+merge:integriq:3507:b1b08a46	merge	integriq	development	development	prs=3507@da5ccdb713500d1e8ecffbe5f8a840fc80f63092,3509@7566b41da4b39fe951c6385dc597f3dd14dafc8f	2026-11-13T08:30:22Z
+merge:launchpad:1175:13899a12	merge	launchpad	development	development	prs=1175@b36da8bea115f254ee4bb314c4813f9d51087e9f	2026-11-13T08:30:22Z
+cover:dossiq:f8a113c5m7e79:b12f5203	cover	dossiq	development	quality/test-coverage-b12f5203	lang=php;dirs=lib/Service/Import/;focus=thin;weight=1844;coverage=87.99;target=90.0	2026-08-15T05:59:30Z
+cover:dossiq:f8a113c5m7e79:00494271	cover	dossiq	development	quality/test-coverage-00494271	lang=php;dirs=lib/Service/DocumentSeries/;focus=thin;weight=691;coverage=87.99;target=90.0	2026-08-15T06:18:43Z
+cover:buildiq:70b3e29embf07:0d8702e3	cover	buildiq	development	quality/test-coverage-0d8702e3	lang=php;dirs=lib/Resources/template/;focus=uncovered;weight=471;coverage=88.48;target=90.0	2026-09-14T06:51:49Z
+cover:buildiq:70b3e29embf07:1b97f731	cover	buildiq	development	quality/test-coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=153;coverage=88.48;target=90.0	2026-09-14T06:57:07Z
+cover:buildiq:70b3e29embf07:f545d745	cover	buildiq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=thin;weight=3317;coverage=88.48;target=90.0	2026-09-14T06:09:40Z
+cover:buildiq:70b3e29embf07:d39f9857	cover	buildiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=2126;coverage=88.48;target=90.0	2026-09-14T06:24:14Z
+cover:buildiq:70b3e29embf07:38e80a9f	cover	buildiq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=1096;coverage=88.48;target=90.0	2026-09-14T06:41:24Z
+cover:integriq:92114ab0m658d:102ac6fb	cover	integriq	development	quality/test-coverage-102ac6fb	lang=php;dirs=lib/Service/Security/*.php;focus=thin;weight=5463;coverage=88.97;target=90.0	2026-10-14T06:39:10Z
+cover:shillinq:05639debmd8ee:34cd3e35	cover	shillinq	development	quality/test-coverage-34cd3e35	lang=php;dirs=lib/Service/Usage/;focus=thin;weight=591;coverage=85.47;target=90.0	2026-11-13T03:49:21Z
+cover:shillinq:05639debmd8ee:8bdc03d4	cover	shillinq	development	quality/test-coverage-8bdc03d4	lang=php;dirs=lib/Service/BbvMigration/;focus=thin;weight=513;coverage=85.47;target=90.0	2026-11-13T03:50:39Z
+cover:shillinq:05639debmd8ee:4751a52c	cover	shillinq	development	quality/test-coverage-4751a52c	lang=php;dirs=lib/Validation/*.php;focus=thin;weight=338;coverage=85.47;target=90.0	2026-11-13T03:53:34Z
+measure:keepiq:20261113h08	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T08:30:22Z
