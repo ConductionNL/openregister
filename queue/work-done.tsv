@@ -3126,3 +3126,4 @@ cover:dossiq:f8a113c5m7e79:74111b6d	already done: pcov on development (today) sh
 cover:shillinq:05639debmd8ee:c80330bb	already done: lib/Service/Purchasing/ at 96.7% lines (88/91) on development ebb2e0884; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:39Z
 cover:shillinq:05639debmd8ee:50cc8442	already done: lib/Util/*.php at 98.06% lines (152/155) on development ebb2e0884; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:55Z
 cover:integriq:92114ab0m658d:9d3a1784	already done: lib/BackgroundJob/*.php at 93.3% lines (846/907) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:19:48Z
+cover:dossiq:f8a113c5m7e79:3641032a	already done: lib/Service/Pipelinq 521/521 covered	session-20261113T051709-e616bf69	2026-11-13T07:20:03Z
