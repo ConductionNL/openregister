@@ -4056,3 +4056,4 @@ build:pipelinq:clients-registry-numbers-and-enrichment	failed: permission (compo
 measure:larpinq:20261113h08	php 92.61% js 79.0%	session-20261113T094617-36f80607	2026-11-13T09:50:19Z
 cover:learniq:e6498dddm0533:f545d745	PR #2461: failure paths of 5 repair steps, 8 tests, suite 6373->6381 (inherited 1F unchanged)	session-20261113T064518-860c039d	2026-11-13T09:51:15Z
 cover:integriq:92114ab0m158b:js971eca14	PR #3519: 27 vitest tests, ModalHost and SynchronizationNodeEditor 0%->100%; modals/v2 76.4%->83.9%; suite 1993->2020 all pass	session-20261113T081046-f0858dc4	2026-11-13T09:51:23Z
+gap:planninq:tcr2:burn1	PR #1143: 6 vitest specs for flow/phaseFiles/caseHandover api, asList/responseBody, memberSearchInput mixin, registerProjectsLeaf; suite 3133 green	session-20261113T074533-3e2a2da6	2026-11-13T09:51:32Z
