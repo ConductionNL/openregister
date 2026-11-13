@@ -5322,3 +5322,4 @@ integriq	3495	0dc6dd4b7a61d05c09e8beb531312c5cf818e8dc	GREEN	worker-12	tree 3494
 hermiq	1670	a10c02c71fdbcbe7c0bc704a3cb5b9819f37f04b	GREEN	worker-02	tree 1670+1671 on development beeb8ec1: 4198 tests, baseline 4187 (6 errors, 2 warnings inherited), new failures 0; tests-only diff
 hermiq	1671	e9ececd837248437985c1264ff28db30e61b3215	GREEN	worker-02	tree 1670+1671 on development beeb8ec1: 4198 tests, baseline 4187 (6 errors, 2 warnings inherited), new failures 0; tests-only diff
 dossiq	6315	e779507ecdb87ba4c23d52a8cf9ab5571f2daced	GREEN	worker-34	phpunit 15151 on tree (baseline 15137, same 19 inherited failures); tests only
+dossiq	6316	95a280b35ab2c02e3542cd4762648a4a42880312	GREEN	worker-34	phpunit 15151 on tree (baseline 15137, same 19 inherited failures); tests and coverage metadata only
