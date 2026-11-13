@@ -5757,3 +5757,4 @@ cover:shillinq:05639debm4eb8:568ec52a	PR #2949: 78 tests over 8 lifecycle guards
 verify:stackiq:1883:8d47c6e7	GREEN #1883 #1884: 3409 tests, 0 new failures	session-20261113T171141-a3907367	2026-11-13T17:57:57Z
 verify:opencatalogi:2591:1bb11622	opencatalogi #2591-#2594 GREEN: 5287 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:58:17Z
 verify:portaliq:2418:0d2821f2	GREEN #2418 (4914->4921 OK, JS specs pass)	session-20261113T171203-c5a044de	2026-11-13T17:58:47Z
+build:portal-account-presence	x	session-20261113T175400-7ec3993f	2026-11-13T17:59:04Z
