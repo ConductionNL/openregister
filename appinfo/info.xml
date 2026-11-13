@@ -440,6 +440,8 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Encrypts webhook and consumer secrets stored in clear and hashes stored
 			     calendar feed tokens; idempotent. -->
 			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
+			<!-- A schema stored before saves refused reference loops keeps its loop: name it. -->
+			<step>OCA\OpenRegister\Repair\ReportReferenceLoopSchemas</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
