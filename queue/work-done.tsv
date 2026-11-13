@@ -3032,3 +3032,4 @@ cover:hermiq:065f1631mfaac:716923f8	already above target: lib/Service/Credential
 cover:hermiq:065f1631mfaac:b97b9aec	already above target: lib/Service/Approval/ measures 97.54% (198/203) on development beeb8ec; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:55:46Z
 cover:hermiq:065f1631mfaac:17bbac84	already above target: lib/TaskProcessing/*.php measures 98.4% (123/125) on development beeb8ec; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:55:56Z
 cover:dossiq:f8a113c5m7e79:js7de78384	PR dossiq#6306: manifest fragment contract, 7 tests; src/manifest.d 2/31 -> 31/31	session-20261113T031701-b518f7f8	2026-11-13T06:56:07Z
+cover:shillinq:05639debmd8ee:59477eff	already done: lib/Service/Signing/ at 100% lines (193/193) on development 857108ba0, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:56:41Z
