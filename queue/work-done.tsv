@@ -1505,3 +1505,4 @@ verify:integriq:3448:edee7847	GREEN 3448,3449,3450; 7133 tests, only inherited C
 verify:launchpad:1149:4a15dcd3	7/7 GREEN (1149-1155 tests-only; phpunit 3631 OK, vitest 1557 green)	session-20261112T221237-836ed3f0	2026-11-13T01:57:21Z
 verify:shillinq:2819:bbec9eba	7 GREEN, 1 CONFLICT (2822 vs 2820 on Iv3ReportGeneratorTest); no new failures	session-20261113T011731-be978a55	2026-11-13T01:57:48Z
 measure:buildiq:20261113h00	php 80.12% (pcov, OR development sibling for bootstrap), js 79.32%	session-20261113T015003-f68021a4	2026-11-13T01:57:54Z
+cover:dossiq:6ca0231e:c17c6e8e	PR #6225: CallbackService + GuardedCitizenLookup (+13 tests); Kcc 88.5%->96.8%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:58:54Z
