@@ -909,3 +909,16 @@ keepiq	1732	ba76126251b4d81a6fa35b1058003ed60d9547c2	MERGED	merge-local	GATE OK 
 keepiq	1733	07d687d91041563d762c21c2e20c05ed96b528cc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1734	26ea6f867dfe0533dab23415f2fb0f5e64171e57	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1735	73eaa79ea36769e75e5432db05cb355cd8790a68	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1832	094123612109322eaaa16bd130960ba756b98aed	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1833	bf52c1683d1778e0edcbe1d6c019cff62d0b1767	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1834	3d523974560a78afe5beeb21b6a473eeccadd877	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1835	1f1f3e093e95c7eb2d87eeb4d860fd70f8b44a2b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1679	689e315f853994d1e757f86757da38ca3a3e8fbb	SKIP	merge-local	GATE UNMEASURED 689e315f85 does not merge cleanly onto development
+stackiq	1689	3fd47a002b37b0a9c7efc7c94e470fff5550db8f	SKIP	merge-local	stack: #1679 was not merged
+stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	SKIP	merge-local	stack: #1679 was not merged
+stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	SKIP	merge-local	stack: #1679 was not merged
+stackiq	1836	bb33d6771dcccc81a5c65c3d9cab5244d4bfe709	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1837	fcb8fb244b0e0d0047713fb54ef867fc6410022e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1838	9a140ac4d803e26748ed5bf38a37675226d076da	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1839	96a1216652fc14dc1a0b3af5f981b92a853975f5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1840	3b1e21947eb7f7ac33b0c121538d6b62749484ab	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
