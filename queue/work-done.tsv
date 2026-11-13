@@ -1896,3 +1896,4 @@ cover:stackiq:df113dffm8db8:js5794e9fc	PR #1831: 18 vitest tests, src/views/sett
 cover:launchpad:fb10c50fm31b6:js06645759	PR #1161: +26 vitest tests (WidgetRenderer 55->114/120, OrgNavigationItem 27->38/38); src/components/* 74.83%->90.28%; suite 1662->1688 green	session-20261113T031701-470b4a5e	2026-11-13T03:45:24Z
 verify:dossiq:6261:83b0a816	6261 GREEN: tests only, no new failures (php 19 / js 1 inherited)	session-20261113T024656-d5bfb688	2026-11-13T03:45:35Z
 cover:stackiq:df113dffm8db8:aae6d66c	already done: lib/Exception 4/4 statements covered at development 66e63c22	session-20261113T031700-46f75510	2026-11-13T03:46:01Z
+cover:stackiq:df113dffm8db8:05630945	PR #1832: 15 cases for StandardProtocolPaths (10/10); ApiPathAliases gap is unreachable empty-constant loops	session-20261113T031700-0e23c373	2026-11-13T03:46:39Z
