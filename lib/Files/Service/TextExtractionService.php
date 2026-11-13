@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
@@ -189,12 +190,71 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return;
 		}
 
+		// A file above the ceiling is never opened: it keeps its metadata chunk,
+		// so it stays findable by name, and says why it holds no text.
+		$ceiling = $this->extractionCeiling();
+		if ($ceiling->admits(size: ($ncFile['size'] ?? null)) === false) {
+			$this->persistSkippedFile(fileId: $fileId, ncFile: $ncFile, ceiling: $ceiling);
+			return;
+		}
+
 		// Extract and sanitize the source text payload (includes language metadata).
 		$payload = $this->extractSourceText(
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
 		);
 		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $options->entityTypes);
 	}//end extractFile()
+
+	/**
+	 * The extraction ceiling the file settings state; the default when they cannot be read.
+	 *
+	 * @return ExtractionCeiling
+	 */
+	private function extractionCeiling(): ExtractionCeiling {
+		try {
+			return ExtractionCeiling::fromSettings(fileSettings: $this->analysis->settingsService->getFileSettingsOnly());
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] File settings unreadable, using the default extraction ceiling',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return new ExtractionCeiling(maxBytes: ExtractionCeiling::DEFAULT_BYTES);
+		}
+	}//end extractionCeiling()
+
+	/**
+	 * Store only the metadata chunk of a file above the ceiling, with the status and the ceiling that applied.
+	 *
+	 * @param int                  $fileId  The Nextcloud file id.
+	 * @param array<string, mixed> $ncFile  The file row.
+	 * @param ExtractionCeiling    $ceiling The ceiling that kept it closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/large-file-handling/specs/file-actions/spec.md#requirement-text-extraction-has-a-stated-ceiling-and-a-file-above-it-stays-findable-req-lfh-001
+	 */
+	private function persistSkippedFile(int $fileId, array $ncFile, ExtractionCeiling $ceiling): void {
+		$payload = [
+			'source_type' => 'file',
+			'source_id' => $fileId,
+			'length' => 0,
+			'method' => 'llphant',
+			'owner' => $ncFile['owner'] ?? null,
+			'organisation' => $ncFile['organisation'] ?? null,
+			'extraction_status' => ExtractionCeiling::SKIPPED_TOO_LARGE,
+			'ceiling_bytes' => $ceiling->maxBytes,
+			'metadata' => [
+				'file_path' => $ncFile['path'] ?? null, 'file_name' => $ncFile['name'] ?? null,
+				'mime_type' => $ncFile['mimetype'] ?? null, 'file_size' => $ncFile['size'] ?? null,
+			],
+		];
+		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time())), chunks: []);
+
+		$this->analysis->logger->info(
+			message: '[TextExtractionService] File above the extraction ceiling; stored its metadata only',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $ncFile['size'] ?? null, 'ceiling' => $ceiling->maxBytes]
+		);
+	}//end persistSkippedFile()
 
 	/**
 	 * Index text a caller already extracted as the content of a file.
@@ -944,7 +1004,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// file, or what the caller named, such as `ocr` (#2033).
 			'extraction_method' => $payload['method'] ?? null,
 			'file_metadata' => $payload['metadata'] ?? [],
-		];
+		] + array_intersect_key($payload, array_flip(['extraction_status', 'ceiling_bytes']));
 	}//end summarizeMetadataPayload()
 
 	/**

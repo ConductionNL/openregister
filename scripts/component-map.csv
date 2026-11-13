@@ -1185,6 +1185,7 @@ Files/Service/TextExtraction/DocumentStyleMap.php,129,Files,Files,Files/Service/
 Files/Service/TextExtraction/EmlAttachment.php,25,Files,Files,Files/Service/TextExtraction/EmlAttachment.php,1,,Files
 Files/Service/TextExtraction/EmlBody.php,17,Files,Files,Files/Service/TextExtraction/EmlBody.php,1,,Files
 Files/Service/TextExtraction/EmlParser.php,359,Files,Files,Files/Service/TextExtraction/EmlParser.php,0,,Files
+Files/Service/TextExtraction/ExtractionCeiling.php,,Files,,,,,Files
 Files/Service/TextExtraction/EmlStructure.php,19,Files,Files,Files/Service/TextExtraction/EmlStructure.php,3,,Files
 Files/Service/TextExtraction/EntityRecognitionHandler.php,742,Files,Files,Files/Service/TextExtraction/EntityRecognitionHandler.php,0,,Files
 Files/Service/TextExtraction/ObjectHandler.php,172,Files,Files,Files/Service/TextExtraction/ObjectHandler.php,0,,Files
