@@ -5661,3 +5661,4 @@ cover:pipelinq:7f9dc8e6m16db:8f8dca30	already done: lib/Service/Export at ~98% l
 verify:pipelinq:3736:5ba55edd	3736 CONFLICT (l10n files), 3762 GREEN	session-20261113T171149-8b9ea523	2026-11-13T17:34:48Z
 verify:buildiq:1552:1e8f7986	GREEN 1552, GREEN 1553 (tests-only; vitest 4135 pass, no new failures)	session-20261113T172329-0b6220f9	2026-11-13T17:35:33Z
 cover:stackiq:9ac19b3am9d24:34f5c300	PR #1882: +16 tests (OrganizationSyncService, PublicationService); lib/Service 84.49->85.62%	session-20261113T172328-c860ad55	2026-11-13T17:37:01Z
+verify:dossiq:6425:a7797654	2 GREEN (6425,6426); no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:37:04Z
