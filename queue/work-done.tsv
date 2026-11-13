@@ -3707,4 +3707,5 @@ build:dossiq:a-delivered-set-is-written-by-publishing-only	already done: 1.1 bui
 cover:buildiq:70b3e29embf07:d528dcf0	already done: lib/Dashboard has 31 tests over all branches (batch -1 merged); only getIconClass() (constant getter) is untested, not worth a getter-only test; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:03:45Z
 cover:pipelinq:7f9dc8e6m916f:bc26df70	already done: lib/Service/Labels/ at 96/96 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:44Z
 cover:buildiq:70b3e29embf07:bede5e5d	already done: Automation+Credential at 92.4% lines (61/66; CompileInput 100%, VirtualAppCredentialRegistrar 91.2%) on development, above 90 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:03:54Z
+cover:pipelinq:7f9dc8e6m916f:28cccfd9	already done: batch -1 merged; lib/Repair/Support now 95/95 statements (100%); no PR	session-20261113T080556-d189f150	2026-11-13T09:03:54Z
 cover:pipelinq:7f9dc8e6m916f:6f346b68	already done: lib/Sections/*.php 5/5 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:53Z
