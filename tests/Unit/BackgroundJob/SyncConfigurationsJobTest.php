@@ -135,6 +135,36 @@ class SyncConfigurationsJobTest extends TestCase {
 		$this->runJob(null);
 	}
 
+	public function testRunRefusesASyncedDocumentThatDeclaresElevate(): void {
+		$config = $this->createConfigEntity(['id' => 1, 'lastSyncDate' => null, 'sourceType' => 'github']);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([$config]);
+
+		$this->githubService->method('getFileContent')->willReturn([
+			'components' => [
+				'schemas' => [
+					'case' => ['configuration' => ['x-openregister-action' => ['close' => ['elevate' => [['register' => '*', 'schema' => '*', 'verbs' => ['update']]]]]]],
+				],
+			],
+		]);
+
+		$this->configurationService->expects($this->never())->method('importFromApp');
+
+		$this->runJob(null);
+	}
+
+	public function testRunImportsASyncedDocumentWithActionsWithoutElevate(): void {
+		$config = $this->createConfigEntity(['id' => 1, 'lastSyncDate' => null, 'sourceType' => 'github']);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([$config]);
+
+		$this->githubService->method('getFileContent')->willReturn([
+			'components' => ['schemas' => ['case' => ['configuration' => ['x-openregister-action' => ['close' => ['label' => 'Close']]]]]],
+		]);
+
+		$this->configurationService->expects($this->once())->method('importFromApp');
+
+		$this->runJob(null);
+	}
+
 	public function testRunSkipsConfigurationNotDueForSync(): void {
 		$config = $this->createConfigEntity([
 			'lastSyncDate' => new DateTime(),
