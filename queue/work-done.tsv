@@ -5135,3 +5135,4 @@ cover:portaliq:b60f3b81:59826f43	PR #2404: AdminSettings covered (3 tests); lib/
 cover:portaliq:b60f3b81:e5d17af2	nothing to cover: lib/Auth/*.php holds a marker interface and two exception classes with no executable statements; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:20:04Z
 build:openregister:upload-malware-scan	partial: PR #10233 (1.1 gate+adapter, 1.2 contract suite+workflow, 2.1 archive members; 1.3 wiring must land with 3.1 CI ClamAV, 1.4 settings, 3.x CI/e2e left)	session-20261113T074532-3dc49c57	2026-11-13T13:20:14Z
 cover:portaliq:b60f3b81:13d51e6a	already done: lib/Service/Branch/ at 51/51 statements (100%) on development; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:20:16Z
+review:openregister:10227:bdaa165c	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:20:49Z
