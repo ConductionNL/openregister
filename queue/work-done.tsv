@@ -2033,3 +2033,4 @@ cover:keepiq:c967a31fm88ca:59826f43	already done: lib/Settings/*.php 28/28 state
 cover:hermiq:065f1631m7444:js4829b6aa	already done: src/views/* measures 1148/1311 stmts (87.6%) after merged -1/-2 PRs, above target 85	session-20261113T024656-2f332446	2026-11-13T04:11:05Z
 cover:hermiq:065f1631m7444:js0023cfc7	already at target: src/dialogs measures 85.2% lines (target 85); no PR	session-20261113T024654-6600dc41	2026-11-13T04:11:26Z
 cover:pipelinq:f67520ecm8c58:f545d745	PR #3642: 24 tests + golden test un-risked; lib/Repair 80.9% -> 90.0%; 1 inherited failure	session-20261113T031700-211f0599	2026-11-13T04:11:37Z
+verify:dossiq:6266:4514e2e9	3 GREEN (6266-6268); phpunit 14292 (baseline 14246, 19 inherited failures), 0 new; tests only	session-20261113T034632-47095943	2026-11-13T04:11:51Z
