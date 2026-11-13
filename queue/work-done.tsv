@@ -5738,6 +5738,7 @@ verify:learniq:2468:36995979	GREEN 2468, GREEN 2469 (tests only, 0 new failures 
 cover:pipelinq:7f9dc8e6m16db:b96c059a	already done: lib/Service/SearchConsole/ at 96.3% line coverage, no thin classes	session-20261113T171154-27186e77	2026-11-13T17:55:28Z
 cover:shillinq:05639debm4eb8:c37ad97a	PR #2948: 14 tests, PaymentPlanAllocator 100%, PaymentPlanService 98.8%	session-20261113T172329-0b6220f9	2026-11-13T17:55:19Z
 verify:learniq:2466:2e02f2a5	learniq #2466 #2467 GREEN: 6449 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:55:39Z
+cover:pipelinq:7f9dc8e6m16db:2cc09f74	already covered: lib/Service/Marketing/Transport 330/335 stmts on development 4c67daf; the 5 misses are unreachable defensive branches (object/string provider id after json_decode assoc; LocalMessage always present); earlier -1 branch already merged; no PR	session-20261113T172334-4b3b027b	2026-11-13T17:55:55Z
 verify:portaliq:2414:bf16d223	2414 GREEN, 2415 CONFLICT (package.json with 2414)	session-20261113T175400-7ec3993f	2026-11-13T17:55:53Z
 build:portaliq:form-statements-intro-and-confirmation-mail	PR #2419: T06 built (intro switch on the form settings page, intro.enabled honoured server and site; tabs already there); T07-T08 need a live instance	session-20261113T172329-e224a4f0	2026-11-13T17:56:09Z
 cover:pipelinq:7f9dc8e6m16db:38e80a9f	already done: round -1 merged; every command has a test file covering each branch (checked the thinnest four by hand)	session-20261113T171203-c5a044de	2026-11-13T17:55:58Z
