@@ -4566,3 +4566,8 @@ build:pipelinq:time-entry-mobile-offline	build	pipelinq	development	time-entry-m
 build:pipelinq:walk-in-queue-page	build	pipelinq	development	walk-in-queue-page	change=walk-in-queue-page;open=1	2026-11-13T09:44:25Z
 build:pipelinq:website-forms-submit-into-tickets	build	pipelinq	development	website-forms-submit-into-tickets	change=website-forms-submit-into-tickets;open=2	2026-11-13T09:44:25Z
 build:pipelinq:wire-rapportage-csv-export	build	pipelinq	development	wire-rapportage-csv-export	change=wire-rapportage-csv-export;open=9	2026-11-13T09:44:25Z
+verify:dossiq:6378:e20fc60f	verify	dossiq	development	merge	prs=6378@a657aadbb24f5fe595fe46e711155b926a3a1ffd,6379@4c165be574ac13ac534db72818b4c4078c2d86d7	2026-11-13T09:45:22Z
+verify:buildiq:1536:29e55383	verify	buildiq	development	merge	prs=1536@c016cbe958596e3b52964082df7cb2b5e822da18	2026-11-13T09:45:22Z
+merge:stackiq:1693:44f4b992	merge	stackiq	development	development	prs=1693@44193bc9eecf070881f3df33c1002d339868025b,1813@8e311d81de144657f97c1cd6ce4b36e739a2a7ed,1864@a9af792e188eed982e281451b47304d06f9042b5,1704@f55ed033a0d75c518f0476302f49b8bf3218d361,1706@5ba0e54b3550a536789ec349d1e6b746e42ab4ee;stacks=1704>1706	2026-11-13T09:45:22Z
+merge:shillinq:2819:dcd89161	merge	shillinq	development	development	prs=2819@c6c0b8c1134a82fd85b5eb3acaf0418ad0d0df55	2026-11-13T09:45:22Z
+cover:dossiq:069ee2d6m7275:4c817077	cover	dossiq	development	quality/test-coverage-4c817077	lang=php;dirs=lib/Service/Notification/;focus=thin;weight=1617;coverage=89.34;target=90.0	2026-08-15T08:39:18Z
