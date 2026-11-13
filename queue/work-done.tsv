@@ -6283,3 +6283,4 @@ verify:integriq:3531:86b57bbc	3531 GREEN (tests only, 8235 tests, 4 inherited re
 cover:shillinq:05639debm7b6b:60b3923a	already done: lib/Service/EInvoice/ measured 348/349 (99.7%) on b0ed3e448 (target 95); earlier -1 PR merged	session-20261113T185328-a5a717bc	2026-11-13T19:18:41Z
 cover:hermiq:065f1631md84f:d825828c	already done: lib/Service/Literacy/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T19:18:37Z
 cover:shillinq:05639debm7b6b:e6f8d431	PR #3012: 4 edge tests, 4 surviving mutants killed, Relation stmts 255/258->258/258; suite 10394->10398, only inherited webhook failure	session-20261113T175323-e340fb07	2026-11-13T19:19:08Z
+cover:hermiq:065f1631md84f:f91e7417	PR #1706: ConnectionStatus @uses->@covers (Connection 98%->99%); last miss unreachable with stub	session-20261113T185322-2911ee6d	2026-11-13T19:19:00Z
