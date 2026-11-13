@@ -6157,3 +6157,4 @@ fix:shillinq:2963:ff530f40	no change: clean vs development; conflicts only with 
 cover:decidiq:a5f973bbm5a4d:60c2c265	already done: lib/Controller/*.php measured 3038/3181 lines (95.5%, target 95); no PR	session-20261113T172329-5f4feaba	2026-11-13T19:01:53Z
 cover:decidiq:a5f973bbm5a4d:be0dcca9	already done: lib/Mcp/*.php at 534/534 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:01:43Z
 cover:decidiq:a5f973bbm5a4d:e372e6ff	already done: lib/Event/*.php at 145/145 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:03Z
+cover:decidiq:a5f973bbm5a4d:58192586	already done: lib/Service/Records at 371/379 lines (97.9%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:14Z
