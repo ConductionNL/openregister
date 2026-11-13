@@ -5488,3 +5488,4 @@ cover:hermiq:065f1631me44a:1191da39	PR #1687: +2 egress guard tests; dir already
 verify:pipelinq:3756:33ff2c6d	3756 GREEN, 3757 GREEN (tests only, no new failures)	session-20261113T101609-bc51215d	2026-11-13T14:20:20Z
 review:openregister:10253:59539716	APPROVE with conflict note: 5 files conflict with main; head green (TextExtraction 435+48, Settings 366, Controller/Settings 391, Architecture 2358)	session-20261113T081046-f0858dc4	2026-11-13T14:20:28Z
 review:openregister:10279:4ae53493	APPROVE: change-specified, access paths checked, suites green/identical to main, phpstan clean	session-20261113T094602-d25cda2a	2026-11-13T14:20:31Z
+review:openregister:10266:fbc6c154	APPROVE: additive admin inventory key, suites green	session-20261113T081048-4978ac57	2026-11-13T14:20:53Z
