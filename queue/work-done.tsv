@@ -6372,3 +6372,4 @@ cover:dossiq:069ee2d6mbd37:ea81adeb	already done: lib/Service/Zgw/*.php at 98.91
 cover:dossiq:069ee2d6mbd37:23f6b1f1	PR #6441: 4 test files, 31 tests (HandlerActsAsSystem, ExternalHome, RebindMove, CaseSplitPlan); suite 20 failures before/after	session-20261113T192653-93fd55cc	2026-11-13T19:35:59Z
 review:openregister:10302:31a54a69	APPROVE	session-20261113T175327-6e4e7f28	2026-11-13T19:36:13Z
 review:openregister:10300:03e8599e	BLOCK: schema-only search without register returns empty, team pages list nothing; phpstan clean, Reference/Architecture/Rules/Contract green, Controller 9 errors inherited from main	session-20261113T192651-cb1e4daf	2026-11-13T19:36:25Z
+review:openregister:10305:322d15db	APPROVE 10305	session-20261113T192704-f298034f	2026-11-13T19:36:45Z
