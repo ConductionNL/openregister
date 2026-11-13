@@ -1521,3 +1521,4 @@ cover:shillinq:801aab65:87821f2f	PR: 18 tests for VatLineStamper (63/63); Vat di
 verify:filinq:2001:b5697f6a	2001,2002 GREEN: tests-only, 5510 tests, no failures	session-20261113T011731-f3798045	2026-11-13T02:00:53Z
 cover:keepiq:d76c2121m70b5:dfaef732	no PR: lib/Notification already 393/395 lines (99.5%) on 77f4641; the 2 uncovered lines (KeepiqNotifier:128, :318) are the unreachable fall-through after the subject-map guard, not coverable without production change	session-20261113T015003-d56b074c	2026-11-13T02:01:14Z
 cover:filinq:8ecceb86:59826f43	already done: lib/Settings/FilinqAdmin.php 14/14 lines covered by FilinqAdminSettingsTest at 1684dc33b, no PR	session-20261113T011731-f3798045	2026-11-13T02:02:12Z
+cover:filinq:8ecceb86:d057649b	already done: lib/Event/Support/ (2 readonly value objects) 100% covered at 1684dc33; further tests would be getter-only; no PR	session-20261113T015003-f68021a4	2026-11-13T02:02:17Z
