@@ -3706,3 +3706,4 @@ cover:dossiq:069ee2d6m7e79:ea81adeb	already done: lib/Service/Zgw/*.php at 2261/
 build:dossiq:a-delivered-set-is-written-by-publishing-only	already done: 1.1 built in #3889 and still on development; 2.1 is declared a separate change	session-20261113T084523-b4140bcd	2026-11-13T09:03:33Z
 cover:pipelinq:7f9dc8e6m916f:bc26df70	already done: lib/Service/Labels/ at 96/96 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:44Z
 cover:buildiq:70b3e29embf07:bede5e5d	already done: Automation+Credential at 92.4% lines (61/66; CompileInput 100%, VirtualAppCredentialRegistrar 91.2%) on development, above 90 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:03:54Z
+cover:pipelinq:7f9dc8e6m916f:6f346b68	already done: lib/Sections/*.php 5/5 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:53Z
