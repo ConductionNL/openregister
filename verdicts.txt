@@ -2808,3 +2808,4 @@
 10168 27f234c20e64c3a42eb38932e3f00cc355d5acda APPROVE tests only: SourceMapperFindForSystemTest (4) passes merged with main, strict coverage metadata clean; no production code changed
 10149 0a12138367771a48078a92b8a26e71fd784447ac APPROVE tests only (schema shape + PUT org-admin gate); merged with main: new tests 13 OK, Architecture 2358, Contract 21, Rules 296, Controller 9964 all pass
 10172 8acb05a2ea45a85da66fda183e714841a3882fd6 APPROVE docs and task list only; documented renderMode API matches lib on main; leaf tests (7+26+4) and Contract pass merged with main
+10156 979bada99fe98dc40749683067e608a4f6d0bc63 BLOCK RestApiSourceFetcher now gets HarvestHttpClient by autowiring, so every existing REST source passes the outbound address guard with no per-source opt-in; a source on a private-range host that harvests on main is refused here. Rest of the diff checks out.
