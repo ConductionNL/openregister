@@ -3297,3 +3297,4 @@
 2026-11-13T07:10:50Z integrator-20261111T115842-a749432d MERGED-TREE fe5aef5a8f: 1 PRs in one push, main now fe5aef5a8f = tested tree
 2026-11-13T07:54:15Z integrator-20261111T115842-a749432d GREEN tree fee4590d8a on dev f0b31b119e prs 6 front=ok: Tests: 58237, Assertions: 200106, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-13T07:56:52Z integrator-20261111T115842-a749432d MERGED-TREE fee4590d8a: 6 PRs in one push, main now fee4590d8a = tested tree
+2026-11-13T07:57:28Z session-20261113T072708-ee434236 correction: task cover:versioniq:1b35eed9:1d2bf2e8 opened PR #673 (its result line says #672 by mistake)
