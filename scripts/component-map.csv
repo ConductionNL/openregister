@@ -2513,6 +2513,7 @@ Service/Integration/PropertySemanticReferenceValidator.php,68,Service,Integratio
 Service/Integration/Providers/ActivityProvider.php,121,Service,Integrations,Integrations/Service/Integration/Providers/ActivityProvider.php,0,,Integrations
 Service/Integration/Providers/AnalyticsProvider.php,61,Service,Integrations,Integrations/Service/Integration/Providers/AnalyticsProvider.php,0,,Integrations
 Service/Integration/Providers/BookmarksProvider.php,49,Service,Integrations,Integrations/Service/Integration/Providers/BookmarksProvider.php,0,,Integrations
+Service/Integration/Providers/BrpMockRegister.php,138,Service,Work,Work/Service/Integration/Providers/BrpMockRegister.php,0,,Integrations
 Service/Integration/Providers/BrpPersonProvider.php,187,Service,Work,Work/Service/Integration/Providers/BrpPersonProvider.php,3,,Integrations
 Service/Integration/Providers/CalendarProvider.php,73,Service,Integrations,Integrations/Service/Integration/Providers/CalendarProvider.php,0,,Integrations
 Service/Integration/Providers/CollectivesProvider.php,67,Service,Integrations,Integrations/Service/Integration/Providers/CollectivesProvider.php,0,,Integrations
