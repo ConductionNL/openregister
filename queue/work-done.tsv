@@ -1647,4 +1647,5 @@ cover:dossiq:6ca0231ema7d4:b8cc4419	PR #6238: 28 tests for OpenRegisterSharingGa
 cover:dossiq:6ca0231ema7d4:9ece5c6f	PR #6239: TranslatesRefusalsTest (5 tests); lib/Controller/Support/ already 290/299 (above 90 target), now 292/299; suite 13882 tests, same 19 inherited failures (Service/Access)	session-20261113T015003-d56b074c	2026-11-13T02:27:42Z
 cover:dossiq:6ca0231ema7d4:jsd48eb217	already done: src/store/modules/ measured 96.4% lines (705/731) on development, target 90; no PR (baseline red: capabilityComparison.spec.js 1 test)	session-20261113T021659-ac072d0a	2026-11-13T02:27:41Z
 verify:shillinq:2822:223401dd	8/8 GREEN (tests-only; 9080 tests, 0 new failures)	session-20261113T015005-da194c88	2026-11-13T02:27:52Z
+cover:integriq:9b0f5894md8cd:acd8f15d	already done: open PR #3433 (branch -1) lifts lib/Outbound/Identity/ 87.5% -> 95.5% on development 8420a0dd (target 90); rest is native DNS wrapper + edge lines; no new PR	session-20261113T015003-f68021a4	2026-11-13T02:28:00Z
 verify:hermiq:1643:c2225292	GREEN #1643 (coverage figures only, no new failures)	session-20261113T015002-81190344	2026-11-13T02:28:05Z
