@@ -1,12 +1,215 @@
 {
  "app": "filinq",
- "commit": "e1f08e30b88c6e7128cac176143bc81503fdfc44",
- "measured_at": "2026-11-13T04:38:06Z",
- "php": null,
+ "commit": "90be525f52fb2b4227919f3ff8a4f75c65876069",
+ "measured_at": "2026-11-13T06:44:51Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 94.11,
+  "statements": 34099,
+  "covered": 32091,
+  "dirs": {
+   "lib/AppInfo/": [
+    87,
+    59
+   ],
+   "lib/BackgroundJob/": [
+    458,
+    458
+   ],
+   "lib/Command/": [
+    27,
+    27
+   ],
+   "lib/Controller/": [
+    3878,
+    3696
+   ],
+   "lib/Controller/Support/": [
+    88,
+    87
+   ],
+   "lib/Dashboard/": [
+    17,
+    17
+   ],
+   "lib/Event/": [
+    168,
+    168
+   ],
+   "lib/Event/Support/": [
+    2,
+    2
+   ],
+   "lib/EventListener/": [
+    1119,
+    1100
+   ],
+   "lib/Exception/": [
+    79,
+    79
+   ],
+   "lib/Flow/": [
+    99,
+    99
+   ],
+   "lib/Kernel/": [
+    16,
+    16
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
+   "lib/Mcp/": [
+    4,
+    4
+   ],
+   "lib/Middleware/": [
+    116,
+    115
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    56
+   ],
+   "lib/Notification/": [
+    16,
+    16
+   ],
+   "lib/Portal/": [
+    181,
+    181
+   ],
+   "lib/Repair/": [
+    790,
+    773
+   ],
+   "lib/Sections/": [
+    6,
+    6
+   ],
+   "lib/Service/": [
+    15693,
+    14319
+   ],
+   "lib/Service/BulkSigning/": [
+    286,
+    284
+   ],
+   "lib/Service/Charts/": [
+    865,
+    857
+   ],
+   "lib/Service/Classification/": [
+    192,
+    187
+   ],
+   "lib/Service/Comparison/": [
+    258,
+    253
+   ],
+   "lib/Service/Contract/": [
+    290,
+    278
+   ],
+   "lib/Service/Conversion/": [
+    932,
+    894
+   ],
+   "lib/Service/Editing/": [
+    1846,
+    1811
+   ],
+   "lib/Service/EmailIngestion/": [
+    267,
+    238
+   ],
+   "lib/Service/EntitySearch/": [
+    307,
+    298
+   ],
+   "lib/Service/Extraction/": [
+    160,
+    154
+   ],
+   "lib/Service/Intake/": [
+    153,
+    153
+   ],
+   "lib/Service/LegalHold/": [
+    403,
+    361
+   ],
+   "lib/Service/Ocr/": [
+    135,
+    118
+   ],
+   "lib/Service/Office/": [
+    127,
+    127
+   ],
+   "lib/Service/Pseudonymisation/": [
+    386,
+    334
+   ],
+   "lib/Service/Publication/": [
+    337,
+    301
+   ],
+   "lib/Service/Redaction/": [
+    652,
+    642
+   ],
+   "lib/Service/Sanitization/": [
+    147,
+    134
+   ],
+   "lib/Service/SignerAuth/": [
+    483,
+    467
+   ],
+   "lib/Service/Signing/": [
+    867,
+    866
+   ],
+   "lib/Service/SigningEnvelope/": [
+    197,
+    182
+   ],
+   "lib/Service/SubjectErasure/": [
+    820,
+    804
+   ],
+   "lib/Service/Suggestion/": [
+    88,
+    87
+   ],
+   "lib/Service/Support/": [
+    23,
+    23
+   ],
+   "lib/Service/Validation/": [
+    230,
+    228
+   ],
+   "lib/Service/VeraPdf/": [
+    309,
+    300
+   ],
+   "lib/Service/Wizard/": [
+    422,
+    418
+   ],
+   "lib/Settings/": [
+    14,
+    14
+   ]
+  }
+ },
  "js": {
-  "pct": 86.95,
-  "statements": 3095,
-  "covered": 2691,
+  "pct": 93.34,
+  "statements": 3123,
+  "covered": 2915,
   "dirs": {
    "src/": [
     114,
@@ -33,16 +236,16 @@
     115
    ],
    "src/services/": [
-    1189,
-    1110
+    1209,
+    1201
    ],
    "src/store/": [
     37,
     37
    ],
    "src/store/modules/": [
-    1461,
-    1138
+    1469,
+    1271
    ],
    "src/utils/": [
     11,
