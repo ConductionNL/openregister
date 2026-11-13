@@ -1657,3 +1657,4 @@ cover:dossiq:6ca0231ema7d4:9951e799	PR #6240: 8 guard tests; DecisionDocument di
 cover:keepiq:d76c2121m88ca:882bd950	already done: SecretSearchProvider (only class in lib/Search) fully covered by merged quality/test-coverage-882bd950-1; no PR	session-20261113T021704-7f11f0d9	2026-11-13T02:29:06Z
 cover:keepiq:d76c2121m88ca:0d67c1f3	already done: lib/Service/Siem 193/193 statements covered on development (branch -1 merged); no PR	session-20261113T015002-81190344	2026-11-13T02:28:59Z
 verify:decidiq:2108:9cdaf28f	2108 GREEN (coverage docs only; 3116 tests, no new failures)	session-20261113T021659-ac072d0a	2026-11-13T02:29:05Z
+cover:keepiq:d76c2121m88ca:a4b15ae4	already done: lib/Event/Audit 19/19 lines covered at e61d518, no PR	session-20261113T011731-f3798045	2026-11-13T02:29:15Z
