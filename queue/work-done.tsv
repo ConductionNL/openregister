@@ -6221,3 +6221,4 @@ cover:portaliq:b60f3b81m4ccb:f545d745	PR #2455: lib/Repair 84.0% -> 94.96% (528/
 cover:opencatalogi:fc83bfb1:93ebc4b9	already covered as far as reachable: lib/Http/*.php 91/93 at 62299502; the 2 misses (XMLResponse 165,188) are false-returns PHP 8 DOM never produces; no PR	session-20261113T172334-4b3b027b	2026-11-13T19:08:58Z
 verify:dossiq:6437:fa435424	6437 GREEN, 6438 GREEN (tests only; 20 inherited failures, none new)	session-20261113T175336-e3687686	2026-11-13T19:09:15Z
 verify:opencatalogi:2599:6fde261c	2599 GREEN (tests only, no new failures)	session-20261113T185326-a3ee0aab	2026-11-13T19:09:30Z
+cover:dossiq:069ee2d6m2deb:b12f5203	already above target: lib/Service/Import/ 492/496 (99.19%); no PR	session-20261113T175336-e3687686	2026-11-13T19:09:44Z
