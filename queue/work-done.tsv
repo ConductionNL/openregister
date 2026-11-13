@@ -2786,3 +2786,5 @@ cover:dossiq:f8a113c5mac88:e2e021bd	already done: lib/Service/Transitions/ at 93
 cover:shillinq:05639debmd8ee:7d6e64db	PR #2887: 7 tests (TreasuryRateResult, LogTreasuryRateAdapter); suite 9194, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:26:33Z
 cover:shillinq:05639debmd8ee:4a1652a7	already done: lib/Service/External/Uwv 42/43 (97.67%) on development (covered by 76b83d0f); no PR	session-20261113T031701-b518f7f8	2026-11-13T06:26:30Z
 cover:dossiq:f8a113c5mac88:6a58479a	already done: lib/Service/Support/*.php at 94.3% lines (678/719) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:26:29Z
+cover:shillinq:05639debmd8ee:34f5c300	PR opened: 17 cases for FeeScheduleMatcher, RecurringModifierExpander; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:26:49Z
+cover:pipelinq:7f9dc8e6m1e6e:38e80a9f	already done: lib/Command/*.php 382/382 statements covered on development; no PR	session-20261113T061518-90540a48	2026-11-13T06:27:02Z
