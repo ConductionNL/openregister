@@ -4680,3 +4680,4 @@ build:openregister:audit-read-events-visible-to	PR #10150: task 2.1 admin UI fie
 fix:pipelinq:3734:666ee86d	failed: branch already contains development; the l10n conflict is only with unmerged #3721 and resolves by merging development once #3721 lands	session-20261113T071631-5a3cc070	2026-11-13T11:58:27Z
 fix:pipelinq:3739:873d21ad	moved new l10n keys mid-catalogue, merges cleanly with #3721; REVERIFY 21e54109	session-20261113T093920-50335e74	2026-11-13T11:58:28Z
 fix:pipelinq:3743:a7b9c340	fixed: l10n strings moved mid-catalogue, merges beside 3721; new head 222fa459	session-20261113T104531-16da055e	2026-11-13T11:59:03Z
+fix:pipelinq:3748:7fcea3b9	moved new l10n keys mid-catalogue, merges cleanly with #3721 and #3739; REVERIFY 31cb846e	session-20261113T093920-50335e74	2026-11-13T11:59:22Z
