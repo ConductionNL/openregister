@@ -49,6 +49,10 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Exception\CustomValidationException
  * @uses   \OCA\OpenRegister\Db\Decision
  * @uses   \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\DecisionMetadataEdit
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
  */
 class RelationDecisionServiceBehaviourTest extends TestCase
 {

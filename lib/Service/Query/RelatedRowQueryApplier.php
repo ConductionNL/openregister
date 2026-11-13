@@ -23,8 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -82,6 +85,45 @@ class RelatedRowQueryApplier {
 	public function mayReadProperty(Schema $schema, string $property): bool {
 		return $this->access->mayReadProperty(schema: $schema, property: $property);
 	}//end mayReadProperty()
+
+	/**
+	 * Refuse a top-level filter or sort on a property the caller may not read.
+	 *
+	 * Which rows match, and in which order, would answer what the property read
+	 * rule withholds. A query with RBAC off, or a system operation, is not asked.
+	 *
+	 * @param array<mixed> $query  The search query.
+	 * @param Schema       $schema The schema being searched.
+	 *
+	 * @return void
+	 *
+	 * @throws ExplicitRevealQueryException When the query filters or sorts on such a property.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	public function refuseUnreadableFilterOrSort(array $query, Schema $schema): void {
+		$rbac = ($query['_rbac'] ?? true);
+		if ($rbac === false || $rbac === 'false' || $rbac === '0' || $rbac === 0
+			|| SystemOperationContext::isActive() === true
+			|| $schema->hasPropertyAuthorization() === false
+		) {
+			return;
+		}
+
+		$order = (new OrderParameter(order: ($query['_order'] ?? [])))->fields();
+		foreach (array_keys($schema->getProperties() ?? []) as $name) {
+			$name = (string)$name;
+			if (array_key_exists($name, $query) === false && array_key_exists($name, $order) === false) {
+				continue;
+			}
+
+			if ($this->mayReadProperty(schema: $schema, property: $name) === false) {
+				throw new ExplicitRevealQueryException(
+					message: sprintf('\'%s\' cannot be filtered or sorted on.', $name)
+				);
+			}
+		}
+	}//end refuseUnreadableFilterOrSort()
 
 	/**
 	 * Narrow a query by every `_related` block it carries.

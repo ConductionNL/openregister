@@ -48,6 +48,19 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
+ * @uses   \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 

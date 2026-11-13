@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskCalendarDocument
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjector
  */
 final class TaskCalendarDocumentTest extends TestCase {
 

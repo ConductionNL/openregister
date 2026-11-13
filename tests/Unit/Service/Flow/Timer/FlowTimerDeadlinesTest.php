@@ -54,6 +54,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Db\FlowTimer
  * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RollRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
  */
 class FlowTimerDeadlinesTest extends TestCase {
 

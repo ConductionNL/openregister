@@ -130,6 +130,18 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
 
 	/**
+	 * A session whose user has an empty uid is no reader either.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyUidCountsAsNoReader(): void {
+		$query = $this->makeHandler(uid: '')->buildSearchQuery(['_unread' => 'true'], 1, 777);
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $query);
+		$this->assertStringContainsString(needle: 'no-unread-reader', haystack: ($query['_ids'][0] ?? ''));
+	}//end testAnEmptyUidCountsAsNoReader()
+
+	/**
 	 * The reader is always the session, whatever the request names.
 	 *
 	 * @return void

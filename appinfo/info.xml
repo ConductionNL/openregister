@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.0</version>
+    <version>2.2.0-dev.1</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -133,6 +133,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SharerAccessSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExternalGrantLapseJob</job>
@@ -341,6 +342,10 @@ Vrij en open source onder de EUPL-licentie.
 			     Post-migration, because it needs the flow_* columns the schema
 			     migration adds. -->
 			<step>OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution</step>
+			<!-- Keys the audit chain: the existing rows are verified and keep their
+			     unkeyed links, the next row links onto them with an HMAC under the
+			     chain key. After the seed v2 re-seal, so it verifies the final form. -->
+			<step>OCA\OpenRegister\Repair\KeyAuditHashChain</step>
 			<!-- Task fixtures (flow-task-entity, ADR-001): the five seed
 			     groups from the change's design.md, idempotent on uuid.
 			     OPT-IN: runs only when app config openregister/seed_demo_tasks
@@ -494,6 +499,8 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
 			<step>OCA\OpenRegister\Repair\SeedIntakeSourceRegister</step>
+			<!-- A fresh install keys the audit chain from its first row. -->
+			<step>OCA\OpenRegister\Repair\KeyAuditHashChain</step>
 		</install>
 	</repair-steps>
 

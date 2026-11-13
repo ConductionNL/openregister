@@ -40,6 +40,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
  */
 final class RuleMessageGoldenTest extends TestCase {
 
