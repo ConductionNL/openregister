@@ -1774,6 +1774,7 @@ cover:filinq:8ecceb86mc744:519c54f6	PR #2015: 13 tests, PhpWord 68->114/118, Lib
 verify:buildiq:1491:1f5ec8a5	3 GREEN (1491,1492,1493), 0 new failures	session-20261113T031704-5a455d65	2026-11-13T03:18:47Z
 cover:filinq:8ecceb86mc744:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 123 interfaces with 0 executable statements (measured with pcov)	session-20261113T024656-2f332446	2026-11-13T03:19:59Z
 fix:thematiq:1660:29d2f8f7	failed: permission (close refused); PR is obsolete: development #1662 already ships a versioned openapi.json that passes ADR; this one conflicts (add/add) and fails include-major-version-in-uri on its unversioned server url; close it	session-20261113T031700-7e4db3e6	2026-11-13T03:20:02Z
+cover:dossiq:6ca0231ema7d4:js0be8c659	PR #6261: +27 vitest specs on 5 modals; src/modals 81.0%->91.1%; 1 inherited failure, none new	session-20261113T024656-d5bfb688	2026-11-13T03:20:42Z
 merge:stackiq:1693:fb94e5c7	merge-local over 11 stackiq tasks: merged=27 red=0 fail=0 skip=11; already in development 10; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:20:38Z
 merge:stackiq:1706:d4989553	merge-local over 11 stackiq tasks: merged=27 red=0 fail=0 skip=11; already in development 10; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:20:38Z
 merge:stackiq:1692:9a920908	merge-local over 11 stackiq tasks: merged=27 red=0 fail=0 skip=11; already in development 10; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:20:38Z
