@@ -1873,3 +1873,4 @@ cover:filinq:7a9ef677mc744:js8a19c098	already done: open PR #2004 (verified GREE
 cover:openregister:7350e3efm0e99:9632bd63	PR #10094: McpSchemaOwnership 5->35/35 + @uses fix for 11 risky tests; Mcp dirs 93.98->95.45%	session-20261113T015005-da194c88	2026-11-13T03:39:56Z
 cover:learniq:1ae7757ema84a:jsea7197ec	PR learniq#2433: 10 tests, src/utils 89.01->89.19% (-1 branch already holds signUpDecisionRequest)	session-20261113T031704-4f12cb78	2026-11-13T03:39:54Z
 verify:buildiq:1495:5d078a9a	1495 GREEN, 1496 GREEN: tests-only, php baseline unchanged, vitest 3419 pass	session-20261113T024654-6600dc41	2026-11-13T03:39:51Z
+cover:dossiq:6ca0231ema7d4:ab2de1d0	already done: lib/Service/Obligations 170/177 stmts (96.0%) on development after quality/test-coverage-ab2de1d0-1	session-20261113T024656-d5bfb688	2026-11-13T03:39:58Z
