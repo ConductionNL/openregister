@@ -6566,7 +6566,9 @@ cover:integriq:92114ab0m0593:19badfa5	already done: lib/Outbound/Call/*.php at 6
 build:filinq:whole-collection-integrity-scan	partial: PR filinq#2095 builds task 1 (scan service, integrityScan schema) and the occ command; job, notifier, admin section left	session-20261113T175332-5effc865	2026-11-13T20:10:02Z
 cover:buildiq:70b3e29em7beb:8ed5443b	already done: lib/Kernel/Contracts/*.php is 51 interfaces with no executable statements (0 statements in pcov clover); nothing to cover, no PR	session-20261113T182404-f2c28226	2026-11-13T20:10:02Z
 cover:pipelinq:7f9dc8e6m8ce9:fdb25f89	already done: lib/Service/Access at 86/86 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T20:10:15Z
+cover:pipelinq:7f9dc8e6m8ce9:168f7791	already done: lib/Dossiq/*.php at 26/26 100.0 lines (measured this session)	session-20261113T172349-00278d9d	2026-11-13T20:10:28Z
 build:filinq:templates-house-style-from-thematiq	partial: PR #2096 (1.1, 1.2, 2.2 done; 2.1 code done but local run and mPDF font files left; 3.1 screenshot left); suite 6443 to 6483 OK	session-20261113T195345-400acccd	2026-11-13T20:10:49Z
 build:filinq:work-stamp-text-on-every-page	PR opened: tasks 1.1, 1.2, 2.1 and 3.1 built with 16 new tests (6443->6459, all passing); 2.2 is a live run with decidiq, left open	session-20261113T192659-0ddb618f	2026-11-13T20:10:54Z
 cover:buildiq:70b3e29em7beb:59826f43	already done: lib/Settings/*.php is AdminSettings.php at 100% (9/9 statements); no PR	session-20261113T182404-f2c28226	2026-11-13T20:10:48Z
 verify:pipelinq:3777:91d1f76e	GREEN 3777,3778,3779 (tests only, no new failures)	session-20261113T185324-28e07ab2	2026-11-13T20:10:54Z
+cover:pipelinq:7f9dc8e6m8ce9:7505aeb4	already done: lib/Activity/*.php at 66/66 100.0 lines (measured this session)	session-20261113T172349-00278d9d	2026-11-13T20:11:18Z
