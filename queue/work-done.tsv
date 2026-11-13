@@ -1330,3 +1330,4 @@ merge:filinq:1976:1806e527	merge-local over 3 filinq tasks: merged=9 red=0 fail=
 merge:filinq:1978:f915358b	merge-local over 3 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:11:21Z
 cover:dossiq:6ca0231e:3ee9dda7	PR #6213: 10 tests, CaseCustodyChain 102->114/115, CaseTakeoverRequest 172->185/185, Custody 596->621/629, suite 13462->13472, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T01:11:34Z
 verify:shillinq:2806:56379199	GREEN 2806,2807,2808: tree 9054 tests, 0 new failures (1 inherited), tests-only diffs	session-20261112T234655-599f9c9a	2026-11-13T01:11:34Z
+cover:launchpad:755175ffm7412:60c2c265	PR #1146: 3 classes, 15 tests, suite 3579->3594, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:11:41Z
