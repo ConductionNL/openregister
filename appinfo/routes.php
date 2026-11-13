@@ -144,6 +144,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // nothing leaves draft by accident. A plain Controller, so a refusal
         // keeps its status (OCSMiddleware would turn a 403 into a 200).
         ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // Named drafts of an object beside the published one (records-draft-versions 2.2).
+        ['name' => 'versions#index', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#create', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#show', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#update', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'PUT', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
 
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
