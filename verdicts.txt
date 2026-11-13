@@ -2748,3 +2748,4 @@
 10115 69b99177a357f375d6370c897e459890d9e82b1b APPROVE Tests only (one new jest DOM spec, 8 tests pass on the PR merged with main, eslint clean); no production code changed.
 10117 b94f2fddb7d106bd46f00e2d5e6e4a6783eb562d APPROVE Tests only: two jest specs for the object modals; no production code changed. Specs and eslint clean; full jest 7837/7837 passed on the PR (based on current main).
 10112 58c023e80c0d9ffa3944c945e27bb7ef4bb76570 APPROVE Tests only (@uses metadata in 59 Rbac tests + ObjectAccessReportTest); on main merge Rbac/Architecture/Rules/Contract OK; Controller 9 env-bound DB errors inherited
+9972 bf599deef5f2285c71b40bc0784e92f1cd466ace APPROVE integrator IL4: main merge on top of 7e3b440d; registrar/routes/e2e conflicts resolved as union (main's bundle service, draft gate and routes kept, the PR's seed service and route added after them); 279 registrar/config/route/guard tests green
