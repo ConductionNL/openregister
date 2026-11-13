@@ -5621,3 +5621,10 @@ review:openregister:10218:44eb7da6	review	openregister	main	10218	sha=44eb7da614
 cover:pipelinq:7f9dc8e6m84dd:a3bb9eeb	cover	pipelinq	development	quality/test-coverage-a3bb9eeb	lang=php;dirs=lib/Service/Portal/*.php;focus=thin;weight=6635;coverage=86.73;target=90.0	2026-11-13T08:54:38Z
 measure:keepiq:20261113h12	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T13:00:21Z
 measure:pipelinq:20261113h12	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T13:00:21Z
+review:openregister:10219:db07bee1	review	openregister	main	10219	sha=db07bee1a8957d02b0c30929a5aaa5d3040be3c0;last_approved=;title=feat(openregister): build record-star-follow-and-unread-on-screen (manage in @self.can)	2026-11-13T13:05:11Z
+review:openregister:10220:17c33b77	review	openregister	main	10220	sha=17c33b779f7e58244282dc789aef2433decefe0c;last_approved=;title=test(openregister): cover operations and configuration controllers	2026-11-13T13:05:11Z
+review:openregister:10221:832a03c5	review	openregister	main	10221	sha=832a03c5ddd6063435812340bbadcc16572a1bf3;last_approved=;title=feat(openregister): build property-code-list-from-concept-scheme	2026-11-13T13:05:11Z
+review:openregister:10222:6ec25b23	review	openregister	main	10222	sha=6ec25b23d67def5951e943bf7df9bd7d9b7abf8d;last_approved=;title=test(openregister): cover search sidebar mount, route watcher and computed values	2026-11-13T13:05:11Z
+review:openregister:10223:ad2e7e32	review	openregister	main	10223	sha=ad2e7e3295021a04a1de379b57c72c94ba8cee66;last_approved=;title=feat(openregister): build flow-task-search-provider	2026-11-13T13:05:11Z
+review:openregister:10224:65feedd0	review	openregister	main	10224	sha=65feedd05acd9d722738d5bb01ec400a8095ea41;last_approved=;title=feat(openregister): build redaction-policy-as-data	2026-11-13T13:05:11Z
+verify:buildiq:1543:d1915b96	verify	buildiq	development	merge	prs=1543@22709fae85f7d2171ac636f1737ab76c7a0afc42	2026-11-13T13:05:11Z
