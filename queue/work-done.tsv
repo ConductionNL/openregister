@@ -7557,3 +7557,4 @@ merge:shillinq:2944:445e7126	merge3 tree of 64 shillinq PRs: merged=43 red=1 fai
 merge:shillinq:2947:310dae8b	merge3 tree of 64 shillinq PRs: merged=43 red=1 fail=0 skip=1; conflict 16, lint 0, moved 0; fix rows 19	merge3-20261113T213425-c36bcd5f	2026-11-13T23:45:38Z
 merge:shillinq:2948:d72faf38	merge3 tree of 64 shillinq PRs: merged=43 red=1 fail=0 skip=1; conflict 16, lint 0, moved 0; fix rows 19	merge3-20261113T213425-c36bcd5f	2026-11-13T23:45:41Z
 merge:shillinq:2952:c8c8084e	merge3 tree of 64 shillinq PRs: merged=43 red=1 fail=0 skip=1; conflict 16, lint 0, moved 0; fix rows 19	merge3-20261113T213425-c36bcd5f	2026-11-13T23:45:44Z
+merge:shillinq:2954:e40b4935	merge3 tree of 64 shillinq PRs: merged=43 red=1 fail=0 skip=1; conflict 16, lint 0, moved 0; fix rows 19	merge3-20261113T213425-c36bcd5f	2026-11-13T23:45:47Z
