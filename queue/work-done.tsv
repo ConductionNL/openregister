@@ -6036,3 +6036,4 @@ build:shillinq:expenses-category-mapping	partial: PR #2961 builds task 3.1 (Expe
 review:openregister:10288:606ffb21	APPROVE: per change specs, phpstan clean, suites green on PR+main	session-20261113T172324-00680177	2026-11-13T18:38:37Z
 cover:opencatalogi:fc83bfb1:88ac6559	PR #2598: 22 tests, Woo 932/945 -> 945/945 stmts, suite 5276 (2 inherited failures)	session-20261113T182348-cc1b5fea	2026-11-13T18:38:52Z
 verify:portaliq:2443:9b9e7370	2443 GREEN (4926 tests, 0 failures; build of resident-identity-in-forms T05)	session-20261113T172329-e224a4f0	2026-11-13T18:38:57Z
+build:shillinq:purchasing-approval-delegation	failed: too big and ordered for one task; 1.1/1.3 (schema chain + removing the in-app approval service, repair step) must land first, 1.2/1.4/2.1 need live/Playwright and OpenRegister flow-approval-consolidation, 3.1 reads the new step shape; split it starting with 1.1+1.3	session-20261113T171149-8b9ea523	2026-11-13T18:39:16Z
