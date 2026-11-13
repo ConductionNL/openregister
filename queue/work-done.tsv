@@ -4547,3 +4547,4 @@ build:openregister:archival-frozen-refuses-delete-and-dates-follow	failed: build
 build:pipelinq:platform-record-lock	partial: PR pipelinq#3752, tasks 1.1 1.2 2.1 2.2 2.3 4.1 4.2 done; 1.3 2.4 3.x left (audit, e2e, OR issue)	session-20261113T104531-16da055e	2026-11-13T11:32:40Z
 verify:pipelinq:3721:555d1541	9 PRs: 3741/3746/3747 GREEN, 3721 BLOCK (copy/delete enabled on Segments instead of Templates), 3728/3742/3743/3745 CONFLICT (l10n tail appends), 3744 CONFLICT vs development	session-20261113T104531-274f72f7	2026-11-13T11:33:11Z
 cover:pipelinq:7f9dc8e6m84dd:jsde685378	PR #3753: portalRequestsFlow spec (5 tests); src/portal/views stmt 89.89->93.26%; suite 4416->4421 green	session-20261113T044737-f37de8e3	2026-11-13T11:33:55Z
+review:openregister:10127:a255da03	APPROVE: tests only, suites green; Controller errors inherited from main	session-20261113T051703-1b54bfba	2026-11-13T11:34:05Z
