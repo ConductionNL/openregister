@@ -2566,3 +2566,4 @@ cover:pipelinq:7f9dc8e6mc4ba:jsd48eb217	failed: permission (npm ci refused in th
 cover:pipelinq:7f9dc8e6mc4ba:jsc41b6099	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T05:54:37Z
 cover:shillinq:05639debmd8ee:jsd48eb217	PR shillinq#2869: 12 vitest tests; src/store/modules 72.05%->100% statements	session-20261113T031701-b518f7f8	2026-11-13T05:54:51Z
 cover:pipelinq:7f9dc8e6mc4ba:568ec52a	PR #3679: 12 tests for ConfiguredGroupGate, BillingHandoffAccessPolicy, SessionUser, ForecastAccess; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:55:08Z
+cover:filinq:7a9ef677m5ffe:6ebcfc9b	already above target: lib/Service/Editing/ measured 98.1% (1811/1846) on development 4ff0b7c; no PR	session-20261113T054519-3d0ac77f	2026-11-13T05:55:12Z
