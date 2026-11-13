@@ -1857,3 +1857,4 @@ pipelinq	3754	9eeea22badc492ed37aafbd84c5ba3ff0ac256a3	MERGED	merge-local	GATE O
 pipelinq	3755	6b2c8043680c332640b7da29c3ac0cc18c7aa654	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3721	f846326553ca8ca0ed4c03160ec7125ca4a255c9	SKIP	merge-local	GATE UNMEASURED f846326553 does not merge cleanly onto development
 pipelinq	3741	5e00efc16a09d4fd355701ec962aeab34e2c7009	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3743	222fa459e19bbc0c4f9efa55f0f2e055f7d0e121	SKIP	merge-local	GATE UNMEASURED 222fa459e1 does not merge cleanly onto development
