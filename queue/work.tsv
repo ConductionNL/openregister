@@ -3189,3 +3189,13 @@ cover:hermiq:065f1631mfaac:js0246d36e	cover	hermiq	development	quality/test-cove
 cover:hermiq:065f1631mfaac:js0cc4cc95	cover	hermiq	development	quality/test-coverage-js-0cc4cc95	lang=js;dirs=src/dialogs/*,src/dialogs/agents/;focus=thin;weight=362;coverage=82.79;target=85.0	2026-11-13T04:07:09Z
 cover:hermiq:065f1631mfaac:js3f3bfe56	cover	hermiq	development	quality/test-coverage-js-3f3bfe56	lang=js;dirs=src/*;focus=thin;weight=356;coverage=82.79;target=85.0	2026-11-13T04:07:15Z
 measure:integriq:20261113h06	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-13T05:25:54Z
+fix:dossiq:6203:31cc59e4	fix	dossiq	development	6203	sha=31cc59e43fa01c880e78ebc0b94c6e4a727344e3;verdict=RED;branch=quality/test-coverage-81b1241f-1;reason=GATE RED checker floor: secretscanning: pass -> fail	2026-11-13T06:30:17Z
+verify:learniq:2418:fa3bbc64	verify	learniq	development	merge	prs=2418@651bdf537da526cbf458e3e83aa7990798e7ff71	2026-11-13T06:30:17Z
+verify:dossiq:6301:795934dd	verify	dossiq	development	merge	prs=6301@3cca74b18a7206cc73b3fa375b12c46da52f20d4,6302@52de79f98c19f8313ac32ad201a9f5176f9593e1	2026-11-13T06:30:17Z
+verify:integriq:3485:42d2a02c	verify	integriq	development	merge	prs=3485@a7dd5e51888bfa95c3d82e16a84a5e26e6b4caff,3492@a4f579ceed23ccfb208b4da1ea75cbedfe9fe904	2026-11-13T06:30:17Z
+verify:shillinq:2887:f9ea0900	verify	shillinq	development	merge	prs=2887@99909cda8b94c455cfe87ca42b927f5ec554adfd,2888@c75656b6155401f4df483526510f33d81113c5cf,2889@2b77aa1e2b4bd5467e78908b32d667a9c027d1f4	2026-11-13T06:30:17Z
+verify:keepiq:1741:bc690436	verify	keepiq	development	merge	prs=1741@6bfe920240746e61879e08bb075dbe3672d8b11e,1742@1784bcc01593f7ac09f501da68dfa44bc2b3273d,1743@1b5711bf1bae2f7f6796ccc8c92e35044932c6d9,1745@9c6017407a17460ff9fb00cb691c18565c1ca530	2026-11-13T06:30:17Z
+merge:dossiq:6300:6af14b06	merge	dossiq	development	development	prs=6300@ed842e92ccf1359bcd4b23501b4ac328bc95caad	2026-11-13T06:30:17Z
+merge:pipelinq:3687:9aa599c7	merge	pipelinq	development	development	prs=3687@9ccf26a2a05c80578b3f91b0c601630e96b36ec7	2026-11-13T06:30:17Z
+merge:shillinq:2883:0ca7c1fe	merge	shillinq	development	development	prs=2883@e8b6e9c54755adf252f3fa0ed3ae2a57a9454ed6,2884@8101864c45677768845f33b64bbed9e13da1aed5,2885@2e0febdaddc614b633124ada0da5685f0415b115	2026-11-13T06:30:17Z
+measure:dossiq:20261113h06	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-13T03:31:03Z
