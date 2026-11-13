@@ -2001,4 +2001,5 @@ cover:hermiq:065f1631m7444:1191da39	already done: WebResearch 58 tests, 327/336 
 cover:hermiq:065f1631m7444:a42697be	PR #1650: 13 tests, lib/Service/Agent 97.3->99.7% stmts	session-20261113T031704-5a455d65	2026-11-13T04:06:16Z
 cover:hermiq:065f1631m7444:17d367ab	already done: lib/Controller/Settings 335/335 lines covered on development (with openregister sibling); no PR	session-20261113T034629-21e68669	2026-11-13T04:06:23Z
 measure:launchpad:20261113h04	php 90.54% js 84.14%	session-20261113T034628-9602b641	2026-11-13T04:06:23Z
+cover:keepiq:c967a31fm88ca:34763eb4	already done: lib/Middleware/*.php 211/212 statements covered on development (earlier -1 branch merged); nothing thin left to add	session-20261113T034634-857dbcc2	2026-11-13T04:06:31Z
 cover:hermiq:065f1631m7444:06285390	PR hermiq#1651: 6 tests for TaskReader; other NcNative classes have dedicated tests; 146/26 inherited unchanged	session-20261113T024654-6600dc41	2026-11-13T04:06:27Z
