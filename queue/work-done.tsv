@@ -1670,3 +1670,4 @@ merge:larpinq:1005:9d190ca5	stale	feeder	2026-11-13T02:30:26Z
 merge:thematiq:1665:df6b35f5	stale	feeder	2026-11-13T02:30:26Z
 merge:thematiq:1665:ee48871d	stale	feeder	2026-11-13T02:30:26Z
 merge:stackiq:1784:11e3c140	stale	feeder	2026-11-13T02:30:26Z
+cover:shillinq:801aab65:8bdc03d4	already done: lib/Service/BbvMigration is 101/102 lines; RgsCandidateMatcher/RgsRegisterReads are exercised through RgsAccountMapperTest and RgsAccountMapperScoringTest; no PR	session-20261112T234655-793f46ee	2026-11-13T02:31:47Z
