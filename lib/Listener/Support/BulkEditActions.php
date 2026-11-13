@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Listener\Support;
 use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\BulkAction\AssignActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
+use OCA\OpenRegister\BulkAction\TransitionActionInterface;
 
 /**
  * The built-in bulk actions that edit the selected objects.
@@ -38,6 +39,7 @@ final class BulkEditActions {
 	 * @param SetPropertiesActionInterface $setProperties The bulk attribute write.
 	 * @param AssignActionInterface        $assign        The bulk redistribution.
 	 * @param ApplyRuleActionInterface     $applyRule     The rule replay.
+	 * @param TransitionActionInterface|null $transition  The bulk lifecycle move (records-bulk-transition).
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
@@ -45,6 +47,7 @@ final class BulkEditActions {
 		public readonly SetPropertiesActionInterface $setProperties,
 		public readonly AssignActionInterface $assign,
 		public readonly ApplyRuleActionInterface $applyRule,
+		public readonly ?TransitionActionInterface $transition = null,
 	) {
 	}//end __construct()
 }//end class
