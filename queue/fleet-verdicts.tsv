@@ -5291,3 +5291,4 @@ shillinq	2892	caf09dd52ded8e0fb7ce3c9d6c9cf098e8224a9e	GREEN	worker-01	tree of 2
 shillinq	2893	1c43c5860fbae07f80dafc95f06821b95b6570f7	GREEN	worker-01	tree of 2890-2893 on development ff5f1eee: unit 9441 run (baseline 9302), 1 inherited clock-bound PaymentWebhookIntakeCharacterisationTest, 0 new; tests only, additive
 dossiq	6303	eb9fbf87cf28c0bbc23b3e5b3b0c2db3d515acb1	GREEN	worker-03	unit 14981 on tree (baseline 14921, 19 inherited failures), 0 new failures; tests only
 dossiq	6304	51303319ea04d57b1eaeb7c6754cdedcbdf62093	GREEN	worker-03	unit 14981 on tree (baseline 14921, 19 inherited failures), 0 new failures; tests only
+decidiq	2117	4e8cf799592053b04451859ecc1290cc7e8b9b63	GREEN	worker-03	unit 3700 on tree (baseline 3684 green), 0 new failures; adds tests only
