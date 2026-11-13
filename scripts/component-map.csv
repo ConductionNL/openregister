@@ -1921,6 +1921,8 @@ Service/Chat/ChatProxyHandler.php,143,Service,Platform,Platform/Service/Chat/Cha
 Service/CollectiveLinkService.php,330,Service,Integrations,Integrations/Service/CollectiveLinkService.php,0,,Integrations
 Service/ComparableInstants.php,28,Service,Access,Access/Service/ComparableInstants.php,0,,Core
 Service/ConditionMatcher.php,222,Service,Access,Access/Service/ConditionMatcher.php,14,102,Core
+Service/Confidentiality/ConfidentialityAnnotationValidator.php,182,Service,Access,Access/Service/Confidentiality/ConfidentialityAnnotationValidator.php,0,,Core
+Service/Confidentiality/ConfidentialityRule.php,369,Service,Access,Access/Service/Confidentiality/ConfidentialityRule.php,0,,Core
 Service/Config/BundleCrossingGuard.php,36,Service,Configuration,Configuration/Service/Config/BundleCrossingGuard.php,0,,Configuration
 Service/Config/BundleSigner.php,94,Service,Integrations,Integrations/Service/Config/BundleSigner.php,0,,Configuration
 Service/Config/FederatedConfigAccess.php,41,Service,Configuration,Configuration/Service/Config/FederatedConfigAccess.php,0,,Configuration

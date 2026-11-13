@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
@@ -297,6 +298,12 @@ final class AnnotationVocabulary {
 		// setConfiguration() would drop it and every classified object would
 		// read as unclassified, the same silent no-op every entry above records.
 		ClassificationScale::ANNOTATION,
+		// A per-object confidentiality tier, legal ground and timed release
+		// (confidentiality-classification-primitive). Read by
+		// ConfidentialityRule; a faulty block is logged at error level and
+		// fails closed. Absent from this list setConfiguration() would drop it
+		// and every confidential object would read as unclassified.
+		ConfidentialityAnnotationValidator::ANNOTATION,
 	];
 
 
