@@ -177,7 +177,9 @@
         "params": {
             "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "logger": "Psr\\Log\\LoggerInterface",
+            "readScope": "(other)",
+            "queryGuard": "(other)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver": {

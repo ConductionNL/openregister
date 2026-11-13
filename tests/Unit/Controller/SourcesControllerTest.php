@@ -973,4 +973,110 @@ class SourcesControllerTest extends TestCase {
 
 		$this->assertSame(404, $result->getStatus());
 	}
+
+	// -------------------------------------------------------------------------
+	// queryPreview() — dbal-query-schema-guarded-and-previewed (design D-3)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Ask the controller to preview a query.
+	 *
+	 * @param string $query The query parameter.
+	 *
+	 * @return void
+	 */
+	private function previewing(string $query): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $key === 'query' ? $query : $default
+		);
+	}
+
+	/**
+	 * A join previews its columns and at most 50 rows.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewAnswersColumnsAndRows(): void {
+		$this->sourceMapper->method('find')->willReturn($this->sqliteDatabaseSource());
+		$this->previewing('SELECT p.reference, t.name AS type FROM permits p JOIN permit_types t ON t.id = p.permit_type_id');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame(['reference', 'type'], array_column($data['columns'], 'name'));
+		$this->assertNotSame([], $data['rows']);
+		$this->assertLessThanOrEqual(50, count($data['rows']));
+		$this->assertSame(['reference', 'type'], array_keys($data['rows'][0]));
+	}
+
+	/**
+	 * A non-administrator is refused before the source is read.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRequiresAdmin(): void {
+		$controller = $this->buildController(isAdmin: false);
+		$this->sourceMapper->expects($this->never())->method('find');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->queryPreview(5)->getStatus());
+	}
+
+	/**
+	 * Another organisation's source is not found.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewOfAnotherOrganisationsSourceIs404(): void {
+		$this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('other organisation'));
+		$this->previewing('SELECT 1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->queryPreview(7)->getStatus());
+	}
+
+	/**
+	 * A data-changing statement is a 400 naming the rule, and nothing is written.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRefusesAStatementThatIsNotARead(): void {
+		$source = $this->sqliteDatabaseSource();
+		$this->sourceMapper->method('find')->willReturn($source);
+		$this->previewing('SELECT 1; DELETE FROM permits');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'A query-backed schema may contain only one statement.'], $result->getData());
+		$check = \Doctrine\DBAL\DriverManager::getConnection(['driver' => 'pdo_sqlite', 'path' => $source->getAuthConfig()['path']]);
+		$this->assertGreaterThan(0, (int)$check->fetchOne('SELECT COUNT(*) FROM permits'));
+	}
+
+	/**
+	 * A database error answers a fixed sentence and its class, never the database's message.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewKeepsTheDatabaseMessageOut(): void {
+		$this->sourceMapper->method('find')->willReturn($this->sqliteDatabaseSource());
+		$this->previewing('SELECT salary FROM payroll');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(502, $result->getStatus());
+		$this->assertSame(['error' => 'The database refused the query.', 'errorClass' => 'TableNotFoundException'], $result->getData());
+	}
+
+	/**
+	 * A source that is not a database source is refused.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRejectsANonDatabaseSource(): void {
+		$source = new Source();
+		$source->setType('internal');
+		$this->sourceMapper->method('find')->willReturn($source);
+
+		$this->assertSame(422, $this->controller->queryPreview(1)->getStatus());
+	}
 }
