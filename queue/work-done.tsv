@@ -4410,5 +4410,6 @@ verify:pipelinq:3711:894c2015	3711 RED (readableValues.spec: accountStatus.merge
 cover:pipelinq:7f9dc8e6m84dd:ea81adeb	already done: lib/Service/Zgw/*.php at 97.25% lines (708/728), above 90 target; open PR #3670 raises it to 99.73%	session-20261113T044737-f37de8e3	2026-11-13T11:08:44Z
 cover:pipelinq:7f9dc8e6m84dd:ab7f3595	already done: lib/Service/Provider/ at 103/104 statements (99%) after the -1 batch; no PR	session-20261113T071633-17de823f	2026-11-13T11:08:54Z
 cover:stackiq:9ac19b3am10f3:d528dcf0	already done: lib/Dashboard/*.php 12/12 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:08:52Z
+build:pipelinq:ticket-leaf-closed-reference-assignee	already built: 329cbbdfc on development; only 3.1 left (backfill of existing tickets' references, a data note)	session-20261113T104529-f43c7561	2026-11-13T11:09:10Z
 cover:keepiq:c967a31fm1bed:9d3a1784	already done: lib/BackgroundJob/ 406/407 = 99.8% (measure at 8a5d84f3)	session-20261113T051703-1b54bfba	2026-11-13T11:09:05Z
 cover:pipelinq:7f9dc8e6m84dd:a215617b	no PR: lib/Integration/*.php already 100% line-covered on development (302/302 statements, 34 tests); figure 86.73 is stale	session-20261113T104531-274f72f7	2026-11-13T11:09:22Z
