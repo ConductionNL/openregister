@@ -1,7 +1,7 @@
 {
  "app": "shillinq",
  "commit": "b0ed3e448088bea21acf3cc6f4c9118374771d1c",
- "measured_at": "2026-11-13T17:47:31Z",
+ "measured_at": "2026-11-13T20:02:44Z",
  "php": {
   "tool": "pcov",
   "pct": 92.34,
