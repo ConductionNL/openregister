@@ -4614,3 +4614,4 @@ decidiq	2102	0f39dcdccadc227bed3babce5bff6997a008ac72	GREEN	worker-41	tree 3218 
 dossiq	6207	0eee3b00378eaa3e779d4052c0eccb09b72ed4c9	GREEN	worker-18	tree of 2: phpunit 13409 run vs baseline 13396 (19 failures inherited), 0 new failures; tests-only additions
 filinq	1986	c128d7f95a604dc8d0a0dbd0c38a6002123b097e	GREEN	worker-43	5328 tests run (baseline 5318, 6 skipped inherited), 0 new failures; tests only
 dossiq	6208	4b8f9f9811961af57e9f4f1291b22b9dd35b3612	GREEN	worker-18	tree of 2: phpunit 13409 run vs baseline 13396 (19 failures inherited), 0 new failures; tests-only additions
+hermiq	1485	6291bb82f064a9e9771c98f365a4020273091640	GREEN	worker-51:review	pure move: 7 Anthropic format methods byte-identical in AnthropicMessageFormat (strict_types both), all callers updated, removed tests moved intact; phpstan clean; unit 3848 vs development 3842, same 6 inherited errors, 0 new
