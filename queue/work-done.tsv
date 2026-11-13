@@ -1172,6 +1172,7 @@ cover:launchpad:755175ffm7412:js0be8c659	PR #1142: 61 tests, src/modals 60.8%->8
 cover:shillinq:801aab65:34f5c300	PR #2804: lib/Service/*.php 88.47->89.83% (risky seed tests fixed via @uses, Innovatiebox 0->100/100); 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:37:05Z
 cover:buildiq:8ca317f6m6d54:f91e7417	PR #1487: 3 ConnectionReporter edge tests, class lines 111->118/119; suite 2310->2313, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:37:24Z
 cover:keepiq:d76c2121m70b5:js3287a408	PR #1707: 7 settings specs, 48 tests; settings line coverage 74.5% -> 85.5%	session-20261113T002028-6d7c79b9	2026-11-13T00:37:27Z
+merge:hermiq:1595:7693f8c3	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:37:45Z
 cover:buildiq:8ca317f6m6d54:568ec52a	no PR: lib/Lifecycle already at 84/85 lines (24 tests, earlier -1 batch merged); only a non-array jsonSerialize guard left	session-20261113T002028-bc0aa910	2026-11-13T00:38:11Z
 cover:openregister:7350e3efm0e99:js716923f8	PR #10074: @uses metadata in 18 credential tests; 80 risky->0, measured Credential coverage 83.9%->94.7% (row said lang=js; dirs are PHP)	session-20261112T234655-0bdbf2be	2026-11-13T00:38:15Z
 fix:stackiq:1690:28600ec1	merged development in (SPDX header conflict), suite green; new head 74ea9a64, REVERIFY recorded	session-20261112T231638-72e59130	2026-11-13T00:38:31Z
