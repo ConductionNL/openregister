@@ -3312,3 +3312,4 @@ verify:filinq:2045:6da846fd	GREEN #2045, #2046; phpunit 6268->6294, vitest 751, 
 cover:dossiq:f8a113c5m7e79:9951e799	PR #6332: 7 tests, DecisionDocument Definition/Lifecycle/RecordComposer to 100% lines; suite 15190->15197, 19 inherited failures	session-20261113T074535-8a2067c2	2026-11-13T07:55:11Z
 cover:versioniq:1b35eed9:72b7d712	PR #672: 4 classes, 23 tests (SignedRelease, AppsRoot, SignedInstall, ExternalInstallRun); suite 1356->1379, 0 new failures	session-20261113T074527-031883a8	2026-11-13T07:55:16Z
 verify:dossiq:6324:10beb863	GREEN 6324 (behaviour-preserving refactor of 5 units, 15190->15200, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:55:13Z
+gap:planninq:tcr1:burn1	PR #1139: 7 test files (32 tests), PHP lib 94.1->95.2%	session-20261113T051709-e616bf69	2026-11-13T07:55:24Z
