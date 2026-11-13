@@ -2474,3 +2474,4 @@ cover:pipelinq:f67520ecmc4ba:js4c63a0a9	PR #3671: 2 specs/15 tests for KeywordIn
 cover:hermiq:065f1631m312d:568ec52a	already done: lib/Lifecycle/*.php 22/22 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:23Z
 cover:hermiq:065f1631m312d:34763eb4	already done: lib/Middleware/*.php 10/10 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:32Z
 cover:hermiq:065f1631m312d:d81d2d49	already done: lib/Service/Speech/ 57/57 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:37Z
+cover:hermiq:065f1631m312d:28cccfd9	already done: lib/Repair/Support/ 52/53 lines (98.1%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:43Z
