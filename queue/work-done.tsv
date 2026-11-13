@@ -3769,3 +3769,4 @@ verify:dossiq:6341:3f763da8	GREEN 6341, 6342, 6343 (php 0 new failures; vitest 1
 cover:hermiq:065f1631m249e:1b97f731	already done: lib/Listener/*.php 432/466 lines (92.7%) under the full unit suite on development, target 90; branch -1 merged; no PR	session-20261113T072713-f866e896	2026-11-13T09:14:51Z
 cover:pipelinq:7f9dc8e6m916f:js7de78384	already done: open branch -1 (manifestFragments.spec.js) brings src/manifest.d/* to 100% (53/53); no new PR	session-20261113T051705-4f5ad12a	2026-11-13T09:14:59Z
 gap:stackiq:16:614b0a03	PR #1865: npm refresh within ranges (nextcloud-vue and icons held back), SBOM regenerated; unit 2344/2344, build ok, lint unchanged	session-20261113T081038-e8b5210f	2026-11-13T09:14:56Z
+cover:dossiq:069ee2d6m7275:ea81adeb	PR #6350: 5 Zgw classes, 18 tests, lib/Service/Zgw 97.75% -> 98.79%, 19 inherited failures unchanged	session-20261113T084525-9d890807	2026-11-13T09:15:07Z
