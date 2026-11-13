@@ -1723,3 +1723,4 @@ fix:hermiq:1515:cf9c3a09	stale	session-20261112T234655-793f46ee	2026-11-13T02:44
 merge:stackiq:1784:5160cda2	stale	feeder	2026-11-13T02:44:13Z
 merge:stackiq:1784:5160cda2	stale	feeder	2026-11-13T02:45:07Z
 verify:humaniq:1101:a2d625e7	GREEN 1101 (docs/coverage data only, clean merge)	session-20261113T024653-d22c13a3	2026-11-13T02:47:21Z
+verify:keepiq:1721:0b38c8c3	failed: permission	session-20261113T024656-2f332446	2026-11-13T02:48:10Z
