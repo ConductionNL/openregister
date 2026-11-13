@@ -4965,3 +4965,4 @@ build:openregister:schema-breaking-change-notice	failed: worker rules forbid bui
 build:openregister:shared-decision-table-evaluator	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:23Z
 build:openregister:object-quota-per-organisation	PR #10199: task 4.1 (bulk creates held to the per-organisation cap), 9 tests; 4.2 is hermiq lane	session-20261113T103904-e108be02	2026-11-13T12:41:31Z
 build:openregister:survey-object	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:29Z
+build:openregister:settings-change-audit	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:35Z
