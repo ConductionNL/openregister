@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "71731da7aa1c2eff620046202511aa7167897510",
- "measured_at": "2026-11-12T22:35:49Z",
+ "commit": "ee910c6515130cf998cf1089929541e26688cadc",
+ "measured_at": "2026-11-13T02:04:40Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.2,
+  "pct": 82.11,
   "statements": 25598,
-  "covered": 20530,
+  "covered": 21018,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -22,11 +22,11 @@
    ],
    "lib/BackgroundJob/": [
     479,
-    307
+    328
    ],
    "lib/Controller/": [
     3163,
-    2432
+    2489
    ],
    "lib/Dashboard/": [
     65,
@@ -50,7 +50,7 @@
    ],
    "lib/Listener/": [
     1208,
-    1080
+    1104
    ],
    "lib/Mcp/": [
     534,
@@ -78,7 +78,7 @@
    ],
    "lib/Service/": [
     17588,
-    13977
+    14363
    ],
    "lib/Service/Records/": [
     379,
@@ -98,5 +98,63 @@
    ]
   }
  },
- "js": null
+ "js": {
+  "pct": 95.21,
+  "statements": 2795,
+  "covered": 2661,
+  "dirs": {
+   "src/components/minutesEditor/": [
+    77,
+    77
+   ],
+   "src/components/tabs/": [
+    117,
+    113
+   ],
+   "src/components/userSettings/": [
+    67,
+    55
+   ],
+   "src/components/widgets/": [
+    75,
+    67
+   ],
+   "src/config/": [
+    2,
+    2
+   ],
+   "src/dialogs/": [
+    6,
+    6
+   ],
+   "src/integrations/": [
+    385,
+    355
+   ],
+   "src/modals/": [
+    18,
+    18
+   ],
+   "src/services/": [
+    282,
+    268
+   ],
+   "src/store/": [
+    10,
+    10
+   ],
+   "src/store/modules/": [
+    72,
+    40
+   ],
+   "src/utils/": [
+    1581,
+    1549
+   ],
+   "src/views/dashboard/widgets/": [
+    103,
+    101
+   ]
+  }
+ }
 }
