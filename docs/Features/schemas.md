@@ -3281,7 +3281,10 @@ Schemas can configure object name, description, and file handling:
 | `allowFiles` | boolean | Whether schema allows file attachments |
 | `allowedTags` | array | File tags allowed for this schema |
 | `autoPublish` | boolean | Whether objects auto-publish on creation |
+| `exportable` | boolean | Whether list pages offer the Export menu for this schema (see below) |
 | `unique` | array | Properties that must have unique values |
+
+**The `exportable` flag.** Set `configuration.exportable: true` to offer export on the list pages of this schema; an index page with `allowExport` then shows the Export menu. The flag is stored once, as `configuration.exportable`. A top-level `exportable` in a schema payload or an imported register file is folded into it (when both are given, the configuration value wins), and every schema read returns both `configuration.exportable` and a top-level `exportable` with the same value, `false` when unset. The flag only says the schema offers export; who may export is decided by the export route's own rights.
 
 ### Database Schema
 

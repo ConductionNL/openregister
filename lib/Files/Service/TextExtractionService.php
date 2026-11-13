@@ -275,7 +275,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				return false;
 			}
 
-			$entityOptions = ['method' => $entityMethod, 'confidence_threshold' => 0.5];
+			// No confidence_threshold: the handler reads the organisation's setting at request time.
+			$entityOptions = ['method' => $entityMethod];
 			if ($entityTypes !== null) {
 				$entityOptions['entity_types'] = array_values($entityTypes);
 			}
@@ -565,7 +566,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$entityResult = $this->analysis->entityHandler->processSourceChunks(
 				sourceType: 'object',
 				sourceId: $objectId,
-				options: ['method' => 'hybrid', 'confidence_threshold' => 0.5]
+				options: ['method' => 'hybrid']
 			);
 
 			$this->analysis->logger->debug(
