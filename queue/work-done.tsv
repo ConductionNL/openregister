@@ -2374,3 +2374,4 @@ merge:keepiq:1727:8880a6bb	merge-local over 3 keepiq tasks: merged=9 red=0 fail=
 merge:keepiq:1733:3825bcec	merge-local over 3 keepiq tasks: merged=9 red=0 fail=0 skip=0; already in development 1; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:20:06Z
 merge:keepiq:1607:3449394c	merge-local over 3 keepiq tasks: merged=9 red=0 fail=0 skip=0; already in development 1; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:20:06Z
 fix:pipelinq:3659:ce88ead8	failed: permission (PR is obsolete: development's SettingsSectionTest already holds all its assertions; closing it was refused)	session-20261113T044737-f37de8e3	2026-11-13T05:20:57Z
+cover:integriq:92114ab0m1534:65e30692	PR #3479: 13 tests for IntakeGroups (28->46/46); lib/Service/Intake 93.07->98.5%, suite 7148->7161 (2 inherited errors)	session-20261113T041646-2c1d764f	2026-11-13T05:20:54Z
