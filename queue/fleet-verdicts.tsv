@@ -4646,3 +4646,4 @@ stackiq	1804	2dc6125b4b3b4b3d2b34e4221bbc899f63f94edf	GREEN	worker-37	tests only
 stackiq	1805	fb96956f1c700812f67926a50f05ed3c01c749aa	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 stackiq	1806	379b17482337aae248763452222c3b7be4039273	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 stackiq	1807	81313a5dccaf8ece17ab049629f27492ba3f7ec0	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
+pipelinq	3605	618006ce0076dbed0b45d6be0b041e1b386ac6b9	GREEN	worker-15	tree of 3, tests-only vitest specs: vitest 475 files / 3203 tests all pass; PHP unit 5774 tests unchanged (1 inherited CrmPrivilegeRefusalGoldenTest failure), 0 new
