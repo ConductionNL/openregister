@@ -5658,3 +5658,4 @@ learniq	2462	3fc1b5013f6f38ae96ee36ff80bd5544afb35b44	GREEN	worker-54	6388 tests
 buildiq	1537	c30d072848a1a0abd6d9263ff7a48d230b5e983d	GREEN	worker-58	vitest 402 files/3896 pass on tree; phpunit 2784 unchanged (1 inherited failure); 3 new spec files, tests only
 stackiq	1866	6e28dd160f3c928940226d4fe6f226a3ef385958	GREEN	worker-46	PHP unit 3264 on tree (baseline 3261, 0 failures, 2 warnings as base); php -l clean; extract-method refactor of AanbodService accept/deny and ArchiMateService query: same order, messages, key order and query shape; 3 tests added, none removed
 versioniq	675	f64fa4537861e58b3c103d174b7c00ddb74b4acc	GREEN	worker-54	tests/phpunit-unit-only.xml 1366 tests (baseline 1356, 2 failures from development: Installer golden tests); 0 new; tests only
+versioniq	676	d57f1dccda1378ed8abec3c1c2494ce367390123	GREEN	worker-54	tests/phpunit-unit-only.xml 1366 tests (baseline 1356, 2 failures from development: Installer golden tests); 0 new; tests only
