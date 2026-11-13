@@ -2738,4 +2738,5 @@ measure:launchpad:20261113h06	php 92.52% js 92.45% at 7a18021a	session-20261113T
 cover:dossiq:f8a113c5mac88:154acb60	PR #6300: 42 tests, lib/Service/Cases 92.1->99.2%, suite 14731->14778, same 19 inherited failures	session-20261113T054517-26499007	2026-11-13T06:19:19Z
 measure:pipelinq:20261113h06	php 84.95% (pcov, 50e93fcd); js not re-measured (npm ci refused here), previous js 80.72% kept with js_commit	session-20261113T054519-189b2666	2026-11-13T06:19:24Z
 verify:decidiq:2098:08d9a2aa	2 GREEN (2098, 2116); 3684 tests, 0 new failures	session-20261113T061521-423d1e83	2026-11-13T06:19:33Z
+cover:shillinq:05639debmd8ee:60c2c265	already above target: lib/Controller/*.php measures 93.28% (9217/9881) with strict metadata on development d33c9cc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:19:46Z
 cover:pipelinq:7f9dc8e6mc4ba:dfaef732	already done: lib/Notification 120/120 statements (100%) on development 50e93fcda; latest measurement agrees	session-20261113T061516-58aa7364	2026-11-13T06:19:38Z
