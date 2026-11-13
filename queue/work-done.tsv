@@ -4845,3 +4845,4 @@ build:openregister:modelling-stated-requirements	partial: PR #10183 tags 1.1/1.2
 build:openregister:modelling-property-index-switch	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:30Z
 build:openregister:object-presence	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:36Z
 build:openregister:operate-admin-query-console	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:42Z
+review:openregister:10175:b50560d8	APPROVE: docs only, claims verified	session-20261113T103904-e108be02	2026-11-13T12:28:56Z
