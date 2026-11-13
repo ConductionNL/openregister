@@ -1360,6 +1360,7 @@ cover:buildiq:8ca317f6m6d54:1106b038	PR buildiq#1489: AbstractToolHandler guards
 cover:buildiq:8ca317f6m6d54:d39f9857	already done: lib/Support at 375/389 statements (96%) on development	session-20261112T231640-f6dda86c	2026-11-13T01:16:51Z
 merge:filinq:1986:53e375fb	merge-local over 1 filinq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:16:51Z
 cover:dossiq:6ca0231e:e2e021bd	PR #6219: 36 tests (CaseStatusStore, CaseTypeReader, CaseResultWriter); dir already 87% before	session-20261113T004523-285a0413	2026-11-13T01:17:23Z
+cover:pipelinq:f67520ecm9d2c:js4f7d1071	PR #3615: 12 vitest tests, social+widgets stmts 74.3% -> 81.4% (SocialPerformanceView in #3603)	session-20261112T234648-144479e8	2026-11-13T01:17:44Z
 cover:launchpad:755175ffm7412:js4a0489d3	PR #1150: 3 Workspace components, 16 vitest tests; suite 1188 -> 1204; Workspace lines 85.2% -> 95.2%	session-20261112T234653-57d11a5b	2026-11-13T01:17:45Z
 cover:shillinq:801aab65:38e80a9f	PR #2811: 4 tests over 2 commands, lib/Command/*.php 70.19%->93.27%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:17:36Z
 cover:dossiq:6ca0231e:6a58479a	PR dossiq#6220: 15 tests, 5 Support classes to 100% (OwningCaseResolver 0->43/43 etc.); dir was 81.1%; suite 13498, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:17:58Z
