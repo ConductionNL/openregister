@@ -2854,3 +2854,4 @@ cover:stackiq:df113dffm5ac4:js4829b6aa	failed: permission (npm ci refused in thi
 cover:stackiq:df113dffm5ac4:f545d745	already done: lib/Repair/*.php 1229/1234 statements (99.6%) with pcov on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:34:32Z
 cover:stackiq:df113dffm5ac4:c2bb21fa	already above target: lib/Service/Stackiq/*.php measures 86.15% (1959/2274) with strict metadata on development a05c3dd; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:34:40Z
 cover:stackiq:df113dffm5ac4:f4b2f7af	already done: lib/Service/ArchiMate/ at 99.02% (202/204, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:34:40Z
+cover:stackiq:df113dffm5ac4:b5905f71	PR stackiq#1845: FederationService +7 tests, lib/Service/Federation/ 362->384/388 stmts, suite 3126->3133 OK	session-20261113T061518-90540a48	2026-11-13T06:34:56Z
