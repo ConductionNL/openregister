@@ -1375,3 +1375,4 @@ merge:launchpad:1142:caafba6d	merge-local over 1 launchpad tasks: merged=2 red=0
 verify:dossiq:6210:c039092d	6 GREEN (6210-6215), 13637 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T01:20:08Z
 review:openregister:10079:60d7fbb2	APPROVE: tests only, 13 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:20:15Z
 cover:integriq:9b0f5894m2367:d9b69b92	already done: Lvs/Oso/Roster/Swv/UwlrEduV adapters 92/92 statements covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:20:23Z
+cover:launchpad:755175ffm7412:f545d745	failed: no PR; lib/Repair is 279/313 lines covered and the misses are seed-missing/unreadable/malformed branches keyed on the fixed lib/actions.seed.json path (testable only by editing the shipped seed) plus one getName line	session-20261112T234653-57d11a5b	2026-11-13T01:20:33Z
