@@ -4807,3 +4807,4 @@ verify:pipelinq:3754:a2c8bcab	CONFLICT: l10n en/nl with development	session-2026
 review:openregister:10163:aade2aff	APPROVE	session-20261113T104531-274f72f7	2026-11-13T12:21:38Z
 build:openregister:mcp-output-schema-payload	already built on main; PR #10173 ticks the tasks with evidence (budget test passes)	session-20261113T104527-c302106c	2026-11-13T12:22:00Z
 build:openregister:lifecycle-guards-see-the-stored-object	done (tasks); 1.6 already landed via create-over-taken-identifier-runs-update-path, ticked in PR; 2.1 is app lanes	session-20261113T121536-3cb7eb71	2026-11-13T12:22:17Z
+build:openregister:dsar-finds-records-by-declared-subject-id	PR #10174: declared subject id field discovery + shared annotation reader, tasks 1.1/2.1/2.2 done (2.3 Newman, 3.1 learniq notice, 3.2 openspec validate left), 19 tests, Gdpr/Architecture/Controller/Contract green	session-20261113T093920-50335e74	2026-11-13T12:22:32Z
