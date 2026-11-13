@@ -7046,3 +7046,4 @@ build4:openregister:large-file-handling	partial: PR #10387 to main - task 1.2 ex
 review:openregister:10352:f594e007	10352 APPROVE (guards before vault read; suites green)	session-20261113T182359-67ad413b	2026-11-13T22:00:55Z
 review:openregister:10372:145208aa	APPROVE: additive provider, suites match main	session-20261113T205324-91f6ae17	2026-11-13T22:01:02Z
 build4:openregister:flow-engine-unification	partial: PR #10389 task 3.4e (state-delta trace on hop log + step row keys); 3.1 remnant/3.5/6.1 need decisions or upstream UI, rest is other repos/governance/live	session-20261113T202612-d930c905	2026-11-13T22:01:29Z
+build4:openregister:rbac-default-authenticated	failed: blocked by the change's load-bearing order: task 1 audit exists but no maintainer has settled any schema intent; task 2 is per-app fleet register work; tasks 3-4 (flip + default-refusal log) must not land before 2	session-20261113T212411-bd385ec2	2026-11-13T22:01:26Z
