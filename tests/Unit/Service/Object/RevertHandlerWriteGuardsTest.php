@@ -54,6 +54,11 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Exception\LockedException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Db\AuditTrail\RevertOptions
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Object\RevertPoint
+ * @uses \OCA\OpenRegister\Service\Object\RevertStores
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 

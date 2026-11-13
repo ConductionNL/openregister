@@ -27,6 +27,11 @@ use stdClass;
 /**
  * @covers \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\NotSuppliedReasons
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedEntry
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedRules
  */
 final class NotSuppliedHandlerTest extends TestCase {
 

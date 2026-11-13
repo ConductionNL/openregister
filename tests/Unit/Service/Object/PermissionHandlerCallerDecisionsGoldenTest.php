@@ -51,6 +51,21 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ProvenanceResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Object\ProvenanceRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses \OCA\OpenRegister\Service\Rbac\StagedDenial
  */
 class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 

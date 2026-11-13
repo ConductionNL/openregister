@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Counts, the duration guard and the array form. No test pins a clock value.
  *
  * @covers \OCA\OpenRegister\Service\Object\BatchOperationStatus
+ * @uses \OCA\OpenRegister\Service\Object\RowFailure
  */
 class BatchOperationStatusTest extends TestCase {
 

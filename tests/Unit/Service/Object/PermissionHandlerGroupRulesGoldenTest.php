@@ -36,6 +36,13 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantNarrower
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  */
 class PermissionHandlerGroupRulesGoldenTest extends TestCase {
 

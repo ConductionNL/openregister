@@ -42,6 +42,9 @@ use RuntimeException;
  * Locks carry a far-future absolute expiration so the decision never depends on the clock.
  *
  * @covers \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LockAuthorizationBehaviourTest extends TestCase {
 

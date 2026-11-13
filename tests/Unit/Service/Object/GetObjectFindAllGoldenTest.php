@@ -44,6 +44,18 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicListRequest
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\Object\GetObjectSources
+ * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSourceBinding
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
  */
 class GetObjectFindAllGoldenTest extends TestCase {
 

@@ -47,6 +47,18 @@ use ReflectionMethod;
  * unreadable property, and the count turns that refusal into 0.
  *
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Exception\CustomValidationException
+ * @uses \OCA\OpenRegister\Service\Object\UniqueFieldScope
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class UniqueFieldUnreadablePropertyTest extends TestCase {
 

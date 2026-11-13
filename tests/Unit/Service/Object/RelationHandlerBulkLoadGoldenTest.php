@@ -32,6 +32,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
  * @uses   \OCA\OpenRegister\Service\Object\RelationLoadRun
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\RelatedObjectSet
+ * @uses \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @uses \OCA\OpenRegister\Service\Object\RelationHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\RelationLookup
+ * @uses \OCA\OpenRegister\Service\Object\RelationTables
  */
 class RelationHandlerBulkLoadGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/relation-handler-bulk-load-golden.json';

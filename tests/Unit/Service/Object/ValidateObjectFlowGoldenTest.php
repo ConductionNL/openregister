@@ -34,6 +34,25 @@ use Throwable;
  * The recording was made on the code before these units were split.
  *
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Exception\CustomValidationException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Formats\BsnFormat
+ * @uses \OCA\OpenRegister\Formats\CronFormat
+ * @uses \OCA\OpenRegister\Formats\ExtendedFieldTypeValidator
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
+ * @uses \OCA\OpenRegister\Formats\FormattedProperty
+ * @uses \OCA\OpenRegister\Formats\Iso8601DateTimeFormat
+ * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\UserFormat
+ * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
+ * @uses \OCA\OpenRegister\Service\Object\PlannedAccountsCheck
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Object\ValidationErrorMessages
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectFlowGoldenTest extends TestCase {
 

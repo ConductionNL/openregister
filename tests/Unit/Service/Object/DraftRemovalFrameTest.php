@@ -33,6 +33,12 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalFrame
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalRecord
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftRemovalFrameTest extends TestCase {
 

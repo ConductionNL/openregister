@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\MergeRun
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
  */
 class MergeHandlerReferenceRowTest extends TestCase {
 

@@ -32,6 +32,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\LanguageKeyedMap
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 class TranslationHandlerRenderGoldenTest extends TestCase {
 
