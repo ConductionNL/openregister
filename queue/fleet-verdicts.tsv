@@ -5735,3 +5735,4 @@ hermiq	1684	7d1cd6ace379ea726d5703e4f5a1ffc802746cea	GREEN	worker-08	tree 4518 t
 humaniq	1111	20bf4791d8632d07ef4ab020f51b79d76185306a	GREEN	worker-09	tests only, merges clean; 3892 -> 3928 tests, all pass
 shillinq	2929	c9a02a763e10ceab8926dd0366b74988bd942b31	GREEN	worker-38	unit 10100 run on tree, baseline 10087 with 1 inherited clock-bound failure, no new failures; tests only
 opencatalogi	2587	0acdbab08bb37ce6d40a69b540a5d43776ff1eaf	GREEN	worker-27	tests-only; unit 5177 tests (baseline 5162, 2 inherited failures AppIdentityTest/WooControllerTest), +15 pass; no new failures
+pipelinq	3710	1dd8bd4afb32b78416c2554f80738339fe20ba32	CONFLICT	worker-09	conflicts with development in 5 tests/Unit/BackgroundJob tests
