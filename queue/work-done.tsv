@@ -4516,3 +4516,4 @@ build:openregister:app-leaf-provider-registration	nothing to build here: both op
 build:openregister:a-leaf-that-cannot-render-refuses-to-register	failed: build tasks never run on openregister (worker rules); left for the openregister lane	session-20261113T074532-3dc49c57	2026-11-13T11:26:35Z
 build:pipelinq:product-service-catalogue-public	partial: PR #3749 (schema fields, public RBAC rules, catalogue card, tests); left 2.2 live check, 4.1 UPL import, archive edits	session-20261113T081048-4978ac57	2026-11-13T11:26:36Z
 build:openregister:anonymisation-image-seam	failed: build tasks never run on openregister (worker rules); left for the openregister lane	session-20261113T074532-3dc49c57	2026-11-13T11:26:47Z
+cover:keepiq:c967a31fm1bed:34f5c300	PR #1753: 8 tests for ShareQuarantineScanner gate (3->35/239 lines in plain unit run; rest DB-bound); suite 4830->4838, 0 failures	session-20261113T081046-f0858dc4	2026-11-13T11:27:04Z
