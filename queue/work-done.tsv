@@ -5217,3 +5217,4 @@ review:openregister:10187:52bd77cf	APPROVE: test-only, 21 new tests pass, suites
 build2:openregister:anonymisation-discloses-itself-pipeline	partial: PR #10240 (1.1, 2.1, 2.2 + 1.2 route/controller; 1.2 Newman, 2.3 UI list with 37-locale l10n, e2e left)	session-20261113T124807-2640af3d	2026-11-13T13:34:13Z
 merge:pipelinq:3602:a98549bd	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:34:20Z
 verify:portaliq:2400:8ad3016b	GREEN #2400 (tests-only +6, 4848, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:34:49Z
+build2:openregister:public-pages-open-without-a-session	already done: all openregister tasks 1-5 on main (#3964) — PublicPageResolver, publicPage() shell, AccessLinkReader, PublicTimeline, tests; only 6.1 open, which is dossiq's own leaf PR, out of scope for this repo	session-20261113T114524-3c44fc56	2026-11-13T13:34:57Z
