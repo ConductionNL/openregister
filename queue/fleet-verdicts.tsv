@@ -5553,3 +5553,4 @@ stackiq	1863	222faabc2fd5cc98e2bfad56b8c300d28b23183e	GREEN	worker-06	vitest 239
 stackiq	1864	a9af792e188eed982e281451b47304d06f9042b5	GREEN	worker-06	vitest 2395 passed on tree (baseline 2344), php 3216 unchanged; tests-only, 0 new failures
 pipelinq	3697	1aed3b007eae2874af151fbaeac68b2f5d3ca26f	GREEN	worker-22	vitest 553 files/3979 tests all pass on tree; phpunit 6454 (baseline 6454, 1 inherited failure CrmPrivilegeRefusalGoldenTest), new failures: none; tests-only
 pipelinq	3698	4d89508e62cc548c69320089a31b941911d30702	GREEN	worker-22	vitest 553 files/3979 tests all pass on tree; phpunit 6454 (baseline 6454, 1 inherited failure), new failures: none; tests-only
+dossiq	6345	6ff1998bfb9dc0a9a46b3e1a5e5a17bb0686c789	GREEN	worker-16	tests only; unit 15412 run, baseline 15383 with 19 failures, no new failures; vitest 6532, 1 inherited failure (capabilityComparison)
