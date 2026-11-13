@@ -3977,3 +3977,4 @@ Service/Connection/ConnectionReportForbiddenException.php,,Service,,,,,Integrati
 Service/Connection/ConnectionReportKind.php,,Service,,,,,Integrations
 Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
 Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
+Service/Query/ReferenceFilterParser.php,,Service,,,,,Core
