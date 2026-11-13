@@ -4920,3 +4920,4 @@ build:openregister:records-tree-view	failed: worker rules forbid build tasks on 
 build:openregister:reimport-real-register-configuration	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:36Z
 build:openregister:reply-threading-by-headers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:42Z
 build:openregister:remove-file-ownership-storage-rename	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:52Z
+build:openregister:redaction-release-safeguards	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:58Z
