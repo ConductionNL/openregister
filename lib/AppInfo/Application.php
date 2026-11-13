@@ -196,6 +196,8 @@ class Application extends App implements IBootstrap {
 
 		SearchProviderRegistrar::register(context: $context);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
+		// Objects of schemas declaring x-openregister-team-resources appear on their owning team's page.
+		$context->registerTeamResourceProvider(\OCA\OpenRegister\Reference\ObjectTeamResourceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
 
 		IntegrationRegistrar::register(context: $context);
