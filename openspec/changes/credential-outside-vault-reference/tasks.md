@@ -7,7 +7,7 @@
 
 ## 2. Reader
 
-- [ ] 2.1 `OutsideVaultReader` for HashiCorp Vault KV v2 and OpenBao with token and AppRole login, two second timeout, request-scoped cache. Verify: unit test against a fake HTTP client for login, read, a missing key and a 403.
+- [x] 2.1 `OutsideVaultReader` for HashiCorp Vault KV v2 and OpenBao with token and AppRole login, two second timeout, request-scoped cache. Verify: unit test against a fake HTTP client for login, read, a missing key and a 403.
 - [ ] 2.2 Branch on `custody` in `resolveInjectable()` and the proxy path after both guards; failures set `lastError` to a fixed sentence. Verify: `CredentialBrokerServiceTest` asserts the guards run before the reader and that no secret appears in logs or responses.
 
 ## 3. Page, ADR, proof and docs

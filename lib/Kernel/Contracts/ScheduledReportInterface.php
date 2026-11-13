@@ -55,6 +55,10 @@ use JsonSerializable;
  * @method void setDeliveryFolder(?string $deliveryFolder)
  * @method string|null getDeliveryMode()
  * @method void setDeliveryMode(?string $deliveryMode)
+ * @method string|null getKind()
+ * @method void setKind(?string $kind)
+ * @method string|null getOptions()
+ * @method void setOptions(?string $options)
  * @method string|null getRecipients()
  * @method void setRecipients(?string $recipients)
  * @method bool|null getEnabled()
@@ -90,6 +94,24 @@ interface ScheduledReportInterface extends JsonSerializable {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function getRecipientsArray(): array;
+
+	/**
+	 * The report's kind, `export` when none is stored.
+	 *
+	 * @return string The kind.
+	 *
+	 * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
+	 */
+	public function getKindOrDefault(): string;
+
+	/**
+	 * The decoded options, or an empty array when none are stored.
+	 *
+	 * @return array<string, mixed> The options.
+	 *
+	 * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
+	 */
+	public function getOptionsArray(): array;
 
 	/**
 	 * JSON serialization — the row is only ever exposed to its owner or an admin (controller-gated).

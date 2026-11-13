@@ -381,7 +381,8 @@ final class ServiceRegistrar {
 				fileService: null,
 				// Not FileService itself (that would be the cycle this
 				// factory breaks), only the means to resolve it on first use.
-				container: $container
+				container: $container,
+				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
 

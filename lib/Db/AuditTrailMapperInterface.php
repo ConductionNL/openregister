@@ -198,6 +198,20 @@ interface AuditTrailMapperInterface {
 	): AuditTrail;
 
 	/**
+	 * Record one change to an object: the typed form of {@see createAuditTrail()}.
+	 *
+	 * It also carries the change's named markers (a revert names the point it
+	 * restored), which the positional form has no room for.
+	 *
+	 * @param AuditedChange $change The old and new state, the action, the cascade context and the markers.
+	 *
+	 * @return AuditTrail The created (or merged) audit trail
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function recordChange(AuditedChange $change): AuditTrail;
+
+	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
 	 *
 	 * Contains the complete row-building logic shared by {@see createAuditTrail()}

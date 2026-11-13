@@ -118,6 +118,74 @@ final class FileUploadGuardTest extends TestCase {
 	}//end testMimeTypeIn()
 
 	/**
+	 * A PDF-only property: its two configuration shapes, as the editor and the register JSON write them.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function pdfOnlyProperties(): array {
+		return [
+			'register JSON (bytes)' => [['allowedTypes' => ['application/pdf'], 'maxSize' => 1048576]],
+			'editor (megabytes)' => [['fileConfiguration' => ['allowedMimeTypes' => ['application/pdf'], 'maxSize' => 1]]],
+		];
+	}//end pdfOnlyProperties()
+
+	/**
+	 * A PNG on a PDF-only property is refused, naming its type and the allowed list.
+	 *
+	 * @param array<string, mixed> $fileConfig The property configuration.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider pdfOnlyProperties
+	 *
+	 * @spec openspec/changes/capability-rows-verified-c/tasks.md
+	 */
+	public function testAPngOnAPdfOnlyPropertyIsRefusedByType(array $fileConfig): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage("File at permit has invalid type 'image/png'. Allowed types: application/pdf");
+
+		$this->guard()->assertAccepted(
+			new UploadCheck(fileData: ['filename' => 'scan.png', 'mimeType' => 'image/png', 'size' => 2048], errorPrefix: 'File at permit', fileConfig: $fileConfig)
+		);
+	}//end testAPngOnAPdfOnlyPropertyIsRefusedByType()
+
+	/**
+	 * A PDF above the property's 1 MB limit is refused, naming the limit and the size in bytes.
+	 *
+	 * @param array<string, mixed> $fileConfig The property configuration.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider pdfOnlyProperties
+	 *
+	 * @spec openspec/changes/capability-rows-verified-c/tasks.md
+	 */
+	public function testAPdfAboveTheLimitIsRefusedBySize(array $fileConfig): void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('File at permit exceeds maximum size (1048576 bytes). File size: 1048577 bytes');
+
+		$this->guard()->assertAccepted(
+			new UploadCheck(fileData: ['filename' => 'permit.pdf', 'mimeType' => 'application/pdf', 'size' => 1048577], errorPrefix: 'File at permit', fileConfig: $fileConfig)
+		);
+	}//end testAPdfAboveTheLimitIsRefusedBySize()
+
+	/**
+	 * A PDF exactly at the limit is stored.
+	 *
+	 * @param array<string, mixed> $fileConfig The property configuration.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider pdfOnlyProperties
+	 */
+	public function testAPdfAtTheLimitIsAccepted(array $fileConfig): void {
+		$this->guard()->assertAccepted(
+			new UploadCheck(fileData: ['filename' => 'permit.pdf', 'mimeType' => 'application/pdf', 'size' => 1048576], errorPrefix: 'File at permit', fileConfig: $fileConfig)
+		);
+		$this->addToAssertionCount(1);
+	}//end testAPdfAtTheLimitIsAccepted()
+
+	/**
 	 * A guard blocking `exe` over a silent logger.
 	 *
 	 * @return FileUploadGuard

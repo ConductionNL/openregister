@@ -164,7 +164,8 @@
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
 		"OCA\\OpenRegister\\Listener\\NotifyPushListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\LifecycleActionRecordListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectUpdatingEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyTreeGuardListener",
@@ -235,7 +236,8 @@
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\SchemaAuthorizationAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SourceCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"

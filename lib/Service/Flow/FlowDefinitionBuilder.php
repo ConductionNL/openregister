@@ -62,7 +62,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ use Symfony\Component\Workflow\Transition;
 /**
  * Lowers a stored flow document into an executable Petri-net definition.
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowDefinitionBuilder {
 	/**
@@ -102,7 +102,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @return FlowGraph The helper.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function graph(): FlowGraph {
 		if ($this->graphHelper === null) {
@@ -158,7 +158,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @throws InvalidArgumentException When the document does not describe a runnable flow.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function build(array $flow): Definition {
 		$this->refuseLegacyShape(flow: $flow);
@@ -236,7 +236,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @throws InvalidArgumentException When an edge carries behaviour.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function refuseLegacyShape(array $flow): void {
 		foreach (($flow['edges'] ?? []) as $index => $edge) {
@@ -264,7 +264,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @throws InvalidArgumentException When an edge is malformed or dangling.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function extractEdges(array $flow, array $nodes): array {
 		$edges = [];
@@ -334,7 +334,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @return array<string> The place names.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function buildPlaces(LoweredFlow $net): array {
 		$places = [];
@@ -397,7 +397,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @return array<Transition> The transitions.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function buildTransitions(LoweredFlow $net): array {
 		$transitions = [];
@@ -450,7 +450,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @throws InvalidArgumentException When `initial` names an unknown node.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function declaredInitialPlaces(mixed $declared, array $nodes): array {
 		$initial = [];
@@ -477,7 +477,7 @@ class FlowDefinitionBuilder {
 	 *
 	 * @return array<string> The initial place names.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function inferredInitialPlaces(LoweredFlow $net): array {
 		$sources = [];

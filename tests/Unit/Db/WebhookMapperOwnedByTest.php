@@ -38,7 +38,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\WebhookMapper
  * @covers \OCA\OpenRegister\Db\Webhook
- * @covers \OCA\OpenRegister\Migration\Version1Date20261113120000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261113120200
  */
 class WebhookMapperOwnedByTest extends TestCase {
 

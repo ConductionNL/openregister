@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Composes and hands off a transactional email to a Nextcloud user.
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-009
  */
 class EmailSender implements EmailSenderInterface {
 

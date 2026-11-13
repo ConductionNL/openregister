@@ -79,3 +79,21 @@ No new schema is introduced, so no seed objects are required. The regression tes
 - **A consumer adapted to the wrong answer.** Correcting resolution changes what some callers receive. The known case (hermiq's agent-detail sizing) is a workaround that becomes unnecessary. The audit must enumerate the collisions actually present so the blast radius is known rather than discovered; start from `SELECT LOWER(slug), COUNT(*) FROM oc_openregister_schemas GROUP BY 1 HAVING COUNT(*) > 1`.
 - **Decision 3 leaves a known-imperfect path.** `GET /api/schemas/{id}` without `?register=` still guesses. That is a deliberate, documented deferral, not an oversight — and it is now logged rather than silent.
 - **This is the foundation repository.** Every app resolves schemas. The regression test failing before the fix is the minimum bar for believing the change does anything; a test written after the fix, that passes immediately, would prove only that it does not crash.
+
+## Audit so far (task 2, partial)
+
+Measured against `main` on 2026-11-13. Since this change was written, the fix has largely landed through other changes: there is a shared resolver for a `{register}` + `{schema}` pair, and the main request paths go through it or through `findBySlugInIds()`. The table lists the paths verified so far. It is **not** the complete enumeration task 2.1 asks for: `SchemaMapper::find()` has about 200 call sites in about 130 files, and the rest are not classified yet.
+
+| Path | Disposition | Notes |
+| --- | --- | --- |
+| `ObjectService::setSchema()` → `resolveSchemaRef()` | (a) scoped | The reference implementation. A raw ref is remembered so a later `setRegister()` re-resolves it inside the register. |
+| `ObjectService::schemaWithinRegister()` (slug searches) | (a) scoped, no fallback | Refuses with `SchemaNotInRegisterException` instead of falling back to a global `find()`. |
+| `RegisterScopedSchemaResolver::resolvePair()` | (a) scoped | Shared by `SchemasController`, `TablesController`, `ContextsController`, `TmloController`, aggregation, quality statistics, dedup rules, duplicate detection, migration, federation share targets and the contract bindings. Uses `findInIds()`, so ids, uuids and slugs are all bounded by the register. |
+| `GET /api/schemas/{id}?register=` (`SchemasController::resolveSchema()`) | (a) scoped when the parameter is present; global when absent (Decision 3) | Absent: unchanged, and an ambiguous slug logs the candidate ids at debug level. |
+| Flow `ObjectReadNode` / `ObjectWriteNode` | (a) scoped | `findBySlugInIds()` against the register's schemas first. |
+| `ImportHandler` (configuration import) | (a) scoped | Matches an existing schema by slug only among the register's schemas. |
+| `occ openregister:backfill-object-slugs` | (a) scoped | |
+
+### The request cache (Decision 4)
+
+`findBySlugInIds()` and `findInIds()` neither read nor write `SchemaMapper::$findCache`, so a scoped lookup cannot be answered from a global one, or seed it. `tests/Unit/Db/SchemaMapperScopedSlugTest.php` runs both orders in one mapper instance.
