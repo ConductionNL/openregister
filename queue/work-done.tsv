@@ -5132,3 +5132,4 @@ verify:planninq:1139:e6274a1a	1139 GREEN (tests only, unit 1015->1022, vitest 31
 measure:stackiq:20261113h12	php 87.39% (pcov, 3320 tests), js 91.96% (2437 tests) @e4a96a07	session-20261113T131537-72e2896e	2026-11-13T13:19:33Z
 cover:portaliq:b60f3b81:b5d4a28f	PR #2403: PortalOverview +4 edge tests (4842->4846); SessionTrust already fully pinned	session-20261113T131531-81a20e2a	2026-11-13T13:19:33Z
 cover:portaliq:b60f3b81:59826f43	PR #2404: AdminSettings covered (3 tests); lib/Settings/*.php 14.29%->100%	session-20261113T091531-f9ad21ac	2026-11-13T13:19:47Z
+cover:portaliq:b60f3b81:e5d17af2	nothing to cover: lib/Auth/*.php holds a marker interface and two exception classes with no executable statements; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:20:04Z
