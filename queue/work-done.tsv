@@ -5721,9 +5721,11 @@ cover:pipelinq:7f9dc8e6m16db:ea81adeb	already done: lib/Service/Zgw/*.php at 99.
 verify:shillinq:2944:5a00747c	2945 GREEN; 2944 skipped (head moved to 1db10ef)	session-20261113T171149-8b9ea523	2026-11-13T17:52:23Z
 build:portaliq:hermiq-ai-tooling	failed: blocked: depends on portaliq-mcp-adoption, which is not built yet (all its tasks open, no lib/Mcp); build that change first	session-20261113T172328-c860ad55	2026-11-13T17:52:34Z
 verify:pipelinq:3736:4884dd28	GREEN 3736; no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:52:35Z
+build:portaliq:form-save-and-resume-dialogs	nothing to build: only T07 open, a product decision (dossiq Woo endpoint option a/b); T01-T06 already on development	session-20261113T172328-c860ad55	2026-11-13T17:52:59Z
 cover:shillinq:05639debm4eb8:2befd24e	already done: lib/Service/Asset/ measured 562/564 lines (99.6%, target 95) after -1..-3 merged; no PR	session-20261113T172329-5f4feaba	2026-11-13T17:52:48Z
 cover:stackiq:9ac19b3am9d24:efa2a923	PR #1883: 3 tests for the ObjectEventPayload trait (rest of EventListener covered by rounds -1,-2); suite 3397->3400 OK	session-20261113T171203-c5a044de	2026-11-13T17:52:49Z
 verify:keepiq:1748:429c524e	4 GREEN (1748,1754,1755,1758); phpunit 4897 ok, vitest 6354 ok	session-20261113T171153-e1c17962	2026-11-13T17:53:03Z
 verify:learniq:2465:f8cd08f8	learniq #2465 GREEN: 6429 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:53:19Z
 verify:portaliq:2416:64e46dac	2416 GREEN, 2417 CONFLICT (l10n with 2416)	session-20261113T172324-00680177	2026-11-13T17:54:04Z
 build:portaliq:anonymous-collection-reads-what-the-public-may	already built: T1/T2/T4 on development (b50fe648a); only T3 left, a decidiq-side change, not portaliq code	session-20261113T175336-b2d7fc7c	2026-11-13T17:54:18Z
+cover:stackiq:9ac19b3am9d24:f545d745	PR (stackiq) quality/test-coverage-f545d745-2: 9 tests for SlugRenamePlanner, MigrateRegisterSlugDecisions; suite 3397->3406 OK	session-20261113T171203-c5a044de	2026-11-13T17:54:23Z
