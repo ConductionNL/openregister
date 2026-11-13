@@ -2691,3 +2691,4 @@ cover:dossiq:f8a113c5mac88:4e459503	already done: lib/Service/CaseDefinition/*.p
 cover:filinq:7a9ef677m5ffe:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 123 interfaces with 0 executable statements, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:13:07Z
 merge:decidiq:2111:154ba380	merge-local over 1 decidiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:13:32Z
 merge:humaniq:1025:b865de88	merge-local over 1 humaniq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:13:49Z
+verify:buildiq:1514:88371e89	GREEN 1514 (spec-only; vitest 3774/3774 pass)	session-20261113T051704-8c56f5b7	2026-11-13T06:13:51Z
