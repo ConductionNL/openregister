@@ -3664,3 +3664,4 @@ cover:stackiq:9ac19b3am6096:2861e5ef	already done: lib/Examples/ContactpersoonSe
 verify:launchpad:1180:f77364f4	1180 GREEN, 1181 GREEN: 3805 PHP + 2051 JS tests, 0 new failures	session-20261113T073916-e9f11dfa	2026-11-13T08:57:12Z
 cover:learniq:e6498dddmf689:83cf1abf	already done: lib/Service/Accessibility at 96.5% lines (136/141) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:57:30Z
 measure:decidiq:20261113h08	php 90.73% js 98.26% at a2b22454	session-20261113T080556-d189f150	2026-11-13T08:57:32Z
+cover:decidiq:a5f973bbmb22b:34763eb4	already done: lib/Middleware/*.php at 58/59 statements (98.3%) on development a2b22454, above the 90% target; no PR	session-20261113T080556-d189f150	2026-11-13T08:57:57Z
