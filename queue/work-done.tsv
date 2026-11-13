@@ -5768,3 +5768,4 @@ build:portaliq:portal-theme-blocks-and-contributed-pages	failed: not started; op
 cover:shillinq:05639debm7b6b:js0be8c659	PR #2950: 60 tests, 4 modals, src/modals 59.6%->76.0%	session-20261113T171149-8b9ea523	2026-11-13T17:59:58Z
 build:openregister:object-event-sync-async-split	partial: PR #10288 (webhook guard 1.3, ContextChat deferral 2.4, placement annotations 3.1; 6 tasks obsolete after flow engine consolidation; gate 61 needs update for ListenerRegistrar)	session-20261113T171137-8f22ecb0	2026-11-13T18:00:08Z
 build:portaliq:identity-registered-details	PR #2425: T07 residents count via openregister countResidentsAtAddressObject, 4 tests; suite 4917/0 fail	session-20261113T175327-6e4e7f28	2026-11-13T18:00:10Z
+fix:portaliq:2417:5cad6030	failed: #2416 is not on development yet; #2417 merges cleanly with development today and conflicts only with #2416 (l10n en/nl .js/.json). Re-queue once #2416 lands	session-20261113T171203-c5a044de	2026-11-13T18:00:15Z
