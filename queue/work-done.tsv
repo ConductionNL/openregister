@@ -4559,3 +4559,4 @@ cover:pipelinq:7f9dc8e6m84dd:d39f9857	already covered: lib/Support/*.php 100% (3
 cover:pipelinq:7f9dc8e6m84dd:be0dcca9	already covered: lib/Mcp/*.php 100% (29/29) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T11:35:31Z
 cover:pipelinq:7f9dc8e6m84dd:6925f818	already covered: lib/SetupCheck/*.php 100% (27/27) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T11:35:44Z
 cover:keepiq:c967a31fm1bed:60c2c265	PR #1754: 17 tests, Controller/*.php 97.9%->98.9% local, no new failures	session-20261113T104530-961e9992	2026-11-13T11:36:08Z
+review:openregister:10131:9be4d64c	APPROVE: frontend per spec 7.4/7.5, checks green or same as main	session-20261113T051703-1b54bfba	2026-11-13T11:36:15Z
