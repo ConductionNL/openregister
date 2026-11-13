@@ -5135,3 +5135,4 @@ pipelinq	3665	80ebf4f9bb27b23dc242c25e31838735d290e7ee	GREEN	worker-58	phpunit 6
 pipelinq	3666	9473c65ace2c9870fb93d97692e5a4647e68b76f	GREEN	worker-58	phpunit 6429 on 8-PR tree vs baseline 6355, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWoo), 0 new; vitest 545 files/3837 tests pass; tests-only diff
 pipelinq	3667	116b90f0f40f685ed02842bcf7a90e1f8491fb77	GREEN	worker-58	phpunit 6429 on 8-PR tree vs baseline 6355, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWoo), 0 new; vitest 545 files/3837 tests pass; tests-only diff
 pipelinq	3668	c9b3e76315867f925b017d728ddac17f222b9408	GREEN	worker-58	phpunit 6429 on 8-PR tree vs baseline 6355, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWoo), 0 new; vitest 545 files/3837 tests pass; tests-only diff
+launchpad	1171	e8495801bc97fc80e582c90c3673c38c52167539	GREEN	worker-34	phpunit 3741 ok (baseline 3741 ok, 13 skipped), vitest 1927/1927 incl 14 new; tests only, no new failures
