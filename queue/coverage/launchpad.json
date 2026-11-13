@@ -1,12 +1,12 @@
 {
  "app": "launchpad",
- "commit": "867c6ce5847844432409a8d275dee935f0e12dd7",
- "measured_at": "2026-11-13T09:42:59Z",
+ "commit": "d6a7f892fa22bfc450a6c298813e11f15d26af2a",
+ "measured_at": "2026-11-13T18:16:48Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.53,
+  "pct": 96.19,
   "statements": 22125,
-  "covered": 20472,
+  "covered": 21281,
   "dirs": {
    "lib/Activity/": [
     337,
@@ -26,15 +26,15 @@
    ],
    "lib/Command/": [
     1357,
-    1354
+    1357
    ],
    "lib/Controller/": [
     4625,
-    4284
+    4387
    ],
    "lib/Db/": [
     2102,
-    1614
+    2100
    ],
    "lib/Event/": [
     6,
@@ -66,7 +66,7 @@
    ],
    "lib/Repair/": [
     313,
-    279
+    296
    ],
    "lib/Search/": [
     202,
@@ -74,7 +74,7 @@
    ],
    "lib/Service/": [
     11530,
-    10798
+    10998
    ],
    "lib/Service/Cleanup/": [
     42,
@@ -103,9 +103,9 @@
   }
  },
  "js": {
-  "pct": 94.2,
+  "pct": 96.92,
   "statements": 7243,
-  "covered": 6823,
+  "covered": 7020,
   "dirs": {
    "src/": [
     44,
@@ -113,15 +113,15 @@
    ],
    "src/components/": [
     464,
-    435
+    447
    ],
    "src/components/Widgets/": [
     234,
-    213
+    234
    ],
    "src/components/Widgets/Renderers/": [
     1302,
-    1233
+    1288
    ],
    "src/components/Workspace/": [
     324,
@@ -141,7 +141,7 @@
    ],
    "src/composables/": [
     378,
-    357
+    365
    ],
    "src/constants/": [
     47,
@@ -157,7 +157,7 @@
    ],
    "src/services/": [
     526,
-    502
+    503
    ],
    "src/stores/": [
     715,
@@ -165,11 +165,11 @@
    ],
    "src/utils/": [
     132,
-    125
+    127
    ],
    "src/views/": [
     717,
-    619
+    717
    ],
    "src/views/settings/": [
     40,
