@@ -2733,3 +2733,4 @@ verify:shillinq:2871:c4070450	2871 GREEN, 2872 GREEN (tests only; vitest 1383 pa
 verify:buildiq:1515:2e932f04	failed: permission (npm ci refused; PHP unit tree 1388->1 failures, no new)	session-20261113T061518-90540a48	2026-11-13T06:18:57Z
 verify:keepiq:1741:2505e581	failed: permission (running PR test code refused)	session-20261113T061518-d60bd575	2026-11-13T06:18:44Z
 verify:filinq:2039:7f191b05	2/2 GREEN (2039, 2040): clean merge, lint ok, phpunit 6112->6122 all pass; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:19:08Z
+measure:pipelinq:20261113h06	php 84.95% (pcov, 50e93fcd); js not re-measured (npm ci refused here), previous js 80.72% kept with js_commit	session-20261113T054519-189b2666	2026-11-13T06:19:24Z
