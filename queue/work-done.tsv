@@ -6136,6 +6136,7 @@ cover:hermiq:065f1631md84f:34a55f48	already done: lib/Service/Workspace/*.php at
 cover:dossiq:069ee2d6m2deb:c97e6ec3	PR #6437: 9 tests for ApprovalSource and ConsultationSource (+RegisterBackedSource refusals); suite 16530->16539, same 20 inherited failures	session-20261113T181000-9baff50f	2026-11-13T18:59:28Z
 build:shillinq:sales-billable-rate-per-hour	partial: PR #2996 builds task 2.1 (BillableRateService, 9 tests); 1.1, 2.2-5.2 left	session-20261113T171149-8b9ea523	2026-11-13T18:59:27Z
 cover:hermiq:065f1631md84f:9d3a1784	already done: lib/BackgroundJob/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:12Z
+build:shillinq:tax-cbcr-and-pillar2-returns	partial: PR #2997 task 3.1 GroupScopeService + GroupScopeAssessment schema (part of 1.1), app version moved; 15 tasks left (XSDs, figures, generators, pages); suite 10394->10399, same 1 inherited failure	session-20261113T172349-00278d9d	2026-11-13T18:59:35Z
 cover:openregister:7350e3efma401:32df05fd	PR #10296: metadata fix for 19 risky test classes; lib/Files/Service 93.94% -> 95.44%, 43 risky -> 0, tests only	session-20261113T182348-4d2d804b	2026-11-13T18:59:45Z
 build:shillinq:reporting-ifrs-calculations	partial: PR #2999 builds 1.3 (lease disclosure table stored on period close); 1.1, 1.2, 1.4 left	session-20261113T172329-5f4feaba	2026-11-13T18:59:40Z
 cover:hermiq:065f1631md84f:06285390	PR #1700: 20 tests, NcNative 91.3%->99.9%, suite 4562->4582 no new failures	session-20261113T185324-28e07ab2	2026-11-13T18:59:46Z
