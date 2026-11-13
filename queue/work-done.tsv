@@ -1395,3 +1395,4 @@ cover:launchpad:755175ffm7412:dfaef732	no PR: every Notifier/NotificationCopy li
 verify:pipelinq:3611:0af47ee6	3611,3612,3613 GREEN (tests only, unit 0 new failures, vitest 3230 green)	session-20261112T234653-efce95ba	2026-11-13T01:22:53Z
 cover:launchpad:755175ffm7412:38e80a9f	no PR: lib/Command/*.php already at 1424/1427 lines (52 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:22:58Z
 cover:launchpad:755175ffm7412:d8ac3ddd	already done: lib/Service/Cleanup/ 42/42 statements (100%), 28 tests; prior branch -1 merged; no PR	session-20261113T011729-46bd3dd4	2026-11-13T01:23:08Z
+cover:integriq:9b0f5894m2367:95d5249b	PR #3448: ActivityOverview behaviour tests (+10 tests); suite 7093->7103, no new failures	session-20261113T011731-f3798045	2026-11-13T01:23:33Z
