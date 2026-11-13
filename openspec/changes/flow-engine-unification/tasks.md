@@ -1,20 +1,20 @@
 # Tasks — flow-engine-unification
 
 ## Phase 1 — Native flow storage (OpenRegister)
-- [ ] 1.1 Migration: `oc_openregister_flows` (uuid, name, description, app, enabled, trigger, trigger_register, trigger_schema, cron, execution_mode, nodes, edges, limits, retention_days, owner, organisation, notes, created, updated) + indexes on (app), (trigger, enabled), (organisation), (uuid). (code exists, test missing: lib/Migration/Version1Date20260803000000.php)
-- [ ] 1.2 Migration: `oc_openregister_flow_run_steps` (run_uuid, flow_id, node_id, node_type, sequence, status, started, finished, duration_ms, output, error) + indexes on (run_uuid, sequence), (node_type, status), (flow_id).
+- [x] 1.1 Migration: `oc_openregister_flows` (uuid, name, description, app, enabled, trigger, trigger_register, trigger_schema, cron, execution_mode, nodes, edges, limits, retention_days, owner, organisation, notes, created, updated) + indexes on (app), (trigger, enabled), (organisation), (uuid). (verified: lib/Migration/Version1Date20260803000000.php, tests/Unit/Migration/Version1Date20260803000000Test.php)
+- [x] 1.2 Migration: `oc_openregister_flow_run_steps` (run_uuid, flow_id, node_id, node_type, sequence, status, started, finished, duration_ms, output, error) + indexes on (run_uuid, sequence), (node_type, status), (flow_id). (verified: lib/Migration/Version1Date20260803000100.php creates it as `openregister_flow_steps`, tests/Unit/Migration/Version1Date20260803000100Test.php)
 - [x] 1.3 `lib/Db/Flow.php` + `lib/Db/FlowMapper.php` — organisation-scoped queries, `app` filter, `findByTrigger`. (verified: lib/Db/FlowMapper.php, tests/Unit/Db/FlowMapperApplicationSlugTest.php)
-- [ ] 1.4 `lib/Db/FlowRunStep.php` + `lib/Db/FlowRunStepMapper.php` — `findByRun`, `findByNodeType`, `deleteOlderThan`.
+- [x] 1.4 `lib/Db/FlowRunStep.php` + `lib/Db/FlowRunStepMapper.php` — `findByRun`, `findByNodeType`, `deleteOlderThan`. (verified: lib/Db/FlowRunStepMapper.php, tests/Unit/Db/FlowRunStepMapperSequenceTest.php)
 - [x] 1.5 `lib/Service/Flow/FlowService.php` — the surface apps consume (find/findAll/save/delete/run), owner + organisation stamping, ownerless-flow dispatch refusal. (verified: lib/Service/Flow/FlowService.php, tests/Unit/Service/Flow/FlowOwnershipRequiredTest.php)
 - [x] 1.6 `FlowController` CRUD + `/api/flows/{id}/run`; per-flow guard on run/update/delete (do not repeat the `retry()` IDOR, or#2290). (verified: lib/Controller/FlowController.php, tests/Unit/Controller/FlowControllerTest.php)
 - [x] 1.7 Point `OpenRegisterFlowResolver` at `FlowMapper`; delete `IFlowResolver`, `FlowResolverRegistry`, `RegisterFlowResolversEvent`. (verified: lib/Service/Flow/FlowLocator.php, tests/Unit/Service/Flow/FlowLocatorTest.php)
-- [ ] 1.8 Enforce namespaced node ids end to end: an unresolvable node type fails its step visibly instead of being skipped.
+- [x] 1.8 Enforce namespaced node ids end to end: an unresolvable node type fails its step visibly instead of being skipped. (verified: lib/Service/Flow/FlowNodeRegistry.php, tests/Unit/Service/Flow/FlowUnresolvableNodeTypeTest.php)
 
 ## Phase 2 — Execution history + retention
 - [x] 2.1 `FlowEngine`/`FlowRunService` write a step row per node execution (output, error, timing, sequence); appended, not replaced, across a resume. (verified: lib/Service/Flow/FlowStepHistory.php, tests/Unit/Service/Flow/FlowStepHistoryTest.php)
 - [x] 2.2 `flow_run_retention_days` admin app setting, default 31; `retention_days` per-flow override honoured shorter **and** longer. (verified: lib/Service/Settings/ConfigurationSettingsHandler.php, tests/Unit/BackgroundJob/FlowRunRetentionJobTest.php)
 - [x] 2.3 `FlowRunRetentionJob` daily `TimedJob` sweeping runs + their step rows (model on `ExecutionHistoryCleanupJob`). (verified: lib/BackgroundJob/FlowRunRetentionJob.php, tests/Unit/BackgroundJob/FlowRunRetentionJobTest.php)
-- [ ] 2.4 Admin settings UI section for flow log retention (admin only — not personal settings). (code exists, test missing: src/views/settings/sections/FlowConfiguration.vue)
+- [x] 2.4 Admin settings UI section for flow log retention (admin only — not personal settings). (verified: src/views/settings/sections/FlowConfiguration.vue, src/views/settings/sections/FlowConfiguration.spec.js)
 
 ## Phase 3 — Remove the old engines
 - [ ] 3.1 Delete `FlowActionService`, `FlowActionListener`, `EventCatalogListener`'s dispatch into it, `WorkflowEngine/RunFlowOperation`.

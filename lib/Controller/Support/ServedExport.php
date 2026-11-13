@@ -32,7 +32,7 @@ final class ServedExport {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $format   The format written: csv, json, pdf or excel.
+	 * @param string $format   The format written: csv, json, pdf, excel or ods.
 	 * @param int    $rowCount How many rows left the instance.
 	 */
 	public function __construct(

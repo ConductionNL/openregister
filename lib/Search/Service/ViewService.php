@@ -453,6 +453,7 @@ class ViewService {
 			'table' => null,
 			'kanban' => $this->assertRequiredField(check: $check, path: 'kanban.groupByField'),
 			'calendar' => $this->validateCalendarPresentation(check: $check),
+			'gallery' => $this->validateGalleryPresentation(check: $check),
 			default => throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType),
 		};
 	}//end validatePresentationConfig()
@@ -481,6 +482,95 @@ class ViewService {
 
 		$this->assertFieldExistsOnViewSchema(check: $check, path: 'calendar.endDateField');
 	}//end validateCalendarPresentation()
+
+	/**
+	 * A gallery presentation must declare a titleField; its coverField, when
+	 * given, must be a file or image property, every cardFields entry a
+	 * property, and cardSize small, medium or large. Without a coverField
+	 * the schema's objectImageField is the cover.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private function validateGalleryPresentation(PresentationCheck $check): void {
+		$this->assertRequiredField(check: $check, path: 'gallery.titleField');
+
+		$cover = $check->declared(path: 'gallery.coverField');
+		if ($cover !== null) {
+			$this->assertRequiredField(check: $check, path: 'gallery.coverField');
+			$property = ($this->viewSchema(check: $check, label: 'gallery.coverField')->getProperties()[$cover] ?? []);
+			if (self::isFileOrImageProperty(property: $property) === false) {
+				throw new InvalidArgumentException(
+					'Presentation gallery.coverField "' . $cover . '" is not a file or image property of the view\'s schema'
+				);
+			}
+		}
+
+		$this->assertGalleryCardFields(check: $check);
+
+		$size = $check->declared(path: 'gallery.cardSize');
+		if ($size !== null && in_array($size, ['small', 'medium', 'large'], true) === false) {
+			throw new InvalidArgumentException('Presentation gallery.cardSize must be small, medium or large');
+		}
+	}//end validateGalleryPresentation()
+
+	/**
+	 * Every gallery card field must be a property of the view's schema.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If cardFields is not a list of the schema's properties
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private function assertGalleryCardFields(PresentationCheck $check): void {
+		$fields = $check->declared(path: 'gallery.cardFields');
+		if ($fields === null) {
+			return;
+		}
+
+		if (is_array($fields) === false || array_is_list($fields) === false) {
+			throw new InvalidArgumentException('Presentation gallery.cardFields must be a list of property names');
+		}
+
+		$properties = $this->viewSchema(check: $check, label: 'gallery.cardFields')->getProperties();
+		foreach ($fields as $field) {
+			if (is_string($field) === false || array_key_exists($field, $properties) === false) {
+				throw new InvalidArgumentException(
+					'Presentation gallery.cardFields "' . (string)json_encode($field) . '" is not a property of the view\'s schema'
+				);
+			}
+		}
+	}//end assertGalleryCardFields()
+
+	/**
+	 * Whether a schema property holds a file or an image: type `file`, a list of files, or format `image`.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool True when it can be a gallery cover.
+	 *
+	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
+	 */
+	private static function isFileOrImageProperty(mixed $property): bool {
+		if (is_array($property) === false) {
+			return false;
+		}
+
+		$type = ($property['type'] ?? '');
+		if ($type === 'file' || ($property['format'] ?? '') === 'image') {
+			return true;
+		}
+
+		return $type === 'array' && is_array($property['items'] ?? null) === true && (($property['items']['type'] ?? '') === 'file');
+	}//end isFileOrImageProperty()
 
 	/**
 	 * A required presentation field (kanban.groupByField, calendar.dateField) must be declared and on the view's schema.

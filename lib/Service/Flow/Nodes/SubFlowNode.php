@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunPass;
 use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use RuntimeException;
@@ -59,7 +60,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * How deep a chain of sub-flows may go before it is refused.
@@ -157,6 +158,41 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	public function configKeys(): array {
 		return ['flow', 'flowId', 'wait', 'fanOut'];
 	}//end configKeys()
+
+	/**
+	 * The flow to run, whether to wait for it, and whether to run it per item.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// `flow` is the older spelling of `flowId`; the form writes `flowId`,
+		// which wins when both are present.
+		return [
+			[
+				'key' => 'flowId',
+				'label' => $this->l10n->t('Flow to run'),
+				'type' => 'select',
+				'help' => $this->l10n->t('It receives this step\'s items and runs as a run of its own, with its own log.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/flows',
+			],
+			[
+				'key' => 'wait',
+				'label' => $this->l10n->t('Wait for it to finish'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('On by default: the flow\'s result becomes this '
+					. 'step\'s items. Off queues the flow and carries on with the items as they were.'),
+			],
+			[
+				'key' => 'fanOut',
+				'label' => $this->l10n->t('Run once per item'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Off by default: the flow runs once with every item.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a sub-flow step that names no flow.

@@ -15,7 +15,7 @@
 
 ## 3. Docs
 
-- [ ] 3.1 `docs/` section on record templates.
+- [x] 3.1 `docs/` section on record templates.
 
 Acceptance:
 - A record created from a template passes the same validation and RBAC as any other.
