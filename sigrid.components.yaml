@@ -142,7 +142,7 @@ components:
       - ".*/lib/WorkflowEngine/[^/]*"
   - name: Configuration
     include:
-      - ".*/lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|NameCacheWarmupJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php"
+      - ".*/lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedJobRuntime|RecordedQueuedJob|RecordedTimedJob|RecordsItsRuns|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php"
       - ".*/lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php"
       - ".*/lib/Command/(ApplicationIdRename|BackfillSystemOwnerCommand|DedupeConfigurationsCommand|DedupeSharedSchemasCommand|DescriptorListCommand|ExampleSetInstallCommand|ExampleSetListCommand|ExampleSetRemoveCommand|ImportSkosCsvCommand|MetadataReconcileRun|MigrateSchemaApplicationCommand|MigrateStorageCommand|MigrateStorageRun|PlannedSchemaSplit|ReconcileMagicTablesCommand|ResetSchemaToShippedCommand|ResetToShippedRun|RollbackApprovalMigrationCommand|RotateTenantKeyCommand|SeedImportCommand|SharedSchemaSplitRun)[.]php"
       - ".*/lib/Command/Support/[^/]*"
