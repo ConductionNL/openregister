@@ -5740,3 +5740,4 @@ cover:shillinq:05639debm4eb8:c37ad97a	PR #2948: 14 tests, PaymentPlanAllocator 1
 verify:learniq:2466:2e02f2a5	learniq #2466 #2467 GREEN: 6449 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:55:39Z
 verify:portaliq:2414:bf16d223	2414 GREEN, 2415 CONFLICT (package.json with 2414)	session-20261113T175400-7ec3993f	2026-11-13T17:55:53Z
 cover:keepiq:c967a31fm1bed:js856c2c86	PR #1759: +10 tests, 4 settings sections (3 to 100%); src/components 93.3% -> 94.3%	session-20261113T171141-a3907367	2026-11-13T17:56:13Z
+cover:pipelinq:7f9dc8e6m16db:38e80a9f	already done: round -1 merged; every command has a test file covering each branch (checked the thinnest four by hand)	session-20261113T171203-c5a044de	2026-11-13T17:55:58Z
