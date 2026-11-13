@@ -4098,3 +4098,5 @@ merge:shillinq:2910:3191e515	merge-local over 3 shillinq tasks: merged=7 red=0 f
 merge:shillinq:2911:f096b540	merge-local over 3 shillinq tasks: merged=7 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:57:34Z
 cover:dossiq:069ee2d6m7275:33af3743	already done: lib/Service/Bezwaar/*.php at 99.61% (1550/1556) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:57:39Z
 cover:planninq:e1c9866d:e372e6ff	PR #1146: TimetableEventsTest 6 tests pinning event answer/error exclusion and list re-indexing	session-20261113T074533-3e2a2da6	2026-11-13T09:58:09Z
+build:dossiq:woo-request-corpus-collection	PR dossiq#6382: 8.1-8.3 built (mail threadId via MessageThreadReader/CompoundFileStreams/CaseMailThreads in CaseFileCollector; report conversations+threads); UI half of 8.2 and e2e/live left; suite no new failures	session-20261113T074532-3dc49c57	2026-11-13T09:58:19Z
+fix:dossiq:6359:62aa196e	fixed: spec now expects the change's rule-rows widget; merged development; new head 949df0a7, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T09:58:19Z

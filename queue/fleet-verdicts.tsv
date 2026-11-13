@@ -5618,3 +5618,4 @@ dossiq	6369	a546d3b43d83bfecb047095ce52d191f9d15f08e	GREEN	worker-33	tree withou
 dossiq	6370	3b73db7f0adf929fc50c07855bdc1bd8ecb1c0ae	GREEN	worker-33	tree without 6366: 15521 PHP tests (baseline 15494, 19 inherited failures), 6564 vitest (1 inherited capabilityComparison failure), no new failures; build PR matches its change
 dossiq	6378	a657aadbb24f5fe595fe46e711155b926a3a1ffd	GREEN	worker-51	tree of 2: php 15555 tests (baseline 15522, 19 inherited failures, 0 new); vitest 6613, only inherited capabilityComparison failure (red on development too)
 dossiq	6379	4c165be574ac13ac534db72818b4c4078c2d86d7	GREEN	worker-51	same tree; tests only, 0 new failures
+dossiq	6359	62aa196ec615d61665fada180e1a6af5036371e3	REVERIFY	worker-09	merged development in; spec updated to expect case-type-rule-rows above case-type-rules (intended by the change); new head 949df0a78cea33edd67aa098599f94292d8d4508, verify it
