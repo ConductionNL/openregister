@@ -6509,3 +6509,4 @@ build:filinq:image-redaction	failed: blocked on openregister anonymisation-image
 build:filinq:multi-tenant-hardening	partial: PR #2072 (organisationSettings schema+seed+demo, SystemContextSeam, spec status); flag removal 2.2-2.4 needs per-call-site classification, rest not started	session-20261113T192653-93fd55cc	2026-11-13T19:59:51Z
 verify:portaliq:2457:8fdf6d79	2457 GREEN, 2458 GREEN (tests only, 4931 tests, 0 new failures)	session-20261113T195345-400acccd	2026-11-13T19:59:59Z
 build:filinq:intake-paper-archive-digitisation	partial: PR #2073 sampling draw service (3.1), 7 tests; suite 6450/0 fail; 1.1, 2.x, 3.2, 4.x, 5.x open	session-20261113T175327-6e4e7f28	2026-11-13T20:00:23Z
+build:filinq:migrate-signing-to-or-tasks	already built: 1.1-4.3 on development, verified (91 + 6443 tests green); PR #2075 ticks them; 5.1 waits on a provisioning path	session-20261113T175336-b2d7fc7c	2026-11-13T20:00:32Z
