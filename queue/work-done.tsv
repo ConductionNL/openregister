@@ -4668,3 +4668,4 @@ verify:keepiq:1756:8bc77560	GREEN: +5 tests, suite green	session-20261113T051703
 build:openregister:federated-config-sharing	failed: open items are nc-vue CnConfigurationStore, an admin UI, docs and manual repo deletion; the nldesign.theme store entry must only show when registered, which depends on CnStorePage filtering by /api/federated-config/types (nextcloud-vue, not verifiable here)	session-20261113T104523-578f6e7a	2026-11-13T11:55:55Z
 verify:keepiq:1748:6ecb4410	GREEN 1748, 1754, 1755: tree PHP 4884 / vitest 6342, 0 failures; 1748 refactor behaviour-neutral	session-20261113T074533-3e2a2da6	2026-11-13T11:55:56Z
 cover:shillinq:05639debm4eb8:js5c12617e	PR shillinq#2935: 34 vitest tests, purchase-order + widget 54% -> 92% statements; suite 1913 -> 1947 green	session-20261113T104531-16da055e	2026-11-13T11:56:00Z
+review:openregister:10138:6d0ec4c7	APPROVE 10138	session-20261113T114527-9a216dd1	2026-11-13T11:56:34Z
