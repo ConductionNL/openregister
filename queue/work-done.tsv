@@ -6471,3 +6471,4 @@ build:filinq:filinq-adopt-buildmanifest-pipeline	PR #2061: manifest.d fragments 
 cover:pipelinq:7f9dc8e6m8ce9:d6dccde7	already done: PersonLookup 10/10, Settings 12/12, Worklist 66/66 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:56:10Z
 cover:pipelinq:7f9dc8e6m8ce9:a215617b	already done: lib/Integration/*.php at 100% statements (302/302) on development	session-20261113T175400-7ec3993f	2026-11-13T19:56:01Z
 build:filinq:grondslagen-read-from-dossiq	partial: PR (task 1 resolver + vendored dossiq snapshot, 7 tests); tasks 2-6 left	session-20261113T172328-c860ad55	2026-11-13T19:56:16Z
+cover:pipelinq:7f9dc8e6m8ce9:bec85fb4	already done: lib/Service/Zgw/ at 99.73% statements (726/728) on development c2351f22	session-20261113T175400-7ec3993f	2026-11-13T19:56:20Z
