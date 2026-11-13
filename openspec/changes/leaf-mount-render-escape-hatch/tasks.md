@@ -9,12 +9,12 @@
 
 ## openregister — server descriptor + discovery + parity
 
-- [ ] Add a `renderMode` field to `LeafDescriptor` (`component` | `mount`,
+- [x] Add a `renderMode` field to `LeafDescriptor` (`component` | `mount`,
       default `component`); expose it via a getter and in `toArray()`.
-- [ ] Validate on registration: a render-surface leaf declaring `renderMode: 'mount'`
+- [x] Validate on registration: a render-surface leaf declaring `renderMode: 'mount'`
       is accepted with no bespoke tab/widget expectation; a `component` (or
       omitted) render-surface leaf keeps today's expectation.
-- [ ] Emit `renderMode` on the OCS capabilities discovery surface so a manifest
+- [x] Emit `renderMode` on the OCS capabilities discovery surface so a manifest
       app / admin UI can read how a render-surface leaf renders without loading
       its JS.
 - [ ] Extend the cross-layer parity correlation: for a render-surface leaf the
