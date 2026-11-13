@@ -6319,3 +6319,4 @@ verify:decidiq:2130:3b601c40	2 GREEN (2130,2131): tests only; 3911 -> 3934 OK	se
 review:openregister:10295:ab2e1a66	APPROVE	session-20261113T171152-380dbc11	2026-11-13T19:23:35Z
 build3:openregister:rbac-department-role-matrix	partial: PR #10306 builds 3.2 (admin matrix preview route + handler) with tests; 3.1 Rights tab and its spec/e2e left	session-20261113T172329-5f4feaba	2026-11-13T19:24:06Z
 cover:integriq:92114ab0m0593:e372e6ff	PR #3532: lib/Event/*.php 408/424 -> 418/424 statements (3 new tests + payload assertions); suite 8222->8225, same inherited 2E/2F/2R	session-20261113T182353-86897235	2026-11-13T19:24:03Z
+cover:integriq:92114ab0m0593:js971eca14	PR #3533: 11 vitest tests, SourceFormFields.vue 63% -> 98%	session-20261113T172329-0b6220f9	2026-11-13T19:24:22Z
