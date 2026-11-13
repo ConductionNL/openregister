@@ -5789,3 +5789,4 @@ build:portaliq:personal-data-left-untranslated	PR #2431: T03 built (personal/for
 cover:stackiq:9ac19b3am9d24:6f346b68	already done: lib/Sections/*.php 6/6 statements covered	session-20261113T171141-a3907367	2026-11-13T18:02:38Z
 build:portaliq:personal-action-list	PR #2432: T04 action-due mail beside the reminder message, 7 tests; suite 4921/0 fail; T06/T07 need live	session-20261113T175327-6e4e7f28	2026-11-13T18:02:54Z
 build:portaliq:resident-menu-leave-out	already done: tasks 1-4 built on development; only task 5 left, which is a learniq portal declaration (cross-repo), not portaliq code	session-20261113T172325-6eb25015	2026-11-13T18:03:20Z
+cover:pipelinq:7f9dc8e6m16db:8c6788f4	already done: lib/Service/Gdpr/ at 100% line coverage on development (68/68 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:03:36Z
