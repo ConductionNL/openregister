@@ -2147,3 +2147,4 @@ cover:integriq:92114ab0md8cd:f0d34e00	PR #3474: 9 tests, lib/Connectors 239->272
 cover:integriq:92114ab0m1534:aae6d66c	already done: lib/Exception 54/55 statements covered at development	session-20261113T031700-46f75510	2026-11-13T04:31:48Z
 cover:pipelinq:f67520ecmc4ba:dfaef732	already covered: Notifier golden test runs every subject (16, all 5 groups) with full and empty params plus the other-app refusal; no PR	session-20261113T024654-6600dc41	2026-11-13T04:31:54Z
 cover:launchpad:fb10c50fm2ceb:js750ffd0f	PR #1167: 26 tests, admin line coverage 85.86->89.27%	session-20261113T041644-3c9184ea	2026-11-13T04:31:59Z
+verify:keepiq:1727:8880a6bb	GREEN 1727-1732 (tests only; phpunit and vitest green on the tree)	session-20261113T034634-857dbcc2	2026-11-13T04:32:25Z
