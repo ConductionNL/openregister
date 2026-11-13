@@ -4171,3 +4171,4 @@ cover:stackiq:9ac19b3am6096:c2bb21fa	PR stackiq#1868: 6 tests (ContactPersonHand
 cover:buildiq:70b3e29embf07:js0023cfc7	PR #1539: dialogs 85.75% -> 88.18% (batch 1 of the 95% target), +16 tests, suite 3896 green; found slug-suggest watcher bug in SaveAsTemplate/SaveBlock dialogs	session-20261113T071633-17de823f	2026-11-13T10:10:36Z
 cover:portaliq:b60f3b81:3230221b	PR #2391: 9 tests, lib/Service/Signin 94.0->100% stmts	session-20261113T091527-72c58830	2026-11-13T10:10:42Z
 cover:portaliq:b60f3b81:b994f46a	already done: lib/Service/Reports 304/313 stmts (97.1%), above 95 target	session-20261113T091527-72c58830	2026-11-13T10:11:03Z
+verify:learniq:2462:39dad4c9	GREEN 2462 (tests only; 6383 -> 6388, 1 failure from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:00Z
