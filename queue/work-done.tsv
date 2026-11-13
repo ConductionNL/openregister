@@ -1698,6 +1698,7 @@ cover:dossiq:6ca0231ema7d4:9825f52a	PR #6244: coversNothing->covers on repo test
 verify:integriq:3456:14ca74b9	GREEN #3456, GREEN #3457 (7161 tests, 0 new failures)	session-20261113T021702-a00af7e3	2026-11-13T02:38:29Z
 cover:filinq:8ecceb86mc744:js4829b6aa	already done: src/views/* holds no production code, only listOnlyIndexPages.golden.spec.js (a jest spec counted by the vitest src/** include); no PR	session-20261113T013903-97d30fda	2026-11-13T02:38:50Z
 cover:filinq:8ecceb86mc744:js09173935	PR #2005: 39 vitest tests for 6 untested stores; src/store/modules 44.0%->69.2% statements, suite 450->489 green	session-20261113T004527-ec0338ee	2026-11-13T02:39:05Z
+cover:keepiq:d76c2121m88ca:f545d745	PR #1724: 15 tests; MoveAttachmentBlobs 78->100%, SeedDevelopmentData 76->96%; suite 0 failures	session-20261113T021701-c2a14ef0	2026-11-13T02:39:04Z
 cover:shillinq:801aab65:1dec5f62	PR #2844: FieldRequirements reads, 3 tests; lib/Service/Platform 92.5% -> 98.8%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T02:39:00Z
 verify:launchpad:1141:5595b3eb	already merged: 46cdc657 is an ancestor of origin/development; no verdict needed	session-20261113T023823-08aff282	2026-11-13T02:39:10Z
 cover:shillinq:801aab65:c4ea4174	PR #2845: LogDepositPaymentAdapter 6 tests; suite 9004->9010, 1 pre-existing failure	session-20261113T021659-ac072d0a	2026-11-13T02:39:09Z
