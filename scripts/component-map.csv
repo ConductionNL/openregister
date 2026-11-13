@@ -3989,3 +3989,9 @@ Service/RedactionPolicy/TermRule.php,101,Service,Configuration,Configuration/Ser
 Service/RedactionPolicy/TermRuleMatcher.php,73,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleMatcher.php,0,,Configuration
 Service/RedactionPolicy/TermRuleSourceInterface.php,6,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleSourceInterface.php,0,,Configuration
 Service/RedactionPolicy/TextFolder.php,62,Service,Configuration,Configuration/Service/RedactionPolicy/TextFolder.php,0,,Configuration
+Service/Configuration/SeedReport.php,166,Service,Configuration,Configuration/Service/Configuration/SeedReport.php,0,,Configuration
+Service/Configuration/SeedDirectoryImporter.php,164,Service,Configuration,Configuration/Service/Configuration/SeedDirectoryImporter.php,0,,Configuration
+Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirectory.php,0,,Platform
+BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
+Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
+Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration

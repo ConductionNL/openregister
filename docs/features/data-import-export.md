@@ -146,6 +146,30 @@ Idempotent: importing the same configuration twice produces the same result (no 
 }
 ```
 
+## Seeding from a Mounted Directory
+
+An installation can be seeded at start-up from the operator's own data files, without anyone opening the admin. Name the directory in Nextcloud's `config.php`, typically a volume mounted into the container:
+
+```php
+'openregister.seed_directory' => '/seed',
+```
+
+Every `*.json` file directly in that directory (not in sub-directories) is imported in lexical order, so `10-registers.json` imports before `20-objects.json`. Each file is a configuration in the same format the configuration import takes (`components.registers`, `components.schemas`, and objects under `components.objects` or a top-level `objects`), and it goes through the same import. Writes carry the audit cause `seed`.
+
+The import runs on three occasions:
+
+- on install and after every upgrade (a repair step);
+- every five minutes from a background job, but only when the SHA-256 over the directory's file names and contents changed since the last run;
+- on demand with `occ openregister:seed:import`, which exits `0` on success, `2` on a partial run and `1` on a failed run or when no directory is configured.
+
+Imports are idempotent: registers, schemas and objects are matched by slug or uuid and updated or skipped, never duplicated. A register or schema is updated when its `version` is raised, as in any configuration import; seed objects follow their file's content.
+
+Safety: a file that resolves outside the directory (a symlink leading out) or is larger than 50 MB is refused and named without being read. A file that does not parse is named and the other files still import. A relative or unreadable directory is reported and nothing is imported.
+
+### The seed report
+
+Every run stores a report: the directory, its digest, the moment, and per file the counts of imported, skipped and failed registers, schemas and objects, with each failure named (file, entity, slug, reason). The run is `success` only when nothing failed, `failed` when something failed and nothing imported (or the directory could not be read), and `partial` otherwise. The last report is returned by `GET /api/settings/seed` (administrators only), written to the log and printed by the occ command.
+
 ## Solr Index Warmup
 
 After a large import, `ImportService.scheduleSmartSolrWarmup()` schedules a background job via `IJobList` to reindex the imported objects in Solr. This ensures search results are immediately accurate after bulk loads.

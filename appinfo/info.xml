@@ -203,6 +203,7 @@ Vrij en open source onder de EUPL-licentie.
 			stored and never acted on.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
 	</background-jobs>
 
 	<repair-steps>
@@ -445,6 +446,10 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
 			<!-- A schema stored before saves refused reference loops keeps its loop: name it. -->
 			<step>OCA\OpenRegister\Repair\ReportReferenceLoopSchemas</step>
+			<!-- LAST: the operator's seed directory (config.php
+			     openregister.seed_directory) imports once every register the
+			     app ships exists, so a seed file may use them. -->
+			<step>OCA\OpenRegister\Repair\SeedFromDirectory</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -520,6 +525,10 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\KeyAuditHashChain</step>
 			<!-- Sets the run-once flag on a fresh install (see post-migration). -->
 			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
+			<!-- LAST: the operator's seed directory (config.php
+			     openregister.seed_directory) imports once every register the
+			     app ships exists, so a seed file may use them. -->
+			<step>OCA\OpenRegister\Repair\SeedFromDirectory</step>
 		</install>
 	</repair-steps>
 
@@ -590,6 +599,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ExampleSetInstallCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetRemoveCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
+		<command>OCA\OpenRegister\Command\SeedImportCommand</command>
 		<command>OCA\OpenRegister\Command\RotateTenantKeyCommand</command>
 	</commands>
 

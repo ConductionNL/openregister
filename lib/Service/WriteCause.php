@@ -113,6 +113,18 @@ final class WriteCause {
 	public const LOOKUP = 'lookup';
 
 	/**
+	 * A load of the operator's own data from the mounted seed directory.
+	 *
+	 * Apart from `import` so the audit trail can tell an installation's
+	 * provisioning, which no person started, from a person's file import.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/seed-from-a-mounted-directory/specs/data-import-export/spec.md
+	 */
+	public const SEED = 'seed';
+
+	/**
 	 * The whole vocabulary. Nothing outside it is ever stored.
 	 *
 	 * @var array<int, string>
@@ -125,6 +137,7 @@ final class WriteCause {
 		self::RULE,
 		self::CASCADE,
 		self::LOOKUP,
+		self::SEED,
 	];
 
 	/**

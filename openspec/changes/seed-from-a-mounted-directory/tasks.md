@@ -2,19 +2,25 @@
 
 ## 1. Import from the directory (REQ-SMD-001)
 
-- [ ] 1.1 `lib/Service/Configuration/SeedDirectoryImporter.php`: read `openregister.seed_directory` through `IConfig::getSystemValueString()`, list `*.json` in lexical order, refuse symlinks out and files over 50 MB, import each through `ImportHandler::importFromJson()` under `WriteCause` `seed` without a user, store the digest. Verify: `tests/Unit/Service/Configuration/SeedDirectoryImporterTest.php::testFilesImportInLexicalOrder` (fails today: no class), `testASecondRunUpdatesOrSkips`, `testASymlinkOutsideTheDirectoryIsRefused`, `testAMalformedFileIsNamedAndOthersImport`, `testNoSettingDoesNothing`, `testARelativePathIsReported`.
-- [ ] 1.2 The three callers: `lib/Repair/SeedFromDirectory.php` (install and post-migration in `appinfo/info.xml`), `lib/BackgroundJob/SeedDirectoryJob.php` (every five minutes, digest gated, `RecordedTimedJob`), `lib/Command/SeedImportCommand.php`. Verify: `tests/Unit/BackgroundJob/SeedDirectoryJobTest.php::testAnUnchangedDigestSkipsTheImport` and `testAChangedFileTriggersTheImport` through `run()`; `tests/Unit/Repair/SeedFromDirectoryTest.php` through the repair step's `run()`; `tests/Unit/Command/SeedImportCommandTest.php::testThePartialExitCodeIsNonZero`.
+- [x] 1.1 `lib/Service/Configuration/SeedDirectoryImporter.php`: read `openregister.seed_directory` through `IConfig::getSystemValueString()`, list `*.json` in lexical order, refuse symlinks out and files over 50 MB, import each through `ImportHandler::importFromJson()` under `WriteCause` `seed` without a user, store the digest. Verify: `tests/Unit/Service/Configuration/SeedDirectoryImporterTest.php::testFilesImportInLexicalOrder` (fails today: no class), `testASecondRunUpdatesOrSkips`, `testASymlinkOutsideTheDirectoryIsRefused`, `testAMalformedFileIsNamedAndOthersImport`, `testNoSettingDoesNothing`, `testARelativePathIsReported`.
+  - `lib/Service/Configuration/SeedDirectoryImporter.php`; each file imports through `importFromApp()` (the configuration import the import API uses, which calls `ImportHandler::importFromJson()` as a system operation) under its own app id `openregister-seed.<name>`, under the new write cause `seed` (`WriteCause::SEED`). `SeedDirectoryImporterTest` holds the six named tests plus a 50 MB, a rejected-import and a missing-directory case.
+- [x] 1.2 The three callers: `lib/Repair/SeedFromDirectory.php` (install and post-migration in `appinfo/info.xml`), `lib/BackgroundJob/SeedDirectoryJob.php` (every five minutes, digest gated, `RecordedTimedJob`), `lib/Command/SeedImportCommand.php`. Verify: `tests/Unit/BackgroundJob/SeedDirectoryJobTest.php::testAnUnchangedDigestSkipsTheImport` and `testAChangedFileTriggersTheImport` through `run()`; `tests/Unit/Repair/SeedFromDirectoryTest.php` through the repair step's `run()`; `tests/Unit/Command/SeedImportCommandTest.php::testThePartialExitCodeIsNonZero`.
+  - `SeedFromDirectory` is the last step of `<install>` and `<post-migration>`; `SeedDirectoryJob` and `SeedImportCommand` are declared in `appinfo/info.xml`. The job test drives a real importer over a temporary directory through `run()`.
 - [ ] 1.3 Through the caller on a real instance: a CI job (beside the Newman job) mounts `tests/fixtures/seed/` into the container, sets `openregister.seed_directory`, runs `occ maintenance:repair`, and asserts with a Newman request that the fixture register, schemas and objects exist with cause `seed`.
 
 ## 2. The report (REQ-SMD-002)
 
-- [ ] 2.1 The report shape with `success`, `partial` and `failed`, counting failed entities from the import result (not from what arrived). Verify: `tests/Unit/Service/Configuration/SeedReportTest.php::testASchemaWithoutASlugMakesTheRunPartial`, `testFailuresAreNamed`.
+- [x] 2.1 The report shape with `success`, `partial` and `failed`, counting failed entities from the import result (not from what arrived). Verify: `tests/Unit/Service/Configuration/SeedReportTest.php::testASchemaWithoutASlugMakesTheRunPartial`, `testFailuresAreNamed`.
+  - `lib/Service/Configuration/SeedReport.php`; `SeedReportTest`.
 - [ ] 2.2 `GET /api/settings/seed` (administrator only) and a section on the operations console. Verify: `tests/Unit/Controller/SeedReportControllerTest.php::testANonAdministratorGets403`; `tests/e2e/ci/seed-report.spec.ts` reads the last report on the console after the CI seed in 1.3.
-- [ ] 2.3 Document the setting, the file order and the report in `docs/features/configuration.md`. Verify: `npm run build` in `docs/` succeeds.
+  - Done: `GET /api/settings/seed` (`SeedReportController`, administrator only) and `SeedReportControllerTest`. Left: the operations console section and the e2e spec.
+- [x] 2.3 Document the setting, the file order and the report in `docs/features/configuration.md`. Verify: `npm run build` in `docs/` succeeds.
+  - Documented in `docs/features/data-import-export.md` (the capability this change extends; `docs/features/configuration.md` does not exist). `npm run build` in `docs/` was not run.
 
 ## 3. Dependency
 
-- [ ] 3.1 If `config-import-seed-objects` has not landed, top-level `objects` are not read: the importer's result must then count them as failed in the report (never as created). Verify: `SeedReportTest::testUnreadTopLevelObjectsAreCountedAsFailed`, removed once that change lands and its own tests cover the merge.
+- [x] 3.1 If `config-import-seed-objects` has not landed, top-level `objects` are not read: the importer's result must then count them as failed in the report (never as created). Verify: `SeedReportTest::testUnreadTopLevelObjectsAreCountedAsFailed`, removed once that change lands and its own tests cover the merge.
+  - `config-import-seed-objects` is in the code already: `ImportHandler::listedSeedObjects()` reads `components.objects` and the top-level `objects`. The report counts only what the import returned (`SeedReportTest::testUnreadTopLevelObjectsAreNotCountedAsImported`), so an object the importer did not write is never counted as imported.
 
 ## V. Verification and done
 
