@@ -6607,3 +6607,4 @@ build:filinq:office-template-authoring	partial: PR filinq#2105 (tasks 1.1, 2.1, 
 cover:portaliq:b60f3b81m4ccb:38e80a9f	no PR: lib/Command at 333/335 (99.4%); nothing thin left worth a PR	session-20261113T192700-f21ebd18	2026-11-13T20:14:15Z
 cover:pipelinq:7f9dc8e6m8ce9:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php holds only interfaces, 0 executable statements; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:14:17Z
 review:openregister:10319:195e1747	APPROVE #10319	session-20261113T185328-da819141	2026-11-13T20:14:17Z
+cover:opencatalogi:fc83bfb1:aae6d66c	already covered: all 4 lib/Exception classes executed and asserted (DirectoryUrlException 6 tests, MalformedSearchParameterException via search contract test); remaining two are empty subclasses; no PR	session-20261113T190954-c894781f	2026-11-13T20:14:23Z
