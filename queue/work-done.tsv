@@ -7070,3 +7070,4 @@ build4:openregister:object-archive-state	partial: PR #10398, C29.5 withdrawn tim
 review:openregister:10364:d85b6064	APPROVE: spec-driven, tests green on main merge	session-20261113T213324-d7ae5543	2026-11-13T22:05:18Z
 build4:openregister:rbac-department-role-matrix	PR #10399: Rights tab grid + preview (3.1, 3.3 tab spec); e2e step left	session-20261113T215344-82e3aea0	2026-11-13T22:06:11Z
 review:openregister:10374:e3c0f762	APPROVE: findings warnings-only, suites green, phpstan clean	session-20261113T214930-fbbf31dd	2026-11-13T22:06:11Z
+review:openregister:10365:8c8b718b	APPROVE: additive, suites green merged with main, phpstan clean	session-20261113T202603-6c9ef72f	2026-11-13T22:06:28Z
