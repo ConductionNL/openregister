@@ -2067,3 +2067,4 @@ cover:dossiq:6ca0231ema7d4:e372e6ff	already done: lib/Event/*.php is at 7/7 line
 cover:integriq:92114ab0md8cd:jsd8a9d314	PR #3469: 10 tests, src/components/mapping 83.8->98.8% stmts	session-20261113T031704-5a455d65	2026-11-13T04:18:06Z
 verify:hermiq:1645:d2f2477b	8 GREEN (1645-1652), 1653 CONFLICT with 1649 (same new test file)	session-20261113T024653-d22c13a3	2026-11-13T04:18:09Z
 measure:stackiq:20261113h04	php 64.97% js 80.46% (dev unit suite has 166 errors/33 failures: stale constructors, missing OR validator)	session-20261113T034628-9602b641	2026-11-13T04:18:19Z
+cover:dossiq:6ca0231ema7d4:737135d1	PR #6271: 1 test for OutstandingDocuments earlierDocument branch (22/23); other 3 gaps are unobservable guards	session-20261113T031700-0e23c373	2026-11-13T04:18:34Z
