@@ -3303,3 +3303,4 @@ cover:planninq:e1c9866d:1b97f731	PR #1138: 21 tests, 5 classes, lib/Listener/*.p
 cover:opencatalogi:fc83bfb1:34f5c300	PR #2585: lib/Service/*.php 93.67% -> 95.05% lines, 30 tests in 6 files, suite 5144 -> 5174, 0 new failures	session-20261113T071636-117504ad	2026-11-13T07:53:36Z
 merge:buildiq:1515:bfb3cb57	merge-local over 2 buildiq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:53:47Z
 merge:buildiq:1519:7b5d53f6	merge-local over 2 buildiq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:53:47Z
+cover:versioniq:1b35eed9m70ae:js3f3bfe56	PR #671: 31 vitest tests, ocs.ts 27->100%, App.vue 68->75%; JS 74.2->78.2%, suite 2730->2761 passing	session-20261113T072708-ee434236	2026-11-13T07:53:51Z
