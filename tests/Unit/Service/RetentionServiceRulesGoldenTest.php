@@ -568,18 +568,18 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		$deleted->setDeleted(['deletedBy' => 'x']);
 
 		$expectedEntries = [
-			['uuid' => 'p', 'title' => 'Dossier', 'schema' => '5', 'register' => '3', 'archiefactiedatum' => '2030-01-01', 'classification' => '1.1', 'softDeleted' => false, 'wooGepubliceerd' => false, 'reviewer' => null],
-			['uuid' => 'w1', 'title' => 'w1', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null],
-			['uuid' => 'w2', 'title' => 'w2', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null],
-			['uuid' => 'w3', 'title' => 'w3', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null],
-			['uuid' => 'd', 'title' => 'd', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => true, 'wooGepubliceerd' => false, 'reviewer' => null],
+			['uuid' => 'p', 'title' => 'Dossier', 'schema' => '5', 'register' => '3', 'archiefactiedatum' => '2030-01-01', 'classification' => '1.1', 'softDeleted' => false, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w1', 'title' => 'w1', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w2', 'title' => 'w2', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w3', 'title' => 'w3', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'd', 'title' => 'd', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => true, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
 		];
 		foreach (['system', 'archivaris'] as $createdBy) {
 			$list = $this->service->createDestructionList([$plain, $wooFlag, $wooStatus, $wooMeta, $deleted]);
 			$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $list['createdAt']);
 			unset($list['createdAt']);
 			$this->assertSame(
-				['status' => 'in_review', 'createdBy' => $createdBy, 'objects' => $expectedEntries, 'excluded' => [], 'approvals' => [], 'decisions' => []],
+				['status' => 'in_review', 'createdBy' => $createdBy, 'objects' => $expectedEntries, 'excluded' => [], 'approvals' => [], 'decisions' => [], 'linkConflictCount' => 0],
 				$list
 			);
 		}
