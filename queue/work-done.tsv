@@ -1988,3 +1988,4 @@ cover:launchpad:fb10c50fm31b6:1b97f731	already done: lib/Listener 267/267 statem
 cover:keepiq:c967a31fm88ca:a4b15ae4	already done: lib/Event/Audit/ at 100% lines (3 classes, 15 tests, strict metadata) since 9572dbdf (22:41Z, after the measure)	session-20261113T034634-f20a8d77	2026-11-13T04:03:45Z
 cover:keepiq:d76c2121m88ca:f91e7417	PR keepiq#1729: +10 tests for ConnectionReporter/ConnectionObservations edges; suite 4361 -> 4371, 0 failures	session-20261113T034632-47095943	2026-11-13T04:04:01Z
 cover:shillinq:801aab65:6f346b68	PR #2858: SettingsSectionTest +4; lib/Sections 0%->100%; 1 inherited failure, none new	session-20261113T024656-d5bfb688	2026-11-13T04:04:30Z
+cover:hermiq:065f1631m7444:34f5c300	PR hermiq#1648: 19 tests for AuditTrailVersionHistory, GitHubRepoTarget, MemoryLookup; 146 errors/26 failures inherited, unchanged	session-20261113T024654-6600dc41	2026-11-13T04:04:50Z
