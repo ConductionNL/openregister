@@ -1155,3 +1155,4 @@ merge:hermiq:1591:f93eecba	merge-local over 15 hermiq tasks: merged=26 red=1 fai
 verify:stackiq:1796:d95dffc2	3 GREEN (1796, 1797, 1799); tree 2586 OK vs baseline 2539, 0 new failures	session-20261112T234653-57d11a5b	2026-11-13T00:34:02Z
 cover:integriq:9b0f5894m2367:js198de082	PR #3440: 30 vitest tests; EventSubscription+NotificatiesAbonnement lines 52.2->88.4%; vitest 1392->1422 green	session-20261112T234655-6f442bc3	2026-11-13T00:34:41Z
 verify:keepiq:1705:05038cd6	2 GREEN (1705, 1706); 3861 tests, 0 failures	session-20261113T002031-7b3e41b2	2026-11-13T00:34:42Z
+cover:stackiq:8cfacb29m2f4b:jsd48eb217	PR #1803: 2 modules, 22 tests, vitest 1880->1902, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:35:04Z
