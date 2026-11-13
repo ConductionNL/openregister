@@ -6284,3 +6284,19 @@ dossiq	6448	dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	GREEN	worker-06	tests only 
 filinq	2054	bd946b514b421f26357c0aa44e52cd4079b72159	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
 filinq	2055	254cbb8d4e125d39fa5937327e7248a0ff2ceb53	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
 filinq	2059	876e3d8ed792d2cbdc65087dbba5c4038ecac395	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
+filinq	2053	af1e32a4610b7c3bcb2d1351dd0b17adc7ec6963	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; waarmerk schema+seed per change tasks 1.1/1.2
+integriq	3534	a1b02a5162d520f61331b7211662fd0d374762e0	GREEN	worker-49	phpunit 8256 tests (+34), 2 errors 3 failures 2 risky = baseline (same tests); tests only
+filinq	2056	b75f87ba7f32c97a02adddfd329b814a8060b9ee	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; tests only
+filinq	2057	8e1588657a68f9dba41a3a4b83173e8f0b37efb2	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; tests + task ticks only
+filinq	2058	e0070c28ced4857edebfd48ed5208691858f1ee9	BLOCK	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; editDocument's editor-delivery branch returns before prepareWrite, so the format/final/signing/anonymisation refusals and the update-permission check no longer apply to a document open in an editor; the change only narrows the lock refusal
+filinq	2060	c02f868ba31f0ad846dfc41f3313419fbef635bc	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2061	0c60fc726b440780afa42c949004dd7c5d5c8975	RED	worker-58	new failure UnifiedSearchConsistencyTest::testDeepLinkUrlTemplatesMapToManifestRoutes: pages move out of src/manifest.json (46 -> 6), so deepLink /apps/filinq/templates/{uuid} maps onto no manifest detail route; tree rebuilt without it
+filinq	2062	baea435f0ea63b1e9b0c164a4655135e5b98fdf6	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2063	67e09430480e320f7beafecb87e4b39c1346f72f	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2064	15940c2fb9d65fd90dfc751c82be8babc0748924	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2065	1cb536b6e3c1e051e2e142caf11ab8f7174b40c2	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2068	cf7e6b767b99da1e346cf30163f73d7a82a0b081	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds finish-half-built-capabilities (sequential signing turn, preview listRefs) as its tasks ask
+filinq	2066	41015dd0b5e7f3d4538b42ba1e3c94b635fb99d6	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2067	73639362c2d9caba4931fd838c76efac195067fb	CONFLICT	worker-58	conflicts in lib/Settings/filinq_register.json and filinq_mock_register.json with earlier PRs in the tree (merges cleanly on plain development)
+filinq	2068	cf7e6b767b99da1e346cf30163f73d7a82a0b081	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2069	4cff2e3bcfcf0cf06fa9984b57532aee9e3f8188	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds intake-acknowledge-and-stamp
