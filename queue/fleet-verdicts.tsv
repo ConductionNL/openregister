@@ -4719,3 +4719,4 @@ keepiq	1712	01b7d84d743afa5bedf644a792aef266b786c522	GREEN	worker-05	phpunit 372
 keepiq	1713	2e3f253eb142527746fbaf6c360127056eb0c493	GREEN	worker-05	phpunit 3727 run (baseline 3727, 0 fail); vitest 325 files/5668 tests on tree all pass; new failures: none; JS spec additions only
 keepiq	1714	aa5475c94c4cd4d5bfe204af5f6f993250922c42	GREEN	worker-05	phpunit 3727 run (baseline 3727, 0 fail); vitest 325 files/5668 tests on tree all pass; new failures: none; JS spec additions only
 keepiq	1715	636ecfd55230ff425f5f85c3032bedb2684b9310	GREEN	worker-05	phpunit 3727 run (baseline 3727, 0 fail); vitest 325 files/5668 tests on tree all pass; new failures: none; JS spec additions only
+keepiq	1716	bc20dfe9fc6a29742115ad170447866cb99e9d38	GREEN	worker-07	phpunit 3792 (baseline 3792, 0 failures), vitest 5594 passed/319 files; tests-only (8 new store specs); new failures: none
