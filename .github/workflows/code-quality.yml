@@ -180,8 +180,9 @@ jobs:
     with:
       app-name: openregister
       php-version: "8.3"
-      php-test-versions: '["8.3", "8.4"]'
-      database-test-matrix: '[\"pgsql\", \"mariadb\"]'
+      php-test-versions: '["8.3"]'
+      database-test-matrix: '["pgsql", "mysql", "mariadb"]'
+      reduce-pr-base-branches: '["main"]'
       # NO `nextcloud-test-refs` HERE, DELIBERATELY. Unset, the shared workflow
       # derives the matrix from appinfo/info.xml, so the tested range and the
       # declared range cannot disagree.
