@@ -370,6 +370,7 @@ components:
       - ".*/lib/Notifications/Service/Webhook/[^/]*"
       - ".*/lib/Push/[^/]*"
       - ".*/lib/Service/(ActivityFilter|ActivityFilterServiceInterface|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php"
+      - ".*/lib/Service/Mail/[^/]*"
   - name: Platform
     include:
       - ".*/lib/AppInfo/[^/]*"
