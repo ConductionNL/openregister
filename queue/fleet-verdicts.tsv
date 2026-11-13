@@ -4677,6 +4677,7 @@ pipelinq	3610	de7341ccf2c155d7af0f7f3f205f6db7ff761072	GREEN	worker-40	unit 5774
 hermiq	1584	9cc7549e6375611e5f874b2884f47adfa6614326	GREEN	worker-31	additive: public OpenAPI document, API-Version header, /api/v1 aliases of existing routes; existing routes unchanged; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
 hermiq	1605	600aae13c2ce350e44ce1de12b5a066c05024cd2	GREEN	worker-31	tests-only; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
 hermiq	1630	f413d3e845182b3c9a0b5a12104672bc3a290eda	GREEN	worker-31	tests-only; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
+keepiq	1708	8fe569275fe978c8d3e1a289f8625e48fbdf286a	GREEN	worker-34	tree of 4 test-only PRs (new vitest specs): vitest 5659 vs baseline 5475, all passing; PHP unit 3727, 0 failures
 hermiq	1631	5eee19884f4e134d2762373f48850bc2fefd0758	GREEN	worker-31	tests-only; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
 hermiq	1632	24631505ef95e754ded242e791f78c88898e3b89	GREEN	worker-31	tests-only; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
 hermiq	1633	84a2f7cb104b4b64326b2873521f0ffa05743072	GREEN	worker-31	tests-only; PHP 3946 run (baseline 3840), same 145 errors/26 failures inherited, 0 new; vitest 1095 pass (baseline 1072)
