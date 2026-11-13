@@ -30,6 +30,7 @@ The first case of 2026 is `Z-2026-00001`. The first case of 2027 is
 | `sequence` | The counter this property draws from. Two schemas naming the same counter share it, so a register can number cases and complaints in one run |
 | `format` | The value, with placeholders. `{seq:n}` is the number padded to n digits, `{year}` and `{month}` come from the creation time, and everything else is literal |
 | `resetOn` | `never` for one counter for all time, `year` to restart each January. Defaults to `never` |
+| `reserved` | A list of values and `/patterns/` no sequence may issue. Optional. See below |
 
 A number past its padding grows rather than wrapping. The hundred-thousand-first
 case of a five-digit format reads `Z-2026-100001`, not `Z-2026-00001`.
@@ -48,6 +49,29 @@ that look right:
 
 The annotation also belongs on a string property. A generated identifier on an
 integer is refused.
+
+## Reserved values and patterns
+
+Some numbers should never be handed out: a value kept for a special case, or a
+run of numbers an old system already used. `reserved` lists them.
+
+```json
+"x-openregister-generated": {
+  "sequence": "case",
+  "format": "Z-{seq:4}",
+  "reserved": ["Z-0666", "/^Z-00(0[0-9]|1[0-9])$/"]
+}
+```
+
+An entry written between slashes is a regular expression matched against the
+rendered value; any other entry is one exact value. When the counter reaches a
+reserved value the sequence advances past it and issues the next one, so the
+reserved value stays unissued for good (the skipped number is spent, never
+handed out later). A pattern that matched every value would spin forever, so
+after a thousand skips in a row the create is refused rather than looping.
+
+A `reserved` entry that is not a non-empty string, or a pattern that does not
+compile, is refused at schema save.
 
 ## Gaps are allowed, reuse is not
 
