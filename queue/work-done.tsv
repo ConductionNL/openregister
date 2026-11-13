@@ -3253,3 +3253,4 @@ verify:shillinq:2905:e1d62568	2905 GREEN, 2906 GREEN (no new failures, 1 inherit
 measure:learniq:20261113h06	php 91.2% (pcov, 34292/37601), js 99.79% (c8) at 8c8d3686	session-20261113T064519-30004ad4	2026-11-13T07:45:49Z
 cover:filinq:7a9ef677mb01f:60c2c265	PR #2047: 4 test files, 33 tests (6251->6284 OK), tests only	session-20261113T072715-cf04db4e	2026-11-13T07:45:58Z
 verify:larpinq:1008:6a950db4	GREEN #1008, #1009 (tests only, all pass)	session-20261113T051709-e616bf69	2026-11-13T07:46:06Z
+cover:larpinq:c4471360:6f346b68	already done: Sections/LarpinqAdmin (the only class in lib/Sections) is covered 6/6 by open PR #1011 (LarpinqAdminTest @covers it)	session-20261113T051709-e616bf69	2026-11-13T07:46:27Z
