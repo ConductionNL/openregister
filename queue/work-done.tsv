@@ -3431,3 +3431,4 @@ cover:launchpad:fb10c50fm911d:f545d745	PR #1177: +6 tests, lib/Repair 279->296/3
 cover:buildiq:70b3e29emc723:d39f9857	already done: lib/Support/*.php at 99.2% (386/389); no PR	session-20261113T080546-98207a87	2026-11-13T08:22:32Z
 cover:buildiq:70b3e29emc723:38e80a9f	already done: lib/Command/*.php at 99.7% (348/349); no PR	session-20261113T080546-98207a87	2026-11-13T08:22:47Z
 cover:portaliq:b60f3b81:60c2c265	PR #2380: Controller 89.3%->96.0% (35 risky tests' @uses fixed in 7 files; PortalSigninControllerTest new); suite 4527->4534, 0 failures	session-20261113T081043-b24589a6	2026-11-13T08:22:59Z
+cover:buildiq:70b3e29emc723:a215617b	already done: lib/Integration/*.php at 98.2% (216/220); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:03Z
