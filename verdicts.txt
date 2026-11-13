@@ -3008,3 +3008,4 @@
 10287 054efa863dca583f26cbfb9d0d05eac9ef37fe2c APPROVE integrator IL5: main merge on top of approved a92c2d44: listener goldens follow the merged registrar after #10264 (listener-order.json regenerated, order golden re-pinned); Listener tests pass
 10288 62319c927496f1916b61647f3b4bbd19189eccaf APPROVE integrator IL5: main merge on top of approved 606ffb21: docblock conflict only: this branch's @listener-placement note kept with main's repointed @spec; Listener tests and the PR's tests pass
 10289 fe469e10a68dfc1fa8b6bde94c47a0e4567b6a98 APPROVE Tests only (3 new unit test files, 26 tests, all pass). Architecture, Rules, Contract green on the merged tree; Controller reds are inherited from main (local DBAL stub).
+10293 187ad658f95bd23c2024bffe2f67425a2763e6c4 APPROVE Tests only (5 new files, 21 tests, all pass); Notifications 590 green, Architecture/Rules/Contract green; 9 Controller errors are sandbox DBAL-stub gaps unrelated to the PR
