@@ -1612,3 +1612,4 @@ cover:pipelinq:f67520ecm8c58:50d794fc	PR #3629: MatomoReportService 70/72 -> 72/
 cover:dossiq:6ca0231ema7d4:33af3743	already done: lib/Service/Bezwaar/*.php measured 99.2% lines (1543/1556) on development 3e7a0de, target 90; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:20:26Z
 verify:pipelinq:3617:9c3b80cd	GREEN #3617 (tests only, no new failures)	session-20261113T015005-e2235eb9	2026-11-13T02:20:45Z
 cover:pipelinq:f67520ecm8c58:f3231970	PR #3630: 21 direct tests for ScheduledTaskRights + ScheduledTaskDeadlines; suite 5774->5795, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:21:07Z
+cover:dossiq:6ca0231ema7d4:bf05c668	already done: lib/BulkAction/*.php measured 97.0% lines (225/232) on development, target 85; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:21:10Z
