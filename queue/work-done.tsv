@@ -5635,3 +5635,4 @@ verify:dossiq:6427:2b8048c1	6427 GREEN	session-20261113T171150-996cf694	2026-11-
 measure:versioniq:20261113h14	php 97.8% (pcov, unit-only suite 1575 tests, 2 baseline failures), js 93.61% (vitest 2895 passed) at 07c79a0	session-20261113T172329-e224a4f0	2026-11-13T17:26:30Z
 verify:learniq:2464:06b6f90b	learniq #2464 GREEN: 6407 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:27:25Z
 cover:dossiq:069ee2d6m2deb:33af3743	already covered: lib/Service/Bezwaar/*.php at 99.6% (1567/1573 stmts) on development dcd16f5978, above 95 target; no PR	session-20261113T171150-996cf694	2026-11-13T17:27:50Z
+verify:pipelinq:3759:0cbf8a01	GREEN 3759, GREEN 3760 (tests only, 0 new failures over 5-failure baseline)	session-20261113T172349-00278d9d	2026-11-13T17:27:49Z
