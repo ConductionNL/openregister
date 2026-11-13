@@ -1103,3 +1103,4 @@ dossiq	6221	b648c6bd54f8ab14140ac98633407f0c1a725f25	MERGED	merge-local	GATE OK 
 dossiq	6222	54c8981cec22a6bc6b0d2d45d01eab76a8872fb6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6223	0798d7432a600bb3d6275079871620f00c2fb711	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6225	5a667dcafa8a5873b32617a79fc1c5882a8d6fc3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	SKIP	merge-local	GATE UNMEASURED 4b8eae2ef3 does not merge cleanly onto development
