@@ -2346,3 +2346,4 @@ merge:learniq:2414:1a2fc932	stale	feeder	2026-11-13T05:00:17Z
 merge:integriq:3419:5fbbbe01	stale	feeder	2026-11-13T05:00:17Z
 cover:keepiq:c967a31fm0090:34f5c300	PR keepiq#1738: 44 tests; lib/Service/*.php 87.05%->88.24% (90 not reached: rest is DB-bound scanner or needs server WebAuthn lib)	session-20261113T031701-b518f7f8	2026-11-13T05:01:25Z
 cover:keepiq:c967a31fm0090:0d67c1f3	already done: lib/Service/Siem 193/193 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:01:38Z
+cover:keepiq:c967a31fm0090:38e80a9f	already done: lib/Command/*.php 181/181 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:01:52Z
