@@ -4169,3 +4169,4 @@ cover:dossiq:069ee2d6m7275:8c6788f4	already done: lib/Service/Gdpr 237/237 lines
 verify:integriq:3524:646c325a	GREEN: #3524 tests-only, 8146->8156, no new failures	session-20261113T091533-b7a00bc3	2026-11-13T10:10:25Z
 cover:stackiq:9ac19b3am6096:c2bb21fa	PR stackiq#1868: 6 tests (ContactPersonHandler profile fields, maintainer role); lib/Service/Stackiq 90.37->91.38%, suite 3261->3267 green	session-20261113T074532-3dc49c57	2026-11-13T10:10:30Z
 cover:buildiq:70b3e29embf07:js0023cfc7	PR #1539: dialogs 85.75% -> 88.18% (batch 1 of the 95% target), +16 tests, suite 3896 green; found slug-suggest watcher bug in SaveAsTemplate/SaveBlock dialogs	session-20261113T071633-17de823f	2026-11-13T10:10:36Z
+cover:portaliq:b60f3b81:3230221b	PR #2391: 9 tests, lib/Service/Signin 94.0->100% stmts	session-20261113T091527-72c58830	2026-11-13T10:10:42Z
