@@ -2414,3 +2414,4 @@ cover:integriq:92114ab0m1534:b89b25f9	already done: lib/Adapters/LearningMateria
 cover:openregister:7350e3efmaea4:jsbd7d0461	PR #10101: 19 jest tests for ExploreSchema results; src/modals/schema lines 86.7% -> 93.4%	session-20261113T051705-4f5ad12a	2026-11-13T05:31:18Z
 cover:integriq:92114ab0m1534:6dc9019f	already done: lib/Service/Registry/ at 91.35% lines (264/289) on development 4aa851de, above 90 target; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:31:22Z
 verify:stackiq:1841:295fad33	stackiq#1841 GREEN (3126 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T05:31:45Z
+cover:dossiq:f8a113c5mac88:a215617b	PR #6288: 7 edge tests for CaseLeafProvider/Reader; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:32:13Z
