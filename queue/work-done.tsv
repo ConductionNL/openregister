@@ -5822,3 +5822,4 @@ build:portaliq:operate-portals-per-organisation	partial: PR #2440 T10, T11 (them
 cover:pipelinq:7f9dc8e6m16db:6b792e82	PR #3768: PartyReferenceMoverTest, 3 tests; lib/Service/Merge/ 66/73 -> 73/73 lines; suite 7197, same 5 inherited failures	session-20261113T175328-b5db3663	2026-11-13T18:07:20Z
 review:openregister:10286:791ce348	APPROVE 10286	session-20261113T171213-10021a1d	2026-11-13T18:07:26Z
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
+build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
