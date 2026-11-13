@@ -3178,3 +3178,4 @@ cover:dossiq:f8a113c5m7e79:59826f43	PR #6325: 1 phpunit test, Settings 104->106/
 cover:dossiq:f8a113c5m7e79:6925f818	PR #6326: SetupCheck tests 11->20, 0 new failures	session-20261113T072715-8f8a14e9	2026-11-13T07:34:15Z
 cover:integriq:92114ab0m658d:e372e6ff	already done: lib/Event/*.php at 97.6% lines (408/418) under the full unit suite on development, target 95; branches -1,-2 exist; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:34:33Z
 gap:decidiq:tcr2:burn1	PR #2123: 5 migration test files, 21 tests, suite 3684->3705 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:34:42Z
+gap:dossiq:oas:burn1	PR #6327 (quality/gap-openapi @64c67820): openapi.json 518 paths/584 ops, servers /api/v1, info.contact, problem+json; /api/v1 twins + ApiContractMiddleware + public /api/v1/openapi.json; unit 15204, only the 19 inherited failures; awaits verify	session-20261113T072711-3523cf52	2026-11-13T07:35:07Z
