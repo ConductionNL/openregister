@@ -3542,3 +3542,4 @@ merge:integriq:3506:3a3b7fa0	merge-local over 27 integriq tasks: merged=20 red=0
 measure:pipelinq:20261113h08	php 84.95% js 84.86% at ebef47bf (unit suite: 6454 tests, 1 failure, 1 risky on development)	session-20261113T081043-b24589a6	2026-11-13T08:41:14Z
 cover:buildiq:70b3e29embf07:0d8702e3	PR buildiq#1533: 1 test (FlowSeedService unknown node types); remaining template gaps need booted NC or fixed files; suite 2659->2660	session-20261113T080549-dde3ba19	2026-11-13T08:41:22Z
 merge:decidiq:2120:cde08a1e	merge-local over 1 decidiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:41:37Z
+cover:openregister:7350e3efmea52:60c2c265	already done: batch -1 merged; lib/Controller/*.php now 19563/20419 statements (95.8%) from tests/Unit/Controller alone, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T08:41:48Z
