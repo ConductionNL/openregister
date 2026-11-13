@@ -6179,3 +6179,4 @@ build:shillinq:sales-einvoice-exchange	partial: PR #3007 (tasks 1.1,1.2,2.2,3.1 
 cover:opencatalogi:fc83bfb1:c6b640c3	PR #2599: one provider test (RegisterMapper unavailable); lib/Observability now fully covered; suite 5254->5255, same 2 inherited failures	session-20261113T172334-4b3b027b	2026-11-13T19:04:08Z
 build3:openregister:property-source-vocabulary	already done: all code tasks landed on main in #3952; 2.1/2.2 are out of scope by design (integriq/dossiq side)	session-20261113T185325-0c24b185	2026-11-13T19:04:29Z
 verify:buildiq:1556:376f1fde	1556 GREEN (tests only; vitest 4102 pass; phpunit inherited ExportZipGolden red)	session-20261113T175400-7ec3993f	2026-11-13T19:04:28Z
+build:shillinq:iv3-report-takes-case-costs-by-case-type	partial: PR #3008, tasks 1-4,6,8,9 done (catalogue, cost source, Iv3 section, per-type report, 24 tests); 5,10 UI and 7,11 live left; suite 10420, 1 inherited failure	session-20261113T182348-cc1b5fea	2026-11-13T19:04:36Z
