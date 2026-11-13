@@ -5713,3 +5713,4 @@ cover:pipelinq:7f9dc8e6m16db:0a8f160f	already covered: lib/Service/Sla/ 212/212 
 cover:shillinq:05639debm4eb8:c1054022	PR #2947: 20 tests for DunningStageSelector, DunningChannelSendResult, CreditScoreService (Dunning dir ~97%->99% lines)	session-20261113T172324-00680177	2026-11-13T17:51:02Z
 verify:stackiq:1882:387255c4	GREEN #1882 (tests only, 3397->3413 OK)	session-20261113T171203-c5a044de	2026-11-13T17:51:14Z
 build:portaliq:case-page-tasks-decision-dates-and-next-step	already done: built on development in 4afddccc (T01-T06 ticked); T07 (dossiq issue) and T08 (live check) are not code tasks	session-20261113T172324-00680177	2026-11-13T17:51:29Z
+cover:stackiq:9ac19b3am9d24:c2bb21fa	already done: rounds -1..-5 merged on development; the four handlers have 26 test files, the two remaining classes are logic-free carriers	session-20261113T171203-c5a044de	2026-11-13T17:51:38Z
