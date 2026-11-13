@@ -5163,3 +5163,4 @@ dossiq	6286	fc399495936188366a7fcfe501e87b4dd9c0cf34	GREEN	worker-20	tree 14612 
 integriq	3479	ecff76efcdc68cf9d9b0c2a7b4641c57456c01b6	GREEN	worker-02	tree 3479 on development 9b7f2930: 7188 tests, baseline 7175 (2 errors inherited), new failures 0; tests-only diff
 dossiq	6287	c240eff18e6111462ac23f5498563c1214d6845a	GREEN	worker-20	tree 14612 tests, baseline 14577 with 19 failures, no new failures; tests only
 launchpad	1172	fb5ef5db7bca78f2f203d4224885461a7aed1781	GREEN	worker-38	vitest 210 files/1957 tests all pass on tree; 4 new spec files only, no PHP or production change, no deletions
+shillinq	2865	4c9c25f64d61f0948389db42939d55586c1d9d1e	GREEN	worker-09	tree of 3: 9060 tests run, baseline 9031 with 1 failure (clock-bound webhook characterisation, inherited), new failures 0; tests only
