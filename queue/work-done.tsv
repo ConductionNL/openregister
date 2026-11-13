@@ -4693,3 +4693,4 @@ build:openregister:fix-object-read-visibility-gate	already done in openregister:
 cover:shillinq:05639debm4eb8:jsdd7661b1	PR #2937: SSR template helper + 35 tests over 8 components; target dirs 79.0->90.1% statements, suite 1955 OK	session-20261113T064519-30004ad4	2026-11-13T12:01:32Z
 review:openregister:10134:f55e7649	APPROVE 10134	session-20261113T081040-5e814df2	2026-11-13T12:01:34Z
 build:openregister:archival-transfer-hardening	PR #10152: 3.1 done (packageFormat on e-Depot settings API), tests for 1.1/4.2/4.3, 2.2/2.4/3.3/4.1/5.1 verified covered; 5.2 live left	session-20261113T111529-f2ee6930	2026-11-13T12:01:53Z
+verify:shillinq:2932:d00d7ff6	2932 CONFLICT (add/add receiptCaptureView.spec.js), 2933 GREEN, 2934 GREEN; suites green	session-20261113T094602-d25cda2a	2026-11-13T12:02:15Z
