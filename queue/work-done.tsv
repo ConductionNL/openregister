@@ -3006,3 +3006,4 @@ cover:dossiq:f8a113c5m7e79:3b1fd60e	already done: lib/Review/*.php at 94.53% sta
 verify:shillinq:2890:50a2555d	GREEN 2890,2891,2892,2893 (tests only; 9441 run, 0 new failures)	session-20261113T051704-8c56f5b7	2026-11-13T06:50:30Z
 cover:learniq:e6498dddmf689:js0246d36e	no PR: src/api is timetable.js only, already 100% statements/branches/functions (timetableApi.test.mjs); note dev has 1 unrelated red: aiTranslatedCatalogue stale l10n/*.js	session-20261113T054520-0c8540f8	2026-11-13T06:50:51Z
 verify:pipelinq:3690:db79dece	3690 GREEN: tests only, +3 tests, 1 inherited failure unchanged	session-20261113T051708-7d5f6071	2026-11-13T06:50:52Z
+cover:shillinq:05639debmd8ee:1b97f731	already done: lib/Listener/*.php 2578/2842 statements (90.7%) with pcov on development, at 90 target; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:51:05Z
