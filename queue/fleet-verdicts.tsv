@@ -6330,3 +6330,4 @@ pipelinq	3782	cff7bf5fcad6d21457f7c15bbe5806ebf13f6d3a	GREEN	worker-48	tests onl
 portaliq	2461	e9abc4684989457185c6ce62316db598cd6dbc1e	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
 portaliq	2462	6525b8e73544091996e14bb998a480298fac1efd	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
 filinq	2054	9a5ab51a7cee7f4867ebb52b54dc27186b119e0f	GREEN	worker-08	unit 6520 tests (baseline 6443, 0 failures), no new failures; build PR judged against its openspec changes
+filinq	2092	b63f6794deb56f40aa623e97833a692f49d2ac82	GREEN	worker-08	unit 6520 tests (baseline 6443, 0 failures), no new failures; build PR, new settings endpoints admin-only
