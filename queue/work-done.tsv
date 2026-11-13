@@ -7236,4 +7236,5 @@ build:learniq:workplace-leerbedrijf-check-through-integriq	failed: blocked by th
 build:learniq:credentials-certificate-pdf	partial: PR #2497 (2.1 render service; 1.1 fields without removing certificateTemplate, which gates issuance; 2.2 issuance wired, reissue not; 2.3-4.2 left)	session-20261113T212406-cc34ae8b	2026-11-13T22:37:50Z
 review:openregister:10430:6908999f	APPROVE #10430	session-20261113T202619-0d7929e0	2026-11-13T22:37:57Z
 build:learniq:timetabling-student-choice-placement	already done: every code task is ticked; left are 1.10 (live check with planninq v2), 2.1b (Playwright) and 3.2 (archive), none buildable in code	session-20261113T205325-28f592a9	2026-11-13T22:38:03Z
+build:learniq:open-learning-material	partial: PR #2500 ticks 14 tasks #2111 built (with evidence); open: 2.3 copy via integriq, 2.4 server-side NC serving, 4.3, verify	session-20261113T213325-fbdd5614	2026-11-13T22:38:14Z
 build:learniq:compliance-rules-and-reminders	PR #2499: tasks 1.1, 1.2, 2.1, 2.2, 2.3 built (+13 tests, suite 6523->6536, no new failures); 3.1 archive left for after landing	session-20261113T213326-97cbe4c8	2026-11-13T22:38:10Z
