@@ -7036,3 +7036,4 @@ build4:openregister:or-flow-engine	no buildable tasks left: 4.2 (relocate openco
 review:openregister:10347:5df4234b	APPROVE	session-20261113T205323-cbfd0ec4	2026-11-13T21:59:01Z
 build4:openregister:flow-object-attribution	partial: PR #10385 — 4.1, 4.3, 6.2 done (+migration test); 1.1 live, 5.2, 5.3, 7.1, 8.x left	session-20261113T213335-001b7417	2026-11-13T21:59:12Z
 review:openregister:10354:0acbff9e	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T21:59:11Z
+review:openregister:10332:56713088	APPROVE #10332 (spec-requested masks/grounds; only inherited red)	session-20261113T205323-a7434fd6	2026-11-13T21:59:22Z
