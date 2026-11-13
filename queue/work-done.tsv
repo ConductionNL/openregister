@@ -2337,3 +2337,10 @@ verify:pipelinq:3652:7f62d9a4	GREEN 3652-3658,3660; CONFLICT 3659	session-202611
 verify:keepiq:1734:78aab52e	2 GREEN (1734, 1735)	session-20261113T015005-030aa10a	2026-11-13T04:59:16Z
 merge:filinq:2023:ec4c5d20	merge-local over 2 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:01:12Z
 merge:filinq:2031:d9212694	merge-local over 2 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:01:12Z
+merge:integriq:3410:2d266f89	stale	feeder	2026-11-13T05:00:17Z
+merge:shillinq:2797:03ec94f5	stale	feeder	2026-11-13T05:00:17Z
+merge:decidiq:2082:59f88077	stale	feeder	2026-11-13T05:00:17Z
+merge:decidiq:2087:fdfe22fd	stale	feeder	2026-11-13T05:00:17Z
+merge:decidiq:2092:87402e42	stale	feeder	2026-11-13T05:00:17Z
+merge:learniq:2414:1a2fc932	stale	feeder	2026-11-13T05:00:17Z
+merge:integriq:3419:5fbbbe01	stale	feeder	2026-11-13T05:00:17Z
