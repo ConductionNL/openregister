@@ -2641,3 +2641,4 @@ verify:buildiq:1513:e5136f22	GREEN 1513 (no new failures; fixes 1382 errors when
 cover:shillinq:05639debmd8ee:4734f62e	already done: lib/Service/Import/ImportProfile 105/116 (90.52%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:05:22Z
 verify:filinq:2035:d309fa65	2035 GREEN, 2036 GREEN (php 6112, vitest 718, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T06:05:20Z
 cover:integriq:92114ab0m1534:102ac6fb	PR #3488: 6 tests for SubscriptionSecretMasker; inherited 2E/1F unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:05:49Z
+cover:shillinq:05639debmd8ee:js37c784b6	PR #2874: 58 vitest tests, src/composables 39.1%->97.8%, suite 1331->1389 green	session-20261113T054519-3d0ac77f	2026-11-13T06:05:58Z
