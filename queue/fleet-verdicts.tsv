@@ -6111,3 +6111,4 @@ portaliq	2445	45374ce5e6564b77ca1e325dfc5118b33c695d89	CONFLICT	worker-01	confli
 portaliq	2446	0f1d5cb20719d647856b345933d7c4e3cf64f9f5	CONFLICT	worker-01	conflicts with 2442 in l10n/en,nl .json/.js and package.json
 portaliq	2447	9f3d6d024a4caf14887be44d764d736de975cd92	GREEN	worker-01	phpunit baseline 4914 OK; node baseline 2477/2 inherited fails; tree (2442+2447) phpunit 4921 OK, node 2482 with the same 2 inherited fails; PlainMarkdown per site-honest-without-javascript 2.3
 portaliq	2448	155d5216ce6f6e79cfe5bdf46b6b9df61b209696	CONFLICT	worker-01	conflicts with 2442 in package.json (check:specs line)
+portaliq	2449	f132ffcee8ed7f1b0a2c22ef38b6a2893baed827	CONFLICT	worker-01	conflicts with 2442 in l10n/en,en_US,nl .json/.js (also with 2443 in PortaliqRegisterConfigTest and register version)
