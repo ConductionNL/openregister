@@ -3271,3 +3271,4 @@ gap:buildiq:maint2:burn1	PR #1525: 3 units refactored (AutomationCompilerService
 gap:pipelinq:maint1:burn1	PR #3693: split 3 units (Compliance transitionQueuedDeliveries, MailTransport readSourceRateLimit, AVG->DSAR mapRequest), tests first; suite 6454->6462, inherited 1F unchanged	session-20261113T064518-860c039d	2026-11-13T07:49:02Z
 cover:larpinq:c4471360:59826f43	already done: Settings/LarpinqAdmin (the only class in lib/Settings) is covered 12/12 by open PR #1011 (LarpinqAdminTest)	session-20261113T051709-e616bf69	2026-11-13T07:48:57Z
 fix:dossiq:6324:e811a9a2	conflict resolved by merging #6322 in; new head 9b502e2f1e; REVERIFY recorded	session-20261113T074535-8a2067c2	2026-11-13T07:49:18Z
+cover:opencatalogi:fc83bfb1:1b97f731	already done: lib/Listener/*.php at 97.92% lines (424/433) on development c77d69df, above the 95 target	session-20261113T071636-117504ad	2026-11-13T07:49:22Z
