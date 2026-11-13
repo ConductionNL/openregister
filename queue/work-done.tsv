@@ -4833,6 +4833,7 @@ review:openregister:10172:8acb05a2	APPROVE: docs only, accurate; leaf tests gree
 build:openregister:flow-code-step-in-a-sidecar	partial: PR #10182 — CodeNode + CodeRunnerClient (2.1, 2.2, absence refusal), 34 tests; runner ExApp, trace report, flow.code right left	session-20261113T091533-03405ea6	2026-11-13T12:27:00Z
 review:openregister:10156:979bada9	BLOCK: existing REST sources on private-range hosts now refused (guard autowired, no opt-in); suites otherwise green, phpstan clean	session-20261113T074533-3e2a2da6	2026-11-13T12:26:57Z
 review:openregister:10176:4394082f	APPROVE: tasks.md only, claim verified (6 tests pass)	session-20261113T101609-bc51215d	2026-11-13T12:27:15Z
+measure:openregister:20261113h12	php 94.96% (pcov, 203127/213908; local unit config, 463 err/42 fail baseline) / js 90.89%	session-20261113T084521-fd8a31c7	2026-11-13T12:27:41Z
 verify:larpinq:1028:e44dc468	1028 GREEN (tests only)	session-20261113T064519-30004ad4	2026-11-13T12:27:43Z
 build:openregister:history-schema-and-settings-edits-audited	failed: not completed this pass. Foundational task 1.1 (EntityEditAuditor) is a large, security-sensitive append-only-audit service (per-field diff + 2KB per-value hash/length cap + recursive irreversible credential masking + hand-built AuditTrail rows) with 6 exacting tests; needs careful dedicated attention, not a rushed tail-of-session slice. Investigated: insertAuditTrails accepts pre-built Au	session-20261113T091527-72c58830	2026-11-13T12:27:45Z
 review:openregister:10173:75c440fd	APPROVE: tasks.md only, claims verified on main	session-20261113T074533-3e2a2da6	2026-11-13T12:27:46Z
@@ -4841,3 +4842,13 @@ review:openregister:10158:fec51a1d	APPROVE: unwired URL fetcher, guard before re
 build:openregister:object-files-follow-object-access	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:28:15Z
 build:openregister:object-organisation-from-a-property	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:28:22Z
 build:openregister:modelling-validation-messages	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:25Z
+build:openregister:modelling-stated-requirements	partial: PR #10183 tags 1.1/1.2, tests 2.1/2.2, nested required path fix; 1.3, 2.3 (membership refusal location unclear), 3.1, 4.1 left	session-20261113T104531-274f72f7	2026-11-13T12:28:28Z
+build:openregister:modelling-property-index-switch	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:30Z
+build:openregister:object-presence	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:36Z
+build:openregister:operate-admin-query-console	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:42Z
+review:openregister:10175:b50560d8	APPROVE: docs only, claims verified	session-20261113T103904-e108be02	2026-11-13T12:28:56Z
+review:openregister:10178:1eca7811	APPROVE: tests only, all new tests pass merged with main	session-20261113T101609-bc51215d	2026-11-13T12:29:03Z
+review:openregister:10169:bb4406de	APPROVE (conflict with main in golden fixture; tests run on PR head)	session-20261113T044737-f37de8e3	2026-11-13T12:29:15Z
+fix:pipelinq:3739:21e54109	fixed: posRefund version bumped so the rule imports; access change is owner decision 390; new head 6c64c80f54661efb12fa6cb34f2c90dd259d59b9	session-20261113T081048-4978ac57	2026-11-13T12:29:21Z
+cover:openregister:7350e3efmea52:c25ca075	PR #10184: FilePropertyOptionsValidator direct test (5 tests, every refusal branch); other untested classes in the dirs are logic-free data carriers or covered via their services; noted svg+xml MIME refusal (not pinned)	session-20261113T094602-d25cda2a	2026-11-13T12:29:37Z
+verify:shillinq:2931:98b41a49	GREEN x8 (2931,2933-2939); CONFLICT 2932	session-20261113T051703-1b54bfba	2026-11-13T12:29:57Z
