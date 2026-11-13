@@ -2405,3 +2405,4 @@ cover:dossiq:f8a113c5mac88:aae6d66c	already done: lib/Exception/ 45/45 lines (10
 verify:dossiq:6278:fdd82e57	GREEN 6278-6282 (tests only; no new failures vs baseline)	session-20261113T031701-b518f7f8	2026-11-13T05:29:30Z
 cover:launchpad:fb10c50fm2ceb:js01efb861	PR #1172: 44 vitest tests, Widgets lines 92.2->94.1%	session-20261113T051709-e616bf69	2026-11-13T05:29:33Z
 cover:dossiq:f8a113c5mac88:34763eb4	PR #6286: 15 tests for ZgwAuthMiddleware scope decisions; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:29:33Z
+cover:dossiq:f8a113c5mac88:3b1fd60e	already done: lib/Review/*.php 1178/1298 (90.76%) on development, above 90 target; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:29:54Z
