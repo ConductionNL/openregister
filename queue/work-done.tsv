@@ -6259,3 +6259,4 @@ cover:shillinq:05639debm7b6b:e372e6ff	already done: lib/Event/*.php 100% (96/96)
 fix:shillinq:2983:ccfb2777	no change: #2983 is clean on development; conflict is only with sibling PRs #2982/#2986 (same info.xml version line + lock entry); REVERIFY recorded	session-20261113T175335-552e4d60	2026-11-13T19:15:05Z
 cover:buildiq:70b3e29em7beb:38e80a9f	already done: lib/Command/ 348/349 at e11fe26f	session-20261113T171137-8f22ecb0	2026-11-13T19:15:28Z
 verify:dossiq:6439:73fe2fd7	GREEN 6439, GREEN 6440 (tests-only; 16571 tests, 20 inherited failures, none new)	session-20261113T172329-0b6220f9	2026-11-13T19:15:37Z
+cover:buildiq:70b3e29em7beb:f545d745	already done: lib/Repair/*.php 915/917 statements (99.8%) @e11fe26f, above 95 target	session-20261113T185326-a3ee0aab	2026-11-13T19:15:41Z
