@@ -2176,6 +2176,7 @@ Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Se
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration
 Service/Export/RowsPdfSection.php,60,Service,Configuration,Configuration/Service/Export/RowsPdfSection.php,0,,Configuration
+Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Service/Export/XmlObjectWriter.php,0,,Configuration
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
