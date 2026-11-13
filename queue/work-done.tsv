@@ -1767,3 +1767,4 @@ cover:filinq:8ecceb86mc744:bb678c92	PR #2013: 15 tests for SvgPrimitives/SvgText
 verify:filinq:2004:ded7d3ce	7 GREEN (2004-2010): test-only; phpunit 5899 ok, vitest 556 ok, jest 15 inherited failures	session-20261113T021703-063c80f1	2026-11-13T03:13:24Z
 cover:buildiq:8ca317f6mefda:js0be8c659	PR buildiq#1494: 12 rendered specs for 4 confirm dialogs; src/modals lines 84.9->87.3%; suite 3184->3196 all green	session-20261113T024654-6600dc41	2026-11-13T03:13:29Z
 cover:integriq:9b0f5894md8cd:2af01be6	PR #3462: lib/Intake/*.php 359/436 -> 430/436, 22 tests	session-20261113T015005-030aa10a	2026-11-13T03:14:43Z
+cover:buildiq:8ca317f6mefda:js847d1562	PR #1495: 39 vitest tests, schema-editor stmts 543/805 -> 658/805	session-20261113T024653-d22c13a3	2026-11-13T03:17:50Z
