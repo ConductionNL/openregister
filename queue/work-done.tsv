@@ -4618,3 +4618,4 @@ build:openregister:content-search-index	failed: remaining 1.1/1.3/2.1/2.2 are on
 verify:pipelinq:3725:e744b492	GREEN 3725 3729 3747 3750 3751; CONFLICT 3734 3748 3749 (l10n catalogues)	session-20261113T104531-16da055e	2026-11-13T11:45:29Z
 verify:pipelinq:3731:df2a0a30	GREEN 3731, 3745, 3752, 3753: no new failures	session-20261113T081048-4978ac57	2026-11-13T11:46:10Z
 build:openregister:consolidate-organisation-on-or	already done: tasks 1-5.1 on main (#3016,#3336,#3340); only 5.2 open, which is leaf-app work (opencatalogi/stackiq) the change scopes out as its own change	session-20261113T114524-3c44fc56	2026-11-13T11:46:16Z
+review:openregister:10120:b35f4b7b	failed: permission (self-review of a PR this worker opened; suites green, no verdict recorded)	session-20261113T071631-5a3cc070	2026-11-13T11:46:15Z
