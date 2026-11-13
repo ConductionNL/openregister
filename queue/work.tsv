@@ -2784,3 +2784,11 @@ cover:keepiq:c967a31fm0090:js4829b6aa	cover	keepiq	development	quality/test-cove
 cover:keepiq:c967a31fm0090:js0023cfc7	cover	keepiq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=660;coverage=85.94;target=90.0	2026-11-13T01:11:23Z
 cover:keepiq:c967a31fm0090:js06645759	cover	keepiq	development	quality/test-coverage-js-06645759	lang=js;dirs=src/components/*;focus=uncovered;weight=591;coverage=85.94;target=90.0	2026-11-13T01:12:32Z
 measure:shillinq:20261113h04	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T05:25:12Z
+verify:dossiq:6285:b3a825ec	verify	dossiq	development	merge	prs=6285@cf68f5515bd0a4491061c7ded4296f8db21a5429,6286@fc399495936188366a7fcfe501e87b4dd9c0cf34,6287@c240eff18e6111462ac23f5498563c1214d6845a	2026-11-13T05:30:19Z
+verify:keepiq:1740:94a397e9	verify	keepiq	development	merge	prs=1740@b3eb9b1ee9bbf5640c8605f11af26bd85dfa8a13	2026-11-13T05:30:19Z
+verify:launchpad:1172:ba1d4b65	verify	launchpad	development	merge	prs=1172@fb5ef5db7bca78f2f203d4224885461a7aed1781	2026-11-13T05:30:19Z
+merge:dossiq:6278:fdd82e57	merge	dossiq	development	development	prs=6278@d5378cdb9e742a47ed1300e32cf8f175acd6cb79,6279@a23db83d40a75b340079be8bc89e999373073efb,6280@7b260fb2dee9415ba74c199c6ba5b6042832643b,6281@22cf87006d6df6ba848d44fbf6274a6ce9425b21,6282@1a587279b02c83cf008b1c2e3d9e3e18d1eac94f	2026-11-13T05:30:19Z
+merge:pipelinq:3669:2570871f	merge	pipelinq	development	development	prs=3669@3898d4d66d56c21a667f2044a16fc5913f2415c5,3670@e17df6bebd04aca34a769c20043fa68bb6daa02c	2026-11-13T05:30:19Z
+cover:pipelinq:f67520ecmc4ba:09cc8f24	cover	pipelinq	development	quality/test-coverage-09cc8f24	lang=php;dirs=lib/Service/Cti/;focus=thin;weight=2394;coverage=83.33;target=85.0	2026-11-13T03:10:47Z
+cover:pipelinq:f67520ecmc4ba:89d1fbd3	cover	pipelinq	development	quality/test-coverage-89d1fbd3	lang=php;dirs=lib/Service/Search/;focus=thin;weight=1649;coverage=83.33;target=85.0	2026-11-13T03:23:12Z
+cover:pipelinq:f67520ecmc4ba:ab7f3595	cover	pipelinq	development	quality/test-coverage-ab7f3595	lang=php;dirs=lib/Service/Provider/;focus=thin;weight=1463;coverage=83.33;target=85.0	2026-11-13T03:26:18Z
