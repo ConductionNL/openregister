@@ -5645,3 +5645,4 @@ verify:pipelinq:3761:1e9f0b12	3761 GREEN (tests only, 0 new failures)	session-20
 cover:dossiq:069ee2d6m2deb:b6fccd13	already covered: lib/Service/Access/*.php at 97.9% (1144/1169 stmts) on development dcd16f5978, above 95 target; no PR	session-20261113T171150-996cf694	2026-11-13T17:30:45Z
 cover:pipelinq:7f9dc8e6m16db:09cc8f24	already done: lib/Service/Cti/ at 100% (368/368) @4c67daf	session-20261113T171149-8b9ea523	2026-11-13T17:30:57Z
 cover:pipelinq:7f9dc8e6m16db:a13d1ab7	already done: lib/Service/WebForm/ at 99.5% (398/400) @4c67daf	session-20261113T171149-8b9ea523	2026-11-13T17:31:12Z
+cover:pipelinq:7f9dc8e6mcebb:ea81adeb	already done: lib/Service/Zgw/*.php at 99.7% (726/728) @4c67daf	session-20261113T171149-8b9ea523	2026-11-13T17:31:24Z
