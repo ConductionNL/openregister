@@ -3873,3 +3873,4 @@ build:dossiq:migrate-committees-to-decidiq	nothing buildable: only Task 4 (retir
 build:dossiq:omgevingsvergunning-starts-its-term	already done: built on development (9c19951c4b); only open task 2.1 is a legal-basis decision, not code	session-20261113T091531-dc489d35	2026-11-13T09:26:59Z
 verify:dossiq:6351:910198bf	6351 GREEN, 6352 GREEN (tasks.md only; 19 inherited failures, none new)	session-20261113T091530-f20014fb	2026-11-13T09:27:01Z
 build:dossiq:screens-round12-domain-lists	already done: tasks 1.1-1.4 built on development (70-privacy-and-procurement.json, 96-supplier-contract-status.json, data-subject-requests view); 1.5 portal accounts tab is not in the spec and was left out by decision (page is admin only); no PR	session-20261113T084521-4cd185d2	2026-11-13T09:27:20Z
+cover:dossiq:069ee2d6m7275:a97b9ee7	already done: lib/Service/Money/*.php at 92.93% (789/849) on development 31eb27fb	session-20261113T073916-e9f11dfa	2026-11-13T09:27:27Z
