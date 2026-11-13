@@ -1638,6 +1638,7 @@ cover:keepiq:d76c2121m88ca:be0dcca9	already done: lib/Mcp/*.php 139/139 lines co
 review:openregister:10088:930ec96d	APPROVE: @uses-only docblocks, all classes exist, touched + required suites green	session-20261113T021701-67a73ebd	2026-11-13T02:26:08Z
 cover:pipelinq:f67520ecm8c58:jsde685378	PR #3633: PortalWidget spec, 6 tests; src/portal/views 49.6% -> 55.1% on development, 90.2% together with open -1 branch	session-20261113T003903-5efbf5ae	2026-11-13T02:26:45Z
 cover:dossiq:6ca0231ema7d4:3641032a	PR #6234: 90 tests for 4 Service/Pipelinq classes (Bridge/Programme 100% strict); suite 19 inherited failures unchanged	session-20261113T021701-c2a14ef0	2026-11-13T02:26:48Z
+cover:dossiq:6ca0231ema7d4:0f859653	PR #6236: 8 tests for AskPersonTaskStore (only uncovered Flow class); suite 13893->13901, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:26:54Z
 cover:dossiq:6ca0231ema7d4:8f99c0f1	PR #6235: WooDossierReturn + WooCaseLedger, 4 tests, lib/Woo 94.8->96.3%	session-20261113T004519-b6b86685	2026-11-13T02:26:52Z
 verify:integriq:3455:5099c730	GREEN: 3455 (vitest 1392->1420, no new failures)	session-20261113T004527-ec0338ee	2026-11-13T02:27:00Z
 cover:dossiq:6ca0231ema7d4:e2589e28	PR #6237: 7 tests, AuditPacketBuilder 1->65/70, BeschikkingRepository 1->31/32; suite 13893->13900, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-13T02:27:04Z
