@@ -6778,3 +6778,4 @@ build:opencatalogi:harvest-conflict-policies	failed: blocked - depends_on harves
 build:opencatalogi:capability-rows-verify-scenarios	partial: PR #2628; 1.3 done (REQ-CVS-005 test + spec sync), 1.4 DCAT half tested; 1.1/1.2 need live e2e, 2.1/2.2 feature builds left	session-20261113T195351-a32c6d55	2026-11-13T20:52:52Z
 build:integriq:brp-relations-read	already done: change archived as obsolete on development (c6201246a, decision 399); nothing to build	session-20261113T202612-d04bbf77	2026-11-13T20:53:06Z
 build:opencatalogi:catalogue-staff-access	PR #2629: task 1.4 enforcement test (4 tests vs OpenRegister PermissionHandler); no tasks left in code	session-20261113T204542-158476ba	2026-11-13T20:53:24Z
+cover:decidiq:a5f973bbm5a4d:98083bbf	PR #2142: 3 tests, Listener/Registrar 91.3%->100%, suite 3911->3914 OK	session-20261113T185324-28e07ab2	2026-11-13T20:53:48Z
