@@ -1821,3 +1821,4 @@ cover:stackiq:8cfacb29m8db8:c2bb21fa	PR #1820: 22 tests, ContactPersonHandler 76
 cover:filinq:8ecceb86mc744:4b9c088d	PR #2018: 12 tests, lib/Service/Editing/*.php lines 96.2% -> 98.1%, suite 5911 tests 0 failures	session-20261113T021703-063c80f1	2026-11-13T03:28:11Z
 verify:dossiq:6253:ca7a97de	8 GREEN (6253-6260): phpunit 14106, 19 inherited, 0 new; vitest 1 inherited	session-20261113T031700-7e4db3e6	2026-11-13T03:28:18Z
 cover:stackiq:8cfacb29m8db8:efa2a923	PR #1821: repaired ModuleComplianceSubscriberHandleTest (CatalogueLocator), subscriber 1->60/60 lines, suite errors 57->54	session-20261113T031700-0e23c373	2026-11-13T03:28:45Z
+cover:stackiq:8cfacb29m8db8:59f569b2	PR #1822: +10 tests (CatalogueLocator 347->383/384, EolSyncSettings 40/40); suite 2854->2864, 57 inherited errors unchanged	session-20261113T031701-470b4a5e	2026-11-13T03:28:59Z
