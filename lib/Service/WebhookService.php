@@ -564,6 +564,13 @@ class WebhookService {
 		// latency a function of third-party uptime (async-webhook-delivery /
 		// ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
 		foreach ($webhooks as $webhook) {
+			// An owned webhook is filtered before a job is queued, so a busy
+			// instance does not queue one job per owned webhook per event only
+			// to drop it in the job (webhooks-for-owners D-5).
+			if ($this->ownedWebhookSkipsEvent(webhook: $webhook, eventName: $eventName, payload: $payload) === true) {
+				continue;
+			}
+
 			try {
 				$this->dispatch->jobList->add(
 					WebhookDeliveryJob::class,
@@ -594,6 +601,27 @@ class WebhookService {
 			}
 		}
 	}//end dispatch()
+
+	/**
+	 * Whether an owned webhook would refuse this event anyway: an event it never
+	 * delivers, or a payload outside its register and schema scope.
+	 *
+	 * @param Webhook              $webhook   The webhook.
+	 * @param string               $eventName The event class.
+	 * @param array<string, mixed> $payload   The event payload.
+	 *
+	 * @return bool True to queue no job; always false for an administrator's webhook.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-see
+	 */
+	private function ownedWebhookSkipsEvent(Webhook $webhook, string $eventName, array $payload): bool {
+		if (trim((string)$webhook->getOwner()) === '') {
+			return false;
+		}
+
+		return OwnedWebhookView::mayQueue(webhook: $webhook, eventName: $eventName) === false
+			|| $this->passesFilters(webhook: $webhook, payload: $payload) === false;
+	}//end ownedWebhookSkipsEvent()
 
 	/**
 	 * The webhooks subscribed to an event; none (logged) when there are none or the webhook
@@ -646,6 +674,11 @@ class WebhookService {
 			return false;
 		}
 
+		$delivery = $this->ownerView(delivery: $delivery);
+		if ($delivery === null) {
+			return false;
+		}
+
 		$webhookPayload = $this->buildPayload(delivery: $delivery);
 		$recorder = $this->deliveryRecorder();
 		$webhookLog = $recorder->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
@@ -662,6 +695,37 @@ class WebhookService {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
 	}//end deliverWebhook()
+
+	/**
+	 * The delivery as an owned webhook may send it, or null when it sends nothing.
+	 *
+	 * An administrator's webhook passes unchanged. An owned one goes through
+	 * {@see OwnedWebhookView} on every attempt, retries and resends included;
+	 * without that view it delivers nothing rather than the full event.
+	 *
+	 * @param WebhookDelivery $delivery The delivery.
+	 *
+	 * @return WebhookDelivery|null The delivery to send, or null.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-see
+	 */
+	private function ownerView(WebhookDelivery $delivery): ?WebhookDelivery {
+		if (trim((string)$delivery->webhook->getOwner()) === '') {
+			return $delivery;
+		}
+
+		$event = $this->dispatch->ownedView?->view(webhook: $delivery->webhook, event: $delivery->event);
+		if ($event === null) {
+			return null;
+		}
+
+		return new WebhookDelivery(
+			webhook: $delivery->webhook,
+			event: $event,
+			attempt: $delivery->attempt,
+			timeoutCapSeconds: $delivery->timeoutCapSeconds
+		);
+	}//end ownerView()
 
 	/**
 	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
@@ -960,6 +1024,11 @@ class WebhookService {
 		// local testing. Defaults to false (full SSRF blocking) when the key
 		// is absent. See configuration.allowPrivateTargets.
 		$allowPrivate = (bool)($webhook->getConfigurationArray()['allowPrivateTargets'] ?? false);
+		// An owned webhook never reaches the instance's own network, whatever
+		// its configuration says (webhooks-for-owners D-4/D-5).
+		if (trim((string)$webhook->getOwner()) !== '') {
+			$allowPrivate = false;
+		}
 
 		// SSRF guard: validate the webhook target before issuing the request.
 		// Redirects are re-validated by the per-request on_redirect callback set
@@ -1189,8 +1258,9 @@ class WebhookService {
 	private function matchesInterception(Webhook $webhook, string $eventType): bool {
 		$config = $webhook->getConfigurationArray();
 
-		// Check if webhook is configured for request interception.
-		if (($config['interceptRequests'] ?? false) !== true) {
+		// Check if webhook is configured for request interception. An owned
+		// webhook never intercepts: blocking writes stays an administrator's.
+		if (($config['interceptRequests'] ?? false) !== true || trim((string)$webhook->getOwner()) !== '') {
 			return false;
 		}
 
