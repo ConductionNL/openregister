@@ -5411,5 +5411,6 @@ review:openregister:10251:9d0fcb0d	APPROVE: change-specified tightening, no leak
 review:openregister:10265:1caf04d7	APPROVE #10265 (reveal audit visibility; tightens gating, green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T14:05:09Z
 review:openregister:10240:fd961afd	APPROVE 10240	session-20261113T114527-9a216dd1	2026-11-13T14:07:53Z
 cover:buildiq:70b3e29ema699:js0be8c659	PR #1552: 4 modals (AutomationTestPanel, LinkRepo, PermissionHistory, Permissions) to 100%; src/modals 92.4%->97.9%; +15 vitest tests, suite 4010 pass	session-20261113T131537-142f7747	2026-11-13T14:08:20Z
+review:openregister:10263:84fb9f40	APPROVE: note lock per spec, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:08:40Z
 review:openregister:10270:1462b41e	APPROVE #10270 (frontend green; l10n parity +1 missing key per locale noted, already red on main)	session-20261113T084525-9d890807	2026-11-13T14:09:03Z
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
