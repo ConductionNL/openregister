@@ -6628,3 +6628,4 @@ dossiq	6378	a657aadbb24f5fe595fe46e711155b926a3a1ffd	CONFLICT	merge3	conflicts w
 dossiq	6385	cf5945ae69aa923c3bb13bacf515473aa105e1e6	CONFLICT	merge3	conflicts with development; files: src/menu-layout.simple.json tests/vitest/simpleCasePage.spec.js 
 dossiq	6434	20c5660f980c4d2d98e80699767c43f831df2e1e	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/Zaakdossier/CaseDocumentProvenanceTest.php tests/Unit/Service/Zaakdossier/DocumentCaseWriteGuardTest.php tests/Unit/Service/Zaakdossier/FileRestrictionMirrorTest.php 
 dossiq	6459	89dbd4a89eada0a136fd50b0c9709c85d55a0258	RED	merge3	new unit failure on the tree with development: OpenApiDocumentTest::testTheDocumentMatchesTheRoutes, routed but not documented: POST /api/v1/decision-advice/override, POST /api/v1/decision-advice/recommend
+shillinq	2996	c8bf209f8503b2d563208844cd9f45e764e0681c	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.95 -> 2.93
