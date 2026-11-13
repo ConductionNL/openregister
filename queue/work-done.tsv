@@ -3384,3 +3384,4 @@ verify:opencatalogi:2585:695abb5b	GREEN #2585: tests only, 5192 tests, no new fa
 cover:buildiq:70b3e29emc723:d33a91b0	already done: lib/Service/Copilot/ at 98.7% (149/151 stmts) on development, above 90 target; earlier -1 branch merged; no PR	session-20261113T080546-98207a87	2026-11-13T08:14:16Z
 cover:planninq:e1c9866d:34f5c300	PR #1142: 26 tests, lib/Service/*.php 93.99% -> 95.97%	session-20261113T080552-2a8a5ff1	2026-11-13T08:14:29Z
 review:openregister:10107:66169fa8	APPROVE: tests only, merged-with-main suites green (ObjectSource 376, Architecture, Rules, Controller, Contract)	session-20261113T074532-3dc49c57	2026-11-13T08:14:27Z
+cover:buildiq:70b3e29emc723:f91e7417	already done: lib/Service/Connection/ at 99.4% (170/171) on development, above 90 target; no PR	session-20261113T080546-98207a87	2026-11-13T08:14:30Z
