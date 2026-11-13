@@ -63,6 +63,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class SaveObjectsChunkMergeGoldenTest extends TestCase {
 
