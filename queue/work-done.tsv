@@ -5694,3 +5694,4 @@ cover:pipelinq:7f9dc8e6m16db:568ec52a	already covered: lib/Lifecycle/*.php measu
 fix:shillinq:2944:c7766ce8	restored deleted spec, new tests in own file, merged development; REVERIFY at 1db10eff	session-20261113T172329-5f4feaba	2026-11-13T17:45:50Z
 cover:learniq:e6498dddm0533:9623f321	PR #2470: 8 tests (TimetableWindow, LocalSessionTimetableSource scope); suite 6402->6410, no new failures	session-20261113T172325-6eb25015	2026-11-13T17:46:10Z
 cover:opencatalogi:fc83bfb1:d528dcf0	PR #2591: 7 tests for DashboardRegistrar, RetentionWidget, MostViewedPublicationsWidget; suite 5254->5261, same 2 inherited failures	session-20261113T171203-c5a044de	2026-11-13T17:46:23Z
+build:portaliq:event-sign-up-by-a-pupil-with-seats	partial: PR #2416 (task 4: staff event list endpoint + news event picker); tasks 3 (shell child refs) and 5 (learniq) left	session-20261113T172328-c860ad55	2026-11-13T17:47:17Z
