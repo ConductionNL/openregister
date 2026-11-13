@@ -6067,3 +6067,4 @@ verify:shillinq:2958:4cc14625	2958 GREEN (build task 2.6, 0 new failures)	sessio
 build:shillinq:bookings-messages-and-embedding	partial: PR #2968 task 1.1 send through IMailer with ICS; recording the send and 1.2-1.6 left	session-20261113T172324-00680177	2026-11-13T18:44:32Z
 build:shillinq:hours-to-humaniq	partial: PR #2967 design.md (1.1,1.2) + occ shillinq:hours:subject-audit (2.1, 6 tests); rest gated on live counts (2.2) or in humaniq	session-20261113T181000-9baff50f	2026-11-13T18:44:29Z
 build:shillinq:ledger-retention-due-records	partial: PR #2970 task 1.1 RetentionDueService + 6 tests; 2.1 page/route, 3.x strings/live left; suite 10394->10400, same 1 clock-bound inherited failure	session-20261113T172334-4b3b027b	2026-11-13T18:45:00Z
+review:openregister:10291:453c9de0	APPROVE (risky 3->1; StatisticsScope still undeclared)	session-20261113T175327-6e4e7f28	2026-11-13T18:45:15Z
