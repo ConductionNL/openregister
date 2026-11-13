@@ -6237,3 +6237,4 @@ shillinq	3002	6f0aa114932de9971cf99f6d79b20557d3e9215a	GREEN	worker-16	tree 2986
 hermiq	1704	ead6a7644fddc7a723e558392eba839fd177bd51	GREEN	worker-39	tests-only (4 vitest specs); vitest 1306->1332 pass, no PHP touched, no new failures
 shillinq	3003	594db7339e002d088d7d72e285a37a97d5a32134	CONFLICT	worker-16	conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR); clean vs development
 shillinq	3004	7d6918f86920b501fb52f578004638b2522c93bb	CONFLICT	worker-16	conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR); clean vs development
+shillinq	3002	6f0aa114932de9971cf99f6d79b20557d3e9215a	REVERIFY	worker-19	no change: branch already contains development and merges cleanly; conflict was only with an earlier unmerged PR in the tree (openapi.json); new head 6f0aa114932de9971cf99f6d79b20557d3e9215a, verify it alone or after that PR lands
