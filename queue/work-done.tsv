@@ -7063,3 +7063,4 @@ build4:openregister:files-leaf-save-to-object	partial: PR #10395 (task 2.1 Files
 review:openregister:10370:f4ef0cfc	APPROVE: scope capability + app: narrowing per change spec; 7 suites green on PR merged with main	session-20261113T214350-9762e143	2026-11-13T22:03:54Z
 review:openregister:10358:411a360c	APPROVE: audit-trail node per spec; phpstan clean, 16610 unit tests green	session-20261113T215342-fabaa836	2026-11-13T22:04:11Z
 review:openregister:10366:79d767c2	APPROVE: spec'd public form page, all suites green	session-20261113T213325-5a151438	2026-11-13T22:04:22Z
+review:openregister:10381:e72f32f5	BLOCK: @creator-only read list resolves as open in the reader list (watcher filter)	session-20261113T210940-b751519f	2026-11-13T22:04:29Z
