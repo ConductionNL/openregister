@@ -1025,3 +1025,26 @@ humaniq	1030	4e04b394e56c758e0a154a2734470d412302efa7	SKIP	merge-local	GATE UNME
 humaniq	1031	f88eeb1ed1d23d855c5decb3b750537502cfd0ca	SKIP	merge-local	GATE UNMEASURED f88eeb1ed1 does not merge cleanly onto development
 humaniq	1094	77832e4d8369f59b17dadd1107884681f3427d5a	SKIP	merge-local	GATE UNMEASURED 77832e4d83 does not merge cleanly onto development
 hermiq	1584	9cc7549e6375611e5f874b2884f47adfa6614326	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+buildiq	1486	6ecaf8c861c4694762f08d1e7660c49a252eefda	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1487	267226c948ac53c7df34c7520ae741f7004e7906	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1488	eb7ec1dfbc5040ed32acaac4f14735b4b32190df	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1489	4a12606364c74c68fefa0eb80e53052b25f30af5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1491	f226e0262552ca42c76b9bf3ad3a258662ef5192	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1492	8a4549d3d4a1d852866bd5a2628a1a0b98e4714e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1493	5b7f7d600d9fe5b1250f6cd3da7330192bb2f176	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1494	60ee2391ede562304827f2e692ca8b16184c5af9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1495	a223182c5a37211067cabfc781b218b11aeb959c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1496	d38ebb691702264939f96a5013b4256d6cdbcba0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1497	d672052c821e242d04877c35a6af552219c032fd	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1498	e2cf428c152a81aa087e630ef2e8d1e063bc6e0a	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+buildiq	1499	caba96d111235a637a142e2a6b50e0938ce34fa9	SKIP	merge-local	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+buildiq	1500	c9733ca670f3e78df637f65ea9a180a2dcc4f4a2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1501	b87671084ed3e6a76bef7438fc692f5b5ec930aa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1503	49ca6eb4e926181feb93c1726999281807400000	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1504	e583dc7518eab9857909c6b4b3053c9121abb774	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1505	b14da8b1f1294551c56d43561545f221046fbfa6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1506	e3662b915b9e0dc9ce4a8147c510b053594f4291	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1507	2dbe888c07dc6d025e35105b501dbe0ff5f95537	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1508	7b21988db5bf53f1440f5c6e6aeb452e3513119c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1509	c84ee2db6c98a708f0453a1af42d6351596d703b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1510	74e6c610d5c56caaa6a1e7651bea006bdc8a19f3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
