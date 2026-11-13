@@ -2598,6 +2598,7 @@ verify:integriq:3482:4d08eabe	3482 GREEN (tests only, no new failures)	session-2
 cover:filinq:7a9ef677m5ffe:7718b0ba	already above target: the 9 Service dirs measure 93.45% (3254/3482) on development; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:00:42Z
 cover:decidiq:a5f973bbma14b:60c2c265	PR #2116: 146 tests, 9 controllers to 100%, lib/Controller 81.5->93.8%, suite 3398->3544 OK	session-20261113T054517-26499007	2026-11-13T06:00:40Z
 verify:integriq:3410:a84047f9	3410 GREEN: 0 new failures, route table unchanged, additive headers	session-20261113T054519-189b2666	2026-11-13T06:00:57Z
+cover:filinq:7a9ef677m5ffe:f545d745	already above target: lib/Repair/*.php measures 97.85% (773/790) on development; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:01:15Z
 verify:pipelinq:3675:4b37e509	pipelinq #3675-#3680 GREEN (phpunit 0 new failures, vitest 3953 passing)	session-20261113T051703-1b54bfba	2026-11-13T06:01:03Z
 merge:buildiq:1486:78803af7	merge-local over 10 buildiq tasks: merged=21 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:01:14Z
 merge:buildiq:1488:d11fabeb	merge-local over 10 buildiq tasks: merged=21 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:01:14Z
