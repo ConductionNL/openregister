@@ -2420,3 +2420,4 @@ cover:dossiq:f8a113c5mac88:9d3a1784	already done: lib/BackgroundJob/*.php 616/65
 cover:dossiq:f8a113c5mac88:f545d745	PR #6290: 35 tests over 7 Repair classes; lib/Repair 88.06% -> 92.15%; suite 19 inherited failures unchanged	session-20261113T051708-7d5f6071	2026-11-13T05:32:29Z
 verify:dossiq:6283:37139d12	GREEN 6283, GREEN 6284 (tests only, no new failures vs 19 baseline)	session-20261113T051714-4ad50f31	2026-11-13T05:32:40Z
 cover:launchpad:fb10c50fm2ceb:js0023cfc7	PR #1173: 12 vitest tests, dialogs lines 78->92%	session-20261113T051709-e616bf69	2026-11-13T05:33:45Z
+verify:integriq:3480:2009af82	GREEN 3480 (7175->7182, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:34:21Z
