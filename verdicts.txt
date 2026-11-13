@@ -3040,3 +3040,4 @@
 10321 1237ea7c47e0ac89a1fe71b073f9742fc39d382d APPROVE tests only (15 tests for SearchTrailStatistics, fixed dates, strict metadata, not risky); Arch/Contract/Rules green
 10319 4b97ad25cbc8bb89377345e0a033a98d2a4adf1a APPROVE integrator IL5: main merge on top of approved 195e1747: main (#10317) already added DeepLinkRegistryService::registrations() as a list; the branch's duplicate method and interface line dropped for main's, its registrations test asserts register::schema claims instead of keys; DeepLink/Capability/CommentsCollection tests (295) pass
 10323 1983a4612eb88d4d1bf0db20b3bd615cfbae098d APPROVE tests only (9 listener edge tests, full coverage metadata, not risky under pcov); Arch/Contract/Rules green
+10322 26173695d7466d23493b4b6380197e2773af40da APPROVE Tests only (3 new test files for Notifications/Db); 109 Db tests pass merged with main; Architecture, Rules, Controller, Contract suites green.
