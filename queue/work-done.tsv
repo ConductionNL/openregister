@@ -3589,6 +3589,7 @@ cover:stackiq:9ac19b3am5ac4:jsd48eb217	already done: src/store/modules/ at 769/7
 cover:stackiq:9ac19b3am6096:59f569b2	already done: lib/Service/Settings/*.php at 1265/1296 lines (97.6%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:47:39Z
 cover:buildiq:70b3e29embf07:f91e7417	no PR: lib/Service/Connection/ at 170/171 lines (pcov); the uncovered line is the single-candidate branch of a fixed two-entry constant	session-20261113T080549-dde3ba19	2026-11-13T08:47:41Z
 cover:stackiq:9ac19b3am6096:007dc1d0	already done: lib/Service/Cmdb/*.php 1491/1520 = 98.1% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:47:48Z
+cover:stackiq:9ac19b3am5ac4:js0f856eeb	already done: contracts/organisations/sbom JS coverage 97.65% lines on development 2a8336ce (target 90); suite 2344/2344 green; no PR	session-20261113T084521-4cd185d2	2026-11-13T08:48:08Z
 verify:integriq:3513:6811747d	3513 GREEN (8069 tests, no new failures; tests only)	session-20261113T071640-3ba6da34	2026-11-13T08:48:05Z
 cover:stackiq:9ac19b3am6096:b5905f71	already done: lib/Service/Federation/ at 384/388 lines (99.0%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:48:08Z
 verify:learniq:2448:2609eebf	GREEN 2448, GREEN 2449: 6112 tests, 0 new failures	session-20261113T080552-2a8a5ff1	2026-11-13T08:48:23Z
