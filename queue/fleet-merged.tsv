@@ -2079,3 +2079,24 @@ pipelinq	3778	c45902dd29b570712e4c29a503cfea9fb4d12d9f	MERGED	merge3	GATE OK sbo
 pipelinq	3779	4f6953c3dd83758485802934b6033e8cfb4ff1c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3782	cff7bf5fcad6d21457f7c15bbe5806ebf13f6d3a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3785	d836a96b390e23e342ac090644a391eab8febc41	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1688	e8a49480e6cf7233a128ee786424738b72cc97f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1689	9747b243d267aa701fb14ad27bf5e2d9c884b66b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1690	cd1e7365f3b002c503940dd8fa1a04c11a93bf32	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+hermiq	1691	7fc206ed88dd98d8995b70329a14b62e6d284d28	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1692	3c06d22dd93315d96e3d29ad99f74a5dd9275c53	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1693	72250774a2fd806e68742e051799877912979173	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1694	7a955b37fbf7e2915e195cd21d374108b49a8232	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1695	ab797eefeab743e0c2434b050eb0ba95970bbf80	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1696	b576cb4042fb329de7a3b067748a661280ed9baa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1697	57e17d54c8b0c263d05dcfdc90bbe5ce697e2a4f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1698	95233f5fe5adb63051d70cee5fc54714755a8b32	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1699	2ae2caf440e7bfbec653b58f1d65bf6b6974bcf5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1700	8969148dada668b6fb003ec90a55da96e542ccfa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1701	05a5aec93a37c870ab9a253de1aa4e542bd84c7f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1702	695dd3dc15c6bfc831c739430f92dac72098efc5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1703	31e5fd3c839ae4044a4180229d7f7ee7fbaa9d04	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1704	ead6a7644fddc7a723e558392eba839fd177bd51	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1705	ff5eebe38947790d2a1958e4c50eaad7a07721a5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1706	0f12ea39eec58d63ec7641303b372f0152a30f10	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1714	3a9b3d4386c30b662d03b810b8fac48fa50d7919	RED	merge3	GATE RED floor: unit_complexity: 4.53 -> 4.48
+hermiq	1716	33ca91419a94b729524e78c311b585c7769a6b70	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
