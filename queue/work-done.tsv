@@ -1636,3 +1636,4 @@ cover:dossiq:6ca0231ema7d4:f0c02922	PR #6233: 17 tests, lib/Service/External lin
 verify:keepiq:1719:88e773ed	1719 GREEN, 1720 GREEN (4119 tests, baseline 4110, no failures)	session-20261113T015002-115b579d	2026-11-13T02:25:54Z
 cover:keepiq:d76c2121m88ca:be0dcca9	already done: lib/Mcp/*.php 139/139 lines covered at e61d518, no PR	session-20261113T011731-f3798045	2026-11-13T02:25:58Z
 review:openregister:10088:930ec96d	APPROVE: @uses-only docblocks, all classes exist, touched + required suites green	session-20261113T021701-67a73ebd	2026-11-13T02:26:08Z
+cover:pipelinq:f67520ecm8c58:jsde685378	PR #3633: PortalWidget spec, 6 tests; src/portal/views 49.6% -> 55.1% on development, 90.2% together with open -1 branch	session-20261113T003903-5efbf5ae	2026-11-13T02:26:45Z
