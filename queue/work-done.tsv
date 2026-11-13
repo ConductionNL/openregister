@@ -1966,3 +1966,4 @@ cover:hermiq:755cdfe7m7444:5597bc7b	already done: lib/Service/Workspace/ at 94.2
 cover:dossiq:6ca0231ema7d4:a97b9ee7	PR #6268: 23 tests over PayoutReader, CasePaymentReader, AmountObjectionService, PayoutService; suite 14213->14236, 19 inherited failures unchanged	session-20261113T034625-a62d2029	2026-11-13T03:59:49Z
 cover:keepiq:d76c2121m88ca:js0023cfc7	PR #1727: 12 vitest tests (ImportWizardDialog steps, KeyGeneratorModal controls), src/dialogs 87.1%->89.4%	session-20261113T031700-0e23c373	2026-11-13T04:01:23Z
 cover:shillinq:801aab65:7cb249c8	PR #2856: 8 GlLineResultStamps edge tests; suite 9004->9012, 1 inherited clock-bound failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:01:32Z
+cover:launchpad:fb10c50fm31b6:js01efb861	PR #1166: 49 tests, Widgets lines 86.2->92.2%	session-20261113T034628-9602b641	2026-11-13T04:01:42Z
