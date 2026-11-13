@@ -2626,3 +2626,4 @@ cover:buildiq:9930949bm5861:js847d1562	PR #1514: 30 vitest specs for Lifecycle/A
 cover:filinq:7a9ef677m5ffe:14722ee7	PR #2037: last reachable Conversion line (EmlBackend replace); rest unreachable/race-only	session-20261113T054516-469bb7f6	2026-11-13T06:03:12Z
 verify:decidiq:2111:bc6b2110	GREEN x3 (2111,2112,2113): tests only, 3398->3445 OK	session-20261113T054517-26499007	2026-11-13T06:03:11Z
 merge:buildiq:1511:e5bd1f24	merge-local over 1 buildiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:03:32Z
+cover:integriq:92114ab0m1534:a4a15698	PR #3487: 12 tests for PDOK geocoding/WFS HTTP clients; suite 7280->7292, 3 inherited	session-20261113T054519-189b2666	2026-11-13T06:03:50Z
