@@ -6199,3 +6199,4 @@ opencatalogi	2599	3c9a93dfe19f76cfb948befa4ebdb724047118fd	GREEN	worker-17	5255 
 shillinq	2987	82328584f9c6ec33310e1ca6ea26c10dd51dc617	CONFLICT	worker-54	conflicts with #2982 in tests/fixtures/register-versions.lock.json (and #2982/#2986 in appinfo/info.xml): register version bumps
 dossiq	6437	cd04bfd97b20addafada54909cf1c29073486fd8	GREEN	worker-38	tests only; phpunit-unit 16530->16551 on tree, baseline 20 failures, no new failures
 dossiq	6438	d1a49871e4a1298671ac40e6373fa2d2b0cfbeb5	GREEN	worker-38	tests only; phpunit-unit 16530->16551 on tree, baseline 20 failures, no new failures
+shillinq	2975	66d3ac29a4fc7616a46b49a9ca5656757d02ef05	REVERIFY	worker-16	no change needed: merges cleanly with current development; conflicts only with unmerged sibling #2972 (both bump appinfo version and append a register-versions.lock entry); land one, then re-run the version bump on the other; new head 66d3ac29a4fc7616a46b49a9ca5656757d02ef05, verify it
