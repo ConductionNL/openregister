@@ -4620,5 +4620,6 @@ verify:pipelinq:3725:e744b492	GREEN 3725 3729 3747 3750 3751; CONFLICT 3734 3748
 verify:pipelinq:3731:df2a0a30	GREEN 3731, 3745, 3752, 3753: no new failures	session-20261113T081048-4978ac57	2026-11-13T11:46:10Z
 build:openregister:consolidate-organisation-on-or	already done: tasks 1-5.1 on main (#3016,#3336,#3340); only 5.2 open, which is leaf-app work (opencatalogi/stackiq) the change scopes out as its own change	session-20261113T114524-3c44fc56	2026-11-13T11:46:16Z
 review:openregister:10120:b35f4b7b	failed: permission (self-review of a PR this worker opened; suites green, no verdict recorded)	session-20261113T071631-5a3cc070	2026-11-13T11:46:15Z
+build:openregister:dbal-virtual-registers	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T11:46:39Z
 build:openregister:bag-address-lookup-by-postcode	partial: PR #10139, task 3.1 + 3.2 code (lookup service, public throttled endpoint; 18 tests); 1.1 schema/index, 2.x PDOK loader, Newman, docs left	session-20261113T104523-578f6e7a	2026-11-13T11:46:35Z
 fix:pipelinq:3721:22fb037c	copy/delete moved to Templates page + spec; new head f8463265, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:46:51Z
