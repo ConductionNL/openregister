@@ -3439,3 +3439,4 @@ verify:portaliq:2373:5486e820	2373,2374,2377 GREEN (4620 tests, 0 failures); 237
 cover:buildiq:70b3e29emc723:be0dcca9	already done: lib/Mcp/*.php at 100% (31/31); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:46Z
 cover:buildiq:70b3e29emc723:aae6d66c	already done: lib/Exception/*.php at 100% (64/64); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:56Z
 cover:buildiq:70b3e29emc723:390adfb9	already done: lib/*.php at 100% (11/11); no PR	session-20261113T080546-98207a87	2026-11-13T08:24:06Z
+cover:openregister:7350e3efmea52:js76b76dfb	already done: src/views/register+schema at 97.27% stmts / 97.41% lines (jest, 186 tests) >= 90 target; no PR	session-20261113T080549-9b0da587	2026-11-13T08:24:03Z
