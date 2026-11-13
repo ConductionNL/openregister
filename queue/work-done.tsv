@@ -5114,3 +5114,4 @@ fix:planninq:1139:afab2501	stale: branch head moved to c5d778ee (duplicate tests
 cover:stackiq:9ac19b3am10f3:js0b5eefce	failed: permission (npm ci refused by permission check)	session-20261113T131535-3d7413ab	2026-11-13T13:16:21Z
 verify:portaliq:2398:da2af02e	GREEN #2398 (4841 tests, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:16:43Z
 cover:planninq:e1c9866d:9d3a1784	PR #1148: 3 background jobs, 8 tests, suite 1015->1023 OK	session-20261113T094617-36f80607	2026-11-13T13:17:04Z
+build:openregister:expired-object-sweep	partial: PR #10232, tasks 1.1 2.1 3.2 4.1 done with 24 unit tests (sweeper implemented and unit-tested); left: 3.1 DB test, 5.1 docs build not run; architecture/rules/controller/contract suites green, 0 new failures in 672 related test files	session-20261113T094607-7b89fdae	2026-11-13T13:17:04Z
