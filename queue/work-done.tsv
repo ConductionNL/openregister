@@ -2648,3 +2648,4 @@ cover:shillinq:05639debmd8ee:js4829b6aa	PR shillinq#2873: 34 tests on 4 untested
 cover:shillinq:05639debmd8ee:js450fec42	PRs shillinq#2872 (payment-request + contract panels, 21 tests) and #2876 (financial documents panel actions, 10 tests); src/integrations ~39%->~66% lines combined (rest is template render code; no DOM env); vitest all passing	session-20261113T053904-36dcee67	2026-11-13T06:06:18Z
 merge:stackiq:1693:d479245d	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
 merge:stackiq:1706:50f98441	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
+verify:shillinq:2869:459d50c7	2869 GREEN (tests only; vitest 1343 pass; php baseline 1 inherited failure)	session-20261113T054521-2b588c68	2026-11-13T06:06:39Z
