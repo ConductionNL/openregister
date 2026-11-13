@@ -6033,3 +6033,4 @@ portaliq	2416	deb957a04387db0ee9c4d35a9f6cd1779ab36c99	GREEN	worker-14	unit 4918
 portaliq	2417	5cad603093b2ac37262b3e10054d4f69245dbe5e	CONFLICT	worker-14	conflicts with #2416 in l10n/en.js, en.json, nl.js, nl.json; merge development (after #2416) into the branch
 learniq	2468	683f22b1a19353c1ffc61e9fb17d59ad7eee78c2	GREEN	worker-06	tests only; unit 6412 on tree, baseline 6402 with 1 failure, 0 new failures
 pipelinq	3765	98485ac459dec1b510e54406b3966f3f85f78912	GREEN	worker-01	tests only; phpunit 7199 vs baseline 7194, same 5 inherited failures, 0 new
+learniq	2469	8e2d2f034035a8daf3887c1de34704ca0aeb1261	GREEN	worker-06	tests only; unit 6412 on tree, baseline 6402 with 1 failure, 0 new failures
