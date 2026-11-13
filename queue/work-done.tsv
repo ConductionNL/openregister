@@ -1621,3 +1621,4 @@ cover:launchpad:755175ffm31b6:34f5c300	already done: lib/Service/*.php 10652/115
 cover:dossiq:6ca0231ema7d4:67b69054	PR #6226: 8 tests over CaseConversationService and CaseCaptureService remaining branches; suite 13867->13875, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-13T02:22:39Z
 cover:dossiq:6ca0231ema7d4:c97e6ec3	PR #6227: 3 queue sources, 7 tests, Queue/Source 78.9->95.2%	session-20261113T004519-b6b86685	2026-11-13T02:22:47Z
 measure:filinq:20261113h02	php 87.6% / js 35.34%	session-20261113T021702-a00af7e3	2026-11-13T02:22:49Z
+cover:dossiq:6ca0231ema7d4:b7fd3ec4	PR #6228: 35 tests for 5 Beschikking classes; suite 13840->13875, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:23:02Z
