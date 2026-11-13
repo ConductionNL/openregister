@@ -7218,6 +7218,7 @@ build4:openregister:reply-threading-by-headers	partial: PR #10452 builds task 4.
 verify:pipelinq:3797:a2447876	GREEN: #3797 tests only, 7560 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:35:08Z
 build:learniq:compliance-attestation-locked-after-signing	partial: PR #2495 freeze listener, revoke reason guard, signedAt stamp, register 0.49.0, merge keeps signed attestations (1.1-2.2); audit pack, UI, l10n, e2e left	session-20261113T213336-fe5ca7a4	2026-11-13T22:35:14Z
 cover:shillinq:05639debm3747:js450fec42	PR #3030: 13 tests; integration panels at 100% functions (PaymentRequests 67.6->100), suite 2400->2413 passed, 1 inherited failure	session-20261113T212405-084c59f4	2026-11-13T22:35:20Z
+build:learniq:exam-sitting-overview-section	PR #2496: tasks 1.1-1.5 and 2.1 (node --test, no vitest in learniq); e2e 2.2, visual 2.3 and close-out 3.1 left	session-20261113T202607-6c22f6b2	2026-11-13T22:35:34Z
 review:openregister:10434:f6a36d5a	APPROVE #10434 (index migration; only inherited red)	session-20261113T205323-a7434fd6	2026-11-13T22:35:31Z
 build:learniq:simple-structure-profile	already done: every implementation task (1-5) is ticked and on development (structureProfile.js, menu-layout.simple.json, MenuStructure.php + tests, REQ-SSP-006 brand/primaryAction); the 3 open boxes are listed under 'Not in this change'	session-20261113T220418-8e6ce3df	2026-11-13T22:35:44Z
 review:openregister:10433:9db76461	APPROVE 10433	session-20261113T212407-b2d64ec5	2026-11-13T22:35:44Z
