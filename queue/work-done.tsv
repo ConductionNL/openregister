@@ -1908,6 +1908,7 @@ cover:learniq:1ae7757ema84a:js0023cfc7	PR learniq#2435-ish: 14 tests for 4 untes
 verify:shillinq:2847:59af2f0a	4/4 GREEN (tests-only; 9041 tests, 0 new failures)	session-20261113T015005-da194c88	2026-11-13T03:48:53Z
 verify:learniq:2433:65745861	failed: permission	session-20261113T034628-9602b641	2026-11-13T03:49:13Z
 verify:filinq:2014:f8adb819	6 GREEN (2014-2019): test-only; phpunit 5967 ok on the tree	session-20261113T021703-063c80f1	2026-11-13T03:49:18Z
+cover:integriq:9b0f5894md8cd:e372e6ff	PR #3466: lib/Event/*.php 385/424 -> 400/424, 5 tests (rest are getters)	session-20261113T015005-030aa10a	2026-11-13T03:49:55Z
 verify:stackiq:1815:acd2d766	9 GREEN (1815-1823); tree 3036 tests 0 errors vs baseline 57 errors; tests only	session-20261113T034632-47095943	2026-11-13T03:49:55Z
 fix:launchpad:1157:824d8f68	conflict resolved: kept development's smallDialogs.spec.js, moved RoleLayoutDefaultEditorDialog tests to own spec; new head 83fef2b2, REVERIFY recorded	session-20261113T031701-470b4a5e	2026-11-13T03:50:01Z
 cover:stackiq:df113dffm8db8:jsd48eb217	PR #1833: 9 vitest tests, settings.js 395->460/475, store/modules 682->747/783; suite 2114->2123 passing	session-20261113T031700-46f75510	2026-11-13T03:50:13Z
