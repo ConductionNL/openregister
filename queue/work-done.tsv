@@ -3075,3 +3075,4 @@ cover:integriq:92114ab0m658d:f545d745	PR #3494: RenameDutchColumns failure paths
 cover:shillinq:05639debmd8ee:e763166c	already done: lib/Service/PublicSector/ at 95% lines (439/462) on development 857108ba0, above target, no PR	session-20261113T054516-469bb7f6	2026-11-13T07:03:35Z
 cover:keepiq:c967a31fmb40c:38e80a9f	already done: lib/Command/*.php is 181/181 statements on development; no PR	session-20261113T061518-90540a48	2026-11-13T07:03:34Z
 cover:dossiq:f8a113c5m7e79:0c7c4f5d	already done: lib/Service/Term/*.php 483/483 statements covered on development; no PR	session-20261113T063948-afebd30c	2026-11-13T07:04:13Z
+cover:hermiq:065f1631mfaac:d39f9857	already done: lib/Support/*.php at 100% lines (19/19) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T07:04:25Z
