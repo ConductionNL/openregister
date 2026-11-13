@@ -3206,3 +3206,4 @@ cover:integriq:92114ab0m658d:ee14dc38	PR #3503: LogiusSchemaTest, 5 tests (dir a
 review:openregister:9943:2314f92f	APPROVE: expiry+renew, checks green; Controller env errors inherited from main	session-20261113T054517-26499007	2026-11-13T07:38:06Z
 cover:versioniq:1b35eed9:60c2c265	PR #667: 81 tests for ApiController admin guards and request validation; suite 1356->1437, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:38:28Z
 cover:dossiq:f8a113c5m7e79:80b3d955	PR #6328: 1 phpunit test, Catalogue 153->154/154	session-20261113T051709-e616bf69	2026-11-13T07:38:26Z
+cover:larpinq:c4471360:e372e6ff	PR #1008: lib/Event settlement commands, 4 tests; suite 697->701 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:38:45Z
