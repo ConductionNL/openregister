@@ -993,6 +993,7 @@ Exception/CaseValidationException.php,6,Exception,Exception,Exception/CaseValida
 Exception/ChunkMatcherException.php,17,Exception,Exception,Exception/ChunkMatcherException.php,0,,Kernel
 Exception/CircularReferenceException.php,45,Exception,Exception,Exception/CircularReferenceException.php,0,,Kernel
 Exception/CodedValueException.php,15,Exception,Exception,Exception/CodedValueException.php,0,,Kernel
+Exception/ConfidenceThresholdOutOfRangeException.php,6,Exception,Exception,Exception/ConfidenceThresholdOutOfRangeException.php,0,,Kernel
 Exception/ConsistencyCheckWouldWriteException.php,14,Exception,Exception,Exception/ConsistencyCheckWouldWriteException.php,0,,Kernel
 Exception/CorrectionRefusedException.php,10,Exception,Exception,Exception/CorrectionRefusedException.php,0,,Kernel
 Exception/CustomValidationException.php,13,Exception,Exception,Exception/CustomValidationException.php,59,,Kernel
@@ -1191,8 +1192,10 @@ Files/Service/TextExtractionService.php,1142,Files,Files,Files/Service/TextExtra
 Files/Service/TextSplitPass.php,71,Files,Files,Files/Service/TextSplitPass.php,0,,Files
 Files/Service/UploadService.php,104,Files,Files,Files/Service/UploadService.php,0,264,Files
 Formats/BsnFormat.php,40,Formats,Formats,Formats/BsnFormat.php,2,,Kernel
+Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php,0,,Kernel
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
+Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
 Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeFormat.php,0,,Kernel
 Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
@@ -1774,11 +1777,13 @@ Service/Archival/DestructionService.php,321,Service,Compliance,Compliance/Servic
 Service/Archival/ElementMappingValidator.php,142,Service,Compliance,Compliance/Service/Archival/ElementMappingValidator.php,0,190,Compliance
 Service/Archival/LegalHoldLedger.php,99,Service,Compliance,Compliance/Service/Archival/LegalHoldLedger.php,0,,Compliance
 Service/Archival/LegalHoldService.php,136,Service,Compliance,Compliance/Service/Archival/LegalHoldService.php,5,,Compliance
+Service/Archival/LinkedRetentionConflictFinder.php,161,Service,Compliance,Compliance/Service/Archival/LinkedRetentionConflictFinder.php,0,,Compliance
 Service/Archival/MdtoElementCatalogue.php,76,Service,Compliance,Compliance/Service/Archival/MdtoElementCatalogue.php,0,319,Compliance
 Service/Archival/MdtoMappingResolver.php,84,Service,Compliance,Compliance/Service/Archival/MdtoMappingResolver.php,0,,Compliance
 Service/Archival/MdtoTerms.php,9,Service,Service,Service/Archival/MdtoTerms.php,0,,Compliance
 Service/Archival/ObjectArchivalAnnotation.php,63,Service,Compliance,Compliance/Service/Archival/ObjectArchivalAnnotation.php,0,,Compliance
 Service/Archival/RecordState.php,44,Service,Compliance,Compliance/Service/Archival/RecordState.php,0,395,Compliance
+Service/Archival/ReferencingSchema.php,13,Service,Compliance,Compliance/Service/Archival/ReferencingSchema.php,0,,Compliance
 Service/Archival/RetentionConditionEvaluator.php,63,Service,Compliance,Compliance/Service/Archival/RetentionConditionEvaluator.php,0,,Compliance
 Service/Archival/RetentionEvaluator.php,130,Service,Compliance,Compliance/Service/Archival/RetentionEvaluator.php,0,216,Compliance
 Service/Archival/RetentionRowScanner.php,212,Service,Compliance,Compliance/Service/Archival/RetentionRowScanner.php,0,,Compliance
@@ -2002,12 +2007,20 @@ Service/Credential/OAuth2RegistrationFailedException.php,6,Service,Integrations,
 Service/Credential/OAuth2RelayGuard.php,57,Service,Integrations,Integrations/Service/Credential/OAuth2RelayGuard.php,0,,Integrations
 Service/Credential/OAuth2StateService.php,98,Service,Integrations,Integrations/Service/Credential/OAuth2StateService.php,0,,Integrations
 Service/Credential/OAuth2TokenSet.php,177,Service,Integrations,Integrations/Service/Credential/OAuth2TokenSet.php,0,,Integrations
+Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integrations/Service/Credential/OutsideVaultConnection.php,0,,Integrations
+Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
+Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
+Service/Credential/DeclaredProviderApprovals.php,47,Service,Integrations,Integrations/Service/Credential/DeclaredProviderApprovals.php,0,,Integrations
+Service/Credential/DeclaredProviderLoader.php,101,Service,Integrations,Integrations/Service/Credential/DeclaredProviderLoader.php,0,,Integrations
+Service/Credential/DeclaredProviderResolver.php,90,Service,Integrations,Integrations/Service/Credential/DeclaredProviderResolver.php,0,,Integrations
 Service/Credential/ProviderCatalogue.php,47,Service,Integrations,Integrations/Service/Credential/ProviderCatalogue.php,5,,Integrations
+Service/Credential/VaultReference.php,25,Service,Integrations,Integrations/Service/Credential/VaultReference.php,0,,Integrations
 Service/CrossRegisterExistenceService.php,166,Service,Service,Service/CrossRegisterExistenceService.php,0,,Core
 Service/DateTimeNormalizer.php,76,Service,Service,Service/DateTimeNormalizer.php,3,,Core
 Service/Dbal/DatabaseIntrospectionService.php,393,Service,Service,Service/Dbal/DatabaseIntrospectionService.php,0,,Core
 Service/Dbal/DbalConnectionException.php,6,Service,Service,Service/Dbal/DbalConnectionException.php,0,,Core
 Service/Dbal/DbalConnectionFactory.php,116,Service,Service,Service/Dbal/DbalConnectionFactory.php,0,,Core
+Service/Dbal/ReadOnlyQueryGuard.php,124,Service,Service,Service/Dbal/ReadOnlyQueryGuard.php,0,,Core
 Service/Dbal/SqlTypeMapper.php,85,Service,Service,Service/Dbal/SqlTypeMapper.php,0,,Core
 Service/Decision/DecisionOwnedException.php,12,Service,Flows,Flows/Service/Decision/DecisionOwnedException.php,0,,Processes
 Service/Decision/DecisionOwnership.php,72,Service,Flows,Flows/Service/Decision/DecisionOwnership.php,0,,Processes
@@ -2125,6 +2138,7 @@ Service/ExampleSet/ExampleSetTasks.php,188,Service,Configuration,Configuration/S
 Service/ExampleSet/ExampleSetUserPreferences.php,96,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetUserPreferences.php,0,,Configuration
 Service/ExampleSet/ExampleSetValues.php,213,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetValues.php,0,,Configuration
 Service/ExampleSet/ExampleSetWatchers.php,76,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetWatchers.php,0,,Configuration
+Service/Export/DocumentStyleReader.php,102,Service,Configuration,Configuration/Service/Export/DocumentStyleReader.php,0,,Configuration
 Service/Export/ExportAuditRecorder.php,81,Service,Configuration,Configuration/Service/Export/ExportAuditRecorder.php,0,308,Configuration
 Service/Export/ExportGate.php,44,Service,Configuration,Configuration/Service/Export/ExportGate.php,0,402,Configuration
 Service/Export/ExportProfileService.php,181,Service,Configuration,Configuration/Service/Export/ExportProfileService.php,0,,Configuration
@@ -2394,6 +2408,7 @@ Service/Gdpr/Identity/NullIdentityVerifyProvider.php,15,Service,Compliance,Compl
 Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,26,Service,Compliance,Compliance/Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,0,,Compliance
 Service/Gdpr/Policy/DsarPolicyPackResolver.php,99,Service,Compliance,Compliance/Service/Gdpr/Policy/DsarPolicyPackResolver.php,0,,Compliance
 Service/Gdpr/PrivacyOfficerRecipientResolver.php,49,Service,Compliance,Compliance/Service/Gdpr/PrivacyOfficerRecipientResolver.php,0,,Compliance
+Service/Gdpr/ProcessingAnnotationReader.php,137,Service,Compliance,Compliance/Service/Gdpr/ProcessingAnnotationReader.php,0,,Compliance
 Service/Gdpr/Redaction/RedactionWriteService.php,48,Service,Compliance,Compliance/Service/Gdpr/Redaction/RedactionWriteService.php,0,,Compliance
 Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,15,Service,Compliance,Compliance/Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,0,,Compliance
 Service/Gdpr/Regulator/RegulatorEscalateProvider.php,7,Service,Compliance,Compliance/Service/Gdpr/Regulator/RegulatorEscalateProvider.php,4,,Compliance
@@ -2564,6 +2579,7 @@ Service/Notification/NotificationsAnnotationInstaller.php,117,Service,Flows,Flow
 Service/Notification/ReferencedAddressNotifier.php,200,Service,Service,Service/Notification/ReferencedAddressNotifier.php,0,120,Configuration
 Service/NotificationService.php,96,Service,Configuration,Configuration/Service/NotificationService.php,1,,Configuration
 Service/Oas/OasETagComputer.php,50,Service,Service,Service/Oas/OasETagComputer.php,0,,Core
+Service/Oas/OasExtendedTypes.php,60,Service,Service,Service/Oas/OasExtendedTypes.php,0,,Core
 Service/Oas/OasRbacAnnotator.php,118,Service,Service,Service/Oas/OasRbacAnnotator.php,0,,Core
 Service/Oas/OasRequestValidator.php,110,Service,Service,Service/Oas/OasRequestValidator.php,0,255,Core
 Service/Oas/OasValidationReport.php,81,Service,Service,Service/Oas/OasValidationReport.php,0,327,Core
@@ -2626,6 +2642,8 @@ Service/Object/MigrationRun.php,56,Service,Service,Service/Object/MigrationRun.p
 Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide.php,0,,Core
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
+Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
+Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
 Service/Object/NameLookupRun.php,6,Service,Service,Service/Object/NameLookupRun.php,0,,Core
 Service/Object/NonAggregatedFacetKey.php,19,Service,Service,Service/Object/NonAggregatedFacetKey.php,0,,Core
 Service/Object/NotSuppliedHandler.php,140,Service,Service,Service/Object/NotSuppliedHandler.php,0,,Core
@@ -2675,6 +2693,7 @@ Service/Object/SaveObject/ComputedFieldHandler.php,427,Service,Service,Service/O
 Service/Object/SaveObject/DefaultValueContext.php,6,Service,Service,Service/Object/SaveObject/DefaultValueContext.php,0,,Core
 Service/Object/SaveObject/FilePropertyHandler.php,795,Service,Service,Service/Object/SaveObject/FilePropertyHandler.php,0,,Core
 Service/Object/SaveObject/FilePropertyTarget.php,13,Service,Service,Service/Object/SaveObject/FilePropertyTarget.php,0,,Core
+Service/Object/SaveObject/ImageObjectForm.php,15,Service,Service,Service/Object/SaveObject/ImageObjectForm.php,0,,Core
 Service/Object/SaveObject/InverseRelationWrite.php,12,Service,Service,Service/Object/SaveObject/InverseRelationWrite.php,0,,Core
 Service/Object/SaveObject/LinkedEntityPropertyHandler.php,114,Service,Service,Service/Object/SaveObject/LinkedEntityPropertyHandler.php,0,,Core
 Service/Object/SaveObject/MetadataHydrationHandler.php,309,Service,Service,Service/Object/SaveObject/MetadataHydrationHandler.php,0,,Core
@@ -2841,6 +2860,10 @@ Service/Rbac/AdminGate.php,31,Service,Access,Access/Service/Rbac/AdminGate.php,0
 Service/Rbac/AggregateVisibility.php,76,Service,Access,Access/Service/Rbac/AggregateVisibility.php,0,322,Core
 Service/Rbac/AnonymousEnvelope.php,39,Service,Platform,Platform/Service/Rbac/AnonymousEnvelope.php,0,,Core
 Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/AuthorizationDenyValidator.php,0,,Core
+Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
+Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
+Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
 Service/Rbac/DefinitionWriteRights.php,34,Service,Access,Access/Service/Rbac/DefinitionWriteRights.php,0,433,Core
 Service/Rbac/DenyEnforcementMode.php,59,Service,Access,Access/Service/Rbac/DenyEnforcementMode.php,0,356,Core
@@ -2873,6 +2896,7 @@ Service/Rbac/MetadataConditionFindings.php,115,Service,Service,Service/Rbac/Meta
 Service/Rbac/ObjectAccessHistory.php,89,Service,Access,Access/Service/Rbac/ObjectAccessHistory.php,0,,Core
 Service/Rbac/ObjectAccessReport.php,82,Service,Access,Access/Service/Rbac/ObjectAccessReport.php,0,,Core
 Service/Rbac/ObjectAuthorizationWriter.php,38,Service,Access,Access/Service/Rbac/ObjectAuthorizationWriter.php,0,,Core
+Service/Rbac/ObjectClassification.php,89,Service,Access,Access/Service/Rbac/ObjectClassification.php,0,,Core
 Service/Rbac/ObjectGrantResolver.php,191,Service,Access,Access/Service/Rbac/ObjectGrantResolver.php,4,128,Core
 Service/Rbac/ObjectGrantsReport.php,198,Service,Access,Access/Service/Rbac/ObjectGrantsReport.php,0,,Core
 Service/Rbac/ObjectOwnerWriter.php,38,Service,Access,Access/Service/Rbac/ObjectOwnerWriter.php,0,,Core
@@ -3008,6 +3032,7 @@ Service/Schemas/FacetResultCacheClearer.php,33,Service,Service,Service/Schemas/F
 Service/Schemas/GeneratedIdentifierDeclaration.php,214,Service,Service,Service/Schemas/GeneratedIdentifierDeclaration.php,0,,Core
 Service/Schemas/GeneratedIdentifierException.php,18,Service,Service,Service/Schemas/GeneratedIdentifierException.php,0,,Core
 Service/Schemas/PropertySourceDeclaration.php,109,Service,Service,Service/Schemas/PropertySourceDeclaration.php,0,,Core
+Service/Schemas/PropertyTitles.php,80,Service,Service,Service/Schemas/PropertyTitles.php,0,,Core
 Service/Schemas/PropertySourceException.php,5,Service,Service,Service/Schemas/PropertySourceException.php,0,,Core
 Service/Schemas/PropertyValidatorHandler.php,756,Service,Service,Service/Schemas/PropertyValidatorHandler.php,2,28,Core
 Service/Schemas/PropertyVocabulary.php,136,Service,Service,Service/Schemas/PropertyVocabulary.php,0,,Core
@@ -3016,6 +3041,7 @@ Service/Schemas/ReferenceFilterDeclaration.php,113,Service,Service,Service/Schem
 Service/Schemas/ReferenceFilterException.php,23,Service,Service,Service/Schemas/ReferenceFilterException.php,0,460,Core
 Service/Schemas/ReferenceFilterOperandGuard.php,55,Service,Work,Work/Service/Schemas/ReferenceFilterOperandGuard.php,0,,Core
 Service/Schemas/ReferenceOptionsReader.php,69,Service,Service,Service/Schemas/ReferenceOptionsReader.php,0,,Core
+Service/Schemas/RegisterModelService.php,344,Service,Service,Service/Schemas/RegisterModelService.php,0,,Core
 Service/Schemas/RepeatingGroupDeclarationValidator.php,65,Service,Service,Service/Schemas/RepeatingGroupDeclarationValidator.php,0,,Core
 Service/Schemas/SchemaCacheHandler.php,334,Service,Service,Service/Schemas/SchemaCacheHandler.php,0,63,Core
 Service/Schemas/ScopedPropertyDeclaration.php,60,Service,Service,Service/Schemas/ScopedPropertyDeclaration.php,0,351,Core
@@ -3066,6 +3092,7 @@ Service/Sharing/SharePrincipalDeriver.php,70,Service,Integrations,Integrations/S
 Service/ShippedBaseline/AuthorizationBlocks.php,114,Service,Configuration,Configuration/Service/ShippedBaseline/AuthorizationBlocks.php,0,,Configuration
 Service/ShippedBaseline/DescriptorParts.php,72,Service,Configuration,Configuration/Service/ShippedBaseline/DescriptorParts.php,1,,Configuration
 Service/ShippedBaseline/DivergenceComparator.php,88,Service,Configuration,Configuration/Service/ShippedBaseline/DivergenceComparator.php,1,,Configuration
+Service/ShippedBaseline/GuardedAnnotations.php,180,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedAnnotations.php,0,,Configuration
 Service/ShippedBaseline/GuardedDescriptorMerge.php,175,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedDescriptorMerge.php,1,,Configuration
 Service/ShippedBaseline/ShippedAuthorizationDecision.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedAuthorizationDecision.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineResetService.php,0,,Configuration
@@ -3229,6 +3256,8 @@ Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
+Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
+Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
@@ -3266,9 +3295,13 @@ Service/File/ArchiveBounds.php,,Service,,,,,Core
 Service/File/ArchiveListing.php,,Service,,,,,Core
 Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Core
 Service/File/ArchiveWalk.php,,Service,,,,,Core
+Service/File/UrlFetchRefused.php,,Service,,,,,Core
+Service/File/UrlFileFetcher.php,,Service,,,,,Core
+Service/File/UrlStreamOpener.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
+Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,249,Service,Compliance,Compliance/Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,0,,Compliance
 Service/Geo/,,Service,,,,,Core
 Service/GraphQL/,,Service,,,,,Core
 Service/Handoff/,,Service,,,,,Integrations
@@ -3909,3 +3942,4 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance

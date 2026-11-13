@@ -164,12 +164,24 @@ class ReadEventVisibility {
 	 * @return array<int, string> The groups; empty when unset or unreadable.
 	 */
 	private function groups(): array {
-		$raw = $this->appConfig->getValueString(self::APP, self::CONFIG_KEY, '[]');
+		return self::groupsFrom(raw: $this->appConfig->getValueString(self::APP, self::CONFIG_KEY, '[]'));
+	}//end groups()
+
+	/**
+	 * The group ids a stored setting value names.
+	 *
+	 * @param string $raw The stored value, a JSON list of group ids.
+	 *
+	 * @return array<int, string> The groups; empty when the value is not a list.
+	 *
+	 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 */
+	public static function groupsFrom(string $raw): array {
 		$groups = json_decode($raw, true);
 		if (is_array($groups) === false) {
 			return [];
 		}
 
 		return array_values(array_filter($groups, static fn ($group): bool => is_string($group) === true && $group !== ''));
-	}//end groups()
+	}//end groupsFrom()
 }//end class
