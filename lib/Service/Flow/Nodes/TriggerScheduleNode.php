@@ -33,12 +33,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCP\IUserManager;
 
 /**
  * Starts the flow on a cron schedule.
  */
-class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNodeInterface {
+class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNodeInterface, IFlowNodeConfigForm {
 	/**
 	 * Constructor.
 	 *
@@ -109,6 +110,38 @@ class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNode
 	public function configKeys(): array {
 		return ['cron', 'runAs'];
 	}//end configKeys()
+
+	/**
+	 * The cron expression and the account a scheduled run acts as, both required.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'cron',
+				'label' => $this->l10n->t('Schedule (cron)'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Five fields: minute, hour, day of month, month, day of week, like "0 7 * * 1-5". '
+						. 'Only the shape is checked here; when it actually fires is the scheduler\'s question.'
+				),
+				'required' => true,
+			],
+			[
+				'key' => 'runAs',
+				'label' => $this->l10n->t('Run as user'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The account the scheduled runs act as. Nobody is present when a '
+						. 'schedule fires, and the flow\'s author is never used in its place.'
+				),
+				'required' => true,
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * The expression is required, and must have five fields.
