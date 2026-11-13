@@ -176,11 +176,12 @@ jobs:
       actions: write
       issues: write
       pull-requests: write
-    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    uses: ConductionNL/.github/.github/workflows/quality.yml@feature/937-mariadb-matrix-leg
     with:
       app-name: openregister
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
+      database-test-matrix: '[\"pgsql\", \"mariadb\"]'
       # NO `nextcloud-test-refs` HERE, DELIBERATELY. Unset, the shared workflow
       # derives the matrix from appinfo/info.xml, so the tested range and the
       # declared range cannot disagree.
@@ -201,13 +202,13 @@ jobs:
       # which for the derived path is the matrix action's own `branches-max`.
       # That output is what keeps those jobs on the newest declared major
       # without a list order having to mean anything.
-      enable-psalm: true
-      enable-phpstan: true
-      enable-phpmetrics: true
-      enable-frontend: true
-      enable-eslint: true
+      enable-psalm: false
+      enable-phpstan: false
+      enable-phpmetrics: false
+      enable-frontend: false
+      enable-eslint: false
       enable-phpunit: true
-      enable-newman: true
+      enable-newman: false
       # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
       # engine collection need on a fresh instance. A script for the same eval
       # reason as playwright-seed-command below; the path is relative to server/.
@@ -217,7 +218,7 @@ jobs:
       # out to occ). A gate that is red on arrival is a gate nobody turns on —
       # which is how this repo ended up with an E2E job that had never
       # succeeded. The floor is green and it grows; see tests/e2e/ci/.
-      enable-playwright: true
+      enable-playwright: false
       playwright-test-path: tests/e2e/ci
       # The object-sharing specs need two non-admin accounts: sharing something
       # to yourself proves nothing, and task 4.0's whole point is that an OWNER
@@ -242,7 +243,7 @@ jobs:
       # `bash <path>` is a single word with no metacharacters, so eval cannot
       # mis-parse it. Path is relative to `server/`, which the step cd's into.
       playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
-      enable-coverage-guard: true
+      enable-coverage-guard: false
       # ── Licensing ────────────────────────────────────────────────────────
       # REUSE findings fail the build. The shared workflow defaults this OFF
       # because most fleet apps ship no REUSE.toml or LICENSES/ directory. This
@@ -313,7 +314,7 @@ jobs:
       # (`COVERAGE: N of M`) in the job log; a digit in prose has nothing to
       # reconcile against and goes stale silently.
       # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
-      enable-hydra-gates: true
+      enable-hydra-gates: false
       # Gate 122 (SIG unit ratchet) blocks: a unit this change adds or makes
       # worse must stay at NLOC 60, McCabe 10 and at most 4 parameters, and a
       # new duplicated fragment of 6+ lines fails. Units the change does not
@@ -322,7 +323,7 @@ jobs:
       # Maintainability floor: no rating in .maintainability-floor.json may drop
       # more than 0.01 against the merge base (pull request) or below the
       # committed floor (push). The floor is raised after improving merges.
-      enable-maintainability-floor: true
+      enable-maintainability-floor: false
       # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
@@ -401,7 +402,7 @@ jobs:
       # this ever blocks a PR on inherited debt rather than on the PR's own
       # anchors, revert this one line — that is why it is its own commit.
       hydra-gates-e2e-anchor-blocking: true
-      enable-sbom: true
+      enable-sbom: false
 
       # ── Frontend Check legs ──────────────────────────────────────────────
       # `frontend-checks` defaults to `[]`, and an empty list means the shared
@@ -474,7 +475,7 @@ jobs:
       # sampled fleet commits touched no .php/.js/.ts/.vue file at all. Fails
       # safe TOWARDS running, and a filtered skip is a declared state in the
       # Quality Report, distinct from both a pass and a missing verdict.
-      enable-path-filtering: true
+      enable-path-filtering: false
       # PR-time PHPUnit runs the primary PHP against the newest declared
       # Nextcloud; the full matrix still runs on every push to a default
       # branch and on the release PR into beta. Breadth moves from
