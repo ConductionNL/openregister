@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
+use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
+use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
@@ -194,6 +196,53 @@ final class RecordAnnotationRefusals {
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
+	/**
+	 * Refuse an anonymisation profile that names an undeclared property, or one
+	 * declared in both the `x-openregister-archival` block and the `archive`
+	 * block (design D-6).
+	 *
+	 * A profile may sit under `x-openregister-archival.anonymisation` (the block
+	 * that also carries `retention`) or under `archive.anonymisation`, for a
+	 * schema that archives through the `archive` block and has no `retention`
+	 * object to give. Either way the profile may only name properties the schema
+	 * declares, because it would otherwise silently anonymise nothing; and it may
+	 * sit in only one place, so there is never a question which one wins.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the profile names an undeclared property or is declared twice.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
+	 */
+	public function checkAnonymisationProfile(Schema $schema): void {
+		$archival = (array) (($schema->getConfiguration() ?? [])['x-openregister-archival'] ?? []);
+		$archive  = $schema->getArchive();
+
+		$inArchival = (($archival[AnonymisationProfile::ANNOTATION_KEY] ?? null) !== null);
+		$inArchive  = (($archive[AnonymisationProfile::ANNOTATION_KEY] ?? null) !== null);
+
+		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-archival');
+		if ($inArchival === true && $inArchive === true) {
+			$annotation->faults()->refuseWith(
+				messages: ['The anonymisation profile is declared in both x-openregister-archival.anonymisation and archive.anonymisation; declare it in one place only.']
+			);
+		}
+
+		if ($inArchival === false && $inArchive === false) {
+			return;
+		}
+
+		$block = ($inArchival === true ? $archival : $archive);
+		$annotation->faults()->refuseWith(
+			messages: (new AnonymisationPlanner())->refusals(
+				annotation: $block,
+				declaredProperties: array_keys($schema->getProperties())
+			)
+		);
+	}//end checkAnonymisationProfile()
+
 	public function checkExternalLinks(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: ExternalLinkResolverInterface::ANNOTATION);
 		if ($annotation->hasValue() === true) {
