@@ -63,6 +63,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\CauseFrame
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaders
  * @uses \OCA\OpenRegister\Service\Schemas\ReferencePick
+ * @uses \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ObjectsControllerReferenceOptionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-reference-options-golden.json';

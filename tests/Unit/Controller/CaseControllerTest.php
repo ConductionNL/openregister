@@ -77,6 +77,8 @@ use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
  * @uses \OCA\OpenRegister\Service\Case\CaseItemTransition
  * @uses \OCA\OpenRegister\Service\Case\CasePlanCreation
  * @uses \OCA\OpenRegister\Service\Case\CasePlanProvenance
+ * @uses \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
  */
 class CaseControllerTest extends TestCase {
 

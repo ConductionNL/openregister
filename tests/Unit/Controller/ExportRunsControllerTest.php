@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ExportRunsController
+ * @uses \OCA\OpenRegister\Db\ExportRun
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunFile
  */
 class ExportRunsControllerTest extends TestCase {
 
