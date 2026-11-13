@@ -6000,3 +6000,4 @@ portaliq	2412	299d3b39a53d64f0b6f72a38ed83c6f2c2362336	GREEN	worker-21	unit 4915
 pipelinq	3736	d98a90ef3a28dae336aa1c858076fe361278208d	CONFLICT	worker-37	merge conflict with development in l10n/en.js, en.json, nl.js, nl.json
 pipelinq	3762	46e9fa69177c879995108aaf9a52359a67694844	GREEN	worker-37	tests only (7 test files); unit 7240 tests vs baseline 7194, 5 failures inherited from development, 0 new
 buildiq	1552	ba17cdd60c5b52ce1f96eab9c189327084a5b995	GREEN	worker-39	tests-only (4 vitest specs); vitest 4077->4135 pass, phpunit 2917 baseline 1 inherited failure (ExportZipGoldenTest), no new failures
+buildiq	1553	060512f439e3da307671c03a30e692013d754f25	GREEN	worker-39	tests-only (8 vitest specs); vitest 4077->4135 pass on tree, phpunit baseline 1 inherited failure, no new failures
