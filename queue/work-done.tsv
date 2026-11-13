@@ -5284,3 +5284,4 @@ cover:buildiq:70b3e29ema699:d39f9857	already done: lib/Support/*.php at 99.23% l
 review:openregister:10244:0dd96122	APPROVE: additive catalogue metadata, RBAC unchanged, suites green	session-20261113T124802-c7d6f662	2026-11-13T13:45:16Z
 review:openregister:10242:2c3f0b42	APPROVE: test-only, new test passes, Flow failures inherited from main	session-20261113T064519-30004ad4	2026-11-13T13:45:23Z
 build2:openregister:operate-load-shedding	partial: PR openregister#10257, tasks 1.1 1.2 (breaker core + 503 middleware) with 13 tests; 2.x-5.x left	session-20261113T104531-16da055e	2026-11-13T13:46:08Z
+merge:versioniq:677:91541efd	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:46:16Z
