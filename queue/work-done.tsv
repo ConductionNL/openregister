@@ -6838,3 +6838,4 @@ build:decidiq:interests-and-integrity	partial: PR #2146 - task 6 (assistive posi
 build:opencatalogi:catalogs	partial: PR #2642; already implemented; 17 sub-items ticked after verification; rest are spec-vs-code naming/shape differences, unverified UI detail, or live checks	session-20261113T195351-a32c6d55	2026-11-13T21:02:28Z
 verify:decidiq:2142:41388697	GREEN #2142 (tests only, +3 tests, suite green)	session-20261113T205323-a7434fd6	2026-11-13T21:02:45Z
 build:opencatalogi:attachments-are-files	partial: PR #2644 (7.3 auto-publish skips withdrawn files; 7.1 window end; 7.1 metadata, 7.2, 7.4-7.7 left)	session-20261113T185328-da819141	2026-11-13T21:02:53Z
+build:opencatalogi:capability-rows-get-requirements	partial: PR opencatalogi#2645 builds 2.1 e-depot handover and 2.2 dashboard counts; 1.1-1.3 e2e/spec-sync left	session-20261113T175332-5effc865	2026-11-13T21:03:05Z
