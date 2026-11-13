@@ -6282,3 +6282,4 @@ dossiq	6446	182daeacfb29e994bd50cca1a128357da3508076	GREEN	worker-49	phpunit 165
 dossiq	6447	ede87a1a384cd36346fe6debd7b2824b5f455838	GREEN	worker-49	phpunit 16530 tests, 20 failures = baseline 20; vitest 6849 passed, 1 failed = inherited capabilityComparison; tests only, no new failures
 dossiq	6448	dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	GREEN	worker-06	tests only (vitest); vitest 6824 on tree, 1 failure inherited (capabilityComparison, red on development too); new spec 25/25; PHP suite baseline 16530 with 20 failures, untouched by the diff
 filinq	2054	bd946b514b421f26357c0aa44e52cd4079b72159	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
+filinq	2055	254cbb8d4e125d39fa5937327e7248a0ff2ceb53	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
