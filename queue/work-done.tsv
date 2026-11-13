@@ -2731,3 +2731,4 @@ merge:learniq:2435:764e4beb	merge-local over 1 learniq tasks: merged=1 red=0 fai
 cover:keepiq:c967a31fm0090:05630945	already done: StandardProtocolPaths 100%, ApiPathAliases 89.8%; the 5 uncovered lines are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable without production changes; 4 test classes cover the rest	session-20261113T034634-f20a8d77	2026-11-13T06:18:33Z
 verify:shillinq:2871:c4070450	2871 GREEN, 2872 GREEN (tests only; vitest 1383 pass)	session-20261113T054521-2b588c68	2026-11-13T06:18:37Z
 verify:keepiq:1741:2505e581	failed: permission (running PR test code refused)	session-20261113T061518-d60bd575	2026-11-13T06:18:44Z
+verify:filinq:2039:7f191b05	2/2 GREEN (2039, 2040): clean merge, lint ok, phpunit 6112->6122 all pass; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:19:08Z
