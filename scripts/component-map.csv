@@ -2026,6 +2026,7 @@ Service/Credential/OAuth2RegistrationFailedException.php,6,Service,Integrations,
 Service/Credential/OAuth2RelayGuard.php,57,Service,Integrations,Integrations/Service/Credential/OAuth2RelayGuard.php,0,,Integrations
 Service/Credential/OAuth2StateService.php,98,Service,Integrations,Integrations/Service/Credential/OAuth2StateService.php,0,,Integrations
 Service/Credential/OAuth2TokenSet.php,177,Service,Integrations,Integrations/Service/Credential/OAuth2TokenSet.php,0,,Integrations
+Service/Credential/OutsideCustody.php,139,Service,Integrations,Integrations/Service/Credential/OutsideCustody.php,0,,Integrations
 Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integrations/Service/Credential/OutsideVaultConnection.php,0,,Integrations
 Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
 Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
