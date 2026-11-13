@@ -1974,11 +1974,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
+		// Which columns order as text is decided over every schema of the
+		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
+		$textColumns = $this->unionTextColumns(registerSchemaPairs: $registerSchemaPairs);
 
 		// One batch: the single-statement path, unchanged.
 		if (count($batches) <= 1) {
 			return $this->convertUnionRowsToEntities(
-				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs)
+				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns)
 			);
 		}
 
@@ -1988,12 +1991,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// contribute row `offset + limit - 1` even when it owns it.
 		$rows = [];
 		foreach ($batches as $batch) {
-			foreach ($this->unionBatchRows(query: $query, registerSchemaPairs: $batch) as $row) {
+			foreach ($this->unionBatchRows(query: $query, registerSchemaPairs: $batch, textColumns: $textColumns) as $row) {
 				$rows[] = $row;
 			}
 		}
 
-		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query);
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, textColumns: $textColumns);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-batch union search merged',
@@ -2019,12 +2022,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
 	 */
-	private function runUnionBatch(array $query, array $registerSchemaPairs): array {
+	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = []): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
@@ -2055,7 +2060,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionPage(query: $query)->limitClause();
+		$unionSql = implode(' UNION ALL ', $parts)
+			. $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
+			. $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2083,15 +2090,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query               Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
-	private function unionBatchRows(array $query, array $registerSchemaPairs): array {
+	private function unionBatchRows(array $query, array $registerSchemaPairs, array $textColumns = []): array {
 		$rows = [];
 		foreach ($this->unionPage(query: $query)->batchSteps() as $step) {
-			$stepRows = $this->runUnionBatch(query: $step, registerSchemaPairs: $registerSchemaPairs);
+			$stepRows = $this->runUnionBatch(query: $step, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns);
 			$rows = array_merge($rows, $stepRows);
 			if (count($stepRows) < (int)($step['_limit'] ?? 0)) {
 				break;
@@ -2190,16 +2198,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * several batches sorts on exactly what the SQL sorts on.
 	 *
 	 * @param array $query Search parameters.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return string The clause, with a leading space.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
-	private function unionOrderByClause(array $query): string {
+	private function unionOrderByClause(array $query, array $textColumns = []): string {
 		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 
 		$orderClauses = [];
-		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres) as $orderKey) {
+		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres, textColumns: $textColumns) as $orderKey) {
 			$orderClauses[] = $orderKey['sql'] . ' ' . $orderKey['dir'];
 		}
 
@@ -2217,12 +2226,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query      Search parameters.
 	 * @param bool  $isPostgres Whether the platform is PostgreSQL (identifier quoting).
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
-	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
+	 * @return array<int, array{row: string, sql: string, dir: string, fold?: bool}> Ordered sort keys.
 	 *
 	 */
-	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
+	private function buildUnionOrderKeys(array $query, bool $isPostgres, array $textColumns = []): array {
+		return (new MagicUnionOrder(isPostgres: $isPostgres, textColumns: $textColumns))->keys(query: $query);
 	}//end buildUnionOrderKeys()
 
 	/**
@@ -2245,11 +2255,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $rows  Rows from every batch, in batch order.
 	 * @param array $query The caller's search parameters (offset and limit).
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array The merged page.
 	 */
-	private function mergeUnionBatchRows(array $rows, array $query): array {
-		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform());
+	private function mergeUnionBatchRows(array $rows, array $query, array $textColumns = []): array {
+		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform(), textColumns: $textColumns);
 
 		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
@@ -2543,6 +2554,56 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $allColumns;
 	}//end collectAllPropertyColumns()
+
+	/**
+	 * The property columns of a cross-schema search that hold text in every schema declaring them.
+	 *
+	 * Such a column orders case-insensitively in the union, as a text property
+	 * does in a single-schema search. A column that is a number, a date or a
+	 * translatable map in any schema of the search keeps its native order,
+	 * since LOWER() on it would order digits as text.
+	 *
+	 * @param array $registerSchemaPairs The register+schema pairs of the search.
+	 *
+	 * @return array<int, string> The text columns.
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function unionTextColumns(array $registerSchemaPairs): array {
+		$isText = [];
+		foreach ($registerSchemaPairs as $pair) {
+			$properties = ($pair['schema'] ?? null)?->getProperties();
+			if (is_array($properties) === false) {
+				continue;
+			}
+
+			foreach ($properties as $propertyName => $propertyConfig) {
+				if (is_array($propertyConfig) === false || in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+					continue;
+				}
+
+				$column = $this->sanitizeColumnName(name: (string) $propertyName);
+				$isText[$column] = (($isText[$column] ?? true) && self::isUnionTextProperty(propertyConfig: $propertyConfig));
+			}
+		}
+
+		return array_keys(array_filter($isText));
+	}//end unionTextColumns()
+
+	/**
+	 * Whether a property orders as text: a string that is not a date and not translatable.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private static function isUnionTextProperty(array $propertyConfig): bool {
+		return ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
+			&& ($propertyConfig['translatable'] ?? false) !== true;
+	}//end isUnionTextProperty()
 
 	/**
 	 * Convert UNION query row to ObjectEntity.
