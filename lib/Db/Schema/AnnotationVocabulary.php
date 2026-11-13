@@ -59,6 +59,14 @@ final class AnnotationVocabulary {
 		'x-openregister-aggregate-refs',
 		'x-openregister-notifications',
 		'x-openregister-widgets',
+		// What a reference card of this schema's objects shows: its title
+		// property, up to three summary properties, an icon and an image
+		// property (platform-reference-provider). Absent from this list
+		// setConfiguration() would drop the block, every card would fall back
+		// to the dull title-and-schema default, and the schema would read as
+		// having declared nothing — the same or#460/#462-class silent drop the
+		// entries around this one record.
+		'x-openregister-card',
 		'x-openregister-relations',
 		// The named relation vocabulary: a list of
 		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
