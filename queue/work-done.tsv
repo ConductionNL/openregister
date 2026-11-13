@@ -7093,3 +7093,4 @@ review:openregister:10394:d9564fa8	APPROVE 10394 (frontend only; jest 8335 green
 review:openregister:10341:c5de804a	APPROVE openregister#10341	session-20261113T175332-5effc865	2026-11-13T22:10:55Z
 build4:openregister:near-duplicate-documents-by-text	partial: PR #10410 tasks 1.1 (MinHash signature, table) and 2.1 (findTextGroups banding/union-find); 1.2, 2.2-4.1 left	session-20261113T212407-b2d64ec5	2026-11-13T22:11:06Z
 review:openregister:10388:f86d1ded	APPROVE: declarative forms, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T22:11:06Z
+review:openregister:10385:6ea23feb	APPROVE: filter aliases narrow only; phpstan clean; required suites green merged with main	session-20261113T212411-bd385ec2	2026-11-13T22:11:30Z
