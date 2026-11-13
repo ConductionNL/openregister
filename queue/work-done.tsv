@@ -4583,3 +4583,4 @@ cover:keepiq:c967a31fm1bed:2c3e981f	already done: lib/Service/ShareSync/ at 100%
 build:openregister:calc-engine-scalar-functions	PR #10135 to main: code (tasks 1.x/2.x, 7 operators + tests) already on main; ran validations 3.1 (26 tests pass) and 3.2 (phpcs/phpmd/psalm/phpstan clean) and ticked them	session-20261113T091527-72c58830	2026-11-13T11:42:06Z
 cover:keepiq:c967a31fm1bed:34763eb4	already done: lib/Middleware/*.php at 100% on development 4932b8a9 (siblings merged); no PR	session-20261113T074533-3e2a2da6	2026-11-13T11:42:11Z
 verify:dossiq:6403:a42a90f9	GREEN 6403, 6405	session-20261113T081040-5e814df2	2026-11-13T11:42:17Z
+build:openregister:anonymiser-backend-selection	PR #10136: task 6.5, PHPMD TooManyMethods fixed by extracting ProbeResultCache (7 tests); only 7.2 archive sync left	session-20261113T104523-578f6e7a	2026-11-13T11:42:34Z
