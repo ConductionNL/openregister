@@ -1065,3 +1065,4 @@ cover:openregister:7350e3efm0e99:js3421d638	failed: lang=js but lib/Service/Flow
 cover:keepiq:d76c2121:2c3e981f	PR #1706: 3 classes, 54 tests, suite 3727->3781, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:15:07Z
 cover:openregister:7350e3efm0e99:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP only; a PHP coverage run on the full suite was OOM-killed and restarted the container	session-20261112T234655-793f46ee	2026-11-13T00:15:23Z
 cover:openregister:7350e3efm0e99:js7505aeb4	failed: lang=js but dirs are PHP only (payload inconsistent)	session-20261112T234655-793f46ee	2026-11-13T00:15:39Z
+cover:filinq:8ecceb86:59d1e403	PR #1985: NativeSigningProvider + ValidSignProvider, 13 tests; suite 5318 -> 5331 OK	session-20261112T234653-57d11a5b	2026-11-13T00:15:52Z
