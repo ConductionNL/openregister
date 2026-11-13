@@ -3888,3 +3888,4 @@ cover:dossiq:069ee2d6m7275:js0be8c659	PR #6361: 14 vitest tests, src/modals/* 90
 verify:hermiq:1679:11e43d64	GREEN 1679, 1680: 0 new failures (development baseline carries 146 errors + 26 failures)	session-20261113T080556-d189f150	2026-11-13T09:28:34Z
 build:dossiq:status-type-phase	already done: built on development (1b1f57ccd7, 123f12a601); only open task is a data re-import on existing installs	session-20261113T091531-dc489d35	2026-11-13T09:28:47Z
 cover:keepiq:c967a31fm1147:a4b15ae4	already done: lib/Event/Audit 19/19 covered	session-20261113T051709-e616bf69	2026-11-13T09:28:58Z
+merge:buildiq:1526:ebabb0e8	merge-local over 1 buildiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:29:01Z
