@@ -7012,3 +7012,4 @@ build4:openregister:archive-members-are-searchable	partial: PR #10375 (2.1 per-m
 review:openregister:10351:133f2376	APPROVE: additive partial-index migration, suites green, 5 inherited Migration reds (upstream 404 in ReservedColumnNamesTest)	session-20261113T214350-9762e143	2026-11-13T21:52:36Z
 build4:openregister:import-preview-and-conflict-policy	partial: PR openregister#10376 - section 4 copy before destruction (4.1-4.3, failed-copy half of 6.2); sections 5, 7, 8 and 2.3 left	session-20261113T202612-d04bbf77	2026-11-13T21:52:43Z
 build4:openregister:object-event-sync-async-split	partial: PR #10377 2.6 confirmed and 4.3 payload tests (tests only); 4.1/4.2 remnants, 4b.8, 5.x left	session-20261113T205330-0e50ee62	2026-11-13T21:53:14Z
+review:openregister:10346:55cbaff2	APPROVE: spec'd floor guard, all required suites green	session-20261113T213325-5a151438	2026-11-13T21:53:25Z
