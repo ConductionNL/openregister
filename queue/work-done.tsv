@@ -3067,3 +3067,4 @@ cover:dossiq:f8a113c5m7e79:3ee9dda7	already done: lib/Service/Custody/*.php at 9
 cover:hermiq:065f1631mfaac:568ec52a	already done: lib/Lifecycle/*.php 22/22 statements, two test classes	session-20261113T061521-423d1e83	2026-11-13T07:02:43Z
 cover:shillinq:05639debmd8ee:d33e6ea4	already done: lib/Service/Pivot/ at 95.14% lines (176/185) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:02:43Z
 verify:buildiq:1519:75076ad7	1519,1520,1521 GREEN (vitest 3821 -> 3845, 0 failures; tests only)	session-20261113T034634-f20a8d77	2026-11-13T07:02:42Z
+cover:dossiq:f8a113c5m7e79:59f569b2	PR #6314: 13 tests (SchemaSlugResolver, RegisterFragmentMerger); Settings 91.3%->94.1%; suite failures unchanged (19 inherited)	session-20261113T064517-3e632ed8	2026-11-13T07:03:09Z
