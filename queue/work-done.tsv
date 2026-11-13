@@ -6626,5 +6626,6 @@ cover:opencatalogi:fc83bfb1:e372e6ff	PR #2608: ObligationsRequestedEvent 4 tests
 build:filinq:signing-field-validation	partial: PR #2106 backend tasks 1.1, 2.1-2.4 done with tests (suite 6443->6469, 0 fail); left 3.1/3.2 frontend, 4.1 docs/strings, 4.2 issues	session-20261113T195349-c4c36e69	2026-11-13T20:16:36Z
 verify:shillinq:3015:3ba01163	3015 GREEN	session-20261113T195349-172671ca	2026-11-13T20:16:41Z
 cover:shillinq:05639debm7b6b:4387d378	already done: lib/Budget/*.php 237/237 statements covered on 6b976fc7d with dedicated tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T20:16:51Z
+cover:portaliq:b60f3b81m4ccb:2f89e88c	PR #2461: 6 tests; lib/Service/Traffic/Geo 90.18% -> 95.24%	session-20261113T175336-b2d7fc7c	2026-11-13T20:17:00Z
 build:filinq:share-document-links	partial: PR #2107 (1.1, 2.1, 2.2 done; 2.3 routes without preflight; bundles, job, screens, docs left); suite 6443->6467, no failures	session-20261113T182349-6568f680	2026-11-13T20:17:10Z
 verify:filinq:2055:e870a369	GREEN 2055,2077,2078,2080,2081,2082,2084; CONFLICT 2079,2083 (register json vs #2078)	session-20261113T192654-ac81692f	2026-11-13T20:17:24Z
