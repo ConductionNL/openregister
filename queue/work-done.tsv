@@ -1686,3 +1686,4 @@ cover:keepiq:d76c2121m88ca:1b97f731	PR keepiq#1723: AuditListener vault events (
 cover:filinq:8ecceb86mc744:js8a19c098	PR #2004: 13 tests, store.js 0->23/23, storeRequest.js 0->14/14 stmts (suite 450->463 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:36:14Z
 cover:shillinq:801aab65:34cd3e35	already done: lib/Service/Usage/ 95/100 covered on development; no PR (note: suite has 96 risky tests at HEAD)	session-20261112T221237-836ed3f0	2026-11-13T02:36:36Z
 cover:shillinq:801aab65:dfaef732	PR #2840: 7 tests (ScheduledReportNotifier, RoleFallbackResolver empty group); suite 9004->9011, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:36:41Z
+cover:shillinq:801aab65:b1a94ae2	PR #2841: 10 tests for SeedImporter import paths (+SeedImport/SeedMessages); suite 9004->9014, 1 inherited failure unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:36:50Z
