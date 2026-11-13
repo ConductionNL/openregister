@@ -8139,3 +8139,15 @@ review:openregister:10425:4bfe7acd	review	openregister	main	10425	sha=4bfe7acd0b
 review:openregister:10426:6d5c8a8f	review	openregister	main	10426	sha=6d5c8a8fff5840d63d52c5ceed78861b6a561008;last_approved=;title=feat(openregister): build object-write-sub-500ms	2026-11-13T22:20:27Z
 review:openregister:10427:aa96b6cb	review	openregister	main	10427	sha=aa96b6cbcf001c73161784a9f87a980fbabc5520;last_approved=;title=feat(openregister): build rights-administration-hardening	2026-11-13T22:20:27Z
 cover:shillinq:05639debm3747:js450fec42	cover	shillinq	development	quality/test-coverage-js-450fec42	lang=js;dirs=src/integrations/*;focus=uncovered;weight=108;coverage=84.31;target=90.0	2026-11-13T16:37:47Z
+review:openregister:10428:e7ba5ff7	review	openregister	main	10428	sha=e7ba5ff74e644b9fa8b77ced5a41846aeb1f46e6;last_approved=;title=feat(openregister): build retention-linked-destruction-conflict	2026-11-13T22:25:27Z
+review:openregister:10429:c138c3a8	review	openregister	main	10429	sha=c138c3a8de052e307c2d64e85c4afee8fd38bbfa;last_approved=;title=feat(openregister): build production-observability	2026-11-13T22:25:27Z
+review:openregister:10430:6908999f	review	openregister	main	10430	sha=6908999fedfe99f6fb6160e2b0ed3b62337dae2f;last_approved=;title=feat(openregister): build property-code-list-from-concept-scheme	2026-11-13T22:25:27Z
+review:openregister:10431:84b46686	review	openregister	main	10431	sha=84b46686f450893aee827216d9470aed080f6667;last_approved=;title=feat(openregister): build records-tree-view	2026-11-13T22:25:27Z
+review:openregister:10432:f03476b5	review	openregister	main	10432	sha=f03476b5aa1208e426113cd60b50f612e7c77f64;last_approved=;title=feat(openregister): build upload-malware-scan (scan state on the file settings)	2026-11-13T22:25:27Z
+review:openregister:10433:9db76461	review	openregister	main	10433	sha=9db7646110616cc4a1810b003b65ce28b7fcc3c4;last_approved=;title=feat(openregister): build platform-cloud-federation-provider	2026-11-13T22:25:27Z
+review:openregister:10434:f6a36d5a	review	openregister	main	10434	sha=f6a36d5a559ead50239fd806b769bfea46595576;last_approved=;title=feat(openregister): build tasks-progress-report	2026-11-13T22:25:27Z
+review:openregister:10435:a7d8dbc5	review	openregister	main	10435	sha=a7d8dbc5397eb08f9df6ea1c51ee69466f7f2772;last_approved=;title=feat(openregister): build tables-bulk-jobs-and-file-search	2026-11-13T22:25:27Z
+review:openregister:10436:de6e0970	review	openregister	main	10436	sha=de6e0970e602ffea5057ba99de2a4357c6493e05;last_approved=;title=feat(openregister): build records-change-held-for-approval	2026-11-13T22:25:27Z
+review:openregister:10437:de80b221	review	openregister	main	10437	sha=de80b22112859106aa11c78638a0b8e61b34a446;last_approved=;title=feat(openregister): build seed-from-a-mounted-directory	2026-11-13T22:25:27Z
+verify:learniq:2486:ba898332	verify	learniq	development	merge	prs=2486@fa92dc968b0e8b2bd05cfbe2a6f1d6a5d793ceca	2026-11-13T22:25:27Z
+verify:pipelinq:3797:a2447876	verify	pipelinq	development	merge	prs=3797@cb66ca7dcbaaa8df28a3a26534031c92cad08e50	2026-11-13T22:25:27Z
