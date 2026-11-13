@@ -4577,3 +4577,4 @@ stackiq	1796	b4808add109d6dea0df15cdb4784d27869754138	GREEN	worker-45	2586 tests
 stackiq	1797	dbbb1e345771182cea8323a119a01b8a82eaf2ba	GREEN	worker-45	2586 tests run on 3-PR tree, baseline 2539 OK (39 skipped), 0 new failures; tests only
 stackiq	1799	6794acdf0d2c6d01d5e784ef5f8f141a15183af3	GREEN	worker-45	2586 tests run on 3-PR tree, baseline 2539 OK (39 skipped), 0 new failures; schema-id and error-grouping extraction refactor, behaviour unchanged
 keepiq	1705	168092407f05086c871e32f40491e4e385b4d109	GREEN	worker-31	tests-only; 3861 run (baseline 3727, 0 failures), 0 new failures
+keepiq	1706	6cf2104a354bcd810d332fb9c1eef7325c937542	GREEN	worker-31	tests-only; 3861 run (baseline 3727, 0 failures), 0 new failures
