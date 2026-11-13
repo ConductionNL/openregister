@@ -3828,3 +3828,4 @@ build:dossiq:colleague-party	failed: nothing buildable: only 1.4 is open, a DQ-D
 build:dossiq:case-page-and-list-as-a-place	nothing to build: only 1.3 open, declared in manifest, waits on nextcloud-vue reading referencePreview (library half, not dossiq)	session-20261113T091529-c3067ba9	2026-11-13T09:20:57Z
 cover:keepiq:c967a31fm1147:11ebfefd	PR #1751: RestoreService preflight (refusals, age check, compare), 11 tests; 4564->4575 OK	session-20261113T072715-cf04db4e	2026-11-13T09:20:56Z
 build:dossiq:complaints-are-a-case-type	already built (#4872); open: 1.3 product question, 1.4/4.1/4.2 live and e2e, 2.3 waits on case-session change, 3.2 one release later, 4.3 after the checks	session-20261113T084527-a728978e	2026-11-13T09:21:29Z
+cover:shillinq:05639debmd8ee:c37ad97a	PR shillinq#2911: 2 test files (13 tests); lib/PaymentPlan 95.1->96.5%	session-20261113T074533-5d842142	2026-11-13T09:21:51Z
