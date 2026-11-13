@@ -6122,3 +6122,4 @@ measure:buildiq:20261113h18	php 91.18% (pcov), js 94.01% at e11fe26f	session-202
 cover:hermiq:065f1631md84f:93e5f5a4	already done: lib/Service/AiFeature/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:57:45Z
 cover:hermiq:065f1631md84f:7927b05b	already done: lib/Service/Llm/*.php now 99.0% (1232/1244 stmts, target 95); 12 left are broker-absent/class_exists branches unreachable with the test broker stub; no PR	session-20261113T185326-316f096d	2026-11-13T18:57:50Z
 measure:integriq:20261113h18	php 93.54% (pcov, 8222 tests, 2F/2E inherited), js 92.11% @81441e2	session-20261113T185326-a3ee0aab	2026-11-13T18:58:00Z
+cover:integriq:92114ab0mb37a:102ac6fb	already done: lib/Service/Security/*.php at 97.7% (1021/1045) on development after -1 and -2 merged, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T18:58:17Z
