@@ -3907,3 +3907,4 @@ review:openregister:10118:7a35c2de	APPROVE: tests only; merged-with-main touched
 cover:dossiq:069ee2d6m7275:eb8f684c	already done: lib/Service/Reporting/ at 98.16% (533/543) on development ed104aa6	session-20261113T073916-e9f11dfa	2026-11-13T09:30:42Z
 verify:hermiq:1681:2d2cae27	GREEN #1681: 4212 tests, same 172 inherited, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T09:30:56Z
 build:dossiq:only-the-advice-transition-sets-the-outcome	PR #6364: page task was already on development (93aa810), ticked; only live check left	session-20261113T091527-72c58830	2026-11-13T09:31:10Z
+verify:buildiq:1535:10bd7bd8	GREEN buildiq#1535	session-20261113T074533-5d842142	2026-11-13T09:31:07Z
