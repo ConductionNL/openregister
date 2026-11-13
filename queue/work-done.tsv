@@ -6079,3 +6079,4 @@ build:shillinq:public-sector-task-field-allocation	partial: PR #2974 (1.1 task-f
 cover:dossiq:069ee2d6m2deb:6ecc72bb	already above target: lib/Service/Workflow/*.php 610/612 statements (99.67%); no PR	session-20261113T175336-e3687686	2026-11-13T18:47:44Z
 cover:dossiq:069ee2d6m2deb:3ee9dda7	already above target: lib/Service/Custody/*.php 628/629 (99.84%); no PR. Real dossiq gaps now: Service/Stuf 45%, AppointmentBackend 55%, Advice 68%, Assistant 72%	session-20261113T175336-e3687686	2026-11-13T18:48:02Z
 cover:dossiq:069ee2d6m2deb:c17c6e8e	already above target: lib/Service/Kcc/*.php 791/800 (98.88%); no PR	session-20261113T175336-e3687686	2026-11-13T18:48:18Z
+cover:dossiq:069ee2d6m2deb:eb8f684c	already above target: lib/Service/Reporting/ 533/543 (98.16%); no PR	session-20261113T175336-e3687686	2026-11-13T18:48:32Z
