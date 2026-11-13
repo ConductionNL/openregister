@@ -4864,3 +4864,4 @@ build:openregister:flow-error-branch-and-step-retry	partial: PR #10185 (1.1 Flow
 build:openregister:organisation-capability-halt	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:58Z
 build:openregister:people-on-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:04Z
 build:openregister:or-flow-connectivity-and-last-run	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:14Z
+build:openregister:or-form-and-journey-registry	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:20Z
