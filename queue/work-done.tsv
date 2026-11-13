@@ -2296,4 +2296,5 @@ cover:integriq:92114ab0m1534:js0023cfc7	PR #3477: 12 tests, src/dialogs 91.0% ->
 cover:dossiq:f8a113c5mac88:js2b6606f9	already done: src/views/cases/ 381/436 stmts (87.4%, target 85) on development; -1 merged, -2 still open adds more; baseline red inherited capabilityComparison.spec.js; no PR	session-20261113T041644-818a1837	2026-11-13T04:51:15Z
 cover:stackiq:df113dffm2c76:007dc1d0	already done: lib/Service/Cmdb/*.php measured at 97.4% statements (1481/1520) on development, above the 85% target; remaining lines are filesystem-failure branches; no PR	session-20261113T041644-3c9184ea	2026-11-13T04:51:30Z
 cover:stackiq:df113dffm2c76:e99dc6f8	already done: lib/Service/Cmdb 1481/1520 stmts (97.4%) on development (suite green; reader tests need no OR sibling)	session-20261113T024656-d5bfb688	2026-11-13T04:51:29Z
+cover:stackiq:df113dffm2c76:34763eb4	PR #1841: @uses metadata fix un-risks 8 tests; ApiContractMiddleware 10.5%->100% lines	session-20261113T044735-792ed933	2026-11-13T04:51:50Z
 cover:hermiq:065f1631m312d:93e5f5a4	PR #1660: 13 tests, lib/Service/AiFeature 100% statements; suite unchanged otherwise	session-20261113T044732-d7765ae1	2026-11-13T04:51:42Z
