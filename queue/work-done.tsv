@@ -3689,3 +3689,4 @@ cover:dossiq:069ee2d6m7e79:9d3a1784	PR #6341: 5 tests (ReportGroupingJob, Triage
 verify:learniq:2454:60467ee9	GREEN 2454, tests only, 0 new failures	session-20261113T084527-a728978e	2026-11-13T09:01:06Z
 review:stackiq:1700:7a35e49e	GREEN: behaviour-preserving extraction, vitest 2370 pass, eslint 0 errors	session-20261113T080556-d189f150	2026-11-13T09:01:25Z
 cover:stackiq:9ac19b3am6096:6f346b68	already done: lib/Sections at 100% (StackiqAdmin 6/6 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:01:45Z
+cover:learniq:e6498dddmf689:38e80a9f	PR #2458: 14 tests, 3 commands 0->100%, lib/Command 66->99.6%; suite 6116->6130, only inherited failure	session-20261113T081055-3901e400	2026-11-13T09:01:58Z
