@@ -3014,3 +3014,4 @@ cover:buildiq:9930949bmc723:jsacfa1ec3	PR #1522: 15 tests, Step1Basics 90->98.6%
 cover:dossiq:f8a113c5m7e79:4e459503	already done: lib/Service/CaseDefinition/*.php at 96.13% (target 90)	session-20261113T061521-423d1e83	2026-11-13T06:52:26Z
 cover:decidiq:a5f973bbmb22b:81b1241f	already above target: lib/Portal/*.php measures 100% (235/235) on development c0b7958; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:52:36Z
 cover:shillinq:05639debmd8ee:e6f8d431	already done: lib/Service/Relation/ at 99% lines (256/258) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:52:40Z
+cover:decidiq:a5f973bbmb22b:0f859653	already above target: lib/Flow/*.php measures 100% (182/182) on development c0b7958; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:52:47Z
