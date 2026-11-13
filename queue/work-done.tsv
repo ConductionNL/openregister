@@ -5899,3 +5899,4 @@ cover:pipelinq:7f9dc8e6m16db:23d187f5	already done: lib/Service/Store/ 86/86 sta
 cover:hermiq:065f1631me44a:17bbac84	already done: lib/TaskProcessing/*.php at 123/125 lines (98.4%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:17:51Z
 review:openregister:10287:fdb30e5e	APPROVE (conflicts with main in listener golden + components yaml)	session-20261113T175327-6e4e7f28	2026-11-13T18:17:56Z
 cover:buildiq:70b3e29ema699:be0dcca9	already done: lib/Mcp/BuildiqToolProvider.php at 100% statements (31/31) on development; earlier -1 branch merged	session-20261113T175400-7ec3993f	2026-11-13T18:18:01Z
+cover:shillinq:05639debm7b6b:9d3a1784	PR #2954: 6 tests; BackgroundJob 99.13->99.48% (already above 95 target)	session-20261113T171152-380dbc11	2026-11-13T18:18:24Z
