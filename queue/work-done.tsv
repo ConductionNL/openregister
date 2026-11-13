@@ -2399,3 +2399,4 @@ cover:dossiq:f8a113c5mac88:0eb04fa4	already done: Product/ 147/147 lines (100%) 
 cover:dossiq:f8a113c5mac88:a797d42e	already done: CasePlanDrain/ 184/186 lines (98.9%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:34Z
 cover:integriq:92114ab0m1534:a0b17cde	already done: lib/Service/Synchronization/ at 95.38% lines (165/173) on development; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:28:45Z
 cover:dossiq:f8a113c5mac88:aede7575	already done: Command/Backfill/ 163/164 lines (99.4%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:45Z
+cover:dossiq:f8a113c5mac88:c7ef8f28	already done: Listener/Support/ 158/160 lines (98.8%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:57Z
