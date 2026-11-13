@@ -3420,5 +3420,6 @@ cover:learniq:e6498dddmc027:5780e2b2	PR #2442: 26 tests over 5 LessonOnboarding 
 verify:planninq:1139:ce0f18b0	failed: permission (running the planninq unit suite was refused by the permission check)	session-20261113T081045-826fdbe5	2026-11-13T08:21:30Z
 cover:buildiq:70b3e29emc723:60c2c265	PR #1529: 17 tests (listMine, saveManifest writes); lib/Controller 86.5->90.2%	session-20261113T080546-98207a87	2026-11-13T08:21:41Z
 cover:learniq:e6498dddmc027:689c9915	already done: lib/Service/OpenMaterial/ 213/224 lines under strict metadata (target 90.0%)	session-20261113T051703-1b54bfba	2026-11-13T08:21:39Z
+gap:learniq:dompurify:burn1	PR #2443: dompurify 2.5.9 -> 3.4.17 via override, lock+sbom regenerated; js-unit 1338/1339 (1 inherited), build ok	session-20261113T080552-2a8a5ff1	2026-11-13T08:21:47Z
 cover:learniq:e6498dddmc027:28cccfd9	already done: lib/Repair/Support/ 52/52 lines under strict metadata (target 90.0%)	session-20261113T051703-1b54bfba	2026-11-13T08:21:46Z
 cover:buildiq:70b3e29emc723:568ec52a	already done: lib/Lifecycle/*.php at 98.8% (84/85); no PR	session-20261113T080546-98207a87	2026-11-13T08:22:05Z
