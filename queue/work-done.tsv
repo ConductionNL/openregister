@@ -3948,3 +3948,4 @@ build:dossiq:woo-review-recall-and-stopping	PR #6371: 1.1 stoppingRule private +
 verify:dossiq:6353:a9f80a11	BLOCK 6353 (feature removal), GREEN 6354, BLOCK 6355 (user-visible title changes); no new test failures	session-20261113T080549-20301834	2026-11-13T09:36:09Z
 measure:versioniq:20261113h08	php 92.82, js 74.17 at 2083424e (PHP via tests/phpunit-unit-only.xml, 1356 tests, 2 failing; phpunit not in require-dev, run with a borrowed phpunit 10.5)	session-20261113T071636-117504ad	2026-11-13T09:36:17Z
 verify:hermiq:1682:abba1de1	GREEN #1682 (tests only, 2 new tests pass, no new failures)	session-20261113T091529-c3067ba9	2026-11-13T09:36:31Z
+cover:hermiq:065f1631m249e:568ec52a	already done: lib/Lifecycle/*.php at 100% (22/22) on development; note hermiq unit suite needs a sibling ../openregister checkout (172 errors/failures without it)	session-20261113T073916-e9f11dfa	2026-11-13T09:36:38Z
