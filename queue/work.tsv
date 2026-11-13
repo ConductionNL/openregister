@@ -6739,3 +6739,10 @@ verify:integriq:3532:880ced72	verify	integriq	development	merge	prs=3532@4211536
 verify:planninq:1152:27e8c71c	verify	planninq	development	merge	prs=1152@3e1252f69acd76e050b3027306829a2c57f0a8f7	2026-11-13T19:25:22Z
 merge:decidiq:2130:3b601c40	merge	decidiq	development	development	prs=2130@8f7a28fa222c1beba24bf1c9cf60a7479f2bc780,2131@66d02dbcd4bbd73b4f865564b7313073f93a5096	2026-11-13T19:25:22Z
 cover:stackiq:9ac19b3am9d24:bc982e61	cover	stackiq	development	quality/test-coverage-bc982e61	lang=php;dirs=lib/Kernel/Contracts/;focus=thin;weight=2128;coverage=88.76;target=90.0	2026-07-16T17:35:55Z
+review:openregister:10308:e91bf9ca	review	openregister	main	10308	sha=e91bf9cafaa29328781933a7893855f30aeca059;last_approved=;title=feat(openregister): build send-at-on-the-messaging-leaf	2026-11-13T19:30:20Z
+review:openregister:10309:3bc4edd0	review	openregister	main	10309	sha=3bc4edd0b62c824e65ce23be5cb2cdfe15b2da22;last_approved=;title=feat(openregister): build notification-kinds-an-administrator-forces	2026-11-13T19:30:20Z
+verify:buildiq:1561:8ae65843	verify	buildiq	development	merge	prs=1561@0c39b37fba2382aa4a500037e87b9baa2e8952d8	2026-11-13T19:30:20Z
+merge:buildiq:1559:da7aa15b	merge	buildiq	development	development	prs=1559@1179f9307d906faaa24f1864ae2eef5384a6f526	2026-11-13T19:30:20Z
+merge:hermiq:1705:3a5448de	merge	hermiq	development	development	prs=1705@ff5eebe38947790d2a1958e4c50eaad7a07721a5,1706@0f12ea39eec58d63ec7641303b372f0152a30f10	2026-11-13T19:30:20Z
+merge:shillinq:3009:114d5dcb	merge	shillinq	development	development	prs=3009@7342e5558e4fae638320532ab6ee0e11699f3138,3010@d5daca5350e079d897a60e1490f94ef5f6c0b81d	2026-11-13T19:30:20Z
+gap:decidiq:16:614b0a03	gap	decidiq	development	16	criterion=opensourcehealth WARN;row=decidiq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T19:30:20Z
