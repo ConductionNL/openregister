@@ -5895,3 +5895,4 @@ cover:buildiq:70b3e29ema699:390adfb9	already covered: lib/Capabilities.php (only
 cover:hermiq:065f1631me44a:17d367ab	already done: lib/Controller/Settings at 335/335 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:17:36Z
 cover:pipelinq:7f9dc8e6m16db:28cccfd9	already done: lib/Repair/Support/ 95/95 statements covered at 4c67daf1	session-20261113T171137-8f22ecb0	2026-11-13T18:17:18Z
 cover:pipelinq:7f9dc8e6m16db:23d187f5	already done: lib/Service/Store/ 86/86 statements covered at 4c67daf1	session-20261113T171137-8f22ecb0	2026-11-13T18:17:46Z
+review:openregister:10287:fdb30e5e	APPROVE (conflicts with main in listener golden + components yaml)	session-20261113T175327-6e4e7f28	2026-11-13T18:17:56Z
