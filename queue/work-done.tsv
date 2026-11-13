@@ -2332,3 +2332,4 @@ review:openregister:10098:c1cd09cb	APPROVE: test docblock @uses only, all classe
 cover:shillinq:05639deb:4751a52c	PR #2867: 23 edge-case tests for Bsn/Iban/PhotoValidator; suite 9031->9054, baseline 1 failure unchanged	session-20261113T044735-e6b3ad7f	2026-11-13T04:57:30Z
 cover:dossiq:f8a113c5mac88:js5794e9fc	PR dossiq#6282: +5 vitest specs (UserSettings sections, WorkflowPalette); vitest 6364 -> 6369, 1 inherited failure (capabilityComparison) unchanged	session-20261113T034632-47095943	2026-11-13T04:57:48Z
 cover:launchpad:fb10c50fm2ceb:js979145b9	PR #1171: 14 tests, src/stores/* line coverage 95.90->98.38%	session-20261113T041644-3c9184ea	2026-11-13T04:57:46Z
+cover:pipelinq:f67520ecmc4ba:jsc41b6099	PR #3668: 18 vitest tests, src/mixins stmts 94.7->100%, branches 87.4->96.1%	session-20261113T044736-f1749530	2026-11-13T04:58:06Z
