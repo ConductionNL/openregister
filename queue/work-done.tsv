@@ -1884,3 +1884,4 @@ cover:buildiq:9930949bmefda:568ec52a	failed: ApplicationVersionOwnerGuard's 24 e
 cover:buildiq:9930949bmefda:9d3a1784	failed: lib/BackgroundJob tests mostly error in the cloud (OCA\OpenRegister classes absent; sibling checkout required); not measurable here	session-20261113T024654-6600dc41	2026-11-13T03:41:56Z
 cover:stackiq:df113dffm8db8:d528dcf0	PR #1828: 3 tests for ConceptOrganisatiesWidget::load(); suite 2854->2857, 57 inherited errors unchanged	session-20261113T033859-c661da78	2026-11-13T03:42:24Z
 cover:buildiq:9930949bmefda:6891a8ac	failed: lib/Service/Dashboard tests (22 of 32) error in the cloud for lack of OCA\OpenRegister classes; not measurable here	session-20261113T024654-6600dc41	2026-11-13T03:42:23Z
+cover:buildiq:8ca317f6mefda:a215617b	PR #1501: 16 tests, PageLayout/RegistrationForm leaf providers	session-20261113T031704-5a455d65	2026-11-13T03:43:05Z
