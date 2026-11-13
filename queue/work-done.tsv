@@ -2356,3 +2356,4 @@ cover:keepiq:c967a31fm0090:60c2c265	PR #1739: 105 controller tests, 10 controlle
 verify:buildiq:1508:43c2897e	GREEN 1508, GREEN 1509 (vitest 3483 pass; PHP no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:08:53Z
 cover:keepiq:c967a31fm0090:59826f43	already done: lib/Settings/*.php 6 classes at 100% lines; AdminAreaSettingsTest asserts key/name/priority per area, registrar binding and info.xml	session-20261113T034634-f20a8d77	2026-11-13T05:10:20Z
 cover:keepiq:c967a31fm0090:d39f9857	already done: lib/Support/*.php 4 classes at 100% lines, dedicated tests in tests/Unit/Support (same as cover:keepiq:c967a31fm88ca:d39f9857)	session-20261113T034634-f20a8d77	2026-11-13T05:10:31Z
+verify:keepiq:1724:afdbbef0	GREEN 1724, 1736, 1737 (tests only; phpunit and vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T05:11:14Z
