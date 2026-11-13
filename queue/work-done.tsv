@@ -2046,6 +2046,7 @@ cover:hermiq:065f1631m7444:js06645759	already above target: src/components/* mea
 cover:dossiq:6ca0231ema7d4:3e42da73	already done: lib/Service/Tenant 97/99 (97.98%) on development, above target; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:26Z
 cover:dossiq:6ca0231ema7d4:6f346b68	already done: lib/Sections/*.php 5/5 covered on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:40Z
 cover:dossiq:6ca0231ema7d4:bedd4a8d	already done: lib/Service/Drafts 175/177 (98.87%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:53Z
+cover:hermiq:065f1631m7444:js3287a408	already done: src/components/settings 130/130 lines on development (branch -1 merged); no PR	session-20261113T034629-21e68669	2026-11-13T04:14:08Z
 cover:dossiq:6ca0231ema7d4:93ebc4b9	already done: lib/Http/*.php 50/50 covered on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:14:08Z
 cover:hermiq:065f1631m7444:f545d745	PR #1655: 10 tests, lib/Repair 93.5->96.0% stmts	session-20261113T031704-5a455d65	2026-11-13T04:14:06Z
 cover:pipelinq:f67520ecm8c58:1b97f731	PR #3643: 16 tests, SLA created/updated listeners; lib/Listener 1381->1456/1580; inherited 1 failure unchanged	session-20261113T031700-46f75510	2026-11-13T04:14:12Z
