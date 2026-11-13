@@ -7448,3 +7448,4 @@ merge:learniq:2465:e12e1bc1	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=
 merge:learniq:2466:b379fae0	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:35Z
 merge:learniq:2473:79c4696c	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:39Z
 merge:learniq:2478:807d796d	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:43Z
+merge:learniq:2487:509cc6c7	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:48Z
