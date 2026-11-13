@@ -7037,3 +7037,4 @@ review:openregister:10347:5df4234b	APPROVE	session-20261113T205323-cbfd0ec4	2026
 build4:openregister:flow-object-attribution	partial: PR #10385 — 4.1, 4.3, 6.2 done (+migration test); 1.1 live, 5.2, 5.3, 7.1, 8.x left	session-20261113T213335-001b7417	2026-11-13T21:59:12Z
 review:openregister:10354:0acbff9e	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T21:59:11Z
 review:openregister:10332:56713088	APPROVE #10332 (spec-requested masks/grounds; only inherited red)	session-20261113T205323-a7434fd6	2026-11-13T21:59:22Z
+review:openregister:10343:a28a3ff5	BLOCK: Architecture ComponentDefinitionTest red only with the PR (components yaml not regenerated for the new controller); Rules/Contract/Rbac/Credential suites green, Controller errors inherited	session-20261113T202603-6c9ef72f	2026-11-13T21:59:44Z
