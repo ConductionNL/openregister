@@ -6518,3 +6518,4 @@ learniq	2497	383a9f4ea3e6c91111fb24cf6d3ed2dea184ea85	CONFLICT	worker-26	conflic
 learniq	2498	6e6db722c49b00084eb994b24c4eacdd4643a034	GREEN	worker-26	phpunit 6635 on tree vs 6575 baseline, 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS merged
 learniq	2499	847973e56fd9fc5e9e8acf4a1565d361ecaffd79	GREEN	worker-26	phpunit 6635 on tree vs 6575 baseline, 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS merged
 learniq	2500	e0c0e415bfa6ef9b8533328c29013a635e1d5dd7	GREEN	worker-26	phpunit 6635 on tree vs 6575 baseline, 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS merged
+learniq	2501	dd3ee75629911da7f6a3311a14f8ba9bd1cef300	CONFLICT	worker-26	conflicts in tests/Unit/Settings/OpenLearningMaterialRegisterTest.php with an earlier PR of this tree
