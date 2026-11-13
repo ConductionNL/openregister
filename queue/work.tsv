@@ -8151,3 +8151,17 @@ review:openregister:10436:de6e0970	review	openregister	main	10436	sha=de6e0970e6
 review:openregister:10437:de80b221	review	openregister	main	10437	sha=de80b22112859106aa11c78638a0b8e61b34a446;last_approved=;title=feat(openregister): build seed-from-a-mounted-directory	2026-11-13T22:25:27Z
 verify:learniq:2486:ba898332	verify	learniq	development	merge	prs=2486@fa92dc968b0e8b2bd05cfbe2a6f1d6a5d793ceca	2026-11-13T22:25:27Z
 verify:pipelinq:3797:a2447876	verify	pipelinq	development	merge	prs=3797@cb66ca7dcbaaa8df28a3a26534031c92cad08e50	2026-11-13T22:25:27Z
+fix:pipelinq:3794:08d129aa	fix	pipelinq	development	3794	sha=08d129aa6de7572843d94a3c537badb2ecf81fce;verdict=CONFLICT;branch=quality/gap-pipelinq-devdeps;reason=package-lock.json conflicts with development, baseline 7319 tests 0 failures	2026-11-13T22:30:20Z
+review:openregister:10438:74b85fb1	review	openregister	main	10438	sha=74b85fb1239509da44cc64c8cdce69525c0e9251;last_approved=;title=feat(openregister): build redaction-policy-as-data	2026-11-13T22:30:20Z
+review:openregister:10439:260f0519	review	openregister	main	10439	sha=260f0519c4fc3d35206bdee4eda00d897ebf699f;last_approved=;title=feat(openregister): build search-accent-insensitive	2026-11-13T22:30:20Z
+review:openregister:10440:5b67fbef	review	openregister	main	10440	sha=5b67fbef97fd582635c779ac97257880d91fa7d8;last_approved=;title=feat(openregister): build register-scoped-schema-slug-resolution	2026-11-13T22:30:20Z
+review:openregister:10441:f955d4d8	review	openregister	main	10441	sha=f955d4d8bc8462b19d7a3531e97247f470ab4378;last_approved=;title=feat(openregister): build platform-provided-capabilities	2026-11-13T22:30:20Z
+review:openregister:10442:f3db1f05	review	openregister	main	10442	sha=f3db1f0517d715fde197ff36293d079293e65525;last_approved=;title=feat(openregister): build platform-user-migrator	2026-11-13T22:30:20Z
+review:openregister:10443:e7ab19e9	review	openregister	main	10443	sha=e7ab19e98de6a282f455270f2f8b63d7e70b2aca;last_approved=;title=feat(openregister): build records-draft-versions	2026-11-13T22:30:20Z
+review:openregister:10444:a5438292	review	openregister	main	10444	sha=a5438292bf60874b25ba91cd6fb7f3011f7886a8;last_approved=;title=feat(openregister): build rules-compose-read-transitions-and-time	2026-11-13T22:30:20Z
+review:openregister:10445:b5a5fbeb	review	openregister	main	10445	sha=b5a5fbebd4427ba322b61e4676359685ba9ff3f6;last_approved=;title=feat(openregister): build scoped-api-tokens (whoami)	2026-11-13T22:30:20Z
+verify:learniq:2489:85b194ce	verify	learniq	development	merge	prs=2489@0ab04086854a13d63cca5ff700e425cd1d12bb99	2026-11-13T22:30:20Z
+verify:portaliq:2475:55352372	verify	portaliq	development	merge	prs=2475@f06702f0b9a33c6fbf597c68ff19f85a6fad8da9	2026-11-13T22:30:20Z
+merge:dossiq:6464:d2b312d1	merge	dossiq	development	development	prs=6464@a0506858be8d952910a34e957aefbdfe936f4c34	2026-11-13T22:30:20Z
+merge:pipelinq:3795:f810ec60	merge	pipelinq	development	development	prs=3795@62e20cea22a8ac842cea61d6d66be4e37e8bff3e	2026-11-13T22:30:20Z
+measure:opencatalogi:20261113h22	measure	opencatalogi	development	queue/coverage/opencatalogi.json	why=slices need per-directory coverage	2026-11-13T22:30:20Z
