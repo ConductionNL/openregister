@@ -5427,3 +5427,4 @@ build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 do
 review:openregister:10258:0e3583ea	APPROVE	session-20261113T094606-b7da8c7f	2026-11-13T14:10:25Z
 cover:launchpad:fb10c50fm2d1d:a1252b57	already done: lib/Service/Confluence 97.47% (462/474) on development d6a7f892 after the merged -1 batch; 12-23 tests per class	session-20261113T091533-b7a00bc3	2026-11-13T14:11:01Z
 verify:portaliq:2410:731a2164	GREEN: build PR case-page-objection-and-complaint; 4874 tests (baseline 4857 +17), 0 new failures; config normaliser guards nothing, no access weakening	session-20261113T131538-bf8ccc8e	2026-11-13T14:12:39Z
+cover:launchpad:fb10c50fm2d1d:38e80a9f	already done: lib/Command 100% (1357/1357) on development d6a7f892 after batches -1,-2	session-20261113T091533-b7a00bc3	2026-11-13T14:12:29Z
