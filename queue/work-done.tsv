@@ -5953,3 +5953,5 @@ cover:pipelinq:7f9dc8e6m16db:0798b7cf	already done: lib/Service/PosCart/ at 100%
 cover:dossiq:069ee2d6m2deb:e56141e7	PR #6434: 34 tests over 8 Zaakdossier classes; suite 16530->16564, same 20 inherited failures; note FileRestrictionMirror::SERVICE names a class path OpenRegister main no longer has	session-20261113T181000-9baff50f	2026-11-13T18:26:10Z
 verify:keepiq:1762:6ad3734c	GREEN 1762; phpunit 4855 ok	session-20261113T171153-e1c17962	2026-11-13T18:26:10Z
 cover:integriq:92114ab0mb37a:js1f9fa0a2	PR #3526: 4 vitest specs (35 tests), Rule+Synchronization 92.85%->97.79% statements; suite 2093->2128 all passing	session-20261113T175336-e3687686	2026-11-13T18:26:14Z
+cover:pipelinq:7f9dc8e6m16db:4d8f122a	already done: lib/Service/MailAddIn/ at 98.8% lines (85/86, only a defensive no-uuid fallback left), above target 90; no PR	session-20261113T175328-b5db3663	2026-11-13T18:26:27Z
+verify:keepiq:1760:58991a29	1760 GREEN (vitest 6369 passed, php 4854 0 failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:26:34Z
