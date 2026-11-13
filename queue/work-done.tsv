@@ -5826,6 +5826,7 @@ build:portaliq:site-messages-per-record	no code left: T4 is a live check needing
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
 cover:stackiq:9ac19b3am9d24:d528dcf0	already done: lib/Dashboard/*.php 12/12 statements covered	session-20261113T171141-a3907367	2026-11-13T18:07:42Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
+cover:pipelinq:7f9dc8e6m16db:a215617b	already covered: lib/Integration/*.php 302/302 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:06Z
 build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 code (KVK claim to session); T0 broker confirmation, T4 e2e and T5 openspec CLI left (live/tooling); suite 4914->4917, 0 failures	session-20261113T172325-6eb25015	2026-11-13T18:07:54Z
 cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 statements covered	session-20261113T171141-a3907367	2026-11-13T18:08:04Z
 build:portaliq:shared-plans-with-a-caseworker	partial: PR #2442 (T07 plan templates admin page); T04 needs personal-action-list dialog, T09/T10 live	session-20261113T172328-c860ad55	2026-11-13T18:08:08Z
