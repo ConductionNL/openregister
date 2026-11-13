@@ -3486,4 +3486,5 @@ review:openregister:10109:37e1e614	APPROVE: tests only, ExampleSet 1368 OK, gati
 cover:learniq:e6498dddmf689:1b97f731	PR #2447: 29 tests over 6 listeners (~+2.6pt lib/Listener); suite 6105->6134, no new failures	session-20261113T081038-e8b5210f	2026-11-13T08:34:19Z
 cover:learniq:e6498dddmc027:2f64931a	nothing to cover: lib/Plagiarism holds only an interface (no executable lines)	session-20261113T081038-e8b5210f	2026-11-13T08:34:42Z
 cover:dossiq:f8a113c5m7e79:00494271	already done: lib/Service/DocumentSeries 100% covered by its own tests (155/155 statements)	session-20261113T080551-294c2aa6	2026-11-13T08:34:46Z
+cover:integriq:92114ab0m658d:fd0946f1	PR #3512: EndpointMessageGate 74/91->91/91, 13 tests; suite 7736->7749, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T08:35:06Z
 verify:hermiq:1675:74fa3eaa	GREEN: +36 tests pass, failing set identical to development	session-20261113T051703-1b54bfba	2026-11-13T08:35:10Z
