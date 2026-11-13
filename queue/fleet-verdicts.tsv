@@ -5508,3 +5508,4 @@ learniq	2451	75b6d16c0a4921bc21023939388218855fbf1cc2	GREEN	worker-56	tree 4 PRs
 learniq	2452	b74f344792993d5fddbb35c5dc6391e88530a235	GREEN	worker-56	tree 4 PRs: 6130 tests, baseline 6116 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
 learniq	2453	1e2e4747c68bbc4e84f2fae472e79f8910a69719	GREEN	worker-56	tree 4 PRs: 6130 tests, baseline 6116 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
 integriq	3512	ea4bbc8b27f9f267a03697dcc05a5357d0b1fe18	GREEN	worker-18	tests-only (13 new tests pass); tree 8067 run (baseline 8054 with 2 errors + 2 failures in CallServiceTest/JobsControllerTest, inherited), 0 new failures
+launchpad	1176	f91e9600a8313081c560a4087c61ad361089c85e	GREEN	worker-57	3789 tests (with pcov), baseline 3789 green, 0 new failures; risky 2->0; test metadata only
