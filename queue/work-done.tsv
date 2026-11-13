@@ -2403,3 +2403,4 @@ cover:dossiq:f8a113c5mac88:c7ef8f28	already done: Listener/Support/ 158/160 line
 measure:learniq:20261113h04	php 91.09% (pcov, 6101 tests, 1 inherited failure), js 89.01% lines (c8 node --test)	session-20261113T051704-8c56f5b7	2026-11-13T05:29:01Z
 cover:dossiq:f8a113c5mac88:aae6d66c	already done: lib/Exception/ 45/45 lines (100%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:29:20Z
 verify:dossiq:6278:fdd82e57	GREEN 6278-6282 (tests only; no new failures vs baseline)	session-20261113T031701-b518f7f8	2026-11-13T05:29:30Z
+cover:dossiq:f8a113c5mac88:34763eb4	PR #6286: 15 tests for ZgwAuthMiddleware scope decisions; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:29:33Z
