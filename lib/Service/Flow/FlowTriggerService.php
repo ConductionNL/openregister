@@ -55,6 +55,13 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	private const MODE_SYNC = 'sync';
 
 	/**
+	 * The events whose trigger nodes can narrow with a filter.
+	 *
+	 * @var array<int, string>
+	 */
+	private const FILTERED_EVENTS = ['object.transitioned', 'object.updated'];
+
+	/**
 	 * Finds flows wired to an event.
 	 *
 	 * @var FlowLocator
@@ -80,10 +87,27 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	 *
 	 * @param FlowExecution $execution Finds flows wired to an event, queues the runs and logs.
 	 */
-	public function __construct(FlowExecution $execution) {
+	/**
+	 * The in-memory check of a trigger's own filters, after the index matched.
+	 *
+	 * @var FlowTriggerFilter
+	 */
+	private readonly FlowTriggerFilter $filter;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param FlowExecution                    $execution The locator, run service and logger.
+	 * @param FlowPublishedGraphInterface|null $published Reads a flow's published graph for the trigger filters.
+	 */
+	public function __construct(
+		FlowExecution $execution,
+		private readonly ?FlowPublishedGraphInterface $published=null,
+	) {
 		$this->resolvers = $execution->resolvers;
 		$this->runner    = $execution->runner;
 		$this->logger    = $execution->logger;
+		$this->filter    = new FlowTriggerFilter();
 	}//end __construct()
 
 	/**
@@ -135,6 +159,10 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 				// whole fan-out, so the one broken flow silenced every healthy
 				// flow wired to the same event. Log it against the flow and
 				// keep queuing the rest.
+				if ($this->acceptedBy(flowId: $flowId, trigger: $trigger) === false) {
+					continue;
+				}
+
 				try {
 					$run = $this->runner->queueRun(
 						flowId: $flowId,
@@ -213,6 +241,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-execution-mode/spec.md
 	 */
+
 	private function runInline(FlowRun $run, string $flowId, array $subject): void {
 		$flow = $this->resolvers->resolveFlow($flowId);
 		if ($flow === null) {
@@ -263,4 +292,31 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 		$this->runner->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: $object), origin: new FlowRunOrigin(items: $seed));
 
 	}//end runInline()
+
+	/**
+	 * Whether the flow's published object triggers accept this firing's context.
+	 *
+	 * Only `object.transitioned` and `object.updated` can carry a filter, so
+	 * only they read the published graph. Without a graph reader, or for a
+	 * flow with no published graph, the flow is accepted as before: the run
+	 * service then refuses an unpublished flow on its own terms.
+	 *
+	 * @param string      $flowId  The flow.
+	 * @param FlowTrigger $trigger The firing.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md
+	 */
+	private function acceptedBy(string $flowId, FlowTrigger $trigger): bool {
+		if ($this->published === null || in_array($trigger->event, self::FILTERED_EVENTS, true) === false) {
+			return true;
+		}
+
+		return $this->filter->accepts(
+			graph: $this->published->graphOf(flowId: $flowId),
+			event: $trigger->event,
+			context: $trigger->context
+		);
+	}//end acceptedBy()
 }//end class

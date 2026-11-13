@@ -2,7 +2,7 @@
 
 ## 1. Relink and reverse
 
-- [ ] 1.1 `ReferenceRelinker::plan()` and `apply()` over the relation index, scalar, array and relation-row moves, under the actor's rights, 5,000 cap. Verify: `tests/Unit/Service/Merge/ReferenceRelinkerTest.php` with a module referenced from a suite array, a connection scalar and one object the actor may not update.
+- [x] 1.1 `ReferenceRelinker::plan()` and `apply()` over the relation index, scalar, array and relation-row moves, under the actor's rights, 5,000 cap. Verify: `tests/Unit/Service/Merge/ReferenceRelinkerTest.php` with a module referenced from a suite array, a connection scalar and one object the actor may not update.
 - [ ] 1.2 `executeMerge()` runs the relinker after the configured relink and records moves in the snapshot; `reverseMerge()` restores unchanged moves. Verify: `MergeServiceTest` merge-then-reverse leaves every reference as before, and a reference edited in between keeps the edit.
 - [ ] 1.3 Preview lists references by schema and count. Verify: `MergeControllerTest` for the preview shape.
 

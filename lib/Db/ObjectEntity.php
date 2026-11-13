@@ -2267,6 +2267,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end isArchived()
 
 	/**
+	 * Whether this object is in the preservation (statisch) regime.
+	 *
+	 * The preservation regime is the Dutch `semi_statisch` archival state: a
+	 * dossier whose business use has ended and that the Archiefwet clock now
+	 * governs. It is DISTINCT from the archive state {@see self::isArchived()}
+	 * gives a finished object: an object can be archived, preserved, both or
+	 * neither, and the two are reported separately (REQ-APS-006). A preserved
+	 * object refuses content writes and leaves the working views while staying
+	 * readable and keeping its references resolvable; the write guard reads this
+	 * only when its schema offers the regime.
+	 *
+	 * Read off the TMLO archival metadata, where the archival pipeline keeps the
+	 * state, rather than a marker of its own, because the state is the archival
+	 * fact and a second copy would drift from it.
+	 *
+	 * @return bool True when the object's archival status is a preservation (semi-static) state.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreserved(): bool {
+		$status = ($this->getTmlo() ?? [])['archiefstatus'] ?? null;
+		if (is_string($status) === false) {
+			return false;
+		}
+
+		return in_array(strtolower($status), ['semi_static', 'semi_statisch', 'gearchiveerd'], true);
+	}//end isPreserved()
+
+	/**
 	 * Whether this object has been frozen.
 	 *
 	 * Same trap as {@see self::isArchived()}: never compare `getFrozen()` with
