@@ -50,6 +50,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAcknowledgedBy(?string $acknowledgedBy)
  * @method DateTime|null getAcknowledgedAt()
  * @method void setAcknowledgedAt(?DateTime $acknowledgedAt)
+ * @method int|null getNoticeSentTo()
+ * @method void setNoticeSentTo(?int $noticeSentTo)
+ * @method DateTime|null getNoticeSentAt()
+ * @method void setNoticeSentAt(?DateTime $noticeSentAt)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  *
@@ -110,6 +114,20 @@ class SchemaChangelog extends Entity implements JsonSerializable {
 	protected ?DateTime $acknowledgedAt = null;
 
 	/**
+	 * How many people the breaking-change notice told, once it was sent.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $noticeSentTo = null;
+
+	/**
+	 * When the breaking-change notice was sent.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $noticeSentAt = null;
+
+	/**
 	 * Creation timestamp.
 	 *
 	 * @var DateTime|null
@@ -127,6 +145,8 @@ class SchemaChangelog extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'actor', type: 'string');
 		$this->addType(fieldName: 'acknowledgedBy', type: 'string');
 		$this->addType(fieldName: 'acknowledgedAt', type: 'datetime');
+		$this->addType(fieldName: 'noticeSentTo', type: 'integer');
+		$this->addType(fieldName: 'noticeSentAt', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()

@@ -3993,6 +3993,13 @@ Files/Service/TextExtraction/PatternSet/JurisdictionPatternSets.php,75,Files,Fil
 Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,61,Files,Files,Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,0,,Files
 Formats/LicensePlateNlFormat.php,47,Formats,Formats,Formats/LicensePlateNlFormat.php,0,,Kernel
 Service/Settings/EntityPatternSetSetting.php,46,Service,Configuration,Configuration/Service/Settings/EntityPatternSetSetting.php,0,,Configuration
+BackgroundJob/SchemaChangeNoticeJob.php,,BackgroundJob,,,,,Core
+Controller/SchemaChangeFollowersController.php,,Controller,,,,,Core
+Db/SchemaFollower.php,,Db,,,,,Core
+Db/SchemaFollowerMapper.php,,Db,,,,,Core
+Middleware/SchemaChangeHeaderMiddleware.php,,Middleware,,,,,Platform
+Notification/SchemaChangeSubjectRenderer.php,,Notification,,,,,Notifications
+Service/Schema/SchemaChangeNoticeService.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
