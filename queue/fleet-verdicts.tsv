@@ -5857,3 +5857,4 @@ learniq	2463	98ba380f2f63aa26be1a364c195a0b478ccf14c6	GREEN	worker-09	tests only
 shillinq\t2932\ta1bec6cdd395b0459e4a6fee29dd115452fcfb71\tCONFLICT\tworker-35\tadd/add conflict in tests/vitest/receiptCaptureView.spec.js (development now has a file of that name); other 3 specs merge clean
 shillinq\t2933\td4e16dcb312b34f6ee5ccd927ea9db54dbba0e41\tGREEN\tworker-35\ttests-only vitest spec; tree vitest 194 files/2017 tests all green, 0 new failures
 shillinq\t2934\tf31bd60394b9ec04d5efc3abf037f240e9ec8231\tGREEN\tworker-35\ttests-only phpunit (Reporting); tree phpunit 10087->10122, 1 inherited clock-bound failure, 0 new; php -l clean
+portaliq	2388	6952d338c43380d1a03403d4e61b9ee61c927484	RED	merge-local:merge-gate	GATE RED floor: module_coupling: 4.56 -> 4.52
