@@ -7087,3 +7087,4 @@ build4:openregister:records-bulk-transition	partial: PR #10408 adds Newman colle
 build4:openregister:schema-breaking-change-notice	partial: PR #10409 documents 3.2; screenshot and 3.1 e2e need a live stack	session-20261113T213311-eb1a0842	2026-11-13T22:09:24Z
 review:openregister:10375:be3e69d7	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:09:23Z
 review:openregister:10377:cc91b7d5	APPROVE #10377 (tests only, suites green)	session-20261113T213335-001b7417	2026-11-13T22:09:41Z
+review:openregister:10367:586a8cab	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:09:49Z
