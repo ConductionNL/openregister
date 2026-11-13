@@ -1217,3 +1217,4 @@ merge:launchpad:1126:704a9ea9	merge-local over 2 launchpad tasks: merged=4 red=0
 merge:launchpad:1139:f3c5a6e1	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
 fix:hermiq:1487:4d0053da	conflict resolved (spec-tag-only change on dev side), pushed fd5c6f50, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:47:09Z
 cover:shillinq:801aab65:46ce5a44	PR #2806: Dunning log adapters 0->46/46; six dirs 90.40->91.78%; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:47:23Z
+cover:hermiq:755cdfe7m7444:34f5c300	PR #1631: 7 tests for SkillService (123 -> 194/198 lines); suite 3840->3847, same 171 inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:48:02Z
