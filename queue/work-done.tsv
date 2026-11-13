@@ -5847,3 +5847,4 @@ cover:stackiq:9ac19b3am9d24:aae6d66c	already done: lib/Exception/*.php at 100% (
 cover:stackiq:9ac19b3am9d24:34763eb4	already done: three earlier PRs for this task merged; lib/Middleware/*.php at 57/57 statements	session-20261113T172325-6eb25015	2026-11-13T18:09:48Z
 cover:stackiq:9ac19b3am9d24:2f30e3d6	already done: lib/Service/AangebodenGebruik/ and lib/Service/Itsm/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:09:46Z
 build:portaliq:site-honest-without-javascript	partial: PR #2447 task 2.3 PlainMarkdown with 7 tests; 14 tasks left (route, renderer, notice, publications, e2e)	session-20261113T172324-00680177	2026-11-13T18:09:57Z
+cover:stackiq:9ac19b3am9d24:9d3a1784	already done: lib/BackgroundJob/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:09:59Z
