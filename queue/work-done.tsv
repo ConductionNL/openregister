@@ -6959,3 +6959,4 @@ review:openregister:10330:2e9e6453	APPROVE: docs-only, claims match code	session
 review:openregister:10327:3f38d1c6	APPROVE: frontend card + l10n + Newman, no PHP or access change; jest 50/50, eslint clean	session-20261113T195351-a32c6d55	2026-11-13T21:34:48Z
 build4:openregister:app-declared-credential-providers	partial: PR #10343 - 3.1 approval writer + 3.2 admin approve/reject/revoke routes with tests; 4.3, 4.4, 5.1, 6.2, 6.4 left; Credential 624 OK, Contract 28 OK, Architecture not finished	session-20261113T202624-e1abf1c1	2026-11-13T21:34:54Z
 review:openregister:10336:f6b65967	APPROVE: docs, specs and an excluded Newman collection only; merges clean	session-20261113T213325-5a151438	2026-11-13T21:34:56Z
+build4:openregister:capability-rows-stated-requirements	partial: PR #10344 task 2.1 URN follows moved trail (+5 tests, no new failures vs main); 3.1/3.2 checksum left	session-20261113T202619-0d7929e0	2026-11-13T21:35:11Z
