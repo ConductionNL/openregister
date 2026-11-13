@@ -6552,3 +6552,4 @@ review:openregister:10318:87733f80	APPROVE: tests green on merge with main, phps
 cover:dossiq:069ee2d6mbd37:3ee9dda7	already done: lib/Service/Custody/*.php at 99.84% (628/629) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:11Z
 cover:pipelinq:7f9dc8e6m8ce9:36ac5d07	no PR: lib/Service/LineTotals already 100% lines (LineRollUp 41/41, LineTotalMath 17/17, LineParent 1/1) under 30 tests incl. edge-case suites	session-20261113T195351-a32c6d55	2026-11-13T20:08:49Z
 verify:filinq:2060:d629df5c	GREEN 2060,2062-2066,2068; RED 2061 (deep-link route test); CONFLICT 2067 (register files)	session-20261113T175327-6e4e7f28	2026-11-13T20:08:48Z
+build:filinq:extraction-model-filled-fields	partial: PR #2093 (register, shared model call, service, routes, 26 tests; UI 4.1/4.2, docs, hermiq issue left)	session-20261113T192654-ac81692f	2026-11-13T20:09:07Z
