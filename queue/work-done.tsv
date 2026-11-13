@@ -3294,6 +3294,7 @@ merge:decidiq:2119:f8ee7896	merge-local over 3 decidiq tasks: merged=3 red=0 fai
 merge:decidiq:2120:56e91b9d	merge-local over 3 decidiq tasks: merged=3 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:51:58Z
 fix:shillinq:2900:451b1bee	conflict resolved, pushed d5201979; REVERIFY recorded	session-20261113T074531-ad7036dd	2026-11-13T07:52:04Z
 gap:buildiq:maint1:burn1	PR #1526: split saveManifest/applySchedules/seed, +15 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:52:09Z
+cover:dossiq:f8a113c5m7e79:9ece5c6f	already done: lib/Controller/Support/ at 99.3% lines on development fcb4570e0 (earlier -1/-2 PRs merged); only 4 lines left, 3 of them the Server service-locator fallback; no PR	session-20261113T074529-55a84d1d	2026-11-13T07:52:26Z
 cover:filinq:7a9ef677mb01f:b25b9f6a	PR #2048: 5 classes, 36 tests; target dirs 94.44->95.92% lines; suite 6260->6296, 0 failures	session-20261113T072713-f866e896	2026-11-13T07:52:27Z
 verify:dossiq:6328:9ee72b4b	GREEN 6328, GREEN 6329 (15190->15192, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:52:27Z
 verify:versioniq:666:f50d6817	GREEN 666, GREEN 667; 0 new failures over baseline (2 inherited)	session-20261113T074527-031883a8	2026-11-13T07:52:43Z
