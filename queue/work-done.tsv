@@ -7075,3 +7075,4 @@ build4:openregister:records-gallery-view	partial: PR #10401 (2.1 gallery renderi
 review:openregister:10368:58f42eb0	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:07:00Z
 build4:openregister:operate-load-shedding	partial: PR #10400 adds 2.1 (OutboundHttpClient guarded per host/named dependency, 7 tests); 2.2-2.4, 3.1, 4.x, 5.x left	session-20261113T212414-55623216	2026-11-13T22:07:08Z
 review:openregister:10379:3f974abe	APPROVE: frontend-only, jest 396 green, eslint clean, l10n gates equal main +3 keys	session-20261113T204533-6fe960ff	2026-11-13T22:07:09Z
+gap:pipelinq:opensourcehealth:1250bbe5	partial: PR #3794 moves node-polyfill-webpack-plugin + path-browserify to devDependencies (prod pkgs 500->370, SBOM -102 polyfill components); remaining stale deps come via Nextcloud/Conduction UI libraries	session-20261113T220418-8e6ce3df	2026-11-13T22:07:27Z
