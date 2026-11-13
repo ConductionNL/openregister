@@ -4709,3 +4709,4 @@ build:openregister:calendar-time-zone	partial: PR #10154 (2.1 isWorkingDay in ca
 build:openregister:capability-rows-verified-b	partial: PR #10155 — GitLab publish backend + tests, LLM provider test; left: GitLab UI target (needs 37-locale strings), Playwright flow test	session-20261113T114524-3c44fc56	2026-11-13T12:03:22Z
 review:openregister:10137:62ec2de9	APPROVE: change behaviour as specified, no new failures, phpstan clean	session-20261113T101609-bc51215d	2026-11-13T12:03:22Z
 build:openregister:app-harvest-fetchers-and-flow-node	partial: PR #10156 (tasks 1.1-1.3, 2.1, 3.4, 4.1, 6.2, 6.3; node/flow, validation, resolution API, decisions, UI, docs open)	session-20261113T113930-fe243f84	2026-11-13T12:03:31Z
+cover:shillinq:05639debm0c05:5fe382d1	PR #2938: 11 tests, lib/Service/Import/*.php 91.2% -> 96.2% statements	session-20261113T091533-03405ea6	2026-11-13T12:03:41Z
