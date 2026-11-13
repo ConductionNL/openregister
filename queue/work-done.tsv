@@ -2949,3 +2949,4 @@ cover:pipelinq:7f9dc8e6m1e6e:168f7791	already done: pcov on development (today) 
 verify:filinq:2041:ba5bdc82	GREEN #2041: tests only, unit 6260 OK vs baseline 6251	session-20261113T051705-4f5ad12a	2026-11-13T06:44:07Z
 cover:pipelinq:7f9dc8e6m1e6e:23d187f5	PR pipelinq#3690: Store assembler + ledger, 3 tests, lib/Service/Store/ 82->86/86, suite 6454->6457 (1 inherited failure)	session-20261113T061518-90540a48	2026-11-13T06:44:13Z
 cover:pipelinq:7f9dc8e6m1e6e:36ac5d07	already above target: lib/Service/LineTotals/ measures 100% (59/59) with strict metadata on development 50e93fc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:44:32Z
+verify:stackiq:1846:7def2824	GREEN 1846-1849 (tests only; PHP clean; vitest 2311 pass)	session-20261113T051714-4ad50f31	2026-11-13T06:44:37Z
