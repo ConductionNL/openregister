@@ -3192,3 +3192,4 @@ cover:dossiq:f8a113c5m7e79:3e42da73	already done: lib/Service/Tenant 97/99 lines
 cover:dossiq:f8a113c5m7e79:8f99c0f1	already above target: lib/Woo measured 96.3% after PR #6235, which is merged on development (target 90); no PR	session-20261113T072711-3523cf52	2026-11-13T07:36:49Z
 cover:dossiq:f8a113c5m7e79:018cb40a	already done: lib/Contribution 65/65 lines (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:36:48Z
 cover:dossiq:f8a113c5m7e79:bedd4a8d	already done: lib/Service/Drafts 175/177 lines (99%, target 95), PR -1 merged	session-20261113T051703-1b54bfba	2026-11-13T07:37:02Z
+cover:dossiq:f8a113c5m7e79:aede7575	already done: lib/Command/Backfill at 163/164 lines (99%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T07:37:06Z
