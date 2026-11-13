@@ -5705,3 +5705,4 @@ cover:opencatalogi:fc83bfb1:9a7aca2d	PR #2593: 8 tests, Publication 99.09->99.64
 cover:learniq:e6498dddm0533:7dbbf814	already done: lib/Service/CoursePackage at 837/843 lines (99.3%), above 95 target	session-20261113T172349-00278d9d	2026-11-13T17:49:36Z
 cover:hermiq:065f1631me44a:js77cf3af4	PRs #1696 (+11 tests, 4 widgets to 100%) and #1698 (+8 tests, 2 widgets to 100%); src/widgets/* 90.3% -> ~94.6%	session-20261113T171141-a3907367	2026-11-13T17:49:34Z
 cover:pipelinq:7f9dc8e6m16db:36a69cec	PR #3765: LeadRelatedSummaryLookupTest (5 tests); rest of dirs already fully covered; suite 7194->7199, same 5 inherited failures	session-20261113T172334-4b3b027b	2026-11-13T17:49:58Z
+build:portaliq:editor-blocks-read-public-app-data	PR #2417: task 4 built (editor picker for app kind, categories, filters, columns from declared kinds, both editor hosts); task 5 is learniq	session-20261113T172329-e224a4f0	2026-11-13T17:50:03Z
