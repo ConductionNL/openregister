@@ -6841,3 +6841,4 @@ verify:decidiq:2142:41388697	GREEN #2142 (tests only, +3 tests, suite green)	ses
 build:opencatalogi:attachments-are-files	partial: PR #2644 (7.3 auto-publish skips withdrawn files; 7.1 window end; 7.1 metadata, 7.2, 7.4-7.7 left)	session-20261113T185328-da819141	2026-11-13T21:02:53Z
 build:opencatalogi:capability-rows-get-requirements	partial: PR opencatalogi#2645 builds 2.1 e-depot handover and 2.2 dashboard counts; 1.1-1.3 e2e/spec-sync left	session-20261113T175332-5effc865	2026-11-13T21:03:05Z
 review:openregister:10325:8ab17ee1	APPROVE: tests only, suites green	session-20261113T205324-91f6ae17	2026-11-13T21:03:10Z
+review:openregister:10324:42f33eba	APPROVE: tests only, 17 new tests green; Task/Architecture/Rules/Controller/Contract green merged with main	session-20261113T205329-39b9195a	2026-11-13T21:03:36Z
