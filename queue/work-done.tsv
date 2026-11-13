@@ -2124,5 +2124,6 @@ cover:filinq:7a9ef677mc744:js450fec42	PR #2024: 31 vitest tests for 3 integratio
 cover:filinq:7a9ef677mc744:9d3a1784	PR #2025: 11 tests, lib/BackgroundJob 97.4% -> 100% lines; suite 0 failures before/after	session-20261113T041644-786bb7fc	2026-11-13T04:27:13Z
 verify:buildiq:1503:92635760	3 GREEN (1503-1505); vitest 3457 passed, phpunit unchanged; JS tests only	session-20261113T034632-47095943	2026-11-13T04:27:14Z
 cover:dossiq:6ca0231ema7d4:js5794e9fc	PR dossiq#6275: 5 settings components, 26 vitest tests; src/views/settings 66.07%->72.53% statements	session-20261113T031701-b518f7f8	2026-11-13T04:27:21Z
+cover:learniq:e6498dddma84a:js0023cfc7	already done: open branches quality/test-coverage-js-0023cfc7-1 and -2 (#2435) bring src/dialogs/*.js to 908/908; no new PR	session-20261113T034628-73e45054	2026-11-13T04:27:28Z
 cover:filinq:7a9ef677mc744:e372e6ff	PR filinq#2026: 9 tests, lib/Event stmt coverage 168/168, suite 6038->6047 green	session-20261113T041646-adfbb291	2026-11-13T04:27:30Z
 cover:filinq:7a9ef677mc744:js0023cfc7	PR #2027: +15 jest tests (3 dialogs); dialogs jest line cov 86.2->89.4%; note dialog specs run under jest, vitest config excludes src/** so measured 35% understates	session-20261113T041645-1e9d4ce1	2026-11-13T04:27:42Z
