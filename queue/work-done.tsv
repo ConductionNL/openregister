@@ -6379,3 +6379,4 @@ verify:buildiq:1561:8ae65843	GREEN #1561 (test-only vitest spec; 4111 js tests p
 cover:dossiq:069ee2d6mbd37:e7fd1c43	PR dossiq#6442: 8 BoundFormsCheck tests (assess/sentence/listing/naming); suite 16530->16538, 20 inherited failures unchanged	session-20261113T190954-c894781f	2026-11-13T19:37:56Z
 fix:shillinq:3004:7d6918f8	merged #2986 into branch, l10n conflict resolved keeping both; REVERIFY 0b2be938955fce6d7ebc09529c883913faa5c24a	session-20261113T192701-f224cbcf	2026-11-13T19:37:55Z
 review:openregister:10303:609b6aef	APPROVE: tests-only, 2 new tests pass, Architecture/Contract green	session-20261113T192659-0ddb618f	2026-11-13T19:38:58Z
+review:openregister:10310:82e01f16	APPROVE (risky 16->0)	session-20261113T175327-6e4e7f28	2026-11-13T19:39:09Z
