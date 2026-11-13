@@ -6061,3 +6061,4 @@ cover:shillinq:05639debm7b6b:81b1241f	already done: lib/Portal/*.php 157/157 sta
 verify:shillinq:2955:bde3906a	3 GREEN (2955,2956,2957); 10479 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T18:43:35Z
 cover:shillinq:05639debm7b6b:a215617b	already done: lib/Integration/*.php 256/256 statements covered, no PR	session-20261113T172329-0b6220f9	2026-11-13T18:44:07Z
 verify:dossiq:6434:8dbc13ef	6434 GREEN, 6435 GREEN (tests only; phpunit 20 inherited failures, vitest 1 inherited failure, none new)	session-20261113T175336-e3687686	2026-11-13T18:44:20Z
+build:shillinq:hours-to-humaniq	partial: PR #2967 design.md (1.1,1.2) + occ shillinq:hours:subject-audit (2.1, 6 tests); rest gated on live counts (2.2) or in humaniq	session-20261113T181000-9baff50f	2026-11-13T18:44:29Z
