@@ -34,6 +34,17 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Source
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregation
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregationQuery
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregationShape
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregator
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalColumnCriterion
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalFromClause
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalMetricRequest
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalObjectRef
  */
 final class DbalAggregationFilterGoldenTest extends TestCase {
 
