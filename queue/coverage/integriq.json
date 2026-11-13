@@ -1,7 +1,7 @@
 {
  "app": "integriq",
- "commit": "8420a0dd260957e2068ed284bc2e7c633c8e5806",
- "measured_at": "2026-11-13T01:54:54Z",
+ "commit": "2210ff7559401c2211cb5176125d65d6ca442226",
+ "measured_at": "2026-11-13T04:22:30Z",
  "php": {
   "tool": "pcov",
   "pct": 88.01,
@@ -495,37 +495,37 @@
   }
  },
  "js": {
-  "pct": 72.18,
-  "statements": 5687,
-  "covered": 4105,
+  "pct": 82.64,
+  "statements": 6394,
+  "covered": 5284,
   "dirs": {
    "src/": [
-    10,
-    10
+    44,
+    44
    ],
    "src/components/": [
-    218,
-    199
+    270,
+    249
    ],
    "src/components/Approvals/": [
     36,
-    30
+    31
    ],
    "src/components/callLog/": [
-    19,
-    7
+    43,
+    36
    ],
    "src/components/mapping/": [
-    231,
-    105
+    240,
+    201
    ],
    "src/dialogs/": [
     522,
-    402
+    475
    ],
    "src/handlers/": [
     80,
-    66
+    80
    ],
    "src/integration/": [
     51,
@@ -543,6 +543,10 @@
     187,
     170
    ],
+   "src/modals/Directory/": [
+    28,
+    28
+   ],
    "src/modals/Endpoint/": [
     1,
     1
@@ -553,35 +557,39 @@
    ],
    "src/modals/EventSubscription/": [
     219,
-    123
+    198
    ],
    "src/modals/Migration/": [
     99,
     78
    ],
    "src/modals/NotificatiesAbonnement/": [
-    71,
-    28
+    79,
+    73
    ],
    "src/modals/Rule/": [
     77,
-    57
+    77
    ],
    "src/modals/Subscription/": [
     44,
-    22
+    43
    ],
    "src/modals/Synchronization/": [
     24,
     22
    ],
    "src/modals/v2/": [
-    1083,
-    849
+    1352,
+    1101
    ],
    "src/store/": [
     31,
     31
+   ],
+   "src/views/ApiProducts/": [
+    126,
+    124
    ],
    "src/views/Approvals/": [
     75,
@@ -590,6 +598,10 @@
    "src/views/EventDelivery/": [
     43,
     36
+   ],
+   "src/views/ExecutionTrace/": [
+    19,
+    19
    ],
    "src/views/Migration/": [
     42,
@@ -601,19 +613,19 @@
    ],
    "src/views/Rule/actionForms/": [
     421,
-    143
+    246
    ],
    "src/views/Synchronization/": [
     874,
     695
    ],
    "src/views/admin/": [
-    422,
-    319
+    480,
+    392
    ],
    "src/views/wrappers/": [
-    139,
-    92
+    219,
+    214
    ]
   }
  }
