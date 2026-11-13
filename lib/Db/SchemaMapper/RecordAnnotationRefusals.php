@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
+use OCA\OpenRegister\Service\Search\SearchResultDeclaration;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
@@ -252,4 +253,27 @@ final class RecordAnnotationRefusals {
 			)
 		);
 	}//end checkReferenceCard()
+	/**
+	 * Refuse a save whose `x-openregister-search-result` names a property this schema does not have.
+	 *
+	 * A declared title that is not there would leave every result of the
+	 * schema on the derived title while the schema says otherwise.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration names something the schema does not have.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-schema-declares-its-result-title-subline-and-ordering-date-req-psp-002
+	 */
+	public function checkSearchResult(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: SearchResultDeclaration::ANNOTATION);
+		$annotation->faults()->refuseWith(
+			messages: SearchResultDeclaration::faults(
+				block: $annotation->value(),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkSearchResult()
 }//end class

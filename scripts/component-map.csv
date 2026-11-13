@@ -3096,6 +3096,8 @@ Service/Search/DictionaryExpansion.php,41,Service,Service,Service/Search/Diction
 Service/Search/HistoryNarrowing.php,48,Service,Service,Service/Search/HistoryNarrowing.php,0,,Core
 Service/Search/HistoryPredicate.php,115,Service,Service,Service/Search/HistoryPredicate.php,0,,Core
 Service/Search/ObjectSearchResultFormatter.php,176,Service,Platform,Platform/Service/Search/ObjectSearchResultFormatter.php,0,,Core
+Service/Search/SearchResultDeclaration.php,,Service,,,,,Core
+Service/Search/SearchResultDeclarations.php,,Service,,,,,Core
 Service/Search/SearchDictionary.php,104,Service,Service,Service/Search/SearchDictionary.php,0,,Core
 Service/Search/SearchDictionaryProvider.php,188,Service,Service,Service/Search/SearchDictionaryProvider.php,0,,Core
 Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNode.php,0,,Core
