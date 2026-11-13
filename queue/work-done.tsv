@@ -3313,3 +3313,4 @@ cover:versioniq:1b35eed9:72b7d712	PR #672: 4 classes, 23 tests (SignedRelease, A
 verify:dossiq:6324:10beb863	GREEN 6324 (behaviour-preserving refactor of 5 units, 15190->15200, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:55:13Z
 gap:planninq:tcr1:burn1	PR #1139: 7 test files (32 tests), PHP lib 94.1->95.2%	session-20261113T051709-e616bf69	2026-11-13T07:55:24Z
 cover:integriq:92114ab0m658d:dffb5af6	PR #3507: GroupMappingResolver edge cases + inactive-account membership; 4 tests (dir already ~98%); suite 7736->7740, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T07:55:36Z
+verify:opencatalogi:2578:9edc50c1	2578 RED (WooControllerTest::testInventarislijstRouteIsAGet sees a duplicate aliased route); 2584 GREEN	session-20261113T071636-117504ad	2026-11-13T07:55:36Z
