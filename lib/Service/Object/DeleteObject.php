@@ -36,13 +36,13 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use JsonSerializable;
-use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
@@ -135,6 +135,7 @@ class DeleteObject {
 	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
+	 * @param DeleteRowRules|null $rowRules Checks each `cascade: true` child; without it a root with children is refused
 	 * @param IEventDispatcher|null $eventDispatcher Announces a permanent delete to the object-event listeners
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
@@ -151,6 +152,7 @@ class DeleteObject {
 		private readonly ?FileFolderServiceInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
+		private readonly ?DeleteRowRules $rowRules = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 	) {
 		$this->auditTrailMapper = $audit->trail;
@@ -578,7 +580,9 @@ class DeleteObject {
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
 
-		return $this->deleteResolved(run: new DeletionRun(context: $context, uuid: $request->uuid), options: $request->options);
+		$caller = new DeleteCaller(userId: $request->options->actingUserId, rbac: $_rbac, multitenancy: $_multitenancy);
+
+		return $this->deleteResolved(run: new DeletionRun(context: $context, uuid: $request->uuid, caller: $caller), options: $request->options);
 	}//end deleteObject()
 
 	/**
@@ -721,20 +725,22 @@ class DeleteObject {
 	}//end concreteTable()
 
 	/**
-	 * Handle referential integrity checks and cascade deletion for root deletions.
+	 * Check every cascade the root delete implies, then run them and the root delete together.
 	 *
-	 * Returns the deletion result if integrity processing handled the delete,
-	 * or null if no integrity actions were needed (caller should do simple delete).
+	 * Returns the deletion result when a cascade ran, or null when the root has neither
+	 * onDelete dependents nor `cascade: true` children (the caller then does a simple delete).
+	 * Every `cascade: true` child is checked before anything is written: one refused
+	 * child refuses the root delete.
 	 *
-	 * @param DeletionRun $run       The resolved context and the uuid asked for.
+	 * @param DeletionRun $run       The resolved context, the uuid asked for and the caller.
 	 * @param bool        $permanent Whether the root is destroyed instead of tombstoned.
 	 *
-	 * @return bool|null The result, or null if no integrity processing was needed
+	 * @return bool|null The result, or null if no cascade was needed
 	 *
-	 * @throws ReferentialIntegrityException If blocked by RESTRICT
-	 * @throws Exception If cascade transaction fails
+	 * @throws ReferentialIntegrityException If blocked by RESTRICT, or a child is outside its property's table
+	 * @throws Exception If a child may not be deleted, or the cascade transaction fails
 	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function handleIntegrityDeletion(DeletionRun $run, bool $permanent): ?bool {
 		$object = $run->object();
@@ -743,24 +749,27 @@ class DeleteObject {
 		$this->objectEntityMapper->assertDeletable(entity: $object);
 		$this->guardsAsked[(string)$object->getUuid()] = true;
 
+		$children = $this->permittedCascadeChildren(run: $run);
+
 		$schemaId = $object->getSchema();
 		$hasIntegrityAction = $this->integrity->governs(schemaId: $schemaId);
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.relindex');
 
-		// Run legacy cascade regardless of integrity actions.
-		if ($hasIntegrityAction === false) {
-			$this->runLegacyCascade(context: $run->context, object: $object, uuid: $run->uuid);
-			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.legacycascade');
+		if ($hasIntegrityAction === false && $children === []) {
 			return null;
 		}
 
-		$analysis = $this->integrity->analyse(object: $object);
+		$analysis = DeletionAnalysis::empty();
+		if ($hasIntegrityAction === true) {
+			$analysis = $this->integrity->analyse(object: $object);
+		}
+
 		if ($analysis->deletable === false) {
 			$this->logAndThrowRestrict(run: $run, analysis: $analysis);
 		}
 
-		return $this->executeIntegrityTransaction(run: $run, analysis: $analysis, permanent: $permanent);
+		return $this->executeIntegrityTransaction(run: $run, analysis: self::withChildren(analysis: $analysis, children: $children), children: $children, permanent: $permanent);
 	}//end handleIntegrityDeletion()
 
 	/**
@@ -785,21 +794,26 @@ class DeleteObject {
 	}//end logAndThrowRestrict()
 
 	/**
-	 * Execute integrity cascade actions and root deletion within a transaction.
+	 * Run the cascade and the root deletion within one transaction.
 	 *
-	 * @param DeletionRun      $run       The resolved context and the uuid asked for.
-	 * @param DeletionAnalysis $analysis  The deletion analysis
-	 * @param bool             $permanent Whether the root is destroyed instead of tombstoned.
+	 * The `cascade: true` children are cascade targets of the same analysis as the onDelete
+	 * dependents: the archival obligation keeps a retained child live, and each child's
+	 * audit row names the root delete. A root delete that fails rolls every child back.
+	 *
+	 * @param DeletionRun                 $run       The resolved context and the uuid asked for.
+	 * @param DeletionAnalysis            $analysis  The deletion analysis, with the children as cascade targets.
+	 * @param array<string, CascadeChild> $children  The checked `cascade: true` children, keyed by uuid.
+	 * @param bool                        $permanent Whether the root is destroyed instead of tombstoned.
 	 *
 	 * @return bool True if deletion succeeded
 	 *
 	 * @throws Exception If the transaction fails
 	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function executeIntegrityTransaction(DeletionRun $run, DeletionAnalysis $analysis, bool $permanent): bool {
+	private function executeIntegrityTransaction(DeletionRun $run, DeletionAnalysis $analysis, array $children, bool $permanent): bool {
 		try {
-			return $this->integrity->atomically(
+			$result = $this->integrity->atomically(
 				work: fn (): bool => $this->applyIntegrityAndDeleteRoot(run: $run, analysis: $analysis, permanent: $permanent)
 			);
 		} catch (Exception $e) {
@@ -815,18 +829,24 @@ class DeleteObject {
 			throw $e;
 		}//end try
 
+		if ($result === false) {
+			return false;
+		}
+
+		$this->invalidateCachesForDeleted(deleted: self::withoutRetained(children: $children, retained: $this->lastRetainedTargets));
+		return true;
 	}//end executeIntegrityTransaction()
 
 	/**
-	 * Apply the integrity actions, run the legacy cascade and delete the root, counting the cascade.
+	 * Apply the integrity actions and delete the root, counting the cascade.
 	 *
 	 * @param DeletionRun      $run       The resolved context and the uuid asked for.
-	 * @param DeletionAnalysis $analysis  The deletion analysis
+	 * @param DeletionAnalysis $analysis  The deletion analysis, with the children as cascade targets.
 	 * @param bool             $permanent Whether the root is destroyed instead of tombstoned.
 	 *
 	 * @return bool True if deletion succeeded
 	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyIntegrityAndDeleteRoot(DeletionRun $run, DeletionAnalysis $analysis, bool $permanent): bool {
 		[$userId, $activeOrg] = $this->attribution->actingUser();
@@ -837,11 +857,7 @@ class DeleteObject {
 		);
 
 		// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
-		// a cascade casualty and must not be counted as one. The count used to
-		// be `count($analysis->cascadeTargets)`, the number of rows the
-		// analysis WANTED to delete, which is now a different number from the
-		// rows the cascade actually took. Reporting the analysis figure would
-		// tell a bulk caller that a record it can still see was deleted.
+		// a cascade casualty and must not be counted as one.
 		$this->lastRetainedTargets = $integrityResult['retained'];
 
 		$cCount = (count($analysis->cascadeTargets) - count($this->lastRetainedTargets));
@@ -849,39 +865,183 @@ class DeleteObject {
 		$dCount = count($analysis->defaultTargets);
 		$this->lastCascadeCount = (max(0, $cCount) + $nCount + $dCount);
 
-		$this->runLegacyCascade(context: $run->context, object: $run->object(), uuid: $run->uuid);
-
-		$rootCascadeCtx = self::buildCascadeContext(run: $run, analysis: $analysis);
-
 		return $this->delete(
 			object: $run->object(),
-			options: new RemovalOptions(cascadeContext: $rootCascadeCtx, permanent: $permanent, table: $run->table())
+			options: new RemovalOptions(cascadeContext: self::buildCascadeContext(run: $run, analysis: $analysis), permanent: $permanent, table: $run->table())
 		);
 	}//end applyIntegrityAndDeleteRoot()
 
 	/**
-	 * Run legacy cascade: true deletion if register and schema are available.
+	 * The analysis with the `cascade: true` children added as cascade targets.
 	 *
-	 * @param array $context The object context
-	 * @param ObjectEntity $object The object being deleted
-	 * @param string $uuid The object UUID
+	 * A child that is an onDelete cascade target already is not added twice.
 	 *
-	 * @return void
+	 * @param DeletionAnalysis            $analysis The onDelete analysis.
+	 * @param array<string, CascadeChild> $children The checked children, keyed by uuid.
 	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @return DeletionAnalysis
 	 */
-	private function runLegacyCascade(array $context, ObjectEntity $object, string $uuid): void {
-		$contextRegister = $context['register'] ?? null;
-		$contextSchema = $context['schema'] ?? null;
-
-		if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
-			$this->cascadeDeleteObjects(
-				root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
-				originalObjectId: $uuid
-			);
+	private static function withChildren(DeletionAnalysis $analysis, array $children): DeletionAnalysis {
+		$targets = $analysis->cascadeTargets;
+		$known   = array_flip(array_map(static fn (array $target): string => (string)($target['objectUuid'] ?? ''), $targets));
+		foreach ($children as $uuid => $child) {
+			if (isset($known[$uuid]) === false) {
+				$targets[] = $child->cascadeTarget();
+			}
 		}
 
-	}//end runLegacyCascade()
+		return new DeletionAnalysis(
+			deletable: true,
+			effects: new DeletionEffects(
+				cascadeTargets: $targets,
+				nullifyTargets: $analysis->nullifyTargets,
+				defaultTargets: $analysis->defaultTargets
+			),
+			chainPaths: $analysis->chainPaths
+		);
+	}//end withChildren()
+
+	/**
+	 * The children the cascade deleted: all but the retained ones.
+	 *
+	 * @param array<string, CascadeChild>      $children The checked children, keyed by uuid.
+	 * @param array<int, array<string, mixed>> $retained The retained reports.
+	 *
+	 * @return array<int, ObjectEntity>
+	 */
+	private static function withoutRetained(array $children, array $retained): array {
+		foreach ($retained as $report) {
+			unset($children[(string)($report['uuid'] ?? '')]);
+		}
+
+		return array_values(array_map(static fn (CascadeChild $child): ObjectEntity => $child->entity, $children));
+	}//end withoutRetained()
+
+	/**
+	 * The live `cascade: true` children of the root, each checked the way a direct delete of it is.
+	 *
+	 * Each referenced id is looked up in the table its property names, with the caller's RBAC
+	 * and organisation filters. An id that is not there refuses the root delete, so a
+	 * reference cannot reach an object in another register, schema or organisation. A found
+	 * child must pass the direct-delete refusals and the caller's delete right. Already
+	 * deleted children are left out.
+	 *
+	 * @param DeletionRun $run The root, its table and the caller.
+	 *
+	 * @return array<string, CascadeChild> The children to delete, keyed by uuid.
+	 *
+	 * @throws ReferentialIntegrityException When a referenced id is outside its property's table.
+	 * @throws Exception When a child may not be deleted.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function permittedCascadeChildren(DeletionRun $run): array {
+		$table = $run->table();
+		if ($table === null) {
+			return [];
+		}
+
+		$children = [];
+		foreach (($table->schema->getProperties() ?? []) as $propertyName => $property) {
+			if (self::isCascadeProperty(property: $property) === false) {
+				continue;
+			}
+
+			$ids = self::usableCascadeIds(candidates: self::cascadeCandidatesOf(value: $run->object()->getObject()[$propertyName] ?? null));
+			if ($ids === []) {
+				continue;
+			}
+
+			$childTable = $this->integrity->cascadePropertyTable(property: $property, owner: $table);
+			foreach ($ids as $id) {
+				$child = $this->permittedCascadeChild(run: $run, childTable: $childTable, id: $id, propertyName: (string)$propertyName);
+				if ($child !== null) {
+					$children[(string)$child->getUuid()] = new CascadeChild(entity: $child, property: (string)$propertyName);
+				}
+			}
+		}
+
+		return $children;
+	}//end permittedCascadeChildren()
+
+	/**
+	 * One `cascade: true` child, found in its property's table and checked; null when already deleted.
+	 *
+	 * @param DeletionRun         $run          The root and the caller.
+	 * @param RegisterSchema|null $childTable   The table the property names; null when it does not resolve.
+	 * @param string              $id           The referenced id.
+	 * @param string              $propertyName The cascade property.
+	 *
+	 * @return ObjectEntity|null The child, or null when it is deleted already.
+	 *
+	 * @throws ReferentialIntegrityException When the child is not in the table.
+	 * @throws Exception When the child may not be deleted.
+	 */
+	private function permittedCascadeChild(DeletionRun $run, ?RegisterSchema $childTable, string $id, string $propertyName): ?ObjectEntity {
+		$child = null;
+		if ($childTable !== null && $this->rowRules !== null) {
+			$child = $this->findCascadeChild(run: $run, childTable: $childTable, id: $id);
+		}
+
+		if ($child === null) {
+			$this->logAndThrowRestrict(run: $run, analysis: self::outOfScopeChild(run: $run, propertyName: $propertyName));
+		}
+
+		if ($child->isSoftDeleted() === true) {
+			return null;
+		}
+
+		$this->rowRules->assertDeletable(row: $child, table: $childTable, caller: $run->caller);
+		return $child;
+	}//end permittedCascadeChild()
+
+	/**
+	 * The child with this id in the table, as the caller may see it, or null.
+	 *
+	 * @param DeletionRun    $run        The caller.
+	 * @param RegisterSchema $childTable The table the property names.
+	 * @param string         $id         The referenced id.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function findCascadeChild(DeletionRun $run, RegisterSchema $childTable, string $id): ?ObjectEntity {
+		try {
+			return $this->objectEntityMapper->find(
+				identifier: $id,
+				register: $childTable->register,
+				schema: $childTable->schema,
+				includeDeleted: true,
+				_rbac: $run->caller->rbac,
+				_multitenancy: $run->caller->multitenancy
+			);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findCascadeChild()
+
+	/**
+	 * The analysis that refuses a root whose cascade property refers outside its table.
+	 *
+	 * The blocker names the property, not the referenced id.
+	 *
+	 * @param DeletionRun $run          The root.
+	 * @param string      $propertyName The cascade property.
+	 *
+	 * @return DeletionAnalysis
+	 */
+	private static function outOfScopeChild(DeletionRun $run, string $propertyName): DeletionAnalysis {
+		return new DeletionAnalysis(
+			deletable: false,
+			blockers: [[
+				'objectUuid' => '',
+				'schema' => $run->object()->getSchema(),
+				'property' => $propertyName,
+				'action' => 'CASCADE',
+				'reason' => 'out_of_scope',
+				'chain' => [],
+			]]
+		);
+	}//end outOfScopeChild()
 
 	/**
 	 * Build cascade context metadata for audit trail tagging.
@@ -912,170 +1072,6 @@ class DeleteObject {
 		];
 
 	}//end buildCascadeContext()
-
-	/**
-	 * Handles cascading deletes for related objects (legacy cascade: true).
-	 *
-	 * PERF: all referenced ids are collected first and resolved with ONE batched
-	 * cross-table lookup, then soft-deleted with one UPDATE per magic table and
-	 * one multi-row audit INSERT — instead of running the full per-object delete
-	 * pipeline (cross-table scan, re-find, row update, audit insert) per id.
-	 * Ids the uuid-based batch lookup cannot resolve (numeric ids, slugs, URIs)
-	 * fall back to the legacy per-id pipeline, preserving prior behaviour.
-	 * Cascade depth is unchanged: children are sub-deletions (originalObjectId
-	 * set) and never cascade further, exactly like the per-id pipeline.
-	 *
-	 * @param DeletionTarget $root             The object being deleted with its register and schema.
-	 * @param string         $originalObjectId The ID of original object for cascading.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function cascadeDeleteObjects(DeletionTarget $root, string $originalObjectId): void {
-		$register = $root->register;
-		$schema = $root->schema;
-		if ($register === null || $schema === null) {
-			return;
-		}
-
-		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $root->object);
-		if (empty($cascadeIds) === true) {
-			return;
-		}
-
-		$handledIds = $this->softDeleteCascadeTargets(targets: $this->lookupCascadeTargets(cascadeIds: $cascadeIds));
-
-		// Legacy per-id pipeline for ids the batch lookup did not resolve.
-		foreach (self::unhandledIds(ids: $cascadeIds, handledIds: $handledIds) as $cascadeId) {
-			$options = new DeletionOptions(originalObjectId: $originalObjectId);
-			$this->deleteObject(request: new DeletionRequest(register: $register, schema: $schema, uuid: $cascadeId, options: $options));
-		}
-	}//end cascadeDeleteObjects()
-
-	/**
-	 * Resolve every level-one cascade target in one batched lookup.
-	 *
-	 * A failed lookup is logged and resolves nothing, so every id falls back to
-	 * the per-id pipeline.
-	 *
-	 * @param array<int, string> $cascadeIds The referenced ids.
-	 *
-	 * @return ObjectEntity[] The resolved targets.
-	 */
-	private function lookupCascadeTargets(array $cascadeIds): array {
-		try {
-			return $this->objectEntityMapper->findStoredAcrossAllMagicTables(
-				uuids: $cascadeIds,
-				includeDeleted: true
-			);
-		} catch (\Throwable $e) {
-			$this->logCascadeLookupFailure(error: $e);
-		}
-
-		return [];
-	}//end lookupCascadeTargets()
-
-	/**
-	 * Log a batched cascade lookup that failed.
-	 *
-	 * @param \Throwable $error Why it failed.
-	 *
-	 * @return void
-	 */
-	private function logCascadeLookupFailure(\Throwable $error): void {
-		$this->logger->warning(
-			message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'error' => $error->getMessage(),
-			]
-		);
-	}//end logCascadeLookupFailure()
-
-	/**
-	 * Guard, then batch-soft-delete the resolved targets that are not deleted yet.
-	 *
-	 * @param ObjectEntity[] $targets The resolved cascade targets.
-	 *
-	 * @return array<string, true> Ids taken care of (batch-deleted or already deleted), keyed by uuid.
-	 */
-	private function softDeleteCascadeTargets(array $targets): array {
-		$this->assertCascadeTargetsDeletable(targets: $targets);
-
-		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
-		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
-		foreach ($alreadyDeleted as $target) {
-			$handledIds[(string)$target->getUuid()] = true;
-		}
-
-		return $handledIds;
-	}//end softDeleteCascadeTargets()
-
-	/**
-	 * Ask the delete guards about every live cascade target.
-	 *
-	 * The batched write dispatches update events only, so a guard on the deleting
-	 * event answers here: one refused child refuses the whole cascade.
-	 *
-	 * @param ObjectEntity[] $targets The resolved cascade targets.
-	 *
-	 * @return void
-	 */
-	private function assertCascadeTargetsDeletable(array $targets): void {
-		foreach ($targets as $target) {
-			if (empty($target->getDeleted()) === true) {
-				$this->objectEntityMapper->assertDeletable(entity: $target);
-			}
-		}
-	}//end assertCascadeTargetsDeletable()
-
-	/**
-	 * The ids the batch did not take care of, in their original order.
-	 *
-	 * @param array<int, string>  $ids        The referenced ids.
-	 * @param array<string, true> $handledIds The ids taken care of.
-	 *
-	 * @return array<int, string>
-	 */
-	private static function unhandledIds(array $ids, array $handledIds): array {
-		$unhandled = [];
-		foreach ($ids as $id) {
-			if (isset($handledIds[$id]) === false) {
-				$unhandled[] = $id;
-			}
-		}
-
-		return $unhandled;
-	}//end unhandledIds()
-
-	/**
-	 * Collect the referenced ids of all `cascade: true` schema properties.
-	 *
-	 * @param Schema $schema The schema whose properties are inspected.
-	 * @param ObjectEntity $object The object holding the reference values.
-	 *
-	 * @return string[] Unique, non-empty referenced ids.
-	 *
-	 * @psalm-return list<string>
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function collectCascadeTargetIds(Schema $schema, ObjectEntity $object): array {
-		$ids = [];
-		$properties = $schema->getProperties();
-		foreach ($properties ?? [] as $propertyName => $property) {
-			if (self::isCascadeProperty(property: $property) === false) {
-				continue;
-			}
-
-			$candidates = self::cascadeCandidatesOf(value: $object->getObject()[$propertyName] ?? null);
-			array_push($ids, ...self::usableCascadeIds(candidates: $candidates));
-		}
-
-		return array_values(array_unique($ids));
-	}//end collectCascadeTargetIds()
 
 	/**
 	 * Whether a schema property declares `cascade: true`.
@@ -1127,147 +1123,6 @@ class DeleteObject {
 
 		return $ids;
 	}//end usableCascadeIds()
-
-	/**
-	 * Soft-delete a batch of resolved cascade targets.
-	 *
-	 * Applies the same deletion metadata shape as {@see delete()}, persists via
-	 * one UPDATE per magic table (MagicMapper::softDeleteMultipleObjectEntities,
-	 * which also dispatches the per-object updating/updated events the per-id
-	 * pipeline produced), writes the audit rows with one multi-row INSERT, and
-	 * invalidates caches per object.
-	 *
-	 * @param ObjectEntity[] $targets The batch-resolved cascade target entities.
-	 *
-	 * @return array<string, true> Ids taken care of by the batch (keyed by uuid).
-	 *                             Empty when the batch write failed entirely — the
-	 *                             caller then falls back to per-id deletes.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function batchCascadeSoftDelete(array $targets): array {
-		if (empty($targets) === true) {
-			return [];
-		}
-
-		[$userId, $activeOrganisation] = $this->attribution->actingUser();
-		[$handled, $oldEntities] = (new SoftDeleteStamp(deletedBy: $userId, organisation: $activeOrganisation))->apply(targets: $targets);
-
-		try {
-			$deleted = $this->objectEntityMapper->softDeleteMultipleObjectEntities(
-				entities: $targets,
-				oldEntities: $oldEntities
-			);
-		} catch (\Throwable $e) {
-			// Nothing was handled — the caller retries every id via the
-			// legacy per-id pipeline.
-			$this->logger->error(
-				message: '[DeleteObject] Batched cascade soft delete failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-			return [];
-		}
-
-		$this->writeCascadeAuditTrails(deleted: $deleted);
-		$this->invalidateCachesForDeleted(deleted: $deleted);
-
-		return $handled;
-	}//end batchCascadeSoftDelete()
-
-	/**
-	 * Write the audit rows for batch-cascade-deleted objects in one bulk INSERT.
-	 *
-	 * Row shape matches the per-object path exactly (buildAuditTrail with
-	 * action `delete` and the post-soft-delete entity as the old state). An
-	 * audit failure is logged but never aborts the cascade — parity with the
-	 * per-id pipeline, where a throwing audit write left the object deleted
-	 * and the cascade running.
-	 *
-	 * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	private function writeCascadeAuditTrails(array $deleted): void {
-		if (empty($deleted) === true || $this->isAuditTrailsEnabled() === false) {
-			return;
-		}
-
-		$rows = $this->buildCascadeAuditRows(deleted: $deleted);
-		if (empty($rows) === true) {
-			return;
-		}
-
-		$this->insertCascadeAuditRows(rows: $rows);
-	}//end writeCascadeAuditTrails()
-
-	/**
-	 * Build one audit row per deleted entity; a row that cannot be built is logged and skipped.
-	 *
-	 * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
-	 *
-	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The rows, in entity order.
-	 */
-	private function buildCascadeAuditRows(array $deleted): array {
-		$rows = [];
-		foreach ($deleted as $entity) {
-			try {
-				$rows[] = $this->auditTrailMapper->buildEntry(change: new AuditedChange(old: $entity, new: null, action: 'delete'));
-			} catch (\Throwable $e) {
-				$this->logCascadeAuditRowFailure(entity: $entity, error: $e);
-			}
-		}
-
-		return $rows;
-	}//end buildCascadeAuditRows()
-
-	/**
-	 * Log a cascade audit row that could not be built.
-	 *
-	 * @param ObjectEntity $entity The entity the row was for.
-	 * @param \Throwable   $error  Why it could not be built.
-	 *
-	 * @return void
-	 */
-	private function logCascadeAuditRowFailure(ObjectEntity $entity, \Throwable $error): void {
-		$this->logger->warning(
-			message: '[DeleteObject] Could not build cascade audit row',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $entity->getUuid(),
-				'error' => $error->getMessage(),
-			]
-		);
-	}//end logCascadeAuditRowFailure()
-
-	/**
-	 * Insert the cascade audit rows in one bulk INSERT; a failure is logged, never thrown.
-	 *
-	 * @param array<int, \OCA\OpenRegister\Db\AuditTrail> $rows The rows.
-	 *
-	 * @return void
-	 */
-	private function insertCascadeAuditRows(array $rows): void {
-		try {
-			$this->auditTrailMapper->insertAuditTrails(entries: $rows);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[DeleteObject] Bulk cascade audit insert failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'count' => count($rows),
-					'error' => $e->getMessage(),
-				]
-			);
-		}
-	}//end insertCascadeAuditRows()
 
 	/**
 	 * Invalidate caches per soft-deleted object (parity with delete()).

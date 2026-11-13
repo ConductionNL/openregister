@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -443,6 +444,47 @@ class ReferentialIntegrityService {
 		$this->ensureRelationIndex();
 		return isset($this->relationIndex[$schemaId]);
 	}//end hasIncomingOnDeleteReferences()
+
+	/**
+	 * The table the references of a `cascade: true` property must live in.
+	 *
+	 * The property's `$ref` (or `items.$ref`) names the schema, resolved the way an
+	 * onDelete relation's target is. The register is the owner's own register when it
+	 * holds that schema, otherwise the register whose table holds it. A property that
+	 * names no schema refers into the owner's own table.
+	 *
+	 * @param array          $property The property definition.
+	 * @param RegisterSchema $owner    The register and schema of the object holding the property.
+	 *
+	 * @return RegisterSchema|null The table, or null when the named schema or its register does not resolve.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function cascadePropertyTable(array $property, RegisterSchema $owner): ?RegisterSchema {
+		$targetRef = $this->extractTargetRef(property: $property);
+		if ($targetRef === null) {
+			return $owner;
+		}
+
+		$this->ensureSchemaDetail();
+		$schemaId = $this->resolveSchemaRef(ref: $targetRef, allSchemas: ($this->schemaCache ?? []));
+		$schema   = ($this->schemaCache[$schemaId ?? ''] ?? null);
+		if ($schema === null) {
+			return null;
+		}
+
+		$ownerSchemas = array_map('strval', array_filter($owner->register->getSchemas(), 'is_scalar'));
+		$register     = ($this->schemaRegisterMap[$schemaId] ?? null);
+		if (in_array($schemaId, $ownerSchemas, true) === true) {
+			$register = $owner->register;
+		}
+
+		if ($register === null) {
+			return null;
+		}
+
+		return new RegisterSchema(register: $register, schema: $schema);
+	}//end cascadePropertyTable()
 
 	/**
 	 * Build the relation index from all schemas if not already cached.
