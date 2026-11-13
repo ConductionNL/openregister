@@ -6133,3 +6133,4 @@ pipelinq	3771	dc8a207a97e2a6468d64acef75f988ac9ed8c4ee	GREEN	worker-21	tree 3769
 integriq	3524	650f8d30b9ec8230fdf5b2228b9fd4f2101c68c5	GREEN	worker-35	unit 8232 run (baseline 8222, E2 F2-3 inherited incl. flaky golden sync test); tests only, no new failures
 integriq	3526	b3a0637f0165892c648864ead5966c03069eb472	GREEN	worker-35	unit 8232 run same as baseline; vitest 159 files/2128 tests all pass; tests only
 portaliq	2443	4322f3ac1ef3423b13baca3b34799b91c46b8460	GREEN	worker-21	unit 4926 tests (baseline 4914, 0 failures); implements T05 of resident-identity-in-forms (yivi brokered provider, filtered attributes); envelope checks unchanged
+keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	GREEN	worker-16	unit 4855 tests (baseline 4854 OK, 241 skipped), 0 new failures; tests only
