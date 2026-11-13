@@ -1584,3 +1584,4 @@ cover:stackiq:8cfacb29m8db8:jsc7b297c1	PR #1813: 2 views, 12 tests, src/views li
 cover:pipelinq:f67520ecm8c58:d4326ecd	already done: the four dirs are at 90/97 statements (92.8%), above the 85% target; 7 lines left across WorkBuckets, PersonFetch, SchemaSlugMap	session-20261113T015005-e2235eb9	2026-11-13T02:15:29Z
 cover:pipelinq:f67520ecm8c58:js00fe026a	already done: open PR on quality/test-coverage-js-00fe026a-1 (e9f50310) already covers these src/services gaps (9 specs); no duplicate opened	session-20261112T234655-793f46ee	2026-11-13T02:15:44Z
 cover:pipelinq:f67520ecm8c58:js4570fd16	failed: permission (lang=js needs npm ci, refused in this session)	session-20261113T015005-e2235eb9	2026-11-13T02:15:40Z
+cover:pipelinq:f67520ecm8c58:23d187f5	already done: lib/Service/Store at 82/86 statements (95.3%), above the 90% target	session-20261113T015005-e2235eb9	2026-11-13T02:15:56Z
