@@ -862,8 +862,52 @@ class FilesController extends Controller {
 			$files = $this->fileRestrictions->readableNodes(nodes: $files);
 		}
 
-		return $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		$page = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		if ($isAnonymous === true) {
+			return $page;
+		}
+
+		return $this->withOfficeUrls(route: $route, object: $object, page: $page);
 	}//end listedFiles()
+
+	/**
+	 * The page with `officeUrl` on every file Nextcloud Office opens: the page
+	 * that opens it, which runs its own read and update checks. A file of
+	 * another type, or every file when Office is not available, gets none.
+	 *
+	 * @param FileObjectRoute      $route  The object, as the route names it.
+	 * @param ObjectEntity|null    $object The object the access check resolved.
+	 * @param array<string, mixed> $page   The formatted page of files.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	private function withOfficeUrls(FileObjectRoute $route, ?ObjectEntity $object, array $page): array {
+		if ($this->officeSessionService === null || is_array(($page['results'] ?? null)) === false) {
+			return $page;
+		}
+
+		$objectId = (string)($object?->getUuid() ?? $route->id);
+		foreach ($page['results'] as $index => $file) {
+			if (is_array($file) === false) {
+				continue;
+			}
+
+			$url = $this->officeSessionService->officePageUrl(
+				register: $route->register,
+				schema: $route->schema,
+				objectId: $objectId,
+				fileId: (int)($file['id'] ?? 0),
+				mimeType: (string)($file['type'] ?? '')
+			);
+			if ($url !== null) {
+				$page['results'][$index]['officeUrl'] = $url;
+			}
+		}
+
+		return $page;
+	}//end withOfficeUrls()
 
 	/**
 	 * Answer a failed listing; anything unforeseen answers 500 without its detail (SEC-CTRL-7).
