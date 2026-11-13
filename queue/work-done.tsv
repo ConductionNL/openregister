@@ -4339,3 +4339,4 @@ measure:pipelinq:20261113h10	php 86.73% (50701/58457 lines, pcov), js 88.76% (15
 cover:opencatalogi:fc83bfb1:24707f74	already done: lib/Controller/Setup 297/297 statements covered on development (baseline 2 unrelated failures: AppIdentityTest, WooControllerTest)	session-20261113T104531-16da055e	2026-11-13T10:57:13Z
 merge:humaniq:1025:f78d6ab2	merge-local over 1 humaniq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:57:36Z
 build:pipelinq:berichtenbox-admin-stats-pagination-and-tests	PR #3714: paged stats (limit 500) + 9 controller tests; 1.4/3.2 manual left; suite 1 inherited failure, no new	session-20261113T104531-274f72f7	2026-11-13T10:57:33Z
+review:openregister:10124:31c24145	APPROVE: tests only, 27 jest tests pass merged with main	session-20261113T101609-bc51215d	2026-11-13T10:57:43Z
