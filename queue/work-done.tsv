@@ -2449,3 +2449,4 @@ cover:integriq:92114ab0m1534:fd0946f1	already done: lib/Service/MessageValidatio
 verify:launchpad:1172:ba1d4b65	GREEN 1172 (JS specs only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T05:36:35Z
 verify:shillinq:2865:f69ec358	shillinq #2865 #2866 #2867 GREEN (9060 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T05:36:56Z
 cover:openregister:7350e3efmaea4:js76b76dfb	PR #10102: 5 mount specs, 27 tests; register+schema views 85.3%->97.4% lines; suite 7703 pass	session-20261113T051710-d9c31c61	2026-11-13T05:37:05Z
+cover:openregister:7350e3efmaea4:js5794e9fc	PR #10103: 35 jest tests (PermissionMatrix, LlmConfiguration); src/views/settings lines 85.2% -> 92.7%	session-20261113T051705-4f5ad12a	2026-11-13T05:37:31Z
