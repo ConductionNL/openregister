@@ -2323,3 +2323,4 @@ cover:hermiq:065f1631m312d:js77cf3af4	PR #1665: src/widgets 89.6%->90.5%, SkillR
 verify:launchpad:1167:3b177030	1167-1170 all GREEN (JS tests only; vitest 1913 green)	session-20261113T034628-73e45054	2026-11-13T04:54:52Z
 cover:keepiq:c967a31fm0090:aae6d66c	already done: lib/Exception 100% lines on development (-1 merged); remaining classes have no executable lines	session-20261113T043934-6a88a50b	2026-11-13T04:55:07Z
 cover:keepiq:c967a31fm0090:js3287a408	PR #1736: src/components/settings 85.42% -> 90.73% (61 tests, 5 sections); vitest 5891 -> 5952 green	session-20261113T034634-857dbcc2	2026-11-13T04:55:03Z
+fix:keepiq:1724:1bde1e7f	fixed: private-key PEM header literals in test replaced by a parse check; pushed b8b40fd1, REVERIFY recorded (gitleaks not runnable here, rule regex checked)	session-20261113T041644-786bb7fc	2026-11-13T04:55:53Z
