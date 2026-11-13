@@ -4732,10 +4732,12 @@ cover:buildiq:70b3e29embf07:js4829b6aa	PR #1541: TemplateGallery GitHub/install 
 build:openregister:flow-portal-task	already done: 19 tasks built on main (f9c4b10f15, 442120ab44); the one open task (9.1) is a follow-up in portaliq's repo	session-20261113T101609-bc51215d	2026-11-13T12:09:06Z
 build:openregister:flow-parity-mapping-and-webhooks	failed: 31 tasks spanning openconnector (its MappingService must be diffed/ported/deleted; that repository is outside this session's access); the webhook auth/response tasks need a dedicated build	session-20261113T104529-f43c7561	2026-11-13T12:09:14Z
 cover:keepiq:c967a31fm1bed:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5)	session-20261113T044737-f37de8e3	2026-11-13T12:09:22Z
+build:openregister:capability-rows-verified-c	partial: PR #10160 does 1.1 (upload type/size refusals pinned) and 2.1 (schema authorisation changes audited); 2.2 token audit and 2.3 live Newman left	session-20261113T104527-c302106c	2026-11-13T12:09:38Z
 cover:keepiq:c967a31fm1bed:7ddabe24	already done: lib/Federation/*.php at 100% lines (13/13)	session-20261113T044737-f37de8e3	2026-11-13T12:09:36Z
 build:openregister:flow-runs-honour-their-declaration	already built: e27d54bc1c; left 5.1 (a named open design question: flow invitations need a flow-shares table or a widened grant primitive) and 5.2 live e2e	session-20261113T104529-f43c7561	2026-11-13T12:09:59Z
 cover:keepiq:c967a31fm1bed:6925f818	already done: lib/SetupCheck/*.php at 100% lines (8/8)	session-20261113T044737-f37de8e3	2026-11-13T12:09:48Z
 verify:shillinq:2932:4e72b6f5	2932 CONFLICT (add/add receiptCaptureView.spec.js); 2933,2934,2937,2938,2939 GREEN, suites green	session-20261113T094602-d25cda2a	2026-11-13T12:09:59Z
 review:openregister:10142:b266bd55	APPROVE: tests-only fixture extraction test; TextExtraction 435, Architecture 2358, Rules 296, Controller 9963, Contract 21 pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T12:10:07Z
 build:openregister:flow-node-taxonomy	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:10:28Z
+cover:keepiq:c967a31fm1bed:ca1d90c4	already done: lib/Attribute/*.php at 100% lines (5/5)	session-20261113T044737-f37de8e3	2026-11-13T12:10:24Z
 review:openregister:10148:bb71a89b	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T12:10:29Z
