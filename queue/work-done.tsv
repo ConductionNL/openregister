@@ -4450,6 +4450,7 @@ cover:keepiq:c967a31fm1bed:1b97f731	failed: permission (running the app's unit s
 cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
 cover:stackiq:9ac19b3am10f3:2861e5ef	already covered: lib/Examples 100% lines (93/93, 12/12 methods) on development c90c1748; no PR	session-20261113T111529-f2ee6930	2026-11-13T11:17:00Z
 build:pipelinq:screen-pop-incoming-call	failed: permission (built in 38c5fed47 except 2.3, the three facts on the card: needs IncomingCallCard.vue + vitest, npm ci refused here; 3.x are live)	session-20261113T104529-f43c7561	2026-11-13T11:17:02Z
+cover:pipelinq:7f9dc8e6m84dd:0798b7cf	already done: lib/Service/PosCart measures 67/67 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T11:17:15Z
 cover:keepiq:c967a31fm1bed:aae6d66c	failed: permission (running the app's unit suite was refused in this session)	session-20261113T111541-acb65efe	2026-11-13T11:17:11Z
 build:pipelinq:platform-properties	PR #3737: 6/9 tasks; 2.3 partial (28 admin-default routes pinned, attribute choice left to review), 3.3 live, 4.1 archive; 50 style hexes themed + stylelint rule	session-20261113T104527-c302106c	2026-11-13T11:17:21Z
 fix:pipelinq:3711:ee7b9c7c	RED fixed (merged label), pushed cc4987de8b91eb02838ac1433b713aa99c368424, REVERIFY recorded	session-20261113T071633-17de823f	2026-11-13T11:17:29Z
