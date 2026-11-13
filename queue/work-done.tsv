@@ -4392,3 +4392,4 @@ build:pipelinq:request-dialog-client-lookups	partial: PR #3725 builds the KVK se
 build:pipelinq:my-work-roadmap	partial: PR #3726 builds block 1 (week-stats service, endpoint, manifest tiles, 11 tests); blocks 2-13 left	session-20261113T101609-bc51215d	2026-11-13T11:06:12Z
 build:pipelinq:pipeline-lead-rotation	partial: PR #3727 (schema, LeadRotationService, listener hook, settings key, 17 tests); left 1.4 UI, 1.5 LeadDetail, 1.6 doc (frontend, npm unavailable here)	session-20261113T104529-f43c7561	2026-11-13T11:06:29Z
 cover:pipelinq:7f9dc8e6m84dd:d4326ecd	already done: Messaging, PersonLookup, Settings, Worklist measure 97/97 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T11:06:41Z
+build:pipelinq:calendar-deepening	PR #3728: 15/16 tasks (1.3 live render left); 20 PHP tests; suite 6747->6767, 1 inherited failure	session-20261113T104527-c302106c	2026-11-13T11:06:56Z
