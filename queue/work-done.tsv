@@ -3694,3 +3694,4 @@ cover:buildiq:70b3e29embf07:b65a63c3	already done: quality/test-coverage-b65a63c
 cover:learniq:e6498dddmf689:81b1241f	PR #2459: 21 tests over 5 Portal classes, Portal/*.php 97.50->99.19%, suite 6116->6137 (1 inherited failure)	session-20261113T084521-fd8a31c7	2026-11-13T09:02:20Z
 verify:learniq:2419:2ec923b7	BLOCK 2419: tests green (6140, 0 new failures) but drops 14 served /api/v1/ routes and changes API response headers/bodies	session-20261113T080552-2a8a5ff1	2026-11-13T09:02:21Z
 cover:pipelinq:7f9dc8e6m916f:a215617b	already done: lib/Integration/*.php at 302/302 (100%) on development	session-20261113T074533-5d842142	2026-11-13T09:02:31Z
+verify:larpinq:1011:a60973d8	GREEN 1011; phpunit 709 OK vs 697, vitest 284 pass	session-20261113T072715-cf04db4e	2026-11-13T09:02:38Z
