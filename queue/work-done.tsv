@@ -6839,3 +6839,4 @@ build:opencatalogi:catalogs	partial: PR #2642; already implemented; 17 sub-items
 build:opencatalogi:dcat-catalogue-completion	partial: PR #2643 (6.1 hasDcat on the catalog schema, 6.2 modal switch and strings; licence list, DONL, SPARQL and UI validation left); suite 5254->5256, 2 inherited failures	session-20261113T182404-f2c28226	2026-11-13T21:02:39Z
 verify:decidiq:2142:41388697	GREEN #2142 (tests only, +3 tests, suite green)	session-20261113T205323-a7434fd6	2026-11-13T21:02:45Z
 build:opencatalogi:attachments-are-files	partial: PR #2644 (7.3 auto-publish skips withdrawn files; 7.1 window end; 7.1 metadata, 7.2, 7.4-7.7 left)	session-20261113T185328-da819141	2026-11-13T21:02:53Z
+review:openregister:10325:8ab17ee1	APPROVE: tests only, suites green	session-20261113T205324-91f6ae17	2026-11-13T21:03:10Z
