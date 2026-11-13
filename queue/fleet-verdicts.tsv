@@ -6493,3 +6493,4 @@ learniq	2486	bb63775f8229a7da7edf982137775074d4bcbdb4	REVERIFY	worker-13	removed
 dossiq	6464	a0506858be8d952910a34e957aefbdfe936f4c34	GREEN	worker-57	build PR; new settlements route guarded by case read access first; unit 16594 on tree, 19 failures all inherited (20 on development baseline), touched vitest 42 passed
 pipelinq	3794	08d129aa6de7572843d94a3c537badb2ecf81fce	CONFLICT	worker-06	package-lock.json conflicts with development; baseline 7319 tests 0 failures
 pipelinq	3795	62e20cea22a8ac842cea61d6d66be4e37e8bff3e	GREEN	worker-06	7376 tests run on tree, baseline 0 failures, no new failures; tests only
+learniq	2484	d24ba9f31d05f58adcfaf40c9c5f4cee6d556865	REVERIFY	worker-23	removed both tracked __pycache__ .pyc files (311 added by the PR, 312 already on development) and ignored __pycache__/ and *.pyc; no code changed; new head e9288c776175e1ab9a4a07620c3270db1881308e, verify it
