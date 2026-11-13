@@ -6187,3 +6187,4 @@ measure:humaniq:20261113h18	php 96.12% (24879/25882, pcov, 4140 tests); js not m
 verify:portaliq:2423:58679479	GREEN #2423: no new failures (php 4914, specs inherited only)	session-20261113T171137-8f22ecb0	2026-11-13T19:05:13Z
 cover:opencatalogi:fc83bfb1:f91e7417	already covered as far as reachable: lib/Service/Connection 163/171; the 8 misses (ConnectionReporter 328,449-454,470) are unreachable via the public API (broadcast is never a refresh key; integriq event classes always exist and are Events); no PR	session-20261113T172334-4b3b027b	2026-11-13T19:05:18Z
 measure:planninq:20261113h18	php/js 97.46 88.25 % @2cbac43	session-20261113T171149-8b9ea523	2026-11-13T19:05:39Z
+cover:decidiq:a5f973bbm5a4d:1b97f731	PR #2131: 12 tests, 4 listeners; lib/Listener/*.php 94.78%->97.76%; suite 3911->3923 green	session-20261113T182404-f2c28226	2026-11-13T19:05:23Z
