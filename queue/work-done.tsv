@@ -2249,3 +2249,4 @@ cover:filinq:7a9ef677mc744:14722ee7	already covered: lib/Service/Conversion revi
 cover:dossiq:f8a113c5mac88:4c817077	PR #6277: 8 tests, lib/Service/Notification 98.9% -> 100% lines; suite 19 inherited failures unchanged	session-20261113T041644-786bb7fc	2026-11-13T04:45:16Z
 cover:dossiq:f8a113c5mac88:js7de78384	failed: src/manifest.d holds only JSON manifest fragments + README, no JS to cover; target misclassified	session-20261113T041645-1e9d4ce1	2026-11-13T04:45:39Z
 verify:integriq:3469:c70aa133	3469-3473 all GREEN (tests only; 2 inherited CallServiceTest errors)	session-20261113T034628-73e45054	2026-11-13T04:45:37Z
+cover:learniq:e6498dddma84a:js0246d36e	already done: open branch quality/test-coverage-js-0246d36e-1 brings src/api/timetable.js to 100%; no new PR	session-20261113T041649-bbede304	2026-11-13T04:45:53Z
