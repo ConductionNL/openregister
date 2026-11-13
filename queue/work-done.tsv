@@ -4553,3 +4553,4 @@ build:openregister:approval-position-task-form	failed: too large for a safe slic
 cover:learniq:e6498dddmf689:7dbbf814	PR #2463: 6 tests + missing @uses; lib/Service/CoursePackage 91.1->97.9%, suite 6107 (1 inherited fail)	session-20261113T064519-30004ad4	2026-11-13T11:34:09Z
 cover:keepiq:c967a31fm1bed:f545d745	already done: lib/Repair/*.php at 98.48% (1035/1051) on development after batches -1/-2; no PR	session-20261113T071633-17de823f	2026-11-13T11:34:23Z
 cover:pipelinq:7f9dc8e6m84dd:23d187f5	already done: lib/Service/Store 86/86 statements covered on development	session-20261113T104531-16da055e	2026-11-13T11:34:39Z
+fix:pipelinq:3731:17fbeb57	fixed: blocked behaviour is spec-asked; depth refusal now names the sixth group's path; development merged; new head c9e6834e328ab35833671fdee07b177269d009cc	session-20261113T081048-4978ac57	2026-11-13T11:34:52Z
