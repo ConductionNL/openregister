@@ -6652,3 +6652,6 @@ cover:openregister:7350e3efma401:919f90c0	cover	openregister	main	test/coverage-
 cover:openregister:7350e3efma401:1b97f731	cover	openregister	main	test/coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=393;coverage=94.96;target=95.0	2026-11-13T19:12:12Z
 measure:pipelinq:20261113h18	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T19:20:22Z
 measure:stackiq:20261113h18	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T15:21:09Z
+fix:shillinq:3008:67bfab3c	fix	shillinq	development	3008	sha=67bfab3c589314a313679e734fe76f4aa7d961b7;verdict=CONFLICT;branch=quality/build-iv3-report-takes-case-costs-by-case-type;reason=conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR), clean vs development	2026-11-13T19:22:01Z
+review:openregister:10302:31a54a69	review	openregister	main	10302	sha=31a54a69e2abc1b520cdab11673f4d9465a27a89;last_approved=;title=feat(openregister): build platform-caldav-backend	2026-11-13T19:22:01Z
+merge:opencatalogi:2600:f07aa357	merge	opencatalogi	development	development	prs=2600@7874d6b1e0c0bbd61fdf605846cb0bab4a393c94,2601@6ee1c99a2e9e365c470249360be68b988f4b2114,2602@31ebaa9bf0a9edb09143ff15da05be9df036d32d	2026-11-13T19:22:01Z
