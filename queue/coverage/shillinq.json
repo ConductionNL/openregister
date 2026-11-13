@@ -1,7 +1,7 @@
 {
  "app": "shillinq",
- "commit": "79e59c85b1e0e9b6056c37aaa175e640178fa93a",
- "measured_at": "2026-11-13T14:02:02Z",
+ "commit": "b0ed3e448088bea21acf3cc6f4c9118374771d1c",
+ "measured_at": "2026-11-13T17:47:31Z",
  "php": {
   "tool": "pcov",
   "pct": 92.34,
@@ -339,9 +339,9 @@
   }
  },
  "js": {
-  "pct": 83.12,
-  "statements": 7410,
-  "covered": 6159,
+  "pct": 84.31,
+  "statements": 7503,
+  "covered": 6326,
   "dirs": {
    "src/": [
     3,
@@ -464,8 +464,8 @@
     4
    ],
    "src/modals/": [
-    1467,
-    721
+    1560,
+    888
    ],
    "src/store/": [
     3,
