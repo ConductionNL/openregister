@@ -2304,3 +2304,4 @@ cover:decidiq:a5f973bbma14b:d528dcf0	already done: lib/Dashboard/*.php at 100% l
 cover:decidiq:a5f973bbma14b:58192586	already done: lib/Service/Records/ 371/379 stmts (97.9%, target 85) at 13a5da8 after merged quality/test-coverage-58192586-1; no PR	session-20261113T041644-818a1837	2026-11-13T04:52:20Z
 cover:dossiq:f8a113c5mac88:jsd48eb217	already done: src/store/modules lines 96.4% (705/731), above 90 target	session-20261113T034628-9602b641	2026-11-13T04:52:17Z
 cover:pipelinq:f67520ecmc4ba:2cc09f74	already done: Transport/ at 330/335 stmts (98.5%) from own tests on d0c5ea266; the 5 left are unreachable (extractProviderId object/string branches behind an array-or-null decoder; Mail class-absent branch)	session-20261113T044732-d7765ae1	2026-11-13T04:52:53Z
+verify:pipelinq:3644:e00d484c	9 GREEN (tests-only), 0 new failures	session-20261113T024656-2f332446	2026-11-13T04:53:00Z
