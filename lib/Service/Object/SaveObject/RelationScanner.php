@@ -65,7 +65,7 @@ final class RelationScanner {
 		try {
 			$scan->schemaProperties = $this->schemaProperties(schema: $scan->schema);
 			foreach ($data as $key => $value) {
-				if (is_string($key) === true && empty($key) === false) {
+				if (is_string($key) === true && empty($key) === false && $scan->withholds(key: $key) === false) {
 					$scan->moveTo(key: $key);
 					$this->scanValue(scan: $scan, value: $value);
 				}

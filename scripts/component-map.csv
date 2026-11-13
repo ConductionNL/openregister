@@ -3896,3 +3896,4 @@ Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
+Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform

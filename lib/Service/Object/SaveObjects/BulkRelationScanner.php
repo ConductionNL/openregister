@@ -50,7 +50,7 @@ final class BulkRelationScanner {
 	public function scan(array $data, BulkRelationRun $run): array {
 		$run->schemaProperties = $run->schema?->getProperties();
 		foreach ($data as $key => $value) {
-			if (is_string($key) === true && empty($key) === false) {
+			if (is_string($key) === true && empty($key) === false && $run->withholds(key: $key) === false) {
 				$run->moveTo(key: $key);
 				$run->relations = array_merge($run->relations, $this->propertyRelations(value: $value, run: $run));
 			}

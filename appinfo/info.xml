@@ -237,6 +237,7 @@ Vrij en open source onder de EUPL-licentie.
 			     (occ openregister:adopt-organisationless-rows with apply writes). -->
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
 			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
+			<step>OCA\OpenRegister\Repair\WithholdRevealValuesFromRelations</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
