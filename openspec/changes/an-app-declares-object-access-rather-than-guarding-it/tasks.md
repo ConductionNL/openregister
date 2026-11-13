@@ -2,12 +2,14 @@
 
 ## 1. The contract, written down
 
-- [ ] 1.1 Document the declaration form in the schema `authorization`
+- [x] 1.1 Document the declaration form in the schema `authorization`
       reference: the principal vocabulary, the `match` clause, `$userId`,
       `$user.groups`, `$organisation`, `$now` and `$contains`, with the
       assignee and assignees example.
-- [ ] 1.2 State that an app-side guard needs a comment naming the expression
+- [x] 1.2 State that an app-side guard needs a comment naming the expression
       it tried and why it failed.
+      Both in `docs/Features/access-control.md`, "An app declares object access;
+      it does not guard it".
 
 ## 2. The undecidable posture
 
@@ -29,8 +31,11 @@
 
 ## 4. The orphan validator
 
-- [ ] 4.1 Call `TokenGrantValidator::refusalFor()` on the grant issue path and
+- [x] 4.1 Call `TokenGrantValidator::refusalFor()` on the grant issue path and
       return its reason to the caller.
+      Already on main: `ConsumersController::grantRefusal()` calls
+      `TokenGrantValidator::refusalFor()` on consumer create and update and
+      answers its reason; the validator is no longer an orphan.
 
 ## 5. Tests
 
