@@ -6597,3 +6597,11 @@ hermiq	1717	94f4b6bd904f3f6eec1d2178612597afd33f8668	CONFLICT	merge3	merges clea
 hermiq	1719	42c3a70eb2a0dc1be19efc69ae5d35122253c4ae	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 integriq	3539	d13d98400d1ddb28100f51d9bbce21eadfc88278	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.00 -> 3.98
 integriq	3541	e2cae68ddf2d5fa07921a9743743a06816171833	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.00 -> 3.96
+integriq	3343	ebd21951a0b504432e6a4687571acdd083d6ed36	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/CallServiceTest.php 
+integriq	3435	5be5ccc63a8f82c6ae58408f3cd0cd63796fe005	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Kiss/CtiSourceResolverTest.php 
+integriq	3466	5930a910f81986d6cb981e3d9591a9e4551431d8	CONFLICT	merge3	conflicts with development; files: tests/Unit/EventListener/DocumentRenderRequestedListenerTest.php 
+integriq	3472	17ed9285e12378bb2e64fc2f7698c98eebf66780	CONFLICT	merge3	conflicts with development; files: tests/Unit/Outbound/OutboundSecurityCryptoTest.php 
+integriq	3543	aaeb1f5d9dc1b0e4de7476e6901b446174c9e14d	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.json 
+integriq	3546	95fa7eb644975cdf5d614d79337033061f191477	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json openapi.json 
+integriq	3551	a7b3ae533ada5f5f63e2e5b0240d52b01b9c7731	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json openapi.json 
+integriq	3556	c479514657eb8eb37b2d66375774fb84698c7dc2	CONFLICT	merge3	merges clean on development alone; files: lib/Service/EndpointService.php 
