@@ -5607,3 +5607,11 @@ review:openregister:10209:c7722e08	review	openregister	main	10209	sha=c7722e08d9
 review:openregister:10210:d7ed0581	review	openregister	main	10210	sha=d7ed05811ca09bf0009c1a1da6e71922bc585e21;last_approved=;title=feat(openregister): build object-write-at-instance-floor	2026-11-13T12:50:09Z
 review:openregister:10211:77d5cedc	review	openregister	main	10211	sha=77d5cedca226f49fe7e0de0ec36eb810046833fe;last_approved=;title=feat(openregister): build modelling-field-names-per-language	2026-11-13T12:50:09Z
 merge:pipelinq:3749:5510695c	merge	pipelinq	development	development	prs=3749@a9ac3f12fd84606854a384d302bad66b133da585	2026-11-13T12:50:09Z
+review:openregister:10212:876c2868	review	openregister	main	10212	sha=876c28684aff07da621b65c4afeeef0f4329391a;last_approved=;title=fix(registers): a register that does not exist is not logged as an error	2026-11-13T12:55:09Z
+review:openregister:10213:bc4c8ebd	review	openregister	main	10213	sha=bc4c8ebd55ae01a6c1c3a1e07a220a24f9d07054;last_approved=;title=feat(openregister): build register-document-store	2026-11-13T12:55:09Z
+review:openregister:10214:addc2884	review	openregister	main	10214	sha=addc28849646ccf66f049abc20b89fe8672e7cdf;last_approved=;title=feat(openregister): build search-over-history-and-an-administered-dictionary	2026-11-13T12:55:09Z
+review:openregister:10215:bbf65756	review	openregister	main	10215	sha=bbf657569eaef30b8a0d67b922b08dec77a5429b;last_approved=;title=feat(openregister): build records-gallery-view	2026-11-13T12:55:09Z
+review:openregister:10216:e73d099a	review	openregister	main	10216	sha=e73d099a672fc7b7cdb05aa845ee1d6bf3bced44;last_approved=;title=feat(openregister): build register-scoped-schema-slug-resolution	2026-11-13T12:55:09Z
+verify:buildiq:1542:8d1ecaef	verify	buildiq	development	merge	prs=1542@741d037cfa7d8b50ec6310b1d7ca1785b1923a7d	2026-11-13T12:55:09Z
+merge:pipelinq:3754:2d53b5e5	merge	pipelinq	development	development	prs=3754@9eeea22badc492ed37aafbd84c5ba3ff0ac256a3,3755@6b2c8043680c332640b7da29c3ac0cc18c7aa654	2026-11-13T12:55:09Z
+measure:stackiq:20261113h12	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T08:55:36Z
