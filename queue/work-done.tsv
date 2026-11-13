@@ -3556,6 +3556,7 @@ measure:stackiq:20261113h08	php 85.28%, js 88.5% at 2a8336ce	session-20261113T08
 cover:stackiq:9ac19b3am5ac4:38e80a9f	already done: lib/Command/*.php at 100% (282/282); no PR	session-20261113T080546-98207a87	2026-11-13T08:43:11Z
 cover:stackiq:9ac19b3am5ac4:d528dcf0	already done: lib/Dashboard/*.php is one class at 12/12 lines with 3 test files; no PR	session-20261113T080549-20301834	2026-11-13T08:43:11Z
 cover:stackiq:9ac19b3am5ac4:f545d745	already done: lib/Repair/*.php at 1229/1234 lines (99.6%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:43:24Z
+cover:stackiq:9ac19b3am5ac4:9d3a1784	already done: lib/BackgroundJob/*.php at 196/198 lines on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:43:38Z
 fix:larpinq:1011:c34753f4	renamed 4 test classes to match files; 12 tests now run; suite 697->709, 0 failures; head 27666447	session-20261113T081043-b24589a6	2026-11-13T08:43:37Z
 cover:learniq:e6498dddmc027:fbe5f47d	PR #2452: 5 tests, WorkGroupMembershipService 91->100% lines, dir 99%; suite 6105->6110, only inherited failure	session-20261113T081055-3901e400	2026-11-13T08:43:46Z
 verify:learniq:2441:c104aca5	GREEN x3 (2441,2442,2443): failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T08:43:54Z
