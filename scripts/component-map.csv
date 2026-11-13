@@ -3106,6 +3106,8 @@ Service/Search/SearchDictionaryProvider.php,188,Service,Service,Service/Search/S
 Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNode.php,0,,Core
 Service/Search/SearchTermParser.php,251,Service,Service,Service/Search/SearchTermParser.php,0,,Core
 Service/Search/SearchTermSqlCompiler.php,22,Service,Service,Service/Search/SearchTermSqlCompiler.php,0,,Core
+Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Core
+Service/Search/VectorSearchFacade.php,81,Service,Service,Service/Search/VectorSearchFacade.php,0,,Core
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Integrations
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
