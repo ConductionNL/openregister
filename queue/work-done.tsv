@@ -2262,3 +2262,4 @@ cover:dossiq:f8a113c5mac88:67b69054	already done: lib/Service/Conversation/ at 9
 cover:openregister:7350e3efm0e99:22940b20	PR #10099: 17 tests; AgentMapper and ConversationMapper to 100% lines; Db suite 5326 -> 5343 all passing	session-20261113T034629-21e68669	2026-11-13T04:46:18Z
 cover:hermiq:065f1631m312d:dfaef732	already done: lib/Notification/Notifier.php 74/74 (100%) on development; no PR	session-20261113T041652-f9df3e85	2026-11-13T04:46:19Z
 cover:filinq:7a9ef677mc744:efa2a923	already covered: earlier batches quality/test-coverage-efa2a923-1/-2 exist; every lib/EventListener class is exercised by dedicated or wiring tests; no PR	session-20261113T024654-6600dc41	2026-11-13T04:46:18Z
+cover:hermiq:065f1631m312d:9d3a1784	already covered: lib/BackgroundJob 99.1% stmts (1 left), earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:46:57Z
