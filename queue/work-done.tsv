@@ -1412,4 +1412,5 @@ cover:filinq:8ecceb86:1174c39d	already done: lib/Service/Support/ at 95.7% (22/2
 cover:filinq:8ecceb86:9ece5c6f	PR #1987: 16 tests for OperationAnswer, HandlerAnswer, ServerErrorAnswer, TranslatedErrorAnswer, PdfResponses; suite 5499->5515 green	session-20261113T011737-1f344aca	2026-11-13T01:25:36Z
 cover:integriq:9b0f5894m2367:4250c627	PR #3450: PingAction 3 tests, Job dir 142/166 -> 166/166	session-20261113T004523-285a0413	2026-11-13T01:25:39Z
 cover:shillinq:801aab65:1581293a	PR #2817: 14 tests over 3 classes, lib/Service/Pipelinq/*.php 83.72%->94.74%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:25:39Z
+cover:filinq:8ecceb86:12f19218	already done: lib/Service/SigningEnvelope/ at 92.4% (182/197 stmts) on development 1684dc33, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:25:57Z
 verify:hermiq:1637:530a673f	5 GREEN (1637-1641), 0 new failures, vitest green	session-20261113T004524-55adaa63	2026-11-13T01:26:06Z
