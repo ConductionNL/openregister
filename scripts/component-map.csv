@@ -1159,6 +1159,7 @@ Files/Service/File/TaggingHandler.php,225,Files,Files,Files/Service/File/Tagging
 Files/Service/FileSidebarService.php,198,Files,Files,Files/Service/FileSidebarService.php,0,,Files
 Files/Service/Integration/AttachTargetFilter.php,75,Files,Files,Files/Service/Integration/AttachTargetFilter.php,0,,Files
 Files/Service/Integration/TalkChatExporter.php,46,Files,Files,Files/Service/Integration/TalkChatExporter.php,0,,Files
+Files/Service/NoteLockService.php,62,Files,Files,Files/Service/NoteLockService.php,0,,Files
 Files/Service/NoteService.php,248,Files,Files,Files/Service/NoteService.php,2,88,Files
 Files/Service/NoteVersionService.php,124,Files,Files,Files/Service/NoteVersionService.php,0,,Files
 Files/Service/PendingExtractionWalk.php,27,Files,Files,Files/Service/PendingExtractionWalk.php,0,,Files

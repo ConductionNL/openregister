@@ -80,7 +80,14 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @var string
 	 */
-	public const LOCKED_VERB = 'note-locked';
+	public const LOCKED_VERB = NoteLockService::LOCKED_VERB;
+
+	/**
+	 * The lock rules of a note, built from this service's own collaborators.
+	 *
+	 * @var NoteLockService
+	 */
+	private readonly NoteLockService $lockService;
 
 	/**
 	 * How many notes are read per page when every note on an object is walked.
@@ -100,6 +107,7 @@ class NoteService implements NoteServiceInterface {
 	 * @param NoteAccounts                       $accounts        User session and user manager
 	 * @param TimelineVisibilityServiceInterface $visibility      Normalises the internal/public flag
 	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
+	 * @param NoteLockService|null               $lock            The lock rules of a note; built from these collaborators when omitted
 	 *
 	 * @return void
 	 */
@@ -108,7 +116,9 @@ class NoteService implements NoteServiceInterface {
 		private readonly NoteAccounts $accounts,
 		private readonly TimelineVisibilityServiceInterface $visibility,
 		private readonly NoteVersionService $versions,
+		private readonly ?NoteLockService $lock = null,
 	) {
+		$this->lockService = ($lock ?? new NoteLockService(commentsManager: $commentsManager, accounts: $accounts));
 	}//end __construct()
 
 	/**
@@ -347,13 +357,8 @@ class NoteService implements NoteServiceInterface {
 			throw new Exception('No user logged in');
 		}
 
-		try {
-			$comment = $this->commentsManager->get((string)$noteId);
-		} catch (CommentsNotFoundException $e) {
-			throw new Exception('Note not found');
-		}
-
-		if ($comment->getVerb() === self::LOCKED_VERB) {
+		$comment = $this->loadComment(noteId: $noteId);
+		if ($this->lockService->isLocked(comment: $comment) === true) {
 			throw new NoteLockedException(noteId: $noteId);
 		}
 
@@ -377,6 +382,44 @@ class NoteService implements NoteServiceInterface {
 
 		return $notes[0];
 	}//end editNote()
+
+	/**
+	 * Lock a note: from now on nobody can edit or delete it. There is no unlock.
+	 *
+	 * Only the note's author, or someone who manages the object, may lock it.
+	 * Who locked it and when go in the comment's metadata, and the verb
+	 * becomes {@see self::LOCKED_VERB}, which {@see editNote()} and
+	 * {@see deleteNote()} refuse. Locking a locked note changes nothing.
+	 *
+	 * @param int  $noteId    The note to lock.
+	 * @param bool $mayManage Whether the caller manages the object the note hangs on.
+	 *
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager of the object.
+	 *
+	 * @return array<string, mixed> The locked note.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function lockNote(int $noteId, bool $mayManage): array {
+		$comment = $this->lockService->apply(noteId: $noteId, mayManage: $mayManage);
+
+		return $this->withEditSummaries(notes: [$this->commentToArray(comment: $comment)])[0];
+	}//end lockNote()
+
+	/**
+	 * Write the note-locked entry on the object's audit trail.
+	 *
+	 * @param ObjectEntityInterface $object The object the note hangs on
+	 * @param array<string, mixed>  $note   The locked note as lockNote() returned it
+	 *
+	 * @return bool True when an audit entry was written
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function auditLock(ObjectEntityInterface $object, array $note): bool {
+		return $this->versions->auditLock(object: StoredEntity::object(object: $object), note: $note);
+	}//end auditLock()
 
 	/**
 	 * Write the flag onto a comment, leaving the rest of its metadata alone.
@@ -447,20 +490,39 @@ class NoteService implements NoteServiceInterface {
 	 * @return void
 	 *
 	 * @throws Exception If the note is not found
+	 * @throws NoteLockedException If the note is locked.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
 	 */
 	public function deleteNote(int $noteId): void {
-		try {
-			$this->commentsManager->get((string)$noteId);
-			$this->commentsManager->delete((string)$noteId);
-		} catch (CommentsNotFoundException $e) {
-			throw new Exception('Note not found');
+		// A locked note is the record of what was said; it is not removed.
+		if ($this->lockService->isLocked(comment: $this->loadComment(noteId: $noteId)) === true) {
+			throw new NoteLockedException(noteId: $noteId);
 		}
+
+		$this->commentsManager->delete((string)$noteId);
 
 		// The note is gone, so its history has nothing left to belong to.
 		$this->versions->forget(noteIds: [$noteId]);
 	}//end deleteNote()
+
+	/**
+	 * A note by id, or a 404 when there is none.
+	 *
+	 * @param int $noteId The note id.
+	 *
+	 * @return IComment The comment that is the note.
+	 *
+	 * @throws Exception With code 404 when the note does not exist.
+	 */
+	private function loadComment(int $noteId): IComment {
+		try {
+			return $this->commentsManager->get((string)$noteId);
+		} catch (CommentsNotFoundException $e) {
+			throw new Exception('Note not found', 404);
+		}
+	}//end loadComment()
 
 	/**
 	 * Count the notes on an object.
@@ -540,7 +602,7 @@ class NoteService implements NoteServiceInterface {
 	}//end noteIdsForObject()
 
 	/**
-	 * Map an IComment to a JSON-friendly array.
+	 * Convert an IComment to a JSON-friendly array.
 	 *
 	 * @param IComment $comment The comment to convert
 	 *
@@ -572,7 +634,9 @@ class NoteService implements NoteServiceInterface {
 			'createdAt' => $comment->getCreationDateTime()->format('c'),
 			'isCurrentUser' => $isCurrentUser,
 			'visibility' => $this->readVisibility(comment: $comment),
-			'locked' => ($comment->getVerb() === self::LOCKED_VERB),
+			'locked' => $this->lockService->isLocked(comment: $comment),
+			'lockedBy' => $this->lockService->lockedBy(comment: $comment)['by'],
+			'lockedAt' => $this->lockService->lockedBy(comment: $comment)['at'],
 			// The defaults of a note nobody has edited. Every read that can
 			// afford the query replaces them through
 			// {@see withEditSummaries()}; a note that has just been created
