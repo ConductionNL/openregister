@@ -8,7 +8,7 @@
 ## 2. Provider
 
 - [x] 2.1 Add `TaskProcessingTranslationProvider` with `translate()` and `translateDetailed()`: task type choice and the fenced prompt (design D-2), `runTask()` as the acting user, null when no task type is available, and the glossary check (D-5). Verify: `tests/Unit/Service/Translation/TaskProcessingTranslationProviderTest.php` with a mocked `IManager` asserts the translate type without glossary, the text2text type with one, the prompt fencing, and `glossary-terms-missing` on a missed term.
-- [ ] 2.2 Add `TranslationProviderResolver` and replace the binding at `lib/AppInfo/Application.php:660-667`; skip `x-openregister-encrypted` properties with `encrypted-at-rest` and store a glossary miss as `draft` in `BulkTranslationService`; report the bound provider in `ConnectionSeamReportJob`. Verify: `tests/Unit/Service/BulkTranslationServiceGlossaryTest.php` and `tests/Unit/BackgroundJob/ConnectionSeamReportJobTest.php`; with both settings at their defaults the identity provider is bound.
+- [x] 2.2 Add `TranslationProviderResolver` and replace the binding at `lib/AppInfo/Application.php:660-667`; skip `x-openregister-encrypted` properties with `encrypted-at-rest` and store a glossary miss as `draft` in `BulkTranslationService`; report the bound provider in `ConnectionSeamReportJob`. Verify: `tests/Unit/Service/BulkTranslationServiceGlossaryTest.php` and `tests/Unit/BackgroundJob/ConnectionSeamReportJobTest.php`; with both settings at their defaults the identity provider is bound.
 
 ## 3. Settings and page
 

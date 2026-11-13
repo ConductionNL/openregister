@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
+use OCA\OpenRegister\Service\Translation\TaskProcessingTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -119,8 +120,34 @@ class ConnectionSeamReportJob extends TimedJob {
 			];
 		}
 
+		if ($provider instanceof TaskProcessingTranslationProvider) {
+			return ['configured', $this->describeTaskProcessing(names: $provider->providerNames())];
+		}
+
 		return ['configured', 'Translation provider "' . $identifier . '" is bound. Not tested.'];
 	}//end describeTranslation()
+
+	/**
+	 * The message for the Task Processing provider: the Nextcloud providers it sends text to.
+	 *
+	 * @param array<string, string> $names The provider name per task type.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
+	 */
+	private function describeTaskProcessing(array $names): string {
+		if ($names === []) {
+			return 'Translation runs through Nextcloud Task Processing, which reports no provider for translation. Not tested.';
+		}
+
+		$parts = [];
+		foreach ($names as $taskTypeId => $name) {
+			$parts[] = $name . ' (' . $taskTypeId . ')';
+		}
+
+		return 'Translation runs through Nextcloud Task Processing: ' . implode(', ', $parts) . '. Not tested.';
+	}//end describeTaskProcessing()
 
 	/**
 	 * What answers behind the DSAR identity-verify seam.

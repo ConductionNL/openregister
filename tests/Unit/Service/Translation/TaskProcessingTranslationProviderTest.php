@@ -212,4 +212,39 @@ class TaskProcessingTranslationProviderTest extends TestCase {
 	public function testItIdentifiesAsTaskProcessing(): void {
 		$this->assertSame('taskprocessing', $this->provider([])->getIdentifier());
 	}
+
+	public function testTheProviderNamesAreThoseNextcloudPrefersPerTaskType(): void {
+		$translate = $this->createMock(\OCP\TaskProcessing\IProvider::class);
+		$translate->method('getName')->willReturn('Local translator');
+		$llm = $this->createMock(\OCP\TaskProcessing\IProvider::class);
+		$llm->method('getName')->willReturn('Remote assistant');
+		$this->manager->method('getPreferredProvider')->willReturnMap(
+			[
+				['core:text2text:translate', $translate],
+				['core:text2text', $llm],
+			]
+		);
+
+		$this->assertSame(
+			['core:text2text:translate' => 'Local translator', 'core:text2text' => 'Remote assistant'],
+			$this->provider([])->providerNames()
+		);
+		$this->assertSame('taskprocessing', $this->provider([])->getIdentifier());
+	}
+
+	public function testATaskTypeWithoutAProviderIsLeftOutOfTheNames(): void {
+		$translate = $this->createMock(\OCP\TaskProcessing\IProvider::class);
+		$translate->method('getName')->willReturn('Local translator');
+		$this->manager->method('getPreferredProvider')->willReturnCallback(
+			static function (string $taskTypeId) use ($translate) {
+				if ($taskTypeId === 'core:text2text') {
+					throw new RuntimeException('none');
+				}
+
+				return $translate;
+			}
+		);
+
+		$this->assertSame(['core:text2text:translate' => 'Local translator'], $this->provider([])->providerNames());
+	}
 }
