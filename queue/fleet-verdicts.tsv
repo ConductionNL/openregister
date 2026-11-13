@@ -4772,3 +4772,4 @@ shillinq	2826	650e736338b7b359c19606e9369afe0966734066	GREEN	worker-46	9078 test
 buildiq	1489	4a12606364c74c68fefa0eb80e53052b25f30af5	GREEN	worker-19	unit 2392 tests on tree vs baseline 2381 (5E/1F inherited), 0 new failures; adds one test file only
 filinq	2001	8dd695546fc0602aa504877f4372885295e45896	GREEN	worker-07	tree of 2: phpunit 5510 tests (baseline 5499, 0 failures), new failures: none; tests-only additions
 filinq	2002	6de4a7190a7e94449876d34db27b26803fbe191e	GREEN	worker-07	tree of 2: phpunit 5510 tests (baseline 5499, 0 failures), new failures: none; tests-only additions
+decidiq	2103	b36c973da390eca8e1e52e6a19ccd7071f317cd4	GREEN	worker-21	phpunit 3116 OK (baseline 3116 OK), vitest 187 files/2682 passed 4 skipped on 5-PR tree, 0 new failures; tests-only additions
