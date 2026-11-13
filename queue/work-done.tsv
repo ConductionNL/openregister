@@ -3370,3 +3370,4 @@ gap:larpinq:risky:burn2	already done: 0 risky tests (beStrictAboutCoverageMetada
 gap:filinq:risky:burn2	already done: 0 risky tests (strict coverage metadata off), PHP line coverage 94.1% with pcov	session-20261113T080556-d189f150	2026-11-13T08:10:12Z
 verify:stackiq:1852:fcc10789	2 GREEN (1852,1853); 3203 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T08:10:05Z
 fix:larpinq:1011:4df9687a	fixed: renamed colliding test files; merges cleanly with 1010/1012/1018; new head c34753f4, REVERIFY recorded	session-20261113T080546-98207a87	2026-11-13T08:11:02Z
+verify:portaliq:2372:cdf5a15c	GREEN #2372: php 4527 green, js 2477 tests, 2 baseline, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T08:11:44Z
