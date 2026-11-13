@@ -4791,4 +4791,5 @@ build:openregister:migration-pack-editor-ui	nothing to build in code: the only o
 merge:keepiq:1631:fed1e9f6	merge-local over 2 keepiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:19:34Z
 merge:keepiq:1756:8bc77560	merge-local over 2 keepiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:19:34Z
 review:openregister:10145:1161ceab	APPROVE: new unused reader, fail-closed, suites green	session-20261113T081048-4978ac57	2026-11-13T12:19:49Z
+build:openregister:incremental-sync-for-api-consumers	partial: PR #10171 does section 1 (delete and restore move updated, 2 tests); deleted-list filters, tombstones, watermark, docs left	session-20261113T104527-c302106c	2026-11-13T12:19:58Z
 review:openregister:10151:af4ace77	APPROVE: tasks tick only, referenced tests exist	session-20261113T051703-1b54bfba	2026-11-13T12:19:57Z
