@@ -2156,3 +2156,4 @@ cover:keepiq:c967a31fm0090:dfaef732	already done: lib/Notification/*.php 394/396
 cover:keepiq:c967a31fm0090:34763eb4	already done: lib/Middleware/*.php 211/212 statements; duplicate of cover:keepiq:c967a31fm88ca:34763eb4	session-20261113T034634-857dbcc2	2026-11-13T04:33:16Z
 cover:pipelinq:f67520ecmc4ba:js4570fd16	PR #3646: 17 vitest tests for PosTransactionForm checkout/tenders/gift cards; views/pos lines 87.63->89.65%, suite 3571->3588 passing	session-20261113T041646-2c1d764f	2026-11-13T04:33:26Z
 cover:launchpad:fb10c50fm2ceb:js4829b6aa	PR #1168: 30 vitest tests, src/views 76.2% -> 86.7% lines; suite 1730 -> 1760 passing	session-20261113T041644-786bb7fc	2026-11-13T04:33:26Z
+cover:pipelinq:f67520ecmc4ba:95a79563	PR pipelinq#3647: 8 tests for SchemaLifecycleGraph across register files (fragments, precedence, malformed input); 1 inherited failure unchanged	session-20261113T024654-6600dc41	2026-11-13T04:34:10Z
