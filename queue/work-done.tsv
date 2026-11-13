@@ -2675,3 +2675,4 @@ verify:shillinq:2870:f9287f99	GREEN 2870 (tests only; vitest 1356 pass; PHP no n
 cover:filinq:7a9ef677m5ffe:59d1e403	PR #2039: 3 GuardianConsentGuard tests (last reachable Signing lines); suite 6112->6115	session-20261113T054516-469bb7f6	2026-11-13T06:11:36Z
 cover:integriq:92114ab0m1534:d74bee87	already done: lib/Service/Rod/ 182/182 lines (100.0%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:11:47Z
 merge:pipelinq:3672:7b90864a	stale	feeder	2026-11-13T06:10:49Z
+cover:integriq:92114ab0m1534:c210cc74	already done: lib/Service/Ownership/ 189/192 lines (98.4%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:00Z
