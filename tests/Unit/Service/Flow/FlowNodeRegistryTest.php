@@ -17,6 +17,8 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCP\EventDispatcher\Event;
@@ -250,6 +252,36 @@ class FlowNodeRegistryTest extends TestCase {
 		// declares neither says so rather than being guessed at.
 		$this->assertSame('serviceTask', $entry['kind']);
 		$this->assertSame('other', $entry['category']);
+	}
+
+	/**
+	 * The tag step is offered to administrators and to users alike, as an
+	 * object step, so a sales manager's own flow can label a lead.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
+	 */
+	public function testTheTagObjectStepIsInBothPalettes(): void {
+		$urls = $this->createMock(\OCP\IURLGenerator::class);
+		$urls->method('imagePath')->willReturn('/apps/openregister/img/tag.svg');
+		$l10n = $this->createMock(\OCP\IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$node = new TagObjectNode(
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
+			$this->createMock(\OCA\OpenRegister\Service\Object\PermissionCheckInterface::class),
+			$this->createMock(\OCP\IUserManager::class),
+			new FlowNodePresentation($l10n, $urls)
+		);
+		$registry = $this->registryWith([$node]);
+
+		foreach ([IManager::SCOPE_ADMIN, IManager::SCOPE_USER] as $scope) {
+			$entries = array_column($registry->palette($scope), null, 'id');
+			$this->assertArrayHasKey('openregister.tag-object', $entries, "scope {$scope}");
+			$this->assertSame('Tag an object', $entries['openregister.tag-object']['displayName']);
+			$this->assertSame('step', $entries['openregister.tag-object']['role']);
+			$this->assertSame('objects', $entries['openregister.tag-object']['category']);
+		}
 	}
 
 	public function testThePaletteReportsTheRoleTheNodeDeclaresRatherThanItsId(): void {

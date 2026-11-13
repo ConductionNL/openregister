@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The steps that write objects and move them through their lifecycle.
+ * The steps that write objects, move them through their lifecycle and tag them.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 
 /**
@@ -39,10 +40,12 @@ final readonly class ObjectChangeFlowNodes {
 	 *
 	 * @param ObjectWriteNodeInterface $objectWrite The built-in "Write an object" node.
 	 * @param TransitionNodeInterface  $transition  The built-in "Lifecycle transition" node.
+	 * @param TagObjectNodeInterface   $tagObject   The built-in "Tag an object" node.
 	 */
 	public function __construct(
 		private ObjectWriteNodeInterface $objectWrite,
 		private TransitionNodeInterface $transition,
+		private TagObjectNodeInterface $tagObject,
 	) {
 	}//end __construct()
 
@@ -55,6 +58,7 @@ final readonly class ObjectChangeFlowNodes {
 		return [
 			$this->objectWrite,
 			$this->transition,
+			$this->tagObject,
 		];
 
 	}//end nodes()
