@@ -4262,3 +4262,4 @@ cover:openregister:7350e3efme1f3:jsbd7d0461	already done: src/modals/schema at 9
 merge:learniq:2436:8799bca5	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:36:27Z
 merge:learniq:2461:7ec74609	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:36:27Z
 verify:shillinq:2926:446cfff9	2926,2927 GREEN (tests-only)	session-20261113T064518-860c039d	2026-11-13T10:37:33Z
+review:openregister:10121:733fa491	APPROVE: tests-only, 23 tests pass, phpstan clean, covers match subjects	session-20261113T084521-fd8a31c7	2026-11-13T10:38:06Z
