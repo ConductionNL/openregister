@@ -4874,3 +4874,4 @@ integriq	3458	3a4b21f61a58f450f9c7d4b332623e61ae3a0aa9	GREEN	worker-35	7238 test
 integriq	3459	1d7dbe02ada33f21af662907bb21f871213c11a4	GREEN	worker-35	7238 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures
 integriq	3460	c804b12f04929d4c929679de68620b74d8d3e0b6	GREEN	worker-35	7238 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures
 integriq	3461	72d916450a21142889848c71d0511ab59e1c7463	GREEN	worker-35	7238 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures
+dossiq	6244	9863aef53b2af3068883972ceadcd051823d140a	GREEN	worker-37	tests only; phpunit-unit 14095 run, baseline 14016 with 19 failures, no new failures; vitest 6325 run, 1 failure inherited from development (capabilityComparison.spec.js)
