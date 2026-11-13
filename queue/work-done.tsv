@@ -5889,3 +5889,4 @@ cover:hermiq:065f1631me44a:b97b9aec	already done: lib/Service/Approval at 198/20
 measure:launchpad:20261113h18	php 96.19% (pcov, 4062 tests), js 96.92% (vitest 2208 tests) at d6a7f892	session-20261113T172334-4b3b027b	2026-11-13T18:17:04Z
 cover:pipelinq:7f9dc8e6m16db:d6dccde7	already done: PersonLookup 10/10, Settings 12/12, Worklist 66/66 statements covered at 4c67daf1	session-20261113T171137-8f22ecb0	2026-11-13T18:17:04Z
 cover:hermiq:065f1631me44a:f91e7417	already done: lib/Service/Connection at 98/100 lines (98%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:16:53Z
+cover:buildiq:70b3e29ema699:390adfb9	already covered: lib/Capabilities.php (only file in lib/*.php) at 100% lines/methods; no PR	session-20261113T175336-e3687686	2026-11-13T18:17:13Z
