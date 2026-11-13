@@ -5063,5 +5063,6 @@ cover:openregister:7350e3efma401:js30a52488	PR #10222: 23 jest tests, SearchSide
 build:openregister:flow-task-search-provider	partial: PR #10223 task 1.1 (inbox term) plus the search provider without the D-3 app-route override (no task-route contract in the deep link registry); 2.2, 3.x left	session-20261113T091530-f20014fb	2026-11-13T13:03:55Z
 review:openregister:10190:ed15406a	BLOCK: new node missing from FlowNodeDeclaredTaxonomyTest list (test red on PR, green on main)	session-20261113T114525-2ca68289	2026-11-13T13:04:16Z
 review:openregister:10215:bbf65756	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:04:52Z
+build2:openregister:api-client-libraries	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:05:08Z
 build:openregister:redaction-policy-as-data	partial: PR #10224 (1.1 register+repair, 1.2 validation, 2.1 matcher core; 2.1 source/listener, 2.2-5.2 left)	session-20261113T114545-cd8d833c	2026-11-13T13:05:08Z
 review:openregister:10209:c7722e08	APPROVE: miss-only lookup, access kept; suites green	session-20261113T124802-c7d6f662	2026-11-13T13:05:26Z
