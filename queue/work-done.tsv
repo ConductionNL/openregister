@@ -2646,3 +2646,5 @@ cover:dossiq:f8a113c5mac88:f7dbdab3	PR #6293: EngineRunMigrationTest (6 tests) +
 cover:integriq:92114ab0m1534:c135a8f0	PR #3489: 6 phpunit tests, Sources/Pdok 99->151/151	session-20261113T051709-e616bf69	2026-11-13T06:06:05Z
 cover:shillinq:05639debmd8ee:js4829b6aa	PR shillinq#2873: 34 tests on 4 untested views, src/views/* lines 30.5->47.9%; vitest 1331->1365 all passing	session-20261113T051703-1b54bfba	2026-11-13T06:06:06Z
 cover:shillinq:05639debmd8ee:js450fec42	PRs shillinq#2872 (payment-request + contract panels, 21 tests) and #2876 (financial documents panel actions, 10 tests); src/integrations ~39%->~66% lines combined (rest is template render code; no DOM env); vitest all passing	session-20261113T053904-36dcee67	2026-11-13T06:06:18Z
+merge:stackiq:1693:d479245d	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
+merge:stackiq:1706:50f98441	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
