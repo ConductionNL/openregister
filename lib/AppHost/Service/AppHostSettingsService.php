@@ -260,6 +260,102 @@ class AppHostSettingsService {
 	}//end recordSettingsChange()
 
 	/**
+	 * Record a register configuration import as one row on the audit trail.
+	 *
+	 * Runs after the import and before the version stamp, so the count is the
+	 * managed keys the import itself overwrote. Like the update path it never
+	 * throws: the import has happened, and a failure here would deny it.
+	 *
+	 * @param array<string, mixed> $before The settings before the import.
+	 * @param bool                 $forced Whether the import was forced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function auditImport(array $before, bool $forced): void {
+		try {
+			$this->recordImport(keysOverwritten: $this->overwrittenKeyCount(before: $before, after: $this->getSettings()), forced: $forced);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[AppHost:%s] Configuration import was stored but not audited: %s',
+					$this->appId,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end auditImport()
+
+	/**
+	 * Hand an import to OpenRegister's settings-change auditor, when it can record one.
+	 *
+	 * @param int  $keysOverwritten How many stored keys the import replaced.
+	 * @param bool $forced          Whether the import was forced.
+	 *
+	 * @return void
+	 */
+	private function recordImport(int $keysOverwritten, bool $forced): void {
+		$auditor = $this->container->get(
+			'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+		);
+		$import  = 'OCA\\OpenRegister\\Service\\Rbac\\SettingsImport';
+		if (method_exists($auditor, 'recordImport') === false || class_exists($import) === false) {
+			return;
+		}
+
+		$auditor->recordImport($this->appId, new $import($forced, $keysOverwritten));
+	}//end recordImport()
+
+	/**
+	 * How many managed keys held a value before and hold a different one after.
+	 *
+	 * A key set for the first time is not overwritten. Values compare as text,
+	 * because `IAppConfig` stores strings: `"1"` over a stored `1` is no change.
+	 *
+	 * @param array<string, mixed> $before The settings before.
+	 * @param array<string, mixed> $after  The settings after.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function overwrittenKeyCount(array $before, array $after): int {
+		$count = 0;
+		foreach ($this->configKeys() as $key) {
+			$old = ($before[$key] ?? null);
+			if ($old === null || $old === '') {
+				continue;
+			}
+
+			if (self::settingText(value: $old) !== self::settingText(value: ($after[$key] ?? null))) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}//end overwrittenKeyCount()
+
+	/**
+	 * A setting value as the text it is stored as; non-scalars as JSON.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The text, or null when absent.
+	 */
+	private static function settingText(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return (string)json_encode($value);
+	}//end settingText()
+
+	/**
 	 * The feature toggles this app declares.
 	 *
 	 * 🔑 THE DECLARATION HAS TO BE READABLE ON THE SERVER. The change names the
@@ -518,9 +614,11 @@ class AppHostSettingsService {
 		}
 
 		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationServiceInterface');
+		$before = $this->getSettings();
 		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
 
 		if (empty($result) === false) {
+			$this->auditImport(before: $before, forced: $force);
 			return $this->registerImportSucceeded(result: $result);
 		}
 

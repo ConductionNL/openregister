@@ -32,8 +32,10 @@ use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
+use OCA\OpenRegister\Exception\TextDisclosureNotRecordedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
+use OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
@@ -391,7 +393,8 @@ class EntityRecognitionHandler {
 			query: new EntityDetectionQuery(
 				text: $scan->text,
 				entityTypes: $options['entity_types'] ?? null,
-				confidenceThreshold: $this->confidenceThreshold(options: $options)
+				confidenceThreshold: $this->confidenceThreshold(options: $options),
+				source: new TextDisclosureSource(sourceType: (string)$scan->chunk->getSourceType(), sourceId: (int)$scan->chunk->getSourceId())
 			),
 			method: $scan->method
 		);
@@ -739,10 +742,15 @@ class EntityRecognitionHandler {
 	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
 	 *
 	 * @return array Detected entities with type, value, category, position, and confidence.
+	 *
+	 * @throws TextDisclosureNotRecordedException When the disclosure record cannot be written.
 	 */
 	private function detectWithPresidio(EntityDetectionQuery $query): array {
 		try {
 			return $this->runPresidio(query: $query);
+		} catch (TextDisclosureNotRecordedException $e) {
+			// The text was not sent; the regex fallback would hide that.
+			throw $e;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[EntityRecognitionHandler] Presidio detection failed: ' . $e->getMessage(),
@@ -865,7 +873,8 @@ class EntityRecognitionHandler {
 			call: new AnalyzeCall(
 				url: $endpoint . '/analyze',
 				requestBody: $this->buildAnalyzeRequestBody(request: $request),
-				serviceName: 'Presidio'
+				serviceName: 'Presidio',
+				source: $request->query->source
 			)
 		);
 	}//end postToPresidio()
@@ -883,6 +892,7 @@ class EntityRecognitionHandler {
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 *
 	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
+	 * @throws TextDisclosureNotRecordedException When the disclosure record cannot be written.
 	 */
 	private function detectWithOpenAnonymiser(EntityDetectionQuery $query): array {
 		try {
@@ -894,6 +904,9 @@ class EntityRecognitionHandler {
 				message: '[EntityRecognitionHandler] ' . $e->getMessage() . ' (a request error; the regex detector is not used for it)',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'status' => $e->getStatus()]
 			);
+			throw $e;
+		} catch (TextDisclosureNotRecordedException $e) {
+			// The text was not sent; the regex fallback would hide that.
 			throw $e;
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -931,7 +944,8 @@ class EntityRecognitionHandler {
 
 		$responseData = $this->sendOpenAnonymiserRequest(
 			requestBody: $requestBody,
-			transport: $this->openAnonymiserTransport(fileSettings: $fileSettings)
+			transport: $this->openAnonymiserTransport(fileSettings: $fileSettings),
+			source: $query->source
 		);
 
 		return $this->openAnonymiserEntities(responseData: $responseData, request: $request);
@@ -1017,14 +1031,15 @@ class EntityRecognitionHandler {
 	 * external endpoint when the ExApp is unreachable; external posts to the
 	 * operator-entered URL. A 4xx is thrown by either transport (or#4115).
 	 *
-	 * @param array                   $requestBody The analyze request body.
-	 * @param OpenAnonymiserTransport $transport   Endpoint, transport choice and credentials.
+	 * @param array                     $requestBody The analyze request body.
+	 * @param OpenAnonymiserTransport   $transport   Endpoint, transport choice and credentials.
+	 * @param TextDisclosureSource|null $source      The document the text belongs to.
 	 *
 	 * @return array|null The response data, or null when OpenAnonymiser could not be reached.
 	 *
 	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
 	 */
-	private function sendOpenAnonymiserRequest(array $requestBody, OpenAnonymiserTransport $transport): ?array {
+	private function sendOpenAnonymiserRequest(array $requestBody, OpenAnonymiserTransport $transport, ?TextDisclosureSource $source=null): ?array {
 		$responseData = null;
 		if ($transport->useExternal === false) {
 			$responseData = $this->backends->anonymisationBackendService->requestOpenAnonymiser(
@@ -1046,7 +1061,8 @@ class EntityRecognitionHandler {
 				url: $transport->endpoint.'/api/v1/analyze',
 				requestBody: $requestBody,
 				serviceName: 'OpenAnonymiser',
-				extraHeaders: $transport->authHeaders
+				extraHeaders: $transport->authHeaders,
+				source: $source
 			)
 		);
 	}//end sendOpenAnonymiserRequest()
@@ -1154,7 +1170,8 @@ class EntityRecognitionHandler {
 	 *
 	 * @return array|null Parsed JSON response array, or null on failure.
 	 *
-	 * @throws AnalyzeRequestRejectedException When the service answers with a request error.
+	 * @throws AnalyzeRequestRejectedException    When the service answers with a request error.
+	 * @throws TextDisclosureNotRecordedException When the disclosure record cannot be written; nothing is sent.
 	 */
 	private function postAnalyzeRequest(AnalyzeCall $call): ?array {
 		$serviceName = $call->serviceName;
@@ -1164,11 +1181,16 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
+		// The body is recorded as disclosed before it is sent; when the record
+		// cannot be written this throws and nothing is sent.
+		$body = (string)json_encode($call->requestBody);
+		$this->recordDisclosure(call: $call, bytes: strlen($body));
+
 		try {
 			$response = $clientService->newClient()->post(
 				$call->url,
 				[
-					'body' => json_encode($call->requestBody),
+					'body' => $body,
 					'headers' => $this->analyzeHeaders(call: $call),
 					'timeout' => 30,
 					'http_errors' => false,
@@ -1184,6 +1206,34 @@ class EntityRecognitionHandler {
 			response: new AnalyzeResponse(status: $response->getStatusCode(), body: $response->getBody())
 		);
 	}//end postAnalyzeRequest()
+
+	/**
+	 * Record that a call is about to send a document's text to an external service.
+	 *
+	 * A call without a known document is recorded under source type `unknown`, never skipped.
+	 *
+	 * @param AnalyzeCall $call  The call about to be made.
+	 * @param int         $bytes The number of bytes it sends.
+	 *
+	 * @return void
+	 *
+	 * @throws TextDisclosureNotRecordedException When no recorder is wired or the record cannot be written.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-external-call-that-carries-a-documents-text-is-recorded-per-document-req-adi-005
+	 */
+	private function recordDisclosure(AnalyzeCall $call, int $bytes): void {
+		$recorder = $this->backends->disclosureRecorder;
+		if ($recorder === null) {
+			throw new TextDisclosureNotRecordedException(service: $call->serviceName);
+		}
+
+		$recorder->record(
+			source: $call->source ?? new TextDisclosureSource(sourceType: 'unknown', sourceId: 0),
+			service: $call->serviceName,
+			url: $call->url,
+			bytes: $bytes
+		);
+	}//end recordDisclosure()
 
 	/**
 	 * Log that the service could not be reached.

@@ -105,6 +105,12 @@ class MdtoXmlGenerator {
 	public const USE_RESTRICTION_UNRECORDED = 'Nader te bepalen';
 
 	/**
+	 * The begrippenlijst named for `betrokkeneTypeRelatie`. MDTO leaves it free;
+	 * the label is the schema property the party is kept in.
+	 */
+	public const PARTY_RELATION_LIST = 'Relatietypen betrokkenen';
+
+	/**
 	 * The MDTO begrippenlijst `waardering` comes from. It is CLOSED.
 	 */
 	public const APPRAISAL_LIST = 'Waarderingen';
@@ -191,6 +197,7 @@ class MdtoXmlGenerator {
 		$this->addInformatiecategorie(run: $run);
 		$this->addRepresentations(parent: $root, files: $files);
 		$this->addArchiefvormer(parent: $root);
+		$this->addParties(run: $run);
 		$this->addUseRestriction(run: $run);
 
 		return $this->writer->serialise(dom: $dom);
@@ -555,6 +562,41 @@ class MdtoXmlGenerator {
 			)
 		);
 	}//end addArchiefvormer()
+
+	/**
+	 * Add one `betrokkene` per party the schema's archival block names.
+	 *
+	 * The relation is the property the party came from (`aanvrager`), on a
+	 * free list, because MDTO prescribes none for it; the actor is the party's
+	 * name, with its OpenRegister id when it has one. A schema that names no
+	 * party gets no `betrokkene`, exactly as before.
+	 *
+	 * @param InformatieobjectRun $run The document being written: its element, object and facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	private function addParties(InformatieobjectRun $run): void {
+		foreach ($this->sources->sourceReader->parties(object: $run->object) as $party) {
+			$role = $party['role'];
+			if ($role === '') {
+				$role = 'betrokkene';
+			}
+
+			$element = $this->writer->element(parent: $run->root, name: 'betrokkene');
+			$this->writer->begrip(
+				parent: $element,
+				name: 'betrokkeneTypeRelatie',
+				begrip: new MdtoBegrip(label: $role, list: self::PARTY_RELATION_LIST)
+			);
+			$this->writer->verwijzing(
+				parent: $element,
+				name: 'betrokkeneActor',
+				verwijzing: new MdtoVerwijzing(naam: $party['name'], kenmerk: $party['id'], bron: 'OpenRegister')
+			);
+		}
+	}//end addParties()
 
 	/**
 	 * Add `beperkingGebruik`, which the XSD requires at least once.

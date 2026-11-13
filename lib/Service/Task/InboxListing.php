@@ -37,11 +37,13 @@ final class InboxListing {
 	 * @param array<string, mixed> $subjects Subject contexts by object uuid.
 	 * @param DateTimeInterface $now The moment the due fields are derived at.
 	 * @param array<int, string> $openBlockers The uuids of the open blockers.
+	 * @param string|null $caller The uid the listing is read for; null lists no `can` (record-tasks-tab D-4).
 	 */
 	public function __construct(
 		public readonly array $subjects,
 		public readonly DateTimeInterface $now,
 		public readonly array $openBlockers,
+		public readonly ?string $caller = null,
 	) {
 	}//end __construct()
 }//end class

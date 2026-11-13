@@ -222,15 +222,15 @@ exports[`views store requests golden createView([{"name":"New","id":1,"uuid":"x"
       "logged": [
         [
           "Error creating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -258,15 +258,15 @@ exports[`views store requests golden createView([{"name":"New","id":1,"uuid":"x"
       "logged": [
         [
           "Error creating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -874,15 +874,15 @@ exports[`views store requests golden deleteView(["u-7"]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -909,15 +909,15 @@ exports[`views store requests golden deleteView(["u-7"]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -944,15 +944,15 @@ exports[`views store requests golden deleteView(["u-7"]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -979,15 +979,15 @@ exports[`views store requests golden deleteView(["u-7"]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -1799,15 +1799,15 @@ exports[`views store requests golden deleteView([7]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -1834,15 +1834,15 @@ exports[`views store requests golden deleteView([7]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -1869,15 +1869,15 @@ exports[`views store requests golden deleteView([7]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -1904,15 +1904,15 @@ exports[`views store requests golden deleteView([7]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -2724,15 +2724,15 @@ exports[`views store requests golden deleteView([99]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -2759,15 +2759,15 @@ exports[`views store requests golden deleteView([99]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -2794,15 +2794,15 @@ exports[`views store requests golden deleteView([99]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -2829,15 +2829,15 @@ exports[`views store requests golden deleteView([99]) 1`] = `
       "logged": [
         [
           "Error deleting view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -6684,15 +6684,15 @@ exports[`views store requests golden fetchView([7]) 1`] = `
       "logged": [
         [
           "Error fetching view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -6719,15 +6719,15 @@ exports[`views store requests golden fetchView([7]) 1`] = `
       "logged": [
         [
           "Error fetching view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7149,15 +7149,15 @@ exports[`views store requests golden fetchViews([]) 1`] = `
       "logged": [
         [
           "Error fetching views:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7184,15 +7184,15 @@ exports[`views store requests golden fetchViews([]) 1`] = `
       "logged": [
         [
           "Error fetching views:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7852,15 +7852,15 @@ exports[`views store requests golden updateView(["u-7",{"name":"By uuid"}]) 1`] 
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7888,15 +7888,15 @@ exports[`views store requests golden updateView(["u-7",{"name":"By uuid"}]) 1`] 
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7924,15 +7924,15 @@ exports[`views store requests golden updateView(["u-7",{"name":"By uuid"}]) 1`] 
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -7960,15 +7960,15 @@ exports[`views store requests golden updateView(["u-7",{"name":"By uuid"}]) 1`] 
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -8829,15 +8829,15 @@ exports[`views store requests golden updateView([7,{"id":7,"uuid":"u-7","name":"
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -8865,15 +8865,15 @@ exports[`views store requests golden updateView([7,{"id":7,"uuid":"u-7","name":"
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -8901,15 +8901,15 @@ exports[`views store requests golden updateView([7,{"id":7,"uuid":"u-7","name":"
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -8937,15 +8937,15 @@ exports[`views store requests golden updateView([7,{"id":7,"uuid":"u-7","name":"
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -9806,15 +9806,15 @@ exports[`views store requests golden updateView([99,{"name":"Unknown"}]) 1`] = `
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "null",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -9842,15 +9842,15 @@ exports[`views store requests golden updateView([99,{"name":"Unknown"}]) 1`] = `
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":7,"uuid":"other"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -9878,15 +9878,15 @@ exports[`views store requests golden updateView([99,{"name":"Unknown"}]) 1`] = `
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":1,"uuid":"u-7"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
@@ -9914,15 +9914,15 @@ exports[`views store requests golden updateView([99,{"name":"Unknown"}]) 1`] = `
       "logged": [
         [
           "Error updating view:",
-          "Error: HTTP error! status: 400",
+          "Error: Bad view",
         ],
       ],
       "outcome": {
-        "threw": "Error: HTTP error! status: 400",
+        "threw": "Error: Bad view",
       },
       "state": {
         "activeView": "{"id":2,"uuid":"u-2"}",
-        "error": "HTTP error! status: 400",
+        "error": "Bad view",
         "loading": false,
         "viewsList": "[{"id":7,"uuid":"u-7","name":"Seven"},{"id":2,"uuid":"u-2","name":"Two"}]",
       },
