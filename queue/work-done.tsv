@@ -4897,3 +4897,5 @@ build:openregister:recompute-and-reindex-on-demand	failed: worker rules forbid b
 build:openregister:property-explicit-reveal	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:20Z
 build:openregister:property-source-vocabulary	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:26Z
 build:openregister:records-copy-with-links	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:39Z
+build:openregister:records-draft-versions	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:55Z
+build:openregister:records-api-and-table-stated	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:01Z
