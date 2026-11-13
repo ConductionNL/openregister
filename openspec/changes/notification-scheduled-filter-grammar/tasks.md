@@ -45,9 +45,14 @@
 - [x] 3.2 The `op`-key diagnostic: an array carrying `op` but not `operator`
       produces `notification-scheduled-bad-filter-operator-key` whose message
       names `operator` as the expected key and quotes the offending spelling. (verified: lib/Service/Notification/ScheduledFilterParser.php, tests/Unit/Service/Notification/NotificationAnnotationValidatorTest.php)
-- [ ] 3.3 Update the class docblocks that enumerate the old four-operator
+- [x] 3.3 Update the class docblocks that enumerate the old four-operator
       grammar: `ScheduledFilterEvaluator.php:5-9` and `:39-55`,
-      `NotificationAnnotationValidator.php:1004-1017`.
+      `NotificationAnnotationValidator.php:1004-1017`. (verified: the evaluator's
+      docblocks defer to `ScheduledFilterParser`; the filter check now lives in
+      `NotificationTriggerValidator::validateScheduledFilter()`, whose docblock says
+      it enumerates no operators. The last literal operator list outside the
+      grammar, `ScheduledNotificationJob::windowFilterFields()`, now reads
+      `ScheduledFilterGrammar::DURATION_OPERATORS`.)
 
 ## 4. PERF-3 seam
 
