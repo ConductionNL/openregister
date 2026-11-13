@@ -6809,3 +6809,16 @@ cover:pipelinq:7f9dc8e6m8ce9:0a24f15f	cover	pipelinq	development	quality/test-co
 cover:pipelinq:7f9dc8e6m8ce9:d528dcf0	cover	pipelinq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=551;coverage=81.79;target=90.0	2026-11-13T11:29:09Z
 cover:pipelinq:7f9dc8e6m8ce9:f3231970	cover	pipelinq	development	quality/test-coverage-f3231970	lang=php;dirs=lib/Service/ScheduledTask/;focus=thin;weight=472;coverage=81.79;target=90.0	2026-11-13T11:30:28Z
 measure:shillinq:20261113h18	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T19:50:18Z
+review:openregister:10318:87733f80	review	openregister	main	10318	sha=87733f803fd0148f6c2cb32584d38ca63fffdf1b;last_approved=;title=feat(openregister): build records-bulk-transition	2026-11-13T19:55:29Z
+review:openregister:10319:195e1747	review	openregister	main	10319	sha=195e1747e9c1b9102a4ae59954dfac52c137f280;last_approved=;title=feat(openregister): build platform-capability	2026-11-13T19:55:29Z
+verify:dossiq:6448:8ad53eaa	verify	dossiq	development	merge	prs=6448@dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	2026-11-13T19:55:29Z
+verify:filinq:2053:15844216	verify	filinq	development	merge	prs=2053@af1e32a4610b7c3bcb2d1351dd0b17adc7ec6963,2054@bd946b514b421f26357c0aa44e52cd4079b72159,2055@254cbb8d4e125d39fa5937327e7248a0ff2ceb53,2056@b75f87ba7f32c97a02adddfd329b814a8060b9ee,2057@8e1588657a68f9dba41a3a4b83173e8f0b37efb2,2058@e0070c28ced4857edebfd48ed5208691858f1ee9,2059@876e3d8ed792d2cbdc65087dbba5c4038ecac395	2026-11-13T19:55:29Z
+merge:stackiq:1895:78a4ba9c	merge	stackiq	development	development	prs=1895@c3663e04a77c8e8941c73d169bda79a222e90379	2026-11-13T19:55:29Z
+merge:dossiq:6443:2382f907	merge	dossiq	development	development	prs=6443@e9b9ace10d1240952e472e56cb6e54a68cddea02,6444@d2390741beba8173e8d59c01e11d3c0cd703bf58	2026-11-13T19:55:29Z
+merge:shillinq:3014:05638130	merge	shillinq	development	development	prs=3014@d48233634c2056466edb729f998612588eee6f7b	2026-11-13T19:55:29Z
+cover:pipelinq:7f9dc8e6m8ce9:0798b7cf	cover	pipelinq	development	quality/test-coverage-0798b7cf	lang=php;dirs=lib/Service/PosCart/;focus=thin;weight=465;coverage=81.79;target=90.0	2026-11-13T11:35:39Z
+cover:pipelinq:7f9dc8e6m8ce9:f0c02922	cover	pipelinq	development	quality/test-coverage-f0c02922	lang=php;dirs=lib/Service/External/;focus=thin;weight=446;coverage=81.79;target=90.0	2026-11-13T11:35:58Z
+cover:pipelinq:7f9dc8e6m8ce9:2ea9e4f7	cover	pipelinq	development	quality/test-coverage-2ea9e4f7	lang=php;dirs=lib/Service/CallReview/;focus=thin;weight=432;coverage=81.79;target=90.0	2026-11-13T11:36:12Z
+cover:pipelinq:7f9dc8e6m8ce9:db675bd6	cover	pipelinq	development	quality/test-coverage-db675bd6	lang=php;dirs=lib/Activity/Setting/;focus=thin;weight=431;coverage=81.79;target=90.0	2026-11-13T11:36:13Z
+cover:pipelinq:7f9dc8e6m8ce9:bc26df70	cover	pipelinq	development	quality/test-coverage-bc26df70	lang=php;dirs=lib/Service/Labels/;focus=thin;weight=430;coverage=81.79;target=90.0	2026-11-13T11:36:14Z
+cover:pipelinq:7f9dc8e6m8ce9:dfaef732	cover	pipelinq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=427;coverage=81.79;target=90.0	2026-11-13T11:36:17Z
