@@ -738,6 +738,10 @@ final class ListenerRegistrar {
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
 		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
+
+		// A state that declares `freezesObject: true` freezes the object on entry,
+		// so a closed phase's data stops changing without anybody clicking Freeze.
+		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
