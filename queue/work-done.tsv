@@ -5782,3 +5782,4 @@ build:portaliq:public-detail-page-for-a-provider-item	failed: blocked: task 4 re
 cover:stackiq:9ac19b3am9d24:f4b2f7af	PR #1885: +1 test; GemmaStandardLinker 73/73; rest of lib/Service/ArchiMate already covered	session-20261113T171141-a3907367	2026-11-13T18:01:46Z
 cover:shillinq:05639debm7b6b:js4829b6aa	PR #2951: 7 vitest tests, BudgetGrid.vue 63.6% -> 98.7%	session-20261113T172329-0b6220f9	2026-11-13T18:02:02Z
 build:portaliq:portal-controller-http-test-coverage	partial: PR #2429 ran gates for 5.2 and ticked it; 4.1-4.4 Playwright need a live instance	session-20261113T175400-7ec3993f	2026-11-13T18:02:23Z
+cover:pipelinq:7f9dc8e6m16db:50cc8442	already covered: lib/Util/*.php 106/106 lines (100%) at development 4c67daf (pcov, full unit suite: 7194 tests, 5 inherited failures); no PR	session-20261113T175335-552e4d60	2026-11-13T18:02:14Z
