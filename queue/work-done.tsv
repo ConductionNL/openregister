@@ -2492,3 +2492,4 @@ merge:dossiq:6107:31ee98b4	stale	feeder	2026-11-13T05:40:13Z
 merge:dossiq:6159:7c5940b9	stale	feeder	2026-11-13T05:40:13Z
 merge:dossiq:6172:7ca90664	stale	feeder	2026-11-13T05:40:13Z
 merge:dossiq:6187:e9049bcb	stale	feeder	2026-11-13T05:40:13Z
+cover:shillinq:05639deb:05630945	PR shillinq#2868: 14 tests, StandardProtocolPaths 10/10; ApiPathAliases 3 lines unreachable (empty RENAMED)	session-20261113T051703-1b54bfba	2026-11-13T05:41:35Z
