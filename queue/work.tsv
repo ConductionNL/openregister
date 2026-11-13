@@ -3440,3 +3440,7 @@ cover:keepiq:c967a31fmb40c:7ddabe24	cover	keepiq	development	quality/test-covera
 cover:keepiq:c967a31fmb40c:ca1d90c4	cover	keepiq	development	quality/test-coverage-ca1d90c4	lang=php;dirs=lib/Attribute/*.php;focus=thin;weight=110;coverage=89.12;target=90.0	2026-11-13T06:20:27Z
 cover:keepiq:c967a31fmb40c:6f346b68	cover	keepiq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=96;coverage=89.12;target=90.0	2026-11-13T06:20:41Z
 cover:keepiq:c967a31fmb40c:6925f818	cover	keepiq	development	quality/test-coverage-6925f818	lang=php;dirs=lib/SetupCheck/*.php;focus=thin;weight=95;coverage=89.12;target=90.0	2026-11-13T06:20:42Z
+cover:dossiq:f8a113c5m7e79:a07ceba0	cover	dossiq	development	quality/test-coverage-a07ceba0	lang=php;dirs=lib/Service/Dso/;focus=thin;weight=1291;coverage=87.99;target=90.0	2026-08-15T04:53:56Z
+cover:dossiq:f8a113c5m7e79:c900fa11	cover	dossiq	development	quality/test-coverage-c900fa11	lang=php;dirs=lib/Service/Email/Filters/;focus=thin;weight=1219;coverage=87.99;target=90.0	2026-08-15T04:55:08Z
+cover:dossiq:f8a113c5m7e79:c7ef8f28	cover	dossiq	development	quality/test-coverage-c7ef8f28	lang=php;dirs=lib/Listener/Support/;focus=thin;weight=1133;coverage=87.99;target=90.0	2026-08-15T04:56:34Z
+cover:shillinq:05639debmd8ee:c80330bb	cover	shillinq	development	quality/test-coverage-c80330bb	lang=php;dirs=lib/Service/Purchasing/;focus=thin;weight=417;coverage=85.47;target=90.0	2026-11-13T02:37:19Z
