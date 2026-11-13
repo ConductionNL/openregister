@@ -5750,3 +5750,4 @@ build:portaliq:intake-conditional-questions-and-drafts	failed: blocked: T06-T08 
 build:portaliq:link-field-qr-code	already done: built on development (9eea75b9), T1-T9 ticked; the only open task T10 is a learniq follow-up, not buildable in portaliq	session-20261113T171203-c5a044de	2026-11-13T17:56:31Z
 build:portaliq:home-and-theme-landing-pages	no code left: sections 1-4 built 2026-10-08; open 5.1 is a live check and 6.x are delivery/measurement steps of that build	session-20261113T175327-6e4e7f28	2026-11-13T17:57:04Z
 build:portaliq:embedded-intake-form	PR #2421: T02 already built (FormEmbedDialog), ticked; all tasks done	session-20261113T175400-7ec3993f	2026-11-13T17:57:11Z
+build:portaliq:inbox-read-receipt-on-request	nothing left to build in code: T01-T05 built (#1850), sendingRef filter works via route query; T06 count needs a nextcloud-vue count component, T07 live check, T08 other repos	session-20261113T171153-e1c17962	2026-11-13T17:57:22Z
