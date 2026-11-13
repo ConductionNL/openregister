@@ -2,7 +2,7 @@
 
 ## 1. Formats
 
-- [ ] 1.1 Add `ExportService::exportToTsv()` and the `tsv` branch in `ObjectsController::export()` (tab delimiter, quoting as design D-1, UTF-8 with BOM, `text/tab-separated-values`). Verify: `tests/Unit/Service/ExportServiceTsvTest.php` round-trips a value with a tab, a line break and a quote through PhpSpreadsheet's reader.
+- [x] 1.1 Add `ExportService::exportToTsv()` and the `tsv` branch in `ObjectsController::export()` (tab delimiter, quoting as design D-1, UTF-8 with BOM, `text/tab-separated-values`). Verify: `tests/Unit/Service/ExportServiceTsvTest.php` round-trips a value with a tab, a line break and a quote through PhpSpreadsheet's reader.
 - [ ] 1.2 Add `ExportService::exportToXml()` with `XMLWriter` and the `xml` branch, implementing the existing scenario "Export to XML" plus the `<property name="...">` fallback for invalid names and `xsi:nil` for null. Verify: `tests/Unit/Service/ExportServiceXmlTest.php` validates the output with `DOMDocument::loadXML()`, covers arrays, nested objects, an `@self` block and a property named `2e-adres`.
 
 ## 2. Public download

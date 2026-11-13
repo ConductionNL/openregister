@@ -159,9 +159,10 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	/**
 	 * Presentation configuration stored as JSON (nullable)
 	 *
-	 * Declares how the view renders: `viewType` (table|kanban|calendar) plus
-	 * type-specific config (kanban: groupByField/cardFields/columnOrder;
-	 * calendar: dateField/endDateField). Null means "not configured" and MUST
+	 * Declares how the view renders: `viewType` (table|kanban|calendar|gallery)
+	 * plus type-specific config (kanban: groupByField/cardFields/columnOrder;
+	 * calendar: dateField/endDateField; gallery:
+	 * coverField/titleField/cardFields/cardSize). Null means "not configured" and MUST
 	 * render as `table` (the default) so existing views are unchanged.
 	 *
 	 * @var array|null Presentation configuration, or null for the default table view
@@ -455,11 +456,11 @@ class View extends Entity implements JsonSerializable, ViewInterface {
 	 * Get the presentation configuration, defaulted to the `table` view.
 	 *
 	 * A null `presentation` (never configured) MUST render exactly like an
-	 * unconfigured legacy view: `viewType: table` and no kanban/calendar
+	 * unconfigured legacy view: `viewType: table` and no kanban/calendar/gallery
 	 * config. This is the single place that applies that default so both
 	 * the API response and any internal consumer see the same shape.
 	 *
-	 * @return array{viewType: string, kanban?: array, calendar?: array} The effective presentation config
+	 * @return array{viewType: string, kanban?: array, calendar?: array, gallery?: array} The effective presentation config
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */

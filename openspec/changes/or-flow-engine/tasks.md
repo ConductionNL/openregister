@@ -36,11 +36,15 @@
 
 ## 4. Follow-ups (separate changes)
 
-- [ ] 4.1 OR-backed `MarkingStoreInterface` persisting to a flow-run object
+- [x] 4.1 OR-backed `MarkingStoreInterface` persisting to a flow-run object
+      (verified: lib/Service/Flow/FlowRunMarkingStore.php keeps the marking on the
+      FlowRun row, the native run table that replaced the flow-run object under
+      flow-engine-unification; tests/Unit/Service/Flow/FlowRunMarkingStoreDeltaTest.php)
 - [ ] 4.2 Relocate openconnector's `flow` schema + `FlowRunnerService`; resolve
       `order`-as-identity before a canvas can drive it
-- [ ] 4.3 Move openbuild's `DecisionTableEvaluator` to OR as the shared
-      decision-table service
+- [x] 4.3 Move openbuild's `DecisionTableEvaluator` to OR as the shared
+      decision-table service (verified: lib/Service/Dmn/DecisionTableEvaluator.php,
+      tests/Unit/Service/Dmn/DecisionTableEvaluatorTest.php)
 - [ ] 4.4 DMN/CMMN interchange (openregister#466) — driver unconfirmed
 
 ## Item data channel

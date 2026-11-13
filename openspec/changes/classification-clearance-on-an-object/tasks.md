@@ -2,19 +2,19 @@
 
 ## 1. Declaration
 
-- [ ] 1.1 Add `x-openregister-classification` to
+- [x] 1.1 Add `x-openregister-classification` to
       `SchemaSlugMap::SCHEMA_ANNOTATION_KEYS` so the block is not dropped in
       silence on import.
-- [ ] 1.2 Validate the block at schema save: at least two levels, no
+- [x] 1.2 Validate the block at schema save: at least two levels, no
       duplicate, `property` declared on the schema, `clearances` entries
       naming a declared level, `default` a declared level.
-- [ ] 1.3 Validate `ceilings` entries and the `floor` reference.
+- [x] 1.3 Validate `ceilings` entries and the `floor` reference.
 
 ## 2. Resolution
 
-- [ ] 2.1 A comparator placing a label by its index, with an absent, empty or
+- [x] 2.1 A comparator placing a label by its index, with an absent, empty or
       unknown label at the most restrictive index, logged.
-- [ ] 2.2 A clearance resolver: highest mapped group, then `default`, then the
+- [x] 2.2 A clearance resolver: highest mapped group, then `default`, then the
       lowest level, with the administrator at the top, logged when
       unresolvable.
 

@@ -67,6 +67,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Lifecycle + access-control by design.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FolderManagementHandler {
 	/**

@@ -154,6 +154,7 @@ import {
 } from '@nextcloud/vue'
 /**
  * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
+ * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
  */
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SectionSaveActions from './SectionSaveActions.vue'

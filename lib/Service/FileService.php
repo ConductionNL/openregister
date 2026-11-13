@@ -124,6 +124,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyFields)            File service orchestrates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 

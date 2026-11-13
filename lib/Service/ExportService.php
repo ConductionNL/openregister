@@ -281,6 +281,52 @@ class ExportService implements ObjectExporterInterface {
 	}//end csvFor()
 
 	/**
+	 * Export objects of a single schema to a TSV document.
+	 *
+	 * The same spreadsheet the CSV exporter builds, written with a tab
+	 * delimiter. A value holding a tab, a line break or a double quote is
+	 * quoted so any spreadsheet reads it back; the document carries a UTF-8
+	 * byte order mark, like the CSV.
+	 *
+	 * @param ObjectExportRequest $request The register context and the schema whose objects are exported (required).
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function exportToTsv(ObjectExportRequest $request): string {
+		return $this->tsvFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToTsv()
+
+	/**
+	 * Export one request to TSV; TSV holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function tsvFor(ExportRequest $request): string {
+		if ($request->register !== null && $request->schema === null) {
+			throw new InvalidArgumentException('Cannot export multiple schemas to TSV format.');
+		}
+
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
+		$writer->setDelimiter("\t");
+		$writer->setEnclosure('"');
+		$writer->setUseBOM(true);
+
+		ob_start();
+		$writer->save('php://output');
+		return ob_get_clean();
+	}//end tsvFor()
+
+	/**
 	 * Export objects of a single schema to a JSON document
 	 *
 	 * Serialises every object (subject to the same RBAC + multi-tenancy + filter
