@@ -1860,3 +1860,7 @@ pipelinq	3741	5e00efc16a09d4fd355701ec962aeab34e2c7009	MERGED	merge-local	GATE O
 pipelinq	3743	222fa459e19bbc0c4f9efa55f0f2e055f7d0e121	SKIP	merge-local	GATE UNMEASURED 222fa459e1 does not merge cleanly onto development
 portaliq	2398	598926b6b23fdd4cc6308f22b7eddfbfd565f3da	RED	merge-local	GATE RED floor: module_coupling: 4.56 -> 4.54
 portaliq	2400	93a719a60a694bf60eeac6f06b9e7c1b32f2c368	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1148	20deab94f63827958462d31812ecc0e46550e94c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1149	6e3a46f9f01400537aa4dee60fc3d9064b9d7c92	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1150	a07096743816d533a67b09824957439f897f49f6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1151	372f537e3bb06a33bc6ae6cf86b0e19b9d14cdbf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
