@@ -6047,6 +6047,7 @@ build:shillinq:leges-at-intake	nothing to build: open tasks are 1.2 (BbvTaakveld
 verify:opencatalogi:2595:996caeef	GREEN 2595,2596,2597 (tests only; 5284 tests, 2 inherited failures)	session-20261113T182348-cc1b5fea	2026-11-13T18:40:35Z
 verify:humaniq:1119:fd79c83e	1119,1120,1121 GREEN (tests only, 4159 tests, 0 new failures)	session-20261113T182349-7e3632fd	2026-11-13T18:40:57Z
 build:shillinq:budget-scenarios	already done: code tasks on development (18495f87e); open items are the grid selector (excluded by the change's own REQ-BSC-010) and Playwright tasks	session-20261113T171152-380dbc11	2026-11-13T18:40:53Z
+build:shillinq:platform-properties	PR #2964: tasks 1.1-2.4 built (@spec tags, PlatformPropertiesTest 5 tests); 3.1 archive left; suite 10394->10399, no new failures	session-20261113T172325-6eb25015	2026-11-13T18:41:15Z
 verify:integriq:3527:8787d817	3527,3528,3529,3530 GREEN; no new failures	session-20261113T182349-6568f680	2026-11-13T18:41:18Z
 build:shillinq:receivables-object-request-settlement	already done: code tasks on development (a50432583 and earlier); open are 2.3 live/e2e and 5.2 handover to larpinq (not code)	session-20261113T171152-380dbc11	2026-11-13T18:41:22Z
 build:shillinq:integration-leaves-consume	PR #2965: §1-§4 built (files widgets on 3 pages, linkedTypes fragment, talk on 2 curated pages; ReceiptDetail refused: custom overlay); §5 live UI left; +4 PHPUnit +7 vitest; PHP 10394/1 inherited -> 10398/1, vitest 2302 pass	session-20261113T175335-552e4d60	2026-11-13T18:41:33Z
