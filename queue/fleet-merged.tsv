@@ -1234,3 +1234,7 @@ stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	RED	merge-local	GATE RED f
 stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	SKIP	merge-local	stack: #1700 was not merged
 hermiq	1598	d97fe2d546e6338887a279b898ab88b4a73f2a51	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 opencatalogi	2578	b2cba0b6256cf411c3194f7cb59108956628cab2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2121	d094c2d61d91cedc67c0b6a907ae41dcc0fb2d20	SKIP	merge-local	GATE UNMEASURED d094c2d61d does not merge cleanly onto development
+decidiq	2122	fa8d0eb66b8b8d5df1d5b065238cec0090d9520b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2123	8f07c6bc32eabaf49caa35ea3e8c3f0294d94316	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2124	d285adf422519dd3da870189427649cc4d444537	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
