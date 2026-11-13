@@ -2744,5 +2744,6 @@ cover:pipelinq:7f9dc8e6mc4ba:dfaef732	already done: lib/Notification 120/120 sta
 cover:pipelinq:7f9dc8e6mc4ba:0798b7cf	already done: lib/Service/PosCart 67/67 statements (100%) on development 50e93fcda after ba210f571	session-20261113T061516-58aa7364	2026-11-13T06:20:26Z
 cover:pipelinq:7f9dc8e6mc4ba:d528dcf0	already done: lib/Dashboard/*.php at 100% (36/36 statements, pcov on 50e93fcd); no PR	session-20261113T054519-189b2666	2026-11-13T06:19:55Z
 verify:shillinq:2873:7a88bd74	GREEN 2873-2881 (JS specs only; vitest 1660 all pass)	session-20261113T031701-b518f7f8	2026-11-13T06:20:29Z
+cover:learniq:e6498dddmf689:jsd48eb217	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:20:41Z
 measure:buildiq:20261113h06	php 33.42% (pcov, pcov.directory=lib; 1382 tests error on development's phpunit-unit.xml bootstrap, #1516 fixes); js skipped (npm ci refused)	session-20261113T061518-90540a48	2026-11-13T06:20:38Z
 verify:pipelinq:3681:acf7a728	GREEN 3681-3685 (tests only; no new PHP failures; vitest 3951 pass)	session-20261113T051714-4ad50f31	2026-11-13T06:20:59Z
