@@ -2712,3 +2712,4 @@ review:openregister:9943:6aa9d5c8	APPROVE: fail-closed expiry, guarded renew; su
 cover:keepiq:c967a31fm0090:ca1d90c4	no PR: lib/Attribute is 1 getter-only attribute class (VaultKeyProofRequired), already exercised via middleware tests; only getter-only tests possible	session-20261113T054520-0c8540f8	2026-11-13T06:16:26Z
 cover:filinq:7a9ef677m5ffe:e01e982e	already done: lib/Service/SignerAuth/*.php at 96.69% lines (467/483) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:16:45Z
 verify:filinq:2038:c03a7392	2038 GREEN (6132 tests, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T06:16:51Z
+cover:pipelinq:7f9dc8e6mc4ba:6925f818	already done: lib/SetupCheck 27/27 statements (100%) on development 50e93fcda; measurement b363909 predates 4042706a9 which added the tests	session-20261113T061516-58aa7364	2026-11-13T06:17:07Z
