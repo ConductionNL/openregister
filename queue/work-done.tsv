@@ -6456,4 +6456,5 @@ build:filinq:filinq-policy-controller-test-coverage	PR #2056: 61 tests (service 
 build:filinq:document-rich-editing	PR #2057: change already implemented; 16 tasks verified and ticked, +2 metadata write tests (stale version, Agent authored tag); E2E/live tasks and superseded ODF refusal left	session-20261113T185327-0dc82b88	2026-11-13T19:54:24Z
 cover:pipelinq:7f9dc8e6m8ce9:09cc8f24	already done: lib/Service/Cti at 368/368 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:53:58Z
 cover:dossiq:069ee2d6mbd37:js5794e9fc	PRs #6446 (node+panels, 20 tests) and #6448 (WorkflowEditor, 25 tests); settings dir 73.7%->~85% combined; suite only inherited capabilityComparison failure	session-20261113T192700-55dce75a	2026-11-13T19:54:09Z
+cover:pipelinq:7f9dc8e6m8ce9:ea81adeb	already done: lib/Service/Zgw/*.php at 726/728 lines (99.7%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:54:42Z
 review:openregister:10314:1f8cb37d	BLOCK 10314: entity snapshot golden test fails	session-20261113T192704-f298034f	2026-11-13T19:54:55Z
