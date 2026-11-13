@@ -2706,6 +2706,7 @@ cover:dossiq:f8a113c5mac88:e56141e7	PR #6299: 19 tests (DossierUploadHandler, Do
 cover:pipelinq:7f9dc8e6mc4ba:be0dcca9	already done: lib/Mcp/*.php at 100% statements (29/29) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:29Z
 cover:shillinq:05639debmd8ee:123a624c	PR shillinq#2883: 14-test generator/catalogue contract, dir 1387->1404/1528 lines; rest is in open PRs -1/-2; same 1 inherited failure	session-20261113T051703-1b54bfba	2026-11-13T06:15:46Z
 cover:pipelinq:7f9dc8e6mc4ba:ab7f3595	already done: lib/Service/Provider/ at 99.04% statements (103/104) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:44Z
+cover:shillinq:05639debmd8ee:89bf3ba4	PR #2884: 7 tests for AbstractStatementReportGenerator; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:15:53Z
 cover:pipelinq:7f9dc8e6mc4ba:23d187f5	already done: lib/Service/Store/ at 95.35% statements (82/86) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:d39f9857	already done: lib/Support/*.php 32/32 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:09cc8f24	already done: lib/Service/Cti/ 365/368 lines (99.2%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:16:03Z
