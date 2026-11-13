@@ -4003,6 +4003,9 @@ Db/SchemaFollowerMapper.php,,Db,,,,,Core
 Middleware/SchemaChangeHeaderMiddleware.php,,Middleware,,,,,Platform
 Notification/SchemaChangeSubjectRenderer.php,,Notification,,,,,Notifications
 Service/Schema/SchemaChangeNoticeService.php,,Service,,,,,Core
+Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFolding.php,0,,Core
+Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
+Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
