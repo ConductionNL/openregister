@@ -6343,3 +6343,4 @@ filinq	2098	fc7ce3c42df6b89414df284016be402d36eb0b2f	GREEN	worker-23	unit 6491 t
 filinq	2099	697ea860f396fab0bca86de18aa7254eea16fc1f	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; woo-decision contract check applies only to templates declaring it
 filinq	2100	7a4ee692702c8b39b230e42dcf44b4de74208177	CONFLICT	worker-23	conflicts with 2097-2099 in the tree (l10n/en,nl js+json); clean against development alone, needs development merged in after those land
 filinq	2101	cab6810d9718f4e3578b1d20b1f3f7fc0610c53a	CONFLICT	worker-23	conflicts with 2097-2099 in the tree (l10n/en,nl js+json); clean against development alone, needs development merged in after those land
+filinq	2102	4fc388cbeb6ab5085c5f76804e90278a2734e51e	CONFLICT	worker-23	conflicts with 2097-2099 in the tree (lib/Settings/filinq_register.json); clean against development alone, needs development merged in after those land
