@@ -7425,3 +7425,4 @@ build:humaniq:platform-integrations-catalogue	partial: PR #1130 builds 1.1 (D1 c
 verify:shillinq:3031:2dfd2f28	GREEN 3031	session-20261113T213326-97cbe4c8	2026-11-13T22:58:14Z
 build:humaniq:payroll-reservation-payouts	partial: PR humaniq#1134 builds the band op (1.2) and payout arithmetic (2.1); tax table, pack path, run wiring, IKB, pages left	session-20261113T175332-5effc865	2026-11-13T22:58:45Z
 build:hermiq:action-matrix-screen	PR #1762: tasks 1.1, 1.2, 2.1 built with tests; e2e 3.1 and archive 3.2 left	session-20261113T204606-0d8f1c54	2026-11-13T22:58:28Z
+build:humaniq:leave-approval-steps-and-history	partial: PR #1133 tasks 1.1,1.2,2.1,2.2 (+13 tests, suite 4140->4153 green); 2.3 UI, 2.4 requests, 2.5, 3.x left	session-20261113T202619-0d7929e0	2026-11-13T22:58:50Z
