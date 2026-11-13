@@ -3546,3 +3546,4 @@ cover:openregister:7350e3efmea52:60c2c265	already done: batch -1 merged; lib/Con
 cover:openregister:7350e3efmea52:js0b5eefce	PR openregister#10117: 43 jest tests (ViewObject, MergeObject); src/modals/object 78.3->90.8%, jest 7794->7837 green	session-20261113T074532-3dc49c57	2026-11-13T08:41:48Z
 verify:opencatalogi:2586:06ee83ce	GREEN 2586 (test @uses metadata only; 5162 tests, 2 inherited failures, 0 new)	session-20261113T083916-59f10a3b	2026-11-13T08:41:50Z
 measure:keepiq:20261113h08	php 89.12% (pcov, 4564 tests), js 90.45% (6244 tests)	session-20261113T072715-8f8a14e9	2026-11-13T08:42:12Z
+verify:portaliq:2387:a0911cbe	GREEN 2387; 4560 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:42:18Z
