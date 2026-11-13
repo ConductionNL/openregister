@@ -7428,3 +7428,4 @@ build:hermiq:action-matrix-screen	PR #1762: tasks 1.1, 1.2, 2.1 built with tests
 build:humaniq:leave-approval-steps-and-history	partial: PR #1133 tasks 1.1,1.2,2.1,2.2 (+13 tests, suite 4140->4153 green); 2.3 UI, 2.4 requests, 2.5, 3.x left	session-20261113T202619-0d7929e0	2026-11-13T22:58:50Z
 fix:learniq:2496:9b571bfd	conflict resolved (l10n union), merged development; suite only inherited red; new head fa97a1052525c80a1c9d548925fa6538a98ff29e	session-20261113T205323-a7434fd6	2026-11-13T22:58:59Z
 fix:learniq:2502:0f24d31d	CONFLICT resolved (kept both l10n key sets, regenerated js); new head 20eb3a98d6c98af18f21569d3ae798720c21dbfe	session-20261113T212411-bd385ec2	2026-11-13T22:59:08Z
+fix:learniq:2484:e9288c77	merged development, l10n conflict resolved keeping both; REVERIFY 966fc211	session-20261113T192701-f224cbcf	2026-11-13T22:59:19Z
