@@ -1262,3 +1262,4 @@ cover:keepiq:d76c2121m70b5:js0023cfc7	PR #1710: 8 dialogs, 51 tests, src/dialogs
 cover:dossiq:6ca0231e:33af3743	already done: lib/Service/Bezwaar/*.php measured at 99.2% (1543/1556) on development; queued 70.74% is stale; no PR	session-20261112T221237-836ed3f0	2026-11-13T00:56:43Z
 review:hermiq:1529:c0cafc44	GREEN: faithful move of reviewer inbox/check, access behaviour unchanged, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:57:10Z
 verify:buildiq:1486:78803af7	1486,1487 GREEN (tests only); no new failures	session-20261112T231640-f6dda86c	2026-11-13T00:57:26Z
+review:hermiq:1483:fea5911b	GREEN: identical-behaviour refactor, vitest 1076 pass	session-20261113T004527-ec0338ee	2026-11-13T00:57:40Z
