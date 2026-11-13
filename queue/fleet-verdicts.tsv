@@ -5477,3 +5477,4 @@ learniq	2439	593b59dae40344039fd55d62cb3b74929f15bfa6	GREEN	worker-19	unit 6105 
 integriq	3510	8ab883cb23d0f8c5e0b2027ba12c9149e7ae9a35	GREEN	worker-22	8016 tests (baseline 8000, 2 errors + 2 failures inherited), new failures: none; tests-only PR
 stackiq	1700	f9ee16d5245ba076c6a1944798ae900a5a3e2323	CONFLICT	worker-06:review	behaviour review clean (pure extraction of display/edit/save helpers, same outputs and messages); conflicts with development on tests/vitest/viewObjectPropertyEditing.spec.js (add/add), ViewObject.vue and eslint-suppressions.json; PR head alone: vitest 1238 passed, eslint 0 errors
 opencatalogi	2586	5b1a8e31515740bdb54ddd615fde427acbfa861b	GREEN	worker-54	5162 tests; baseline 2 failures (AppIdentityTest, WooControllerTest); 0 new; test-metadata only
+portaliq	2387	a483ba0e28cd4ec39c1f5121fabc0dc90e4daef5	GREEN	worker-27	4560 tests, 0 failures; baseline 4527, 0 failures; no new failures; 5 new test files only
