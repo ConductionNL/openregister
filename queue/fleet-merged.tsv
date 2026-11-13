@@ -458,3 +458,4 @@ dossiq	6094	9fecf9710291423f6ed76c6e119109d44f5b65a7	MERGED	merge-local	GATE OK 
 dossiq	6095	16c34b6ba21a9767b969294599fb871f2e228bf3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6096	7be207b85160ce1e5cc61020911f83df4722ac5c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6097	856c057083edac18e944061515829e2698bcf602	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6185	b8462690bcc75ed68eea0604bf936326e5908359	MERGED	merge-local	light gate: quality config yaml only, parses, applies cleanly
