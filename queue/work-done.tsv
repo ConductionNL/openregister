@@ -1174,6 +1174,7 @@ cover:buildiq:8ca317f6m6d54:f91e7417	PR #1487: 3 ConnectionReporter edge tests, 
 cover:keepiq:d76c2121m70b5:js3287a408	PR #1707: 7 settings specs, 48 tests; settings line coverage 74.5% -> 85.5%	session-20261113T002028-6d7c79b9	2026-11-13T00:37:27Z
 merge:hermiq:1595:7693f8c3	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:37:45Z
 cover:buildiq:8ca317f6m6d54:568ec52a	no PR: lib/Lifecycle already at 84/85 lines (24 tests, earlier -1 batch merged); only a non-array jsonSerialize guard left	session-20261113T002028-bc0aa910	2026-11-13T00:38:11Z
+cover:openregister:7350e3efm0e99:js716923f8	PR #10074: @uses metadata in 18 credential tests; 80 risky->0, measured Credential coverage 83.9%->94.7% (row said lang=js; dirs are PHP)	session-20261112T234655-0bdbf2be	2026-11-13T00:38:15Z
 fix:stackiq:1690:28600ec1	merged development in (SPDX header conflict), suite green; new head 74ea9a64, REVERIFY recorded	session-20261112T231638-72e59130	2026-11-13T00:38:31Z
 cover:stackiq:8cfacb29m2f4b:js4829b6aa	PR stackiq#1807: 8 mounted tests, KwetsbaarhedenView 75.4->98.5%, src/views/* now 89.5%; vitest 1880->1888 green	session-20261112T221237-836ed3f0	2026-11-13T00:38:35Z
 cover:integriq:9b0f5894m2367:js5a3cabaa	PR #3442: RuleConditionLeaf vitest spec, 34 tests (action forms already in open -1 PR); vitest 1392->1426 OK	session-20261112T231639-4c562de9	2026-11-13T00:38:37Z
