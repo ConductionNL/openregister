@@ -1050,3 +1050,14 @@ buildiq	1508	7b21988db5bf53f1440f5c6e6aeb452e3513119c	MERGED	merge-local	GATE OK
 buildiq	1509	c84ee2db6c98a708f0453a1af42d6351596d703b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1510	74e6c610d5c56caaa6a1e7651bea006bdc8a19f3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1511	8b127c0953d48c92356148a9295e08da68acfd21	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2418	66bff88472562e9dfab3fad30d3d6eaf470e1ebd	RED	merge-local	GATE RED checker floor: adrvalidator: warn -> fail
+learniq	2426	f9b1cdabc05685168aae40aa83cf725c66a69356	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2427	2e9ae1342722765e4904575d983c9592283e9f2a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2428	fbb4c1ae4bc36dd77f177e53bd090786f7c1d270	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2429	39dc1d38237a09ea86c04a5f96946dc059e659a4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2430	8f86db8965b9281a0f9143650e1590e974aeab93	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2431	f92b159d6ab44a87e8a4bba5e2df120593b5137c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2434	fc291da35f049d3d888e6fe8ed806704b5fb234f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2433	10358e9fcc87fd53b2cafd01b3bccaa6dbdbc0fe	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2435	24dae66bbcdf3034ca82787dd709f398e3b635b3	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+learniq	2436	c487c8c3f3268f7edce46f86878a9686ecc01d2f	SKIP	merge-local	GATE UNMEASURED c487c8c3f3 does not merge cleanly onto development
