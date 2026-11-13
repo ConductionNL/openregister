@@ -5294,4 +5294,5 @@ dossiq	6304	51303319ea04d57b1eaeb7c6754cdedcbdf62093	GREEN	worker-03	unit 14981 
 decidiq	2117	4e8cf799592053b04451859ecc1290cc7e8b9b63	GREEN	worker-03	unit 3700 on tree (baseline 3684 green), 0 new failures; adds tests only
 filinq	2042	00d80a47b5c5179ded683b2b0ac8f5029fe9203a	GREEN	worker-13	phpunit 6259 tests on tree, baseline 6251/0 fail, 0 new; tests only
 decidiq	2118	ef480645f07cb2a53397f122080594d73bbf843a	GREEN	worker-03	unit 3700 on tree (baseline 3684 green), 0 new failures; adds tests only
+shillinq	2894	528f455d4b5e3da0dddedb907896edd1258afc24	GREEN	worker-39	unit 9333 on tree vs 9319 baseline, 1 inherited failure, 0 new; test-only (adds assertions, @uses->@covers)
 shillinq	2896	6b8a339ee367d6bffc5be14f4b9ead64ba0c190f	GREEN	worker-22	9364 tests (+27), baseline 9337 with 1 inherited failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp), 0 new failures; tests-only diff
