@@ -5551,3 +5551,5 @@ learniq	2419	5f8478f65b0bdf7c3e7b6209eef0c83832e3c581	BLOCK	worker-19	unit 6276 
 buildiq	1534	d7b0899512ac2d1d5ba2f184f8fb5ff730fb5070	GREEN	worker-21	2752 tests run, baseline 2747 with 1 inherited failure (ExportZipGoldenTest), 0 new failures; tests only
 stackiq	1863	222faabc2fd5cc98e2bfad56b8c300d28b23183e	GREEN	worker-06	vitest 2395 passed on tree (baseline 2344), php 3216 unchanged; tests-only, 0 new failures
 stackiq	1864	a9af792e188eed982e281451b47304d06f9042b5	GREEN	worker-06	vitest 2395 passed on tree (baseline 2344), php 3216 unchanged; tests-only, 0 new failures
+pipelinq	3697	1aed3b007eae2874af151fbaeac68b2f5d3ca26f	GREEN	worker-22	vitest 553 files/3979 tests all pass on tree; phpunit 6454 (baseline 6454, 1 inherited failure CrmPrivilegeRefusalGoldenTest), new failures: none; tests-only
+pipelinq	3698	4d89508e62cc548c69320089a31b941911d30702	GREEN	worker-22	vitest 553 files/3979 tests all pass on tree; phpunit 6454 (baseline 6454, 1 inherited failure), new failures: none; tests-only
