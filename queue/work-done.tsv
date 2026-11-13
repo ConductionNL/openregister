@@ -3493,3 +3493,4 @@ cover:stackiq:9ac19b3am5ac4:17d367ab	already done: lib/Controller/Settings/ at 1
 verify:versioniq:671:042a546f	GREEN 671, 672, 673 (php 1411 vs 1356, 2 inherited; vitest 2761 green); note: composer-cloud leaves vendor-bin/phpunit empty, ran it on that dir	session-20261113T080549-20301834	2026-11-13T08:35:37Z
 cover:dossiq:f8a113c5m7e79:6891a8ac	already done: lib/Service/Dashboard 100% covered by its own tests (160/160 statements)	session-20261113T080551-294c2aa6	2026-11-13T08:35:46Z
 review:openregister:10114:fb0951d0	APPROVE: 3 jest specs, 24 pass, eslint clean	session-20261113T080556-d189f150	2026-11-13T08:35:46Z
+cover:stackiq:9ac19b3am5ac4:68d2b5ba	already done: Service/Cmdb 98.1%, Service/Settings 97.6%; no PR	session-20261113T080546-98207a87	2026-11-13T08:36:01Z
