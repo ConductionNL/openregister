@@ -3007,3 +3007,4 @@
 10291 453c9de06366dbe95fb8cd54fa8ae0affd02fd11 APPROVE Test metadata only (@uses for two real classes); touched tests pass on the PR merged with main, risky drops 3 to 1. GraphQLServiceGoldenTest still executes StatisticsScope without declaring it.
 10287 054efa863dca583f26cbfb9d0d05eac9ef37fe2c APPROVE integrator IL5: main merge on top of approved a92c2d44: listener goldens follow the merged registrar after #10264 (listener-order.json regenerated, order golden re-pinned); Listener tests pass
 10288 62319c927496f1916b61647f3b4bbd19189eccaf APPROVE integrator IL5: main merge on top of approved 606ffb21: docblock conflict only: this branch's @listener-placement note kept with main's repointed @spec; Listener tests and the PR's tests pass
+10289 fe469e10a68dfc1fa8b6bde94c47a0e4567b6a98 APPROVE Tests only (3 new unit test files, 26 tests, all pass). Architecture, Rules, Contract green on the merged tree; Controller reds are inherited from main (local DBAL stub).
