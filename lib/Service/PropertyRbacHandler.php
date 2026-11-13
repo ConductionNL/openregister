@@ -177,6 +177,44 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	}//end canUpdateProperty()
 
 	/**
+	 * The properties the current user may read but may not change, for one object.
+	 *
+	 * The hint a form disables and `@self.readOnlyProperties` carries. It is a
+	 * HINT, not the gate: the save path still refuses a write to any of these
+	 * (see {@see getUnauthorizedProperties()}). An admin, and a schema with no
+	 * property-level authorization, has nothing read-only. A property with no
+	 * `update` rule is writable by anyone who may write the object, so it is
+	 * not read-only. A rule's `match` condition is evaluated against the object
+	 * handed in.
+	 *
+	 * @param Schema               $schema The object's schema.
+	 * @param array<string, mixed> $object The object data, for a rule's `match` condition.
+	 *
+	 * @return array<int, string> The read-only property names, in schema order.
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+	 */
+	public function readOnlyProperties(Schema $schema, array $object = []): array {
+		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
+			return [];
+		}
+
+		$readOnly = [];
+		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $name) {
+			$name = (string) $name;
+			$property = new SchemaProperty(schema: $schema, name: $name);
+			$request = new PropertyAccessRequest(object: $object);
+			if ($this->canReadProperty(property: $property, request: $request) === true
+				&& $this->canUpdateProperty(property: $property, request: $request) === false
+			) {
+				$readOnly[] = $name;
+			}
+		}
+
+		return $readOnly;
+	}//end readOnlyProperties()
+
+	/**
 	 * Filter an object to only include readable properties
 	 *
 	 * @param Schema $schema Schema containing property definitions
