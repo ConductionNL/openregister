@@ -1118,6 +1118,7 @@ merge:launchpad:1138:e654c706	merge-local over 7 launchpad tasks: merged=16 red=
 cover:buildiq:8ca317f6m6d54:6891a8ac	no PR: lib/Service/Dashboard already at 137/141 lines (WidgetItemProjector 100%, gateway 32/36) with the openregister sibling present; the 4 missed lines are the class-absent branch, unreachable in-process	session-20261113T002028-bc0aa910	2026-11-13T00:25:00Z
 verify:integriq:3425:2a68796c	9 GREEN (3425-3433, tests-only), 7197 tests vs baseline 7113, same 2 inherited errors, 0 new	session-20261112T231639-4c562de9	2026-11-13T00:25:17Z
 cover:decidiq:13261b1bmcfc2:60c2c265	PR #2102: 4 controllers, 29 tests, suite 3116->3145, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:25:45Z
+cover:learniq:1ae7757e:js619872ae	PR #2429: 37 loadSfc tests for LessonAssistPanel, LessonNextStepEditor and 4 openMaterial components; suite 1101->1138, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:26:19Z
 verify:stackiq:1780:de9f5ca5	9 PRs GREEN (1780,1781,1790-1796); 4 refactors read as behaviour-preserving, 0 new failures	session-20261112T233856-8f2d924b	2026-11-13T00:26:32Z
 merge:hermiq:1495:a0733f67	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:26:38Z
 merge:hermiq:1509:724a5b72	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:26:44Z
