@@ -3918,3 +3918,4 @@ fix:learniq:2419:5f8478f6	restored 14 /api/v1 routes, pushed 938831f69b9efdc7919
 cover:keepiq:c967a31fm1147:0d67c1f3	already done: lib/Service/Siem 193/193 covered	session-20261113T051709-e616bf69	2026-11-13T09:32:00Z
 verify:filinq:2049:78602b5a	2049 GREEN (lockfile only; vitest 751 pass, build ok, php unchanged)	session-20261113T071640-3ba6da34	2026-11-13T09:32:01Z
 build:dossiq:woo-term-is-computed-and-reported-right	already built: sections 1-3 built under one-term-engine, 4.1/4.2 and 6.1-6.4 ticked on development; only e2e 5.1, live 5.2 and delivery 6.5 remain	session-20261113T074532-3dc49c57	2026-11-13T09:32:05Z
+build:dossiq:woo-dossier-shared-with-the-requester	nothing buildable: groups 1-5 done; open 6.1 is a live e2e pass with portaliq and 6.2 a pre-push check, both outside unit/code scope	session-20261113T081043-b24589a6	2026-11-13T09:32:29Z
