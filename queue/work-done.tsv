@@ -6523,3 +6523,4 @@ measure:shillinq:20261113h18	php 92.34% js 84.31% @b0ed3e44	session-20261113T195
 build:filinq:redaction-at-scale	partial: PR #2079 (1.1, 1.2 done; QA sampler and report aggregation; coordinator, endpoints, UI left); suite 6443->6450 green	session-20261113T182404-f2c28226	2026-11-13T20:02:56Z
 build:filinq:generate-draft-and-attended-edit	partial: PR #2078, backend tasks 1.1 and 2.1-2.5 built with 42 new tests (6443->6485, all passing); frontend 3.1-3.4, 4.1 and the docs half of 4.2 left	session-20261113T192659-0ddb618f	2026-11-13T20:02:57Z
 review:openregister:10316:b950c04d	10316 APPROVE (spec-asked index switch; suites green, RegisterMapperDiagnosticsTest red on main too)	session-20261113T182359-67ad413b	2026-11-13T20:02:58Z
+build:filinq:tmlo-mdto-metadata	partial: PR #2080 MdtoMappingService prefill + completeness gate (2.1/2.2 partial), 8 tests; suite 6451/0 fail	session-20261113T175327-6e4e7f28	2026-11-13T20:03:04Z
