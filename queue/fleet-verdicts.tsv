@@ -5421,3 +5421,4 @@ filinq	2048	2868dbcf281f5976396ed7a083dc3f7ad3726e9d	GREEN	worker-18	tests-only 
 humaniq	1106	851456fa2da38415812c8833db92e420a4cbc5d0	GREEN	worker-21	3877 tests run (all 3 merged), baseline 3834 OK, 0 new failures; tests-only diff
 larpinq	1019	bdceb1c7361376ffa89d410dca32a7f1d50e5d5b	GREEN	worker-06	php 697 (baseline 697, 0 fail); vitest 323 passed on tree (baseline 264); tests-only, 0 new failures
 humaniq	1107	b5d20d6e20d7ef9f3bc0b6e017aa98107bfc045a	GREEN	worker-21	3877 tests run (all 3 merged), baseline 3834 OK, 0 new failures; tests-only diff
+stackiq	1852	a906e1f4a4c62b924885e15a55e94f5fb41715c7	GREEN	worker-21	3203 tests run (both merged), baseline 3154 OK, 0 new failures; license headers + tests only
