@@ -32,6 +32,7 @@ jest.mock('../register/DetailChartGrid.vue', () => ({
 jest.mock('../schemas/SchemaWorkflowTab.vue', () => ({ name: 'SchemaWorkflowTab', props: ['schema'], render: () => null }))
 jest.mock('./CalendarProviderTab.vue', () => ({ name: 'CalendarProviderTab', props: ['schema'], render: () => null }))
 jest.mock('./SchemaRulesTab.vue', () => ({ name: 'SchemaRulesTab', props: ['schema'], render: () => null }))
+jest.mock('./SchemaRightsTab.vue', () => ({ name: 'SchemaRightsTab', props: ['schema'], render: () => null }))
 jest.mock('../../store/store.js', () => ({
 	dashboardStore: { loading: false, error: null, chartData: {}, fetchAllChartData: jest.fn() },
 	navigationStore: { setModal: jest.fn(), setDialog: jest.fn() },
