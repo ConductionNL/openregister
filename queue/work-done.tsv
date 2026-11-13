@@ -2982,3 +2982,4 @@ cover:decidiq:a5f973bbmb22b:e372e6ff	already done: lib/Event/*.php at 100% lines
 cover:keepiq:c967a31fmb40c:11ebfefd	already done: lib/Backup/*.php 474/481 (98.54%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:38Z
 cover:integriq:92114ab0m658d:aae6d66c	already above target: lib/Exception/*.php measures 98.18% (54/55) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:47:47Z
 cover:decidiq:a5f973bbmb22b:be0dcca9	PR decidiq#2117: McpActionItemTools relations-array scoping, 1 test, lib/Mcp/*.php 530->534/534, suite 3684->3685 OK	session-20261113T061518-90540a48	2026-11-13T06:47:53Z
+cover:hermiq:065f1631mfaac:js0b44ffaf	already done: src/icons/openGemeentenIcons.js 100% lines on development (merged -1 branch)	session-20261113T053904-36dcee67	2026-11-13T06:48:01Z
