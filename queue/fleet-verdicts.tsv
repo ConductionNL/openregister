@@ -6251,3 +6251,4 @@ shillinq	3009	7342e5558e4fae638320532ab6ee0e11699f3138	GREEN	worker-44	build sal
 shillinq	3010	d5daca5350e079d897a60e1490f94ef5f6c0b81d	GREEN	worker-44	build tax-vat-position-and-suppletie judged against its specs, access checks per administration; tree 10439 tests, 1 inherited clock-bound failure, vitest 2295 passed
 buildiq	1559	1179f9307d906faaa24f1864ae2eef5384a6f526	GREEN	worker-20	2920 tests run (3 new, all pass); baseline 2917 with 1 inherited failure (ExportZipGoldenTest); no new failures; tests only
 hermiq	1705	ff5eebe38947790d2a1958e4c50eaad7a07721a5	GREEN	worker-29	tree 4563 tests; baseline 4562 with 172 inherited fails; 0 new failures; test-only
+hermiq	1706	0f12ea39eec58d63ec7641303b372f0152a30f10	GREEN	worker-29	tree 4563 tests; baseline 4562 with 172 inherited fails; 0 new failures; test-only coverage metadata
