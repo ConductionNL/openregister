@@ -3577,3 +3577,5 @@ cover:buildiq:70b3e29embf07:aae6d66c	no PR: lib/Exception/*.php already fully co
 gap:buildiq:16:614b0a03	no change: advisory only (no score effect); a dependency refresh means committing composer.lock, which workers must not do - leave to a maintainer sweep	session-20261113T080549-dde3ba19	2026-11-13T08:46:01Z
 cover:stackiq:9ac19b3am5ac4:aae6d66c	already done: lib/Exception at 100% (CmdbImportException 4/4 lines via 5b7be347 on development; UnsupportedSbomFormatException has no executable lines); no PR	session-20261113T083916-59f10a3b	2026-11-13T08:46:01Z
 verify:buildiq:1531:26e25221	GREEN 1531, 1532: 2682 tests, 0 new failures (1 inherited)	session-20261113T080556-d189f150	2026-11-13T08:46:32Z
+merge:launchpad:1174:1d410467	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
+merge:launchpad:1175:13899a12	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
