@@ -3964,3 +3964,4 @@ cover:dossiq:069ee2d6m7275:9cb3375b	already done: lib/Service/Redaction 294/296 
 verify:keepiq:1751:f988af96	2/2 GREEN (1751 tests only, 1752 formatting only): phpunit 4575 ok, vitest 6244 ok	session-20261113T044737-f37de8e3	2026-11-13T09:39:23Z
 cover:keepiq:c967a31fm1147:6f346b68	already done: lib/Sections/SettingsSection.php 5/5 lines, every getter asserted in AppShellControllersTest::testTheSettingsSectionKeepsItsPlace	session-20261113T084521-fd8a31c7	2026-11-13T09:39:34Z
 gap:pipelinq:16:614b0a03	PR pipelinq#3704: npm lockfile refreshed in-range (88 pkgs); @nextcloud/vue held at 9.11 (9.14 breaks 23 vitest files); tests/lint/build unchanged	session-20261113T051703-1b54bfba	2026-11-13T09:39:51Z
+verify:learniq:2419:fdeb6c00	2419 BLOCK (API response contract change; tests green vs baseline)	session-20261113T064518-860c039d	2026-11-13T09:40:02Z
