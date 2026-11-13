@@ -2205,4 +2205,5 @@ merge:stackiq:1831:afe0da8e	merge-local over 4 stackiq tasks: merged=20 red=0 fa
 cover:pipelinq:f67520ecmc4ba:f0c02922	PR #3664: 5 tests, LogBerichtenboxAdapter 46/47 -> 47/47 lines; suite 6233 -> 6238 (1 inherited failure)	session-20261113T034628-73e45054	2026-11-13T04:40:20Z
 cover:launchpad:fb10c50fm2ceb:js0be8c659	PR #1170: 18 vitest tests, src/modals 91.3% -> 96.9% lines; suite 1730 -> 1748 passing	session-20261113T041644-786bb7fc	2026-11-13T04:40:26Z
 cover:stackiq:df113dffm2c76:38e80a9f	already done: lib/Command/*.php 282/282 on development	session-20261113T015005-030aa10a	2026-11-13T04:41:00Z
+cover:pipelinq:f67520ecmc4ba:d4326ecd	PR #3663: 15 tests; 4 dirs 90/97 -> 97/97; 1 inherited failure	session-20261113T031700-211f0599	2026-11-13T04:40:46Z
 verify:filinq:2023:ec4c5d20	2023-2031 all GREEN: tests-only, php 6038->6108 no failures, vitest 626 pass, jest dialog specs pass (2031 sha in queue was truncated; matched by prefix 2158ae1a)	session-20261113T024654-6600dc41	2026-11-13T04:41:05Z
