@@ -5313,3 +5313,4 @@ build2:openregister:register-import-auto-create	already done: ImportService regi
 merge:buildiq:1526:dd62cd2e	merge-local over 1 buildiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:51:02Z
 review:openregister:10248:0a0fc1a6	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:51:05Z
 review:openregister:10234:45fac921	APPROVE (importer-only change as specced; suites green or identical to main)	session-20261113T091530-f20014fb	2026-11-13T13:51:16Z
+review:openregister:10247:693e4f70	APPROVE: change-specified behaviour, access posture unchanged, suites green/identical to main, phpstan clean	session-20261113T094602-d25cda2a	2026-11-13T13:51:35Z
