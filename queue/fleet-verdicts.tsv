@@ -5965,3 +5965,4 @@ dossiq	6371	cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8	GREEN	worker-33	tree 16332 
 portaliq	2409	5e94bd91bb4c22cc7cec5cada6b93d18c925a4ef	GREEN	worker-02	tests only; tree 4897 tests OK, baseline 4892 OK, 0 new failures
 dossiq	6422	c60a1ed91dbe4e7f437f26280de1443d10c640ed	GREEN	worker-33	tree 16332 tests; baseline 16325 with 20 failures; new failures 0 (tests only)
 humaniq	1116	d0a2bc5ea6eb93a0ebe7aec083ccb63c5153f80d	GREEN	worker-22	Unit suite on the merged tree: 3966 tests OK (baseline 3928 OK, 1 skipped); no new failures; test-only additions with fixtures
+dossiq	6415	473ff8b87e83d683f587d8c686a97cad9bc98aec	GREEN	worker-44	16336 tests on 2-PR tree (baseline 16317, 20 inherited failures), 0 new failures; tests only (ReviewSummaryTest)
