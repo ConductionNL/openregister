@@ -6295,6 +6295,7 @@ filinq	2062	baea435f0ea63b1e9b0c164a4655135e5b98fdf6	GREEN	worker-58	baseline 64
 filinq	2063	67e09430480e320f7beafecb87e4b39c1346f72f	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
 filinq	2064	15940c2fb9d65fd90dfc751c82be8babc0748924	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
 filinq	2065	1cb536b6e3c1e051e2e142caf11ab8f7174b40c2	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
+filinq	2068	cf7e6b767b99da1e346cf30163f73d7a82a0b081	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds finish-half-built-capabilities (sequential signing turn, preview listRefs) as its tasks ask
 filinq	2066	41015dd0b5e7f3d4538b42ba1e3c94b635fb99d6	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
 filinq	2067	73639362c2d9caba4931fd838c76efac195067fb	CONFLICT	worker-58	conflicts in lib/Settings/filinq_register.json and filinq_mock_register.json with earlier PRs in the tree (merges cleanly on plain development)
 filinq	2068	cf7e6b767b99da1e346cf30163f73d7a82a0b081	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
