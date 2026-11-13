@@ -7126,3 +7126,4 @@ review:openregister:10389:1b924185	APPROVE 10389 (task 3.4e as specified, suites
 build4:openregister:register-document-store	partial: PR #10424 store status in file settings API + occ document-store:status (1.2 backend); left 1.1 foreign-root refusal, Vue block (l10n), 2.x move, 3.x, 4.1	session-20261113T214350-9762e143	2026-11-13T22:18:03Z
 build4:openregister:runs-recorded-and-causes-named	partial: PR #10423, section 2 core (audit definition check, evaluator with existing scorer, verdict, failures, CSV) + 4.2; storage, runner and section 3 left	session-20261113T202611-3b383b96	2026-11-13T22:18:08Z
 build4:openregister:the-organisation-projection-is-writable	already done: every openregister task is ticked on main; only 5.1 is open and it is each consuming app's migration in its own repo	session-20261113T202626-976dcdac	2026-11-13T22:18:20Z
+review:openregister:10392:d840911f	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:18:30Z
