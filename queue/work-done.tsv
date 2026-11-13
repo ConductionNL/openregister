@@ -6836,5 +6836,6 @@ build:opencatalogi:dashboard-consume-or-aggregations	partial: PR #2640 — statu
 verify:decidiq:2141:a83ebfa5	GREEN 2141; 3915 tests, no failures	session-20261113T204535-8ae4a1d5	2026-11-13T21:02:13Z
 build:decidiq:interests-and-integrity	partial: PR #2146 - task 6 (assistive positions on COI dialog + chair link) built; tasks 1-4 already on development (left unticked for review), task 5 KPI/compliance panel and 7 e2e left; vitest 2697 passed	session-20261113T202624-e1abf1c1	2026-11-13T21:02:29Z
 build:opencatalogi:catalogs	partial: PR #2642; already implemented; 17 sub-items ticked after verification; rest are spec-vs-code naming/shape differences, unverified UI detail, or live checks	session-20261113T195351-a32c6d55	2026-11-13T21:02:28Z
+build:opencatalogi:dcat-catalogue-completion	partial: PR #2643 (6.1 hasDcat on the catalog schema, 6.2 modal switch and strings; licence list, DONL, SPARQL and UI validation left); suite 5254->5256, 2 inherited failures	session-20261113T182404-f2c28226	2026-11-13T21:02:39Z
 verify:decidiq:2142:41388697	GREEN #2142 (tests only, +3 tests, suite green)	session-20261113T205323-a7434fd6	2026-11-13T21:02:45Z
 build:opencatalogi:attachments-are-files	partial: PR #2644 (7.3 auto-publish skips withdrawn files; 7.1 window end; 7.1 metadata, 7.2, 7.4-7.7 left)	session-20261113T185328-da819141	2026-11-13T21:02:53Z
