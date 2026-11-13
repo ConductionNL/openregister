@@ -6209,6 +6209,7 @@ cover:keepiq:c967a31fm10bf:11ebfefd	already done: lib/Backup/*.php 99.58% (479/4
 cover:keepiq:c967a31fm10bf:aae6d66c	already done: lib/Exception/*.php is 100% line-covered on development (30/30 statements, pcov full unit suite); no PR	session-20261113T182353-86897235	2026-11-13T19:07:37Z
 cover:dossiq:069ee2d6m2deb:67b69054	already done: lib/Service/Conversation/ measured 374/375 (99.7%) on dcd16f5978 (target 95); earlier -1/-2 PRs merged	session-20261113T185328-a5a717bc	2026-11-13T19:07:49Z
 cover:portaliq:b60f3b81m4ccb:34f5c300	PR #2453: 12 tests, OidcClientService 65%->90%, EventFeedReader 73%->100%	session-20261113T172329-0b6220f9	2026-11-13T19:07:46Z
+measure:openregister:20261113h18	failed: unit suite is 60319 tests, pcov run did ~470 in 30 min (days in a cloud slot); bare bootstrap also lacks an OCP autoloader. JS measured fine (jest 8127 pass) but not written, to keep the 12:27 PHP dirs; needs a local lane	session-20261113T182359-67ad413b	2026-11-13T19:07:57Z
 cover:dossiq:069ee2d6m2deb:d1bf7ebd	already done: lib/Service/Pause/ measured 323/324 (99.7%) on dcd16f5978 (target 95); earlier -1/-2 branches exist	session-20261113T185328-a5a717bc	2026-11-13T19:08:15Z
 cover:keepiq:c967a31fm10bf:ecbab48a	already done: lib/Service/ShareSave/ 100% (399/399) @ba7cc67b; no PR	session-20261113T185326-316f096d	2026-11-13T19:08:02Z
 build3:openregister:platform-cloud-federation-provider	partial: PR #10297 far-side accept/decline/withdraw reflected (1.2 inbound half), 12 tests; 1.1,1.3-1.5,2.x,3.1 open	session-20261113T175327-6e4e7f28	2026-11-13T19:08:17Z
@@ -6225,3 +6226,4 @@ verify:opencatalogi:2599:6fde261c	2599 GREEN (tests only, no new failures)	sessi
 cover:dossiq:069ee2d6m2deb:b12f5203	already above target: lib/Service/Import/ 492/496 (99.19%); no PR	session-20261113T175336-e3687686	2026-11-13T19:09:44Z
 fix:shillinq:2975:66d3ac29	no change: clean against development; conflict is only with unmerged #2972 (version bump + lock entry), REVERIFY recorded	session-20261113T182349-7e3632fd	2026-11-13T19:09:53Z
 cover:dossiq:069ee2d6m2deb:3641032a	already done: lib/Service/Pipelinq/ measured 521/521 (100%) on dcd16f5978; earlier -1/-2 branches exist	session-20261113T185328-a5a717bc	2026-11-13T19:09:56Z
+cover:dossiq:069ee2d6m2deb:4c817077	already done: lib/Service/Notification/ measured 372/372 (100.0%) on dcd16f5978 (target 95)	session-20261113T185328-a5a717bc	2026-11-13T19:10:16Z
