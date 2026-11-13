@@ -1,12 +1,12 @@
 {
  "app": "shillinq",
- "commit": "d33c9cc69e340e4a01cf1bef8141ede7d318f9ae",
- "measured_at": "2026-11-13T05:45:27Z",
+ "commit": "e678c8ef9d26bf66ebae584411391df334b0ea26",
+ "measured_at": "2026-11-13T09:32:16Z",
  "php": {
   "tool": "pcov",
-  "pct": 85.47,
+  "pct": 89.62,
   "statements": 79867,
-  "covered": 68260,
+  "covered": 71575,
   "dirs": {
    "lib/AppInfo/": [
     269,
@@ -14,7 +14,7 @@
    ],
    "lib/BackgroundJob/": [
     1727,
-    1387
+    1533
    ],
    "lib/BackgroundJob/Support/": [
     12,
@@ -22,39 +22,39 @@
    ],
    "lib/Budget/": [
     237,
-    232
+    236
    ],
    "lib/Command/": [
     208,
-    146
+    194
    ],
    "lib/Controller/": [
     9881,
-    9217
+    9364
    ],
    "lib/Dashboard/": [
     158,
-    147
+    156
    ],
    "lib/Enums/": [
     23,
-    6
+    23
    ],
    "lib/Event/": [
     96,
-    95
+    96
    ],
    "lib/Guard/": [
     1933,
-    1887
+    1912
    ],
    "lib/Integration/": [
     256,
-    217
+    248
    ],
    "lib/Lifecycle/": [
     6921,
-    5570
+    5890
    ],
    "lib/Lifecycle/Action/": [
     616,
@@ -62,7 +62,7 @@
    ],
    "lib/Listener/": [
     2842,
-    2529
+    2578
    ],
    "lib/Middleware/": [
     59,
@@ -74,7 +74,7 @@
    ],
    "lib/Notification/": [
     85,
-    81
+    85
    ],
    "lib/PaymentPlan/": [
     513,
@@ -82,7 +82,7 @@
    ],
    "lib/PaymentRun/": [
     505,
-    484
+    493
    ],
    "lib/PaymentRun/Generator/": [
     209,
@@ -94,15 +94,15 @@
    ],
    "lib/Repair/": [
     3923,
-    2071
+    2444
    ],
    "lib/Repair/Support/": [
     113,
-    108
+    113
    ],
    "lib/Reporting/": [
     342,
-    242
+    243
    ],
    "lib/Reporting/Feed/": [
     30,
@@ -110,11 +110,11 @@
    ],
    "lib/Reporting/Generator/": [
     1528,
-    1387
+    1466
    ],
    "lib/Reporting/Schedule/": [
     235,
-    219
+    232
    ],
    "lib/Request/": [
     47,
@@ -126,11 +126,11 @@
    ],
    "lib/Service/": [
     32533,
-    28782
+    29223
    ],
    "lib/Service/Asset/": [
     564,
-    551
+    555
    ],
    "lib/Service/Bank/": [
     681,
@@ -142,7 +142,7 @@
    ],
    "lib/Service/Booking/": [
     377,
-    126
+    359
    ],
    "lib/Service/Commitment/": [
     541,
@@ -150,31 +150,31 @@
    ],
    "lib/Service/Dunning/": [
     825,
-    763
+    809
    ],
    "lib/Service/EInvoice/": [
     349,
-    324
+    348
    ],
    "lib/Service/External/Bunq/": [
     41,
-    0
+    40
    ],
    "lib/Service/External/Cbs/": [
     45,
-    0
+    45
    ],
    "lib/Service/External/CcmRuleEngine/": [
     51,
-    0
+    50
    ],
    "lib/Service/External/CsrdEsrsXbrl/": [
     75,
-    0
+    74
    ],
    "lib/Service/External/DepositPayment/": [
     89,
-    26
+    89
    ],
    "lib/Service/External/Digipoort/": [
     24,
@@ -182,7 +182,7 @@
    ],
    "lib/Service/External/Ib47/": [
     41,
-    0
+    40
    ],
    "lib/Service/External/Kvk/": [
     23,
@@ -194,11 +194,11 @@
    ],
    "lib/Service/External/RvO/": [
     27,
-    0
+    26
    ],
    "lib/Service/External/Salarisbureau/": [
     36,
-    0
+    35
    ],
    "lib/Service/External/Sisa/": [
     24,
@@ -206,11 +206,11 @@
    ],
    "lib/Service/External/TreasuryRate/": [
     53,
-    1
+    53
    ],
    "lib/Service/External/Uwv/": [
     43,
-    0
+    42
    ],
    "lib/Service/Extraction/": [
     272,
@@ -218,11 +218,11 @@
    ],
    "lib/Service/Import/": [
     898,
-    727
+    819
    ],
    "lib/Service/Import/ImportProfile/": [
     116,
-    105
+    116
    ],
    "lib/Service/Ledger/": [
     86,
@@ -234,47 +234,47 @@
    ],
    "lib/Service/Migration/": [
     283,
-    276
+    283
    ],
    "lib/Service/Payment/": [
     263,
-    261
+    262
    ],
    "lib/Service/Peppol/": [
     65,
-    64
+    65
    ],
    "lib/Service/Pipelinq/": [
     817,
-    684
+    774
    ],
    "lib/Service/Pivot/": [
     185,
-    176
+    184
    ],
    "lib/Service/Platform/": [
     160,
-    148
+    158
    ],
    "lib/Service/Project/": [
     113,
-    105
+    112
    ],
    "lib/Service/PublicSector/": [
     462,
-    439
+    450
    ],
    "lib/Service/PurchaseOrder/": [
     126,
-    113
+    125
    ],
    "lib/Service/Purchasing/": [
     91,
-    88
+    91
    ],
    "lib/Service/Relation/": [
     258,
-    246
+    256
    ],
    "lib/Service/Sales/": [
     477,
@@ -282,15 +282,15 @@
    ],
    "lib/Service/Seed/": [
     70,
-    63
+    69
    ],
    "lib/Service/Signing/": [
     193,
-    185
+    193
    ],
    "lib/Service/Sms/": [
     134,
-    125
+    134
    ],
    "lib/Service/Tax/": [
     59,
@@ -306,7 +306,7 @@
    ],
    "lib/Service/Vat/": [
     220,
-    210
+    213
    ],
    "lib/Settings/": [
     12,
@@ -318,19 +318,19 @@
    ],
    "lib/Standards/": [
     269,
-    231
+    250
    ],
    "lib/Standards/Checks/": [
     3759,
-    2755
+    3247
    ],
    "lib/Support/": [
     48,
-    32
+    48
    ],
    "lib/Util/": [
     155,
-    152
+    155
    ],
    "lib/Validation/": [
     51,
