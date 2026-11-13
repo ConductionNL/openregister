@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use ddn\sapp\pdfvalue\PDFValueObject;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 class PdfStructureInspector {
 	/**
@@ -67,7 +67,7 @@ class PdfStructureInspector {
 	 *
 	 * @return array{tagged: bool, structElementCount: int}
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-001
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function inspect(PDFDoc $doc): array {
 		return [
@@ -84,7 +84,7 @@ class PdfStructureInspector {
 	 *
 	 * @return bool True when the input is a tagged PDF.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-001
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function isTagged(PDFDoc $doc): bool {
 		$catalog = $this->findCatalog(doc: $doc);
@@ -112,7 +112,7 @@ class PdfStructureInspector {
 	 *
 	 * @return int The number of `/Type /StructElem` objects.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-001
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function countStructElements(PDFDoc $doc): int {
 		$count = 0;

@@ -48,6 +48,8 @@ use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightRefused;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
@@ -179,6 +181,13 @@ class FlowController extends Controller {
 	private readonly FlowBpmnInterchangeInterface $bpmn;
 
 	/**
+	 * Which steps need a right, and whether the caller holds it.
+	 *
+	 * @var FlowNodeRightsGuardInterface
+	 */
+	private readonly FlowNodeRightsGuardInterface $nodeRights;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request HTTP request.
@@ -197,7 +206,67 @@ class FlowController extends Controller {
 		$this->access = $services->definitions->access;
 		$this->flowVersionService = $services->definitions->flowVersionService;
 		$this->bpmn = $services->catalogue->bpmn;
+		$this->nodeRights = $services->definitions->nodeRights;
 	}//end __construct()
+
+	/**
+	 * Refuse unless the caller holds the right of every step in the document and the stored flow.
+	 *
+	 * Runs after denyUnless() on every path that saves a flow an author wrote:
+	 * create, BPMN import, update, draft, publish and adopt. The palette's
+	 * `locked` is advice; this is the control.
+	 *
+	 * @param array<string, mixed>      $document The document being saved.
+	 * @param array<string, mixed>|null $stored   The stored document of the flow being changed, or null.
+	 *
+	 * @return JSONResponse|null A 403 naming the step type and the right, or null when allowed.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private function refuseRestrictedSteps(array $document, ?array $stored=null): ?JSONResponse {
+		$user = $this->access->currentUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->nodeRights->assertMayAuthor(user: $user, document: $document, stored: $stored);
+		} catch (FlowNodeRightRefused $refused) {
+			return new JSONResponse($refused->body(), Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end refuseRestrictedSteps()
+
+	/**
+	 * A stored flow's graph as a document.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{nodes: array, edges: array}
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private static function documentOf(Flow $flow): array {
+		return ['nodes' => ($flow->getNodes() ?? []), 'edges' => ($flow->getEdges() ?? [])];
+	}//end documentOf()
+
+	/**
+	 * Run an action on a flow the caller may update and whose steps they may author.
+	 *
+	 * @param string   $id   The flow uuid.
+	 * @param callable $then The action, given the flow.
+	 *
+	 * @return JSONResponse The action's response, 401/403 or 404.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private function withAuthorableFlow(string $id, callable $then): JSONResponse {
+		return $this->withUpdatableFlow(
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => ($this->refuseRestrictedSteps(document: self::documentOf(flow: $flow)) ?? $then($flow))
+		);
+	}//end withAuthorableFlow()
 
 	/**
 	 * Refuse unless the caller holds the named right.
@@ -313,6 +382,10 @@ class FlowController extends Controller {
 		}
 
 		$results = $this->nodes->palette(scope: $scope);
+		$user = $this->access->currentUser();
+		if ($user !== null) {
+			$results = $this->nodeRights->annotatePalette(user: $user, palette: $results);
+		}
 
 		return new JSONResponse(
 			[
@@ -474,7 +547,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function validate(): JSONResponse {
 		$flow = $this->request->getParam('flow');
@@ -576,7 +649,7 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -627,7 +700,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|null The trimmed-nonempty value, or null.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function trimmedFilter(string $key): ?string {
 		$value = $this->request->getParam($key);
@@ -671,7 +744,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
@@ -728,7 +801,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function importBpmn(): JSONResponse {
@@ -745,6 +818,11 @@ class FlowController extends Controller {
 		$result = $this->mapBpmn(xml: $xml, strict: $this->strictRequested());
 		if ($result instanceof JSONResponse) {
 			return $result;
+		}
+
+		$restricted = $this->refuseRestrictedSteps(document: (array)$result['flow']);
+		if ($restricted !== null) {
+			return $restricted;
 		}
 
 		return $this->storeImportedFlow(result: $result);
@@ -870,7 +948,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|JSONResponse|null The file's content, a 400 refusal, or null when no file was sent.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function readBpmnUpload(): string|JSONResponse|null {
 		$file = $this->request->getUploadedFile('file');
@@ -950,6 +1028,11 @@ class FlowController extends Controller {
 
 		if (trim((string)($data['name'] ?? '')) === '') {
 			return new JSONResponse(['error' => 'A flow needs a name.'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$restricted = $this->refuseRestrictedSteps(document: $data);
+		if ($restricted !== null) {
+			return $restricted;
 		}
 
 		$flow = $this->saveOrRefuse(data: $data);
@@ -1050,8 +1133,16 @@ class FlowController extends Controller {
 			return $denied;
 		}
 
+		$data = $this->flowPayload();
 		try {
-			$flow = $this->saveOrRefuse(data: $this->flowPayload(), uuid: $id);
+			// The stored steps count as much as the new ones: changing only the
+			// name of a powerful flow is still editing it.
+			$restricted = $this->refuseRestrictedSteps(document: $data, stored: self::documentOf(flow: $this->flows->find(uuid: $id)));
+			if ($restricted !== null) {
+				return $restricted;
+			}
+
+			$flow = $this->saveOrRefuse(data: $data, uuid: $id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		}
@@ -1208,7 +1299,7 @@ class FlowController extends Controller {
 	 *
 	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
 	 *
-	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 * @spec openspec/specs/flow-and-run-detail-pages/spec.md
 	 */
 	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
 		$status = Http::STATUS_FORBIDDEN;
@@ -1371,7 +1462,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
-		return $this->withUpdatableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
+		return $this->withAuthorableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
 	}//end publish()
 
 	/**
@@ -1421,7 +1512,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
-		return $this->withUpdatableFlow(
+		return $this->withAuthorableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
 				step: fn () => $this->flowVersionService->createDraft(flow: $flow),
@@ -1504,7 +1595,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {
-		return $this->withUpdatableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
+		return $this->withAuthorableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
 	}//end adopt()
 
 	/**

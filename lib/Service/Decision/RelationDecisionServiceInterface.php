@@ -49,7 +49,7 @@ interface RelationDecisionServiceInterface {
 	 * @throws DecisionOwnedException When the decision belongs to someone else, its record is missing, or another reviewer decided first.
 	 * @throws CustomValidationException When the body is malformed.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function decide(EntityRelation $relation, array $body, IUser $actor): array;
 }//end interface

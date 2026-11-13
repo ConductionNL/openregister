@@ -45,4 +45,15 @@ final class IdentifierFormats {
 	public static function bsn(): Format {
 		return new BsnFormat();
 	}//end bsn()
+
+	/**
+	 * The Dutch licence plate format, which also names the sidecode a plate matches.
+	 *
+	 * @return LicensePlateNlFormat
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/pii-entity-detection/spec.md
+	 */
+	public static function licensePlateNl(): LicensePlateNlFormat {
+		return new LicensePlateNlFormat();
+	}//end licensePlateNl()
 }//end class

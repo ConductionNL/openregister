@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
  * Which way a moment that lands on a non-working day moves, and the calendar
  * that decides which days are non-working.
  *
- * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
 final class RollRule {
 	/**
@@ -35,7 +35,7 @@ final class RollRule {
 	 * @param string               $roll     One of SlaCalculatorInterface::ROLLS.
 	 * @param WorkingCalendar|null $calendar The resolved calendar.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function __construct(
 		public readonly string $roll,

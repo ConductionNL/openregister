@@ -87,6 +87,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		EntityRecognitionHandler::ENTITY_TYPE_IBAN,
 		EntityRecognitionHandler::ENTITY_TYPE_SSN,
 		EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
+		EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE,
 	];
 
 	/**
@@ -242,7 +243,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @psalm-return File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function replaceWords(WordReplacementRequest $request): File {
 		$file = $this->requireFile(node: $request->node);
@@ -337,7 +338,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return File The anonymized document file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymize(DocumentAnonymisationRequest $request): File {
 		$node = $request->node;
@@ -1134,7 +1135,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return File The anonymised PDF.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	private function replaceWordsInPdfDocument(DocumentReplacement $job): File {
 		// File::getContent() returns the content string and throws on failure

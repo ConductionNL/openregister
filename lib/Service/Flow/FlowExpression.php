@@ -43,7 +43,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class FlowExpression {
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function documentFor(array $item, FlowExpressionDataOptions $options): array {
 		return [
@@ -102,7 +102,7 @@ class FlowExpression {
 	 *
 	 * @return mixed The result, or null when it could not be evaluated.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function evaluate(mixed $logic, array $data) {
 		self::registerOperators();
@@ -127,7 +127,7 @@ class FlowExpression {
 	 *
 	 * @return boolean Whether the condition holds.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function isTrue(mixed $logic, array $data): bool {
 		$result = self::evaluate(logic: $logic, data: $data);
@@ -153,7 +153,7 @@ class FlowExpression {
 	 *
 	 * @return boolean True when it evaluates against an empty document.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function isValid(mixed $logic): bool {
 		self::registerOperators();
@@ -180,7 +180,7 @@ class FlowExpression {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private static function registerOperators(): void {
 		if (self::$operatorsRegistered === true) {

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['condition'];
@@ -128,7 +128,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 *
 	 * @throws UnexpectedValueException When the condition is missing or malformed.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$condition = ($config['condition'] ?? null);

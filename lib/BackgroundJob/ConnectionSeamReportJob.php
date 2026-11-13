@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	protected function run($argument): void {
 		$this->reportSeam(key: 'translation', describe: fn (): array => $this->describeTranslation());
@@ -102,7 +102,7 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @return array{0: string, 1: string} The status and the message.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function describeTranslation(): array {
 		/*
@@ -127,7 +127,7 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @return array{0: string, 1: string} The status and the message.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function describeIdentity(): array {
 		/*
@@ -155,7 +155,7 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @return array{0: string, 1: string} The status and the message.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function describeRegulator(): array {
 		/*

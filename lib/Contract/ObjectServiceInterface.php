@@ -17,6 +17,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IUser;
 
@@ -635,6 +636,26 @@ interface ObjectServiceInterface {
 		?array $ids=null,
 		?string $uses=null
 	): int;
+
+	/**
+	 * Whether a sample record would be accepted, without saving it.
+	 *
+	 * Checks the sample against the schema and every save rule that decides
+	 * acceptance (coded values, dependent values, unique fields, declared
+	 * bounds, read-only fields), as a create, or with an id as an update of that
+	 * object. Writes nothing and dispatches no object event. The sample is
+	 * invalid exactly when a save of it would be refused for one of these rules.
+	 *
+	 * @param array      $object   The sample record.
+	 * @param string|int $register The register (id, uuid or slug).
+	 * @param string|int $schema   The schema (id, uuid or slug).
+	 * @param ?string    $id       The object the sample updates, or null for a create.
+	 *
+	 * @return ObjectValidationVerdict `valid`, and one error per refused property with the rule that refused it.
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	public function validateObject(array $object, string|int $register, string|int $schema, ?string $id=null): ObjectValidationVerdict;
 
 	/**
 	 * The object currently held as context, if any.

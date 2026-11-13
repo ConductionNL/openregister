@@ -3450,7 +3450,7 @@ class ImportHandler {
 	 *
 	 * @return ListedSeed|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedSeed(array $objectData, array $actor): ?ListedSeed {
 		$rawRegister = $objectData['@self']['register'] ?? null;
@@ -3485,7 +3485,7 @@ class ImportHandler {
 	 *
 	 * @return Register|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedRegister(mixed $rawRegister): ?Register {
 		$register = $this->registersMap[$rawRegister] ?? null;
@@ -3510,7 +3510,7 @@ class ImportHandler {
 	 *
 	 * @return Schema|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedSchema(mixed $rawSchema): ?Schema {
 		$schema = $this->schemasMap[$rawSchema] ?? null;
@@ -3550,7 +3550,7 @@ class ImportHandler {
 	 *
 	 * @return mixed The stored object (an array or ObjectEntity), or null.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function existingListedObject(ListedSeed $seed): mixed {
 		$registerId = $seed->register->getId();
@@ -3617,7 +3617,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
 		return $this->objectService->saveObject(
@@ -3640,7 +3640,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function createListedObject(ListedSeed $seed, array $listed): ObjectEntity {
 		$objectData = $listed['data'];
@@ -3669,7 +3669,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function updateListedObject(ListedSeed $seed, array $listed): ?ObjectEntity {
 		$objectData = $listed['data'];
@@ -3708,7 +3708,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function followShippedContent(ListedSeed $seed, array $listed): ?ObjectEntity {
 		$seedKey = $seed->seedKey();

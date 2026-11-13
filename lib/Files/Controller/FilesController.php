@@ -358,7 +358,7 @@ class FilesController extends Controller {
 	 *                           schema (so a slug is this schema's object, #4037); null for an
 	 *                           anonymous caller, who is gated on publication instead.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
+	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
@@ -623,7 +623,7 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse The error response.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function accessDenied(NotAuthorizedException $e): JSONResponse {
 		if ($e instanceof ObjectFileAccessDeniedException === true
@@ -820,7 +820,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(string $register, string $schema, string $id): JSONResponse {
@@ -1926,7 +1926,7 @@ class FilesController extends Controller {
 	 *
 	 * @return bool True only when an object was found and its read rule allows the caller.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function mayReadObject(ObjectEntity $object): bool {
 		if ($this->objectFileAccess === null) {
@@ -2910,7 +2910,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
@@ -2941,7 +2941,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

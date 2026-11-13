@@ -30,7 +30,7 @@ use OCP\IUserSession;
 /**
  * The collaborators of FlowTestRunController, wired by DI autowiring.
  *
- * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ * @spec openspec/specs/flow-partial-run/spec.md
  */
 final class FlowTestRunControllerServices {
 	/**
@@ -41,7 +41,7 @@ final class FlowTestRunControllerServices {
 	 * @param IUserSession $userSession Who is asking, for attribution.
 	 * @param FlowRunnableGuardInterface $guard Whether the caller may run and edit this flow.
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	public function __construct(
 		public readonly FlowRunServiceInterface $runner,

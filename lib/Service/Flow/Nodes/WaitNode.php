@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['for', 'until'];
@@ -270,7 +270,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The resume time, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function resolve(array $config): ?DateTime {
 		$until = trim((string)($config['until'] ?? ''));
@@ -291,7 +291,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The moment, or null when the duration cannot be read.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function momentAfter(string $duration): ?DateTime {
 		if ($duration === '') {
@@ -312,7 +312,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The moment.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function momentAt(int|false $timestamp): ?DateTime {
 		if ($timestamp === false) {

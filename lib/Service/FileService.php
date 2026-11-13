@@ -1469,7 +1469,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
 	 *   (resolves a single file node by NC file id, null on miss)
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getFileById(int $fileId): ?File {
 		try {
@@ -1519,7 +1519,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return bool True when it is an object's or a register's file or folder.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isManagedFile(Node $node): bool {
 		return $this->folderManagementHandler->isManagedNode(node: $node);
@@ -1532,7 +1532,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return ObjectEntity|null The owning object.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function findObjectForFile(Node $file): ?ObjectEntity {
 		return $this->folderManagementHandler->getObjectForFile(file: $file);

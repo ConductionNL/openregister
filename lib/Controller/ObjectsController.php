@@ -123,6 +123,7 @@ use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -294,7 +295,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return ObjectVersionGuard The guard for this request.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionGuard(): ObjectVersionGuard {
 		return new ObjectVersionGuard(
@@ -3646,6 +3647,92 @@ class ObjectsController extends Controller {
 	}//end create()
 
 	/**
+	 * Whether a sample record would be accepted by this schema, without saving it.
+	 *
+	 * The body is the sample. With an `id` query parameter the sample is checked
+	 * as an update of that object, which needs `update` on it; without, as a
+	 * create, which needs `create` on the schema. The rights are asked because
+	 * a verdict can reveal whether a unique value exists. Answers 200 with
+	 * `{valid, errors: [{property, message, rule}]}` for a well-formed request,
+	 * and never writes.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The verdict, or 403/404 when it may not be asked.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function validateSample(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$id = $this->request->getParam('id');
+		if (is_string($id) === false || $id === '') {
+			$id = null;
+		}
+
+		$refusal = $this->sampleRefusal(
+			ref: new ObjectRef(register: $register, schema: $schema, id: (string)$id),
+			schemaEntity: $resolved['schemaEntity'],
+			update: $id !== null
+		);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$sample = $this->submittableBody(object: $this->request->getParams());
+		unset($sample['id']);
+		if ($objectService instanceof ObjectServiceInterface === false) {
+			return new JSONResponse(data: ['message' => 'Validation is not available.'], statusCode: 500);
+		}
+
+		$verdict = $objectService->validateObject(object: $sample, register: $resolved['register'], schema: $resolved['schema'], id: $id);
+		return new JSONResponse(data: $verdict->jsonSerialize());
+	}//end validateSample()
+
+	/**
+	 * Why the caller may not ask for a verdict on this sample, or null when they may.
+	 *
+	 * @param ObjectRef $ref          The register, schema and, on an update, the object.
+	 * @param mixed     $schemaEntity The resolved schema.
+	 * @param bool      $update       Whether the sample updates an object.
+	 *
+	 * @return JSONResponse|null 404 for an object the caller cannot read, 403 without the right, or null.
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	private function sampleRefusal(ObjectRef $ref, mixed $schemaEntity, bool $update): ?JSONResponse {
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		if ($update === false) {
+			if ($permissions->hasPermission(schema: $schemaEntity, action: 'create') === true) {
+				return null;
+			}
+
+			return new JSONResponse(data: ['message' => 'You may not create objects in this schema.'], statusCode: 403);
+		}
+
+		$object = $this->presenceObjectOrRefusal(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if ($permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $object->getOwner(), object: $object) === true) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['message' => 'You may not update this object.'], statusCode: 403);
+	}//end sampleRefusal()
+
+	/**
 	 * The request body, after the webhooks that may validate, transform or enrich it.
 	 *
 	 * @param string $register The register in the URL, for the log.
@@ -3709,7 +3796,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertRefusal(ObjectCreate $create): ?JSONResponse {
 		if ($create->controls->upsertOn === '') {
@@ -3753,7 +3840,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array{object: ObjectEntity, created: bool} The saved object.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function savedObject(ObjectCreate $create): array {
 		$create->objectService->clearCreatedSubObjects();
@@ -3840,7 +3927,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertPreconditionRefusal(bool $failIfExists, array $resolved): ?JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -4112,7 +4199,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function preWriteRefusal(ObjectUpdate $update, ObjectEntity $existing): ?JSONResponse {
 		if ($update->target->holds(object: $existing) === false) {
@@ -4289,7 +4376,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The object, or the refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function patchedResponse(ObjectUpdate $patch): JSONResponse {
 		$existing = $this->findReadableForPatch(patch: $patch);
@@ -4332,7 +4419,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionRefusal(ObjectUpdate $patch, ObjectEntity $existing): ?JSONResponse {
 		$this->noteClientSuppliedCause(object: $existing);

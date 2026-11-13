@@ -60,7 +60,7 @@ interface ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function build(RefusedWrite $write, array $intervening): array;
 }//end interface

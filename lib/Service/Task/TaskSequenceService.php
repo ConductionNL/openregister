@@ -320,7 +320,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return array<string, mixed> The position, with `approvingOutcomes` when declared.
 	 *
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	private function positionSnapshot(array $position, array $template): array {
 		$approving = TaskState::approvingSet(declared: ($template['approvingOutcomes'] ?? null));
@@ -360,7 +360,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function onTaskTerminal(Task $task): void {
 		$sequence = $this->runningSequenceOf(task: $task);
@@ -573,7 +573,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	private function closeUndecided(TaskSequence $sequence, Task $task): void {
 		$this->close(closure: new SequenceClosure(
@@ -597,7 +597,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return array<int, string> The declared set, or the default set when none is usable.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	private function approvingOutcomes(TaskSequence $sequence): array {
 		return TaskState::approvingSetOrDefault(declared: (($sequence->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
