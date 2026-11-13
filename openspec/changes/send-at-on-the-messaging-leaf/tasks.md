@@ -6,9 +6,9 @@
 
 ## 2. Scheduling
 
-- [ ] 2.1 Migration: `openregister_scheduled_messages` (channel, source, path, body, headers, object, author, send at, state, attempts, response, message id).
+- [x] 2.1 Migration: `openregister_scheduled_messages` (channel, source, path, body, headers, object, author, send at, state, attempts, response, message id). — `Version1Date20261113190000`, plus `claimed_by`, `claimed_at`, `last_error`; read and written by `ScheduledMessageStore` (compare-and-set claim on id, state and attempts).
 - [ ] 2.2 `sendAt` and `object` on the send endpoints; list and cancel routes; audit entries on the object.
-- [ ] 2.3 `ScheduledMessageSweepJob`, registered in `appinfo/info.xml`. **The
+- [x] 2.3 `ScheduledMessageSweepJob`, registered in `appinfo/info.xml`. — done: every five minutes, `ScheduledMessageSweep` applies `ScheduledMessagePolicy` and dispatches through `MessageDispatcherInterface`; states and attempt limit are the policy's (pending, claimed, sent, cancelled, parked; 5). **The
       RULES it obeys are built and tested** in
       `lib/Service/Notification/ScheduledMessagePolicy.php`; the job, the
       table and the routes are not. The sweep is the dangerous part of
