@@ -4970,3 +4970,4 @@ build:openregister:tasks-delegation-and-substitution	failed: worker rules forbid
 build:openregister:search-quality-operators-and-facets	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:51Z
 build:openregister:task-inbox-open-first	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:58Z
 build:openregister:spec-anchor-repair	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:42:04Z
+build:openregister:seed-from-a-mounted-directory	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:42:10Z
