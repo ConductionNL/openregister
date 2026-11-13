@@ -6310,3 +6310,13 @@ cover:pipelinq:7f9dc8e6m16db:6925f818	cover	pipelinq	development	quality/test-co
 cover:pipelinq:7f9dc8e6m16db:be0dcca9	cover	pipelinq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=192;coverage=87.68;target=90.0	2026-11-13T16:08:12Z
 cover:pipelinq:7f9dc8e6m16db:168f7791	cover	pipelinq	development	quality/test-coverage-168f7791	lang=php;dirs=lib/Dossiq/*.php;focus=thin;weight=95;coverage=87.68;target=90.0	2026-11-13T16:09:49Z
 cover:pipelinq:7f9dc8e6m16db:6f346b68	cover	pipelinq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=85;coverage=87.68;target=90.0	2026-11-13T16:09:59Z
+review:openregister:10290:00f931a5	review	openregister	main	10290	sha=00f931a50815f328d3eb7d85b785e6c584c99870;last_approved=;title=test(openregister): cover entity, deleted, organisation, application and settings views	2026-11-13T18:35:22Z
+verify:learniq:2473:79c4696c	verify	learniq	development	merge	prs=2473@5526131b50a1b9b988301e1b2362e32ceb0fddb7,2474@b111dcec9b633cfd4bcedb913e6cde0b71d1692b,2475@65ecf2ebe8555e558ca01c3631c5571123f2a8f8,2476@85ad0fe1e366d50ca4682e82924fb3ff30e9926c,2477@353cf067921d82016b61af7a6ca620bf9e3e6d82	2026-11-13T18:35:22Z
+verify:pipelinq:3772:ba375543	verify	pipelinq	development	merge	prs=3772@564e0ecc89f51ef390f1311bc3499d50a611bf7d	2026-11-13T18:35:22Z
+verify:integriq:3527:8787d817	verify	integriq	development	merge	prs=3527@121481dcf334972d1d3273cdf9d48cde1d0a43d3,3528@987f8973f8fb05d06d150c0a1da49b3ca177a7d7,3529@e6de3038de3f8644ea9136b1698346ca07572492,3530@56515acb491c77d8adaea6f94a22c15ba5b53baa	2026-11-13T18:35:22Z
+verify:humaniq:1119:fd79c83e	verify	humaniq	development	merge	prs=1119@ffc6a7f28d6e51547edb02e0deb71a357bcbf342,1120@cbe5197149c886bbdb3730e924a865238e89ff86,1121@ee633bd15f5522ac3fd86f5c56c89dcf37920338	2026-11-13T18:35:22Z
+verify:shillinq:2959:7788337f	verify	shillinq	development	merge	prs=2959@94bd9e965e743acba69829d729bfd153ef85ea01	2026-11-13T18:35:22Z
+verify:portaliq:2443:9b9e7370	verify	portaliq	development	merge	prs=2443@4322f3ac1ef3423b13baca3b34799b91c46b8460	2026-11-13T18:35:22Z
+verify:opencatalogi:2595:996caeef	verify	opencatalogi	development	merge	prs=2595@21d2431c12bf08539e01c946dd91232d3b1d2499,2596@4e73b518b32ea98fa4265bfaf87846400c5d2d6e,2597@0bad17de449dbb981d2b98719de1e80cabe10d75	2026-11-13T18:35:22Z
+merge:dossiq:6431:3ab8f4db	merge	dossiq	development	development	prs=6431@9b1475ac5754de43d361792f626d012fdea1a045,6432@daec3186b606c25251244ed40367f505e0b5ba24,6433@857fa215a2cc1800ccdceff4c789dc163db885db	2026-11-13T18:35:22Z
+merge:portaliq:2427:bb1ed905	merge	portaliq	development	development	prs=2427@d256286fe99dd5624de69e220db457e2ecc1a78d	2026-11-13T18:35:22Z
