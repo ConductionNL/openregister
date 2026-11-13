@@ -3647,3 +3647,4 @@ merge:filinq:2043:e8e1719f	merge-local over 4 filinq tasks: merged=6 red=0 fail=
 merge:filinq:2044:28826748	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
 merge:filinq:2045:0324e68d	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
 merge:filinq:2048:3a6b4f8c	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
+cover:pipelinq:7f9dc8e6m916f:db675bd6	no PR: lib/Activity/Setting/ 27/27 lines (100%) with per-class tests plus a golden test; nothing thin left	session-20261113T071640-3ba6da34	2026-11-13T08:55:11Z
