@@ -1266,3 +1266,4 @@ review:hermiq:1483:fea5911b	GREEN: identical-behaviour refactor, vitest 1076 pas
 cover:hermiq:755cdfe7m7444:js77cf3af4	PR #1640: 3 widget modules, 22 tests, vitest 1072->1094, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:57:51Z
 review:openregister:10068:385b8604	APPROVE: tests only, settings specs 355 green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T00:57:49Z
 review:hermiq:1486:a26b6d01	GREEN: behaviour-preserving refactor, vitest 1093 OK on merge with development	session-20261112T231639-4c562de9	2026-11-13T00:58:02Z
+cover:pipelinq:f67520ecm9d2c:js6d6735a6	PR #3609: 5 mount tests, ResourceForm 54->64/71; other bookings views are in the open -1 branch	session-20261112T224529-41d77a96	2026-11-13T00:58:11Z
