@@ -3285,4 +3285,5 @@ review:openregister:10103:bc3c6397	APPROVE #10103	session-20261113T074533-5d8421
 gap:keepiq:maint2:burn1	PR keepiq#1749: refactored teamFolder runFanOut/autoConfirm and MoveDialog moveVaultContents (+4 tests, vitest 6248 green)	session-20261113T072713-bdbc6044	2026-11-13T07:51:02Z
 merge:filinq:2041:ba5bdc82	merge-local over 2 filinq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:51:10Z
 merge:filinq:2042:2cae529d	merge-local over 2 filinq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:51:10Z
+cover:keepiq:c967a31fmb40c:js4829b6aa	PR #1750: 2 specs/11 tests (EmergencyAccessView actions, ApplicationDetail rendered); src/views/* stmt 93.20->95.01%; suite 6244->6255 green	session-20261113T044737-f37de8e3	2026-11-13T07:51:20Z
 cover:larpinq:c4471360m4538:js0023cfc7	PR #1019: 5 dialogs (4 at 100%, 1 at 93.75%), 59 tests; js total 65.35->74.62%; vitest 264->323 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:51:20Z
