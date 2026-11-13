@@ -6111,4 +6111,5 @@ build:shillinq:sales-invoice-sending	partial: PR #2991 (1.1, 1.2, most of 1.3: c
 cover:shillinq:05639debm7b6b:d47bb994	PR #2990: 14 tests for ReportSection, ReportTable, ReportCatalogue; suite 10394->10408, same 1 inherited failure	session-20261113T181000-9baff50f	2026-11-13T18:55:41Z
 cover:openregister:7350e3efma401:7a62cd5d	PR #10294: 7 tests (ReadOnlyQueryGuard hash comments, driver extension refusal); dir 95.57% before	session-20261113T175327-6e4e7f28	2026-11-13T18:55:55Z
 verify:shillinq:2964:34734270	shillinq #2964-#2970 GREEN: 10435 PHP tests 0 new failures, vitest 2302 pass	session-20261113T172325-6eb25015	2026-11-13T18:55:58Z
+cover:hermiq:065f1631md84f:be0dcca9	already done: quality/test-coverage-be0dcca9-1 merged; lib/Mcp/*.php at 333/333 statements (the one class without its own test holds only a constant)	session-20261113T172325-6eb25015	2026-11-13T18:56:20Z
 measure:larpinq:20261113h18	php 96.84% (pcov, 791 tests), js 97.05% (495 tests) @3fbcc23	session-20261113T185326-316f096d	2026-11-13T18:56:13Z
