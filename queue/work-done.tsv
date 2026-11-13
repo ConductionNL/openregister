@@ -4798,3 +4798,4 @@ build:openregister:leaf-mount-render-escape-hatch	partial: PR #10172 server half
 build:openregister:modelling-rename-without-loss	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:17Z
 build:openregister:list-query-condition-groups	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:23Z
 build:openregister:modelling-composite-identity	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:29Z
+build:openregister:modelling-field-access-editor	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:36Z
