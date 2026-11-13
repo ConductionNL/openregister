@@ -4986,3 +4986,4 @@ buildiq	1500	c9733ca670f3e78df637f65ea9a180a2dcc4f4a2	GREEN	worker-37	tests only
 buildiq	1501	b87671084ed3e6a76bef7438fc692f5b5ec930aa	GREEN	worker-37	tests only; phpunit.xml 2427 run (phpunit-unit.xml needs an openregister sibling here), baseline 2391 with 1 failure, no new failures; vitest 3449 passed
 launchpad	1160	fe8607310237fd7c1c4158e05d0ad0c2ea1cbff2	GREEN	worker-58	phpunit 3646 (baseline 3646, 0 fail); vitest 1709 with both (baseline 1662), 0 new failures; tests only
 launchpad	1161	f01f5009e5db85c554a2cf7bb85b0d7ad3b5b687	GREEN	worker-58	phpunit 3646 (baseline 3646, 0 fail); vitest 1709 with both (baseline 1662), 0 new failures; tests only
+integriq	3465	e5787d7ccd489b102d9f76cdd9bee1af67d93e22	GREEN	worker-35	7118 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests only
