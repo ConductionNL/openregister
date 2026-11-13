@@ -33,6 +33,7 @@ use RuntimeException;
  * A history that cannot be read lists nothing; one that can is listed in full, reindexed.
  *
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class AuditTrailProviderFailureTest extends TestCase {
 

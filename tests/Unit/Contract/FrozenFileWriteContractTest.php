@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Contract;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Controller\ObjectStateController;
 use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -45,9 +46,8 @@ use PHPUnit\Framework\TestCase;
 class FrozenFileWriteContractTest extends TestCase {
 
 	public function testTheFreezeRouteIsPostOnTheObject(): void {
-		$routes = require __DIR__ . '/../../../appinfo/routes.php';
 		$freeze = array_values(array_filter(
-			$routes['routes'],
+			DeclaredRoutes::unversioned(),
 			static fn (array $route): bool => $route['name'] === 'objectState#freeze'
 		));
 

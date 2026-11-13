@@ -171,7 +171,7 @@ class TaskNotesController extends Controller {
 	public function update(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
-			action: fn (): JSONResponse => $this->rewriteNote(uuid: $uuid, noteId: (int)$noteId)
+			action: fn (TaskInterface $task): JSONResponse => $this->rewriteNote(task: $task, noteId: (int)$noteId)
 		);
 	}//end update()
 
@@ -190,7 +190,7 @@ class TaskNotesController extends Controller {
 	public function destroy(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
-			action: fn (): JSONResponse => $this->removeNote(uuid: $uuid, noteId: (int)$noteId)
+			action: fn (TaskInterface $task): JSONResponse => $this->removeNote(task: $task, noteId: (int)$noteId)
 		);
 	}//end destroy()
 
@@ -232,18 +232,18 @@ class TaskNotesController extends Controller {
 	/**
 	 * Rewrite a note: the message is checked before the note's ownership.
 	 *
-	 * @param string $uuid   The task uuid.
-	 * @param int    $noteId The note id.
+	 * @param TaskInterface $task   The readable task.
+	 * @param int           $noteId The note id.
 	 *
 	 * @return JSONResponse The updated note, 400 without a message, 404 for a foreign note.
 	 */
-	private function rewriteNote(string $uuid, int $noteId): JSONResponse {
+	private function rewriteNote(TaskInterface $task, int $noteId): JSONResponse {
 		$message = $this->message();
 		if ($message === null) {
 			return $this->messageRequired();
 		}
 
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+		if ($this->isNoteOfTask(uuid: (string)$task->getUuid(), noteId: $noteId) === false) {
 			return TaskLeafGuard::notFound();
 		}
 
@@ -253,13 +253,13 @@ class TaskNotesController extends Controller {
 	/**
 	 * Remove a note that hangs on this task.
 	 *
-	 * @param string $uuid   The task uuid.
-	 * @param int    $noteId The note id.
+	 * @param TaskInterface $task   The readable task.
+	 * @param int           $noteId The note id.
 	 *
 	 * @return JSONResponse Confirmation, or 404 for a foreign note.
 	 */
-	private function removeNote(string $uuid, int $noteId): JSONResponse {
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+	private function removeNote(TaskInterface $task, int $noteId): JSONResponse {
+		if ($this->isNoteOfTask(uuid: (string)$task->getUuid(), noteId: $noteId) === false) {
 			return TaskLeafGuard::notFound();
 		}
 

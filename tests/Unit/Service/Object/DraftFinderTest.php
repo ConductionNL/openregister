@@ -33,6 +33,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\OwnDraftSearch
  */
 class DraftFinderTest extends TestCase {
 

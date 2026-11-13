@@ -227,6 +227,7 @@ Controller/ChatHealthController.php,58,Controller,Platform,Platform/Controller/C
 Controller/ChatStreamController.php,249,Controller,Platform,Platform/Controller/ChatStreamController.php,0,,Platform
 Controller/CollectiveLinksController.php,112,Controller,Integrations,Integrations/Controller/CollectiveLinksController.php,0,,Integrations
 Controller/CompanyLookupController.php,63,Controller,Integrations,Integrations/Controller/CompanyLookupController.php,0,,Integrations
+Controller/ConfigurationBundleController.php,,Controller,,,,,Configuration
 Controller/ConfigurationController.php,1118,Controller,Configuration,Configuration/Controller/ConfigurationController.php,0,,Configuration
 Controller/ConfigurationDeploymentController.php,208,Controller,Configuration,Configuration/Controller/ConfigurationDeploymentController.php,0,,Configuration
 Controller/ConfigurationsController.php,213,Controller,Configuration,Configuration/Controller/ConfigurationsController.php,0,,Configuration
@@ -626,6 +627,9 @@ Db/CollectiveLink.php,54,Db,Integrations,Integrations/Db/CollectiveLink.php,0,,I
 Db/CollectiveLinkMapper.php,23,Db,Integrations,Integrations/Db/CollectiveLinkMapper.php,0,,Integrations
 Db/ColumnFiltersTrait.php,19,Db,Integrations,Integrations/Db/ColumnFiltersTrait.php,0,,Integrations
 Db/Configuration.php,174,Db,Configuration,Configuration/Db/Configuration.php,0,117,Configuration
+Db/ConfigurationBinding.php,,Db,,,,,Configuration
+Db/ConfigurationBindingMapper.php,,Db,,,,,Configuration
+Db/ConfigurationBindingMapperInterface.php,,Db,,,,,Configuration
 Db/ConfigurationDeployment.php,61,Db,Configuration,Configuration/Db/ConfigurationDeployment.php,0,,Configuration
 Db/ConfigurationDeploymentMapper.php,49,Db,Configuration,Configuration/Db/ConfigurationDeploymentMapper.php,0,,Configuration
 Db/ConfigurationDraft.php,58,Db,Configuration,Configuration/Db/ConfigurationDraft.php,0,,Configuration
@@ -1933,6 +1937,7 @@ Service/Configuration/SeedReferenceIndex.php,131,Service,Configuration,Configura
 Service/Configuration/SeedVersionLedger.php,56,Service,Configuration,Configuration/Service/Configuration/SeedVersionLedger.php,0,,Configuration
 Service/Configuration/ShippedSeedContent.php,37,Service,Configuration,Configuration/Service/Configuration/ShippedSeedContent.php,0,,Configuration
 Service/Configuration/UploadHandler.php,128,Service,Configuration,Configuration/Service/Configuration/UploadHandler.php,0,,Configuration
+Service/ConfigurationDeployment/ConfigurationBundleService.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/ConfigurationDraftService.php,225,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationDraftService.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationExplainer.php,127,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationExplainer.php,0,,Configuration
 Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,103,Service,Configuration,Configuration/Service/ConfigurationDeployment/ConfigurationKeyRegistry.php,0,,Configuration
@@ -3874,3 +3879,7 @@ Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
 Service/ZgwAutorisatieGrant.php,,Service,,,,,Core
+BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
+Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
+Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
+Service/AuditChainKey.php,,Service,,,,,Compliance

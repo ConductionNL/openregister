@@ -35,6 +35,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
  */
 class CascadingHandlerPreValidationGoldenTest extends TestCase {
 

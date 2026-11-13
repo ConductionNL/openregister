@@ -35,6 +35,19 @@ use Stringable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Service\Object\RelationDetectionTrait
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
  */
 final class SaveObjectsLogTest extends TestCase {
 
