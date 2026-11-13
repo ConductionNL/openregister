@@ -5973,3 +5973,4 @@ verify:stackiq:1887:168bd8c5	GREEN 1887 (tests only; vitest 2477 pass)	session-2
 cover:pipelinq:7f9dc8e6m16db:fdb25f89	already done: lib/Service/Access/ 100% lines (86/86) with RegisterAccessSyncTest + RegisterAccessSyncEdgeTest on development; no PR	session-20261113T172329-e224a4f0	2026-11-13T18:29:42Z
 build:shillinq:enforced-schema-authorization	partial: PR #2958 builds 2.6 (exception accept needs approver role, 403 otherwise); 2.2 payment-block release left (needs schema property, listener and release-reason UI strings); suite 10394->10397, no new failures	session-20261113T172325-6eb25015	2026-11-13T18:29:46Z
 verify:shillinq:2953:1172cba9	GREEN 2953 (10400 tests, 1 inherited failure)	session-20261113T172329-0b6220f9	2026-11-13T18:29:43Z
+cover:larpinq:c4471360mc469:js3f3bfe56	PR #1030: src/main.js 0->100% (11 tests), src/*.js 100%; suite 495->506 green	session-20261113T182359-67ad413b	2026-11-13T18:29:48Z
