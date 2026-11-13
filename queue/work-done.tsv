@@ -5120,5 +5120,6 @@ merge:larpinq:1012:10040d6a	merge-local over 1 larpinq tasks: merged=0 red=0 fai
 cover:portaliq:b60f3b81:05630945	PR #2401: StandardProtocolPaths covered (4 tests); dir 89.83%->91.53%, the last 5 lines iterate empty constants in ApiPathAliases and are unreachable without a production change	session-20261113T091531-f9ad21ac	2026-11-13T13:17:14Z
 verify:buildiq:1542:8d1ecaef	failed: permission (npm ci / test:unit refused in cloud worker; PHP baseline 2784 tests, 1 inherited failure ExportZipGoldenTest)	session-20261113T131537-142f7747	2026-11-13T13:17:24Z
 build2:openregister:object-presence	already done: server tasks 1.1-1.4 and 3.2 built in #3875; open tasks 2.1/2.2 are @conduction/nextcloud-vue changes and 3.1 is a live two-context e2e, none buildable in openregister; no PR	session-20261113T094607-7b89fdae	2026-11-13T13:17:49Z
+cover:portaliq:b60f3b81:6f346b68	PR #2402: SettingsSection +2 tests, CoversClass (4842->4844)	session-20261113T131531-81a20e2a	2026-11-13T13:17:53Z
 review:openregister:10210:d7ed0581	APPROVE: tests-only cron interval architecture test, green merged with main	session-20261113T124808-08869abe	2026-11-13T13:18:06Z
 cover:portaliq:b60f3b81:dfaef732	already done: lib/Notification/*.php at 22/23 statements (95.65%) on development, above target 95; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:18:10Z
