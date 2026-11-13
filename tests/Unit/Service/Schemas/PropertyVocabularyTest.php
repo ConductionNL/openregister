@@ -255,6 +255,24 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
+	 * `x-openregister-required-when` is published, so the form and any other
+	 * client can discover the rule the server enforces.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	public function testTheRequiredWhenKeyIsPublished(): void {
+		$this->assertContains(needle: 'x-openregister-required-when', haystack: $this->vocabulary->keys());
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'x-openregister-required-when' => ['field' => 'requestType', 'op' => 'eq', 'value' => 'Klacht']],
+				path: '/complaintCategory'
+			)
+		);
+	}
+
+	/**
 	 * A vendor extension whose meaning nobody has defined still saves.
 	 *
 	 * The half of the old test that has NOT changed, kept deliberately: an

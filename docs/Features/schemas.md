@@ -224,6 +224,7 @@ In addition to the standard JSON Schema fields above, OpenRegister recognises a 
 | `register` | Override the target register for `$ref` lookups. Defaults to the referrer's own register. | `"register": "decidesk"` |
 | `authorization` | Per-property RBAC rules — restricts who can read/manage this specific field. Same `{group, match?}` grammar as schema-level RBAC. Admin always bypasses. | `"authorization": {"read": [{"group": "hr"}]}` |
 | `format: date-time` (with empty-string handling) | Standard JSON-Schema `date-time` format. OpenRegister's normaliser treats `""`, `null`, and whitespace-only strings as `null` rather than auto-populating to "now". | `"format": "date-time"` |
+| `x-openregister-required-when` | Makes the property required only while a condition on another property holds. See [Conditionally required properties](#conditionally-required-properties). | `"x-openregister-required-when": {"field": "requestType", "op": "eq", "value": "Klacht"}` |
 
 #### Reference example
 
@@ -247,6 +248,41 @@ In addition to the standard JSON Schema fields above, OpenRegister recognises a 
   }
 }
 ```
+
+#### Conditionally required properties
+
+`x-openregister-required-when` makes a property required only in some cases: "the complaint category is required when the request type is Klacht". The value is one condition `{field, op, value}`, or a list of conditions that must all hold:
+
+```json
+"complaintCategory": {
+  "type": "string",
+  "x-openregister-required-when": { "field": "requestType", "op": "eq", "value": "Klacht" }
+},
+"kvkNummer": {
+  "type": "string",
+  "x-openregister-required-when": [
+    { "field": "isCompany", "op": "eq", "value": true },
+    { "field": "amount", "op": "gt", "value": 1000 }
+  ]
+}
+```
+
+| `op` | Holds when the field's value… | Takes `value` |
+|------|-------------------------------|---------------|
+| `eq` | equals `value`, compared loosely (`3` equals `"3"`, as a form field sends text). This is the default when `op` is left out. | yes |
+| `neq` | does not equal `value`, compared the same way | yes |
+| `gt` / `gte` | is greater than (or equal to) `value`, compared as numbers, or as moments when both sides are dates | yes |
+| `lt` / `lte` | is less than (or equal to) `value`, compared the same way | yes |
+| `empty` | is missing, `null`, `""` or an empty list | no |
+| `notEmpty` | is anything else | no |
+
+`field` names another property of the same schema. A dotted path (`adres.land`) reads a nested value.
+
+The forms built on `@conduction/nextcloud-vue` show and check the rule. OpenRegister also enforces it on every save: the API create, update and patch, an import, a flow write and a bulk write. A client that skips the form cannot skip the rule. While every condition holds and the property is empty (missing, `null`, `""` or an empty list), the save is refused with HTTP 422. The refusal names each property and its condition, for example `complaintCategory: Required when requestType eq Klacht.` An update is judged on the stored object with the change laid over it.
+
+A schema save is refused with HTTP 422 when a condition uses an unknown `op`, names no `field`, compares without a `value`, names a field the schema does not declare, or names the property itself.
+
+`x-openregister-visible-when` stays form data only: OpenRegister does not remove a hidden field, because visibility is not access.
 
 Properties can also have nested objects and arrays with their own validation rules, allowing for complex data structures while maintaining strict validation. See the [Nesting schema's](#nesting-schemas) section below for more details.
 

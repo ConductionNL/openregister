@@ -540,6 +540,12 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is '
 				. 'looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.',
 		],
+		RequiredWhenDeclaration::ANNOTATION => [
+			'value' => 'object',
+			'description' => 'Make the field required only when a condition on another field holds: '
+				. '{field, op, value} or a list of them that must all hold. op is eq, neq, gt, gte, lt, lte, '
+				. 'empty or notEmpty. Every save is refused while the condition holds and the field is empty.',
+		],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
@@ -907,6 +913,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		RequiredWhenDeclaration::fromProperty(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**
@@ -1345,7 +1352,36 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			$this->validateProperty(property: $property, path: $path . '/' . $propertyName);
 		}
 
+		if ($path === '') {
+			$this->assertRequiredWhenFieldsDeclared(properties: $properties);
+		}
+
 		return true;
 	}//end validateProperties()
+
+	/**
+	 * Refuse a required-when condition on a field the schema does not declare, or on the property itself.
+	 *
+	 * Only at the top level: a condition reads the object from its root, so
+	 * the fields it may name are the schema's own properties, and only the
+	 * call that holds all of them can tell whether one is missing.
+	 *
+	 * @param array<string, mixed> $properties The schema's top-level properties.
+	 *
+	 * @throws PropertyVocabularyException When a condition names an undeclared field or its own property.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` is a named constructor on a value object.
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	private function assertRequiredWhenFieldsDeclared(array $properties): void {
+		$declared = array_map('strval', array_keys($properties));
+		foreach ($properties as $propertyName => $property) {
+			$declaration = RequiredWhenDeclaration::fromProperty(property: $property, path: '/' . $propertyName);
+			$declaration?->assertFieldsDeclared(declared: $declared, property: (string)$propertyName, path: '/' . $propertyName);
+		}
+	}//end assertRequiredWhenFieldsDeclared()
 
 }//end class

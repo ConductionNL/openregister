@@ -530,6 +530,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
 
+		// A conditionally required property (modelling-required-when-enforced):
+		// the form shows and checks the rule, this refuses a client that skips
+		// the form, on the same two events and for the same reason.
+		$context->registerEventListener(ObjectCreatingEvent::class, RequiredWhenListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, RequiredWhenListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
