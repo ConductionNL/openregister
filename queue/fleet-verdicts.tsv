@@ -6067,3 +6067,4 @@ shillinq	2947	2f18835b74b6fb4e50bdc434096958f494c62740	GREEN	worker-10	tests onl
 stackiq	1885	398c4f7f6570f83c65114883cdd32f89381dceaf	GREEN	worker-37	tests only (1 test added); unit 3398 tests vs baseline 3397, 0 failures, no new warnings
 portaliq	2423	50cc9936c322395b4aa179b56d63a8cf347fe2ce	REVERIFY	worker-24	moved the 10 new l10n keys from the catalogue end to just after the first key in en/en_US/nl .js and .json, so it merges cleanly with #2419 in either order (checked both); check:l10n-js and its node test pass; new head 8eb905abb2aca81225dcf27cb418f5e5ebebebbe, verify it
 pipelinq	3767	9ef7f34c927c4c035a1c90f86ec3cd677cff09bc	GREEN	worker-54	7195 tests vs baseline 7194 (5 inherited failures), same failure set; test-only
+portaliq	2415	1b3e5f2d8564310105899ff754ce3416a97c01ca	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
