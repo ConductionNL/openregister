@@ -1811,3 +1811,4 @@ verify:pipelinq:3635:15b52369	3635 GREEN, 3636 GREEN; 0 new failures (1 inherite
 cover:filinq:8ecceb86mc744:efa2a923	PR #2017: 5 tests, ObjectEventRegistrar 24->49/49, DossierCheckedOnListener 68->70/74; suite green	session-20261113T024656-2f332446	2026-11-13T03:24:40Z
 cover:stackiq:8cfacb29m8db8:34f5c300	PR #1816: 47 tests for 6 Service classes, lib/Service/*.php 62.85%->67.0%, no new failures	session-20261113T031700-0e23c373	2026-11-13T03:25:13Z
 cover:stackiq:8cfacb29m8db8:007dc1d0	PR #1817: +34 tests (CmdbWorkbookReader logic via fake reader 12%->89%, CmdbImportProfile fallbacks); suite 2854->2888, 57 inherited errors unchanged	session-20261113T031701-470b4a5e	2026-11-13T03:25:29Z
+cover:stackiq:8cfacb29m8db8:60c2c265	PR #1818: 37 new + 48 restored tests; lib/Controller 75.8% -> 89.9%; suite errors 57 -> 9 (inherited)	session-20261113T031700-211f0599	2026-11-13T03:25:44Z
