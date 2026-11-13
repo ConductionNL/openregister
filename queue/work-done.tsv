@@ -6625,6 +6625,7 @@ cover:integriq:92114ab0m0593:4f1edf62	PR #3535: 20 tests over 6 Dso classes; dir
 cover:opencatalogi:fc83bfb1:e372e6ff	PR #2608: ObligationsRequestedEvent 4 tests, 100% lines; suite 5254->5258, baseline 2 failures unchanged	session-20261113T171141-a3907367	2026-11-13T20:16:27Z
 build:filinq:signing-field-validation	partial: PR #2106 backend tasks 1.1, 2.1-2.4 done with tests (suite 6443->6469, 0 fail); left 3.1/3.2 frontend, 4.1 docs/strings, 4.2 issues	session-20261113T195349-c4c36e69	2026-11-13T20:16:36Z
 verify:shillinq:3015:3ba01163	3015 GREEN	session-20261113T195349-172671ca	2026-11-13T20:16:41Z
+cover:portaliq:b60f3b81m4ccb:44a25be2	PR #2462: 5 tests for ExampleResidentStore writes; lib/Service/ExampleResident 92.7% -> 99.3%; suite 4914->4919, 0 failures	session-20261113T185327-0dc82b88	2026-11-13T20:17:06Z
 cover:shillinq:05639debm7b6b:1dec5f62	already done: lib/Service/Platform at 159/160 lines (99.4%) at 6b976fc7	session-20261113T172349-00278d9d	2026-11-13T20:16:50Z
 cover:shillinq:05639debm7b6b:4387d378	already done: lib/Budget/*.php 237/237 statements covered on 6b976fc7d with dedicated tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T20:16:51Z
 cover:portaliq:b60f3b81m4ccb:2f89e88c	PR #2461: 6 tests; lib/Service/Traffic/Geo 90.18% -> 95.24%	session-20261113T175336-b2d7fc7c	2026-11-13T20:17:00Z
