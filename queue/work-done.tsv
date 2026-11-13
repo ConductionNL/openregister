@@ -6286,3 +6286,4 @@ cover:shillinq:05639debm7b6b:e6f8d431	PR #3012: 4 edge tests, 4 surviving mutant
 fix:shillinq:2991:94f3e87c	failed: branch already contains development (b0ed3e448); conflicts are only with unmerged siblings 2962/2988-2990 in info.xml and register-versions.lock.json; merge development in again after they land	session-20261113T182404-f2c28226	2026-11-13T19:19:02Z
 cover:hermiq:065f1631md84f:f91e7417	PR #1706: ConnectionStatus @uses->@covers (Connection 98%->99%); last miss unreachable with stub	session-20261113T185322-2911ee6d	2026-11-13T19:19:00Z
 review:openregister:10294:e0b84a0d	APPROVE: tests only; Dbal 81 OK, Architecture 2364 OK on PR merged with main	session-20261113T175328-b5db3663	2026-11-13T19:19:27Z
+fix:shillinq:3000:1c89b1e9	no change: branch already contains development; conflict is only with an earlier tree PR's register-versions.lock.json entry, needs a re-record after that PR lands	session-20261113T175323-e340fb07	2026-11-13T19:19:41Z
