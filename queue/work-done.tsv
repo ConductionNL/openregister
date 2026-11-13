@@ -2526,3 +2526,4 @@ cover:integriq:92114ab0m1534:fd3f82d2	PR #3482: 18 phpunit tests (ZgwRegistryBin
 cover:buildiq:9930949bm5861:60c2c265	PR #1512: 51 tests for 4 controllers; lib/Controller/*.php 76.25%->86.49%; suite 2444->2495, same 1 inherited failure	session-20261113T051704-8c56f5b7	2026-11-13T05:48:24Z
 cover:pipelinq:f67520ecmc4ba:0798b7cf	PR pipelinq#3672: 8 tests for PosCartRepricer + PosLinePricer; suite 6425->6433, same 1 inherited failure	session-20261113T053904-36dcee67	2026-11-13T05:48:36Z
 cover:decidiq:a5f973bbma14b:3d4b295b	already done: lib/Service/Settings/ at 94.1% (32/34) on development, above target 85; the 2 uncovered lines are glob/file_get_contents failure branches	session-20261113T051708-7d5f6071	2026-11-13T05:48:31Z
+review:openregister:10104:1a9d4d63	APPROVE	session-20261113T051707-6c971ec6	2026-11-13T05:49:12Z
