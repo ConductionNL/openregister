@@ -3098,3 +3098,4 @@ cover:shillinq:05639debmd8ee:6d382880	already done: lib/Reporting/Schedule/ at 9
 verify:keepiq:1746:e262a97c	GREEN 1746 (4564->4565, no failures)	session-20261113T041646-2c1d764f	2026-11-13T07:12:38Z
 cover:dossiq:f8a113c5m7e79:js0be8c659	PR #6317: 25 mount specs for 5 modals; src/modals lines 81.0->90.9%, suite 6389 (1 inherited fail)	session-20261113T064519-30004ad4	2026-11-13T07:12:50Z
 cover:keepiq:c967a31fmb40c:882bd950	already done: lib/Search/*.php at 100% lines (31/31) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:12:49Z
+cover:keepiq:c967a31fmb40c:59826f43	already done: lib/Settings/*.php at 100% lines (28/28) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:13:01Z
