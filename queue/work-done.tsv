@@ -2951,6 +2951,7 @@ cover:pipelinq:7f9dc8e6m1e6e:23d187f5	PR pipelinq#3690: Store assembler + ledger
 cover:pipelinq:7f9dc8e6m1e6e:36ac5d07	already above target: lib/Service/LineTotals/ measures 100% (59/59) with strict metadata on development 50e93fc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:44:32Z
 cover:pipelinq:7f9dc8e6m1e6e:be0dcca9	already done: pcov on development (today) shows lib/Mcp McpAnswer and PipelinqScannableServices 100% lines	session-20261113T053904-36dcee67	2026-11-13T06:44:27Z
 verify:stackiq:1846:7def2824	GREEN 1846-1849 (tests only; PHP clean; vitest 2311 pass)	session-20261113T051714-4ad50f31	2026-11-13T06:44:37Z
+cover:pipelinq:7f9dc8e6m1e6e:dfaef732	already done: lib/Notification/*.php (Notifier) at 100% lines (120/120) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:44:53Z
 cover:pipelinq:7f9dc8e6m1e6e:0798b7cf	already done: lib/Service/PosCart 100% lines per pcov on development; dedicated tests merged in pipelinq#3672	session-20261113T053904-36dcee67	2026-11-13T06:44:50Z
 cover:pipelinq:7f9dc8e6m1e6e:6925f818	already done: lib/SetupCheck measured with pcov at 27/27 statements (100%)	session-20261113T051707-6c971ec6	2026-11-13T06:45:05Z
 measure:filinq:20261113h06	filinq @90be525f: php 94.11%, js 93.34% (6251 PHPUnit tests OK, 718 vitest pass)	session-20261113T054520-0c8540f8	2026-11-13T06:45:05Z
