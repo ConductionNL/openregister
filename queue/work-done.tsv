@@ -6914,3 +6914,4 @@ verify:buildiq:1571:5d54ffc0	GREEN #1571: phpunit 2917 (1 inherited), vitest 408
 verify:buildiq:1575:4454957e	GREEN 1575: phpunit 2937 (baseline 2917, no new failures), vitest 4095	session-20261113T192651-cb1e4daf	2026-11-13T21:17:09Z
 build4:dossiq:task-forms-keep-a-draft	partial: PR #6461 (task 7, capabilities row 3.14 built with evidence; tasks 4 e2e and 6 live left); vitest unchanged, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T21:17:33Z
 build4:dossiq:case-goals	PR #6463: 2.1b Close on a goal row (row-action bridge to CnActionDialog, case-scoped close); no tasks left	session-20261113T185328-da819141	2026-11-13T21:18:02Z
+build4:dossiq:public-api-access-with-keys-and-certificates	partial: PR #6462; 1.2, 2.1 (middleware + ZgwService::validateJwtAuth via resolver), 2.2, 4.2 done; suite 16530->16545 same 20 inherited fails; 3.1 admin link and 4.3 Newman left	session-20261113T195351-a32c6d55	2026-11-13T21:18:00Z
