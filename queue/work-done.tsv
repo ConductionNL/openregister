@@ -4109,3 +4109,4 @@ merge:shillinq:2819:dcd89161	merge-local over 1 shillinq tasks: merged=0 red=0 f
 verify:larpinq:1020:a01f8c34	GREEN x4 (1020-1023): +23 tests, suite green	session-20261113T051703-1b54bfba	2026-11-13T09:59:33Z
 cover:integriq:92114ab0m158b:34f5c300	PR #3523: 4 tests for RuleService external-input extension; found list-of-URLs TypeError (reported, not fixed); suite 8097->8101, no new failures	session-20261113T081046-f0858dc4	2026-11-13T09:59:48Z
 cover:shillinq:05639debm0c05:jsea7197ec	already done: src/utils/* 571/631 = 90.5% >= 90	session-20261113T051703-1b54bfba	2026-11-13T09:59:45Z
+cover:dossiq:069ee2d6m7275:js8e4b3d9d	PR #6383: covered the 3 uncovered CaseTypeDetail tab widgets (0%->100%), 7 tests; dirs were already 91.5% > target 90	session-20261113T091531-f9ad21ac	2026-11-13T09:59:59Z
