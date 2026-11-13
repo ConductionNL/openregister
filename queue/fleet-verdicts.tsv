@@ -6356,3 +6356,4 @@ filinq	2087	31ab7049da6b9efae9f237e239e575679ed66f88	CONFLICT	worker-19	lib/Sett
 filinq	2088	cfd39c3538ffa7fa49420c3932e892648b7e2d2c	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
 filinq	2089	b315e20ad63caf7bb5c23b9b15f5250b4089e107	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
 filinq	2090	37852824e959372cea7b4fcf77c0ab0b4defc111	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
+opencatalogi	2607	4f3717b4db1e1cc907b5f42af91d60ecd47b3795	GREEN	worker-48	tests only; phpunit 5260 run (baseline 5254, 2 inherited fails), 0 new
