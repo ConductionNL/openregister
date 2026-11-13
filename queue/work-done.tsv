@@ -2000,3 +2000,4 @@ cover:keepiq:c967a31fm88ca:882bd950	already done: lib/Search/*.php 31/31 stateme
 cover:hermiq:065f1631m7444:1191da39	already done: WebResearch 58 tests, 327/336 lines; the 9 left are unreachable guards and the real dns_get_record wrapper; no PR	session-20261113T034629-21e68669	2026-11-13T04:05:49Z
 cover:hermiq:065f1631m7444:a42697be	PR #1650: 13 tests, lib/Service/Agent 97.3->99.7% stmts	session-20261113T031704-5a455d65	2026-11-13T04:06:16Z
 measure:launchpad:20261113h04	php 90.54% js 84.14%	session-20261113T034628-9602b641	2026-11-13T04:06:23Z
+cover:keepiq:c967a31fm88ca:34763eb4	already done: lib/Middleware/*.php 211/212 statements covered on development (earlier -1 branch merged); nothing thin left to add	session-20261113T034634-857dbcc2	2026-11-13T04:06:31Z
