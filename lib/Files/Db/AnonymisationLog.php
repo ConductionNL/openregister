@@ -66,6 +66,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReplacements(int $replacements)
  * @method int|null getDurationMs()
  * @method void setDurationMs(?int $durationMs)
+ * @method string|null getSteps()
+ * @method void setSteps(?string $steps)
  * @method DateTime getCreated()
  * @method void setCreated(DateTime $created)
  *
@@ -168,6 +170,13 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	protected ?int $durationMs = null;
 
 	/**
+	 * Per content-altering step, as JSON: `ran`, `skipped` with the reason, or `not-applicable`.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $steps = null;
+
+	/**
 	 * Created timestamp.
 	 *
 	 * @var DateTime
@@ -191,6 +200,7 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'sanitization', type: 'string');
 		$this->addType(fieldName: 'replacements', type: 'integer');
 		$this->addType(fieldName: 'durationMs', type: 'integer');
+		$this->addType(fieldName: 'steps', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 		$this->created = new DateTime();
@@ -215,11 +225,31 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getSanitizationArray()
 
 	/**
-	 * The serialised sanitization report, decoded.
+	 * Decode the per-step outcomes.
 	 *
-	 * @return array{sanitization: array|null}
+	 * @return array<string, array{outcome: string, reason?: string}>|null The outcomes, or null when absent.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
+	 */
+	public function getStepsArray(): ?array {
+		if ($this->steps === null) {
+			return null;
+		}
+
+		$decoded = json_decode($this->steps, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end getStepsArray()
+
+	/**
+	 * The serialised sanitization report and step outcomes, decoded.
+	 *
+	 * @return array{sanitization: array|null, steps: array|null}
 	 */
 	protected function jsonOverrides(): array {
-		return ['sanitization' => $this->getSanitizationArray()];
+		return ['sanitization' => $this->getSanitizationArray(), 'steps' => $this->getStepsArray()];
 	}//end jsonOverrides()
 }//end class
