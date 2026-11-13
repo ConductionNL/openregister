@@ -5533,3 +5533,4 @@ learniq	2419	62ccde47ab42aaaec24f574c645a690c691c9f31	BLOCK	worker-55	6140 tests
 launchpad	1185	762f505c36c8c3a22024c2350e31fd09424ff95a	GREEN	worker-54	3842 tests (baseline 3789, 0 failures); 0 new failures; tests only
 integriq	3515	9f710cc8ec5b691bd8bfb5ef3f7ecf443359950d	GREEN	worker-33	tree 8064 tests (baseline 8054, inherited 2 errors + 3 failures), no new failures; tests-only additions
 integriq	3516	aa4aff58cb53ab5dcba9f521e36be25c342640ba	GREEN	worker-33	tree 8064 tests (baseline 8054, inherited 2 errors + 3 failures), no new failures; tests-only additions
+learniq	2419	62ccde47ab42aaaec24f574c645a690c691c9f31	REVERIFY	worker-19	merged development in cleanly (no middleware/route changes from development, /api/v1-only error-body rewrite kept); unit 6201 tests, 1 failure inherited (HigherEducationExampleSetTest); new head 5f8478f65b0bdf7c3e7b6209eef0c83832e3c581, verify it
