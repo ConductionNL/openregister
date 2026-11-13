@@ -137,6 +137,7 @@
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\HandoffLifecycleListener",
 		"OCA\\OpenRegister\\Listener\\ArchivalNominationListener",
+		"OCA\\OpenRegister\\Listener\\StateEntryFreezeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectUnlockedEvent": [

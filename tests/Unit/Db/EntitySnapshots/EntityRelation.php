@@ -27,6 +27,8 @@ return array (
     'bases' => 'json',
     'skipAnonymization' => 'boolean',
     'decisionUuid' => 'string',
+    'page' => 'integer',
+    'box' => 'json',
     'createdAt' => 'datetime',
   ),
   'empty' => 
@@ -51,6 +53,8 @@ return array (
     'bases' => NULL,
     'skipAnonymization' => false,
     'decision' => NULL,
+    'page' => NULL,
+    'box' => NULL,
     'createdAt' => NULL,
   ),
   'filled' => 
@@ -78,6 +82,11 @@ return array (
     ),
     'skipAnonymization' => true,
     'decision' => 'decisionUuid-v',
+    'page' => 4,
+    'box' => 
+    array (
+      'k' => 'box',
+    ),
     'createdAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -102,7 +111,9 @@ return array (
     17 => 'bases',
     18 => 'skipAnonymization',
     19 => 'decisionUuid',
-    20 => 'createdAt',
+    20 => 'page',
+    21 => 'box',
+    22 => 'createdAt',
   ),
   'refused' => 
   array (

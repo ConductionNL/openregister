@@ -96,6 +96,18 @@ final class ObjectStateMarker {
 	 *
 	 * @return string The opening.
 	 */
+	/**
+	 * The sentence a preserved object's content-write refusal carries.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function preservedMessage(): string {
+		return 'Cannot write to this object\'s content: it is in the preservation (statisch) regime. '
+			. 'Its references still resolve and it stays readable; change the retention regime before editing it.';
+	}//end preservedMessage()
+
 	private function sentence(string $state, string $because): string {
 		return 'Cannot write to this object: it was ' . $state . ' by '
 			. ($this->field(key: 'by') ?? 'an unknown user') . ' on ' . ($this->field(key: 'at') ?? 'an unrecorded date')

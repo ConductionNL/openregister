@@ -164,7 +164,9 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 			$this->sortRequest(['title' => $direction], $schema, $languages)
 		);
 
-		$this->assertCount(1, $this->orderBy);
+		// The first term carries the case-insensitive order; the raw value and
+		// _id tie-breaks that follow it make the order total (REQ-CIO-001).
+		$this->assertGreaterThanOrEqual(1, count($this->orderBy));
 		[$expression, $sqlDirection] = $this->orderBy[0];
 		// The double quotes the double emits name the alias `t`; SQLite reads them as identifiers.
 		$sql = 'SELECT title FROM objects AS t ORDER BY ' . $expression . ' ' . $sqlDirection;
@@ -275,9 +277,12 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$this->assertSame(
 			[
 				['LOWER("t"."_name")', 'ASC'],
+				['"t"."_name"', 'ASC'],
 				['LOWER("t"."_summary")', 'DESC'],
+				['"t"."_summary"', 'DESC'],
 				['t._created', 'DESC'],
 				['t._updated', 'ASC'],
+				['t._id', 'ASC'],
 			],
 			$this->orderBy
 		);
@@ -290,7 +295,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
 		$method->invoke($this->makeHandler(new SqlitePlatform()), $this->makeQueryBuilder(), $this->sortRequest(['amount' => 'asc', 'when' => 'asc'], $schema, ['nl']));
 
-		$this->assertSame([['t.amount', 'ASC'], ['t.when', 'ASC']], $this->orderBy);
+		$this->assertSame([['t.amount', 'ASC'], ['t.when', 'ASC'], ['t._id', 'ASC']], $this->orderBy);
 	}//end testANumberPropertyKeepsItsBareColumn()
 
 	public function testPostgresLowersTextAfterACastToText(): void {
@@ -302,7 +307,7 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
 		$method->invoke($this->makeHandler(new PostgreSQLPlatform()), $this->makeQueryBuilder(), $this->sortRequest(['title' => 'asc'], $schema, ['nl']));
 
-		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC']], $this->orderBy);
+		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC'], ['"t"."title"', 'ASC'], ['t._id', 'ASC']], $this->orderBy);
 	}//end testPostgresLowersTextAfterACastToText()
 
 	public function testPostgresExpressionNeverCastsToJson(): void {
