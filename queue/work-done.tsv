@@ -1596,3 +1596,4 @@ cover:pipelinq:f67520ecm8c58:js5cb5a0d3	PR #3622: 28 tests, bookings dir 74.1%->
 cover:pipelinq:f67520ecm8c58:js5794e9fc	already done: branches quality/test-coverage-js-5794e9fc-1 and -2 (2 PRs, open) already cover these settings views; no new PR	session-20261113T011731-be978a55	2026-11-13T02:16:37Z
 cover:pipelinq:f67520ecm8c58:28cccfd9	PR #3623: Repair/Support 94/95 -> 95/95 statements, +2 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:16:50Z
 cover:pipelinq:f67520ecm8c58:e19add4c	already done: lib/Service/Consent 66/67 statements covered on development (classes are value objects driven by existing service tests), no PR	session-20261113T004519-b6b86685	2026-11-13T02:17:08Z
+cover:pipelinq:f67520ecm8c58:db675bd6	already done: lib/Activity/Setting/ 27/27 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:17:37Z
