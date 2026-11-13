@@ -1,7 +1,7 @@
 {
  "app": "pipelinq",
- "commit": "50e93fcdaecbde581d94bee44443922595c06863",
- "measured_at": "2026-11-13T06:19:04Z",
+ "commit": "ebef47bf46c1a1ae66e46726f6a6515a0467bab5",
+ "measured_at": "2026-11-13T08:41:01Z",
  "php": {
   "tool": "pcov",
   "pct": 84.95,
@@ -283,9 +283,9 @@
   }
  },
  "js": {
-  "pct": 80.72,
-  "statements": 17608,
-  "covered": 14213,
+  "pct": 84.86,
+  "statements": 17614,
+  "covered": 14947,
   "dirs": {
    "src/": [
     190,
@@ -297,7 +297,7 @@
    ],
    "src/components/admin/": [
     473,
-    392
+    416
    ],
    "src/components/billing/": [
     74,
@@ -305,7 +305,7 @@
    ],
    "src/components/bookings/": [
     432,
-    361
+    410
    ],
    "src/components/dashboard/": [
     56,
@@ -325,7 +325,7 @@
    ],
    "src/components/pos/": [
     412,
-    315
+    374
    ],
    "src/components/products/": [
     71,
@@ -393,15 +393,15 @@
    ],
    "src/mixins/": [
     225,
-    191
+    213
    ],
    "src/modals/": [
     1211,
-    814
+    846
    ],
    "src/portal/": [
-    106,
-    57
+    100,
+    93
    ],
    "src/portal/components/": [
     30,
@@ -409,11 +409,11 @@
    ],
    "src/portal/views/": [
     267,
-    129
+    238
    ],
    "src/services/": [
     1989,
-    1957
+    1959
    ],
    "src/store/": [
     21,
@@ -421,7 +421,7 @@
    ],
    "src/store/modules/": [
     385,
-    337
+    383
    ],
    "src/store/plugins/": [
     19,
@@ -429,7 +429,7 @@
    ],
    "src/utils/": [
     541,
-    537
+    539
    ],
    "src/views/": [
     9,
@@ -441,11 +441,11 @@
    ],
    "src/views/blasts/": [
     345,
-    232
+    299
    ],
    "src/views/bookings/": [
     480,
-    396
+    406
    ],
    "src/views/clients/": [
     155,
@@ -465,7 +465,7 @@
    ],
    "src/views/export/": [
     323,
-    221
+    261
    ],
    "src/views/flows/": [
     2,
@@ -477,11 +477,11 @@
    ],
    "src/views/leads/": [
     156,
-    118
+    132
    ],
    "src/views/leads/cells/": [
-    48,
-    34
+    46,
+    42
    ],
    "src/views/loyalty/": [
     35,
@@ -489,7 +489,7 @@
    ],
    "src/views/marketing/": [
     417,
-    295
+    323
    ],
    "src/views/messaging/": [
     175,
@@ -497,7 +497,7 @@
    ],
    "src/views/pipeline/": [
     614,
-    508
+    527
    ],
    "src/views/portal/": [
     140,
@@ -513,19 +513,19 @@
    ],
    "src/views/rapportage/": [
     64,
-    37
+    58
    ],
    "src/views/requests/": [
     195,
     153
    ],
    "src/views/settings/": [
-    1175,
-    920
+    1189,
+    1005
    ],
    "src/views/social/": [
     164,
-    88
+    149
    ],
    "src/views/surveys/": [
     45,
@@ -540,6 +540,5 @@
     293
    ]
   }
- },
- "js_commit": "b363909e64eceb1ed50ff9acdc79d7ed96c9ed22"
+ }
 }
