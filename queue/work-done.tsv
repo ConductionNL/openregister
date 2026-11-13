@@ -4049,3 +4049,4 @@ verify:dossiq:6356:868d1422	6 GREEN + 1 GREEN tests-only; 6359 RED (vitest caseT
 build:pipelinq:client-page-as-the-relation-boards	last task already on development; ticked it, PR #3705	session-20261113T094610-10c05647	2026-11-13T09:49:14Z
 cover:learniq:e6498dddm0533:cec0abe6	already done: Attendance 666/694, CourseStore 148/156, Portal 1325/1390 = 2139/2240 (95.5%) on development, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:49:15Z
 merge:stackiq:1693:44f4b992	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:49:32Z
+cover:dossiq:069ee2d6m7275:4c817077	already done: lib/Service/Notification/ at 100% lines (pcov) after -1/-2 merged; ApplicantNotice/NoticeDelivery are property bags with no executable lines; no PR	session-20261113T093920-50335e74	2026-11-13T09:49:58Z
