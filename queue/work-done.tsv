@@ -5219,3 +5219,4 @@ merge:pipelinq:3602:a98549bd	merge-local over 1 pipelinq tasks: merged=0 red=0 f
 build2:openregister:archiving-as-a-process-with-sign-off	partial: PR #10241 — preservation regime (2.2 done, 2.1 guard/distinctness built; working-views exclusion left), 15 tests	session-20261113T091533-03405ea6	2026-11-13T13:34:47Z
 verify:portaliq:2400:8ad3016b	GREEN #2400 (tests-only +6, 4848, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:34:49Z
 build2:openregister:public-pages-open-without-a-session	already done: all openregister tasks 1-5 on main (#3964) — PublicPageResolver, publicPage() shell, AccessLinkReader, PublicTimeline, tests; only 6.1 open, which is dossiq's own leaf PR, out of scope for this repo	session-20261113T114524-3c44fc56	2026-11-13T13:34:57Z
+cover:planninq:e1c9866d:34763eb4	PR #1151: ApiContractMiddleware scriptPrefix test (line 213 now covered), suite 1022->1023 OK	session-20261113T094617-36f80607	2026-11-13T13:35:20Z
