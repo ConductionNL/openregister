@@ -239,6 +239,56 @@ class MagicMapperLockAndBatchDeleteGoldenTest extends TestCase {
 		$this->assertSame(['update 1/2 locked=false', 'event ObjectUnlockedEvent'], $this->trace);
 	}//end testAnUnlockOfAnUnlockedObjectIsStillWrittenAndAnnounced()
 
+	/**
+	 * The run identity reaches the lock: a run lock names its run, not just the user it runs as.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/tasks.md#3-1
+	 */
+	public function testARunUuidIsForwardedIntoTheLock(): void {
+		[$register, $schema] = $this->table();
+		$entity = new ObjectEntity();
+
+		$locked = $this->mapper(user: 'anna')->lockObjectEntity($entity, $register, $schema, 60, 'flow-1', 'run-1');
+
+		$this->assertSame(ObjectEntity::LOCK_KIND_RUN, $locked->getLocked()['kind']);
+		$this->assertSame('run-1', $locked->getLockedByRun());
+		$this->assertSame('flow-1', $locked->getLocked()['process']);
+		$this->assertSame(['update 1/2 locked=true', 'event ObjectLockedEvent'], $this->trace);
+	}//end testARunUuidIsForwardedIntoTheLock()
+
+	/**
+	 * Only the holding run releases a run lock: the same user under another run, or with no run, is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/tasks.md#3-1
+	 */
+	public function testARunLockIsReleasedOnlyByItsOwnRun(): void {
+		[$register, $schema] = $this->table();
+		$entity = new ObjectEntity();
+		$this->mapper(user: 'anna')->lockObjectEntity($entity, $register, $schema, 60, null, 'run-1');
+		$this->trace = [];
+
+		foreach (['run-2', null] as $otherRun) {
+			try {
+				$this->mapper(user: 'anna')->unlockObjectEntity($entity, $register, $schema, $otherRun);
+				$this->fail('An unlock by another run must be refused.');
+			} catch (Exception $e) {
+				$this->assertStringStartsWith('Object is locked by', $e->getMessage());
+			}
+		}
+
+		$this->assertSame([], $this->trace);
+		$this->assertSame('run-1', $entity->getLockedByRun());
+
+		$this->mapper(user: 'anna')->unlockObjectEntity($entity, $register, $schema, 'run-1');
+
+		$this->assertNull($entity->getLocked());
+		$this->assertSame(['update 1/2 locked=false', 'event ObjectUnlockedEvent'], $this->trace);
+	}//end testARunLockIsReleasedOnlyByItsOwnRun()
+
 	public function testABatchHardDeleteRemovesTheRows(): void {
 		[$register, $schema] = $this->table();
 
