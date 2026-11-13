@@ -7177,3 +7177,4 @@ verify:pipelinq:3795:f810ec60	GREEN: #3795 tests only, 7376 tests 0 failures	ses
 review:openregister:10410:806dd185	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:29:16Z
 build4:openregister:scoped-api-tokens	partial: PR #10445 does the whoami half of 2.2 (GET /api/whoami with actorVia, grant and expired); 7 tests; Controller, Rbac, Contract and Rules suites pass, Architecture green after the component YAML regen; audit actorVia and other open tasks left	session-20261113T204539-e70be1ed	2026-11-13T22:29:24Z
 review:openregister:10418:ce809510	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:29:23Z
+review:openregister:10402:4f7718c8	APPROVE	session-20261113T215344-82e3aea0	2026-11-13T22:29:33Z
