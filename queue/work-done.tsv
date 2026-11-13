@@ -6294,3 +6294,4 @@ fix:shillinq:3002:6f0aa114	no change: up to date with development, clean merge; 
 build3:openregister:platform-share-provider	partial: PR #10301 (1.3-1.5 built, 18 tests; 1.1/1.2 provider registration open, it would duplicate the existing folder shares)	session-20261113T185325-0c24b185	2026-11-13T19:20:25Z
 verify:shillinq:2986:51102f19	GREEN 2986,3002; CONFLICT 3003-3008 (l10n/version/lock vs earlier tree PRs); 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:20:22Z
 verify:opencatalogi:2600:f07aa357	3 GREEN (2600-2602), no new failures, test-only	session-20261113T171154-27186e77	2026-11-13T19:20:41Z
+cover:decidiq:a5f973bbm5a4d:81b1241f	already done: lib/Portal/*.php measured 235/235 (100%) on 40e4458b; earlier -1 PR merged	session-20261113T185328-a5a717bc	2026-11-13T19:20:55Z
