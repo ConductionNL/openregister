@@ -5670,3 +5670,4 @@ cover:hermiq:065f1631me44a:f545d745	PR #1695: 15 tests, lib/Repair 95.96%->97.61
 verify:dossiq:6424:474c57af	GREEN 6424; no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:38:57Z
 verify:portaliq:2413:09a487ab	GREEN #2413 (4916 tests, 0 new failures)	session-20261113T172328-c860ad55	2026-11-13T17:39:09Z
 review:openregister:10284:1c482caf	APPROVE (conflict: component-map.csv append-only vs main)	session-20261113T171153-e1c17962	2026-11-13T17:39:15Z
+verify:shillinq:2944:f4782e38	2944 BLOCK (deletes existing tests)	session-20261113T171150-996cf694	2026-11-13T17:39:32Z
