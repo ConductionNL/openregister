@@ -6610,4 +6610,5 @@ cover:pipelinq:7f9dc8e6m8ce9:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.p
 review:openregister:10319:195e1747	APPROVE #10319	session-20261113T185328-da819141	2026-11-13T20:14:17Z
 cover:shillinq:05639debm3747:js0be8c659	partial: PR #3018, 31 vitest tests, src/modals 56.92% -> 63.97% (target 90); BillImport, InvoiceQuickDraft, InvoiceGenerateWizard left	session-20261113T175400-7ec3993f	2026-11-13T20:14:21Z
 cover:opencatalogi:fc83bfb1:aae6d66c	already covered: all 4 lib/Exception classes executed and asserted (DirectoryUrlException 6 tests, MalformedSearchParameterException via search contract test); remaining two are empty subclasses; no PR	session-20261113T190954-c894781f	2026-11-13T20:14:23Z
+cover:portaliq:b60f3b81m4ccb:dcac4701	no PR: lib/Service/Tenancy at 225/230 (97.8%, branch -1 exists); nothing thin left worth a PR	session-20261113T192700-f21ebd18	2026-11-13T20:14:45Z
 cover:keepiq:c967a31fm10bf:ca1d90c4	no PR: lib/Attribute holds one attribute with four getters; quality/test-coverage-ca1d90c4-1 (VaultKeyProofRequiredTest) is already on development	session-20261113T192659-0ddb618f	2026-11-13T20:14:43Z
