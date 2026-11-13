@@ -2507,3 +2507,4 @@ cover:dossiq:f8a113c5mac88:d1fb07ad	PR dossiq#6291: 2 tests, FrozenRecord dir 18
 cover:integriq:92114ab0m1534:0323ad91	already done: lib/Observability/Otel/ at 98.55% lines (272/276) on development 4aa851de; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:44:35Z
 cover:dossiq:f8a113c5mac88:1b97f731	PR dossiq#6292: 18 tests for 3 listeners (RestrictedDocumentHandler, FileRestrictionAdmit, CaseTypeRightsRows); suite 14665->14675, same 19 inherited failures	session-20261113T053904-36dcee67	2026-11-13T05:45:21Z
 measure:shillinq:20261113h04	php 85.47% js 51.96% at d33c9cc6	session-20261113T051708-7d5f6071	2026-11-13T05:45:56Z
+cover:pipelinq:7f9dc8e6mc4ba:js5794e9fc	failed: permission	session-20261113T054519-189b2666	2026-11-13T05:46:10Z
