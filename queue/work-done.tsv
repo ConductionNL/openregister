@@ -2133,3 +2133,4 @@ measure:dossiq:20261113h04	php 85.28%, js 84.55% at d63da17a9 (1 vitest failure 
 cover:filinq:7a9ef677mc744:1174c39d	PR #2029: 6 tests; Support 22/23 -> 23/23, DossierSummaryDataService 18/41 -> 41/41; rest are parameter objects already covered	session-20261113T031700-211f0599	2026-11-13T04:28:28Z
 cover:filinq:7a9ef677mc744:60c2c265	PR #2030: 8 tests, lib/Controller/*.php lines 89.6% -> 90.8%, suite 6046 tests 0 failures	session-20261113T021703-063c80f1	2026-11-13T04:29:00Z
 cover:pipelinq:f67520ecmc4ba:38e80a9f	already done: lib/Command/*.php 382/382 statements covered on development (pcov), no PR	session-20261113T041646-adfbb291	2026-11-13T04:29:06Z
+cover:pipelinq:f67520ecmc4ba:jsa5192f20	already done: open branches -1 and -2 bring src/views/blasts/ to 299/345 (86.7%), target 85; no third PR	session-20261113T015005-030aa10a	2026-11-13T04:29:14Z
