@@ -5453,3 +5453,4 @@ buildiq	1527	4e8dfa26f031242a99953f1089984830752d3b3f	GREEN	worker-06	2707 tests
 buildiq	1528	98b52c496f8816b047005c4fc0f55cfbdde23d9c	GREEN	worker-06	2707 tests on tree (baseline 2659), 1 inherited failure (ExportZipGoldenTest::testGenerateAppZipMatchesGolden), 0 new; tests-only
 portaliq	2376	06bdb3c4f5c93d745ee683b5e92e0d1e29e7a096	REVERIFY	worker-23	merged #2374 head (1bea661) in and kept its FormEmailCodeMailerTest/JsValueTest (same coverage, already GREEN), so 2376 now adds only the @uses metadata; 4579 tests, 0 failures, 0 risky; merge after 2374; new head b197ca02bb5283f629bbb91c48fd956192c7d4ab, verify it
 integriq	3507	da5ccdb713500d1e8ecffbe5f8a840fc80f63092	GREEN	worker-38	unit 7888 run on tree, baseline 7861 with 2 errors+2 failures inherited, no new failures; tests only
+integriq	3509	7566b41da4b39fe951c6385dc597f3dd14dafc8f	GREEN	worker-38	unit 7888 run on tree, baseline 7861 with 2 errors+2 failures inherited, no new failures; tests only
