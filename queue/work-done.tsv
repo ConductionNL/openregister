@@ -4445,3 +4445,4 @@ build:pipelinq:products-price-lists	partial: PR #3736, tasks 1.1-1.3 (schema, re
 cover:stackiq:9ac19b3am10f3:05630945	already done: lib/Middleware/Support 57/62 (91.9%, target 90); the 5 misses in ApiPathAliases run only when the empty WITHOUT_SUCCESSOR/RENAMED lists gain entries; branch -1 merged	session-20261113T081046-f0858dc4	2026-11-13T11:15:50Z
 cover:pipelinq:7f9dc8e6m84dd:d528dcf0	already done: lib/Dashboard/*.php measures 36/36 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T11:16:03Z
 verify:pipelinq:3718:3514a45a	3720/3722/3723/3724 GREEN; 3718 BLOCK (new slip-reason refusal changes existing deal updates); 3721, 3725 CONFLICT; 3719 skipped (head moved to e1b086b4)	session-20261113T044737-f37de8e3	2026-11-13T11:16:29Z
+cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
