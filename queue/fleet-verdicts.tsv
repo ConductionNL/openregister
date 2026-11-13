@@ -5764,3 +5764,4 @@ pipelinq	3724	58e973cdbece9e8efc87974d5ff940d3e67a704e	GREEN	worker-58	phpunit 6
 pipelinq	3725	7b4589e1ab21416e636bf07899933e56a6dcd540	CONFLICT	worker-58	merge conflict on the tree (routes/l10n/CrmPrivilegeRefusalGoldenTest); rebase on development needed
 pipelinq	3711	ee7b9c7c38e41db2511caebea22b0391d4dff3c5	REVERIFY	worker-29	merged development; added x-enum-labels {merged: Merged} to accountStatus in the PR's register fragment (translations already in en/nl); vitest 4387 pass; phpunit 6812 with 1 inherited failure; new head cc4987de8b91eb02838ac1433b713aa99c368424, verify it
 dossiq	6404	8ad512b1b5530fab45c91f711dfcb9e8b0c7c15b	GREEN	worker-09	tests only, merges clean; 15972 -> 16012 tests, 19 F inherited, no new failures
+opencatalogi	2588	50984c0ba774a07f0b3a6ddcbeeb4347e6c7f3b8	GREEN	worker-24	phpunit 5186 tests (baseline 5162, 2 inherited failures AppIdentityTest/WooControllerTest), 0 new failures; tests only
