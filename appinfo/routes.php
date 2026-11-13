@@ -353,6 +353,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Anonymisation backend selection (admin-only).
         ['name' => 'anonymisationBackend#getBackendState', 'url' => '/api/admin/anonymisation/backend-state', 'verb' => 'GET'],
         ['name' => 'anonymisationBackend#testConnection', 'url' => '/api/admin/anonymisation/test-connection', 'verb' => 'POST'],
+        ['name' => 'anonymisationPipeline#index', 'url' => '/api/admin/anonymisation/pipeline', 'verb' => 'GET'],
 
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects/vectorize', 'verb' => 'GET', 'postfix' => 'vectorize'],
         ['name' => 'Settings\ConfigurationSettings#getObjectSettings', 'url' => '/api/settings/objects', 'verb' => 'GET'],
@@ -1936,6 +1937,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// Manual entity addition - operator-supplied value, chunk-aware string matching, persists catalogue + relations.
 		['name' => 'fileText#addManualEntity', 'url' => '/api/files/{fileId}/manual-entities', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+
+		// Text disclosures - every external service a file's text was sent to (REQ-ADI-005).
+		['name' => 'fileDisclosures#index', 'url' => '/api/files/{fileId}/anonymisation/disclosures', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
 
 		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
 		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],

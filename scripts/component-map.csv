@@ -3961,6 +3961,15 @@ Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
 Service/Authorization/GrantedRight.php,,Service,,,,,Core
+Service/Anonymisation/TextDisclosureSource.php,,Service,,,,,Compliance
+Service/Anonymisation/TextDisclosureRecorder.php,,Service,,,,,Compliance
+Service/Anonymisation/PipelineSteps.php,,Service,,,,,Compliance
+Service/Anonymisation/ContentPipelineReport.php,,Service,,,,,Compliance
+Controller/AnonymisationPipelineController.php,,Controller,,,,,Compliance
+Controller/FileDisclosuresController.php,,Controller,,,,,Compliance
+Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
+Files/Db/TextDisclosure.php,,Files,,,,,Files
+Files/Db/TextDisclosureMapper.php,,Files,,,,,Files
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
