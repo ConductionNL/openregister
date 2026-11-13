@@ -5945,3 +5945,4 @@ cover:pipelinq:7f9dc8e6m16db:36ac5d07	already done: lib/Service/LineTotals/ at 1
 cover:pipelinq:7f9dc8e6m16db:e19add4c	already covered: lib/Service/Consent/ 67/67 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:24:59Z
 cover:pipelinq:7f9dc8e6m16db:d528dcf0	already covered: lib/Dashboard/*.php 36/36 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:25:23Z
 verify:buildiq:1554:532d9dc2	GREEN 1554,1555 (tests-only; 2921 tests, only inherited ExportZipGolden failure)	session-20261113T182351-b6448081	2026-11-13T18:25:30Z
+verify:shillinq:2952:fb3392e2	GREEN #2952	session-20261113T171152-380dbc11	2026-11-13T18:25:40Z
