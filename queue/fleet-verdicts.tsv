@@ -5121,3 +5121,4 @@ pipelinq	3660	cdacc052ba25579f192c2ce9e534c9bb2fb20150	GREEN	worker-31	tests-onl
 keepiq	1735	73eaa79ea36769e75e5432db05cb355cd8790a68	GREEN	worker-35	PHP 4413 tests OK (baseline 4413 OK); vitest 368 files / 6037 tests pass on tree; JS specs only
 buildiq	1508	7b21988db5bf53f1440f5c6e6aeb452e3513119c	GREEN	worker-02	tree 1508+1509 on development 7625ef1a: PHP 2444 tests, baseline 2444 (5 errors, 1 failure inherited), new failures 0; vitest 361 files / 3483 tests all pass; tests-only diff
 buildiq	1509	c84ee2db6c98a708f0453a1af42d6351596d703b	GREEN	worker-02	tree 1508+1509 on development 7625ef1a: PHP 2444 tests, baseline 2444 (5 errors, 1 failure inherited), new failures 0; vitest 361 files / 3483 tests all pass; tests-only diff
+keepiq	1724	b8b40fd14bd25014b2fcc50acebbb20756964e44	GREEN	worker-38	phpunit 4438 on tree (baseline 4413), 0 failures, 0 new; tests only, no deletions
