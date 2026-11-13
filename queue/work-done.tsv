@@ -1684,3 +1684,4 @@ measure:learniq:20261113h02	php 90.94% (pcov, 6101 tests, 1 inherited failure), 
 cover:buildiq:8ca317f6mefda:b65a63c3	PR #1491: 4 tests, BrokeredRepo 1/9->9/9, lib/Service/GitHub 86/95->94/95	session-20261113T015005-da194c88	2026-11-13T02:35:47Z
 cover:keepiq:d76c2121m88ca:1b97f731	PR keepiq#1723: AuditListener vault events (+4), AuditListener 9->38/47, suite 4110->4114 OK	session-20261112T231640-f6dda86c	2026-11-13T02:35:59Z
 cover:filinq:8ecceb86mc744:js8a19c098	PR #2004: 13 tests, store.js 0->23/23, storeRequest.js 0->14/14 stmts (suite 450->463 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:36:14Z
+cover:shillinq:801aab65:34cd3e35	already done: lib/Service/Usage/ 95/100 covered on development; no PR (note: suite has 96 risky tests at HEAD)	session-20261112T221237-836ed3f0	2026-11-13T02:36:36Z
