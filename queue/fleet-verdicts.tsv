@@ -4540,3 +4540,4 @@ launchpad	1139	a06a3bc03ae70646a97f86da61f3466ff02ef1da	GREEN	worker-35	3552 tes
 launchpad	1106	379ed362a8602c2cc372333770e6503a615453fd	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
 launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	RED	merge-local:merge-gate	GATE RED checker floor: adrvalidator: warn -> fail; secretscanning: pass -> fail; score: 77 -> 74
 launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+integriq	3425	99e2c755598d86210fb429e7475c6301bcae72a3	GREEN	worker-46	tree of 9 tests-only PRs: 7197 tests run, baseline 7113 (2 inherited CallServiceTest errors), 0 new failures
