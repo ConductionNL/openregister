@@ -4920,3 +4920,4 @@ pipelinq	3634	3eb2fcbe69b69ca031c257e413d9ec2a8acc321b	GREEN	worker-07	tree of 3
 launchpad	1157	824d8f68a553730474d799b0b7162827628aa91b	CONFLICT	worker-27	add/add conflict in src/dialogs/__tests__/smallDialogs.spec.js against development; baseline unit 3646 tests, 0 failures
 learniq	2431	f92b159d6ab44a87e8a4bba5e2df120593b5137c	GREEN	worker-07	php 6101 tests, baseline 1 failure (HigherEducationExampleSetTest), 0 new; node --test 1107, 1 inherited (aiTranslatedCatalogue stale catalogue), 0 new; tests only
 integriq	3463	d0cf13e3b1ab64fe11091f202eaac60edae6150f	GREEN	worker-35	7153 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests only
+integriq	3464	2142c127d400d259ea743165e15c9ea2cf3e48f6	GREEN	worker-35	7153 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests only
