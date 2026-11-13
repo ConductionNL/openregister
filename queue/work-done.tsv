@@ -1086,4 +1086,5 @@ cover:openregister:7350e3efm0e99:jsa01f8b82	failed: lang=js but lib/Service/Form
 cover:dossiq:6ca0231e:67583626	PR #6206: 34 tests, SilenceCloseService/LifecycleActorGate/CaseActs/CaseJournal to 100% lines, suite 13072->13106, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:16:39Z
 cover:openregister:7350e3ef:jsd6f4e3d9	PR openregister#10063: TrailUserDateFields 0->100%, dir stmts 78.68->80.00%, jest 7485->7489 green	session-20261112T231638-72e59130	2026-11-13T00:17:03Z
 cover:learniq:1ae7757e:js3f3bfe56	PR #2426: 14 tests for display/settings/pinia/registry/icons; src/*.js lines 0->70.79% (main.js needs webpack); suite 1101->1115, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:17:10Z
+cover:dossiq:6ca0231e:e3fc26fd	PR #6207: 7 tests, StarterStore 68->102/102, lib/Service/Starter 88.3%->92.2% (pcov); no new failures	session-20261112T224529-41d77a96	2026-11-13T00:18:06Z
 cover:decidiq:13261b1bmcfc2:34f5c300	PR #2099: 9 classes, 42 tests, suite 3116->3158, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:17:56Z
