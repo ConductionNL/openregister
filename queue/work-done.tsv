@@ -4015,3 +4015,4 @@ cover:dossiq:069ee2d6m7275:c7ef8f28	already done: lib/Listener/Support at 98.75%
 cover:dossiq:069ee2d6m7275:38e8c328	already done: the eight dirs are at 259/266 lines (97%), above the 95% target; remaining are value-object constructors and 2 GovernanceBodyReader lines; branch -1 merged	session-20261113T081046-f0858dc4	2026-11-13T09:42:47Z
 measure:launchpad:20261113h08	php 92.53% (20472/22125), js 94.2% (6823/7243) at 867c6ce5	session-20261113T051703-1b54bfba	2026-11-13T09:43:06Z
 cover:dossiq:069ee2d6m7275:cdc59513	already done: lib/Service/Inspection 369/373 stmts (98.9%), every file >=96%	session-20261113T091527-72c58830	2026-11-13T09:43:16Z
+fix:dossiq:6353:60a451ec	no change: removals are what case-notes-stay-in-dossiq asks; REVERIFY recorded as a build PR	session-20261113T091533-03405ea6	2026-11-13T09:43:31Z
