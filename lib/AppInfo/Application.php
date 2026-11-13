@@ -197,6 +197,8 @@ class Application extends App implements IBootstrap {
 		SearchProviderRegistrar::register(context: $context);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
+		// A user's saved views and watches leave and arrive with them; objects do not (platform-user-migrator).
+		$context->registerUserMigrator(\OCA\OpenRegister\Service\UserMigration\PersonalStateMigrator::class);
 
 		IntegrationRegistrar::register(context: $context);
 		CapabilityRegistrar::register(context: $context);

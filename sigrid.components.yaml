@@ -91,6 +91,7 @@ components:
       - ".*/lib/Service/TextExtraction/[^/]*"
       - ".*/lib/Service/TimeTracker/[^/]*"
       - ".*/lib/Service/User/[^/]*"
+      - ".*/lib/Service/UserMigration/[^/]*"
       - ".*/lib/Service/Vectorization/Strategies/[^/]*"
       - ".*/lib/Service/View/[^/]*"
       - ".*/lib/Service/Vocabulary/[^/]*"

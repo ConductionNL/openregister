@@ -3201,6 +3201,10 @@ Service/TranslationProjectionService.php,183,Service,Configuration,Configuration
 Service/TranslationStatusService.php,143,Service,Configuration,Configuration/Service/TranslationStatusService.php,0,200,Configuration
 Service/UrnService.php,214,Service,Service,Service/UrnService.php,0,106,Core
 Service/UserLinkWriter.php,50,Service,Integrations,Integrations/Service/UserLinkWriter.php,0,,Integrations
+Service/UserMigration/ImportReport.php,20,Service,Service,Service/UserMigration/ImportReport.php,0,,Core
+Service/UserMigration/PersonalStateMigrator.php,177,Service,Service,Service/UserMigration/PersonalStateMigrator.php,0,,Core
+Service/UserMigration/PersonalStateReader.php,40,Service,Service,Service/UserMigration/PersonalStateReader.php,0,,Core
+Service/UserMigration/RegisterReferences.php,39,Service,Service,Service/UserMigration/RegisterReferences.php,0,,Core
 Service/UserService.php,864,Service,Access,Access/Service/UserService.php,0,,Core
 Service/Vectorization/Strategies/FileVectorizationStrategy.php,86,Service,Access,Access/Service/Vectorization/Strategies/FileVectorizationStrategy.php,0,,Core
 Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,179,Service,Access,Access/Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,0,,Core
