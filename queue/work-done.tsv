@@ -1930,3 +1930,4 @@ merge:hermiq:1637:23e44097	merge-local over 8 hermiq tasks: merged=42 red=0 fail
 merge:hermiq:1643:c2225292	merge-local over 8 hermiq tasks: merged=42 red=0 fail=1 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:51:43Z
 cover:filinq:7a9ef677mc744:js64227517	no change: dir holds DocumentCompare.vue, already tested by its jest spec DocumentCompare.spec.js; vitest has no Vue plugin so .vue lines cannot be attributed, and the spec file itself counts as uncovered source	session-20261113T021703-063c80f1	2026-11-13T03:51:58Z
 cover:buildiq:9930949bmefda:js4829b6aa	PR #1504: 36 vitest tests, views stmts 1253/1546 -> 1323/1546	session-20261113T024653-d22c13a3	2026-11-13T03:51:52Z
+cover:stackiq:df113dffm8db8:js17dfdc2e	PR #1835: 23 vitest tests (MergeObject flow, ObjectModal save), src/modals/object 46.2%->54.2%; ViewObject left	session-20261113T031700-0e23c373	2026-11-13T03:52:00Z
