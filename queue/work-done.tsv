@@ -5439,6 +5439,9 @@ cover:launchpad:fb10c50fm2d1d:38e80a9f	already done: lib/Command 100% (1357/1357
 cover:dossiq:069ee2d6m2deb:39189253	already done: lib/Service/Transitions/*.php at 95.60% statements (1762/1843) from tests/Unit/Service/Transitions alone on development 8f0bb9e41, target 95; branches -1..-3 exist. Baseline: SetCaseAnswerHandlerTest::testDryRunReportsTheChangeWithoutWriting fails on development	session-20261113T084521-fd8a31c7	2026-11-13T14:13:32Z
 cover:larpinq:c4471360mcb1b:js00fe026a	already done: src/services at 98.99% statements (target 90), 63 files / 491 tests green	session-20261113T114525-2ca68289	2026-11-13T14:13:50Z
 verify:versioniq:679:49cae245	GREEN #679	session-20261113T091533-03405ea6	2026-11-13T14:14:09Z
+cover:shillinq:05639debm4eb8:34f5c300	PR #2940: DBAVbarMonitorService::assess + StandardsPolicyService lookups, 18 tests; suite 10394->10412, same 1 inherited failure	session-20261113T074527-031883a8	2026-11-13T14:14:16Z
 verify:humaniq:1112:e9e9dca8	GREEN 1112, 1113, 1115 (tests only; 3928 -> 4055 tests, no failures)	session-20261113T124807-5f522699	2026-11-13T14:14:33Z
 review:openregister:10274:f3d18c00	APPROVE 10274: tests only, all green	session-20261113T104650-72c03e13	2026-11-13T14:14:47Z
 measure:larpinq:20261113h14	php 96.84% (4021/4152, pcov), js 91.23% (1082/1186) at 8df68c64	session-20261113T114525-2ca68289	2026-11-13T14:15:12Z
+build:portaliq:contact-page-question-form-and-not-found	already built: code tasks T01-T05 are on development; the only open tasks are T06 (live Playwright), T07 (a pipelinq tracker request), T08 (live board check + screenshots) — all need a live instance or another app, none buildable here	session-20261113T111529-f2ee6930	2026-11-13T14:15:28Z
+review:openregister:10271:d4c63696	APPROVE: additive fail-soft import audit, orphan-write now wired, suites green	session-20261113T124802-c7d6f662	2026-11-13T14:15:38Z
