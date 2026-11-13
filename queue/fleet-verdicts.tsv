@@ -4924,3 +4924,4 @@ integriq	3464	2142c127d400d259ea743165e15c9ea2cf3e48f6	GREEN	worker-35	7153 test
 buildiq	1495	a223182c5a37211067cabfc781b218b11aeb959c	GREEN	worker-48	php unit 2391 tests (baseline 1328 errors/5 failures, unchanged), vitest 352 files/3419 tests pass on tree; tests-only diff
 buildiq	1496	d38ebb691702264939f96a5013b4256d6cdbcba0	GREEN	worker-48	php unit 2391 tests (baseline unchanged), vitest 352 files/3419 tests pass on tree; tests-only diff
 integriq	3462	5350d40fe72dda8c3c60b1b1a3cb5b896d4aed78	GREEN	worker-35	7135 tests on tree, baseline 7113 with 2 errors (CallServiceTest), no new failures; tests only
+dossiq	6261	9fec4635568a68f446c7a04cff7db4e5bf81bfc4	GREEN	worker-57	phpunit 14179 tests, baseline 19 failures, 0 new; vitest 6341 tests, baseline 1 failure (capabilityComparison), 0 new; tests only
