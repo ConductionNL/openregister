@@ -1,15 +1,15 @@
 {
  "app": "stackiq",
- "commit": "062e37007c616c24e0574c1e61330501b940e1bc",
- "measured_at": "2026-11-13T01:55:58Z",
+ "commit": "7cd10138f5e6288db4f99cc2c8b2d16993a17760",
+ "measured_at": "2026-11-13T04:17:50Z",
  "php": {
   "tool": "pcov",
-  "pct": 64.67,
-  "statements": 31691,
-  "covered": 20495,
+  "pct": 64.97,
+  "statements": 31787,
+  "covered": 20651,
   "dirs": {
    "lib/AppInfo/": [
-    548,
+    564,
     0
    ],
    "lib/BackgroundJob/": [
@@ -22,7 +22,7 @@
    ],
    "lib/Controller/": [
     3839,
-    2731
+    2900
    ],
    "lib/Controller/Settings/": [
     74,
@@ -34,7 +34,7 @@
    ],
    "lib/EventListener/": [
     982,
-    923
+    915
    ],
    "lib/Examples/": [
     93,
@@ -45,8 +45,12 @@
     4
    ],
    "lib/Middleware/": [
-    42,
-    42
+    57,
+    0
+   ],
+   "lib/Middleware/Support/": [
+    62,
+    56
    ],
    "lib/Portal/": [
     23,
@@ -61,8 +65,8 @@
     6
    ],
    "lib/Service/": [
-    18823,
-    11324
+    18350,
+    10529
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -74,11 +78,11 @@
    ],
    "lib/Service/Cmdb/": [
     1519,
-    1183
+    842
    ],
    "lib/Service/Contactpersoon/": [
     205,
-    116
+    205
    ],
    "lib/Service/Federation/": [
     388,
@@ -86,15 +90,15 @@
    ],
    "lib/Service/Itsm/": [
     49,
-    22
+    49
    ],
    "lib/Service/Settings/": [
-    820,
-    691
+    1296,
+    1226
    ],
    "lib/Service/Stackiq/": [
     2274,
-    1089
+    1555
    ],
    "lib/Settings/": [
     11,
@@ -103,9 +107,9 @@
   }
  },
  "js": {
-  "pct": 76.28,
-  "statements": 8773,
-  "covered": 6692,
+  "pct": 80.46,
+  "statements": 8787,
+  "covered": 7070,
   "dirs": {
    "src/": [
     91,
@@ -117,7 +121,7 @@
    ],
    "src/components/": [
     442,
-    355
+    411
    ],
    "src/components/ai/": [
     29,
@@ -125,7 +129,7 @@
    ],
    "src/components/cards/": [
     65,
-    51
+    64
    ],
    "src/components/cells/": [
     8,
@@ -133,7 +137,7 @@
    ],
    "src/components/contracts/": [
     115,
-    104
+    115
    ],
    "src/components/maintenance/": [
     34,
@@ -141,7 +145,7 @@
    ],
    "src/components/organisations/": [
     146,
-    119
+    140
    ],
    "src/components/portfolio/": [
     63,
@@ -169,7 +173,7 @@
    ],
    "src/dialogs/": [
     209,
-    177
+    202
    ],
    "src/dialogs/SuiteWizard/": [
     50,
@@ -177,11 +181,11 @@
    ],
    "src/modals/": [
     368,
-    305
+    329
    ],
    "src/modals/object/": [
-    2025,
-    819
+    2026,
+    936
    ],
    "src/services/": [
     32,
@@ -196,8 +200,8 @@
     20
    ],
    "src/store/modules/": [
-    769,
-    669
+    782,
+    682
    ],
    "src/store/plugins/": [
     420,
@@ -209,7 +213,7 @@
    ],
    "src/views/": [
     456,
-    393
+    408
    ],
    "src/views/cmdb/": [
     52,
@@ -217,7 +221,7 @@
    ],
    "src/views/organisaties/": [
     208,
-    176
+    203
    ],
    "src/views/settings/": [
     207,
@@ -225,7 +229,7 @@
    ],
    "src/views/settings/sections/": [
     1486,
-    1131
+    1187
    ],
    "src/views/widgets/": [
     26,
