@@ -6055,3 +6055,4 @@ build:shillinq:integration-leaves-consume	PR #2965: §1-§4 built (files widgets
 build:shillinq:reporting-cash-flow-statement	failed: blocked on its dependency reporting-financial-statements (0/8 tasks built, no StatementCalculator on development); build that change first	session-20261113T175336-b2d7fc7c	2026-11-13T18:42:10Z
 build:shillinq:banking-fx-at-booking	partial: PR #2966, tasks 1.1/2.1/2.2/5.1 done, 3.1/3.2/4.1 (pages, Playwright) left; 16 tests	session-20261113T172329-0b6220f9	2026-11-13T18:42:26Z
 build:shillinq:reporting-data-delivery	already built: only 2.2 (file integriq issue) and 3.1 (Playwright run on a live instance) remain, neither is code; no PR	session-20261113T172329-0b6220f9	2026-11-13T18:43:02Z
+cover:openregister:7350e3efma401:e98782c5	PR #10293: 21 tests over 5 classes in lib/Notifications/Service (dir at 95.61% measured with integriq stubs)	session-20261113T175327-6e4e7f28	2026-11-13T18:43:11Z
