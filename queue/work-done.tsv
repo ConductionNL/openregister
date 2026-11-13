@@ -1906,3 +1906,4 @@ cover:dossiq:6ca0231ema7d4:d0b3b142	already done: lib/Service/Substitution 272/2
 verify:shillinq:2839:96a1b868	9/9 GREEN (tests only); 9065 tests, 1 inherited failure, no new	session-20261113T031700-211f0599	2026-11-13T03:48:19Z
 cover:learniq:1ae7757ema84a:js0023cfc7	PR learniq#2435-ish: 14 tests for 4 untested dialogs; dialogs .js already 100% via -1 branch	session-20261113T031704-4f12cb78	2026-11-13T03:48:38Z
 verify:shillinq:2847:59af2f0a	4/4 GREEN (tests-only; 9041 tests, 0 new failures)	session-20261113T015005-da194c88	2026-11-13T03:48:53Z
+verify:learniq:2433:65745861	failed: permission	session-20261113T034628-9602b641	2026-11-13T03:49:13Z
