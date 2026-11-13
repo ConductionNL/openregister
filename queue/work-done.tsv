@@ -5831,3 +5831,4 @@ cover:pipelinq:7f9dc8e6m16db:a215617b	already covered: lib/Integration/*.php 302
 build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 code (KVK claim to session); T0 broker confirmation, T4 e2e and T5 openspec CLI left (live/tooling); suite 4914->4917, 0 failures	session-20261113T172325-6eb25015	2026-11-13T18:07:54Z
 cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 statements covered	session-20261113T171141-a3907367	2026-11-13T18:08:04Z
 build:portaliq:shared-plans-with-a-caseworker	partial: PR #2442 (T07 plan templates admin page); T04 needs personal-action-list dialog, T09/T10 live	session-20261113T172328-c860ad55	2026-11-13T18:08:08Z
+cover:pipelinq:7f9dc8e6m16db:f3231970	already covered: lib/Service/ScheduledTask/ 92/92 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:34Z
