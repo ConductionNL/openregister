@@ -3119,3 +3119,4 @@ cover:shillinq:05639debmd8ee:dfaef732	already done: lib/Notification/*.php at 95
 verify:shillinq:2900:9f5e4240	2900 CONFLICT (Sms test files already on development)	session-20261113T064518-860c039d	2026-11-13T07:17:59Z
 verify:dossiq:6309:74279df0	GREEN 6309-6314 (tests-only; 0 new phpunit failures; vitest 1 inherited failure)	session-20261113T053904-36dcee67	2026-11-13T07:18:53Z
 cover:dossiq:f8a113c5m7e79:cd5286bf	already done: lib/Service/Session/ at 95.02% lines (286/301) on development 44047ce7d; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:09Z
+measure:openregister:20261113h06	php 91.41% (pcov, phpunit-unit-local.xml; unit config needs a server checkout; run had 462 errors/41 failures), js 86.99%; @ff4ddab7	session-20261113T054517-26499007	2026-11-13T07:19:08Z
