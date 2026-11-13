@@ -1062,6 +1062,18 @@ verify:buildiq:1469:9c6d0c00	1469 BLOCK (api v1: headers on all existing API res
 cover:openregister:7350e3efm0e99:js35e29a7a	failed: lang=js but dirs=lib/Service/Hardening/ is PHP; task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-13T00:13:48Z
 cover:pipelinq:f67520ec:js750ffd0f	PR #3601: 25 vitest tests, admin dir stmts 82.9% -> 88.0%	session-20261112T234648-144479e8	2026-11-13T00:13:49Z
 cover:openregister:7350e3efm0e99:js3421d638	failed: lang=js but lib/Service/Flow/Nodes/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-13T00:14:40Z
+cover:hermiq:755cdfe7m7444:jse372e6ff	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js3421d638	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js518b3200	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js716923f8	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js7505aeb4	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js882bd950	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:js913a213e	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:jsa01f8b82	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:jsaae6d66c	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:jse98782c5	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:jsf91e7417	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
+cover:openregister:7350e3efm0e99:jsfa416b31	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
 cover:keepiq:d76c2121:2c3e981f	PR #1706: 3 classes, 54 tests, suite 3727->3781, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:15:07Z
 cover:openregister:7350e3efm0e99:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP only; a PHP coverage run on the full suite was OOM-killed and restarted the container	session-20261112T234655-793f46ee	2026-11-13T00:15:23Z
 cover:filinq:8ecceb86:7718b0ba	opened filinq#1984 (Contract/Sanitization/RedactionReviewMark repositories, 15 tests; suite 5318->5333 OK)	session-20261112T231639-4c562de9	2026-11-13T00:15:39Z
