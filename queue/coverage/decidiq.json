@@ -1,11 +1,11 @@
 {
  "app": "decidiq",
- "commit": "40e4458befdf89ddbe96784ad6f680efdb0a3ee6",
- "measured_at": "2026-11-13T18:17:13Z",
+ "commit": "75a7a65bd73809cf5c20648da9add7ec531830bb",
+ "measured_at": "2026-11-13T20:28:36Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.41,
-  "statements": 25732,
+  "pct": 91.97,
+  "statements": 25854,
   "covered": 23778,
   "dirs": {
    "lib/Activity/": [
@@ -17,8 +17,8 @@
     26
    ],
    "lib/AppInfo/Registrar/": [
-    191,
-    131
+    63,
+    37
    ],
    "lib/BackgroundJob/": [
     479,
@@ -44,13 +44,25 @@
     182,
     182
    ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
    "lib/Lifecycle/": [
-    256,
+    259,
     256
    ],
    "lib/Listener/": [
     1208,
     1176
+   ],
+   "lib/Listener/Registrar/": [
+    103,
+    94
    ],
    "lib/Mcp/": [
     534,
@@ -85,12 +97,16 @@
     5
    ],
    "lib/Service/": [
-    17585,
+    17703,
     15886
    ],
    "lib/Service/Records/": [
     379,
     371
+   ],
+   "lib/Service/Registrar/": [
+    26,
+    0
    ],
    "lib/Service/Settings/": [
     34,
