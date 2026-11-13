@@ -3133,3 +3133,4 @@ cover:dossiq:f8a113c5m7e79:a07ceba0	PR dossiq#6320: 3 tests + 1 metadata fix, Ds
 cover:keepiq:c967a31fmb40c:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5) at 8a5d84f3; the 89.12 is the app-wide figure	session-20261113T071636-117504ad	2026-11-13T07:22:39Z
 cover:dossiq:f8a113c5m7e79:dfaef732	already done: lib/Notification 191/191 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:22:54Z
 verify:dossiq:6317:73469cb8	6317 GREEN, 6318 GREEN; 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:22:55Z
+gap:decidiq:14:732b368d	PR #2120: npm override resolves @toast-ui/editor's dompurify to 3.4.17 (2.5.9 gone), lock + sbom refreshed, vitest unchanged	session-20261113T041646-2c1d764f	2026-11-13T07:23:03Z
