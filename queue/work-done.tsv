@@ -6392,3 +6392,4 @@ verify:shillinq:3013:fe552522	GREEN 3013 (tests only; only inherited failure)	se
 cover:dossiq:069ee2d6mbd37:3b1fd60e	PR #6443: 9 tests in 5 files (ReviewBatches, TriageRules, RecallSamples, DisclosureAssessmentValidator, ReviewConfiguration); suite 20 failures before/after	session-20261113T192653-93fd55cc	2026-11-13T19:41:47Z
 cover:dossiq:069ee2d6mbd37:b6fccd13	PR dossiq#6444: FieldRoleLedger direct tests (5) + ObjectUpdateRight fallbacks (1); suite 16530->16536, 20 inherited failures unchanged	session-20261113T190954-c894781f	2026-11-13T19:42:09Z
 cover:stackiq:9ac19b3am9d24:216a9a0a	PR #1895: LogSafeMessage 7 tests, 3397->3404, no failures	session-20261113T192659-0ddb618f	2026-11-13T19:42:26Z
+review:openregister:10311:fff14172	APPROVE: tests only; Repair 372 OK on merge with main	session-20261113T192651-cb1e4daf	2026-11-13T19:43:17Z
