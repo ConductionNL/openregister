@@ -45,6 +45,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
@@ -2751,6 +2752,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$authorization = self::stripMcpScope(
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
+
+		// THE OWNER SENTINEL AND THE CONDITION SCOPES ARE READ HERE, for the same
+		// reason as the matrix below: every path resolves through this method, so
+		// list queries, single reads and writes all see `@creator` and
+		// `conditions` the same way (access-owner-and-condition-scopes D-1).
+		$authorization = (new AuthorizationBlock())->normalise(authorization: $authorization);
 
 		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
 		// B13). This method is the one step every path takes — the object read,

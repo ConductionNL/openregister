@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -2726,7 +2727,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+			// The same reading resolveAuthorization() applies, so the fallback
+			// does not treat `@creator` as a group or ignore `conditions`.
+			return (new AuthorizationBlock())->normalise(
+				authorization: RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())
+			);
 		}
 	}//end resolveSchemaAuthorization()
 

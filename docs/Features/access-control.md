@@ -773,6 +773,28 @@ How it behaves:
 - Like every conditional rule on a field other than `_organisation`, a caller it admits is no longer held to the organisation filter on that schema. To keep both, add `"_organisation": "$organisation"` to the same `match`.
 - Admins bypass RBAC and see every row, as with every other rule.
 
+### Own records and condition scopes (`@creator`, `conditions`)
+
+A schema designer such as buildiq's access editor writes two shapes that are not native rules. OpenRegister reads both into native rules when it resolves a block (`AuthorizationBlock::normalise()`, called from `PermissionHandler::resolveAuthorization()`), so list queries, single reads and writes treat them alike. The stored block is never rewritten: the designer reads back what it saved.
+
+- **`@creator` in an action's list** means "the object's owner". It is not a group and admits no group. The owner is admitted by the owner rule that applies to every object, so `"read": ["@creator"]` lets each user list and read only the records they created. `["@creator", "redactie"]` admits the owner and the group `redactie`.
+- **`conditions.<action>`** holds `{ "field": "...", "operator": "equals", "value": ... }`, or a list of them. Each becomes `{ "group": "authenticated", "match": { "<field>": <value> } }` on that action, so every signed-in user may act on rows whose field equals the value. The value `@user.uid` means the caller's user id (`$userId`).
+
+```json
+{
+  "read": ["@creator"],
+  "conditions": {
+    "read": { "field": "behandelaar", "operator": "equals", "value": "@user.uid" }
+  }
+}
+```
+
+With this block each user sees the records they created and the records whose `behandelaar` is them.
+
+Only `equals` is read. A condition with another operator, without a field, with a value that is not a scalar, or with a literal that starts with `$` (which would be read as a native variable) is left out, so it admits nobody rather than everybody. A condition on a field the schema does not declare is kept, and the match emitter refuses it as it refuses any undeclared field.
+
+`openregister.authorization.scopes` in the Nextcloud capabilities document (`GET /ocs/v2.php/cloud/capabilities`) lists `group`, `creator` and `condition`, so a client can tell this build enforces both shapes.
+
 ### An app declares object access; it does not guard it
 
 When an app needs "only the people on this record may read it", it writes that rule into the schema's `authorization` block. It does not write a guard class that reads the object and decides in PHP. OpenRegister then enforces the rule on every path that reaches the data: the list (as SQL), the single-object read, the API, search, exports and MCP. An app-side guard only protects the screens that call it.
