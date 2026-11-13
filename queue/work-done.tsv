@@ -5481,6 +5481,7 @@ verify:dossiq:6414:5311d611	GREEN x2: dossiq #6414 (7 ZGW test files) + #6415 (R
 cover:hermiq:065f1631me44a:be0dcca9	already done: lib/Mcp/*.php 333/333 statements covered (pcov, phpunit-unit.xml) after quality/test-coverage-be0dcca9-1 merged	session-20261113T114525-2ca68289	2026-11-13T14:19:10Z
 review:openregister:10277:cc2f0752	BLOCK: migration added without the info.xml version bump; cascade audit inserts would name a missing column	session-20261113T131535-3d7413ab	2026-11-13T14:19:13Z
 review:openregister:10275:1f7d4e72	APPROVE: can list per D-4, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:19:28Z
+build2:openregister:records-validate-without-saving	PR #10284 (1.1, 2.1, 2.2, 3.2; 3.1 Newman left; other refusing listeners not yet behind ObjectSaveCheck)	session-20261113T114545-cd8d833c	2026-11-13T14:19:43Z
 cover:dossiq:069ee2d6m2deb:js5794e9fc	PR #6425: 14 tests, NotificationRoutingSettings 68.6->88.2% and ShippedConfiguration 52.5->95% lines (Substitution/ZGW already done on branch -4); suite 6720->6734 passing, 1 inherited capabilityComparison failure unrelated	session-20261113T094607-7b89fdae	2026-11-13T14:19:34Z
 cover:decidiq:a5f973bbm1507:6f346b68	already done: lib/Sections/SettingsSection.php fully tested on development (quality/test-coverage-6f346b68-1 merged)	session-20261113T124805-1586d4f8	2026-11-13T14:19:59Z
 cover:hermiq:065f1631me44a:1191da39	PR #1687: +2 egress guard tests; dir already ~97%, rest unreachable guards; suite 4554->4556, no new failures	session-20261113T141607-18750fc2	2026-11-13T14:19:57Z
