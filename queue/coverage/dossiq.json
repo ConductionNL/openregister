@@ -1,12 +1,12 @@
 {
  "app": "dossiq",
- "commit": "d63da17a916fa98461c4a2f5f68d514a612960ee",
- "measured_at": "2026-11-13T04:27:56Z",
+ "commit": "31f9e20d817b83db3849f1a461ff11be5994fc7c",
+ "measured_at": "2026-11-13T06:40:15Z",
  "php": {
   "tool": "pcov",
-  "pct": 85.28,
-  "statements": 99134,
-  "covered": 84546,
+  "pct": 87.99,
+  "statements": 99144,
+  "covered": 87234,
   "dirs": {
    "lib/": [
     51,
@@ -22,7 +22,7 @@
    ],
    "lib/BackgroundJob/": [
     659,
-    551
+    616
    ],
    "lib/BulkAction/": [
     232,
@@ -30,11 +30,11 @@
    ],
    "lib/Command/": [
     737,
-    485
+    633
    ],
    "lib/Command/Backfill/": [
     164,
-    135
+    163
    ],
    "lib/Contribution/": [
     65,
@@ -42,7 +42,7 @@
    ],
    "lib/Controller/": [
     12286,
-    9675
+    9799
    ],
    "lib/Controller/Support/": [
     299,
@@ -70,7 +70,7 @@
    ],
    "lib/Integration/": [
     113,
-    102
+    112
    ],
    "lib/Lifecycle/": [
     209,
@@ -78,11 +78,11 @@
    ],
    "lib/Listener/": [
     4082,
-    3510
+    3706
    ],
    "lib/Listener/Support/": [
     160,
-    133
+    158
    ],
    "lib/Mcp/": [
     10,
@@ -90,7 +90,7 @@
    ],
    "lib/Middleware/": [
     191,
-    180
+    183
    ],
    "lib/Notification/": [
     191,
@@ -102,7 +102,7 @@
    ],
    "lib/Repair/": [
     5940,
-    4801
+    5212
    ],
    "lib/Repair/Support/": [
     174,
@@ -110,19 +110,19 @@
    ],
    "lib/Review/": [
     1298,
-    1178
+    1227
    ],
    "lib/Sections/": [
     5,
     5
    ],
    "lib/Service/": [
-    19306,
-    16172
+    19316,
+    16192
    ],
    "lib/Service/Access/": [
     1137,
-    1038
+    1114
    ],
    "lib/Service/Actions/": [
     202,
@@ -182,11 +182,11 @@
    ],
    "lib/Service/CaseDefinition/": [
     1190,
-    1108
+    1144
    ],
    "lib/Service/CasePlanDrain/": [
     186,
-    166
+    184
    ],
    "lib/Service/CaseShare/": [
     7,
@@ -198,11 +198,11 @@
    ],
    "lib/Service/CaseType/": [
     1497,
-    1135
+    1350
    ],
    "lib/Service/Cases/": [
     1564,
-    1308
+    1440
    ],
    "lib/Service/Catalogue/": [
     154,
@@ -230,7 +230,7 @@
    ],
    "lib/Service/Custody/": [
     629,
-    596
+    621
    ],
    "lib/Service/Dashboard/": [
     160,
@@ -298,7 +298,7 @@
    ],
    "lib/Service/Flow/": [
     1241,
-    983
+    1092
    ],
    "lib/Service/FrozenRecord/": [
     184,
@@ -326,15 +326,15 @@
    ],
    "lib/Service/Intake/": [
     2001,
-    1739
+    1900
    ],
    "lib/Service/Kcc/": [
     800,
-    709
+    774
    ],
    "lib/Service/Lifecycle/": [
     893,
-    787
+    867
    ],
    "lib/Service/Mandaat/": [
     142,
@@ -402,11 +402,11 @@
    ],
    "lib/Service/ProcessMining/": [
     571,
-    534
+    558
    ],
    "lib/Service/Product/": [
     147,
-    140
+    147
    ],
    "lib/Service/Publication/": [
     339,
@@ -434,11 +434,11 @@
    ],
    "lib/Service/Registry/": [
     100,
-    88
+    100
    ],
    "lib/Service/Relation/": [
     714,
-    642
+    695
    ],
    "lib/Service/Remedy/": [
     93,
@@ -466,7 +466,7 @@
    ],
    "lib/Service/Settings/": [
     507,
-    348
+    463
    ],
    "lib/Service/Setup/": [
     300,
@@ -482,7 +482,7 @@
    ],
    "lib/Service/Starter/": [
     892,
-    788
+    822
    ],
    "lib/Service/Status/": [
     504,
@@ -506,11 +506,11 @@
    ],
    "lib/Service/Support/": [
     719,
-    593
+    678
    ],
    "lib/Service/Task/": [
     855,
-    739
+    833
    ],
    "lib/Service/Team/": [
     272,
@@ -534,7 +534,7 @@
    ],
    "lib/Service/Termijn/": [
     1400,
-    1302
+    1378
    ],
    "lib/Service/Timeline/": [
     221,
@@ -546,7 +546,7 @@
    ],
    "lib/Service/Transitions/": [
     1843,
-    1604
+    1716
    ],
    "lib/Service/Vth/": [
     355,
@@ -562,7 +562,7 @@
    ],
    "lib/Service/Zaakdossier/": [
     1732,
-    1393
+    1469
    ],
    "lib/Service/Zgw/": [
     2313,
@@ -570,7 +570,7 @@
    ],
    "lib/Settings/": [
     106,
-    100
+    104
    ],
    "lib/SetupCheck/": [
     44,
@@ -587,9 +587,9 @@
   }
  },
  "js": {
-  "pct": 84.55,
-  "statements": 12317,
-  "covered": 10414,
+  "pct": 85.31,
+  "statements": 12310,
+  "covered": 10502,
   "dirs": {
    "src/": [
     144,
@@ -633,7 +633,7 @@
    ],
    "src/services/": [
     1644,
-    1570
+    1605
    ],
    "src/store/": [
     11,
@@ -656,8 +656,8 @@
     41
    ],
    "src/views/cases/components/": [
-    443,
-    328
+    436,
+    381
    ],
    "src/views/casetypes/components/": [
     99,
