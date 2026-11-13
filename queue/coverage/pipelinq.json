@@ -1,299 +1,303 @@
 {
  "app": "pipelinq",
- "commit": "ebef47bf46c1a1ae66e46726f6a6515a0467bab5",
- "measured_at": "2026-11-13T08:41:01Z",
+ "commit": "7bcef73da73fde3ca3e70810724ef2343f813f04",
+ "measured_at": "2026-11-13T10:55:25Z",
  "php": {
   "tool": "pcov",
-  "pct": 84.95,
-  "statements": 58457,
-  "covered": 49660,
+  "pct": 0.0,
+  "statements": 58507,
+  "covered": 0,
   "dirs": {
    "lib/Activity/": [
     66,
-    66
+    0
    ],
    "lib/Activity/Setting/": [
-    27,
-    27
+    28,
+    0
    ],
    "lib/Adapter/": [
-    58,
-    58
+    60,
+    0
    ],
    "lib/AppInfo/": [
     27,
-    26
+    0
    ],
    "lib/BackgroundJob/": [
     1582,
-    1145
+    0
    ],
    "lib/Command/": [
     382,
-    382
+    0
    ],
    "lib/Controller/": [
     8322,
-    7229
+    0
    ],
    "lib/Dashboard/": [
-    36,
-    36
+    37,
+    0
    ],
    "lib/Dossiq/": [
     26,
-    26
+    0
    ],
    "lib/Event/": [
     87,
-    77
+    0
    ],
    "lib/Flow/": [
     128,
-    113
+    0
    ],
    "lib/Integration/": [
     302,
-    302
+    0
    ],
    "lib/Lifecycle/": [
     229,
-    227
+    0
    ],
    "lib/Listener/": [
     1580,
-    1381
+    0
    ],
    "lib/Mcp/": [
     29,
-    29
+    0
    ],
    "lib/Notification/": [
     120,
-    120
+    0
    ],
    "lib/Portal/": [
     556,
-    556
+    0
    ],
    "lib/Repair/": [
-    2420,
-    1958
+    2421,
+    0
    ],
    "lib/Repair/Support/": [
     95,
-    95
+    0
    ],
    "lib/Sections/": [
     5,
-    5
+    0
    ],
    "lib/Service/": [
-    30809,
-    24828
+    30843,
+    0
    ],
    "lib/Service/Access/": [
     86,
-    86
+    0
    ],
    "lib/Service/Berichtenbox/": [
     12,
-    12
+    0
    ],
    "lib/Service/BsnAudit/": [
     4,
-    4
+    0
    ],
    "lib/Service/Competitor/": [
     600,
-    579
+    0
    ],
    "lib/Service/Consent/": [
     67,
-    66
+    0
    ],
    "lib/Service/Cti/": [
     108,
-    108
+    0
    ],
    "lib/Service/Cti/Adapter/": [
     243,
-    240
+    0
    ],
    "lib/Service/Cti/Result/": [
     17,
-    17
+    0
    ],
    "lib/Service/Demo/": [
     490,
-    428
+    0
    ],
    "lib/Service/Egress/": [
     118,
-    72
+    0
    ],
    "lib/Service/Event/": [
     67,
-    56
+    0
    ],
    "lib/Service/Export/": [
     1007,
-    969
+    0
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
-    47
+    0
    ],
    "lib/Service/Forecast/": [
     4,
-    4
+    0
    ],
    "lib/Service/Gdpr/": [
     68,
-    67
+    0
    ],
    "lib/Service/Labels/": [
     96,
-    96
+    0
    ],
    "lib/Service/Lead/": [
     55,
-    51
+    0
    ],
    "lib/Service/Letter/": [
     160,
-    140
+    0
    ],
    "lib/Service/Lifecycle/": [
     134,
-    121
+    0
    ],
    "lib/Service/LineTotals/": [
     59,
-    59
+    0
    ],
    "lib/Service/Loyalty/": [
     15,
-    14
+    0
    ],
    "lib/Service/MailAddIn/": [
     86,
-    85
+    0
    ],
    "lib/Service/Marketing/": [
     1867,
-    1825
+    0
    ],
    "lib/Service/Marketing/Transport/": [
     335,
-    330
+    0
    ],
    "lib/Service/Matomo/": [
     72,
-    70
+    0
    ],
    "lib/Service/Mdm/": [
     126,
-    49
+    0
    ],
    "lib/Service/Merge/": [
     21,
-    21
+    0
    ],
    "lib/Service/Messaging/": [
     9,
-    9
+    0
    ],
    "lib/Service/Payment/": [
-    633,
-    601
+    636,
+    0
    ],
    "lib/Service/PersonLookup/": [
     10,
-    9
+    0
    ],
    "lib/Service/Portal/": [
-    1440,
-    1380
+    1445,
+    0
    ],
    "lib/Service/PosCart/": [
     67,
-    67
+    0
    ],
    "lib/Service/Provider/": [
-    104,
-    103
+    105,
+    0
    ],
    "lib/Service/ScheduledTask/": [
     92,
-    92
+    0
    ],
    "lib/Service/Search/": [
     383,
-    367
+    0
    ],
    "lib/Service/SearchConsole/": [
     298,
-    273
+    0
    ],
    "lib/Service/Settings/": [
     12,
-    11
+    0
    ],
    "lib/Service/Sla/": [
     212,
-    212
+    0
    ],
    "lib/Service/Social/": [
     877,
-    796
+    0
    ],
    "lib/Service/Store/": [
     86,
-    82
+    0
    ],
    "lib/Service/WebForm/": [
     400,
-    398
+    0
    ],
    "lib/Service/Worklist/": [
     66,
-    61
+    0
    ],
    "lib/Service/Zgw/": [
     728,
-    708
+    0
    ],
    "lib/Settings/": [
     24,
-    24
+    0
    ],
    "lib/SetupCheck/": [
-    27,
-    27
+    29,
+    0
    ],
    "lib/Support/": [
     32,
-    32
+    0
    ],
    "lib/Util/": [
     106,
-    106
+    0
    ]
   }
  },
  "js": {
-  "pct": 84.86,
-  "statements": 17614,
-  "covered": 14947,
+  "pct": 88.76,
+  "statements": 17532,
+  "covered": 15562,
   "dirs": {
    "src/": [
-    190,
-    59
+    88,
+    88
    ],
    "src/components/": [
     1457,
-    1292
+    1330
+   ],
+   "src/components/CapabilityComparison/": [
+    25,
+    23
    ],
    "src/components/admin/": [
     473,
@@ -309,7 +313,7 @@
    ],
    "src/components/dashboard/": [
     56,
-    27
+    56
    ],
    "src/components/leadScore/": [
     24,
@@ -333,7 +337,7 @@
    ],
    "src/components/rapportage/": [
     139,
-    96
+    138
    ],
    "src/components/satisfaction/": [
     71,
@@ -385,11 +389,11 @@
    ],
    "src/dialogs/": [
     1779,
-    1410
+    1447
    ],
    "src/manifest.d/": [
     53,
-    15
+    53
    ],
    "src/mixins/": [
     225,
@@ -397,23 +401,23 @@
    ],
    "src/modals/": [
     1211,
-    846
+    974
    ],
    "src/portal/": [
     100,
-    93
+    100
    ],
    "src/portal/components/": [
-    30,
-    0
+    32,
+    32
    ],
    "src/portal/views/": [
     267,
-    238
+    240
    ],
    "src/services/": [
     1989,
-    1959
+    1975
    ],
    "src/store/": [
     21,
@@ -421,7 +425,7 @@
    ],
    "src/store/modules/": [
     385,
-    383
+    385
    ],
    "src/store/plugins/": [
     19,
@@ -445,7 +449,7 @@
    ],
    "src/views/bookings/": [
     480,
-    406
+    418
    ],
    "src/views/clients/": [
     155,
@@ -465,7 +469,7 @@
    ],
    "src/views/export/": [
     323,
-    261
+    306
    ],
    "src/views/flows/": [
     2,
@@ -497,7 +501,7 @@
    ],
    "src/views/pipeline/": [
     614,
-    527
+    567
    ],
    "src/views/portal/": [
     140,
@@ -505,7 +509,7 @@
    ],
    "src/views/pos/": [
     855,
-    755
+    771
    ],
    "src/views/prospects/": [
     97,
@@ -520,8 +524,8 @@
     153
    ],
    "src/views/settings/": [
-    1189,
-    1005
+    1182,
+    1084
    ],
    "src/views/social/": [
     164,
