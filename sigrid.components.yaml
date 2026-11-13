@@ -51,6 +51,7 @@ components:
       - ".*/lib/Service/Aggregation/[^/]*"
       - ".*/lib/Service/ApiVersion/[^/]*"
       - ".*/lib/Service/Authorization/[^/]*"
+      - ".*/lib/Service/Confidentiality/[^/]*"
       - ".*/lib/Service/Consent/[^/]*"
       - ".*/lib/Service/Dbal/[^/]*"
       - ".*/lib/Service/Delegation/[^/]*"
