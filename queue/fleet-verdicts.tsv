@@ -5527,3 +5527,4 @@ dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	RED	coord	secret scan flags
 stackiq	1861	aea61954679e34639b032a15172092ad225c7dd4	GREEN	worker-38	phpunit 3219 run on tree (baseline 3216, 0 failures); vitest 228 files/2360 tests pass; no new failures; tests only
 stackiq	1862	0bd168bc40d4440cb728e374f05d7178ef169348	GREEN	worker-38	phpunit 3219 run on tree (baseline 3216, 0 failures); vitest 228 files/2360 tests pass; no new failures; tests only
 learniq	2454	508373f8515c4716b70b653b0e28ad22a109bb02	GREEN	worker-56	6153 tests, baseline 6142 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
+stackiq	1700	7a35e49eb1b32d5be3010c6b8d503c6225924fe9	GREEN	worker-18:review	pure extraction: moved helpers compared line by line (save flow, messages, endpoints, editability, input kinds, date display) and match; vitest 2370/2370 on PR+development, eslint 0 errors
