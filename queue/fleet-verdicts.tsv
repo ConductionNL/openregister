@@ -4701,3 +4701,4 @@ dossiq	6215	492b1642ef85e3e8d421cfbf2e8f8bbbdd89c4ce	GREEN	worker-41	tree 13637 
 launchpad	1144	34abd4eb0a6b8fdf40f8c1397d890296e4d5f010	GREEN	worker-29	phpunit 3594 ok (baseline 3579 ok, 13 skipped); vitest 1355 ok; new failures 0; tests-only diff
 launchpad	1145	c2a4283e4a4cd1b3649b7d28dfd7dcdc9a1cf358	GREEN	worker-29	phpunit 3594 ok (baseline 3579 ok, 13 skipped); vitest 1355 ok; new failures 0; tests-only diff
 launchpad	1146	3b2ae5047d6b835a92099ce020047a64c8a955fd	GREEN	worker-29	phpunit 3594 ok (baseline 3579 ok, 13 skipped); vitest 1355 ok; new failures 0; tests-only diff
+pipelinq	3614	e56b0d3e983a0d6b2e4234af8d5dcf5cafa05164	GREEN	worker-08	tests 5784 (baseline 5774, 1 inherited failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController), new failures 0; tests-only PR
