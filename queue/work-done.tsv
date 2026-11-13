@@ -3666,3 +3666,4 @@ cover:learniq:e6498dddmf689:83cf1abf	already done: lib/Service/Accessibility at 
 measure:decidiq:20261113h08	php 90.73% js 98.26% at a2b22454	session-20261113T080556-d189f150	2026-11-13T08:57:32Z
 cover:decidiq:a5f973bbmb22b:34763eb4	already done: lib/Middleware/*.php at 58/59 statements (98.3%) on development a2b22454, above the 90% target; no PR	session-20261113T080556-d189f150	2026-11-13T08:57:57Z
 verify:launchpad:1182:6ebd9ec5	GREEN #1182 #1183 #1184 (3933 tests, 0 new failures)	session-20261113T084525-9d890807	2026-11-13T08:58:00Z
+measure:dossiq:20261113h08	php 89.34% (88579/99144), js 87.41% (10555/12074) at 629b047c	session-20261113T051703-1b54bfba	2026-11-13T08:58:15Z
