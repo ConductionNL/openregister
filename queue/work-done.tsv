@@ -4084,3 +4084,8 @@ measure:openregister:20261113h08	php 94.55% (pcov, phpunit-unit-local, 4 shards 
 cover:dossiq:069ee2d6m7275:aede7575	already done: lib/Command/Backfill/ 163/164 = 99.4% >= 90 (measure at 629b047c)	session-20261113T051703-1b54bfba	2026-11-13T09:56:40Z
 verify:learniq:2419:6e77ebc6	stale	feeder	2026-11-13T09:55:18Z
 cover:dossiq:069ee2d6m7275:d0b3b142	already covered: lib/Service/Substitution 99.66% (297/298) from its own tests; no PR	session-20261113T081048-4978ac57	2026-11-13T09:56:54Z
+merge:launchpad:1177:001cdcf7	merge-local over 5 launchpad tasks: merged=11 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:56:59Z
+merge:launchpad:1176:324fd8d3	merge-local over 5 launchpad tasks: merged=11 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:56:59Z
+merge:launchpad:1180:d60b6809	merge-local over 5 launchpad tasks: merged=11 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:56:59Z
+merge:launchpad:1185:7ded26d1	merge-local over 5 launchpad tasks: merged=11 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:56:59Z
+merge:launchpad:1186:9112101f	merge-local over 5 launchpad tasks: merged=11 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:56:59Z
