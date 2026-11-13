@@ -1555,6 +1555,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'files#attach', 'url' => '/api/objects/{register}/{schema}/{id}/files/attach', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		// Talk: save a conversation to the object as a text file ("Save chat to object").
 		['name' => 'files#saveChat', 'url' => '/api/objects/{register}/{schema}/{id}/files/chat', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// The attach picker: where the caller may save a file or a chat, and which objects match.
+		['name' => 'attachTargets#index', 'url' => '/api/files/attach-targets', 'verb' => 'GET'],
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

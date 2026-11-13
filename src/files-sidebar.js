@@ -12,6 +12,7 @@ import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, h, reactive } from 'vue'
 import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
 import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
+import { registerAttachAction } from './files/attachAction.js'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
@@ -23,6 +24,10 @@ registerLibraryTranslations()
 // tab component that uses useIntegrationRegistry() sees the same populated
 // singleton main.js produced on a non-Files page. Idempotent. See ADR-019.
 ensureIntegrationRegistry()
+
+// The Files action "Add to object" (files-leaf-save-to-object). Registered at
+// load, before Files renders its file list, as Files expects of an action.
+registerAttachAction()
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline
