@@ -3200,16 +3200,17 @@ class ImportHandler {
 	}//end seedCandidates()
 
 	/**
-	 * The identity a seed object is de-duplicated by: its uuid, else register/schema/slug.
+	 * The identity a seed object is de-duplicated by: its uuid (or `id`), else register/schema/slug.
 	 *
 	 * @param array $seedSelf The object's `@self`.
 	 *
 	 * @return string The identity, '' when it has none.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/changes/config-import-seed-objects
 	 */
 	private function seedIdentity(array $seedSelf): string {
-		$seedKey = (string)($seedSelf['uuid'] ?? '');
+		$seedKey = (string)($seedSelf['uuid'] ?? $seedSelf['id'] ?? '');
 		if ($seedKey === '') {
 			$seedKey = trim(($seedSelf['register'] ?? '') . '/' . ($seedSelf['schema'] ?? '') . '/' . ($seedSelf['slug'] ?? ''), '/');
 		}
