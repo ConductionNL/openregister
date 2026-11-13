@@ -1206,5 +1206,86 @@ fix:hermiq:1529:f5305e07	conflict resolved, pushed c0cafc44, REVERIFY recorded	s
 cover:shillinq:801aab65:f0c02922	PR #2805: 27 tests over 8 deferred adapters, lib/Service/External 8.7%->68.8%, suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:45:01Z
 fix:hermiq:1518:71a3fd8f	merged development, resolved ScheduleService/ScheduleServiceTest conflicts keeping both extractions; new head 202e8aaa; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:45:07Z
 cover:keepiq:d76c2121m70b5:js0be8c659	PR #1708: 3 modal specs, 26 tests; src/modals line coverage 59.5% -> 93.0%	session-20261113T002028-6d7c79b9	2026-11-13T00:45:18Z
+cover:pipelinq:f67520ecm9d2c:js00fe026a	already done: src/services/* at 96.1% statements (1912/1989, vitest v8) vs target 85; no PR	session-20261112T224529-41d77a96	2026-11-13T00:45:38Z
+fix:launchpad:1109:c9075734	failed: permission (installing the secret scanner to reproduce the gate was refused; gate here reports UNMEASURED)	session-20261113T002025-940c220f	2026-11-13T00:45:49Z
 fix:hermiq:1534:a9242b37	merged development in, head a68a0c8c, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:45:48Z
 fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor + dev @spec tags); suite same 19 inherited failures; REVERIFY new head 05064fadad1bf15bf5341fb8b73ae4dc333dea18	session-20261112T221237-836ed3f0	2026-11-13T00:45:51Z
+cover:buildiq:8ca317f6m6d54:js5794e9fc	PR buildiq#1488: settings views spec (+8), src/views/settings 0->36/46, vitest 2962->2970	session-20261112T231640-f6dda86c	2026-11-13T00:46:13Z
+cover:pipelinq:f67520ecm9d2c:js3a5df78e	PR #3608: 18 vitest tests (ArticleContentSection 64->98/101 stmts); -1 branch PR already open for five other sections	session-20261112T234648-144479e8	2026-11-13T00:46:00Z
+cover:keepiq:d76c2121m70b5:js4829b6aa	PR #1709: 4 views, 57 tests, vitest 5475->5532 pass, src/views/* lines 57.4%->66.5%	session-20261113T002031-7b3e41b2	2026-11-13T00:46:09Z
+fix:hermiq:1605:b04693e3	add/add conflict resolved by renaming the PR's test file, pushed 600aae13, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:46:11Z
+cover:openregister:7350e3efm0e99:jscebea196	PR #10076: 9 jest tests for logs views; jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:46:53Z
+merge:launchpad:1126:704a9ea9	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
+merge:launchpad:1139:f3c5a6e1	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
+fix:hermiq:1487:4d0053da	conflict resolved (spec-tag-only change on dev side), pushed fd5c6f50, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:47:09Z
+cover:shillinq:801aab65:46ce5a44	PR #2806: Dunning log adapters 0->46/46; six dirs 90.40->91.78%; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:47:23Z
+cover:hermiq:755cdfe7m7444:js0be8c659	PR #1630: AgentFormModal pickers, 7 vitest tests; suite 1072 -> 1079; AgentFormModal lines 52.7% -> 64.1%	session-20261112T234653-57d11a5b	2026-11-13T00:47:43Z
+cover:hermiq:755cdfe7m7444:34f5c300	PR #1631: 7 tests for SkillService (123 -> 194/198 lines); suite 3840->3847, same 171 inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:48:02Z
+fix:dossiq:5862:978fbecd	merged development in (import-only conflict), checks green, pushed 5b407093921c1b6369b3206334b190985020c138; REVERIFY recorded	session-20261112T233856-8f2d924b	2026-11-13T00:48:14Z
+verify:filinq:1984:796fcdba	failed: permission (running unit suite on merged PR tree refused)	session-20261113T004522-63c0f62b	2026-11-13T00:48:27Z
+verify:keepiq:1679:aea93eae	stale: #1679 head is 73ccc268 not cc2cc877	session-20261113T004519-b6b86685	2026-11-13T00:48:39Z
+fix:hermiq:1584:d8e968c6	fixed: spec declares the CORS header on /openapi.json (only ADR error); lints warn-only; new head 9cc7549e	session-20261113T004521-223ef947	2026-11-13T00:49:12Z
+review:openregister:10063:8dedc6f8	APPROVE: test-only, 4/4 pass, eslint clean	session-20261113T004527-ec0338ee	2026-11-13T00:49:22Z
+verify:learniq:2426:431b192d	failed: permission (running PR code for verify is refused in this session)	session-20261113T004522-63c0f62b	2026-11-13T00:49:59Z
+verify:decidiq:2087:98dda831	stale	feeder	2026-11-13T00:45:07Z
+merge:stackiq:1595:02c74dd2	stale	feeder	2026-11-13T00:45:07Z
+cover:pipelinq:f67520ecm9d2c:js4570fd16	already done: existing branch quality/test-coverage-js-4570fd16-1 takes src/views/pos 72.3%->87.6% (target 85); no new PR	session-20261112T234653-efce95ba	2026-11-13T00:50:00Z
+verify:decidiq:2099:54c1c538	4 GREEN (2099-2102), 3218 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:50:01Z
+cover:hermiq:755cdfe7:b2c9296a	PR #1632: 4 engine classes, 23 tests, suite 3840->3863, no new failures	session-20261112T234655-c333a6f8	2026-11-13T00:50:21Z
+fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreachable; secret scanner install refused). Vendored ADR ruleset: only 2 use-problem-schema warnings on openapi.json; secretscanning drop likely inherited (#1117 merged 00:09Z after the gate)	session-20261113T002025-940c220f	2026-11-13T00:50:19Z
+cover:hermiq:755cdfe7m7444:js4829b6aa	PR #1633: 16 vitest tests (AiFeatureRegister, AiLiteracy rendered); src/views/* 85.1% -> 87.5%, suite 1072 -> 1088 green	session-20261113T002028-bc0aa910	2026-11-13T00:50:54Z
+cover:hermiq:755cdfe7m7444:js0023cfc7	already done: src/dialogs/* at 88.8% lines (167/188) on development, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:51:01Z
+cover:hermiq:755cdfe7m7444:01b56ade	PR #1634: 6 tests for ProviderFactory Anthropic model choice and HTTP generateText (753 -> 781/839 lines); suite 3840->3846, same inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:51:47Z
+review:openregister:10065:f5aa9315	APPROVE: test-only, 20 new tests pass, Controller 9 errors inherited from main	session-20261112T234655-793f46ee	2026-11-13T00:51:53Z
+cover:openregister:7350e3efm0e99:js6e3c1a64	PR #10077: 9 jest tests for ImportConfiguration (lines 69->80%); jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:52:05Z
+cover:hermiq:755cdfe7m7444:17d367ab	PR #1635: 3 settings controllers, 4 tests; Controller/Settings lines 94.0% -> 100%; suite 3840 -> 3844, no new failures (145E/26F inherited)	session-20261112T234653-57d11a5b	2026-11-13T00:52:10Z
+verify:filinq:1986:53e375fb	GREEN: 1986 (5328 tests, 0 new failures)	session-20261113T004527-ec0338ee	2026-11-13T00:52:19Z
+cover:hermiq:755cdfe7m7444:f545d745	PR #1636: 5 Repair classes, 23 tests; lib/Repair 82.9% -> 93.5%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T00:52:46Z
+cover:dossiq:6ca0231e:b7fd3ec4	failed: permission (running the app unit suite is refused in this session)	session-20261113T004522-63c0f62b	2026-11-13T00:52:51Z
+review:hermiq:1485:6291bb82	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:52:49Z
+cover:hermiq:755cdfe7m7444:60c2c265	PR #1637: 36 tests for 4 controllers; lib/Controller/*.php 83.68->85.42%; suite 3840->3876, 171 inherited, 0 new, no risky	session-20261112T234655-6f442bc3	2026-11-13T00:52:55Z
+cover:openregister:7350e3efm0e99:js518b3200	PR #10078: missing @uses in 23 Task tests un-risked 223 tests; lib/Service/Task 69.4->98.6%; suite failures unchanged (11E/11F)	session-20261112T231637-60fd49c4	2026-11-13T00:52:59Z
+verify:dossiq:6207:85a3453d	2/2 GREEN (6207, 6208 tests-only; 13409 run, no new failures)	session-20261112T221237-836ed3f0	2026-11-13T00:53:22Z
+review:hermiq:1427:b307d69e	GREEN: picker extraction faithful, vitest green	session-20261112T231638-72e59130	2026-11-13T00:53:32Z
+cover:hermiq:755cdfe7m7444:js3287a408	opened hermiq#1638 (TalkBridgeSettings states, 6 tests; vitest 1072->1078 OK)	session-20261112T231639-4c562de9	2026-11-13T00:53:50Z
+cover:shillinq:801aab65:568ec52a	PR #2807: 29 tests over 4 classes, lib/Lifecycle/*.php 80.48%->85.10%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:53:54Z
+review:hermiq:1500:badeb702	GREEN: pure extract-method refactor, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:54:04Z
+verify:keepiq:1680:d2986367	1680 GREEN (unit 3752 OK, no new failures)	session-20261113T002028-6d7c79b9	2026-11-13T00:54:17Z
+cover:hermiq:755cdfe7m7444:65e30692	PR #1639: Intake dir 268/288 -> 288/288 lines; 4 new tests + @uses fix on risky FlowTest; suite 3842 -> 3846 OK	session-20261113T004521-223ef947	2026-11-13T00:54:46Z
+review:hermiq:1527:102d5f61	GREEN: delivery refactor behaviour-preserving, no new failures	session-20261112T231638-72e59130	2026-11-13T00:55:13Z
+review:hermiq:1496:2271f36d	RED: behaviour preserved, but an existing test turns risky under coverage (missing @uses ChatDriverGates) and fails the run	session-20261112T231633-96ffe7b8	2026-11-13T00:55:31Z
+cover:dossiq:6ca0231e:ea81adeb	PR #6209: 19 tests (ZgwZtcResultaattypeRules, ZrcStatusEffects, ZgwAuditedResource to 100%), Zgw 2215->2261/2313 lines, suite 13417->13436, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:55:43Z
+review:hermiq:1495:2810c65e	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:56:07Z
+review:hermiq:1490:fcb1b7ff	GREEN: behaviour-identical date helper extraction; vitest 1075 passing on PR+development	session-20261112T234653-57d11a5b	2026-11-13T00:56:16Z
+review:hermiq:1488:82f546c0	GREEN: refactor preserves behaviour, vitest 1085/1085	session-20261113T003903-5efbf5ae	2026-11-13T00:56:37Z
+cover:keepiq:d76c2121m70b5:js0023cfc7	PR #1710: 8 dialogs, 51 tests, src/dialogs lines 77.7->87.0%	session-20261113T004519-b6b86685	2026-11-13T00:56:42Z
+cover:dossiq:6ca0231e:33af3743	already done: lib/Service/Bezwaar/*.php measured at 99.2% (1543/1556) on development; queued 70.74% is stale; no PR	session-20261112T221237-836ed3f0	2026-11-13T00:56:43Z
+review:hermiq:1529:c0cafc44	GREEN: faithful move of reviewer inbox/check, access behaviour unchanged, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:57:10Z
+verify:buildiq:1486:78803af7	1486,1487 GREEN (tests only); no new failures	session-20261112T231640-f6dda86c	2026-11-13T00:57:26Z
+review:hermiq:1483:fea5911b	GREEN: identical-behaviour refactor, vitest 1076 pass	session-20261113T004527-ec0338ee	2026-11-13T00:57:40Z
+cover:hermiq:755cdfe7m7444:js77cf3af4	PR #1640: 3 widget modules, 22 tests, vitest 1072->1094, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:57:51Z
+review:openregister:10068:385b8604	APPROVE: tests only, settings specs 355 green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T00:57:49Z
+review:hermiq:1486:a26b6d01	GREEN: behaviour-preserving refactor, vitest 1093 OK on merge with development	session-20261112T231639-4c562de9	2026-11-13T00:58:02Z
+cover:pipelinq:f67520ecm9d2c:js6d6735a6	PR #3609: 5 mount tests, ResourceForm 54->64/71; other bookings views are in the open -1 branch	session-20261112T224529-41d77a96	2026-11-13T00:58:11Z
+cover:shillinq:801aab65:9d3a1784	PR #2808: BackgroundJob 80.31->88.77% (LotExpiryAlertJob 12->132/132, 3 pass-through jobs 0->100%), 16 tests; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:58:21Z
+cover:hermiq:755cdfe7m7444:js06645759	PR #1641: src/components/* lines 75.7% -> 89.0% (ToolGrantMatrix 58/134 -> 130/134); 13 tests; vitest 1072 -> 1085 passing	session-20261113T004521-223ef947	2026-11-13T00:58:25Z
+cover:keepiq:d76c2121m70b5:jsfb924eab	PR #1711: 5 components, 50 tests, vitest 5475->5525 pass, dirs lines 59.1%->80.6%	session-20261113T002031-7b3e41b2	2026-11-13T00:58:33Z
+review:openregister:10069:33d5247d	APPROVE: tests-only jest spec; modals/object 504 pass on merge with main	session-20261112T231637-60fd49c4	2026-11-13T00:58:33Z
+cover:launchpad:755175ffm7412:js01efb861	PR #1143: 53 tests, src/components/Widgets 73.2%->86.3% lines	session-20261113T002025-940c220f	2026-11-13T00:59:01Z
+review:dossiq:5899:05064fad	GREEN: behaviour-preserving extraction, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:58:55Z
+fix:launchpad:1106:379ed362	inherited: secretscanning fails on plain development too (same gitleaks 8.28 findings in openspec/docs files, e.g. embedded-analytics spec added 2026-11-12, after the floor was measured); PR only touches package-lock.json and sbom.cdx.json, no fix on the branch	session-20261112T234653-57d11a5b	2026-11-13T00:59:07Z
+review:openregister:10075:c2ae354f	BLOCK: timezone-dependent test in RuleRunSummaryMapperTest	session-20261113T003903-5efbf5ae	2026-11-13T00:59:08Z
+review:hermiq:1518:202e8aaa	GREEN: behaviour-equivalent extraction, no new failures or risky tests	session-20261112T231633-96ffe7b8	2026-11-13T00:59:21Z
+cover:pipelinq:f67520ec:js4c63a0a9	PR #3610: 12 vitest tests, views/marketing stmts 68.6% -> 77.5%	session-20261112T234648-144479e8	2026-11-13T00:59:26Z
+review:stackiq:1595:e53f9c42	GREEN: equivalent extraction, vitest 1887 pass	session-20261113T004523-285a0413	2026-11-13T00:59:48Z
+review:openregister:10070:4529295e	APPROVE: tests only, 22 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:00:13Z
+review:openregister:10071:a6abbd42	APPROVE: test-only jest spec, suites green on merge with main	session-20261112T234655-6f442bc3	2026-11-13T01:00:40Z
+cover:openregister:7350e3efm0e99:jsd29a5f26	already done: src/components/cards at 350/366 statements (95.6%) on main, above target 85	session-20261112T231640-f6dda86c	2026-11-13T01:01:32Z
+merge:pipelinq:3539:195f6466	stale	feeder	2026-11-13T01:00:17Z
+merge:larpinq:1000:d76b1030	stale	feeder	2026-11-13T01:00:17Z
+verify:stackiq:1774:e41fcd93	stale	feeder	2026-11-13T01:00:17Z
+merge:filinq:1975:73c62e36	stale	feeder	2026-11-13T01:00:17Z
+cover:launchpad:755175ffm7412:34f5c300	already done: lib/Service/*.php measured 92.4% lines on development (target 85; #1118 merged), no PR	session-20261113T002025-940c220f	2026-11-13T01:01:50Z
+cover:openregister:7350e3efm0e99:jsa8ac8042	PR #10079: 13 jest tests for EntitiesTab, lines 90.2% -> 100%, suite 7485 -> 7498 green	session-20261113T002028-bc0aa910	2026-11-13T01:02:14Z
+review:stackiq:1704:f55ed033	GREEN: behaviour-preserving refactor; eslint clean; vitest 1910/1910	session-20261113T004521-223ef947	2026-11-13T01:02:12Z
+cover:shillinq:801aab65:f545d745	PR #2809: 30 tests over 5 repair classes, lib/Repair/*.php 52.79%->62.30%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:02:37Z
