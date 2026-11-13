@@ -4998,8 +4998,10 @@ build:openregister:unified-search-magic-table-storage	failed: build tasks never 
 build:openregister:widget-record-import	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:57Z
 build:openregister:virtual-schema-semantic-providers	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:03Z
 build:openregister:store-over-federated-config	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:09Z
+build:openregister:modelling-schema-diagram	partial: PR model endpoint + RegisterModelService (1.1, 1.1a, 1.2) with 9 tests; Diagram view 2.1-2.4 and view docs left	session-20261113T093920-50335e74	2026-11-13T12:45:17Z
 build:openregister:shared-credentials-and-flows	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:15Z
 build:openregister:service-hours-and-repeating-reminders	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:21Z
+build:openregister:rights-screen-stated	partial: PR #10203 — tasks 1.1, 2.2 done (5 unit tests); 2.1 e2e and 3.1 archive left	session-20261113T123928-6bdcc9d0	2026-11-13T12:45:31Z
 build:openregister:search-dutch-language-quality	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:30Z
 build:openregister:visual-flow-builder	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:36Z
 build:openregister:the-organisation-projection-is-writable	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:42Z
