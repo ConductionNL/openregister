@@ -1357,3 +1357,4 @@ cover:dossiq:6ca0231e:71b49856	PR #6216: 3 tests, TakeoverStore and CaseCustodyQ
 review:openregister:10073:1fee9d01	APPROVE: docblock-only @uses additions, tests green	session-20261112T231638-72e59130	2026-11-13T01:15:34Z
 cover:dossiq:6ca0231e:8c2eee86	PR #6218: 8 tests, PackageSeedRules 100%, CaseDefinition dir 93.1%->~96%	session-20261113T004524-55adaa63	2026-11-13T01:16:03Z
 cover:buildiq:8ca317f6m6d54:1106b038	PR buildiq#1489: AbstractToolHandler guards (+11), Mcp/Handler 728->775/808, suite 2381->2392 same inherited failures	session-20261112T231640-f6dda86c	2026-11-13T01:16:06Z
+cover:buildiq:8ca317f6m6d54:d39f9857	already done: lib/Support at 375/389 statements (96%) on development	session-20261112T231640-f6dda86c	2026-11-13T01:16:51Z
