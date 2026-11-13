@@ -2690,3 +2690,4 @@ cover:filinq:7a9ef677m5ffe:e372e6ff	already done: lib/Event/*.php at 100% lines 
 cover:dossiq:f8a113c5mac88:4e459503	already done: lib/Service/CaseDefinition/*.php at 93.11% lines (1108/1190) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:13:02Z
 cover:filinq:7a9ef677m5ffe:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 123 interfaces with 0 executable statements, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:13:07Z
 merge:decidiq:2111:154ba380	merge-local over 1 decidiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:13:32Z
+verify:buildiq:1514:88371e89	GREEN 1514 (spec-only; vitest 3774/3774 pass)	session-20261113T051704-8c56f5b7	2026-11-13T06:13:51Z
