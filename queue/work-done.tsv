@@ -4889,6 +4889,7 @@ review:openregister:10165:3fbabe61	APPROVE (additive evidence metadata; suites g
 cover:pipelinq:7f9dc8e6m84dd:f545d745	already at target: lib/Repair/*.php 90.04% (2179/2420) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T12:33:21Z
 build:openregister:platform-team-resource-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:21Z
 build:openregister:or-flow-scheduled-trigger	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:28Z
+build:openregister:rbac-cross-organisation-is-explicit	nothing to build here: 5.1 is one marker PR per consuming app, in their repos	session-20261113T104527-c302106c	2026-11-13T12:33:33Z
 build:openregister:object-folder-in-files-browser	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:33Z
 cover:pipelinq:7f9dc8e6m84dd:8f8dca30	already done: lib/Service/Export/*.php at 96.23% (969/1007) on development (full suite measured 11:30); no PR	session-20261113T071633-17de823f	2026-11-13T12:33:45Z
 build:openregister:flow-tag-object-step	partial: PR #10190 — tasks 1.1, 2.1, 2.2 with tests; left 3.1 (e2e) and 3.2 (docs with screenshot)	session-20261113T114524-3c44fc56	2026-11-13T12:33:42Z
@@ -4908,4 +4909,18 @@ build:openregister:records-api-and-table-stated	failed: worker rules forbid buil
 build:openregister:records-bulk-transition	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:08Z
 fix:pipelinq:3754:2d2541ab	conflict resolved (l10n union, rebuilt js); new head 9eeea22b, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T12:35:16Z
 build:openregister:query-referenced-schema-rows	already done: code tasks built in 1f2b1f9e4d; only the consuming-app verify task is open (not code)	session-20261113T114525-2ca68289	2026-11-13T12:35:20Z
+build:openregister:platform-provided-capabilities	partial: PR #10193 does 1.x tags and 2.2 platform check; 2.1, 2.3 (login second-factor path, reported to owner privately), 2.4, 2.5, 3.1 left	session-20261113T104527-c302106c	2026-11-13T12:35:31Z
 build:openregister:flow-node-config-forms	partial: PR #10194, forms on 10 nodes (3 triggers, End, Wait, Filter, Merge, Explode, Iterate, SubFlow) + key guard test; 7+ nodes, sweep test and editor round-trip left	session-20261113T111529-f2ee6930	2026-11-13T12:35:46Z
+build:openregister:records-restore-with-cascade	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:59Z
+build:openregister:register-scoped-slug-resolution	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:06Z
+build:openregister:platform-cloud-federation-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:17Z
+build:openregister:relations-that-travel-and-what-they-expose	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:24Z
+build:openregister:import-preview-and-conflict-policy	partial: PR #10195 (8.2 proposer, 8.1 Baserow reader + set/interface; Airtable/NocoDB readers, 8.3-8.5, sections 4/5 left)	session-20261113T114545-cd8d833c	2026-11-13T12:36:28Z
+build:openregister:records-tree-view	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:30Z
+build:openregister:reimport-real-register-configuration	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:36Z
+build:openregister:connections-daily-report-mail	partial: PR #10196 backend (kind, builder, quiet day, @admins), 21 tests; page/docs/e2e left	session-20261113T104530-961e9992	2026-11-13T12:36:48Z
+build:openregister:reply-threading-by-headers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:42Z
+build:openregister:remove-file-ownership-storage-rename	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:52Z
+build:openregister:redaction-release-safeguards	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:58Z
+build:openregister:records-saved-templates	partial: #10197 docs (3.1); 1.x live pass, 2.1-2.2 frontend dialogs, 2.3 nextcloud-vue	session-20261113T084521-fd8a31c7	2026-11-13T12:37:03Z
+verify:portaliq:2388:856b3bfe	2388 GREEN	session-20261113T071633-17de823f	2026-11-13T12:37:15Z
