@@ -3171,3 +3171,4 @@ verify:shillinq:2902:c910ddca	2902 GREEN: tests only, 9491 tests, 0 new failures
 gap:shillinq:spdx:burn1	PR #2906: SPDX headers added to the 15 lib/ PHP files lacking them (src/ and tests/ source files already had them); comment-only, php -l/phpcs 0 errors/phpstan ok, suite unchanged	session-20261113T044737-f37de8e3	2026-11-13T07:32:43Z
 cover:dossiq:f8a113c5m7e79:0250a951	PR dossiq#6323?: metadata fix on 5 tests, Deelzaak 23->152/152 lines	session-20261113T051703-1b54bfba	2026-11-13T07:33:01Z
 cover:versioniq:1b35eed9:34f5c300	PR #665: 14 tests for AdminNotice, NotifiesAdmins/ResolvesAdminUids, InstallerService source binding; suite 1356->1370, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:33:34Z
+gap:keepiq:cplx:burn1	already done: lizard -C 30 -w lib src reports 0 functions over CCN 30 on development 8a5d84f3 (max 23, src/store/modules/import.js commit)	session-20261113T044737-f37de8e3	2026-11-13T07:33:42Z
