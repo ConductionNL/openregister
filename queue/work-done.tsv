@@ -5778,3 +5778,4 @@ build:portaliq:portal-cms-admin-ui	PR #2428: Task 3 copy buttons for TXT record 
 build:portaliq:portal-traffic-zero-result-searches	nothing to build: code tasks done on development; open 3.1/3.2 need a live instance, 4.3-4.5 are pre-merge/process steps	session-20261113T172328-c860ad55	2026-11-13T18:01:27Z
 cover:keepiq:c967a31fm1bed:js4829b6aa	PR #1760: 29 tests, 4 view specs; views lines 94.91->96.64%, suite 6340->6369 green	session-20261113T175323-e340fb07	2026-11-13T18:01:37Z
 cover:pipelinq:7f9dc8e6m16db:e372e6ff	already done: lib/Event/*.php at 100% line coverage on development (130/130 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:01:35Z
+cover:stackiq:9ac19b3am9d24:f4b2f7af	PR #1885: +1 test; GemmaStandardLinker 73/73; rest of lib/Service/ArchiMate already covered	session-20261113T171141-a3907367	2026-11-13T18:01:46Z
