@@ -4788,3 +4788,7 @@ filinq	2000	8d1bee14b81aee23cf87d25fce8ec98ae5308ac9	GREEN	worker-05	unit 5725 r
 filinq	2001	8dd695546fc0602aa504877f4372885295e45896	GREEN	worker-05	unit 5725 run on 9-PR tree (baseline 5499, 0 fail), new failures: none; test-file additions only
 shillinq	2822	bfab5d2296f659e381c472c1ec31e17ac6b91f5d	REVERIFY	worker-43	Renamed the test file and class to Iv3ReportGeneratorTotalsTest so it no longer collides with #2820's Iv3ReportGeneratorTest; both pass together (12 tests); new head b0ad862fe82866e3e92045bed9c7ce7951fd2dc5, verify it
 stackiq	1776	c4d2b1a537223e292e993c85453e704ed1a34f2d	REVERIFY	worker-05	restored dev behaviour on protocol paths: /api/v1 alias for the progress stream is back (route table now identical to development's, 282 routes), API-Version and problem details apply to protocol paths again; Deprecation/Link headers on unversioned paths kept as the PR's stated purpose (additive, bodies unchanged, protocol paths excluded); tests+spec updated; unit 2555 OK; new head 9689d864bcdd4256368b0c20767b5adfcad51e4c, verify it
+dossiq	6222	54c8981cec22a6bc6b0d2d45d01eab76a8872fb6	GREEN	worker-12	13811 tests, baseline 19 failures (13762 tests), 0 new
+dossiq	6223	0798d7432a600bb3d6275079871620f00c2fb711	GREEN	worker-12	13811 tests, baseline 19 failures (13762 tests), 0 new
+dossiq	6224	f0c51db6befd60e4ebaa809d4738f34b3714cd20	GREEN	worker-12	13811 tests, baseline 19 failures (13762 tests), 0 new
+dossiq	6225	5a667dcafa8a5873b32617a79fc1c5882a8d6fc3	GREEN	worker-12	13811 tests, baseline 19 failures (13762 tests), 0 new
