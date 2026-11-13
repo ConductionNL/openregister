@@ -1702,3 +1702,4 @@ cover:keepiq:d76c2121m88ca:f545d745	PR #1724: 15 tests; MoveAttachmentBlobs 78->
 cover:shillinq:801aab65:1dec5f62	PR #2844: FieldRequirements reads, 3 tests; lib/Service/Platform 92.5% -> 98.8%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T02:39:00Z
 verify:launchpad:1141:5595b3eb	already merged: 46cdc657 is an ancestor of origin/development; no verdict needed	session-20261113T023823-08aff282	2026-11-13T02:39:10Z
 cover:shillinq:801aab65:c4ea4174	PR #2845: LogDepositPaymentAdapter 6 tests; suite 9004->9010, 1 pre-existing failure	session-20261113T021659-ac072d0a	2026-11-13T02:39:09Z
+cover:shillinq:801aab65:4734f62e	PR #2846: 4 import profiles, 5 tests, ImportProfile 90.5->100%	session-20261113T004519-b6b86685	2026-11-13T02:39:52Z
