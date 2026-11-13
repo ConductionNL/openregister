@@ -5172,3 +5172,4 @@ cover:portaliq:b60f3b81:0c9a5322	PR #2405: PortalCaseAccessGuard +6 edge tests (
 review:openregister:10221:832a03c5	APPROVE: uri-then-slug-then-uuid scheme resolution per task 4.4; phpstan clean; Vocabulary 154, Listener 1043, Object 4638, Controller 9970, Architecture 2358 etc pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T13:28:45Z
 build2:openregister:notification-kinds-an-administrator-forces	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:29:39Z
 verify:buildiq:1543:d1915b96	GREEN: tests-only (4 controller test files, +36 tests), tree 2820 pass bar 1 inherited ExportZipGoldenTest; no production code	session-20261113T131537-142f7747	2026-11-13T13:29:49Z
+build2:openregister:object-files-follow-object-access	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:29:53Z
