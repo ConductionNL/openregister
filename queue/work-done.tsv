@@ -2858,3 +2858,4 @@ cover:stackiq:df113dffm5ac4:b5905f71	PR stackiq#1845: FederationService +7 tests
 cover:pipelinq:7f9dc8e6m1e6e:js3f7698d2	PR #3689: 7 vitest tests, PipelineCard.vue 87->95% (board left to open -2 branch); 3893->3900 pass	session-20261113T054516-469bb7f6	2026-11-13T06:35:16Z
 measure:integriq:20261113h06	php/js pct: 88.97 74.8 (commit 46d1bb08; unit suite 7280 tests, 2 errors on development)	session-20261113T034634-f20a8d77	2026-11-13T06:35:15Z
 cover:stackiq:df113dffm5ac4:2f30e3d6	already done: lib/Service/AangebodenGebruik 61/61 and lib/Service/Itsm 49/49 statements on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:35:30Z
+cover:buildiq:9930949bmc723:1106b038	already done: lib/Mcp/Handler/ at 95.92% (775/808, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:32Z
