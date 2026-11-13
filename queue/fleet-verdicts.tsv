@@ -5378,3 +5378,4 @@ larpinq	1011	4df9687afb6cd18f6b2774816b55a1d48006e5b5	CONFLICT	worker-34	add/add
 larpinq	1012	ef4abe687e638b6310d495b0a7ec7304d4e22d7a	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
 larpinq	1013	badda1abb64e2828186e668653f0dc18c0113b4b	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
 pipelinq	3545	e08422b5b93577c049bf247d42adb3ad9744dd9d	BLOCK	worker-20	unit 6479 tests, baseline 6454 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; BLOCK only for intended contract change: 4xx/5xx JSON bodies on /api/ gain type/title/status/detail and problem+json content type, unversioned paths get Deprecation/Link headers; owner sign-off needed
+larpinq	1014	b008680cd7e8000950654e8e291ef27008dfd3dc	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
