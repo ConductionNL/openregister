@@ -5501,3 +5501,4 @@ learniq	2444	ca4915c3a16625cf85cb442e25b27fb5d403b95f	GREEN	worker-33	tree 6239 
 learniq	2445	4505533fa900a6d0f5813cd46b9725b9664c3040	GREEN	worker-33	tree 6239 tests (baseline 6116, 1 inherited HigherEducationExampleSetTest failure), no new failures; tests-only additions
 learniq	2446	310bb4e64488c935d84d621ad3cd8a5d54ca887f	GREEN	worker-33	tree 6239 tests (baseline 6116, 1 inherited HigherEducationExampleSetTest failure), no new failures; tests-only additions
 learniq	2447	f7ea0d92720d129b18953856662587cdd863ace9	GREEN	worker-33	tree 6239 tests (baseline 6116, 1 inherited HigherEducationExampleSetTest failure), no new failures; tests-only additions
+stackiq	1857	a85a71294d7c62989f749974960d4d09a5b7016f	GREEN	worker-23	phpunit 3227 on 2-PR tree vs baseline 3216, 0 new failures; one @uses line, tests only
