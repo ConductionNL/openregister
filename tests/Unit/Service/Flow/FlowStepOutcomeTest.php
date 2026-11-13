@@ -66,4 +66,33 @@ final class FlowStepOutcomeTest extends TestCase {
 		self::assertNull($step->getError());
 		self::assertSame([], $step->getOutput());
 	}//end testAnEmptyEntryStampsNothing()
+
+	/**
+	 * Of the hop's state delta the row keeps the key names per item, never the values.
+	 * @return void
+	 */
+	public function testTheStateDeltaIsKeptAsKeyNames(): void {
+		$step = new FlowRunStep();
+
+		FlowStepOutcome::stamp(
+			step: $step,
+			entry: ['itemsIn' => 2, 'itemsOut' => 2, 'produced' => [['status' => 'open', 'assignee' => 'ann'], [], [7 => 'x']]]
+		);
+
+		self::assertSame(['itemsIn' => 2, 'itemsOut' => 2, 'produced' => [['status', 'assignee'], [], ['7']]], $step->getOutput());
+	}//end testTheStateDeltaIsKeptAsKeyNames()
+
+	/**
+	 * A delta that is not a list of deltas is ignored; a non-array member names nothing.
+	 * @return void
+	 */
+	public function testAMalformedDeltaIsNotStored(): void {
+		$step = new FlowRunStep();
+		FlowStepOutcome::stamp(step: $step, entry: ['produced' => 'oops']);
+		self::assertSame([], $step->getOutput());
+
+		$step = new FlowRunStep();
+		FlowStepOutcome::stamp(step: $step, entry: ['produced' => ['oops', ['a' => 1]]]);
+		self::assertSame(['produced' => [[], ['a']]], $step->getOutput());
+	}//end testAMalformedDeltaIsNotStored()
 }//end class
