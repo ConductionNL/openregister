@@ -5933,3 +5933,4 @@ verify:portaliq:2449:f2046ebc	GREEN 2449; CONFLICT 2450,2451,2452 after 2449	ses
 cover:dossiq:069ee2d6m2deb:1b97f731	PR #6432: +8 tests; CaseDeleteGuardListener 85/109 -> 108/109; suite failures unchanged (20 inherited)	session-20261113T171141-a3907367	2026-11-13T18:22:51Z
 cover:pipelinq:7f9dc8e6m16db:jsfef87a3a	PR #3769: 2 vitest specs, 16 tests (POS forms/managers, MarketingTrafficSettings, PipelineManager); target dirs 92.2% -> 93.6% lines; suite 4804 -> 4820 passed	session-20261113T175328-b5db3663	2026-11-13T18:23:06Z
 cover:shillinq:05639debm7b6b:60c2c265	PR #2956: 64 tests over 8 controllers, lib/Controller 93.8% -> 97.0%	session-20261113T171150-996cf694	2026-11-13T18:23:17Z
+cover:dossiq:069ee2d6m2deb:4e459503	PR #6433: 15 tests, 2 classes, lib/Service/CaseDefinition 94.57%->96.81%	session-20261113T171149-8b9ea523	2026-11-13T18:23:31Z
