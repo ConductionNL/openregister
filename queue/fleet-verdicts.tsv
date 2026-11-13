@@ -6153,3 +6153,4 @@ shillinq	2955	fde52d450be28386f3022692ce8f2f7246971441	GREEN	worker-44	tests-onl
 pipelinq	3772	564e0ecc89f51ef390f1311bc3499d50a611bf7d	GREEN	worker-25	tests only (2 vitest specs); phpunit 7194 tests, baseline 5 failures, none new; vitest 643 files/4814 tests pass
 shillinq	2956	56d1ae97cf1f2b134344b3b108bf1f7718fbbb66	GREEN	worker-44	tests-only; tree 10479 tests, baseline 10394 with 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), no new failures
 shillinq	2957	293e9f48315433dc9e1a8dc48d24e8fe3fcb8765	GREEN	worker-44	tests-only; tree 10479 tests, baseline 10394 with 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), no new failures
+dossiq	6434	20c5660f980c4d2d98e80699767c43f831df2e1e	GREEN	worker-38	tests only; phpunit-unit 16530->16564 (tree), baseline 20 failures, no new failures
