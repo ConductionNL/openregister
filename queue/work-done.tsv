@@ -4052,3 +4052,4 @@ merge:stackiq:1693:44f4b992	merge-local over 1 stackiq tasks: merged=1 red=0 fai
 build:dossiq:inspection-conflict-card	PR #6381: task 4 (resolve endpoint, capability, 20 tests); task 5 left (open decision, nextcloud-vue)	session-20261113T091533-b7a00bc3	2026-11-13T09:49:58Z
 cover:dossiq:069ee2d6m7275:4c817077	already done: lib/Service/Notification/ at 100% lines (pcov) after -1/-2 merged; ApplicantNotice/NoticeDelivery are property bags with no executable lines; no PR	session-20261113T093920-50335e74	2026-11-13T09:49:58Z
 cover:dossiq:069ee2d6m7275:cd5286bf	PR #6380: 12 tests, lib/Service/Session statements 286/301 -> 300/301	session-20261113T091533-03405ea6	2026-11-13T09:49:54Z
+measure:larpinq:20261113h08	php 92.61% js 79.0%	session-20261113T094617-36f80607	2026-11-13T09:50:19Z
