@@ -5968,3 +5968,4 @@ fix:portaliq:2450:1e7c63b3	no change: branch already up to date with development
 cover:openregister:7350e3efma401:ed33d83e	PR #10289: 26 tests, GraphMoveCatalogue and OperationsJobsService to 100%	session-20261113T171213-10021a1d	2026-11-13T18:28:44Z
 cover:dossiq:069ee2d6m2deb:js0023cfc7	PR dossiq#6435: 11 tests, 4 dialogs; src/dialogs lines 91.23% -> 92.52%	session-20261113T175332-5effc865	2026-11-13T18:28:51Z
 fix:portaliq:2451:5377377c	no change: branch already contains development (5bad077); conflict is only with unmerged #2449 (both append l10n keys at catalogue end), fix again once #2449 lands	session-20261113T175323-e340fb07	2026-11-13T18:29:00Z
+verify:stackiq:1887:168bd8c5	GREEN 1887 (tests only; vitest 2477 pass)	session-20261113T182348-cc1b5fea	2026-11-13T18:29:23Z
