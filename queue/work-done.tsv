@@ -4870,3 +4870,4 @@ build:openregister:or-flow-object-write-node	failed: worker rules forbid build t
 build:openregister:notification-scheduled-filter-grammar	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:42Z
 review:openregister:10170:dbb679c8	APPROVE: additive mapper methods + tests, no behaviour change	session-20261113T104527-c302106c	2026-11-13T12:31:45Z
 build:openregister:platform-collaboration-resources	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:55Z
+build:openregister:operate-load-shedding	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:01Z
