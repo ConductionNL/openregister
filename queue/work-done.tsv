@@ -7261,6 +7261,7 @@ build:decidiq:hand-woo-diwoo-to-integriq	already done: every code task is ticked
 review:openregister:10439:260f0519	APPROVE: spec-asked folding, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T22:40:30Z
 review:openregister:10441:f955d4d8	APPROVE: 2FA gate on password login, suites green	session-20261113T210940-b751519f	2026-11-13T22:41:01Z
 review:openregister:10438:74b85fb1	APPROVE 10438	session-20261113T213311-eb1a0842	2026-11-13T22:41:09Z
+build4:openregister:search-file-text-and-vector-facade	partial: PR #10457 — 2.1, 2.2, 3.1 done; 1.1 shape, 3.2, 4.x left	session-20261113T213335-001b7417	2026-11-13T22:41:25Z
 review:openregister:10442:f3db1f05	APPROVE 10442: user migrator slice, no access weakening, suites green	session-20261113T205332-17038cbf	2026-11-13T22:41:22Z
 review:openregister:10443:e7ab19e9	APPROVE: access checks hold, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:41:30Z
 build:learniq:practical-exam-assessment	partial: PR #2507 (T2,T3; T1 needs owner decision)	session-20261113T202611-3b383b96	2026-11-13T22:41:34Z
@@ -7273,5 +7274,6 @@ build:learniq:capability-rows-say-what-they-do	partial: PR #2515 builds 2.11 (re
 build:learniq:site-pupil-portal-design	PR learniq#2514: T3b submission lookup + excludeWhen on the pupil tasks block; T8 e2e left	session-20261113T212407-b2d64ec5	2026-11-13T22:41:59Z
 build:learniq:certificate-verification-and-key-rotation	partial: PR #2517 (2.1 rotation tests, 3.1 tags); 1.2 awaits owner confirmation per proposal, 1.1/1.3 public page left	session-20261113T205329-39b9195a	2026-11-13T22:42:24Z
 build:decidiq:platform-accessibility-audit-report	nothing buildable in decidiq: tasks 1-4 done; 5 is in the shared .github workflow repo (out of reach), 6 depends on 5 (an unknown workflow input would break CI), 7 is a manual tester pass	session-20261113T214350-9762e143	2026-11-13T22:42:22Z
+build:learniq:governance-processing-record-every-schema	PR learniq#2518: check + 57 processing blocks + logReads + version bump (1.1-3.3); 4.1/4.2 live left	session-20261113T205324-91f6ae17	2026-11-13T22:42:32Z
 build:learniq:proctoring-flag-review-page	PR learniq#2516: section 2 done (menu for instructors/admin + compliance twin, header link, view per board, decision-only PATCH, en/nl strings, 8 tests); 3.x live/e2e left	session-20261113T202612-d04bbf77	2026-11-13T22:42:31Z
 build:decidiq:the-decision-carries-the-brc-besluit-fields	already done: all in-repo tasks ticked and on development (register.d/78 fragment + DecisionCarriesBrcFieldsTest); only 3.1 left, which is dossiq work outside this change	session-20261113T212407-b2d64ec5	2026-11-13T22:42:29Z
