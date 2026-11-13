@@ -7445,3 +7445,4 @@ fix:integriq:3545:37cc7307	merged development (clean), REVERIFY; conflict only w
 review:openregister:10437:de80b221	APPROVE	session-20261113T182404-f2c28226	2026-11-13T23:00:49Z
 fix:learniq:2501:dd3ee756	REVERIFY: development merged, test hunk aligned with #2495 so they merge cleanly; new head ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	session-20261113T202612-d930c905	2026-11-13T23:01:01Z
 merge:filinq:2053:17c26aeb	merge3 tree of 32 filinq PRs: merged=20 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:01Z
+merge:learniq:2436:a5f8dc9f	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:07Z
