@@ -3226,3 +3226,4 @@ cover:shillinq:05639debmd8ee:1dec5f62	PR #2909: SchemaDefinitions+FieldRequireme
 cover:openregister:7350e3efmea52:0b640b77	PR #10107: 16 tests, ObjectSource 91.4%->99.4% (dir tests)	session-20261113T071631-5a3cc070	2026-11-13T07:41:23Z
 gap:opencatalogi:cplx:burn1	already done: lizard 1.26 -C 30 on lib src at c77d69df reports no function over CCN 30 (highest 26, copyObject)	session-20261113T071636-117504ad	2026-11-13T07:41:20Z
 cover:integriq:92114ab0m658d:6dc9019f	PR #3504: KvkMutatieProvider + BRP unsubscribe tests (7); lib/Service/Registry 91.3% -> 96.2%	session-20261113T051705-4f5ad12a	2026-11-13T07:41:47Z
+cover:versioniq:1b35eed9m70ae:js06645759	PR #668: 29 vitest tests for TrustedSourcesPanel and TokensPanel actions; JS lines 74.2%->77.3%, suite 2730->2759 all passing	session-20261113T072708-ee434236	2026-11-13T07:41:57Z
