@@ -4982,3 +4982,4 @@ build:openregister:term-engine-diagnostic	failed: build tasks never target openr
 gap:portaliq:maint2:burn1	PR #2398: split readCollection, readObject, updateObject (lizard clean), 4 guard tests, suite 4527->4531 green	session-20261113T074527-031883a8	2026-11-13T12:43:10Z
 review:openregister:10177:6c3e61f5	APPROVE: docs + doc test, suites green	session-20261113T074535-8a2067c2	2026-11-13T12:43:05Z
 build:openregister:timeline-entries-are-records	nothing to build: every code task ticked; only 7.1/7.2 hand-over (dossiq, portaliq) remain	session-20261113T074532-3dc49c57	2026-11-13T12:43:21Z
+build:openregister:exchange-encrypted-instance-export	partial: PR #10201 builds the encrypted set container (task 1.1 minus the ext-sodium composer declaration), 14 tests; 2.x/4.1/5.1 left, 3.x wait on import-preview-and-conflict-policy, 5.2 e2e	session-20261113T094606-b7da8c7f	2026-11-13T12:43:49Z
