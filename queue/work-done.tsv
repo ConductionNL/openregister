@@ -3051,3 +3051,4 @@ cover:decidiq:a5f973bbmb22b:59826f43	already above target: lib/Settings/*.php me
 cover:decidiq:a5f973bbmb22b:6f346b68	already done: lib/Sections measured with pcov at 5/5 statements (100%)	session-20261113T051707-6c971ec6	2026-11-13T06:59:58Z
 cover:integriq:92114ab0m658d:b89b25f9	already above target: lib/Adapters/LearningMaterial/*.php measures 98.8% (413/418) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T07:00:15Z
 cover:decidiq:a5f973bbmb22b:882bd950	already done: lib/Search/*.php 58/58 statements, two test classes	session-20261113T061521-423d1e83	2026-11-13T07:00:13Z
+cover:shillinq:05639debmd8ee:a215617b	PR #2899: 6 phpunit tests, Integration 248->256/256	session-20261113T051709-e616bf69	2026-11-13T07:00:16Z
