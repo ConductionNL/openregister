@@ -1082,3 +1082,4 @@ cover:filinq:8ecceb86:59d1e403	PR #1985: NativeSigningProvider + ValidSignProvid
 merge:learniq:2379:c049af5a	stale	feeder	2026-11-13T00:15:19Z
 merge:learniq:2333:a0fb782d	stale	feeder	2026-11-13T00:15:19Z
 merge:filinq:1971:e7e07441	stale	feeder	2026-11-13T00:15:19Z
+cover:dossiq:6ca0231e:67583626	PR #6206: 34 tests, SilenceCloseService/LifecycleActorGate/CaseActs/CaseJournal to 100% lines, suite 13072->13106, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:16:39Z
