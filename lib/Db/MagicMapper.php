@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
@@ -5704,19 +5705,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param int|null $offset Rows to skip (pagination).
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter Only this register, schema and deletion window; null reads the whole bin.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
 	public function findDeletedAcrossAllMagicTables(
 		?int $limit = null,
 		?int $offset = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		?DeletedFilter $filter = null,
 	): array {
 		$page = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset);
-		return $this->findDeletedAcross(page: $page, _rbac: $_rbac, _multitenancy: $_multitenancy);
+		return $this->findDeletedAcross(page: $page, _rbac: $_rbac, _multitenancy: $_multitenancy, filter: $filter);
 	}//end findDeletedAcrossAllMagicTables()
 
 	/**
@@ -5725,12 +5729,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param ListQuery $page          The limit (unbounded for all) and offset, applied after the merge.
 	 * @param bool      $_rbac         Whether to apply RBAC.
 	 * @param bool      $_multitenancy Whether to apply multitenancy.
+	 * @param DeletedFilter|null $filter The register, schema and deletion window, or null for the whole bin.
 	 *
 	 * @return ObjectEntity[] The deleted objects.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
-	public function findDeletedAcross(ListQuery $page, bool $_rbac=true, bool $_multitenancy=true): array {
+	public function findDeletedAcross(ListQuery $page, bool $_rbac=true, bool $_multitenancy=true, ?DeletedFilter $filter=null): array {
+		$filter ??= new DeletedFilter();
 		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$updatedCol = self::METADATA_PREFIX . 'updated';
 
@@ -5742,6 +5749,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$items = [];
 
 		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
+			// Narrowed before the scan: a table outside the filter is never read.
+			if ($filter->admitsTable(table: $info) === false) {
+				continue;
+			}
+
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
 			try {
 				$qb = $this->db->getQueryBuilder();
@@ -5754,7 +5766,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					continue;
 				}
 
-				$items = array_merge($items, $this->deletedItems(rows: $qb->executeQuery()->fetchAll(), table: $info));
+				$rows = array_values(
+					array_filter(
+						$qb->executeQuery()->fetchAll(),
+						static fn (array $row): bool => $filter->admitsMarker(marker: ($row[self::METADATA_PREFIX . 'deleted'] ?? null))
+					)
+				);
+				$items = array_merge($items, $this->deletedItems(rows: $rows, table: $info));
 			} catch (\Exception $e) {
 				$this->logger->debug(
 					message: '[MagicMapper] findDeletedAcrossAllMagicTables: skipping table',
@@ -6005,31 +6023,29 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter The same filter the listing applies, so the total matches its rows.
 	 *
 	 * @return int Total soft-deleted object count.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
-	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int {
-		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true, ?DeletedFilter $filter = null): int {
+		$filter ??= new DeletedFilter();
 		$total = 0;
 
 		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
-			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
+			if ($filter->admitsTable(table: $info) === false) {
+				continue;
+			}
+
 			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('*', 'cnt'))
-					->from($bareTableName, 't')
-					->where($qb->expr()->isNotNull($deletedCol));
-
-				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
-					continue;
-				}
-
-				$res = $qb->executeQuery();
-				$row = $res->fetch();
-				$res->closeCursor();
-				$total += (int)($row['cnt'] ?? 0);
+				$total += $this->countDeletedInTable(
+					bareTableName: substr($fullTableName, strlen($this->getTablePrefix())),
+					table: $info,
+					filter: $filter,
+					access: ['rbac' => $_rbac, 'multitenancy' => $_multitenancy]
+				);
 			} catch (\Exception $e) {
 				continue;
 			}
@@ -6037,6 +6053,52 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $total;
 	}//end countDeletedAcrossAllMagicTables()
+
+	/**
+	 * The deleted rows of one magic table the caller may read, within the filter.
+	 *
+	 * Without a deletion window this is a COUNT(*). With one, the markers are
+	 * read and compared exactly as the listing compares them.
+	 *
+	 * @param string                                $bareTableName The table without the prefix.
+	 * @param array{registerId: int, schemaId: int} $table         The table's register and schema.
+	 * @param DeletedFilter                         $filter        The filter.
+	 * @param array{rbac: bool, multitenancy: bool} $access        Whether to apply RBAC and the organisation boundary.
+	 *
+	 * @return int The count; 0 when the table must be skipped.
+	 */
+	private function countDeletedInTable(string $bareTableName, array $table, DeletedFilter $filter, array $access): int {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
+		$qb = $this->db->getQueryBuilder();
+		if ($filter->readsMarkers() === true) {
+			$qb->select($deletedCol);
+		} else {
+			$qb->select($qb->func()->count('*', 'cnt'));
+		}
+
+		$qb->from($bareTableName, 't')->where($qb->expr()->isNotNull($deletedCol));
+
+		if ($this->scopeDeletedScanToCaller(qb: $qb, table: $table, _rbac: $access['rbac'], _multitenancy: $access['multitenancy']) === false) {
+			return 0;
+		}
+
+		$res = $qb->executeQuery();
+		if ($filter->readsMarkers() === false) {
+			$row = $res->fetch();
+			$res->closeCursor();
+			return (int)($row['cnt'] ?? 0);
+		}
+
+		$count = 0;
+		while (($row = $res->fetch()) !== false) {
+			if ($filter->admitsMarker(marker: ($row[self::METADATA_PREFIX . 'deleted'] ?? null)) === true) {
+				$count++;
+			}
+		}
+
+		$res->closeCursor();
+		return $count;
+	}//end countDeletedInTable()
 
 	/**
 	 * Narrow one magic table's trash scan to the rows the caller may read.

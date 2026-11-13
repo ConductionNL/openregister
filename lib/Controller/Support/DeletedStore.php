@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -40,6 +41,7 @@ final class DeletedStore {
 	 * @param RegisterMapperInterface        $registerMapper     The register mapper
 	 * @param AuditTrailMapperInterface      $auditTrailMapper   Reads back a destruction record and records a restore
 	 * @param DeletionServiceBundle $deletion           The destruction-pipeline collaborators (window, right, clock; scope and recorder)
+	 * @param SchemaMapperInterface|null     $schemaMapper       Resolves the deleted list's `schema` filter; absent, that filter is refused
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
@@ -48,6 +50,7 @@ final class DeletedStore {
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 		public readonly DeletionServiceBundle $deletion,
+		public readonly ?SchemaMapperInterface $schemaMapper = null,
 	) {
 	}//end __construct()
 }//end class

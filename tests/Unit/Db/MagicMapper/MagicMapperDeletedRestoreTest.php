@@ -375,6 +375,86 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		);
 	}//end testScopedCountSkipsATableWhoseSchemaCannotBeResolved()
 
+	/**
+	 * Point table discovery at a lesson table (register 3, schema 7) and a room table (register 3, schema 8).
+	 *
+	 * @return void
+	 */
+	private function discoverLessonAndRoomTables(): void {
+		$discoverStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$discoverStmt->method('execute')->willReturn(
+			$this->resultReturning([['table_name' => 'oc_openregister_table_3_7'], ['table_name' => 'oc_openregister_table_3_8']])
+		);
+		$this->db->method('prepare')->willReturn($discoverStmt);
+	}//end discoverLessonAndRoomTables()
+
+	/**
+	 * The lesson table's deleted rows: deleted on 4, 6 and 7 October.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function lessonRows(): array {
+		return [
+			['_uuid' => 'lesson-4', '_updated' => '2026-10-04T10:00:00+00:00', '_deleted' => '{"deletedAt":"2026-10-04T10:00:00+00:00"}'],
+			['_uuid' => 'lesson-6', '_updated' => '2026-10-06T10:00:00+00:00', '_deleted' => '{"deletedAt":"2026-10-06T10:00:00+00:00"}'],
+			['_uuid' => 'lesson-7', '_updated' => '2026-10-07T10:00:00+00:00', '_deleted' => '{"deletedAt":"2026-10-07T10:00:00+00:00"}'],
+		];
+	}//end lessonRows()
+
+	/**
+	 * One schema's deletions since a moment: only its table is read, only rows inside the window come back (REQ-SYNC-002).
+	 *
+	 * @return void
+	 */
+	public function testAFilteredScanReadsOnlyTheSchemasTableAndKeepsTheWindow(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverLessonAndRoomTables();
+
+		$this->db->expects($this->once())->method('getQueryBuilder')->willReturn($this->makeSelectQbReturning(self::lessonRows()));
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$found = $mapper->findDeletedAcrossAllMagicTables(
+			_rbac: false,
+			_multitenancy: false,
+			filter: new \OCA\OpenRegister\Db\MagicMapper\DeletedFilter(schemaId: 7, deletedSince: new \DateTimeImmutable('2026-10-05T00:00:00+00:00'))
+		);
+
+		$this->assertSame(['lesson-7', 'lesson-6'], array_map(static fn (ObjectEntity $object): string => $object->getUuid(), $found));
+	}//end testAFilteredScanReadsOnlyTheSchemasTableAndKeepsTheWindow()
+
+	/**
+	 * The filtered total counts exactly the rows the filtered listing returns.
+	 *
+	 * @return void
+	 */
+	public function testTheFilteredCountMatchesTheFilteredRows(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverLessonAndRoomTables();
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('isNotNull')->willReturn('cond');
+		$qb->method('expr')->willReturn($expr);
+		foreach (['select', 'from', 'where', 'andWhere'] as $chain) {
+			$qb->method($chain)->willReturnSelf();
+		}
+
+		$result = $this->createMock(IResult::class);
+		$result->method('fetch')->willReturnOnConsecutiveCalls(...[...self::lessonRows(), false]);
+		$qb->method('executeQuery')->willReturn($result);
+		$this->db->expects($this->once())->method('getQueryBuilder')->willReturn($qb);
+
+		$this->assertSame(
+			2,
+			$mapper->countDeletedAcrossAllMagicTables(
+				_rbac: false,
+				_multitenancy: false,
+				filter: new \OCA\OpenRegister\Db\MagicMapper\DeletedFilter(schemaId: 7, deletedSince: new \DateTimeImmutable('2026-10-05T00:00:00+00:00'))
+			)
+		);
+	}//end testTheFilteredCountMatchesTheFilteredRows()
+
 	// -------------------------------------------------------------------------
 	// restoreObject()
 	// -------------------------------------------------------------------------
