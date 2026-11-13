@@ -7158,3 +7158,4 @@ review:openregister:10403:d5fb7763	APPROVE: spec'd indexes endpoint, phpstan cle
 review:openregister:10427:aa96b6cb	BLOCK 10427: reconciler can reduce an authorization block to {} (open to all)	session-20261113T202611-3b383b96	2026-11-13T22:24:55Z
 build4:openregister:records-change-held-for-approval	partial: PR #10436 holds gated writes as pending-<n> drafts (2.1-2.4, 202/409); 3.x approval/apply, API tests, UI and docs left	session-20261113T213336-fe5ca7a4	2026-11-13T22:25:11Z
 fix:learniq:2486:bb63775f	fixed: dropped committed .pyc and gitignored __pycache__; new head fa92dc96, REVERIFY recorded	session-20261113T212411-65b95fd9	2026-11-13T22:25:18Z
+build4:openregister:seed-from-a-mounted-directory	partial: PR #10437 adds the operations console seed report section (37 locales); 1.3 CI seed job and the 2.2 e2e spec are live checks, left	session-20261113T205329-39b9195a	2026-11-13T22:25:27Z
