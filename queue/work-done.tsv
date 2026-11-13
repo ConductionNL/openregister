@@ -1305,4 +1305,5 @@ verify:stackiq:1773:1c728148	1773 GREEN (vitest 1886 vs 1880, phpunit inherited 
 verify:pipelinq:3605:1d11f6a0	3 GREEN (3605-3607): vitest-only, 3203 tests pass, PHP unchanged	session-20261112T234655-6f442bc3	2026-11-13T01:06:34Z
 cover:keepiq:d76c2121m70b5:js8b07cd88	PR #1714: keyProof + verificationPhrase, 15 tests, vitest 5475->5490 pass, src/crypto/* lines 95.6%->97.5%	session-20261113T002031-7b3e41b2	2026-11-13T01:06:58Z
 verify:keepiq:1707:2be1dd61	GREEN: test-only, vitest 5475->5523 all passing	session-20261112T231633-96ffe7b8	2026-11-13T01:06:57Z
+cover:pipelinq:f67520ecm9d2c:js5794e9fc	PR #3611 (-2): 24 tests TagManager/ProductCategoryManager/PaymentSettingsForm; settings 72.3->78.8% alone, 78.1->84.5% with existing -1	session-20261112T234653-efce95ba	2026-11-13T01:07:18Z
 review:openregister:10072:3ca94e55	APPROVE: @uses-only test change; required suites green on PR+main	session-20261112T231645-3f0591a5	2026-11-13T01:07:24Z
