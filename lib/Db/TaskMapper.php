@@ -76,6 +76,11 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @var array<string, array{0: string, 1: int|string}>
 	 */
+	/**
+	 * Most words of a search term that become predicates.
+	 */
+	public const MAX_TERM_WORDS = 8;
+
 	private const EQUALITY_FILTERS = [
 		'isTerminal' => ['is_terminal', IQueryBuilder::PARAM_BOOL],
 		'priority' => ['priority', IQueryBuilder::PARAM_STR],
@@ -889,7 +894,56 @@ class TaskMapper extends QBMapper {
 		}
 
 		$this->applyDueWindow(qb: $qb, criteria: $criteria);
+		$this->applyTerm(qb: $qb, term: $criteria->term);
 	}//end applyFilters()
+
+	/**
+	 * The text filter: every word of the term in the title or the description,
+	 * case insensitively, in the WHERE clause like every other filter.
+	 *
+	 * Word by word, so "terugbellen jansen" finds "Terugbellen mevrouw Jansen".
+	 * Accents fold where the column's collation folds them (MariaDB and MySQL
+	 * by default); the shared folding helper of `search-accent-insensitive`
+	 * takes over here once it exists.
+	 *
+	 * @param IQueryBuilder $qb   The query under construction.
+	 * @param string|null   $term The term, or null for none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	private function applyTerm(IQueryBuilder $qb, ?string $term): void {
+		foreach (self::termWords(term: $term) as $word) {
+			$pattern = '%' . $this->db->escapeLikeParameter($word) . '%';
+			$qb->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->iLike('title', $qb->createNamedParameter($pattern)),
+					$qb->expr()->iLike('description', $qb->createNamedParameter($pattern))
+				)
+			);
+		}
+	}//end applyTerm()
+
+	/**
+	 * The distinct words of a term, at most MAX_TERM_WORDS of them.
+	 *
+	 * @param string|null $term The term.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 */
+	public static function termWords(?string $term): array {
+		$words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY);
+		if ($words === false) {
+			return [];
+		}
+
+		$unique = array_values(array_unique(array_map(static fn (string $w): string => mb_strtolower($w), $words)));
+
+		return array_slice($unique, 0, self::MAX_TERM_WORDS);
+	}//end termWords()
 
 	/**
 	 * One `column = :value` predicate per set equality filter, in EQUALITY_FILTERS order.

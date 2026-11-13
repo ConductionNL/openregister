@@ -1382,6 +1382,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-002
 	 */
 	public function validateObject(
 		array $object,
@@ -2156,6 +2157,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return string A meaningful error message.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-001
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
 		return (new ValidationErrorMessages())->forResult(result: $result);

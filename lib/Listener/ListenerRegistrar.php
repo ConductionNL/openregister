@@ -100,6 +100,7 @@ final class ListenerRegistrar {
 		self::registerSideEffectListeners(context: $context);
 		self::registerDeliveryListeners(context: $context);
 		self::registerAuditListeners(context: $context);
+		self::registerAutomationRecordListeners(context: $context);
 		self::registerDraftListeners(context: $context);
 	}//end register()
 
@@ -924,4 +925,20 @@ final class ListenerRegistrar {
 		$context->registerEventListener($removed, ReadStatePruneListener::class);
 		$context->registerEventListener($removed, NotificationDedupePruneListener::class);
 	}//end registerDraftListeners()
+
+	/**
+	 * Automation run records: a transition's action outcomes are held on the
+	 * pre-save event and written once its save has resolved. Registered after
+	 * every other object listener (only the draft listeners follow), so every
+	 * listener before it keeps its place.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md#requirement-every-lifecycle-action-reached-leaves-an-outcome-record
+	 */
+	private static function registerAutomationRecordListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(ObjectUpdatedEvent::class, LifecycleActionRecordListener::class);
+	}//end registerAutomationRecordListeners()
 }//end class
