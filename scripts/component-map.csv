@@ -4124,3 +4124,6 @@ Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,
 Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
 Command/RetentionDryRunCommand.php,,Command,,,,,Compliance
 Service/Archival/DestructionDryRun.php,,Service,,,,,Compliance
+Service/Translation/DetailedTranslationProviderInterface.php,,Service,,,,,Configuration
+Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
+Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform

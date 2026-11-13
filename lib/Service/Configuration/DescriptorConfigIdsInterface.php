@@ -63,6 +63,8 @@ interface DescriptorConfigIdsInterface {
 
 	public const REDACTION_POLICY = 'openregister.redaction-policy';
 
+	public const TRANSLATION_GLOSSARY = 'openregister.translation-glossary';
+
 	/**
 	 * The descriptors that import under an id of their own, by file name.
 	 *
@@ -79,5 +81,6 @@ interface DescriptorConfigIdsInterface {
 		'data_subject_request_register.json' => self::DSAR_CASES,
 		'dsar_policy_pack_register.json' => self::DSAR_POLICY_PACKS,
 		'redaction_policy_register.json' => self::REDACTION_POLICY,
+		'translation_glossary_register.json' => self::TRANSLATION_GLOSSARY,
 	];
 }//end interface
