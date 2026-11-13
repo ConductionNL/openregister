@@ -57,6 +57,16 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMint
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMintOptions
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  */
 class CredentialBrokerMintTest extends TestCase {
 	/** @var array<string, mixed>|null Captured saveObject() property bag. */

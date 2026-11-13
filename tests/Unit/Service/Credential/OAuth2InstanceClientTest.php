@@ -50,6 +50,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMint
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMintOptions
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CredentialObjects
  */
 class OAuth2InstanceClientTest extends TestCase {
 	/** @var array<int, string> Every URL the service POSTed to. */

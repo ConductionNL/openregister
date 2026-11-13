@@ -66,6 +66,21 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Event\CredentialRelinkRequiredEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshExchange
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshStores
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
+ * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class OAuth2RefreshServiceTest extends TestCase {
 	/** @var array<string, string> The fake custody leaf, keyed by credential UUID. */

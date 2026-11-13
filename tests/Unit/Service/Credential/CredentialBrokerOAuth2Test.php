@@ -54,6 +54,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class CredentialBrokerOAuth2Test extends TestCase {
 	/** @var array<string, mixed>|null The options the outbound client was called with. */
