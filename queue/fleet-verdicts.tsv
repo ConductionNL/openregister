@@ -6366,3 +6366,4 @@ filinq	2106	666af67d1d38a988f17704649274dfb76141ee3e	GREEN	worker-19	unit 6469 r
 filinq	2107	143981a1d378bb034509382c2a50d250e0b9f6c0	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2106 in the tree (clean on development alone); merge development in after #2106 lands
 shillinq	3020	cc8d82d5bc3a814880bbf648074ca2c0ce7526d4	GREEN	worker-44	tests-only; tree 10402 tests, baseline 10394 with 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), no new failures
 decidiq	2140	073bb389014788898d5522010faac2d2c8c4e4a9	CONFLICT	worker-40	conflicts with 2138 in lib/Listener/Registrar/SaveGuardSubscriptions.php (both append save-guard entries at the end of ALL)
+portaliq	2464	66024f364cfd2fa3c35eb8b58d64f41f46e20d22	GREEN	worker-28	tests-only; unit 4919 on tree vs baseline 4914, 0 failures, 0 new
