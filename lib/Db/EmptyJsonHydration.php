@@ -51,6 +51,10 @@ final class EmptyJsonHydration {
 		}
 
 		foreach ($this->emptyJsonAsNull(entity: $entity, object: $object) as $key => $value) {
+			if (HydrationKey::isFieldName(key: $key) === false) {
+				continue;
+			}
+
 			$method = 'set' . ucfirst($key);
 
 			try {
