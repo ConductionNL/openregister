@@ -1129,3 +1129,4 @@ review:openregister:10061:067b7bee	APPROVE: lockfile/SBOM-only dev dep bump, npm
 fix:keepiq:1680:ac4cb6b7	conflict resolved, pushed e4369b52, unit suite green; REVERIFY recorded	session-20261113T002028-6d7c79b9	2026-11-13T00:28:10Z
 cover:integriq:9b0f5894m2367:js9fcd1176	PR #3439: syncDraft + syncConfigOptions vitest specs, 27 tests; vitest 1392->1419 OK	session-20261112T231639-4c562de9	2026-11-13T00:28:23Z
 cover:launchpad:755175ffm7412:js00fe026a	PR #1141: 140 tests, src/services 63.2%->95.6% lines	session-20261113T002025-940c220f	2026-11-13T00:28:28Z
+cover:openregister:7350e3efm0e99:jsfa416b31	PR #10066: 26 tests, 3 classes to 100% (CrossSchemaAggregationValidator, ThresholdTrigger, PayloadComparator); suite 57963->57989, same 92 env reds	session-20261112T231633-96ffe7b8	2026-11-13T00:29:13Z
