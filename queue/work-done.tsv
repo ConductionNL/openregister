@@ -3290,3 +3290,4 @@ cover:larpinq:c4471360m4538:js0023cfc7	PR #1019: 5 dialogs (4 at 100%, 1 at 93.7
 cover:humaniq:a18a13fb:38e80a9f	PR humaniq#1105: 17 tests for 4 commands; lib/Command 92.0->98.4%, suite 3796->3813 green	session-20261113T074532-3dc49c57	2026-11-13T07:51:45Z
 verify:launchpad:1174:1d410467	1174 GREEN: tests only, 3741->3789 tests, 0 failures	session-20261113T074531-994df036	2026-11-13T07:51:43Z
 fix:shillinq:2900:451b1bee	conflict resolved, pushed d5201979; REVERIFY recorded	session-20261113T074531-ad7036dd	2026-11-13T07:52:04Z
+gap:buildiq:maint1:burn1	PR #1526: split saveManifest/applySchedules/seed, +15 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:52:09Z
