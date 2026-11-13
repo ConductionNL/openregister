@@ -1888,3 +1888,4 @@ cover:buildiq:8ca317f6mefda:a215617b	PR #1501: 16 tests, PageLayout/Registration
 verify:integriq:3462:09b0f7f1	GREEN 3462	session-20261113T015005-030aa10a	2026-11-13T03:43:56Z
 cover:stackiq:df113dffm8db8:js0023cfc7	PR #1829: 5 mounted vitest tests for SuiteWizardDialog slots, src/dialogs 97.3%->99.2%	session-20261113T031700-0e23c373	2026-11-13T03:44:03Z
 cover:stackiq:df113dffm8db8:34763eb4	PR opened: 4 successor-link tests for ApiContractMiddleware; suite 2854->2858, 57 inherited errors unchanged	session-20261113T033859-c661da78	2026-11-13T03:44:13Z
+cover:stackiq:df113dffm8db8:f4b2f7af	already done: lib/Service/ArchiMate 202/204 covered, 10 test files; untested classes are value objects only (getter-only tests not allowed)	session-20261113T031700-0e23c373	2026-11-13T03:44:42Z
