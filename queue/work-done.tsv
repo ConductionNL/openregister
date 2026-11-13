@@ -2707,3 +2707,4 @@ cover:shillinq:05639debmd8ee:89bf3ba4	PR #2884: 7 tests for AbstractStatementRep
 cover:pipelinq:7f9dc8e6mc4ba:23d187f5	already done: lib/Service/Store/ at 95.35% statements (82/86) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:d39f9857	already done: lib/Support/*.php 32/32 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:09cc8f24	already done: lib/Service/Cti/ 365/368 lines (99.2%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:16:03Z
+review:openregister:9943:6aa9d5c8	APPROVE: fail-closed expiry, guarded renew; suites green	session-20261113T051710-d9c31c61	2026-11-13T06:16:22Z
