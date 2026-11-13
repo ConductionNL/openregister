@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "7bcef73da73fde3ca3e70810724ef2343f813f04",
- "measured_at": "2026-11-13T10:56:54Z",
+ "commit": "b1df23f489e5acb260deb7ac38119fcaabd883e4",
+ "measured_at": "2026-11-13T13:46:24Z",
  "php": {
   "tool": "pcov",
-  "pct": 86.73,
-  "statements": 58457,
-  "covered": 50701,
+  "pct": 87.48,
+  "statements": 60457,
+  "covered": 52886,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -25,16 +25,16 @@
     26
    ],
    "lib/BackgroundJob/": [
-    1582,
-    1408
+    1784,
+    1533
    ],
    "lib/Command/": [
     382,
     382
    ],
    "lib/Controller/": [
-    8322,
-    7229
+    8472,
+    7734
    ],
    "lib/Dashboard/": [
     36,
@@ -45,8 +45,8 @@
     26
    ],
    "lib/Event/": [
-    87,
-    81
+    111,
+    111
    ],
    "lib/Flow/": [
     128,
@@ -61,24 +61,24 @@
     227
    ],
    "lib/Listener/": [
-    1580,
-    1456
+    1675,
+    1547
    ],
    "lib/Mcp/": [
     29,
     29
    ],
    "lib/Notification/": [
-    120,
-    120
+    162,
+    162
    ],
    "lib/Portal/": [
     556,
     556
    ],
    "lib/Repair/": [
-    2420,
-    2179
+    2589,
+    2386
    ],
    "lib/Repair/Support/": [
     95,
@@ -89,8 +89,8 @@
     5
    ],
    "lib/Service/": [
-    30809,
-    25212
+    31379,
+    25697
    ],
    "lib/Service/Access/": [
     86,
@@ -103,6 +103,10 @@
    "lib/Service/BsnAudit/": [
     4,
     4
+   ],
+   "lib/Service/CallReview/": [
+    103,
+    16
    ],
    "lib/Service/Competitor/": [
     600,
@@ -118,7 +122,7 @@
    ],
    "lib/Service/Cti/Adapter/": [
     243,
-    240
+    243
    ],
    "lib/Service/Cti/Result/": [
     17,
@@ -137,12 +141,12 @@
     67
    ],
    "lib/Service/Export/": [
-    1007,
-    969
+    1204,
+    1153
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
-    47
+    48
    ],
    "lib/Service/Forecast/": [
     4,
@@ -181,8 +185,8 @@
     85
    ],
    "lib/Service/Marketing/": [
-    1867,
-    1825
+    2263,
+    2197
    ],
    "lib/Service/Marketing/Transport/": [
     335,
@@ -197,8 +201,8 @@
     49
    ],
    "lib/Service/Merge/": [
-    21,
-    21
+    73,
+    66
    ],
    "lib/Service/Messaging/": [
     9,
@@ -210,11 +214,11 @@
    ],
    "lib/Service/PersonLookup/": [
     10,
-    9
+    10
    ],
    "lib/Service/Portal/": [
     1440,
-    1380
+    1430
    ],
    "lib/Service/PosCart/": [
     67,
@@ -238,7 +242,7 @@
    ],
    "lib/Service/Settings/": [
     12,
-    11
+    12
    ],
    "lib/Service/Sla/": [
     212,
@@ -250,7 +254,7 @@
    ],
    "lib/Service/Store/": [
     86,
-    82
+    86
    ],
    "lib/Service/WebForm/": [
     400,
@@ -258,11 +262,11 @@
    ],
    "lib/Service/Worklist/": [
     66,
-    61
+    66
    ],
    "lib/Service/Zgw/": [
     728,
-    708
+    726
    ],
    "lib/Settings/": [
     24,
@@ -283,21 +287,17 @@
   }
  },
  "js": {
-  "pct": 88.76,
-  "statements": 17532,
-  "covered": 15562,
+  "pct": 92.59,
+  "statements": 17670,
+  "covered": 16361,
   "dirs": {
    "src/": [
-    88,
+    190,
     88
    ],
    "src/components/": [
-    1457,
-    1330
-   ],
-   "src/components/CapabilityComparison/": [
-    25,
-    23
+    1464,
+    1383
    ],
    "src/components/admin/": [
     473,
@@ -325,15 +325,15 @@
    ],
    "src/components/marketing/": [
     480,
-    386
+    434
    ],
    "src/components/pos/": [
     412,
-    374
+    389
    ],
    "src/components/products/": [
     71,
-    61
+    60
    ],
    "src/components/rapportage/": [
     139,
@@ -389,7 +389,7 @@
    ],
    "src/dialogs/": [
     1779,
-    1447
+    1615
    ],
    "src/manifest.d/": [
     53,
@@ -397,11 +397,11 @@
    ],
    "src/mixins/": [
     225,
-    213
+    225
    ],
    "src/modals/": [
-    1211,
-    974
+    1234,
+    1147
    ],
    "src/portal/": [
     100,
@@ -413,11 +413,11 @@
    ],
    "src/portal/views/": [
     267,
-    240
+    249
    ],
    "src/services/": [
-    1989,
-    1975
+    1990,
+    1977
    ],
    "src/store/": [
     21,
@@ -445,7 +445,7 @@
    ],
    "src/views/blasts/": [
     345,
-    299
+    320
    ],
    "src/views/bookings/": [
     480,
@@ -453,7 +453,7 @@
    ],
    "src/views/clients/": [
     155,
-    102
+    140
    ],
    "src/views/contacts/": [
     77,
@@ -477,7 +477,7 @@
    ],
    "src/views/forecast/": [
     178,
-    126
+    176
    ],
    "src/views/leads/": [
     156,
@@ -492,8 +492,8 @@
     25
    ],
    "src/views/marketing/": [
-    417,
-    323
+    440,
+    420
    ],
    "src/views/messaging/": [
     175,
@@ -501,7 +501,7 @@
    ],
    "src/views/pipeline/": [
     614,
-    567
+    577
    ],
    "src/views/portal/": [
     140,
@@ -509,7 +509,7 @@
    ],
    "src/views/pos/": [
     855,
-    771
+    783
    ],
    "src/views/prospects/": [
     97,
@@ -521,15 +521,15 @@
    ],
    "src/views/requests/": [
     195,
-    153
+    175
    ],
    "src/views/settings/": [
-    1182,
-    1084
+    1189,
+    1123
    ],
    "src/views/social/": [
     164,
-    149
+    154
    ],
    "src/views/surveys/": [
     45,
@@ -541,7 +541,7 @@
    ],
    "src/views/widgets/": [
     354,
-    293
+    342
    ]
   }
  }
