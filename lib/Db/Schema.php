@@ -99,6 +99,10 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getClassification()
+ * @method void setClassification(?string $classification)
+ * @method array|null getCatalogue()
+ * @method void setCatalogue(?array $catalogue)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
  * @method array|null getSharedWith()
@@ -283,6 +287,23 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string|null Organisation UUID this schema belongs to
 	 */
 	protected ?string $organisation = null;
+
+	/**
+	 * The data classification of this record type: open, internal,
+	 * confidential or strictly-confidential. Descriptive only: it never
+	 * changes who may read the schema or its objects.
+	 *
+	 * @var string|null The classification, or null when unset
+	 */
+	protected ?string $classification = null;
+
+	/**
+	 * Data catalogue metadata: maintainer, contact, sourceSystem,
+	 * updateFrequency, documentationUrl and labels.
+	 *
+	 * @var array|null The catalogue block, or null when unset
+	 */
+	protected ?array $catalogue = null;
 
 	/**
 	 * JSON object describing authorizations
@@ -1269,9 +1290,31 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$this->serialisedContent(),
 			$this->serialisedOwnership(),
 			$this->serialisedComposition(),
-			$this->serialisedLinks()
+			$this->serialisedLinks(),
+			$this->serialisedCatalogue()
 		);
 	}//end jsonSerialize()
+
+	/**
+	 * The classification and catalogue block, only when set, so a schema
+	 * without them serialises exactly as before.
+	 *
+	 * @return array<string, mixed> The set fields.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-catalogue-metadata
+	 */
+	private function serialisedCatalogue(): array {
+		$fields = [];
+		if ($this->classification !== null) {
+			$fields['classification'] = $this->classification;
+		}
+
+		if ($this->catalogue !== null) {
+			$fields['catalogue'] = $this->catalogue;
+		}
+
+		return $fields;
+	}//end serialisedCatalogue()
 
 	/**
 	 * The identity fields of the serialised schema.
