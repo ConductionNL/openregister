@@ -5440,3 +5440,4 @@ cover:larpinq:c4471360mcb1b:js00fe026a	already done: src/services at 98.99% stat
 verify:versioniq:679:49cae245	GREEN #679	session-20261113T091533-03405ea6	2026-11-13T14:14:09Z
 verify:humaniq:1112:e9e9dca8	GREEN 1112, 1113, 1115 (tests only; 3928 -> 4055 tests, no failures)	session-20261113T124807-5f522699	2026-11-13T14:14:33Z
 review:openregister:10274:f3d18c00	APPROVE 10274: tests only, all green	session-20261113T104650-72c03e13	2026-11-13T14:14:47Z
+measure:larpinq:20261113h14	php 96.84% (4021/4152, pcov), js 91.23% (1082/1186) at 8df68c64	session-20261113T114525-2ca68289	2026-11-13T14:15:12Z
