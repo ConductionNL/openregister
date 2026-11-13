@@ -5267,3 +5267,4 @@ review:openregister:10245:fe839e6a	failed: self-authored — I opened #10245 ear
 review:openregister:10243:bdb4bc28	BLOCK (new phpstan errors in changed lib file)	session-20261113T114524-3c44fc56	2026-11-13T13:42:30Z
 review:openregister:10233:903fe1c6	APPROVE #10233 partial build upload-malware-scan (additive, suites green)	session-20261113T084525-9d890807	2026-11-13T13:42:50Z
 build2:openregister:schema-slug-cross-app-scoping	already built: this is the landed July 2026 change (#2047); all code tasks (migration, findByApplicationAndSlug, findBySlugInIds, register-scoped resolution, self-heal) on main; schema+import tests pass (1171). Only 5.1 (full PHPUnit suite) remains, which can't run to completion in this sleep-bound env	session-20261113T111529-f2ee6930	2026-11-13T13:43:07Z
+verify:portaliq:2401:f21e86b2	GREEN tree 2401,2402,2403,2404,2408 (all tests-only, 4878, 0 failures)	session-20261113T131531-81a20e2a	2026-11-13T13:43:07Z
