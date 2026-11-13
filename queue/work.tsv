@@ -2911,3 +2911,19 @@ cover:shillinq:05639debmd8ee:js4dad1dd8	cover	shillinq	development	quality/test-
 cover:shillinq:05639debmd8ee:jsea7197ec	cover	shillinq	development	quality/test-coverage-js-ea7197ec	lang=js;dirs=src/utils/*;focus=uncovered;weight=192;coverage=51.96;target=85.0	2026-11-11T20:45:32Z
 cover:shillinq:05639debmd8ee:jsd48eb217	cover	shillinq	development	quality/test-coverage-js-d48eb217	lang=js;dirs=src/store/modules/;focus=uncovered;weight=90;coverage=51.96;target=85.0	2026-11-11T20:47:14Z
 cover:decidiq:a5f973bbma14b:60c2c265	cover	decidiq	development	quality/test-coverage-60c2c265	lang=php;dirs=lib/Controller/*.php;focus=uncovered;weight=2031;coverage=82.1;target=85.0	2026-11-13T02:23:18Z
+fix:decidiq:2098:4c96686d	fix	decidiq	development	2098	sha=4c96686d6809aaa436ce2b7738d8c7811d2d1263;verdict=RED;branch=quality/gap-axe-devdep;reason=GATE RED sbom: package-lock.json changed without sbom.cdx.json	2026-11-13T05:55:28Z
+verify:pipelinq:3675:4b37e509	verify	pipelinq	development	merge	prs=3675@64f895ba8332767e6fbb8a272e27c646f06ecd1c,3676@fe837c9e1438bf8b9375fa5d3149d2fd4b3fdd27,3677@461155a701b454ecae138a0b43b35caa13d7fe18,3678@420d2c6529801a0ff6aff27c1e1059703a6571ea,3679@3b7ecd46cc72a4de678bed4e5c812b30548c7aa8,3680@7d58f1d36edebefcf7ae636b0ff82917282daa8d	2026-11-13T05:55:28Z
+verify:integriq:3483:3d577824	verify	integriq	development	merge	prs=3483@67dfaec281f29ecae93630af0f7a58578d6a8c24	2026-11-13T05:55:28Z
+verify:shillinq:2869:459d50c7	verify	shillinq	development	merge	prs=2869@c6f5e69eddd0478c7fb0b53f492c9474c1a48661	2026-11-13T05:55:28Z
+verify:decidiq:2111:bc6b2110	verify	decidiq	development	merge	prs=2111@40d5be1a737c97dfb238665e68fda26b50a710d5,2112@08cb8c396fdbf49b202d3c4f0e82c48f04ff95af,2113@a5ec2083c9ea754b9d23b1e3fa301a1ff25aeec8	2026-11-13T05:55:28Z
+verify:filinq:2033:cbf9441c	verify	filinq	development	merge	prs=2033@455da195d4612480d0a3671db2daee99a008ed94,2034@e0cb608b96775deafc135556b2b227d61af9f436	2026-11-13T05:55:28Z
+merge:buildiq:1511:e5bd1f24	merge	buildiq	development	development	prs=1511@8b127c0953d48c92356148a9295e08da68acfd21	2026-11-13T05:55:28Z
+merge:humaniq:1025:b865de88	merge	humaniq	development	development	prs=1025@a9ec65cd2303c28414b2a2ce4734b889c83dcd5d,1029@a8575e17355a3083c95cc32a036a2f82e7010e19,1030@4e04b394e56c758e0a154a2734470d412302efa7,1031@f88eeb1ed1d23d855c5decb3b750537502cfd0ca	2026-11-13T05:55:28Z
+merge:shillinq:2868:8a04d278	merge	shillinq	development	development	prs=2868@251d388321bd32b66dd1f09d5ab24e19c53d3332	2026-11-13T05:55:28Z
+merge:decidiq:2110:978356bb	merge	decidiq	development	development	prs=2110@cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	2026-11-13T05:55:28Z
+cover:buildiq:9930949bm5861:a215617b	cover	buildiq	development	quality/test-coverage-a215617b	lang=php;dirs=lib/Integration/*.php;focus=uncovered;weight=111;coverage=80.56;target=85.0	2026-09-14T01:27:42Z
+cover:buildiq:9930949bm5861:d39f9857	cover	buildiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=2126;coverage=80.56;target=85.0	2026-09-14T00:54:07Z
+cover:buildiq:9930949bm5861:js0023cfc7	cover	buildiq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=1194;coverage=84.68;target=85.0	2026-09-14T05:16:51Z
+cover:buildiq:9930949bm5861:js4829b6aa	cover	buildiq	development	quality/test-coverage-js-4829b6aa	lang=js;dirs=src/views/*;focus=uncovered;weight=870;coverage=84.68;target=85.0	2026-09-14T05:22:15Z
+cover:integriq:92114ab0m1534:js9fcd1176	cover	integriq	development	quality/test-coverage-js-9fcd1176	lang=js;dirs=src/views/Synchronization/;focus=uncovered;weight=537;coverage=82.64;target=85.0	2026-10-14T03:25:30Z
+cover:decidiq:a5f973bbma14b:0f859653	cover	decidiq	development	quality/test-coverage-0f859653	lang=php;dirs=lib/Flow/*.php;focus=thin;weight=739;coverage=82.1;target=85.0	2026-11-13T02:49:48Z
