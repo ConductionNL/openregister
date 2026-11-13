@@ -6749,3 +6749,4 @@ build:hermiq:chat-fork-and-share-link	partial: PR #1715 fork (tasks 2,3); task 1
 cover:opencatalogi:fc83bfb1m976b:jsfa8697ee	PR #2621: widgetTable.js 8 vitest tests (806->814); rest of dirs are .vue not importable by vitest config	session-20261113T204539-805bb895	2026-11-13T20:48:53Z
 verify:portaliq:2464:b105c439	2464 GREEN, 2467 GREEN (tests-only, unit 4919 OK, baseline 4914)	session-20261113T204536-22cfbae0	2026-11-13T20:49:03Z
 verify:opencatalogi:2611:12199f3a	2611 GREEN, 2612 GREEN (test-only, no new failures)	session-20261113T204542-158476ba	2026-11-13T20:49:16Z
+build:integriq:access-oauth-and-token-validation	partial: PR integriq#3541, tasks 1, 2 (backend), 5 (backend) built with 21 tests; token endpoint, metadata, seed and UI left; suite 8222->8243, baseline 2E/2F unchanged	session-20261113T202626-976dcdac	2026-11-13T20:49:22Z
