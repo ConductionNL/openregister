@@ -6486,3 +6486,4 @@ cover:pipelinq:7f9dc8e6m8ce9:ab7f3595	already done: lib/Service/Provider at 103/
 cover:pipelinq:7f9dc8e6m8ce9:db675bd6	already done: lib/Activity/Setting/ at 27/27 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:29Z
 cover:pipelinq:7f9dc8e6m8ce9:2ea9e4f7	already done: lib/Service/CallReview/ at 103/103 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:39Z
 cover:pipelinq:7f9dc8e6m8ce9:0798b7cf	already done: lib/Service/PosCart/ at 67/67 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:45Z
+cover:pipelinq:7f9dc8e6m8ce9:f3231970	PR pipelinq#3776: ScheduledTaskStore 11 tests; suite 7194->7205, same 5 inherited failures	session-20261113T192704-f298034f	2026-11-13T19:57:51Z
