@@ -41,6 +41,7 @@ final class UserDomain {
 	 * @param LoginSecurityInterface $securityService Security service for input sanitization
 	 * @param IUserManager           $userManager     User manager for authentication
 	 * @param IUserSession           $userSession     User session manager
+	 * @param IRegistry              $twoFactor       Which second factors each user has enabled
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
