@@ -3159,3 +3159,4 @@ cover:dossiq:f8a113c5m7e79:390adfb9	already done: lib/*.php 49/51 (96%, target 9
 verify:decidiq:2120:56e91b9d	GREEN decidiq#2120 (phpunit 3684 OK, vitest 2682 pass, no new failures)	session-20261113T072713-bdbc6044	2026-11-13T07:29:55Z
 cover:integriq:92114ab0m658d:59f49d26	PR #3499: PropertySourceBindings test (2); lib/PropertySource/*.php 93.8% -> 96.9%	session-20261113T051705-4f5ad12a	2026-11-13T07:30:20Z
 cover:shillinq:05639debmd8ee:28cccfd9	already done: lib/Repair/Support 113/113 statements covered by its own 17 tests (every branch asserted); no PR	session-20261113T064518-860c039d	2026-11-13T07:30:17Z
+measure:versioniq:20261113h06	php 92.82% (pcov, unit-only config; 1356 tests, 2 inherited failures), js 74.17% (vitest 2730 passed)	session-20261113T072708-ee434236	2026-11-13T07:30:42Z
