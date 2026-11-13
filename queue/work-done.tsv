@@ -6360,3 +6360,4 @@ cover:dossiq:069ee2d6mbd37:39189253	no PR: lib/Service/Transitions at 1836/1843 
 build3:openregister:records-change-held-for-approval	partial: PR #10312, task 1.1 (gate.change declaration); 2.x-4.x wait on records-draft-versions promotion	session-20261113T185324-28e07ab2	2026-11-13T19:32:21Z
 cover:shillinq:05639debm7b6b:38e80a9f	PR #3013: 4 tests, ReferencesAuditCommand; lib/Command 93.27%->98.56%; suite 10394->10398, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:32:19Z
 verify:buildiq:1560:88a91f8a	GREEN #1560 (test-only vitest spec; 4079 js tests pass, php baseline unchanged)	session-20261113T192654-ac81692f	2026-11-13T19:32:31Z
+fix:shillinq:3007:d6ce6195	failed: no conflict with development; conflicts are only with an earlier unmerged PR in the verify tree (info.xml version, l10n, register-versions.lock.json); merge development in once that PR lands	session-20261113T182404-f2c28226	2026-11-13T19:32:55Z
