@@ -5105,3 +5105,5 @@ stackiq	1840	3b1e21947eb7f7ac33b0c121538d6b62749484ab	GREEN	worker-04	phpunit 31
 stackiq	1839	96a1216652fc14dc1a0b3af5f981b92a853975f5	GREEN	worker-04	phpunit 3111/0 fail on the tree (baseline 3064/0); test-only; note: ArchiMateExportRoundTripTest triggers a PHP warning at lib/Service/ArchiMateExportService.php:1380 (addAttribute: attribute already exists), a production-side duplicate attribute worth a follow-up
 launchpad	1167	102903de2a6d38eade7b050d6f1b028eca8f7594	GREEN	worker-09	phpunit 3741 baseline green (no PHP changed), vitest tree 206 files/1913 tests all pass; JS tests only
 launchpad	1168	35e566815d07d3daf3afa460c7cf77a1a30f0e1e	GREEN	worker-09	phpunit 3741 baseline green (no PHP changed), vitest tree 206 files/1913 tests all pass; JS tests only
+launchpad	1169	b68bdd1fed253f258950c803c78deda31173c2c5	GREEN	worker-09	phpunit 3741 baseline green (no PHP changed), vitest tree 206 files/1913 tests all pass; JS tests only
+launchpad	1170	8a4ad4df30dd911b9b033dd9e3c06d9374e40ed4	GREEN	worker-09	phpunit 3741 baseline green (no PHP changed), vitest tree 206 files/1913 tests all pass; JS tests only
