@@ -5676,4 +5676,7 @@ planninq	1147	c233be05d9daa5589da13ec0cbf7a34ba74104e7	GREEN	worker-44	one-PR tr
 buildiq	1538	59d9088a273d7862e520adc456d2dde5c2811c2b	GREEN	worker-29	tests-only (3 JS specs, +470 lines, no deletions); vitest 402 files/3894 tests all pass incl. 14 new; PHP unit 2784 with 1 inherited failure unchanged
 portaliq	2389	f4daf84e23a1b73fbdc2a9bb8f75630880252e9c	GREEN	worker-46	PHP unit 4560 on tree 2389+2390 (baseline 4527, 0 failures); tests only
 portaliq	2390	01ebd908619019035c01713c4dfc3fd8447ff1ec	GREEN	worker-46	PHP unit 4560 on tree 2389+2390 (baseline 4527, 0 failures); tests only
+larpinq	1025	a987596259282a76d264bb22c2d3e4b7793b6f04	GREEN	worker-44	tree of 3: PHPUnit 706 tests 0 fail (baseline 697, 0 fail); tests only, no JS
 pipelinq	3706	83837c6f7691993d2c9e5b872435cb42196e0406	GREEN	worker-58	phpunit 6511 vs baseline 6488, 1 inherited failure, 0 new; vitest 551/3964 pass; new phone-lookup feature with tests; CtiContactMatcher needles extracted unchanged; new route session-checked, reads via default RBAC
+larpinq	1026	27d4d7263c184de6d21fed5af9bd86a2f7b06aa4	GREEN	worker-44	tree of 3: PHPUnit 706 tests 0 fail (baseline 697, 0 fail); tests only, no JS
+larpinq	1027	ef1fccbc07cfc82f2efbe7d49307d415228773ee	GREEN	worker-44	tree of 3: PHPUnit 706 tests 0 fail (baseline 697, 0 fail); tests only, no JS
