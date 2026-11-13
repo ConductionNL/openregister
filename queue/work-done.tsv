@@ -6789,3 +6789,4 @@ build:opencatalogi:harvest-observability	failed: blocked on harvest-feed-intake 
 build:integriq:connectors-course-marketplace	nothing to build: every code task is ticked; open boxes are e2e/live tests and Task 6 form half, which the change defers (build decision 57)	session-20261113T202612-d04bbf77	2026-11-13T20:54:59Z
 verify:opencatalogi:2613:97adbb72	4 GREEN (2613-2616); vitest 855 passed; jest failing suites 33 -> 31; PHP 2 inherited	session-20261113T182404-f2c28226	2026-11-13T20:55:14Z
 build:opencatalogi:add-document-content-search	PR #2632: impl already on development; restored the 12 content-search unit tests the change names (lost in the Fase-5 test rewrite); suite 5254->5266, same 2 inherited failures; docs (openwoo repo) + archive left	session-20261113T204539-e70be1ed	2026-11-13T20:55:45Z
+verify:opencatalogi:2617:5cacb577	7 GREEN (2617-2623), no conflicts, no new failures	session-20261113T204539-805bb895	2026-11-13T20:55:50Z
