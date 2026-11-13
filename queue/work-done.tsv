@@ -4682,3 +4682,4 @@ fix:pipelinq:3739:873d21ad	moved new l10n keys mid-catalogue, merges cleanly wit
 fix:pipelinq:3743:a7b9c340	fixed: l10n strings moved mid-catalogue, merges beside 3721; new head 222fa459	session-20261113T104531-16da055e	2026-11-13T11:59:03Z
 fix:pipelinq:3748:7fcea3b9	moved new l10n keys mid-catalogue, merges cleanly with #3721 and #3739; REVERIFY 31cb846e	session-20261113T093920-50335e74	2026-11-13T11:59:22Z
 cover:shillinq:05639debm4eb8:js4f8a0caa	PR #2936: 72 vitest tests over 8 views, lines 78.36->96.02%	session-20261113T081048-4978ac57	2026-11-13T11:59:31Z
+review:openregister:10144:983e77cc	APPROVE: build matches its specs, additive/safe, no broken interface implementor, 116 tests green, phpstan clean	session-20261113T084521-fd8a31c7	2026-11-13T11:59:38Z
