@@ -548,6 +548,11 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
 
+		// The survey rules (survey-object): fixed anonymity, the version raised
+		// by an edit with answers, required answers, no respondent where promised.
+		$context->registerEventListener(ObjectCreatingEvent::class, SurveyWriteListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, SurveyWriteListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.

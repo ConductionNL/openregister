@@ -1311,6 +1311,7 @@ Listener/ShareableConfigTypeRegistrationListener.php,30,Listener,Configuration,C
 Listener/SourceRecordChangeListener.php,168,Listener,Flows,Flows/Listener/SourceRecordChangeListener.php,0,,Processes
 Listener/StateFieldRuleListener.php,238,Listener,Flows,Flows/Listener/StateFieldRuleListener.php,0,,Processes
 Listener/StateHistoryProjectionListener.php,54,Listener,Service,Service/Listener/StateHistoryProjectionListener.php,0,368,Core
+Listener/SurveyWriteListener.php,120,Listener,Work,Work/Listener/SurveyWriteListener.php,0,,Processes
 Listener/SurvivorshipRecomputeListener.php,176,Listener,Service,Service/Listener/SurvivorshipRecomputeListener.php,0,139,Core
 Listener/TablesTableDeletedListener.php,49,Listener,Flows,Flows/Listener/TablesTableDeletedListener.php,0,,Processes
 Listener/TaskBlockerReleaseListener.php,48,Listener,Flows,Flows/Listener/TaskBlockerReleaseListener.php,0,,Processes
@@ -3105,6 +3106,7 @@ Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuratio
 Service/ShippedBaseline/ShippedBaselineStore.php,76,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineStore.php,2,,Configuration
 Service/ShippedBaseline/ShippedConfigurationGuard.php,329,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedConfigurationGuard.php,0,,Configuration
 Service/Survey/SurveyExportShaper.php,57,Service,Work,Work/Service/Survey/SurveyExportShaper.php,0,,Processes
+Service/Survey/SurveyRecords.php,90,Service,Work,Work/Service/Survey/SurveyRecords.php,0,,Processes
 Service/Survey/SurveyRules.php,121,Service,Work,Work/Service/Survey/SurveyRules.php,0,,Processes
 Service/Survivorship/SourceRecordResolver.php,170,Service,Service,Service/Survivorship/SourceRecordResolver.php,0,,Core
 Service/Survivorship/SurvivorshipAnnotationValidator.php,140,Service,Service,Service/Survivorship/SurvivorshipAnnotationValidator.php,0,,Core
