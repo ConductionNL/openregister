@@ -4728,3 +4728,4 @@ filinq	1989	5d4f2f514a6ef4b7ad24c2c0b94ad34ae7971ed7	GREEN	worker-46	5650 tests 
 filinq	1990	4c3928638bb981db6a8d03172b863db443f71903	GREEN	worker-46	5650 tests run on 8-PR tree, baseline 5499 OK, no new failures; tests-only additions
 filinq	1991	9355fd8bd7ab89d7ced8bf8b4ee239d24784b318	GREEN	worker-46	5650 tests run on 8-PR tree, baseline 5499 OK, no new failures; tests-only additions
 filinq	1992	3065dbf73cf0f94aea18b8fc222d9d86795e22fe	GREEN	worker-46	5650 tests run on 8-PR tree, baseline 5499 OK, no new failures; tests-only additions
+dossiq	6216	1449e11a150e6ba8b89f37d7e2da66fd8f6388da	GREEN	worker-07	tree of 6: phpunit 13800 tests (baseline 13687, 19 inherited failures), new failures: none; tests-only additions
