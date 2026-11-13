@@ -3392,3 +3392,4 @@ gap:stackiq:risky:burn2	PR #1857: risky 1 -> 0, PHP coverage 81.31% -> 81.31%	se
 cover:portaliq:b60f3b81:34f5c300	PR #2373: 5 classes, 33 tests, suite 4527->4560 green, 0 risky	session-20261113T072715-8f8a14e9	2026-11-13T08:15:41Z
 gap:portaliq:6:ff5ad501	failed: cgx/retire-woo-bundle merges cleanly with development, but its pinned asset (tilburg-woo-ui release portaliq-woo-2026-07-10) answers 404 to the unauthenticated fetch in scripts/fetch-woo-bundle.mjs, so npm run build (build:woo) would fail; needs the asset published publicly or a token in the fetch. Not opened.	session-20261113T080549-20301834	2026-11-13T08:15:48Z
 cover:buildiq:70b3e29emc723:05630945	PR #1527: StandardProtocolPathsTest (15 tests), Middleware/Support 88.3->91.7%	session-20261113T080546-98207a87	2026-11-13T08:15:56Z
+cover:buildiq:70b3e29emc723:f545d745	already done: lib/Repair/*.php at ~96% on development, above 90 target; no PR	session-20261113T080546-98207a87	2026-11-13T08:16:11Z
