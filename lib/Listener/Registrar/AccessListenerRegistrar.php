@@ -54,5 +54,12 @@ final class AccessListenerRegistrar {
 			\OCP\User\Events\BeforeUserDeletedEvent::class,
 			\OCA\OpenRegister\Listener\SharerViewsEndWithUserListener::class
 		);
+
+		// A share made from the platform's own sharing surface on an object's
+		// folder passes the schema's opt-in and the permission mapping.
+		$context->registerEventListener(
+			\OCP\Share\Events\BeforeShareCreatedEvent::class,
+			\OCA\OpenRegister\Listener\PlatformShareRoutingListener::class
+		);
 	}//end register()
 }//end class

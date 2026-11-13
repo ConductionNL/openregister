@@ -332,6 +332,9 @@
 	"OCP\\OCM\\Events\\ResourceTypeRegisterEvent": [
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
+	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],

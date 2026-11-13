@@ -3987,6 +3987,7 @@ Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
 Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
+Listener/PlatformShareRoutingListener.php,,Listener,,,,,Processes
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
