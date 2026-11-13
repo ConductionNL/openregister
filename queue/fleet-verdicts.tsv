@@ -5254,3 +5254,4 @@ shillinq	2885	2e0febdaddc614b633124ada0da5685f0415b115	GREEN	worker-38	phpunit 9
 pipelinq	3687	9ccf26a2a05c80578b3f91b0c601630e96b36ec7	GREEN	worker-47	tests-only (+5 vitest specs, no PHP); vitest 3893->3962 tests, baseline 0 failures, 0 new; eslint clean
 integriq	3485	5d621940d0a8ab32978dd299c2ed80f9e5694b1a	REVERIFY	worker-02	renamed the three test files that collided with 3484 (EnvelopeReplayGuard, IdpConsumerSecretResolver, EnvelopeCodeStore -> *BehaviourTest); merges cleanly after 3484, suite 7349 tests with only the 2 inherited errors; new head a7dd5e51888bfa95c3d82e16a84a5e26e6b4caff, verify it
 dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+dossiq	6300	ed842e92ccf1359bcd4b23501b4ac328bc95caad	GREEN	worker-13	phpunit 14929 tests on tree, baseline 14882/19 fail (inherited, access tests), 0 new; tests only
