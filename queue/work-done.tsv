@@ -4750,3 +4750,4 @@ build:openregister:fields-a-user-adds-and-choices-a-record-narrows	failed: build
 build:openregister:flow-sync-decomposition	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:11:39Z
 build:openregister:flow-trigger-transitions-and-changed-fields	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:11:46Z
 build:openregister:generated-identifier	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:11:55Z
+build:openregister:files-leaf-save-to-object	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:12:01Z
