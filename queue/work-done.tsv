@@ -6358,3 +6358,4 @@ cover:hermiq:065f1631md84f:d39f9857	no PR: lib/Support fully covered at measured
 cover:hermiq:065f1631md84f:d81d2d49	no PR: lib/Service/Speech already 57/57 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:32:10Z
 cover:dossiq:069ee2d6mbd37:8fea83ca	failed: permission (installing a PHP coverage driver refused; 6.7k-line dir needs measurement to find thin spots)	session-20261113T190954-c894781f	2026-11-13T19:32:24Z
 cover:shillinq:05639debm7b6b:38e80a9f	PR #3013: 4 tests, ReferencesAuditCommand; lib/Command 93.27%->98.56%; suite 10394->10398, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:32:19Z
+verify:buildiq:1560:88a91f8a	GREEN #1560 (test-only vitest spec; 4079 js tests pass, php baseline unchanged)	session-20261113T192654-ac81692f	2026-11-13T19:32:31Z
