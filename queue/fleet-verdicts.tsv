@@ -5526,3 +5526,4 @@ launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	CONFLICT	coord	conflicts
 dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	RED	coord	secret scan flags a dummy key in a test fixture; mark that fixture line with an inline allow comment (or add the fixture path to the scanner allowlist), keep the test unchanged
 stackiq	1861	aea61954679e34639b032a15172092ad225c7dd4	GREEN	worker-38	phpunit 3219 run on tree (baseline 3216, 0 failures); vitest 228 files/2360 tests pass; no new failures; tests only
 stackiq	1862	0bd168bc40d4440cb728e374f05d7178ef169348	GREEN	worker-38	phpunit 3219 run on tree (baseline 3216, 0 failures); vitest 228 files/2360 tests pass; no new failures; tests only
+learniq	2454	508373f8515c4716b70b653b0e28ad22a109bb02	GREEN	worker-56	6153 tests, baseline 6142 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
