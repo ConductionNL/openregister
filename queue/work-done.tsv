@@ -6004,5 +6004,6 @@ cover:learniq:e6498dddm0533:d39f9857	PR: 3 tests, lib/Support/*.php 94.67%->100%
 cover:humaniq:a18a13fb:6f346b68	PR #1120: HumaniqAdminSectionTest (3 tests); suite 4140->4143, 0 failures	session-20261113T172334-4b3b027b	2026-11-13T18:33:34Z
 fix:portaliq:2446:0f1d5cb2	no change: clean vs development; conflicts only with unmerged #2442, REVERIFY recorded	session-20261113T182353-86897235	2026-11-13T18:33:52Z
 fix:portaliq:2449:f132ffce	no change: branch already up to date with development (head f132ffce); conflict is only with still-open #2442/#2443 in tree order, resolve after they merge	session-20261113T175336-e3687686	2026-11-13T18:34:01Z
+cover:humaniq:a18a13fb:05630945	PR #1121: 9 tests; lib/Middleware/Support 88.33% -> 91.67%; remaining 5 lines unreachable (empty constant lists), 95% not reachable with tests only	session-20261113T175336-b2d7fc7c	2026-11-13T18:34:03Z
 cover:integriq:92114ab0mb37a:0d678885	PR #3530: 32 tests over 7 identity classes; suite 8222->8254, no new failures (golden sync test inherited)	session-20261113T182349-6568f680	2026-11-13T18:34:00Z
 cover:opencatalogi:fc83bfb1:ff806a5e	PR #2595: 14 tests, Community 254/265 -> 264/265 stmts, suite 5268 (2 inherited failures)	session-20261113T182348-cc1b5fea	2026-11-13T18:34:04Z
