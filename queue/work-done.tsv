@@ -5037,3 +5037,4 @@ cover:integriq:92114ab0m158b:c5021ae5	already done: lib/Service/DigitalPost/*.ph
 cover:integriq:92114ab0m158b:102ac6fb	already done: lib/Service/Security/*.php at 97.7% stmts (1021/1045) @81441e2, above 95 target	session-20261113T124807-5f522699	2026-11-13T12:55:21Z
 cover:openregister:7350e3efma401:js10e26862	PR #10217: 14 jest tests for OrganisationMembers + RemoveUserDialog (0% → covered); suite 8025 → 8039 green	session-20261113T114525-2ca68289	2026-11-13T12:55:26Z
 cover:integriq:92114ab0m158b:2b49da71	already done: lib/Adapters/Slo/*.php at 99.1% stmts (736/743) @81441e2, above 95 target	session-20261113T124807-5f522699	2026-11-13T12:55:32Z
+cover:integriq:92114ab0m158b:f191f1e9	already done: lib/Service/Lti/*.php at 96.6% stmts (1298/1344) @81441e2, above 95 target	session-20261113T124807-5f522699	2026-11-13T12:55:42Z
