@@ -1703,4 +1703,5 @@ cover:shillinq:801aab65:1dec5f62	PR #2844: FieldRequirements reads, 3 tests; lib
 verify:launchpad:1141:5595b3eb	already merged: 46cdc657 is an ancestor of origin/development; no verdict needed	session-20261113T023823-08aff282	2026-11-13T02:39:10Z
 cover:shillinq:801aab65:c4ea4174	PR #2845: LogDepositPaymentAdapter 6 tests; suite 9004->9010, 1 pre-existing failure	session-20261113T021659-ac072d0a	2026-11-13T02:39:09Z
 cover:shillinq:801aab65:4734f62e	PR #2846: 4 import profiles, 5 tests, ImportProfile 90.5->100%	session-20261113T004519-b6b86685	2026-11-13T02:39:52Z
+cover:filinq:8ecceb86mc744:js00fe026a	PR #2006: 22 vitest tests (intake/final/version/bases/theme/contract labels); src/services 81.7%->87.3%; 450->472 passed	session-20261113T011731-be978a55	2026-11-13T02:39:58Z
 verify:pipelinq:3618:1908d716	3618-3626 GREEN: tests-only, phpunit 5825 (1 inherited), vitest 3205 ok; 3626 sha was truncated in the row, matched by prefix	session-20261113T011731-f3798045	2026-11-13T02:40:12Z
