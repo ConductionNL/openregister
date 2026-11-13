@@ -150,19 +150,23 @@ final class SearchScopes {
 	/**
 	 * Keep only the schemas these scopes name.
 	 *
-	 * A scope set that names no schema and no register leaves the list alone:
-	 * `files` alone is about which HITS to keep, not where to look, and an
-	 * `app:` scope is resolved by the caller into register slugs before it
-	 * reaches here.
+	 * A scope set that names no schema, no register and no app leaves the list
+	 * alone: `files` alone is about which HITS to keep, not where to look.
 	 *
-	 * @param array<int, array{id: int, slug: string, register: string}> $schemas The searchable schemas.
+	 * 🔴 AN `app:` SCOPE NARROWS. It used to be parsed and then ignored here,
+	 * so `app:dossiq` answered every app's rows — a scope that narrows nothing
+	 * when it should, which reads as a broken filter. It keeps the schemas the
+	 * app claims (the row's `apps`), and an app that claims nothing keeps
+	 * nothing, exactly like a schema scope that names no schema.
+	 *
+	 * @param array<int, array{id: int, slug: string, register: string, apps?: array<int, string>}> $schemas The searchable schemas.
 	 *
 	 * @return array<int, int> The schema ids to search.
 	 *
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
 	 */
 	public function narrowSchemas(array $schemas): array {
-		if ($this->schemas === [] && $this->registers === []) {
+		if ($this->schemas === [] && $this->registers === [] && $this->apps === []) {
 			return array_values(array_map(static fn (array $row): int => (int)$row['id'], $schemas));
 		}
 
@@ -177,22 +181,25 @@ final class SearchScopes {
 	}//end narrowSchemas()
 
 	/**
-	 * Whether a schema row is named by a schema scope or a register scope.
+	 * Whether a schema row is named by a schema, register or app scope.
 	 *
 	 * OR, not AND. Two chips are two things the reader wants to see, and
 	 * intersecting them answers an empty page to somebody who asked for more
 	 * rather than less. A row's slug is only read when a schema scope exists,
-	 * and its register only when a register scope exists.
+	 * its register only when a register scope exists, and its apps only when an
+	 * app scope exists. Compared in lower case, because the tokens are: a slug
+	 * stored as `Case` is still named by `schema:case`.
 	 *
-	 * @param array{id: int, slug: string, register: string} $schema One searchable schema.
+	 * @param array{id: int, slug: string, register: string, apps?: array<int, string>} $schema One searchable schema.
 	 *
 	 * @return boolean True when the row is kept.
 	 */
 	private function keeps(array $schema): bool {
-		$bySchema = ($this->schemas !== [] && in_array((string)$schema['slug'], $this->schemas, true) === true);
-		$byRegister = ($this->registers !== [] && in_array((string)$schema['register'], $this->registers, true) === true);
+		$bySchema = ($this->schemas !== [] && in_array(strtolower((string)$schema['slug']), $this->schemas, true) === true);
+		$byRegister = ($this->registers !== [] && in_array(strtolower((string)$schema['register']), $this->registers, true) === true);
+		$byApp = ($this->apps !== [] && array_intersect(array_map('strtolower', ($schema['apps'] ?? [])), $this->apps) !== []);
 
-		return $bySchema === true || $byRegister === true;
+		return $bySchema === true || $byRegister === true || $byApp === true;
 	}//end keeps()
 
 	/**

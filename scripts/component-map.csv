@@ -161,6 +161,7 @@ Capabilities/CapabilityRegistrar.php,23,Capabilities,Platform,Platform/Capabilit
 Capabilities/IntegrationsCapability.php,80,Capabilities,Platform,Platform/Capabilities/IntegrationsCapability.php,0,,Platform
 Capabilities/PlatformCapability.php,,Capabilities,,,,,Platform
 Capabilities/PlatformIntegrations.php,,Capabilities,,,,,Platform
+Capabilities/SearchScopesCapability.php,,Capabilities,,,,,Platform
 Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/UrnCapability.php,0,,Platform
 Collaboration/ObjectResourceProvider.php,,Collaboration,,,,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
@@ -1667,6 +1668,7 @@ Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.p
 Search/SearchProviderRegistrar.php,10,Search,Platform,Platform/Search/SearchProviderRegistrar.php,0,,Search
 Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
+Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
 Search/Service/Aggregation/AggregationAnnotationValidator.php,233,Search,Search,Search/Service/Aggregation/AggregationAnnotationValidator.php,0,91,Search
 Search/Service/Aggregation/AggregationCache.php,156,Search,Search,Search/Service/Aggregation/AggregationCache.php,0,175,Search
