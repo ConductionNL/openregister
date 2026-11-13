@@ -3296,3 +3296,4 @@ fix:shillinq:2900:451b1bee	conflict resolved, pushed d5201979; REVERIFY recorded
 gap:buildiq:maint1:burn1	PR #1526: split saveManifest/applySchedules/seed, +15 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:52:09Z
 cover:dossiq:f8a113c5m7e79:9ece5c6f	already done: lib/Controller/Support/ at 99.3% lines on development fcb4570e0 (earlier -1/-2 PRs merged); only 4 lines left, 3 of them the Server service-locator fallback; no PR	session-20261113T074529-55a84d1d	2026-11-13T07:52:26Z
 verify:dossiq:6328:9ee72b4b	GREEN 6328, GREEN 6329 (15190->15192, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:52:27Z
+verify:versioniq:666:f50d6817	GREEN 666, GREEN 667; 0 new failures over baseline (2 inherited)	session-20261113T074527-031883a8	2026-11-13T07:52:43Z
