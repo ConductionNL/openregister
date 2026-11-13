@@ -1630,4 +1630,5 @@ cover:dossiq:6ca0231ema7d4:28cccfd9	PR #6230: 19 tests for CaseTimerSweeper, Mov
 cover:launchpad:755175ffm31b6:aae6d66c	already done: lib/Exception/*.php 55/55 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:25:07Z
 cover:dossiq:6ca0231ema7d4:a07ceba0	PR #6231: 5 DSO edge tests; Dso dir 283->291/298; suite 13867->13872, same 19 inherited failures	session-20261112T234655-0bdbf2be	2026-11-13T02:25:01Z
 cover:openregister:7350e3efm0e99:356f590c	PR #10091: 25 tests, 4 classes in Service/File; File suite 972->997 OK	session-20261113T015002-81190344	2026-11-13T02:25:22Z
+cover:dossiq:6ca0231ema7d4:5ebe3eb6	PR #6232: lib/Service/Mcp 235/246 -> 246/246, 8 tests	session-20261113T015005-030aa10a	2026-11-13T02:25:10Z
 cover:pipelinq:f67520ecm8c58:js0023cfc7	PR #3634: ContactImport + OrganisationEnrich dialog flows (+16 tests); src/dialogs/* 70.0%->72.2% (0% dialogs in open PRs -1/-2)	session-20261113T011731-f3798045	2026-11-13T02:25:16Z
