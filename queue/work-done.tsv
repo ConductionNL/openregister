@@ -3322,3 +3322,4 @@ verify:hermiq:1598:9dc31b72	1598 BLOCK (adds API contract middleware changing ex
 gap:learniq:maint1:burn1	PR #2438: emitGradeEntry, processMessage and verify split into helpers, behaviour unchanged; 11 tests added first; suite 6101->6112, same inherited failure	session-20261113T051705-4f5ad12a	2026-11-13T07:56:26Z
 gap:portaliq:maint1:burn1	PR #2372: buildRequestUrl, statementLines, fieldError split (golden pinned first); node suite same 2 inherited fails	session-20261113T072706-2eaa6a81	2026-11-13T07:56:24Z
 cover:planninq:e1c9866d:60c2c265	PR #1140: 27 tests, 6 classes, lib/Controller/*.php 90.1% -> 98.0%, suite 894->921 OK	session-20261113T074533-3e2a2da6	2026-11-13T07:56:33Z
+gap:stackiq:spdx:burn1	PR #1852: SPDX headers added to the 24 files under lib/ and tests/ that lacked them; none left	session-20261113T071636-117504ad	2026-11-13T07:56:51Z
