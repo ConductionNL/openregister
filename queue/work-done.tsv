@@ -5448,3 +5448,4 @@ build:portaliq:contact-page-question-form-and-not-found	already built: code task
 review:openregister:10271:d4c63696	APPROVE: additive fail-soft import audit, orphan-write now wired, suites green	session-20261113T124802-c7d6f662	2026-11-13T14:15:38Z
 cover:dossiq:069ee2d6m2deb:86b78c8e	already done: lib/Service/{Transfer,Workflow,Zgw} 97.06% (3303/3403) on development, above the 95% target	session-20261113T091533-b7a00bc3	2026-11-13T14:15:52Z
 review:openregister:10267:e93fce2b	APPROVE #10267 (write-cause threading; backward-compatible, green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T14:16:02Z
+cover:dossiq:069ee2d6m2deb:23f6b1f1	already done: lib/Service/Cases 99.23% (1552/1564) on development after the -1 batch	session-20261113T091533-b7a00bc3	2026-11-13T14:16:21Z
