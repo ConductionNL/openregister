@@ -4560,3 +4560,4 @@ stackiq	1790	aa818309297f212826e5300ee043a76890161487	GREEN	worker-24	2657 tests
 stackiq	1791	95f6cd8fa0b7909a0f7807900af1bb816283b971	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; behaviour-preserving extraction in ArchiMateService org export; same queries, order and error results; golden test added
 stackiq	1792	a210b206e6b39587f3b7206ae1703179c164a72b	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; DI registration split into per-domain methods, same order, pinned by golden test
 stackiq	1793	09753a640d187939c7ddc436d76c4b3961134d23	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only
+stackiq	1794	4b6d860f02ad6960de1ccc22ecb4c75294653f52	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only
