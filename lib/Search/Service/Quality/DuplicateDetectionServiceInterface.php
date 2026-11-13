@@ -149,4 +149,22 @@ interface DuplicateDetectionServiceInterface {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function effectiveRules($register, $schema): array;
+
+	/**
+	 * Group files whose text is near-identical, by their stored MinHash signatures.
+	 *
+	 * @param list<int>  $fileIds   The files, already limited to those the caller may read.
+	 * @param float|null $threshold The similarity at or above which files group (0.5 to 1), or null for the
+	 *                              `duplicates.textThreshold` setting, default 0.9.
+	 *
+	 * @return array{
+	 *     groups: list<array{representative: int, members: list<array{fileId: int, similarity: float, identicalText: bool}>}>,
+	 *     notCompared: list<array{fileId: int, reason: string}>
+	 * } The groups and the files not compared.
+	 *
+	 * @throws \InvalidArgumentException When the threshold lies outside 0.5 to 1.
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-near-identical-documents-are-grouped-by-their-text-req-ndt-002
+	 */
+	public function findTextGroups(array $fileIds, ?float $threshold=null): array;
 }//end interface

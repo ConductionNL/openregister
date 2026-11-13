@@ -2,12 +2,12 @@
 
 ## 1. Signatures (REQ-NDT-001)
 
-- [ ] 1.1 `lib/Service/Quality/TextSignature.php` (normalise, shingle, MinHash with 128 fixed seeds) and `lib/Db/TextSignature.php`, mapper and migration (`file_id` unique, `signature` binary or JSON, `shingle_count`, `text_sha256`, `created`). Verify: `tests/Unit/Service/Quality/TextSignatureTest.php::testTheSameTextGivesTheSameSignature`, `testAShortTextIsNotSigned`, `testNearIdenticalTextsEstimateAboveNinety` (fails today: no class).
+- [x] 1.1 `lib/Service/Quality/TextSignature.php` (normalise, shingle, MinHash with 128 fixed seeds) and `lib/Db/TextSignature.php`, mapper and migration (`file_id` unique, `signature` binary or JSON, `shingle_count`, `text_sha256`, `created`). Verify: `tests/Unit/Service/Quality/TextSignatureTest.php::testTheSameTextGivesTheSameSignature`, `testAShortTextIsNotSigned`, `testNearIdenticalTextsEstimateAboveNinety` (fails today: no class).
 - [ ] 1.2 Compute and store in `TextExtractionService::indexFilePayload()` (both `extractFile()` and `extractFromProvidedText()` reach it); delete beside `ChunkMapper::deleteBySource()`. Verify: `TextSignatureTest::testReExtractionReplacesTheSignature` through `extractFile()` with the real mapper against the test database.
 
 ## 2. Grouping (REQ-NDT-002)
 
-- [ ] 2.1 `DuplicateDetectionService::findTextGroups()` with banding, Jaccard confirmation, union-find grouping and the representative rule; setting `duplicates.textThreshold`. Verify: `tests/Unit/Service/Quality/TextGroupsTest.php::testThreeCopiesFormOneGroup`, `testTheEarliestFileRepresents`, `testBandingDoesNotCompareAllPairs` (counts comparisons on 1000 distinct signatures), `testAThresholdOutsideRangeIsRefused`.
+- [x] 2.1 `DuplicateDetectionService::findTextGroups()` with banding, Jaccard confirmation, union-find grouping and the representative rule; setting `duplicates.textThreshold`. Verify: `tests/Unit/Service/Quality/TextGroupsTest.php::testThreeCopiesFormOneGroup`, `testTheEarliestFileRepresents`, `testBandingDoesNotCompareAllPairs` (counts comparisons on 1000 distinct signatures), `testAThresholdOutsideRangeIsRefused`.
 - [ ] 2.2 `GET /api/files/near-duplicates` on `DuplicateController` (`#[NoAdminRequired]`, read rights per file resolved before comparing), with the 5000 file cap. Verify: `tests/Unit/Controller/NearDuplicateEndpointTest.php::testAnUnreadableFileIsLeftOutBeforeComparing`, `testAFileWithoutTextIsNamedNotCompared`, `testMoreThanFiveThousandIsRefused`; hydra gates route-auth and no-admin-idor pass.
 - [ ] 2.3 Through the route: a Newman request in `tests/newman/` uploads three fixture files with near-identical text to one object, waits for extraction, calls the endpoint and asserts one group of three.
 
