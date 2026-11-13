@@ -6709,3 +6709,4 @@ fix:filinq:2088:cfd39c35	failed: #2085 not on development yet (dev still 95d364b
 fix:filinq:2089:b315e20a	failed: #2085 not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:37:09Z
 cover:opencatalogi:fc83bfb1m976b:js8b29c4b9	PR #2612: 28 vitest tests for src/modals/generic/uploadSteps.js (now 100%); vitest 806->834, all green; .vue files there already have jest specs	session-20261113T195351-a32c6d55	2026-11-13T20:37:16Z
 cover:openregister:7350e3efma401:927a9e67	PR #10324: 17 tests (TaskVerbList, TaskInboxPage, PositionAdvance); dirs 94.84% -> 95.85%	session-20261113T185328-da819141	2026-11-13T20:37:33Z
+fix:filinq:2086:8d29d9b1	failed: the PR it conflicts with is not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:37:31Z
