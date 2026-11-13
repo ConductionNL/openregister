@@ -7341,3 +7341,4 @@ review:openregister:10449:9fcc31c7	APPROVE 10449	session-20261113T213320-1f5acbf
 fix:filinq:2077:d2168f06	fixed floor unit_interfacing: parameter object for the splitter readers; new head 619ea4467fe6f296b93b02b38887434aa0ef3bbc	session-20261113T205325-28f592a9	2026-11-13T22:48:49Z
 build:decidiq:voting-named-paper-vote-entry	partial: PR #2174 tasks 1-4 (register, recorded votes endpoint with whole-list refusal, show-of-hands close fix); task 5 entry sheet UI and Newman left	session-20261113T205330-0e50ee62	2026-11-13T22:49:10Z
 build:hermiq:hermiq-mcp-adoption	partial: PR #1723 (task 1 read-only dialect on Agent/Schedule/Session + test); tasks 2-7 (provider refactor) left	session-20261113T205323-cbfd0ec4	2026-11-13T22:49:17Z
+review:openregister:10446:99fb57fc	APPROVE: tests + tasks only, suites green	session-20261113T202612-d930c905	2026-11-13T22:49:45Z
