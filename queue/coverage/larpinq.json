@@ -1,52 +1,52 @@
 {
  "app": "larpinq",
  "commit": "1137ab67c8cdaea7e555dc99270e050e09fa11c2",
- "measured_at": "2026-11-13T07:36:38Z",
+ "measured_at": "2026-11-13T07:37:09Z",
  "php": {
   "tool": "pcov",
-  "pct": 0.0,
-  "statements": 4153,
-  "covered": 0,
+  "pct": 92.61,
+  "statements": 4152,
+  "covered": 3845,
   "dirs": {
    "lib/AppInfo/": [
     106,
-    0
+    78
    ],
    "lib/BackgroundJob/": [
     9,
-    0
+    9
    ],
    "lib/Command/": [
     19,
-    0
+    19
    ],
    "lib/Controller/": [
     558,
-    0
+    515
    ],
    "lib/Event/": [
-    22,
-    0
+    21,
+    20
    ],
    "lib/Listener/": [
     521,
-    0
+    502
    ],
    "lib/Middleware/": [
     56,
-    0
+    55
    ],
    "lib/Middleware/Support/": [
     59,
-    0
+    52
    ],
    "lib/Portal/": [
     155,
-    0
+    155
    ],
    "lib/Repair/": [
     280,
-    0
+    262
    ],
    "lib/Sections/": [
     6,
@@ -54,7 +54,7 @@
    ],
    "lib/Service/": [
     2305,
-    0
+    2146
    ],
    "lib/Settings/": [
     12,
@@ -62,7 +62,7 @@
    ],
    "lib/Support/": [
     45,
-    0
+    32
    ]
   }
  },
