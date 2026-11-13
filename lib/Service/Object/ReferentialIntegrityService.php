@@ -269,7 +269,9 @@ class ReferentialIntegrityService {
 				changed: $changed + self::triggerOf(origin: $origin),
 				userId: $origin->userId
 			);
-			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
+			$this->logIntegrityAction(
+				entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated)->lastingUntil(until: $origin->evidenceUntil)
+			);
 		}
 	}//end applySetNullTargets()
 
@@ -293,7 +295,9 @@ class ReferentialIntegrityService {
 				changed: $changed + self::triggerOf(origin: $origin),
 				userId: $origin->userId
 			);
-			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
+			$this->logIntegrityAction(
+				entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated)->lastingUntil(until: $origin->evidenceUntil)
+			);
 		}
 	}//end applySetDefaultTargets()
 
@@ -1854,8 +1858,56 @@ class ReferentialIntegrityService {
 			auditTrail: $auditTrail,
 			objectEntity: ($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid))
 		);
+		self::keepUntil(auditTrail: $auditTrail, until: $entry->expiresNoEarlierThan);
 		$this->controls->auditTrailMapper->insert($auditTrail);
 	}//end storeIntegrityRow()
+
+	/**
+	 * Push a finite expiry out to the given moment, so the evidence of a cleared
+	 * reference outlives the recovery window of the delete that cleared it.
+	 *
+	 * An entry retained indefinitely (null expiry) stays so, and an expiry
+	 * already later than the floor is left as it is: the floor only lengthens.
+	 * Set before the row is sealed, as every expiry is.
+	 *
+	 * @param AuditTrail              $auditTrail The entry being written.
+	 * @param \DateTimeImmutable|null $until      The earliest expiry, or null for no floor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	private static function keepUntil(AuditTrail $auditTrail, ?\DateTimeImmutable $until): void {
+		$expires = $auditTrail->getExpires();
+		if ($until === null || $expires === null) {
+			return;
+		}
+
+		if ($expires->getTimestamp() < $until->getTimestamp()) {
+			$auditTrail->setExpires(DateTime::createFromImmutable($until));
+		}
+	}//end keepUntil()
+
+	/**
+	 * The uuid of the deleted object an integrity entry acted for, for the indexed `trigger_object` column.
+	 *
+	 * `set_null` and `set_default` entries carry it in `changed` (see
+	 * {@see self::triggerOf()}); a RESTRICT block carries none and stays null.
+	 *
+	 * @param array $changed The entry's change payload.
+	 *
+	 * @return string|null The triggering object's uuid, or null.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	private static function triggerObjectOf(array $changed): ?string {
+		$trigger = ($changed['triggerObject'] ?? null);
+		if (is_string($trigger) === false || trim($trigger) === '') {
+			return null;
+		}
+
+		return $trigger;
+	}//end triggerObjectOf()
 
 	/**
 	 * The audit row of an integrity action.
@@ -1872,6 +1924,7 @@ class ReferentialIntegrityService {
 		$auditTrail->setObjectUuid($entry->objectUuid);
 		$auditTrail->setAction($entry->action);
 		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setTriggerObject(self::triggerObjectOf(changed: $entry->changed));
 		$auditTrail->setUser($entry->userId);
 		$auditTrail->setCreated(new DateTime());
 

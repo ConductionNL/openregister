@@ -74,6 +74,7 @@ final class AuditTrailFieldTypes {
 		'flowStep' => 'integer',
 		'purpose' => 'string',
 		'consumer' => 'string',
+		'triggerObject' => 'string',
 	];
 
 	/**
@@ -87,7 +88,8 @@ final class AuditTrailFieldTypes {
 	 * rather than a column addition: any key added here changes the canonical
 	 * form of every row ever written. Do not add a key to this list without
 	 * reading that ADR — and note that `purgedAt` is deliberately ABSENT for
-	 * exactly this reason, as are `importJobId`, `purpose` and `consumer`.
+	 * exactly this reason, as are `importJobId`, `purpose`, `consumer` and
+	 * `triggerObject` (a projection of `changed`, which is sealed already).
 	 *
 	 * @var string[]
 	 */

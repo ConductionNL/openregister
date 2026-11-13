@@ -1058,6 +1058,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
@@ -1208,6 +1209,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $removed;
 	}//end removedFields()
+
+	/**
+	 * The uuid of the object a cascade acted for, as the indexed `trigger_object` column holds it.
+	 *
+	 * A projection of the cascade context that {@see self::foldCascadeContext()}
+	 * writes into the sealed `changed` payload, so the column adds no fact the
+	 * chain does not already cover.
+	 *
+	 * @param array|null $cascadeContext The cascade context, if any.
+	 *
+	 * @return string|null The triggering object's uuid, or null when the entry is not part of a cascade.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function triggerObjectOf(?array $cascadeContext): ?string {
+		$trigger = ($cascadeContext['triggerObject'] ?? null);
+		if (is_string($trigger) === false || trim($trigger) === '') {
+			return null;
+		}
+
+		return $trigger;
+	}//end triggerObjectOf()
 
 	/**
 	 * Fold a referential-integrity cascade context into the change set.

@@ -1770,6 +1770,73 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Run one set_null cascade whose stored row resolves to the given expiry, with a recovery window ending at the given moment.
+	 *
+	 * @param \DateTime|null          $resolved The expiry the retention resolver gives the row.
+	 * @param \DateTimeImmutable|null $windowEnd The end of the deleted object's recovery window.
+	 *
+	 * @return AuditTrail The stored row.
+	 */
+	private function storedSetNullRow(?\DateTime $resolved, ?\DateTimeImmutable $windowEnd): AuditTrail {
+		$object = $this->createObjectEntity('dep-uuid', '1', '1', ['parentRef' => 'source-uuid']);
+		$this->objectMapper->method('findAcrossAllSources')
+			->willReturn(['object' => $object, 'register' => $this->createRegister(1), 'schema' => $this->createSchema(1)]);
+		$this->auditTrailMapper->method('applyRetentionExpiry')->willReturnCallback(
+			static function (AuditTrail $trail) use ($resolved): AuditTrail {
+				$trail->setExpires($resolved);
+				return $trail;
+			}
+		);
+
+		$stored = null;
+		$this->auditTrailMapper->expects($this->once())->method('insert')->willReturnCallback(
+			static function (AuditTrail $trail) use (&$stored): AuditTrail {
+				$stored = $trail;
+				return $trail;
+			}
+		);
+
+		$analysis = new DeletionAnalysis(
+			deletable: true,
+			effects: new DeletionEffects(
+				nullifyTargets: [['objectUuid' => 'dep-uuid', 'schema' => '1', 'property' => 'parentRef', 'isArray' => false, 'sourceUuid' => 'source-uuid']]
+			)
+		);
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: 'lead', organisationId: null, evidenceUntil: $windowEnd)
+		);
+
+		return $stored;
+	}
+
+	public function testAClearedReferenceIsKeptUntilTheNinetyDayWindowEnds(): void {
+		$windowEnd = new \DateTimeImmutable('+90 days');
+		$row = $this->storedSetNullRow(resolved: new \DateTime('+30 days'), windowEnd: $windowEnd);
+
+		$this->assertSame('referential_integrity.set_null', $row->getAction());
+		$this->assertSame($windowEnd->getTimestamp(), $row->getExpires()->getTimestamp(), 'a 30-day expiry is pushed out to the end of the 90-day window');
+		$this->assertSame('source-uuid', $row->getTriggerObject(), 'the row names its trigger in the indexed column');
+	}
+
+	public function testALaterExpiryThanTheWindowIsKept(): void {
+		$resolved = new \DateTime('+400 days');
+		$row = $this->storedSetNullRow(resolved: $resolved, windowEnd: new \DateTimeImmutable('+90 days'));
+
+		$this->assertSame($resolved->getTimestamp(), $row->getExpires()->getTimestamp(), 'the floor only lengthens');
+	}
+
+	public function testAnIndefinitelyRetainedRowStaysIndefinite(): void {
+		$this->assertNull($this->storedSetNullRow(resolved: null, windowEnd: new \DateTimeImmutable('+90 days'))->getExpires());
+	}
+
+	public function testWithoutAWindowTheResolvedExpiryStands(): void {
+		$resolved = new \DateTime('+30 days');
+
+		$this->assertSame($resolved->getTimestamp(), $this->storedSetNullRow(resolved: $resolved, windowEnd: null)->getExpires()->getTimestamp());
+	}
+
 	public function testApplyDeletionActionsLogsSetDefaultAuditTrail(): void {
 		$object = $this->createObjectEntity('dep-uuid', '1', '1', ['parentRef' => 'source-uuid']);
 		$register = $this->createRegister(1);
