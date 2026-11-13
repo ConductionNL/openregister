@@ -4858,3 +4858,4 @@ build:openregister:object-tree-read	failed: worker rules forbid build tasks on o
 build:openregister:or-mcp-registration-event	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:34Z
 build:openregister:notes-leaf-rich-text-lock-export	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:40Z
 build:openregister:notification-kinds-an-administrator-forces	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:46Z
+build:openregister:object-write-sub-500ms	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:52Z
