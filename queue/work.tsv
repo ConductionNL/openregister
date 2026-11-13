@@ -6729,3 +6729,13 @@ build:filinq:work-content-search	build	filinq	development	work-content-search	ch
 build:filinq:work-document-notes	build	filinq	development	work-document-notes	change=work-document-notes;open=1	2026-11-13T19:25:06Z
 build:filinq:work-stamp-text-on-every-page	build	filinq	development	work-stamp-text-on-every-page	change=work-stamp-text-on-every-page;open=5	2026-11-13T19:25:06Z
 build:filinq:zgw-document-bridge	build	filinq	development	zgw-document-bridge	change=zgw-document-bridge;open=11	2026-11-13T19:25:06Z
+review:openregister:10303:609b6aef	review	openregister	main	10303	sha=609b6aef09e859ef1f6f7361ed654e0267e4144b;last_approved=;title=test(openregister): cover condition group leaves	2026-11-13T19:25:22Z
+review:openregister:10304:23e91967	review	openregister	main	10304	sha=23e91967c4dbb65e07a73ac13fb77c5f38c6b54f;last_approved=;title=feat(openregister): build records-api-and-table-stated	2026-11-13T19:25:22Z
+review:openregister:10305:322d15db	review	openregister	main	10305	sha=322d15db43072ad0ce5f9d517cf2b0943307f5f5;last_approved=;title=feat(openregister): build object-files-follow-object-access	2026-11-13T19:25:22Z
+review:openregister:10306:f567fb82	review	openregister	main	10306	sha=f567fb82fd7c824ea2cbc1b09a203a2f28deac08;last_approved=;title=feat(openregister): build rbac-department-role-matrix	2026-11-13T19:25:22Z
+review:openregister:10307:94131617	review	openregister	main	10307	sha=941316172aace9112cbc1b919e67837bf6268b66;last_approved=;title=feat(openregister): build platform-collaboration-resources	2026-11-13T19:25:22Z
+verify:buildiq:1560:88a91f8a	verify	buildiq	development	merge	prs=1560@62e96c456e45c0a6a5e1d2be6a932fb7c0308746	2026-11-13T19:25:22Z
+verify:integriq:3532:880ced72	verify	integriq	development	merge	prs=3532@42115361ad6bcea53be7c9485a2560d4d7d8b641,3533@34eb717e4b900085d726c1f1f7d60bc57deb5e7b	2026-11-13T19:25:22Z
+verify:planninq:1152:27e8c71c	verify	planninq	development	merge	prs=1152@3e1252f69acd76e050b3027306829a2c57f0a8f7	2026-11-13T19:25:22Z
+merge:decidiq:2130:3b601c40	merge	decidiq	development	development	prs=2130@8f7a28fa222c1beba24bf1c9cf60a7479f2bc780,2131@66d02dbcd4bbd73b4f865564b7313073f93a5096	2026-11-13T19:25:22Z
+cover:stackiq:9ac19b3am9d24:bc982e61	cover	stackiq	development	quality/test-coverage-bc982e61	lang=php;dirs=lib/Kernel/Contracts/;focus=thin;weight=2128;coverage=88.76;target=90.0	2026-07-16T17:35:55Z
