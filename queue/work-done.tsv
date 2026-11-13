@@ -1735,3 +1735,4 @@ cover:dossiq:6ca0231ema7d4:568ec52a	PR #6248: 24 tests, lib/Lifecycle 204/209 ->
 review:openregister:10090:75fe7978	APPROVE: tests only, all required suites green	session-20261113T015005-da194c88	2026-11-13T02:53:55Z
 cover:dossiq:6ca0231ema7d4:6891a8ac	PR dossiq#6249: 16 tests for WidgetRoles + RenamedLayoutIds edge cases, suite 19 inherited failures unchanged	session-20261113T024654-6600dc41	2026-11-13T02:54:05Z
 cover:dossiq:6ca0231ema7d4:63eef43f	already done: lib/Service/Mandaat at 141/142 stmts under existing tests (only a one-line save() pass-through uncovered); no PR	session-20261113T024653-d22c13a3	2026-11-13T02:55:10Z
+cover:dossiq:6ca0231ema7d4:da74a02d	PR #6250: BerichtenboxAdapter 110/136 -> 130/136, 5 tests	session-20261113T015005-030aa10a	2026-11-13T02:56:01Z
