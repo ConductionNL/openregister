@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * The clock is fixed and every date carries an explicit offset.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ConstraintPoint
  */
 class GrantConstraintsShapeTest extends TestCase {
 

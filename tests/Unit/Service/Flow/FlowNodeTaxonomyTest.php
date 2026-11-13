@@ -173,6 +173,7 @@ class DeclaredNode extends UndeclaredNode implements IFlowNodeTaxonomy {
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTaxonomyVocabulary
  */
 final class FlowNodeTaxonomyTest extends TestCase {
 

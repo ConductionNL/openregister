@@ -35,6 +35,12 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Archival\DeletionCandidate
  */
 final class ArchivalRetentionGuardReportGoldenTest extends TestCase {
 

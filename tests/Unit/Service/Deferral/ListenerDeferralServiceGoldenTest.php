@@ -44,6 +44,13 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
  * fixtures/listener-deferral-service-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Deferral\ListenerDeferralService
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralOptions
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralQueueServices
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredChunkPacking
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredEntry
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredListenerContext
+ * @uses \OCA\OpenRegister\Service\Deferral\JobArgumentBudget
  */
 class ListenerDeferralServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/listener-deferral-service-golden.json';

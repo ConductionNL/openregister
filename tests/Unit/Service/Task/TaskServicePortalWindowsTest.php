@@ -64,6 +64,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
  * @uses \OCA\OpenRegister\Service\Task\TaskIntake
  * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
  * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
  */
 class TaskServicePortalWindowsTest extends TestCase {
 

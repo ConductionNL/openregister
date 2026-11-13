@@ -34,6 +34,7 @@ use Symfony\Component\Yaml\Exception\ParseException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\UploadHandler
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class UploadHandlerGoldenTest extends TestCase {
 	/**

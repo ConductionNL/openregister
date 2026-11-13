@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * How a rule entry fits a record, and which principal type a rule names.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantRuleFit
+ * @uses \OCA\OpenRegister\Service\Rbac\HeldRule
  */
 class GrantRuleFitTest extends TestCase {
 

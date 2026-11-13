@@ -54,6 +54,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\SequenceClosure
  * @uses \OCA\OpenRegister\Service\Task\TaskSequenceServices
  * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
  */
 class TaskSequenceServiceTest extends TestCase {
 

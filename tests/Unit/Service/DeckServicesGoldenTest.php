@@ -55,6 +55,10 @@ foreach (['OCA\\Deck\\Service\\CardService', 'OCA\\Deck\\Db\\CardMapper', 'OCA\\
  * @uses   \OCA\OpenRegister\Service\CardDraft
  * @uses   \OCA\OpenRegister\Service\DeckRowMapper
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\DeckCardRun
+ * @uses \OCA\OpenRegister\Service\DeckPlatform
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class DeckServicesGoldenTest extends TestCase {
 

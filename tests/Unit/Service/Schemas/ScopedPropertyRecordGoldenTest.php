@@ -43,6 +43,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedField
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyPromotion
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
 final class ScopedPropertyRecordGoldenTest extends TestCase {
 

@@ -57,6 +57,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoSourceReader
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoValueReader
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalFactKey
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalSource
+ * @uses \OCA\OpenRegister\Service\Edepot\InformatieobjectRun
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoBegrip
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoValueSources
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoVerwijzing
  */
 class TmloExportTest extends TestCase {
 

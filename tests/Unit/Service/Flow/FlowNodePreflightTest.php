@@ -41,6 +41,7 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodePreflight
  * @uses \OCA\OpenRegister\Service\Flow\FlowConnectivity
  * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPreflightStep
  */
 class FlowNodePreflightTest extends TestCase {
 	use FiltersFlowLevelFindings;

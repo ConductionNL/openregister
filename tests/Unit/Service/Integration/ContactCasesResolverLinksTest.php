@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Integration\ContactCasesResolver
  * @uses   \OCA\OpenRegister\Service\Integration\ContactCasesPanel
+ * @uses \OCA\OpenRegister\Service\Integration\ContactCasesPanel
  */
 class ContactCasesResolverLinksTest extends TestCase {
 

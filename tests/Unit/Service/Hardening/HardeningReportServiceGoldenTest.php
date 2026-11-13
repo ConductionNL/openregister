@@ -38,6 +38,11 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Hardening\HardeningControl
  * @uses   \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  * @uses   \OCA\OpenRegister\Service\Hardening\ThrottledSurfaces
+ * @uses \OCA\OpenRegister\Service\Hardening\FloorRule
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningControlLabel
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPosture
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningReading
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningSettingsStore
  */
 class HardeningReportServiceGoldenTest extends TestCase {
 

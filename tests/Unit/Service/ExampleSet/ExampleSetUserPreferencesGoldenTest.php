@@ -36,6 +36,7 @@ use RuntimeException;
  * Golden pins for the user preference steps of an example set.
  *
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\UserPreferenceKey
  */
 class ExampleSetUserPreferencesGoldenTest extends TestCase {
 

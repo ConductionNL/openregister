@@ -53,6 +53,12 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\BulkCreateCheck
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
  */
 class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 
