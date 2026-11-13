@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "5f5f87c67fc36c647bfe4b43908e2da59a015653",
- "measured_at": "2026-11-13T04:14:14Z",
+ "commit": "0ac5011246218872109a77f0d2e065178b05352c",
+ "measured_at": "2026-11-13T06:20:25Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.56,
-  "statements": 19516,
-  "covered": 15723,
+  "pct": 33.42,
+  "statements": 19656,
+  "covered": 6570,
   "dirs": {
    "lib/": [
     11,
@@ -18,15 +18,15 @@
    ],
    "lib/BackgroundJob/": [
     245,
-    230
+    158
    ],
    "lib/Command/": [
     349,
-    348
+    0
    ],
    "lib/Controller/": [
-    3334,
-    2535
+    3352,
+    1084
    ],
    "lib/Dashboard/": [
     81,
@@ -38,27 +38,35 @@
    ],
    "lib/Integration/": [
     220,
-    183
+    14
    ],
    "lib/Lifecycle/": [
     85,
-    84
+    0
    ],
    "lib/Listener/": [
     538,
-    396
+    251
    ],
    "lib/Mcp/": [
     31,
-    31
+    0
    ],
    "lib/Mcp/Handler/": [
     808,
-    748
+    0
+   ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    53
    ],
    "lib/Repair/": [
     915,
-    683
+    366
    ],
    "lib/Resources/template/": [
     3,
@@ -70,11 +78,11 @@
    ],
    "lib/Resources/template/lib/AppInfo/": [
     34,
-    0
+    27
    ],
    "lib/Resources/template/lib/Controller/": [
     17,
-    0
+    17
    ],
    "lib/Resources/template/lib/Listener/": [
     8,
@@ -82,11 +90,11 @@
    ],
    "lib/Resources/template/lib/Repair/": [
     51,
-    0
+    36
    ],
    "lib/Resources/template/lib/Sections/": [
     5,
-    0
+    5
    ],
    "lib/Resources/template/lib/Service/": [
     150,
@@ -94,11 +102,11 @@
    ],
    "lib/Resources/template/lib/Settings/": [
     9,
-    0
+    9
    ],
    "lib/Resources/template/phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/": [
     155,
-    0
+    151
    ],
    "lib/Resources/template/templates/": [
     3,
@@ -129,8 +137,8 @@
     0
    ],
    "lib/Service/": [
-    11267,
-    9233
+    11270,
+    3156
    ],
    "lib/Service/Automation/": [
     9,
@@ -138,7 +146,7 @@
    ],
    "lib/Service/Connection/": [
     171,
-    163
+    170
    ],
    "lib/Service/Copilot/": [
     151,
@@ -146,15 +154,15 @@
    ],
    "lib/Service/Credential/": [
     57,
-    40
+    52
    ],
    "lib/Service/Dashboard/": [
     141,
-    137
+    32
    ],
    "lib/Service/GitHub/": [
     75,
-    66
+    74
    ],
    "lib/Settings/": [
     0,
@@ -162,123 +170,9 @@
    ],
    "lib/Support/": [
     389,
-    375
+    386
    ]
   }
  },
- "js": {
-  "pct": 84.68,
-  "statements": 13524,
-  "covered": 11452,
-  "dirs": {
-   "src/": [
-    185,
-    171
-   ],
-   "src/components/": [
-    690,
-    568
-   ],
-   "src/components/agents/": [
-    28,
-    27
-   ],
-   "src/components/applicationDetail/": [
-    308,
-    293
-   ],
-   "src/components/applicationDetail/widgets/": [
-    260,
-    235
-   ],
-   "src/components/copilot/": [
-    63,
-    59
-   ],
-   "src/components/dashboard/": [
-    65,
-    61
-   ],
-   "src/components/page-editor/": [
-    1685,
-    1441
-   ],
-   "src/components/page-editor/fields/": [
-    1378,
-    1024
-   ],
-   "src/components/runtime/": [
-    218,
-    194
-   ],
-   "src/components/schema-editor/": [
-    805,
-    572
-   ],
-   "src/components/store/": [
-    94,
-    87
-   ],
-   "src/components/tabs/": [
-    116,
-    108
-   ],
-   "src/components/walkthrough-editor/": [
-    284,
-    183
-   ],
-   "src/composables/": [
-    778,
-    753
-   ],
-   "src/dialogs/": [
-    2022,
-    1624
-   ],
-   "src/dialogs/CreateApplicationWizard/": [
-    205,
-    157
-   ],
-   "src/manifest.d/": [
-    14,
-    14
-   ],
-   "src/manifests/": [
-    3,
-    3
-   ],
-   "src/mixins/": [
-    206,
-    194
-   ],
-   "src/modals/": [
-    726,
-    615
-   ],
-   "src/router/": [
-    1,
-    1
-   ],
-   "src/services/": [
-    1224,
-    1210
-   ],
-   "src/services/manifestValidation/": [
-    479,
-    477
-   ],
-   "src/store/": [
-    45,
-    45
-   ],
-   "src/utils/": [
-    99,
-    83
-   ],
-   "src/views/": [
-    1543,
-    1253
-   ]
-  }
- }
+ "js": null
 }
