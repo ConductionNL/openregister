@@ -5401,4 +5401,5 @@ opencatalogi	2584	d1330364940ead45fba3f7cc3deb79aa133bdac3	GREEN	worker-11	5167 
 humaniq	1104	fedf08539f2302c48351310cbede67be3e22d3ca	GREEN	worker-09	tree of 2: 3824 tests run, baseline 3796 with 0 failures, new failures 0; tests only
 hermiq	1673	a636a706a08b58fb7880512a512c99657f5b7205	GREEN	worker-36	phpunit 4213 run (baseline 4185), 172 baseline failures/errors, 0 new; behaviour-preserving refactor with tests written on old code. Overlaps hermiq#1672 in ContextAssembler
 shillinq	2909	40c78205f4dd99152aa420f9eb35e5e86fefdd98	GREEN	worker-47	9540 tests run (+13), baseline 1 failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp), 0 new; tests only
+shillinq	2900	d5201979daff827e96d750a1a387245c8e067f08	GREEN	worker-30	tree 9541 tests, baseline 9527 (1 inherited failure: PaymentWebhookIntakeCharacterisationTest), new failures 0; tests only
 shillinq	2908	e952d464b21ffe1ed3068b5d564142e19d77dc77	GREEN	worker-39	unit 9533 run (baseline 9527 on development e678c8ef9, 1 inherited clock-bound PaymentWebhookIntakeCharacterisationTest failure), 0 new; adds FleetAppIdServiceLookupTest only
