@@ -3549,3 +3549,4 @@ cover:dossiq:f8a113c5m7e79:2aa8dc21	PR #6335: 2 tests (AutomaticActionFlowMigrat
 measure:keepiq:20261113h08	php 89.12% (pcov, 4564 tests), js 90.45% (6244 tests)	session-20261113T072715-8f8a14e9	2026-11-13T08:42:12Z
 verify:portaliq:2387:a0911cbe	GREEN 2387; 4560 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:42:18Z
 cover:buildiq:70b3e29embf07:a215617b	no PR: lib/Integration/*.php at 216/220 lines (pcov); the 4 uncovered lines are unreachable (non-array guard on array-typed findAll, needs-review guard behind a published-only filter)	session-20261113T080549-dde3ba19	2026-11-13T08:42:32Z
+review:stackiq:1700:f9ee16d5	CONFLICT recorded: no behaviour change found; add/add conflict with development (viewObjectPropertyEditing.spec.js, ViewObject.vue, eslint-suppressions.json)	session-20261113T080546-98207a87	2026-11-13T08:42:44Z
