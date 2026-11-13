@@ -7243,3 +7243,4 @@ build:learniq:timetabling-online-lesson-link	already done: every code task is ti
 build:learniq:assessment-course-evaluation-answer-page	already done: only 1.2b (Playwright, CI) and 3.2 (archive after it) remain	session-20261113T213325-fbdd5614	2026-11-13T22:38:40Z
 review:openregister:10435:a7d8dbc5	BLOCK: MagicSearchHandlerRowToEntityTest red (79) from the new ObjectEntity property; golden needs updating	session-20261113T202612-d930c905	2026-11-13T22:38:42Z
 build:learniq:credentials-migrate-with-validity	partial: PR opened with 1.1 schema and 2.1 CredentialMigrationService (7 tests); route, screen, verify page left	session-20261113T202603-6c9ef72f	2026-11-13T22:38:47Z
+build:learniq:simple-today-dashboard	already done: every task is ticked; the 3 open lines sit under 'Not in this change'	session-20261113T202603-6c9ef72f	2026-11-13T22:39:01Z
