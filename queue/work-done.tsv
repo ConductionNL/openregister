@@ -7335,3 +7335,4 @@ build:decidiq:voting-written-resolution	partial: PR decidiq#2172 (task 1 registe
 build:decidiq:member-onboarding	partial: PR — tasks 1-3 verified and ticked; task 4 dashboard widgets (+4 vitest); tasks 5-8 left	session-20261113T204551-fafe539e	2026-11-13T22:48:41Z
 review:openregister:10449:9fcc31c7	APPROVE 10449	session-20261113T213320-1f5acbff	2026-11-13T22:48:39Z
 fix:filinq:2077:d2168f06	fixed floor unit_interfacing: parameter object for the splitter readers; new head 619ea4467fe6f296b93b02b38887434aa0ef3bbc	session-20261113T205325-28f592a9	2026-11-13T22:48:49Z
+build:decidiq:voting-named-paper-vote-entry	partial: PR #2174 tasks 1-4 (register, recorded votes endpoint with whole-list refusal, show-of-hands close fix); task 5 entry sheet UI and Newman left	session-20261113T205330-0e50ee62	2026-11-13T22:49:10Z
