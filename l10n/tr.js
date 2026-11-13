@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "Bu şemadaki tüm nesneleri yayımla",
     "Publish anyway" : "Yine de yayımla",
     "Publish Configuration to GitHub" : "Yapılandırmayı GitHub'a Yayımla",
+    "Publish Configuration to GitLab" : "Yapılandırmayı GitLab'a Yayımla",
     "Publish draft" : "Taslağı yayımla",
     "Publish OAS" : "OAS'yi Yayımla",
     "Publish Objects" : "Nesneleri Yayımla",

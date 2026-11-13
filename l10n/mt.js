@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "Ippubblika l-Oġġetti kollha f'din l-Iskema",
     "Publish anyway" : "Ippubblika xorta waħda",
     "Publish Configuration to GitHub" : "Ippubblika l-Konfigurazzjoni fuq GitHub",
+    "Publish Configuration to GitLab" : "Ippubblika l-Konfigurazzjoni fuq GitLab",
     "Publish draft" : "Ippubblika l-abbozz",
     "Publish OAS" : "Ippubblika l-OAS",
     "Publish Objects" : "Ippubblika l-Oġġetti",

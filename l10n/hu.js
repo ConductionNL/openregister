@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "A séma összes objektumának közzététele",
     "Publish anyway" : "Közzététel mégis",
     "Publish Configuration to GitHub" : "Konfiguráció közzététele a GitHubon",
+    "Publish Configuration to GitLab" : "Konfiguráció közzététele a GitLabon",
     "Publish draft" : "Piszkozat közzététele",
     "Publish OAS" : "OAS közzététele",
     "Publish Objects" : "Objektumok közzététele",

@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "Publiko të gjitha objektet në këtë skemë",
     "Publish anyway" : "Publiko gjithsesi",
     "Publish Configuration to GitHub" : "Publiko Konfigurimin te GitHub",
+    "Publish Configuration to GitLab" : "Publiko Konfigurimin te GitLab",
     "Publish draft" : "Publiko draftin",
     "Publish OAS" : "Publiko OAS",
     "Publish Objects" : "Publiko Objektet",

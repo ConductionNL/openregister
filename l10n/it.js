@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "Pubblica tutti gli oggetti di questo Schema",
     "Publish anyway" : "Pubblica comunque",
     "Publish Configuration to GitHub" : "Pubblica configurazione su GitHub",
+    "Publish Configuration to GitLab" : "Pubblica configurazione su GitLab",
     "Publish draft" : "Pubblica bozza",
     "Publish OAS" : "Pubblica OAS",
     "Publish Objects" : "Pubblica oggetti",

@@ -2316,6 +2316,7 @@ OC.L10N.register(
     "Publish all objects in this schema" : "Foilsigh na réada uile sa scéimre seo",
     "Publish anyway" : "Foilsigh mar sin féin",
     "Publish Configuration to GitHub" : "Foilsigh Cumraíocht chuig GitHub",
+    "Publish Configuration to GitLab" : "Foilsigh Cumraíocht chuig GitLab",
     "Publish draft" : "Foilsigh an dréacht",
     "Publish OAS" : "Foilsigh OAS",
     "Publish Objects" : "Foilsigh Réada",

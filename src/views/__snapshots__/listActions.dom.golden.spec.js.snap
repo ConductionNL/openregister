@@ -304,6 +304,13 @@ exports[`list page action menus golden card 1`] = `
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
+<slot-default> t:Publish Configuration to GitLab</slot-default>
+<slot-icon>
+<x-clouduploadoutline size="20">
+</x-clouduploadoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
 <slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
@@ -343,6 +350,17 @@ exports[`list page action menus golden card 2`] = `
     [
       "navigationStore.setModal",
       "publishConfiguration",
+    ],
+  ],
+  [
+    "t:Publish Configuration to GitLab",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "publishConfigurationGitLab",
     ],
   ],
   [
