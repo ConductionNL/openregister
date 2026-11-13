@@ -161,4 +161,20 @@ interface GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array;
+
+	/**
+	 * Publish a file to a project branch: update it when it exists there, create it otherwise.
+	 *
+	 * @param GitLabProjectRef $project       The project and the branch to commit to.
+	 * @param string           $path          The file path in the project.
+	 * @param string           $content       The new file content.
+	 * @param string           $commitMessage The commit message.
+	 *
+	 * @return array{success: true, is_update: bool, file_path: mixed, branch: mixed}
+	 *
+	 * @throws \Exception If a request fails.
+	 *
+	 * @spec openspec/changes/capability-rows-verified-b/specs/data-import-export/spec.md
+	 */
+	public function publishFile(GitLabProjectRef $project, string $path, string $content, string $commitMessage): array;
 }//end interface

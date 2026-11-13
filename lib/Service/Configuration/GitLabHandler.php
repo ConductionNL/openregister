@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
  * - Fetching file contents from projects
  * - Listing branches
  * - Parsing and validating configuration files
+ * - Publishing a configuration file to a project branch
  *
  * @package OCA\OpenRegister\Service\Configuration
  */
@@ -56,13 +58,14 @@ class GitLabHandler implements GitLabHandlerInterface {
 		'get file content' => 'Failed to fetch file: ',
 		'list files' => 'Failed to list configuration files: ',
 		'get project' => 'Failed to fetch project: ',
+		'publish' => 'Failed to publish file: ',
 	];
 
 
 	/**
 	 * GitLabHandler constructor
 	 *
-	 * @param GitLabApiClient $api    Authenticated GET requests against the configured GitLab API
+	 * @param GitLabApiClient $api    Authenticated requests against the configured GitLab API
 	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
@@ -451,6 +454,83 @@ class GitLabHandler implements GitLabHandlerInterface {
 	private function logSkippedFile(string $reason, array $context): void {
 		$this->logger->debug(message: self::LOG_TAG.$reason, context: self::logContext(extra: $context));
 	}//end logSkippedFile()
+
+	/**
+	 * Publish a file to a project branch: update it when it exists there, create it otherwise.
+	 *
+	 * Uses the Repository Files API, which takes the branch, the content and the
+	 * commit message; a second publish to the same path updates that file.
+	 *
+	 * @param GitLabProjectRef $project       The project and the branch to commit to.
+	 * @param string           $path          The file path in the project.
+	 * @param string           $content       The new file content.
+	 * @param string           $commitMessage The commit message.
+	 *
+	 * @return array{success: true, is_update: bool, file_path: mixed, branch: mixed}
+	 *
+	 * @throws Exception If a request fails.
+	 *
+	 * @spec openspec/changes/capability-rows-verified-b/specs/data-import-export/spec.md
+	 */
+	public function publishFile(GitLabProjectRef $project, string $path, string $content, string $commitMessage): array {
+		$where = ['project_id' => $project->projectId, 'path' => $path, 'ref' => $project->ref];
+		$filePath = "/projects/{$project->projectId}/repository/files/".rawurlencode($path);
+		try {
+			$isUpdate = $this->fileExists(filePath: $filePath, ref: $project->ref);
+			$context = self::logContext(extra: $where + ['is_update' => $isUpdate]);
+			$this->logger->info(message: self::LOG_TAG.'Publishing file to GitLab', context: $context);
+			$body = ['branch' => $project->ref, 'content' => $content, 'commit_message' => $commitMessage];
+			$result = $this->api->sendJson(method: self::writeMethod(isUpdate: $isUpdate), path: $filePath, body: $body);
+		} catch (GuzzleException $e) {
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'publish', context: $where));
+		}
+
+		return [
+			'success' => true,
+			'is_update' => $isUpdate,
+			'file_path' => $result['file_path'] ?? $path,
+			'branch' => $result['branch'] ?? $project->ref,
+		];
+	}//end publishFile()
+
+	/**
+	 * Whether a file exists on a ref: a 404 means it does not, any other failure is thrown.
+	 *
+	 * @param string $filePath The Repository Files API path of the file.
+	 * @param string $ref      The branch.
+	 *
+	 * @return bool
+	 *
+	 * @throws GuzzleException If the lookup fails other than with a 404.
+	 */
+	private function fileExists(string $filePath, string $ref): bool {
+		try {
+			$this->api->getJson(path: $filePath, options: ['query' => ['ref' => $ref]]);
+		} catch (RequestException $e) {
+			if ($e->getResponse()?->getStatusCode() === 404) {
+				return false;
+			}
+
+			throw $e;
+		}
+
+		return true;
+	}//end fileExists()
+
+	/**
+	 * The Repository Files API method: PUT updates an existing file, POST creates one.
+	 *
+	 * @param bool $isUpdate Whether the file exists.
+	 *
+	 * @return string
+	 */
+	private static function writeMethod(bool $isUpdate): string {
+		if ($isUpdate === true) {
+			return 'PUT';
+		}
+
+		return 'POST';
+	}//end writeMethod()
 
 	/**
 	 * Get the configured GitLab API base URL
