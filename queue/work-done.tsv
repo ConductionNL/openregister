@@ -2277,3 +2277,4 @@ cover:stackiq:df113dffm2c76:efa2a923	already done: lib/EventListener/*.php 974/9
 cover:shillinq:05639deb:8bdc03d4	PR #2865: 2 tests, BbvMigration 101/102 -> 102/102 stmts	session-20261113T024653-d22c13a3	2026-11-13T04:48:25Z
 cover:filinq:7a9ef677mc744:4b9c088d	already covered: batches quality/test-coverage-4b9c088d-1/-2 merged; every concrete Editing class has dedicated tests (untested names are interfaces/value types); no PR	session-20261113T024654-6600dc41	2026-11-13T04:48:34Z
 cover:stackiq:df113dffm2c76:59f569b2	already done: lib/Service/Settings/*.php 1265/1296 stmts (97.6%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:56Z
+cover:openregister:7350e3efm0e99:411f17d0	PR #10100: added missing @uses to 5 TalkLink tests (risky 11->0), TalkLink 9.9%->91.9%	session-20261113T031700-0e23c373	2026-11-13T04:49:02Z
