@@ -4448,3 +4448,4 @@ verify:pipelinq:3718:3514a45a	3720/3722/3723/3724 GREEN; 3718 BLOCK (new slip-re
 cover:pipelinq:7f9dc8e6m84dd:f3231970	already done: lib/Service/ScheduledTask at 100% (92/92) on development 7f670ae95; no PR	session-20261113T083916-59f10a3b	2026-11-13T11:16:50Z
 cover:keepiq:c967a31fm1bed:1b97f731	failed: permission (running the app's unit suite was refused in this session)	session-20261113T111541-acb65efe	2026-11-13T11:16:43Z
 cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
+build:pipelinq:screen-pop-incoming-call	failed: permission (built in 38c5fed47 except 2.3, the three facts on the card: needs IncomingCallCard.vue + vitest, npm ci refused here; 3.x are live)	session-20261113T104529-f43c7561	2026-11-13T11:17:02Z
