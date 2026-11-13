@@ -3741,3 +3741,4 @@ build:dossiq:admin-tabs-carry-the-settings-board-blocks	PR #6347: 2.4 Shipped fi
 cover:shillinq:05639debmd8ee:7cb249c8	already done: quality/test-coverage-7cb249c8-1 exists; lib/Service/Ledger 100% (86/86) on development	session-20261113T081043-b24589a6	2026-11-13T09:09:49Z
 cover:shillinq:05639debmd8ee:6f346b68	already done: batch -1 merged; lib/Sections/*.php at 5/5 statements (100%); no PR	session-20261113T080556-d189f150	2026-11-13T09:10:12Z
 cover:buildiq:70b3e29embf07:568ec52a	already done: Lifecycle/*.php 84/85 lines (only a non-array jsonSerialize branch left), covered by quality/test-coverage-568ec52a-1 already on development	session-20261113T084521-fd8a31c7	2026-11-13T09:10:16Z
+build:dossiq:beschikking-chain-on-the-case	failed: nothing buildable yet: 1.1 is the board itself, 2.1/2.2 wait for board DqZaakBesluiten chain (decision 162), 2.3 is a live e2e pass	session-20261113T084523-b4140bcd	2026-11-13T09:10:26Z
