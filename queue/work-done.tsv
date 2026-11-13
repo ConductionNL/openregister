@@ -2326,3 +2326,4 @@ cover:keepiq:c967a31fm0090:aae6d66c	already done: lib/Exception 100% lines on de
 cover:keepiq:c967a31fm0090:js3287a408	PR #1736: src/components/settings 85.42% -> 90.73% (61 tests, 5 sections); vitest 5891 -> 5952 green	session-20261113T034634-857dbcc2	2026-11-13T04:55:03Z
 cover:decidiq:a5f973bbma14b:9d3a1784	PR #2110: 18 tests, MailReplyHandler 0->100%, TranscriptRetentionJob 62.8->99.4% lines	session-20261113T044735-792ed933	2026-11-13T04:55:41Z
 fix:keepiq:1724:1bde1e7f	fixed: private-key PEM header literals in test replaced by a parse check; pushed b8b40fd1, REVERIFY recorded (gitleaks not runnable here, rule regex checked)	session-20261113T041644-786bb7fc	2026-11-13T04:55:53Z
+review:openregister:10097:4222e32a	APPROVE: tests only, Query/Rules/Contract/Architecture green	session-20261113T034629-21e68669	2026-11-13T04:56:17Z
