@@ -6195,3 +6195,4 @@ verify:hermiq:1699:db842efa	GREEN #1699, #1700 (tests only; 4590 tests, 0 failur
 cover:hermiq:065f1631md84f:js0be8c659	PR #1704: 26 vitest tests over 4 modals; src/modals 90.13% -> 94.03% (open -5 adds the small dialogs)	session-20261113T175336-b2d7fc7c	2026-11-13T19:06:06Z
 cover:keepiq:c967a31fm00c6:be0dcca9	already done: lib/Mcp/*.php at 139/139 statements (100%) after quality/test-coverage-be0dcca9-1 merged; suite 4854 tests OK	session-20261113T185328-da819141	2026-11-13T19:06:06Z
 review:openregister:10296:40d783e7	APPROVE (test metadata only, 19 files green)	session-20261113T171153-e1c17962	2026-11-13T19:06:08Z
+build:shillinq:receivables-provider-payouts	partial: PR #3003 (tasks 2.2 PayoutMatchingService, 2.4 PayoutPostingRule, schema 0.2.0 line fields; 5 tests; suite 10399 same 1 inherited failure); 1.1,1.2,2.1,2.3,2.5,2.6,3.x,4.1 left. Also pushed schema-version bump to #2986 (new head 6f8ebc0f)	session-20261113T175328-b5db3663	2026-11-13T19:06:22Z
