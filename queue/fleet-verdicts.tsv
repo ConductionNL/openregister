@@ -4693,3 +4693,4 @@ shillinq	2804	55986e020e29ea020544921d86b827a22f266d70	GREEN	worker-21	tree of 2
 shillinq	2805	76b83d0f34678adc606610607ebb1fd31fb1f490	GREEN	worker-21	tree of 2803+2804+2805: 9065 tests (baseline 9004), 1 failure inherited (PaymentWebhookIntakeCharacterisationTest stripe timestamp, clock-bound), 0 new; tests only
 stackiq	1776	84125e628f1f73a22a188e3e827947c1cecb55bd	REVERIFY	worker-37	merged development in: kept branch ApiPathAliases route table over dev's inline v1 loop (same postfix, catch-all last, no duplicate names), kept both sides' middleware tests; unit 2554 pass; new head c4d2b1a537223e292e993c85453e704ed1a34f2d, verify it
 dossiq	6210	3842924d1cf271f4cabeb773c520fabf23a94baf	GREEN	worker-41	tree 13637 tests, baseline 13554 with 19 inherited failures, 0 new; tests-only
+dossiq	6211	8e9885ed3a8a1cb18f111cba18518e1c18985cf9	GREEN	worker-41	tree 13637 tests, baseline 13554 with 19 inherited failures, 0 new; tests-only
