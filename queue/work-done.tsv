@@ -1593,3 +1593,4 @@ cover:openregister:7350e3efm0e99:9d3a1784	PR #10090: FlowRunWorker 197/219 -> 21
 cover:pipelinq:f67520ecm8c58:09cc8f24	PR #3621: 9 tests (CTI webhook gates, adapter registry); Cti dir 340->350/353; suite 5774->5783, same 1 inherited failure	session-20261112T234655-0bdbf2be	2026-11-13T02:16:22Z
 cover:pipelinq:f67520ecm8c58:6f346b68	already done: quality/test-coverage-6f346b68-1 (58d4a62b) already extends SettingsSectionTest for the only class in lib/Sections; no duplicate	session-20261112T234655-793f46ee	2026-11-13T02:16:13Z
 cover:pipelinq:f67520ecm8c58:js5cb5a0d3	PR #3622: 28 tests, bookings dir 74.1%->83.3% stmts (suite 3164->3192 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:16:26Z
+cover:pipelinq:f67520ecm8c58:js5794e9fc	already done: branches quality/test-coverage-js-5794e9fc-1 and -2 (2 PRs, open) already cover these settings views; no new PR	session-20261113T011731-be978a55	2026-11-13T02:16:37Z
