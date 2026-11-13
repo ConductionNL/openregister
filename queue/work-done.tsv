@@ -1936,3 +1936,4 @@ verify:shillinq:2852:6ec1334b	shillinq#2852 GREEN: tests only, +19 tests, no new
 cover:filinq:7a9ef677mc744:js4829b6aa	no change: the only file directly in src/views/ is listOnlyIndexPages.golden.spec.js, a jest spec counted as source; there is no source code to cover	session-20261113T021703-063c80f1	2026-11-13T03:52:33Z
 cover:stackiq:df113dffm8db8:17d367ab	already done: SyncHandler and ModuleRegistrationHandler tests (from -1, merged) cover every branch, logs and exceptions; no PR	session-20261113T033859-c661da78	2026-11-13T03:52:26Z
 cover:launchpad:fb10c50fm31b6:34f5c300	PR #1162: 22 tests, CalendarWidget 188->271/296, UrlSafety 22->39/40, Conditional 51->79/79, ConfluenceImportRun 0->16/16; suite green	session-20261113T024656-2f332446	2026-11-13T03:52:35Z
+cover:dossiq:6ca0231ema7d4:774c5470	PR #6266: StatusDisplayNameTest +4, @uses fix; lib/Service/Timeline 95.9%->100%; 19 inherited failures, none new	session-20261113T024656-d5bfb688	2026-11-13T03:53:00Z
