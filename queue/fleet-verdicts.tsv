@@ -6043,3 +6043,4 @@ learniq	2470	68d538ad9419150978bb5ead6c10196567623a77	GREEN	worker-29	tests only
 hermiq	1696	b576cb4042fb329de7a3b067748a661280ed9baa	GREEN	worker-48	tests only; phpunit 4565 run, baseline 172 inherited fails, 0 new; vitest 1342 passed (baseline 1306)
 hermiq	1697	57e17d54c8b0c263d05dcfdc90bbe5ce697e2a4f	GREEN	worker-48	tests only; phpunit 4565 run, baseline 172 inherited fails, 0 new; vitest 1342 passed (baseline 1306)
 hermiq	1698	95233f5fe5adb63051d70cee5fc54714755a8b32	GREEN	worker-48	tests only; phpunit 4565 run, baseline 172 inherited fails, 0 new; vitest 1342 passed (baseline 1306)
+learniq	2471	d5e5efc27e5f6bf62bcf09344c46b8c3eae9ccfe	GREEN	worker-29	tests only; suite 6423 run, baseline 1 failure (HigherEducationExampleSetTest), 0 new
