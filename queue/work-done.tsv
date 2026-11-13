@@ -1350,3 +1350,4 @@ merge:launchpad:1141:5595b3eb	merge-local over 1 launchpad tasks: merged=1 red=0
 cover:launchpad:755175ffm7412:59826f43	already done: lib/Settings/*.php 100% statements (55/55) on development; no PR	session-20261112T234655-6f442bc3	2026-11-13T01:15:09Z
 cover:launchpad:755175ffm7412:a1252b57	no PR: lib/Service/Confluence already at 280/289 statements; the 9 left are defensive failure returns of libxml/preg/XPath not reachable with real input	session-20261112T231633-96ffe7b8	2026-11-13T01:15:18Z
 cover:dossiq:6ca0231e:dddb125b	already done: lib/Service/Bezwaar/ at 1748/1763 lines (99%) on development; remaining 15 are single guard throws, no PR	session-20261112T231645-3f0591a5	2026-11-13T01:15:25Z
+cover:dossiq:6ca0231e:71b49856	PR #6216: 3 tests, TakeoverStore and CaseCustodyQuery to 100%; with #6213 Custody is 626/629 lines; 0 new failures	session-20261112T233856-8f2d924b	2026-11-13T01:15:32Z
