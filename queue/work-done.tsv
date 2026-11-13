@@ -2030,3 +2030,4 @@ verify:hermiq:1644:42717a9c	GREEN 1644 (tests-only, no new failures)	session-202
 cover:hermiq:065f1631m7444:66a28494	PR #1653: 7 tests, lib/Service/Engine 93.6->95.1% stmts	session-20261113T031704-5a455d65	2026-11-13T04:10:16Z
 cover:keepiq:c967a31fm88ca:ecbab48a	PR #1732: 7 direct tests for ShareSaveRestore (32/32 standalone), suite 4361->4368 all green	session-20261113T031700-0e23c373	2026-11-13T04:10:07Z
 cover:keepiq:c967a31fm88ca:59826f43	already done: lib/Settings/*.php 28/28 statements covered on development (prior -1 branch merged); no PR	session-20261113T034628-73e45054	2026-11-13T04:10:36Z
+cover:hermiq:065f1631m7444:js4829b6aa	already done: src/views/* measures 1148/1311 stmts (87.6%) after merged -1/-2 PRs, above target 85	session-20261113T024656-2f332446	2026-11-13T04:11:05Z
