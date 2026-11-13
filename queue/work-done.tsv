@@ -6226,3 +6226,4 @@ verify:opencatalogi:2599:6fde261c	2599 GREEN (tests only, no new failures)	sessi
 fix:shillinq:2975:66d3ac29	no change: clean against development; conflict is only with unmerged #2972 (version bump + lock entry), REVERIFY recorded	session-20261113T182349-7e3632fd	2026-11-13T19:09:53Z
 cover:dossiq:069ee2d6m2deb:3641032a	already done: lib/Service/Pipelinq/ measured 521/521 (100%) on dcd16f5978; earlier -1/-2 branches exist	session-20261113T185328-a5a717bc	2026-11-13T19:09:56Z
 cover:portaliq:b60f3b81m4ccb:1b97f731	PR #2456: 9 tests, 4 listeners (catch/guard branches); suite 4914->4923 green; OR-backed listeners skip without OpenRegister	session-20261113T182404-f2c28226	2026-11-13T19:10:19Z
+cover:dossiq:069ee2d6m2deb:4c817077	already done: lib/Service/Notification/ measured 372/372 (100.0%) on dcd16f5978 (target 95)	session-20261113T185328-a5a717bc	2026-11-13T19:10:16Z
