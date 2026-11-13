@@ -5613,3 +5613,4 @@ merge:dossiq:6371:f0c632b0	merge-local over 2 dossiq tasks: merged=5 red=0 fail=
 merge:dossiq:6413:c8c15d15	merge-local over 2 dossiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:53:08Z
 merge:dossiq:6135:1bd0bbb2	merge-local over 2 dossiq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:53:36Z
 merge:dossiq:6321:6c78b4e7	merge-local over 2 dossiq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:53:36Z
+review:openregister:10231:11faf452	stale	feeder	2026-11-13T15:30:44Z
