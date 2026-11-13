@@ -198,18 +198,21 @@
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterUpdatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SchemaFlowImportListener",
@@ -221,14 +224,16 @@
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaUpdatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SchemaFlowImportListener",
@@ -243,7 +248,8 @@
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
-		"OCA\\OpenRegister\\Listener\\SchemaAuthorizationAuditListener"
+		"OCA\\OpenRegister\\Listener\\SchemaAuthorizationAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SourceCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"

@@ -1270,6 +1270,7 @@ Listener/ConsentEnvelopeOnSaveListener.php,199,Listener,Flows,Flows/Listener/Con
 Listener/ContentReportRemovalListener.php,50,Listener,Compliance,Compliance/Listener/ContentReportRemovalListener.php,0,376,Compliance
 Listener/DecisionTableValidationListener.php,126,Listener,Flows,Flows/Listener/DecisionTableValidationListener.php,0,,Processes
 Listener/DependentValueListener.php,95,Listener,Flows,Flows/Listener/DependentValueListener.php,0,,Processes
+Listener/EntityEditAuditListener.php,,Listener,,,,,Compliance
 Listener/FacetCacheInvalidationListener.php,23,Listener,Service,Service/Listener/FacetCacheInvalidationListener.php,0,397,Core
 Listener/FileChangeListener.php,159,Listener,Flows,Flows/Listener/FileChangeListener.php,0,,Processes
 Listener/FilesSidebarListener.php,17,Listener,Flows,Flows/Listener/FilesSidebarListener.php,0,,Processes
@@ -1817,6 +1818,7 @@ Service/Audit/AuditSink.php,152,Service,Compliance,Compliance/Service/Audit/Audi
 Service/Audit/AuditSinkStatus.php,74,Service,Compliance,Compliance/Service/Audit/AuditSinkStatus.php,0,,Compliance
 Service/Audit/AuditTrailPageService.php,46,Service,Compliance,Compliance/Service/Audit/AuditTrailPageService.php,0,,Compliance
 Service/Audit/ContentReportService.php,143,Service,Compliance,Compliance/Service/Audit/ContentReportService.php,0,,Compliance
+Service/Audit/EntityEditAuditor.php,468,Service,Compliance,Compliance/Service/Audit/EntityEditAuditor.php,0,,Compliance
 Service/Audit/HistoryEntryRedactor.php,146,Service,Service,Service/Audit/HistoryEntryRedactor.php,0,,Compliance
 Service/Audit/ObjectHistoryForReaders.php,139,Service,Service,Service/Audit/ObjectHistoryForReaders.php,0,204,Compliance
 Service/Audit/OrganisationContextAttribution.php,16,Service,Compliance,Compliance/Service/Audit/OrganisationContextAttribution.php,0,,Compliance
