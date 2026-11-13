@@ -50,6 +50,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationScopeFilter
  */
 class GdprEntitiesControllerScopeGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/gdpr-entities-scope-golden.json';

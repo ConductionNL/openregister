@@ -111,6 +111,18 @@ docker exec -u www-data nextcloud php occ app_api:app:register \
     --force-scopes
 ```
 
+## Pairing secrets
+
+Each ExApp container shares a secret with its AppAPI registration. The secrets are not committed. Set them in a local `.env` file next to `docker-compose.yml`:
+
+```bash
+cp .env.example .env
+# one value per ExApp, for example:
+sed -i "s/^N8N_APP_SECRET=$/N8N_APP_SECRET=$(openssl rand -hex 20)/" .env
+```
+
+Use the same value when you register the ExApp with AppAPI. A container started without its secret stays unpaired, and AppAPI refuses its requests.
+
 ## Configuration
 
 ### n8n

@@ -59,6 +59,9 @@ use OCA\OpenRegister\Service\LinkTarget;
  * @covers \OCA\OpenRegister\Controller\TaskEventsController
  * @uses \OCA\OpenRegister\Controller\Support\TaskEventsControllerServices
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Controller\Support\TaskLeafGuard
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\CalendarEventKey
  */
 class TaskEventsControllerTest extends TestCase {
 

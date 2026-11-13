@@ -44,6 +44,13 @@ use PHPUnit\Framework\TestCase;
  * The concept read and the stored-value resolve of the concept repository, pinned.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptRepository
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
  */
 final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 

@@ -47,6 +47,8 @@ use RuntimeException;
 #[UsesClass(NotAuthorizedException::class)]
 #[UsesClass(ObjectWatchersControllerServices::class)]
 #[UsesClass(Watcher::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\ReadableObject::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Interaction\AddressedObject::class)]
 class ObjectWatchersControllerBehaviourTest extends TestCase {
 
 	private ObjectOperationsInterface&MockObject $objects;

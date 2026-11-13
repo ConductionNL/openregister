@@ -75,6 +75,20 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFa
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
  */
 class ObjectPermissionsControllerTest extends TestCase {
 

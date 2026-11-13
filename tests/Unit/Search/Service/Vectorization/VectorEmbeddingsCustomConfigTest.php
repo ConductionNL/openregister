@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * generateEmbeddingWithCustomConfig.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers
  */
 class VectorEmbeddingsCustomConfigTest extends TestCase {
 

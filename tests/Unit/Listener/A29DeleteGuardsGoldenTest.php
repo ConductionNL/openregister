@@ -55,6 +55,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Listener\FrozenObjectDeleteGuardListener
  * @covers \OCA\OpenRegister\Listener\PartyTreeGuardListener
  * @covers \OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\WriteVetoState
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
  */
 final class A29DeleteGuardsGoldenTest extends TestCase {
 

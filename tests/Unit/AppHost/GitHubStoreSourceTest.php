@@ -47,6 +47,13 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource
  * @uses   \OCA\OpenRegister\AppHost\Store\StoreManifest
+ * @uses \OCA\OpenRegister\AppHost\Store\Source\GitHubSearchRun
+ * @uses \OCA\OpenRegister\AppHost\Store\Source\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class GitHubStoreSourceTest extends TestCase {
 	/**

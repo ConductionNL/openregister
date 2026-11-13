@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleActionNodes
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
  */
 class ScheduleActionNodesTest extends TestCase {
 	/**

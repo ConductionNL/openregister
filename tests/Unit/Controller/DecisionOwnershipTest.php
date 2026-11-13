@@ -77,6 +77,20 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
+ * @uses \OCA\OpenRegister\Controller\Support\AuthDenialWarning
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationPatch
+ * @uses \OCA\OpenRegister\Db\DecisionMetadataEdit
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform
+ * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
+ * @uses \OCA\OpenRegister\Service\Decision\RelationDecisionStores
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners
  */
 class DecisionOwnershipTest extends TestCase {
 

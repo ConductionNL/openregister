@@ -40,6 +40,8 @@ use OCA\OpenRegister\BackgroundJob\Support\SchemaRunServices;
  * Pins every call run() makes on the mapper, the engines, the job list and the logger.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\SchemaRunJob
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\SchemaRunServices
+ * @uses \OCA\OpenRegister\Db\SchemaRun
  */
 class SchemaRunJobGoldenTest extends TestCase {
 

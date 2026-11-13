@@ -37,6 +37,23 @@ use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
  * fail-soft paths.
  *
  * @covers \OCA\OpenRegister\Mcp\McpProviderDiscovery
+ * @uses \OCA\OpenRegister\Mcp\AttributeToolScanner
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpLeafApp
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
+ * @uses \OCA\OpenRegister\Mcp\ToolScanSubject
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedToolDefinition
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices
  */
 class McpProviderDiscoveryAttributeCharacterisationTest extends TestCase
 {

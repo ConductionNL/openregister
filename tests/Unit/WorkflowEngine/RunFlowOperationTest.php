@@ -42,6 +42,16 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * @covers \OCA\OpenRegister\WorkflowEngine\RunFlowOperation
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\WorkflowEngine\LifecycleEventObject
+ * @uses \OCA\OpenRegister\WorkflowEngine\RunFlowOperationFlows
  */
 final class RunFlowOperationTest extends TestCase {
 

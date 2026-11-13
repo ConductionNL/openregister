@@ -39,6 +39,12 @@ use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\ContextChat\Support\ContentProviderLinks
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ContentProviderTest extends TestCase {
 	private ContextChatSubmissionListener $submissionListener;

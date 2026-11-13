@@ -32,6 +32,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Controller\Support\ValidationWindow
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  */
 class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-bulk-routes-golden.json';

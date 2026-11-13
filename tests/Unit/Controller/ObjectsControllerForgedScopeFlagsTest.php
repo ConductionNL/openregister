@@ -68,6 +68,12 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Support\UnknownFilterKeys
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  */
 class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 

@@ -62,6 +62,22 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTriggerValidator
  * @uses   \OCA\OpenRegister\Service\Flow\FlowUnattributed
  * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Flow\DelegatedRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPublishOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStreamStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunWalkServices
+ * @uses \OCA\OpenRegister\Service\Flow\RunAttributionQuery
  */
 class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 	public function testACronScheduleInAPublishedManifestFiresAsAFlowRun(): void {

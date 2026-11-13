@@ -556,3 +556,298 @@ When `registry_url` is `local`, publish SHALL write the filtered body into the c
 - GIVEN the local registry holds `woo-intake` at version 1.0.0
 - WHEN `woo-intake` is published at version 1.1.0
 - THEN that same object now reads version 1.1.0
+
+### Requirement: An action posture MUST resolve against the declaring app
+
+When a store declares `installAuth: "action:<name>"`, the engine MUST ask the
+declaring app's own ADR-023 authorization matrix whether the signed-in user may
+perform `<name>`, and MUST install only when it answers yes.
+
+The engine MUST NOT decide an action posture itself. Assuming `admin` would
+turn "the operators who hold this action" into "instance administrators", which
+is the capability loss the key exists to prevent.
+
+An administrator MUST NOT bypass the matrix. Otherwise the declaration is
+decorative, and an app could never gate an install more tightly than instance
+admin.
+
+#### Scenario: The leaf matrix permits
+
+- **WHEN** a store declares `"installAuth": "action:catalog.instantiate"`
+- **AND** the declaring app's matrix permits the signed-in user
+- **THEN** the install proceeds
+
+#### Scenario: The leaf matrix declines
+
+- **WHEN** the declaring app's matrix declines
+- **THEN** the response is 403
+- **AND** no component is written
+
+#### Scenario: An administrator is still asked
+
+- **WHEN** the caller is an instance administrator
+- **AND** the declaring app's matrix declines
+- **THEN** the response is 403
+
+#### Scenario: Anonymous never reaches the matrix
+
+- **WHEN** an anonymous caller posts an install against an action posture
+- **THEN** the response is 403
+- **AND** the matrix is not consulted
+
+### Requirement: An unresolvable authorizer MUST refuse, never permit
+
+Every failure to decide MUST be a refusal, and MUST be logged at ERROR with the
+name that could not be resolved.
+
+The lookup is duck-typed by convention, which is the shape that has repeatedly
+produced silent no-ops in this fleet. A no-op here is an install that skipped
+its authorization check and then reported success, so the absence of an answer
+is treated as "no", never as "no objection".
+
+#### Scenario: The service is not in the container
+
+- **WHEN** `OCA\<Studly>\Service\ActionAuthService` cannot be resolved
+- **THEN** the install is refused
+- **AND** an ERROR is logged naming the action
+
+#### Scenario: The service has no can() method
+
+- **WHEN** the class resolves but exposes no `can()`
+- **THEN** the install is refused
+
+This is the shape a RENAME produces: the class still resolves and the method is
+gone, so a check that only tested existence would sail past it.
+
+#### Scenario: The matrix throws
+
+- **WHEN** `can()` throws
+- **THEN** the install is refused
+
+ADR-023's own `requireAction()` throws to DENY, so anything propagating out of
+the matrix must not be read as consent.
+
+### Requirement: A store MUST declare its discovery source, defaulting to OpenRegister
+
+The `store` block MAY carry a `source` key. Its value MUST be one of
+`openregister` or `github`. When the key is absent the source MUST be
+`openregister`, so every store declared before this change keeps its behaviour
+exactly.
+
+An unknown `source` MUST be treated as a malformed block: the manifest is
+DISABLED and the store does not appear. Falling back to `openregister` would
+silently point an app at a registry it never asked for.
+
+#### Scenario: An absent source defaults to OpenRegister
+
+- **WHEN** a `store` block declares no `source`
+- **THEN** the manifest reports source `openregister`
+- **AND** discovery uses the registry URL configured for the app
+
+#### Scenario: An unknown source disables the store
+
+- **WHEN** a `store` block declares `"source": "npm"`
+- **THEN** the manifest reports `enabled: false`
+- **AND** no marketplace entry may be rendered for that app
+
+### Requirement: A GitHub source MUST discover by topic against a compile-time host
+
+When `source` is `github` the block MUST carry a non-empty `topics` list. Each
+topic is searched as `topic:<topic>` against the GitHub repository search API.
+
+The host MUST be a compile-time constant. A `github` source MUST NOT read the
+app's `registry_url`, and an app MUST NOT be able to influence the host it
+reaches. This is deliberately stricter than the `openregister` source, where the
+URL is admin-configured and therefore SSRF-guarded at request time: here there
+is no URL to guard.
+
+A `github` source MUST NOT be reported as `not_configured` for want of a
+registry URL. It is configured by its topics.
+
+#### Scenario: Topics are searched and results merged
+
+- **WHEN** a store declares `"source": "github"` with two topics
+- **THEN** each topic is searched
+- **AND** the results are merged into one card list, de-duplicated by
+  `owner/repo`
+
+#### Scenario: A GitHub source with no topics is malformed
+
+- **WHEN** a store declares `"source": "github"` and an empty `topics` list
+- **THEN** the manifest reports `enabled: false`
+
+### Requirement: Search MUST distinguish rate limiting from unreachability
+
+The outcome vocabulary gains `rate_limited`. A source that answers with an
+explicit rate-limit signal MUST map to `rate_limited`, never to
+`store_unreachable`.
+
+The two are not interchangeable to a reader: `rate_limited` means wait, or add
+a credential to raise the limit; `store_unreachable` means the network or the
+registry is broken. Reporting the first as the second sends someone to debug a
+network that is fine.
+
+A rate-limited or unreachable search MUST still answer HTTP 200 with an empty
+card list, as today. A store that cannot reach its registry is not a server
+error in the app that hosts the page.
+
+#### Scenario: GitHub rate limiting is reported as itself
+
+- **WHEN** the GitHub API answers 403 with a rate-limit signal
+- **THEN** the outcome is `rate_limited`
+- **AND** the HTTP status is 200
+- **AND** the card list is empty
+
+#### Scenario: A network failure stays unreachable
+
+- **WHEN** the request to the source throws a connection error
+- **THEN** the outcome is `store_unreachable`
+
+### Requirement: Discovery MUST be cached per source
+
+A source MUST declare a cache lifetime for search results, and the engine MUST
+NOT issue an upstream request while a cached answer for the same query is live.
+
+Without this, every keystroke past the debounce is an upstream call, and the
+GitHub search API's unauthenticated limit is low enough that a single user
+typing exhausts it — turning a working store into a `rate_limited` one for
+everybody on the instance.
+
+#### Scenario: A repeated query inside the cache window issues no request
+
+- **WHEN** the same query is searched twice inside the cache lifetime
+- **THEN** exactly one upstream request is made
+- **AND** both answers carry the same cards
+
+### Requirement: A store MUST declare who may install, defaulting to admin
+
+The `store` block MAY carry an `installAuth` key. Its value MUST be one of
+`admin`, `authenticated`, or `action:<name>`. When the key is absent the
+posture MUST be `admin`, so every store declared before this key existed keeps
+the posture it has.
+
+An unrecognised value MUST disable the block. Falling back to `admin` would
+silently REMOVE a capability from an app that asked for a weaker gate, which is
+as wrong as granting one it did not ask for and considerably harder to notice:
+the store still works, for fewer people, for no stated reason.
+
+#### Scenario: An absent installAuth stays admin-only
+
+- **WHEN** a `store` block declares no `installAuth`
+- **AND** a signed-in non-administrator posts an install
+- **THEN** the response is 403
+
+#### Scenario: An authenticated store admits a non-administrator
+
+- **WHEN** a `store` block declares `"installAuth": "authenticated"`
+- **AND** a signed-in non-administrator posts an install
+- **THEN** the install proceeds
+
+#### Scenario: Anonymous is refused whatever the posture
+
+- **WHEN** a `store` block declares `"installAuth": "authenticated"`
+- **AND** an anonymous caller posts an install
+- **THEN** the response is 403, on the same guard as a permitted-but-unauthorised
+  user
+
+`authenticated` is the weakest posture the vocabulary offers and it still means
+signed in. Anonymous and not-permitted share one guard deliberately, which is
+the contract the endpoint already had.
+
+#### Scenario: An unknown posture disables the store
+
+- **WHEN** a `store` block declares `"installAuth": "everyone"`
+- **THEN** the manifest reports `enabled: false`
+
+### Requirement: A loosened install posture MUST NOT widen the allowlist
+
+`installAuth` decides WHO may install. `installable` decides WHAT an install
+may write. The two MUST remain independent: an `authenticated` install MUST
+refuse every schema the allowlist omits, exactly as an `admin` install does,
+and an empty allowlist MUST still refuse everything.
+
+This is stated as its own requirement because the two keys sit side by side in
+the same block and read like a pair. They are not one: relaxing the gate on the
+door does not enlarge the room.
+
+#### Scenario: A non-administrator cannot write a schema the allowlist omits
+
+- **WHEN** a store declares `"installAuth": "authenticated"` and an
+  `installable` list that omits `case`
+- **AND** a signed-in non-administrator installs an item whose component names
+  `case`
+- **THEN** that component is refused
+- **AND** the refusal is reported per component, as for an administrator
+
+### Requirement: A component MUST declare its install operation, defaulting to writing an object
+
+A component MAY carry an `op` key. Its value MUST be one of `writeObject` or
+`setAppConfig`. Absent, it MUST be `writeObject`, so every item that installs
+today installs unchanged.
+
+An unrecognised `op` MUST be refused for that component and reported, and MUST
+NOT abort the remaining components. A component whose operation this server
+does not understand is the registry's mistake, not a reason to deny an
+administrator the components it does understand.
+
+#### Scenario: A component with no op writes an object
+
+- **WHEN** a component declares no `op`
+- **THEN** it is installed through the object write path
+- **AND** the `installable` allowlist applies to it
+
+#### Scenario: An unknown op is refused, and the rest still install
+
+- **WHEN** an item carries one component with `"op": "summonDaemon"` and one
+  ordinary object component
+- **THEN** the unknown component is reported as refused
+- **AND** the object component is still installed
+
+### Requirement: A config write MUST be allowlisted by key and scoped to the declaring app
+
+`setAppConfig` MUST write only into the declaring app's own config namespace,
+and only for a key named in the store block's `configurable` list.
+
+An empty or absent `configurable` list MUST refuse every key.
+
+🔴 This is a second security boundary, not a convenience. `installable` stops a
+remote registry naming any schema the app owns; an app's config namespace holds
+registry URLs, tokens and feature flags, so an unallowlisted config write is a
+remote actor toggling whatever it names. The default must therefore be "refuse
+everything", exactly as it is for schemas.
+
+#### Scenario: An allowlisted key is written
+
+- **WHEN** a store declares `"configurable": ["enableSoapAdapter"]`
+- **AND** a component sets that key
+- **THEN** the value is written to the declaring app's config
+
+#### Scenario: A key outside the allowlist is refused
+
+- **WHEN** a component sets a key the `configurable` list omits
+- **THEN** the component is refused and reported
+
+#### Scenario: An absent configurable list refuses everything
+
+- **WHEN** a store declares no `configurable` list
+- **AND** a component declares `setAppConfig`
+- **THEN** the component is refused
+
+#### Scenario: A config write cannot address another app
+
+- **WHEN** a component's key names another app's namespace
+- **THEN** the key is treated as a plain key of the declaring app, never as a
+  cross-app write
+
+### Requirement: A config value MUST be a scalar
+
+`setAppConfig` MUST accept only a boolean, string or number. An array or object
+MUST be refused.
+
+Config is a flat key-value store, and silently serialising a structure into it
+produces a value the app will later read back as a string it never wrote.
+
+#### Scenario: A structured value is refused
+
+- **WHEN** a component sets a key to an object
+- **THEN** the component is refused and reported

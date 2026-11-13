@@ -44,6 +44,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @covers \OCA\OpenRegister\Mcp\Command\ContextChatReindexCommand
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Mcp\Command\ReindexScope
  */
 class ContextChatReindexCommandTest extends TestCase {
 

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationSubscription
+ * @uses \OCA\OpenRegister\Notifications\Db\SubscriptionKey
  */
 final class NotificationSubscriptionMapperTest extends TestCase {
 	use RecordingQueryBuilderTrait;

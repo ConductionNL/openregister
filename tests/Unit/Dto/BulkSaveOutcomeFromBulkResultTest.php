@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Dto\BulkSaveOutcome
+ * @uses \OCA\OpenRegister\Dto\BulkRowCount
  */
 final class BulkSaveOutcomeFromBulkResultTest extends TestCase {
 

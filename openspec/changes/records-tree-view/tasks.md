@@ -8,7 +8,7 @@
 
 ## 2. Interface
 
-- [ ] 2.1 Tree dispatch in `SearchIndex.vue` with `CnTreeView`, loading a branch on open and opening a record on choose. Verify: `tests/e2e/tree-view.spec.ts` opens two levels of a department tree.
+- [ ] 2.1 Tree dispatch in `SearchIndex.vue` with `CnTreeView`, loading a branch on open and opening a record on choose; going back from a record restores the open branches. Verify: `tests/e2e/tree-view.spec.ts` opens two levels of a department tree.
 - [ ] 2.2 Keyboard operation (arrows open and close, Enter opens the record). Verify: same e2e drives the tree by keyboard and an axe check passes.
 - [ ] 2.3 nextcloud-vue index page tree presentation for a schema with a hierarchy, so leaf apps such as buildiq get it. Verify: component test in nextcloud-vue.
 

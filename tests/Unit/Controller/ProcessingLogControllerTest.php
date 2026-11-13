@@ -54,6 +54,14 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
  * @covers \OCA\OpenRegister\Controller\ProcessingLogController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRegisterAccess
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRegisterReplies
+ * @uses \OCA\OpenRegister\Controller\Support\GdprRequestParams
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogAccess
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ProcessingLogPolicy
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ProcessingLogControllerTest extends TestCase {
 

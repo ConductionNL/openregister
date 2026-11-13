@@ -38,6 +38,13 @@ use Psr\Log\LoggerInterface;
  *
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\DeclaredShareableType
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class FederatedStoreCatalogTest extends TestCase {
 	/** @var ShareableConfigTypeRegistry&MockObject */

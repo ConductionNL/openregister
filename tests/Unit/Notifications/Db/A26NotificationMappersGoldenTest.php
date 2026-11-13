@@ -74,6 +74,35 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
  * @covers \OCA\OpenRegister\Notifications\Db\TimelineEntryMapper
  * @covers \OCA\OpenRegister\Notifications\Db\TimelineKindMapper
  * @covers \OCA\OpenRegister\Notifications\Db\WatcherMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Notifications\Db\AdministeredDeclaration
+ * @uses \OCA\OpenRegister\Notifications\Db\BroadcastMessage
+ * @uses \OCA\OpenRegister\Notifications\Db\BroadcastWindow
+ * @uses \OCA\OpenRegister\Notifications\Db\DedupeSighting
+ * @uses \OCA\OpenRegister\Notifications\Db\DispatchIdempotencyKey
+ * @uses \OCA\OpenRegister\Notifications\Db\HistoryDelivery
+ * @uses \OCA\OpenRegister\Notifications\Db\HistoryEntry
+ * @uses \OCA\OpenRegister\Notifications\Db\HistoryListFilter
+ * @uses \OCA\OpenRegister\Notifications\Db\HistoryNotice
+ * @uses \OCA\OpenRegister\Notifications\Db\HistorySubject
+ * @uses \OCA\OpenRegister\Notifications\Db\HistoryTarget
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationBroadcast
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceipt
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDedupeKey
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDedupeState
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDispatchLog
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationHistory
+ * @uses \OCA\OpenRegister\Notifications\Db\ObjectPresence
+ * @uses \OCA\OpenRegister\Notifications\Db\RecipientNotice
+ * @uses \OCA\OpenRegister\Notifications\Db\ReferencePattern
+ * @uses \OCA\OpenRegister\Notifications\Db\TextBlock
+ * @uses \OCA\OpenRegister\Notifications\Db\TextBlockScope
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntryScope
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineKind
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineSearch
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast
  */
 class A26NotificationMappersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -51,6 +51,24 @@ use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotesController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\NoteEditForbiddenException
+ * @uses \OCA\OpenRegister\Exception\NoteLockedException
+ * @uses \OCA\OpenRegister\Exception\NoteWriteRefusedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\AddressedObject
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotePath
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NoteStep
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ObjectNote
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
+ * @uses \OCA\OpenRegister\Notifications\Service\NoteVisibilityMove
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite
  */
 class A26NotesControllerGoldenTest extends TestCase {
 

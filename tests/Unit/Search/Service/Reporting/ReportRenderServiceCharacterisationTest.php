@@ -43,6 +43,14 @@ use RuntimeException;
  * refused format. The filename stamp is matched by pattern, never by clock.
  *
  * @covers \OCA\OpenRegister\Search\Service\Reporting\ReportRenderService
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportContent
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWriters
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWidgetEntry
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
+ * @uses \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
  */
 class ReportRenderServiceCharacterisationTest extends TestCase {
 

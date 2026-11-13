@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolvers
  */
 class TablesControllerSyncGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/tables-sync-golden.json';

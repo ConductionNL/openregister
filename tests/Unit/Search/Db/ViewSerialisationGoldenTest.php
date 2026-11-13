@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation for View.
  *
  * @covers \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
  */
 final class ViewSerialisationGoldenTest extends TestCase {
 

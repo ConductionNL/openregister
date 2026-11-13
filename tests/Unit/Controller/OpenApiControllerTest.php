@@ -93,6 +93,44 @@ class OpenApiControllerTest extends TestCase {
 	}//end testErrorResponsesAreProblemDetails()
 
 	/**
+	 * The document describes `/api/v1/` and lists every unversioned path as a deprecated twin.
+	 *
+	 * @return void
+	 */
+	public function testUnversionedPathsAreDeprecatedTwins(): void {
+		$document = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/openapi.json'), true);
+		$this->assertSame(expected: 'https://{host}/index.php/apps/openregister/api/v1', actual: $document['servers'][0]['url']);
+		$this->assertArrayHasKey(key: '/objects/{register}/{schema}/{id}/files-multipart', array: $document['paths']);
+		$this->assertArrayNotHasKey(key: '/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
+		$this->assertArrayNotHasKey(key: '/api/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
+
+		$twins = [];
+		foreach (array_keys($document['paths']) as $path) {
+			if (str_starts_with($path, '/api/') === false) {
+				$twins['/api'.$path] = $path;
+			}
+		}
+
+		$this->assertCount(
+			expectedCount: 2 * count($twins),
+			haystack: $document['paths'],
+			message: 'one deprecated twin per path'
+		);
+		foreach ($twins as $twin => $current) {
+			$this->assertArrayHasKey(key: $twin, array: $document['paths']);
+			$this->assertSame(expected: 'https://{host}/index.php/apps/openregister', actual: $document['paths'][$twin]['servers'][0]['url']);
+			foreach ($document['paths'][$current] as $verb => $operation) {
+				if (is_array($operation) === false || isset($operation['responses']) === false) {
+					continue;
+				}
+
+				$this->assertTrue(condition: $document['paths'][$twin][$verb]['deprecated'], message: "$verb $twin");
+				$this->assertSame(expected: $operation['responses'], actual: $document['paths'][$twin][$verb]['responses'], message: "$verb $twin");
+			}
+		}
+	}//end testUnversionedPathsAreDeprecatedTwins()
+
+	/**
 	 * Empty JSON objects in the document stay objects when served.
 	 *
 	 * @return void

@@ -58,6 +58,10 @@ use OCA\OpenRegister\Service\File\FileTransfer;
  * @uses \OCA\OpenRegister\Exception\ObjectFileAccessDeniedException
  * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\File\FileTransfer
  */
 class FilesControllerTransferGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-transfer-golden.json';

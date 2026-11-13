@@ -43,6 +43,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Files\Controller\FileExtractionController
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileExtractionDomain
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileExtractionMappers
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileExtractionPlatform
+ * @uses \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses \OCA\OpenRegister\Files\Service\File\CallerFileAccess
  */
 final class FileExtractionControllerResponsesGoldenTest extends TestCase {
 

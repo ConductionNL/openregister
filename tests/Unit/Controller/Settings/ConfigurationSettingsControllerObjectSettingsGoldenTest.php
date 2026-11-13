@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\ConfigurationSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices
  */
 class ConfigurationSettingsControllerObjectSettingsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/configuration-object-settings-golden.json';

@@ -30,6 +30,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Exception\UnknownMetadataFieldException
  * @covers \OCA\OpenRegister\Exception\TranslationTargetConflictException
+ * @uses \OCA\OpenRegister\Exception\CustomValidationException
  */
 final class MetadataAndTranslationExceptionsGoldenTest extends TestCase {
 

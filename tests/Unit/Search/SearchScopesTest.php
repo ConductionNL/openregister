@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Search\SearchScopes
+ * @uses \OCA\OpenRegister\Search\SearchScopeTargets
  *
  * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md
  */

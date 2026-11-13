@@ -49,6 +49,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService',
 				'OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService',
 				'OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer',
+				'OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService',
 			],
 			actual: $context->services
 		);

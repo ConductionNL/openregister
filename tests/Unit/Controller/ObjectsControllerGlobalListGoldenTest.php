@@ -58,6 +58,8 @@ use Psr\Container\ContainerInterface;
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  */
 class ObjectsControllerGlobalListGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-global-list-golden.json';

@@ -36,6 +36,12 @@ use RuntimeException;
  * failing invocation and a failing audit write.
  *
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ToolInvocation
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationDigest
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationOutcome
  */
 class ToolInvocationAuditCharacterisationTest extends TestCase
 {

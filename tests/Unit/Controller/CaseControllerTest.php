@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CaseControllerFactory;
 use OCA\OpenRegister\Controller\CaseController;
 use OCA\OpenRegister\Db\CaseItem;
@@ -65,6 +66,19 @@ use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Controller\Support\ActionParameters
+ * @uses \OCA\OpenRegister\Controller\Support\CasePlanRequest
+ * @uses \OCA\OpenRegister\Controller\Support\CaseTransitionCommand
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Case\CaseAdHocRequest
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Service\Case\CaseCompletion
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemTransition
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanCreation
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanProvenance
+ * @uses \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
  */
 class CaseControllerTest extends TestCase {
 
@@ -138,10 +152,7 @@ class CaseControllerTest extends TestCase {
 	 * @return array<int, array<string, mixed>> The case# routes.
 	 */
 	private static function caseRoutes(): array {
-		$routes = include __DIR__ . '/../../../appinfo/routes.php';
-		$all = ($routes['routes'] ?? []);
-
-		return array_values(array_filter($all, static fn (array $route): bool => str_starts_with((string)($route['name'] ?? ''), 'case#')));
+		return array_values(array_filter(DeclaredRoutes::unversioned(), static fn (array $route): bool => str_starts_with((string)($route['name'] ?? ''), 'case#')));
 	}//end caseRoutes()
 
 	/**

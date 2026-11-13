@@ -24,6 +24,9 @@ use PHPUnit\Framework\TestCase;
  * Pins every refusal message, the normalised shape and the static helpers.
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
  */
 final class AggregationQueryRulesGoldenTest extends TestCase {
 

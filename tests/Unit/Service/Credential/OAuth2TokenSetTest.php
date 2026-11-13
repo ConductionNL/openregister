@@ -38,6 +38,9 @@ use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
+ * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
  */
 class OAuth2TokenSetTest extends TestCase {
 	public function testRoundTripsThroughTheStoredDocument(): void {

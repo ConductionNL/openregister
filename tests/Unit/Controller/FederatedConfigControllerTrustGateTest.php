@@ -48,6 +48,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses   \OCA\OpenRegister\Service\Config\FederatedConfigService
+ * @uses \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices
+ * @uses \OCA\OpenRegister\Service\Config\FederatedConfigTransport
  */
 class FederatedConfigControllerTrustGateTest extends TestCase {
 

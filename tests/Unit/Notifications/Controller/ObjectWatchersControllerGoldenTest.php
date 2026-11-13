@@ -30,6 +30,11 @@ use RuntimeException;
  * Golden: status, body and call order of every watcher route, allowed and refused.
  *
  * @covers \OCA\OpenRegister\Notifications\Controller\ObjectWatchersController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ReadableObject
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class ObjectWatchersControllerGoldenTest extends TestCase
 {

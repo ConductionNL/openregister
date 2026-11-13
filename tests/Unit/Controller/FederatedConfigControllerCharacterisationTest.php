@@ -45,6 +45,9 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
  * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\ConfigPublishRequest
+ * @uses \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices
+ * @uses \OCA\OpenRegister\Service\Config\ConfigPublishTarget
  */
 class FederatedConfigControllerCharacterisationTest extends TestCase {
 

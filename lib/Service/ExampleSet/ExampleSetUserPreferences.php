@@ -50,7 +50,7 @@ class ExampleSetUserPreferences {
 	/**
 	 * A key name that holds a secret; a set never writes one.
 	 */
-	private const SECRET = '/(pass(word|wd)?|secret|token|credential|private|api[_-]?key|session)/i';
+	private const SENSITIVE_NAME_PATTERN = '/(pass(word|wd)?|secret|token|credential|private|api[_-]?key|session)/i';
 
 	/**
 	 * Constructor.
@@ -256,7 +256,7 @@ class ExampleSetUserPreferences {
 	 * @return bool
 	 */
 	private function holdsSecret(UserPreferenceKey $preference): bool {
-		return preg_match(self::SECRET, $preference->key) === 1 || $this->sensitive(preference: $preference) === true;
+		return preg_match(self::SENSITIVE_NAME_PATTERN, $preference->key) === 1 || $this->sensitive(preference: $preference) === true;
 	}//end holdsSecret()
 
 	/**

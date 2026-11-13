@@ -48,6 +48,11 @@ use OCA\OpenRegister\Service\Case\CasePlanTrigger;
  * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Event\FlowRunTerminalEvent
+ * @uses \OCA\OpenRegister\Event\AbstractTaskEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTrigger
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionActor
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class CaseListenersTest extends TestCase {
 

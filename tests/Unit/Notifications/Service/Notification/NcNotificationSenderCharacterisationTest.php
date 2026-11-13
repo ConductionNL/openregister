@@ -31,6 +31,11 @@ use RuntimeException;
  * Pins the notification row and the web-push jobs NcNotificationSender produces.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\InAppNotice
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeRule
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong
  */
 class NcNotificationSenderCharacterisationTest extends TestCase
 {

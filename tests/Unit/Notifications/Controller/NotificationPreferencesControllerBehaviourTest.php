@@ -33,10 +33,14 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(NotificationPreferencesController::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\PreferenceAddress::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\PreferenceWrite::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices::class)]
 class NotificationPreferencesControllerBehaviourTest extends TestCase {
 
 	private NotificationPreferencesInterface&MockObject $prefs;

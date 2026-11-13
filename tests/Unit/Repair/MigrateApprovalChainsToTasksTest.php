@@ -53,6 +53,10 @@ use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
  * @uses \OCA\OpenRegister\Service\Task\TaskBuilder
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Repair\Support\ApprovalTaskStores
+ * @uses \OCA\OpenRegister\Repair\Support\ChainMigrationRun
+ * @uses \OCA\OpenRegister\Repair\Support\RepairPlatform
+ * @uses \OCA\OpenRegister\Repair\Support\SequenceMigrationRun
  */
 class MigrateApprovalChainsToTasksTest extends TestCase {
 

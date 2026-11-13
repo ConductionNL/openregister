@@ -63,6 +63,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses \OCA\OpenRegister\Controller\Support\RequestListPage
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterExpansion
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterListExtension
+ * @uses \OCA\OpenRegister\Service\Serializer\SchemaObjectCounts
  */
 class RegistersControllerIndexGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-index-golden.json';

@@ -94,7 +94,16 @@ class SettingsChangeAuditor {
 	 *
 	 * @var string
 	 */
-	public const SECRET_KEY = 'x-openregister-secret';
+	public const SENSITIVE_ANNOTATION = 'x-openregister-secret';
+
+	/**
+	 * Former name of SENSITIVE_ANNOTATION, kept for existing callers.
+	 *
+	 * @deprecated Use SENSITIVE_ANNOTATION.
+	 *
+	 * @var string
+	 */
+	public const SECRET_KEY = self::SENSITIVE_ANNOTATION;
 
 	/**
 	 * Constructor.
@@ -180,7 +189,7 @@ class SettingsChangeAuditor {
 	public function secretKeysIn(array $configuration): array {
 		$secrets = [];
 		foreach ($configuration as $key => $declaration) {
-			if (is_array($declaration) === true && ($declaration[self::SECRET_KEY] ?? null) === true) {
+			if (is_array($declaration) === true && ($declaration[self::SENSITIVE_ANNOTATION] ?? null) === true) {
 				$secrets[] = (string)$key;
 			}
 		}

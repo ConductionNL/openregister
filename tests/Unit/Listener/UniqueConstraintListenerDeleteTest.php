@@ -46,6 +46,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConflict
  */
 class UniqueConstraintListenerDeleteTest extends TestCase {
 

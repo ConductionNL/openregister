@@ -15,7 +15,10 @@ import { generateUrl } from '@nextcloud/router'
 export const CAPABILITIES = ['read', 'comment', 'upload']
 
 /** The header the holder's password rides in, so it never lands in a URL. */
-export const PASSWORD_HEADER = 'X-OpenRegister-Link-Password'
+export const LINK_CREDENTIAL_HEADER = 'X-OpenRegister-Link-Password'
+
+/** @deprecated Former name of LINK_CREDENTIAL_HEADER, kept for existing importers. */
+export const PASSWORD_HEADER = LINK_CREDENTIAL_HEADER
 
 /**
  * The state a link is in, for the owner's list.
@@ -203,7 +206,7 @@ export function publicLinkUrl(anchor, suffix = '') {
  * @return {object} Axios options.
  */
 export function passwordOptions(password) {
-	return password ? { headers: { [PASSWORD_HEADER]: password } } : {}
+	return password ? { headers: { [LINK_CREDENTIAL_HEADER]: password } } : {}
 }
 
 /**

@@ -32,6 +32,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Repair\SeedIntakeSourceRegister
+ * @uses \OCA\OpenRegister\Repair\AppRegisterDescriptor
+ * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 final class SeedIntakeSourceRegisterTest extends TestCase {
 

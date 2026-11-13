@@ -1,6 +1,7 @@
 <?php
 
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases([
     'resources' => [
         'Registers' => ['url' => 'api/registers'],
         'Schemas' => ['url' => 'api/schemas'],
@@ -580,6 +581,19 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        // Configuration bundles. A bundle is a binding, not a model: its values
+        // live at the bundle layer of openregister_config_values and these
+        // routes address it by name. Administrator only, same as above.
+        ['name' => 'configurationBundle#index', 'url' => '/api/configuration/bundles',
+            'verb' => 'GET'],
+        ['name' => 'configurationBundle#show', 'url' => '/api/configuration/bundles/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#bind', 'url' => '/api/configuration/bundles/{id}/bindings',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#unbind', 'url' => '/api/configuration/bundles/{id}/bindings/{subject}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'subject' => '[^/]+']],
+        ['name' => 'configurationBundle#copy', 'url' => '/api/configuration/draft-sets/{id}/copy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -1515,7 +1529,9 @@ return [
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files-multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Legacy camelCase address of the same upload, kept so existing clients keep working.
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'legacy'],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
@@ -2328,4 +2344,4 @@ return [
 		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
 			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
-];
+]);

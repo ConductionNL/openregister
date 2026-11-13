@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Notifications\Db\TextBlockMapper
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationQueryTrait
  * @uses   \OCA\OpenRegister\Notifications\Db\TextBlock
+ * @uses \OCA\OpenRegister\Notifications\Db\AdministeredDeclaration
+ * @uses \OCA\OpenRegister\Notifications\Db\TextBlockScope
  */
 final class TextBlockMapperTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator
+ * @uses \OCA\OpenRegister\Search\Service\Quality\ComparedValues
  */
 class SimilarityCalculatorGoldenTest extends TestCase {
 

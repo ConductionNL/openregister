@@ -49,6 +49,13 @@ use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
  * set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexPass
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexRowCounts
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexSnapshotRestore
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexStores
  */
 class SearchIndexMaintenanceGoldenTest extends TestCase {
 

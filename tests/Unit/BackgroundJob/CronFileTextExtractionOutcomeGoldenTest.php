@@ -31,6 +31,7 @@ use ReflectionMethod;
  * Golden outcome lines of the cron text extraction job.
  *
  * @covers \OCA\OpenRegister\Files\BackgroundJob\CronFileTextExtractionJob
+ * @uses \OCA\OpenRegister\Files\BackgroundJob\CronExtractionRun
  */
 final class CronFileTextExtractionOutcomeGoldenTest extends TestCase {
 

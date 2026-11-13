@@ -37,6 +37,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DiscardDraftRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
  */
 class DraftDiscardTest extends TestCase {
 

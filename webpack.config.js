@@ -228,7 +228,7 @@ webpackConfig.resolve.alias = {
 		__dirname,
 		'node_modules/vue/dist/vue.runtime.esm-bundler.js',
 	),
-	pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.mjs'),
+	pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.js'),
 	// `dist/vue-router.js` — NOT `.mjs`, which does not exist. This is the file
 	// the package's own `exports['.'].import` (and `module`) names, so the alias
 	// reproduces default resolution exactly while still guaranteeing that

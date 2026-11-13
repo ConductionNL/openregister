@@ -270,6 +270,7 @@ final class FakeStatement implements IPreparedStatement {
 
 /**
  * @covers \OCA\OpenRegister\Repair\RenameDutchColumns
+ * @uses \OCA\OpenRegister\Repair\Support\ColumnMove
  */
 class RenameDutchColumnsTest extends TestCase {
 	/** @var array<int, string> Every statement the step executed. */

@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Notifications\NotificationsRegistrar
  * @uses   \OCA\OpenRegister\Notifications\Service\WebPush\HexIconService
+ * @uses \OCA\OpenRegister\Notifications\NotificationsWiring
  */
 final class NotificationsRegistrarTest extends TestCase {
 

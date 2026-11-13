@@ -64,6 +64,14 @@ use OCA\OpenRegister\Service\Credential\OAuth2Revocation;
  * @uses \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
+ * @uses \OCA\OpenRegister\Controller\Support\OAuth2StartRequest
+ * @uses \OCA\OpenRegister\Controller\Support\OAuth2StartRun
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2AuthorizationRequest
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CodeGrant
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Revocation
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class CredentialOauth2ControllerTest extends TestCase {
 	/** @var string This instance's own callback URL. */

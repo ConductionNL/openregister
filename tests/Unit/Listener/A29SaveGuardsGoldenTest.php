@@ -64,6 +64,26 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @covers \OCA\OpenRegister\Listener\ObjectQuotaListener
  * @covers \OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener
  * @covers \OCA\OpenRegister\Listener\StateFieldRuleListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\IdentityClaimsCollectingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Event\WriteVetoState
+ * @uses \OCA\OpenRegister\Listener\StateFieldSaveRun
+ * @uses \OCA\OpenRegister\Listener\Support\StateFieldRulePlatform
+ * @uses \OCA\OpenRegister\Listener\Support\StateFieldVersion
+ * @uses \OCA\OpenRegister\Listener\Support\StateFieldWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateCrossing
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateSave
+ * @uses \OCA\OpenRegister\Service\Rules\RuleDescriptor
+ * @uses \OCA\OpenRegister\Service\Rules\RuleRunSubject
+ * @uses \OCA\OpenRegister\Service\Rules\RuleTrace
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Listener\Support\EventSchemaLookup
  */
 final class A29SaveGuardsGoldenTest extends TestCase {
 

@@ -52,6 +52,16 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
  * @uses   \OCA\OpenRegister\Notifications\BackgroundJob\ScheduledFire
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Notifications\Db\NotificationDedupeState
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterClause
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterDates
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget
+ * @uses \OCA\OpenRegister\Notifications\Db\DedupeSighting
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDedupeKey
  */
 class ScheduledNotificationJobGoldenTest extends TestCase
 {

@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationQueryTrait
  * @uses   \OCA\OpenRegister\Notifications\Db\NotificationDispatchLog
  * @uses   \OCA\OpenRegister\Notifications\Db\DuplicateDispatchException
+ * @uses \OCA\OpenRegister\Notifications\Db\DispatchIdempotencyKey
  */
 final class NotificationDispatchLogMapperTest extends TestCase {
 	use RecordingQueryBuilderTrait;

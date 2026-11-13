@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Calendar\CalendarEventTransformer
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Calendar\CalendarDefinition
  */
 class CalendarEventTransformerGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/calendar-event-transformer-golden.json';

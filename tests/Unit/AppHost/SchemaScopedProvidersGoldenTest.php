@@ -55,6 +55,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
  * @uses   \OCA\OpenRegister\Service\WriteCause
  * @uses   \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
+ * @uses \OCA\OpenRegister\AppHost\SchemaScopeLookups
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchHit
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  */
 class SchemaScopedProvidersGoldenTest extends TestCase {
 	private const UUID = '550e8400-e29b-41d4-a716-446655440000';

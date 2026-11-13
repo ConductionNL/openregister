@@ -80,7 +80,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 *
 	 * @var string
 	 */
-	private const PSEUDONYM_TOKEN = '[erased]';
+	private const PSEUDONYM_MARKER = '[erased]';
 
 	/**
 	 * The payload key each marker operation writes: art-18 restriction, art-21 objection.
@@ -570,7 +570,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 			}
 
 			if (is_string($value) === true && in_array(strtolower($value), $needles, true) === true) {
-				$data[$key] = self::PSEUDONYM_TOKEN;
+				$data[$key] = self::PSEUDONYM_MARKER;
 			}
 		}
 

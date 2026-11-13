@@ -41,6 +41,8 @@ use OCA\OpenRegister\Files\Service\File\UserShareGrant;
  * owns is shared back to them, and every other case leaves the node alone.
  *
  * @covers \OCA\OpenRegister\Files\Service\File\FileOwnershipHandler
+ * @uses \OCA\OpenRegister\Files\Service\File\OwnershipTransferRun
+ * @uses \OCA\OpenRegister\Files\Service\File\UserShareGrant
  */
 final class FileOwnershipHandlerTransferTest extends TestCase {
 

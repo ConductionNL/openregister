@@ -45,6 +45,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\ImportMergeOperationRegister
  * @covers \OCA\OpenRegister\Repair\ImportSurveyRegister
  * @covers \OCA\OpenRegister\Repair\ImportTrustConfigurationRegister
+ * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 class RegisterImportStepsGoldenTest extends TestCase {
 

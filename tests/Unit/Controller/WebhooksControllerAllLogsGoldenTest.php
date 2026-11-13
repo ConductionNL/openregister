@@ -43,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
  * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class WebhooksControllerAllLogsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-all-logs-golden.json';

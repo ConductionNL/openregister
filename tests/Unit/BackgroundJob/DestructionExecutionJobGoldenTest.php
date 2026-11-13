@@ -53,6 +53,17 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
  * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\BackgroundJob\DestructionListRun
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\ExecutedDestruction
+ * @uses \OCA\OpenRegister\Service\Object\DeletionOptions
+ * @uses \OCA\OpenRegister\Service\Object\DeletionRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class DestructionExecutionJobGoldenTest extends TestCase
 {

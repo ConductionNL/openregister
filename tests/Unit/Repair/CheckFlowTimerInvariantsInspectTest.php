@@ -35,6 +35,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Repair\CheckFlowTimerInvariants
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class CheckFlowTimerInvariantsInspectTest extends TestCase {
 

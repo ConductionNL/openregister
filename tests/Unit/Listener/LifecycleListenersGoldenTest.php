@@ -109,6 +109,29 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
  * @uses   \OCA\OpenRegister\Service\Rules\RuleTrace
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Listener\Support\ApprovalChainSequences
+ * @uses \OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess
+ * @uses \OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ConditionUser
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ContainerLookup
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateMove
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionPayload
+ * @uses \OCA\OpenRegister\Service\Object\TransitionGate
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionJudgement
+ * @uses \OCA\OpenRegister\Service\Rules\RuleRunSubject
+ * @uses \OCA\OpenRegister\Service\Rules\RuleTraceValue
  */
 class LifecycleListenersGoldenTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
