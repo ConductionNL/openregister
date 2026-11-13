@@ -1,20 +1,323 @@
 {
  "app": "pipelinq",
- "commit": "4c67daf18432a564e46e1b7ebf9ebd15b4dfa9df",
- "measured_at": "2026-11-13T19:46:59Z",
- "php": null,
+ "commit": "fcd583ff4a914bb9cdef4c9af7e096b4c963da30",
+ "measured_at": "2026-11-13T22:37:03Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 88.35,
+  "statements": 61104,
+  "covered": 53985,
+  "dirs": {
+   "lib/Activity/": [
+    66,
+    66
+   ],
+   "lib/Activity/Setting/": [
+    27,
+    27
+   ],
+   "lib/Adapter/": [
+    74,
+    63
+   ],
+   "lib/AppInfo/": [
+    27,
+    26
+   ],
+   "lib/BackgroundJob/": [
+    1785,
+    1728
+   ],
+   "lib/Command/": [
+    382,
+    382
+   ],
+   "lib/Controller/": [
+    8490,
+    7763
+   ],
+   "lib/Dashboard/": [
+    42,
+    42
+   ],
+   "lib/Dossiq/": [
+    26,
+    26
+   ],
+   "lib/Event/": [
+    111,
+    111
+   ],
+   "lib/Flow/": [
+    128,
+    128
+   ],
+   "lib/Integration/": [
+    305,
+    305
+   ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
+   "lib/Lifecycle/": [
+    272,
+    252
+   ],
+   "lib/Listener/": [
+    1834,
+    1796
+   ],
+   "lib/Mcp/": [
+    26,
+    26
+   ],
+   "lib/Middleware/": [
+    58,
+    57
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    53
+   ],
+   "lib/Notification/": [
+    163,
+    163
+   ],
+   "lib/Portal/": [
+    557,
+    557
+   ],
+   "lib/Repair/": [
+    2589,
+    2393
+   ],
+   "lib/Repair/Support/": [
+    95,
+    95
+   ],
+   "lib/Sections/": [
+    5,
+    5
+   ],
+   "lib/Service/": [
+    31664,
+    26022
+   ],
+   "lib/Service/Access/": [
+    86,
+    86
+   ],
+   "lib/Service/Berichtenbox/": [
+    12,
+    12
+   ],
+   "lib/Service/BsnAudit/": [
+    4,
+    4
+   ],
+   "lib/Service/CallReview/": [
+    103,
+    103
+   ],
+   "lib/Service/Competitor/": [
+    600,
+    592
+   ],
+   "lib/Service/Consent/": [
+    67,
+    67
+   ],
+   "lib/Service/Cti/": [
+    108,
+    108
+   ],
+   "lib/Service/Cti/Adapter/": [
+    243,
+    243
+   ],
+   "lib/Service/Cti/Result/": [
+    17,
+    17
+   ],
+   "lib/Service/Demo/": [
+    490,
+    428
+   ],
+   "lib/Service/Egress/": [
+    118,
+    72
+   ],
+   "lib/Service/Event/": [
+    67,
+    67
+   ],
+   "lib/Service/Export/": [
+    1204,
+    1187
+   ],
+   "lib/Service/External/Berichtenbox/": [
+    48,
+    48
+   ],
+   "lib/Service/Forecast/": [
+    4,
+    4
+   ],
+   "lib/Service/Gdpr/": [
+    68,
+    68
+   ],
+   "lib/Service/Labels/": [
+    96,
+    96
+   ],
+   "lib/Service/Lead/": [
+    55,
+    55
+   ],
+   "lib/Service/Letter/": [
+    160,
+    160
+   ],
+   "lib/Service/Lifecycle/": [
+    134,
+    132
+   ],
+   "lib/Service/LineTotals/": [
+    59,
+    59
+   ],
+   "lib/Service/Loyalty/": [
+    15,
+    14
+   ],
+   "lib/Service/MailAddIn/": [
+    86,
+    85
+   ],
+   "lib/Service/Marketing/": [
+    2263,
+    2197
+   ],
+   "lib/Service/Marketing/Transport/": [
+    335,
+    330
+   ],
+   "lib/Service/Matomo/": [
+    72,
+    72
+   ],
+   "lib/Service/Mdm/": [
+    126,
+    49
+   ],
+   "lib/Service/Merge/": [
+    73,
+    66
+   ],
+   "lib/Service/Messaging/": [
+    9,
+    9
+   ],
+   "lib/Service/Payment/": [
+    633,
+    626
+   ],
+   "lib/Service/PersonLookup/": [
+    10,
+    10
+   ],
+   "lib/Service/Portal/": [
+    1440,
+    1430
+   ],
+   "lib/Service/PosCart/": [
+    67,
+    67
+   ],
+   "lib/Service/Provider/": [
+    104,
+    103
+   ],
+   "lib/Service/ScheduledTask/": [
+    92,
+    92
+   ],
+   "lib/Service/Search/": [
+    383,
+    369
+   ],
+   "lib/Service/SearchConsole/": [
+    298,
+    287
+   ],
+   "lib/Service/Settings/": [
+    12,
+    12
+   ],
+   "lib/Service/Sla/": [
+    212,
+    212
+   ],
+   "lib/Service/Social/": [
+    877,
+    796
+   ],
+   "lib/Service/Store/": [
+    86,
+    86
+   ],
+   "lib/Service/WebForm/": [
+    400,
+    398
+   ],
+   "lib/Service/Worklist/": [
+    66,
+    66
+   ],
+   "lib/Service/Zgw/": [
+    728,
+    726
+   ],
+   "lib/Settings/": [
+    24,
+    24
+   ],
+   "lib/SetupCheck/": [
+    27,
+    27
+   ],
+   "lib/Support/": [
+    32,
+    32
+   ],
+   "lib/Util/": [
+    106,
+    106
+   ]
+  }
+ },
  "js": {
-  "pct": 92.59,
-  "statements": 17670,
-  "covered": 16361,
+  "pct": 93.17,
+  "statements": 17586,
+  "covered": 16385,
   "dirs": {
    "src/": [
-    190,
+    88,
     88
    ],
    "src/components/": [
     1464,
     1383
+   ],
+   "src/components/CapabilityComparison/": [
+    25,
+    23
    ],
    "src/components/admin/": [
     473,
@@ -50,7 +353,7 @@
    ],
    "src/components/products/": [
     71,
-    60
+    61
    ],
    "src/components/rapportage/": [
     139,
@@ -241,7 +544,7 @@
     175
    ],
    "src/views/settings/": [
-    1189,
+    1182,
     1123
    ],
    "src/views/social/": [
