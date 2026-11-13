@@ -5373,3 +5373,4 @@ keepiq	1690	0027fec09b1fc7da8109b589da210f23f117adb0	REVERIFY	apifix	already MER
 filinq	2044	dd9720ca1532795164e854db45bee4b338b36d92	GREEN	worker-31	6304 tests (6 skipped) OK, baseline 6251 OK, new failures 0; tests only
 decidiq	2124	d285adf422519dd3da870189427649cc4d444537	GREEN	worker-52	phpunit 3684 OK (baseline 3684 OK, 0 new); vitest 188 files/2691 passed; behaviour-preserving JS refactor
 dossiq	6324	e811a9a2cc4637d2fa8933ececcd0554f27cb311	REVERIFY	worker-03	merged #6322 in (same bulkUpsert split: kept #6322's, kept branch's mixed-batch test renamed); merges clean after 6322+6323, touched tests/phpcs/phpstan green; new head 9b502e2f1e143ddb7202df735a79bb50e1a07ced, verify it
+versioniq	668	56c4ee960f7025bb22e00e4cfafe17cbb8a70dc6	GREEN	worker-43	PHP unit-only 1356 tests, baseline 2 failures, new 0; vitest on tree 51 files/2794 passed (baseline 44/2730); spec-only diff
