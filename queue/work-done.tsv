@@ -6735,3 +6735,4 @@ build:decidiq:delegated-authority-check	no PR: only open task (mandate matrix CS
 build:opencatalogi:admin-settings	partial: PR #2618; all capabilities already implemented; 28/67 tasks ticked after verification; rest are naming differences (spec should follow code), unverified detail, or live checks	session-20261113T195351-a32c6d55	2026-11-13T20:46:35Z
 build:integriq:connectors-case-system-document-delivery	already built: code and PHPUnit done; open items are live runs against Open Zaak/filinq and openspec validate/check:strict, not code; no PR	session-20261113T192701-f224cbcf	2026-11-13T20:46:29Z
 verify:shillinq:3022:40a55ac6	already merged: #3022 is on development (c5650d6bb)	session-20261113T204536-22cfbae0	2026-11-13T20:46:43Z
+verify:shillinq:3020:14ea862e	1 GREEN (3020); 10402 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T20:46:49Z
