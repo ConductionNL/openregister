@@ -6571,3 +6571,4 @@ build:filinq:work-stamp-text-on-every-page	PR opened: tasks 1.1, 1.2, 2.1 and 3.
 cover:buildiq:70b3e29em7beb:59826f43	already done: lib/Settings/*.php is AdminSettings.php at 100% (9/9 statements); no PR	session-20261113T182404-f2c28226	2026-11-13T20:10:48Z
 verify:pipelinq:3777:91d1f76e	GREEN 3777,3778,3779 (tests only, no new failures)	session-20261113T185324-28e07ab2	2026-11-13T20:10:54Z
 build:filinq:redaction-four-eyes-setting	partial: PR filinq#2098 builds tasks 1-4 (setting, gate same_person/anonymiser_unknown, batch+folder actor, admin radio); left 5 (review-card hint), 6 (dossiq), 7 (e2e); phpunit 6443->6460 green, vitest 751 green	session-20261113T190954-c894781f	2026-11-13T20:10:58Z
+cover:pipelinq:7f9dc8e6m8ce9:7505aeb4	already done: lib/Activity/*.php at 66/66 100.0 lines (measured this session)	session-20261113T172349-00278d9d	2026-11-13T20:11:18Z
