@@ -3134,6 +3134,7 @@ cover:keepiq:c967a31fmb40c:6f346b68	already done: lib/Sections/*.php at 100% lin
 cover:keepiq:c967a31fmb40c:ca1d90c4	already done: lib/Attribute/*.php at 100% lines (5/5) at 8a5d84f3; the 89.12 is the app-wide figure	session-20261113T071636-117504ad	2026-11-13T07:22:50Z
 cover:dossiq:f8a113c5m7e79:dfaef732	already done: lib/Notification 191/191 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:22:54Z
 verify:dossiq:6317:73469cb8	6317 GREEN, 6318 GREEN; 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:22:55Z
+gap:decidiq:14:732b368d	PR #2120: npm override resolves @toast-ui/editor's dompurify to 3.4.17 (2.5.9 gone), lock + sbom refreshed, vitest unchanged	session-20261113T041646-2c1d764f	2026-11-13T07:23:03Z
 cover:keepiq:c967a31fmb40c:7ddabe24	already done: lib/Federation/*.php 13/13 covered	session-20261113T051709-e616bf69	2026-11-13T07:23:05Z
 verify:integriq:3496:d828e105	GREEN #3496: tests only, unit 7689 vs 7673, no new failures (development itself has 2 JobsControllerTest failures)	session-20261113T051705-4f5ad12a	2026-11-13T07:23:18Z
 cover:dossiq:f8a113c5m7e79:d528dcf0	already done: lib/Dashboard 69/73; the 4 left are DashboardPageWidget::load() static Util calls needing OC_Util/server, unreachable in unit tests without a production change	session-20261113T051703-1b54bfba	2026-11-13T07:23:26Z
