@@ -3553,3 +3553,4 @@ cover:learniq:e6498dddmc027:9623f321	PR #2451: 3 tests; Local/Planninq sources t
 cover:buildiq:70b3e29embf07:a215617b	no PR: lib/Integration/*.php at 216/220 lines (pcov); the 4 uncovered lines are unreachable (non-array guard on array-typed findAll, needs-review guard behind a published-only filter)	session-20261113T080549-dde3ba19	2026-11-13T08:42:32Z
 review:stackiq:1700:f9ee16d5	CONFLICT recorded: no behaviour change found; add/add conflict with development (viewObjectPropertyEditing.spec.js, ViewObject.vue, eslint-suppressions.json)	session-20261113T080546-98207a87	2026-11-13T08:42:44Z
 measure:stackiq:20261113h08	php 85.28%, js 88.5% at 2a8336ce	session-20261113T080549-20301834	2026-11-13T08:42:52Z
+cover:stackiq:9ac19b3am5ac4:d528dcf0	already done: lib/Dashboard/*.php is one class at 12/12 lines with 3 test files; no PR	session-20261113T080549-20301834	2026-11-13T08:43:11Z
