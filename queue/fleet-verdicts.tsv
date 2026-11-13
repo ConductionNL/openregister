@@ -5502,6 +5502,7 @@ learniq	2445	4505533fa900a6d0f5813cd46b9725b9664c3040	GREEN	worker-33	tree 6239 
 learniq	2446	310bb4e64488c935d84d621ad3cd8a5d54ca887f	GREEN	worker-33	tree 6239 tests (baseline 6116, 1 inherited HigherEducationExampleSetTest failure), no new failures; tests-only additions
 learniq	2447	f7ea0d92720d129b18953856662587cdd863ace9	GREEN	worker-33	tree 6239 tests (baseline 6116, 1 inherited HigherEducationExampleSetTest failure), no new failures; tests-only additions
 stackiq	1857	a85a71294d7c62989f749974960d4d09a5b7016f	GREEN	worker-23	phpunit 3227 on 2-PR tree vs baseline 3216, 0 new failures; one @uses line, tests only
+stackiq	1700	f9ee16d5245ba076c6a1944798ae900a5a3e2323	REVERIFY	worker-26	merged development in: kept both import sets in ViewObject, development's viewObjectPropertyEditing.spec.js kept and the branch's renamed viewObjectPropertyEditRules.spec.js, suppressions pruned; vitest 2370/2370, eslint 0 errors; new head 7a35e49eb1b32d5be3010c6b8d503c6225924fe9, verify it
 learniq	2450	01cdbf716d6ed3cbf67a4409eebff34d2e32df8e	GREEN	worker-56	tree 4 PRs: 6130 tests, baseline 6116 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
 learniq	2451	75b6d16c0a4921bc21023939388218855fbf1cc2	GREEN	worker-56	tree 4 PRs: 6130 tests, baseline 6116 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
 learniq	2452	b74f344792993d5fddbb35c5dc6391e88530a235	GREEN	worker-56	tree 4 PRs: 6130 tests, baseline 6116 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; tests only
