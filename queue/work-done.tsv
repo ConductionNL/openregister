@@ -3479,3 +3479,4 @@ cover:stackiq:9ac19b3am5ac4:b5905f71	already done: lib/Service/Federation/ at 99
 verify:larpinq:1011:1d9c35db	BLOCK #1011: 4 PHP test files never run (class/file name mismatch); renamed they pass; vitest green	session-20261113T080549-20301834	2026-11-13T08:33:09Z
 cover:stackiq:9ac19b3am5ac4:2861e5ef	already done: lib/Examples/*.php at 100% (93/93); no PR	session-20261113T080546-98207a87	2026-11-13T08:33:09Z
 cover:stackiq:9ac19b3am5ac4:34763eb4	already done: lib/Middleware/*.php at 100% (57/57); no PR	session-20261113T080546-98207a87	2026-11-13T08:33:19Z
+cover:dossiq:f8a113c5m7e79:da74a02d	already done: BerichtenboxAdapter tested (MockAdapter 100%, IntegriqAdapter 95%); only gap is the seam-missing refusal, unreachable while bootstrap loads the event stub	session-20261113T080551-294c2aa6	2026-11-13T08:33:39Z
