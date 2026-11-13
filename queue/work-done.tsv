@@ -5244,3 +5244,4 @@ cover:buildiq:70b3e29ema699:34f5c300	PR #1549: 6 uncovered lib/Service classes (
 verify:portaliq:2401:e413f3aa	4 PRs verified GREEN in tree order (#2401,2402,2403,2404): each a single test-only file, no production change, tree 4855 pass vs baseline 4842, no new failures	session-20261113T091531-f9ad21ac	2026-11-13T13:38:19Z
 build2:openregister:modelling-rename-without-loss	partial: PR #10247 (tasks 1.1, 2.1; left 1.2, 2.2, 2.3, 3.x UI/e2e, 4.1 docs)	session-20261113T124805-1586d4f8	2026-11-13T13:38:11Z
 build2:openregister:dbal-virtual-registers	partial: PR #10248 ticks 1.2/5.1/5.2 (already on main, evidence), read-through test for 7.2; 4.3, 6.1, 7.2 rest, 7.3 left	session-20261113T121536-3cb7eb71	2026-11-13T13:38:27Z
+merge:pipelinq:3602:a927cd9b	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:38:46Z
