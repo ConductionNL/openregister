@@ -5720,3 +5720,4 @@ dossiq	6388	d1bb38257e4525eef64d6f5fbb05eb08722ad30a	GREEN	worker-17	tests-only;
 dossiq	6389	0107e969878956c3a69eb86cb4e4f2359be10f55	GREEN	worker-17	tests-only; tree 6388+6389: 15763 tests vs baseline 15757, same 19 inherited failures, no new failures
 hermiq	1644	5f5443ddef61241bde3570c956879466d61f14e7	GREEN	worker-29	tests-only (6 Redaction test files, +618, no deletions); 33 new tests pass; suite 4498 vs baseline 4465, same 146 errors/26 failures inherited from development
 filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	REVERIFY	worker-47	regenerated sbom.cdx.json from the refreshed package-lock.json (regen-sbom --check now current); new head e2f33998d2584880c845531a586368d2033d8933, verify it
+dossiq	6390	ecf88c5df5a15801fa63c7f1afa0531843ba143c	GREEN	worker-17	tests-only; tree 6390+6391: 15847 tests vs baseline 15811, same 19 inherited failures
