@@ -3281,3 +3281,4 @@ cover:integriq:92114ab0m658d:fd3f82d2	no PR: lib/Gateway/*.php already ~99% on d
 gap:hermiq:maint1:burn1	PR hermiq#1673: 3 worst units split (runAgentAsOwner 161L/CCN16, captureForSkill 152L, assembleSkillsForRun CCN15), tests first; phpcs/phpstan clean; suite 4187->4189, identical inherited failures	session-20261113T053904-36dcee67	2026-11-13T07:50:18Z
 gap:pipelinq:oas:burn1	open PR #3545 (quality/api-v1-pipelinq) already commits a conforming openapi.json (servers /api/v1, contact, problem+json); verified: 0 new unit failures, verdict BLOCK only for the intended error-body contract change, no duplicate PR opened	session-20261113T074531-994df036	2026-11-13T07:50:28Z
 verify:humaniq:1102:216a967f	humaniq#1102 GREEN (3806 tests, 0 failures)	session-20261113T051703-1b54bfba	2026-11-13T07:50:48Z
+review:openregister:10103:bc3c6397	APPROVE #10103	session-20261113T074533-5d842142	2026-11-13T07:50:58Z
