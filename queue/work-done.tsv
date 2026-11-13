@@ -4815,3 +4815,4 @@ build:openregister:near-duplicate-documents-by-text	failed: too big for one task
 build:openregister:flow-engine-docs	partial: PR #10177 flows.md + README/workflow-automation + doc-lint test; sharing (not built) and live spot-check left	session-20261113T101609-bc51215d	2026-11-13T12:23:01Z
 cover:pipelinq:7f9dc8e6m916f:0a24f15f	already covered: lib/Service/Letter 100% (160/160) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T12:22:54Z
 review:openregister:10157:ebbe1b8b	APPROVE	session-20261113T071631-5a3cc070	2026-11-13T12:23:14Z
+build:openregister:capability-rows-verified-a	partial: PR #10178 (build/capability-rows-verified-a) does tasks 1.1 and 3.1 (editor/format refusal and empty-search statistics/row mark, tests only, code already compliant); 2.1 public anonymous form left open (new public page plus logged-out Playwright)	session-20261113T094606-70524295	2026-11-13T12:23:52Z
