@@ -45,8 +45,10 @@ namespace OCA\OpenRegister\AppHost\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
-use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
+use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
@@ -541,13 +543,17 @@ class GenericStoreController extends Controller {
 	 */
 	private function descriptor(StoreManifest $store): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: $this->appName,
-			schema: $store->schema,
-			defaultRegister: $store->register,
-			cardFields: $store->cardFields,
-			types: $store->declaredTypes(),
-			publishFields: $store->publishFields,
-			publishGroups: $store->publishGroups
+			listing: new StoreListing(
+				appId: $this->appName,
+				schema: $store->schema,
+				defaultRegister: $store->register,
+				cardFields: $store->cardFields
+			),
+			sharing: new StoreSharing(
+				types: $store->declaredTypes(),
+				publishFields: $store->publishFields,
+				publishGroups: $store->publishGroups
+			)
 		);
 	}//end descriptor()
 }//end class
