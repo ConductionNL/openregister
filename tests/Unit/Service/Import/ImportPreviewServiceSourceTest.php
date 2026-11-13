@@ -49,6 +49,25 @@ use Psr\Log\NullLogger;
  * Register and schema references, the every-50-rows checkpoint and the staged copy's removal.
  *
  * @covers \OCA\OpenRegister\Service\Import\ImportPreviewService
+ * @uses \OCA\OpenRegister\Db\ImportPreview
+ * @uses \OCA\OpenRegister\Db\ImportPreviewRow
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Import\ConflictPolicy
+ * @uses \OCA\OpenRegister\Service\Import\ImportDestination
+ * @uses \OCA\OpenRegister\Service\Import\ImportPreviewMatching
+ * @uses \OCA\OpenRegister\Service\Import\ImportPreviewStore
+ * @uses \OCA\OpenRegister\Service\Import\ImportPreviewTargets
+ * @uses \OCA\OpenRegister\Service\Import\ImportRowPayload
+ * @uses \OCA\OpenRegister\Service\Import\ImportRun
+ * @uses \OCA\OpenRegister\Service\Import\ImportSourceCheck
+ * @uses \OCA\OpenRegister\Service\Import\MatchQuery
+ * @uses \OCA\OpenRegister\Service\Import\MatchResolver
+ * @uses \OCA\OpenRegister\Service\Import\RowImportTarget
+ * @uses \OCA\OpenRegister\Service\Import\SourceRowReader
  */
 class ImportPreviewServiceSourceTest extends TestCase {
 

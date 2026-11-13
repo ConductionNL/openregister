@@ -25,6 +25,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
  * @uses   \OCA\OpenRegister\Service\File\ExecutableContentDetector
  * @uses   \OCA\OpenRegister\Service\File\FilePropertyRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadCheck
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadedContent
  */
 final class FileUploadGuardTest extends TestCase {
 

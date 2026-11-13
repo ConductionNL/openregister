@@ -46,6 +46,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\PropertySourceLanguage
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\LanguageMetaSubject
+ * @uses \OCA\OpenRegister\Service\SourceLanguageLookup
  */
 class SourceLanguageResolutionTableTest extends TestCase {
 

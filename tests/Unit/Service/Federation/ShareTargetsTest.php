@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class ShareTargetsTest extends TestCase {
 

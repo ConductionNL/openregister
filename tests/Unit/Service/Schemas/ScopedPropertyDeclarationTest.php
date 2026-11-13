@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Schema::hasPropertyAuthorization
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  */
 class ScopedPropertyDeclarationTest extends TestCase {
 

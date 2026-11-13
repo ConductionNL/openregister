@@ -51,6 +51,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class UserTaskNodeOutsideARunBehaviourTest extends TestCase {
 

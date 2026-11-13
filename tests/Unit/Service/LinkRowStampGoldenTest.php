@@ -84,6 +84,10 @@ if (class_exists('OCA\\Bookmarks\\Db\\Bookmark') === false) {
  * @uses   \OCA\OpenRegister\Db\PhotoLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses \OCA\OpenRegister\Service\BookmarkDraft
+ * @uses \OCA\OpenRegister\Service\AlbumLinkRun
+ * @uses \OCA\OpenRegister\Service\CospendProjectDraft
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\PollIdentity
  */
 class LinkRowStampGoldenTest extends TestCase {
 

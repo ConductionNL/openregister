@@ -49,6 +49,9 @@ if (class_exists('OCA\\Cospend\\Service\\ProjectService') === false) {
  * @uses   \OCA\OpenRegister\Db\CospendEntryKey
  * @uses   \OCA\OpenRegister\Db\CospendLink
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\CospendProjectDraft
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class CospendLinkServiceGoldenTest extends TestCase {
 

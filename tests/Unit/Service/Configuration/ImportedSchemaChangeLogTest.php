@@ -25,6 +25,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeSet
+ * @uses \OCA\OpenRegister\Service\Schema\IncomingDefinition
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeRecord
  */
 class ImportedSchemaChangeLogTest extends TestCase {
 

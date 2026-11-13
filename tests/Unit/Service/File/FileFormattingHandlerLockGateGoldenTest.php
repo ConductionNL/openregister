@@ -46,6 +46,9 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
+ * @uses \OCA\OpenRegister\Service\File\FileListFilter
+ * @uses \OCA\OpenRegister\Service\File\FileLockEnvelope
+ * @uses \OCA\OpenRegister\Service\File\FileSession
  */
 class FileFormattingHandlerLockGateGoldenTest extends TestCase {
 

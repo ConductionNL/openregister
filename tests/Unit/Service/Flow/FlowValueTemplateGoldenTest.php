@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
  */
 class FlowValueTemplateGoldenTest extends TestCase {
 

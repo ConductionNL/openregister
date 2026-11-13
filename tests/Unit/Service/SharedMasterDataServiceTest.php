@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\SharedMasterDataService
  * @covers \OCA\OpenRegister\Exception\SharedMasterDataWriteException
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
+ * @uses \OCA\OpenRegister\Service\DeclaredRow
  */
 class SharedMasterDataServiceTest extends TestCase {
 

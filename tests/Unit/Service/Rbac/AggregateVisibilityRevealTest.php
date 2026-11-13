@@ -34,6 +34,11 @@ use RuntimeException;
  * mayReadOnSomeRow() and the explicit-reveal masking of value summaries.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class AggregateVisibilityRevealTest extends TestCase {
 

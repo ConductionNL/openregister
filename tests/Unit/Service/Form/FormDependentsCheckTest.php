@@ -40,6 +40,13 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  * @uses \OCA\OpenRegister\Service\Form\FormFieldRules
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Service\Form\FormDependentsSignals
+ * @uses \OCA\OpenRegister\Service\Form\FormDestination
+ * @uses \OCA\OpenRegister\Service\Form\FormFinding
+ * @uses \OCA\OpenRegister\Service\Form\FormUnpublishRun
+ * @uses \OCA\OpenRegister\Service\Form\MappedField
+ * @uses \OCA\OpenRegister\Service\Form\PublishedForm
  */
 class FormDependentsCheckTest extends TestCase {
 

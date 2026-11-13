@@ -31,6 +31,8 @@ use Psr\Log\LoggerInterface;
  * The write runs inside the pass's boundary, and with no automatic move applied the write's own result comes back.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass
  */
 class LifecycleWriteBoundaryWithPassTest extends TestCase {
 

@@ -44,6 +44,13 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory
  * @uses   \OCA\OpenRegister\Service\Dbal\SqlTypeMapper
  * @uses   \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService
+ * @uses \OCA\OpenRegister\Service\Dbal\IntrospectionTools
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\ObjectSource\DbalAggregator
+ * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceWiring
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesProviderParts
  */
 class ObjectSourceRegistrarWiringGoldenTest extends TestCase {
 

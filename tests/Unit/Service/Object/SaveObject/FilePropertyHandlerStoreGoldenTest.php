@@ -116,6 +116,23 @@ class GoldenHttpStreamWrapper {
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\ExecutableContentDetector
+ * @uses \OCA\OpenRegister\Service\File\FilePropertyRules
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileFormat
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileInputReader
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyFiles
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileUploadGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadCheck
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadedContent
+ * @uses \OCA\OpenRegister\Service\SecurityService
+ * @uses \OCA\OpenRegister\Service\Security\OutboundAddressGuard
+ * @uses \OCA\OpenRegister\Service\Security\SafeFetchUrl
  */
 class FilePropertyHandlerStoreGoldenTest extends TestCase {
 

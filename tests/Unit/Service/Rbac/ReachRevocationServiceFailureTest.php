@@ -44,6 +44,10 @@ use RuntimeException;
  * reports a partial act as a whole one.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ReachRevocationService
+ * @uses \OCA\OpenRegister\Db\DelegationGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachRevocationLog
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachSources
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ReachRevocationServiceFailureTest extends TestCase {
 

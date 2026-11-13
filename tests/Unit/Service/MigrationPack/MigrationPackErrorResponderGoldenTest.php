@@ -38,6 +38,10 @@ use RuntimeException;
  * Pins the status, error code and message of every migration-pack answer.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder
+ * @uses \OCA\OpenRegister\Exception\BuiltinPackSlugLockedException
+ * @uses \OCA\OpenRegister\Exception\InvalidPackDefinitionException
+ * @uses \OCA\OpenRegister\Exception\MigrationPackRequestException
+ * @uses \OCA\OpenRegister\Exception\PackSlugExistsException
  */
 class MigrationPackErrorResponderGoldenTest extends TestCase {
 	use PassThroughL10nTrait;

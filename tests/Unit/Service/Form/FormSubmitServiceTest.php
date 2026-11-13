@@ -93,6 +93,20 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Service\Form\FormUploadClaims
  * @uses \OCA\OpenRegister\Service\Form\NestedIdentityGuard
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Form\FormFinding
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitFailure
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadClaim
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadTarget
+ * @uses \OCA\OpenRegister\Service\Form\IdempotentRequest
+ * @uses \OCA\OpenRegister\Service\Form\OwnedDraft
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\OwnDraftSearch
  */
 class FormSubmitServiceTest extends TestCase {
 

@@ -48,6 +48,14 @@ use OCA\OpenRegister\Service\EntityLink;
  * Allowed and refused outcomes of the linked-entity write paths.
  *
  * @covers \OCA\OpenRegister\Service\LinkedEntityService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\LinkedEntityIntegrations
+ * @uses \OCA\OpenRegister\Service\LinkedEntityMappers
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\Register
  */
 class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 

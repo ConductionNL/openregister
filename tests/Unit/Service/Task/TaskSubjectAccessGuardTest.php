@@ -67,6 +67,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\TaskTables
  * @uses \OCA\OpenRegister\Service\Task\TaskAct
  * @uses \OCA\OpenRegister\Service\Task\TaskImport
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class TaskSubjectAccessGuardTest extends TestCase {
 

@@ -40,6 +40,11 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\FileSidebarService
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\GdprEntity
+ * @uses \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
+ * @uses \OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup
  */
 final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 

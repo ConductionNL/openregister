@@ -44,6 +44,15 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  */
 class ObjectServiceScopeContextGoldenTest extends TestCase
 {

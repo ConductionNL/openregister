@@ -95,6 +95,28 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
  * @uses \OCA\OpenRegister\Service\Audit\PurposeGuard
  * @uses \OCA\OpenRegister\Service\Audit\PurposeContext
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailQuery
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryRedactionRun
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableTrailPageRequest
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableTrailRun
+ * @uses \OCA\OpenRegister\Service\Audit\TrailPageOptions
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\PurposeRefusal
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeReadScope
  */
 class ReadableAuditTrailListerTest extends TestCase {
 
