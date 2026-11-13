@@ -3845,3 +3845,4 @@ build:dossiq:case-views-shared-with-a-team	partial: PR #6354 example shared view
 build:dossiq:one-term-engine	already done: every code task ticked and present on development; only 5.1 (per-PR verification checklist) open, not code	session-20261113T091530-f20014fb	2026-11-13T09:23:54Z
 cover:hermiq:065f1631m249e:7d9a7607	no PR: lib/Service/Config/ and lib/Service/Translation/ are 67/67 lines (100%); tests assert exact bundles, install calls per session state and language mapping, nothing thin left	session-20261113T071640-3ba6da34	2026-11-13T09:23:51Z
 fix:learniq:2460:6a2ecbd8	conflict resolved, pushed 92ca06ee9eff91e0ca9dcdd8efccabfb436bcdc4, REVERIFY recorded	session-20261113T081055-3901e400	2026-11-13T09:24:00Z
+build:dossiq:case-money-is-configuration	PR #6355: task 5 (schema titles/descriptions, versions, digests, en/nl); task 6 e2e left	session-20261113T091533-b7a00bc3	2026-11-13T09:24:16Z
