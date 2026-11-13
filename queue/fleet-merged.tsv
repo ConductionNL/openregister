@@ -1024,3 +1024,4 @@ humaniq	1029	a8575e17355a3083c95cc32a036a2f82e7010e19	SKIP	merge-local	GATE UNME
 humaniq	1030	4e04b394e56c758e0a154a2734470d412302efa7	SKIP	merge-local	GATE UNMEASURED 4e04b394e5 does not merge cleanly onto development
 humaniq	1031	f88eeb1ed1d23d855c5decb3b750537502cfd0ca	SKIP	merge-local	GATE UNMEASURED f88eeb1ed1 does not merge cleanly onto development
 humaniq	1094	77832e4d8369f59b17dadd1107884681f3427d5a	SKIP	merge-local	GATE UNMEASURED 77832e4d83 does not merge cleanly onto development
+hermiq	1584	9cc7549e6375611e5f874b2884f47adfa6614326	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
