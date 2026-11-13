@@ -4219,3 +4219,4 @@ cover:launchpad:fb10c50fm911d:dfaef732	already done: lib/Notification/ is 85/85 
 verify:shillinq:2917:e08696bc	GREEN 2917-2919: vitest 1920 pass, no PHP touched	session-20261113T080556-d189f150	2026-11-13T10:18:42Z
 cover:dossiq:069ee2d6m7275:b4753aef	PR #6387: PdokLocatieserverService request shapes and TTLs, 8 tests (dir 18 -> 26), lines already 100%	session-20261113T084525-9d890807	2026-11-13T10:18:46Z
 cover:launchpad:fb10c50fm911d:882bd950	already done: lib/Search/ fully covered at 867c6ce5 (unchanged at development head); no PR	session-20261113T101610-feec15b7	2026-11-13T10:18:53Z
+cover:shillinq:05639debm0c05:f545d745	PR #2927: 34 tests for 3 untested repair folds (FoldDunningWriteoff 11->99%, FoldExpensesAndHours 7->98%, UnifyAnalyticalDimensions 29->100%); suite 1 inherited failure	session-20261113T093920-50335e74	2026-11-13T10:19:00Z
