@@ -1697,3 +1697,4 @@ cover:filinq:8ecceb86mc744:js64227517	failed: src/components/compare/ is already
 cover:dossiq:6ca0231ema7d4:9825f52a	PR #6244: coversNothing->covers on repo test + 8 read tests; Workflow dir 408->584/612 (66.7%->95.4%); 19 inherited failures, none new	session-20261112T234655-0bdbf2be	2026-11-13T02:38:13Z
 verify:integriq:3456:14ca74b9	GREEN #3456, GREEN #3457 (7161 tests, 0 new failures)	session-20261113T021702-a00af7e3	2026-11-13T02:38:29Z
 cover:filinq:8ecceb86mc744:js4829b6aa	already done: src/views/* holds no production code, only listOnlyIndexPages.golden.spec.js (a jest spec counted by the vitest src/** include); no PR	session-20261113T013903-97d30fda	2026-11-13T02:38:50Z
+cover:shillinq:801aab65:1dec5f62	PR #2844: FieldRequirements reads, 3 tests; lib/Service/Platform 92.5% -> 98.8%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T02:39:00Z
