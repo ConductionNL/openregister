@@ -4674,3 +4674,5 @@ merge:larpinq:1025:ef810bdb	merge	larpinq	development	development	prs=1025@a9875
 cover:dossiq:069ee2d6m7275:34763eb4	cover	dossiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=936;coverage=89.34;target=90.0	2026-08-15T09:25:43Z
 cover:dossiq:069ee2d6m7275:63eef43f	cover	dossiq	development	quality/test-coverage-63eef43f	lang=php;dirs=lib/Service/Mandaat/;focus=thin;weight=699;coverage=89.34;target=90.0	2026-08-15T09:29:40Z
 cover:pipelinq:7f9dc8e6m916f:9d3a1784	cover	pipelinq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=1311;coverage=84.95;target=90.0	2026-11-13T04:56:09Z
+merge:dossiq:6366:5400bc38	merge	dossiq	development	development	prs=6366@92d7b0dcc819040c6f1c61dd6c30a30a24ad4741,6385@cf5945ae69aa923c3bb13bacf515473aa105e1e6,6386@e72f1caaaa68cc280a27d2486572cf9d352c57ef,6387@e852853cdd0c2f943837e95439e5668c4b56afd9	2026-11-13T10:25:13Z
+cover:pipelinq:7f9dc8e6m916f:f545d745	cover	pipelinq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=1386;coverage=84.95;target=90.0	2026-11-13T04:59:38Z
