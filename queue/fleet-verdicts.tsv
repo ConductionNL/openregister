@@ -5726,3 +5726,4 @@ buildiq	1539	19adbe957e9b64b5947ac6d256575d8c8be0d66c	GREEN	worker-27	tests-only
 dossiq	6392	812f4ba7a5e00b079eb0c7b266cf57f57a9384b5	GREEN	worker-44	tree of 2: PHPUnit 15847 tests, same 19 inherited failures, none new (failing names diffed); tests only, no JS
 stackiq	1868	5df8ddbe7f814f86d73fc99527b1d647509d1ec8	GREEN	worker-27	tests-only; unit 3279 tests (baseline 3273, 0 failures), +6 new pass; no new failures
 dossiq	6393	909919c89f340fb79371cf70018af37cca00a337	GREEN	worker-44	tree of 2: PHPUnit 15847 tests, same 19 inherited failures, none new (failing names diffed); Service/Flow 153 tests pass; tests only, no JS
+shillinq	2928	b662a237727504a20d4824748d1cfd1989b7ae9b	GREEN	worker-29	tests-only (7 Listener test files, +766/-1, the one removed line is a test ctor arg); suite 10103 vs baseline 10087, same 1 inherited failure
