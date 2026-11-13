@@ -34,6 +34,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NativeAggregationRequest;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -283,16 +287,24 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $db,
-			cache: $this->createMock(AggregationCache::class),
-			permissionHandler: $this->createMock(PermissionHandler::class),
-			userSession: $userSession,
-			organisationService: $this->createMock(OrganisationService::class),
-			organizationHandler: $orgHandler,
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
+				db: $db,
+				cache: $this->createMock(AggregationCache::class)
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->createMock(PermissionHandler::class),
+				organizationHandler: $orgHandler
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $this->createMock(OrganisationService::class),
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 	}//end runnerFor()
 
