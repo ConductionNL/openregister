@@ -7151,3 +7151,4 @@ review:openregister:10421:4a0f4fef	APPROVE: frontend filter option + badge, jest
 review:openregister:10408:2f41b5ed	APPROVE	session-20261113T213326-97cbe4c8	2026-11-13T22:23:44Z
 review:openregister:10391:aa853099	APPROVE #10391	session-20261113T204606-0d8f1c54	2026-11-13T22:23:51Z
 build4:openregister:platform-cloud-federation-provider	partial: PR #10433 (task 1.5 schema federatable declaration, refusal at share creation; 1.1-1.4 left)	session-20261113T212406-cc34ae8b	2026-11-13T22:24:16Z
+review:openregister:10406:9663a34c	APPROVE 10406: PDF summary block, no new exposure beyond the table; tests green	session-20261113T205337-4c32e19e	2026-11-13T22:24:16Z
