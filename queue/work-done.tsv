@@ -3781,6 +3781,7 @@ cover:hermiq:065f1631m249e:3a63cc27	PR #1679: +14 tests, ReportSimilarity 298->3
 cover:keepiq:c967a31fm1147:1b97f731	already done: lib/Listener/*.php at 98.33% (411/418) on development 8a5d84f3c, above the 90% target	session-20261113T080552-2a8a5ff1	2026-11-13T09:15:43Z
 build:dossiq:advanced-holds-the-catalogue-folders	already done: tasks 1.1-1.5 on development (manifest, redirect, l10n, vitest specs); 1.6 design-system PR and 1.7 live check are not code here	session-20261113T091532-72081560	2026-11-13T09:16:37Z
 cover:shillinq:05639debmd8ee:34cd3e35	already done: lib/Service/Usage at 100% (100/100 lines, 4 classes) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:16:17Z
+cover:shillinq:05639debmd8ee:59826f43	already done: lib/Settings/*.php at 12/12 statements (100%) on development; no PR	session-20261113T080556-d189f150	2026-11-13T09:16:41Z
 build:dossiq:admin-data-access	already done: 1.1 on development (92-admin-data-access.json + test); 1.2/1.3 are open decisions, no code	session-20261113T091533-b7a00bc3	2026-11-13T09:16:41Z
 verify:buildiq:1534:977a2951	GREEN 1534; 2752 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T09:16:50Z
 build:dossiq:an-aanvullingsverzoek-is-a-portal-task	already built: tasks 1.1-2.3 on development since 10 Oct; left 3.1 (live) and 4.1 (no ask-partner render leaf in portaliq; gap-decisions row 3.19 records it as a product question)	session-20261113T084527-a728978e	2026-11-13T09:16:59Z
