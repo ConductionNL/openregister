@@ -7,3 +7,4 @@
 10055	0f5d134c006057c6e1cb4c29d44819d6db69b368	-	scope-file only: licence exclude for every @nextcloud package (license2)
 10061	067b7beed9eed9a8cdb61dee926e668df6c32714	c8d3817dae3b3b39d54bf7e75ff3cda30f6fa085	integrator merged main and regenerated sbom.cdx.json (lockfile unchanged vs the approved head)
 8948	23d6bb7ece1bc6ffafd8b04cb65bba93e698c3dc	c58650a7f085c8a1d8ffdc97ff5c0c5b67ac30d6	integrator merged main (component-map rows kept from both sides, patterns regenerated) and re-pinned the listener order, registration sequence and the non-ObjectService find of SharerAccessSweepJob::objectOf; lib unchanged
+9943	6aa9d5c88ec5f861d9a47efa88ea4c6c04619335	-	integrator merged main (component-map rows from both sides, patterns regenerated) and added expiresAt to the three FederatedShareSerialisationGoldenTest expectations; lib unchanged
