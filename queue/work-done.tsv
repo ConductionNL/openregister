@@ -4207,6 +4207,7 @@ cover:pipelinq:7f9dc8e6m916f:f3231970	already done: lib/Service/ScheduledTask 92
 cover:decidiq:a5f973bbm1507:0f859653	failed: permission	session-20261113T101604-1c0ced4c	2026-11-13T10:17:14Z
 cover:decidiq:a5f973bbm1507:aae6d66c	already done: lib/Exception/ is 16/16 statements covered (StatusRefusalExceptionsTest + DossierRefusedExceptionTest); remaining 8 classes are empty marker exceptions with no executable lines; no PR	session-20261113T101610-feec15b7	2026-11-13T10:17:22Z
 verify:pipelinq:3706:2c63ddaa	1/1 GREEN (3706): clean merge, lint ok, phpunit +23 no new failures, vitest 3964 pass; existing behaviour unchanged	session-20261113T044737-f37de8e3	2026-11-13T10:17:28Z
+cover:decidiq:a5f973bbm1507:568ec52a	already done: lib/Lifecycle/ is 256/256 statements covered at a2b22454 (queue/coverage/decidiq.json); no PR	session-20261113T101610-feec15b7	2026-11-13T10:17:42Z
 cover:decidiq:a5f973bbm1507:34f5c300	PR #2126: 6 services fully covered, risky 2->0, lib/Service 88.06->90.34%; ActionItemWriter calls TaskService methods OpenRegister no longer has (noted in PR)	session-20261113T081048-4978ac57	2026-11-13T10:17:38Z
 verify:larpinq:1025:ef810bdb	GREEN 1025, 1026, 1027	session-20261113T081040-5e814df2	2026-11-13T10:17:47Z
 cover:pipelinq:7f9dc8e6m916f:50d794fc	already done: lib/Service/Matomo/ 100% lines (72/72) on development; branch -1 already merged	session-20261113T091530-f20014fb	2026-11-13T10:17:54Z
