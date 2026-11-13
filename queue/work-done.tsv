@@ -2898,6 +2898,7 @@ verify:learniq:2418:fa3bbc64	GREEN 2418 (6105 run, 0 new failures)	session-20261
 cover:hermiq:065f1631mfaac:js0cc4cc95	already done: src/dialogs measures 85.2% lines on development (target 85) after merged quality/test-coverage-js-0cc4cc95-1; 72 files/1205 tests pass	session-20261113T053904-36dcee67	2026-11-13T06:39:17Z
 cover:stackiq:df113dffm5ac4:d528dcf0	already done: lib/Dashboard/*.php 12/12 lines (100.0%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:39:15Z
 cover:buildiq:9930949bmc723:js2cb0b4ec	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:15Z
+cover:stackiq:df113dffm5ac4:81b1241f	already done: lib/Portal/*.php 23/23 statements covered by 17 tests (branch -1 merged)	session-20261113T061521-423d1e83	2026-11-13T06:39:22Z
 cover:integriq:92114ab0m658d:js9fcd1176	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:23Z
 cover:stackiq:df113dffm5ac4:34763eb4	already done: lib/Middleware/*.php 57/57 lines (100.0%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:39:27Z
 cover:stackiq:df113dffm5ac4:05630945	already done: lib/Middleware/Support/ at 91.94% (57/62, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:39:41Z
@@ -2920,3 +2921,4 @@ cover:hermiq:065f1631mfaac:js3f3bfe56	failed: permission (npm ci refused in this
 cover:hermiq:065f1631mfaac:js77cf3af4	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:22Z
 cover:hermiq:065f1631mfaac:js0246d36e	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:28Z
 cover:buildiq:9930949bmc723:js4829b6aa	already done: src/views/*.vue 1323/1546 (85.6%) under vitest on development fc2670dab, above the 85 target; suite 3821 passed	session-20261113T061516-58aa7364	2026-11-13T06:41:33Z
+cover:hermiq:065f1631mfaac:js0be8c659	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:40Z
