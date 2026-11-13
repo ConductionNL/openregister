@@ -138,6 +138,32 @@ class ShareGrantor implements ShareGrantorInterface {
 	}//end schemaRefusal()
 
 	/**
+	 * Why the share's schema may not be federated, or null when it declares it may.
+	 *
+	 * A schema opts in with `configuration.federatable: true`; one that declares
+	 * nothing is not federatable. Asked when a share is created, so an existing
+	 * share keeps serving. A register share names no schema and is not judged here.
+	 *
+	 * @param FederatedShare $share The share to create.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function federationRefusal(FederatedShare $share): ?string {
+		if ($share->getScope() === 'register') {
+			return null;
+		}
+
+		$schema = $this->targets->schema(share: $share);
+		if ($schema === null || $schema->isFederatable() === false) {
+			return 'This schema does not allow its objects to be shared with another instance';
+		}
+
+		return null;
+	}//end federationRefusal()
+
+	/**
 	 * Why the caller may not change an existing share, or null when they may.
 	 *
 	 * An administrator always may, so a share whose register or schema has since gone can still be revoked.
