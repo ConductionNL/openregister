@@ -2913,3 +2913,5 @@ cover:integriq:92114ab0m658d:js9402c870	failed: permission (npm ci refused in th
 cover:hermiq:065f1631mfaac:js06645759	already done: src/components/* measures 88.8% lines on development (target 85); branch -2 still open adds more; 72 files/1205 tests pass	session-20261113T053904-36dcee67	2026-11-13T06:40:53Z
 cover:integriq:92114ab0m658d:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:52Z
 cover:integriq:92114ab0m658d:js0a858bda	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:59Z
+cover:hermiq:065f1631mfaac:js4829b6aa	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:05Z
+measure:dossiq:20261113h06	php 87.99% (87234/99144), js 85.31% at 31f9e20d	session-20261113T031701-b518f7f8	2026-11-13T06:41:07Z
