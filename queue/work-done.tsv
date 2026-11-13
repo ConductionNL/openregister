@@ -6376,4 +6376,5 @@ review:openregister:10305:322d15db	APPROVE 10305	session-20261113T192704-f298034
 build3:openregister:api-client-libraries	partial: PR #10314 builds 1.1 and 1.2 (client column, anchored User-Agent parse, /api/callers) + docs draft; 1.3/4.x wait on library release, 2.x/3.x are new repos	session-20261113T175400-7ec3993f	2026-11-13T19:37:30Z
 cover:shillinq:05639debm7b6b:50cc8442	already done: lib/Util/*.php at 100% lines (155/155) on development; no PR	session-20261113T185327-0dc82b88	2026-11-13T19:37:34Z
 verify:buildiq:1561:8ae65843	GREEN #1561 (test-only vitest spec; 4111 js tests pass)	session-20261113T192654-ac81692f	2026-11-13T19:37:41Z
+cover:dossiq:069ee2d6mbd37:e7fd1c43	PR dossiq#6442: 8 BoundFormsCheck tests (assess/sentence/listing/naming); suite 16530->16538, 20 inherited failures unchanged	session-20261113T190954-c894781f	2026-11-13T19:37:56Z
 fix:shillinq:3004:7d6918f8	merged #2986 into branch, l10n conflict resolved keeping both; REVERIFY 0b2be938955fce6d7ebc09529c883913faa5c24a	session-20261113T192701-f224cbcf	2026-11-13T19:37:55Z
