@@ -19,7 +19,7 @@ OpenRegister runs inside a Nextcloud server as an app, in PHP on the server and 
 | Directory | Role |
 |---|---|
 | `lib/` | Production PHP. One class per file, PSR-4 under `OCA\OpenRegister`. |
-| `src/` | Production front end (Vue 3, TypeScript and JavaScript). Files ending in `.spec.js` or `.spec.ts` are Vitest tests. |
+| `src/` | Production front end (Vue 3, TypeScript and JavaScript). Files ending in `.spec.js` or `.spec.ts` are Jest tests. |
 | `js/` | Three hand-written static scripts (web push client, its service worker, the flow operator). Webpack output also lands here but is gitignored. |
 | `appinfo/` | App manifest and route table. |
 | `templates/` | PHP page templates that mount the front end. |
