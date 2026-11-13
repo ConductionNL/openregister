@@ -7015,4 +7015,5 @@ build4:openregister:object-event-sync-async-split	partial: PR #10377 2.6 confirm
 review:openregister:10346:55cbaff2	APPROVE: spec'd floor guard, all required suites green	session-20261113T213325-5a151438	2026-11-13T21:53:25Z
 review:openregister:10353:593e433f	APPROVE #10353	session-20261113T212920-cf6d8399	2026-11-13T21:53:39Z
 review:openregister:10349:92d12241	APPROVE: geo formats in property editor per change spec; jest 396/396, eslint unchanged vs main	session-20261113T214350-9762e143	2026-11-13T21:54:13Z
+build4:openregister:object-files-follow-object-access	already done: every code task is ticked on main; open boxes are 1.4 (replaced by controller guard, documented), 2.5 (waits on live migration reports), 4.5/5.4 (live integration), 6.2 (coordination), 7.3 (spec sync at archive)	session-20261113T213325-5a151438	2026-11-13T21:54:19Z
 review:openregister:10338:0499604d	APPROVE: tests only, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T21:54:17Z
