@@ -6329,3 +6329,4 @@ opencatalogi	2608	748e39c2db4c0830d686bb087589058b3c78fbb9	GREEN	worker-17	unit 
 pipelinq	3782	cff7bf5fcad6d21457f7c15bbe5806ebf13f6d3a	GREEN	worker-48	tests only (6 vitest specs); vitest 4838 passed (baseline 4804), 0 new failures; no PHP changed
 portaliq	2461	e9abc4684989457185c6ce62316db598cd6dbc1e	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
 portaliq	2462	6525b8e73544091996e14bb998a480298fac1efd	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
+filinq	2054	9a5ab51a7cee7f4867ebb52b54dc27186b119e0f	GREEN	worker-08	unit 6520 tests (baseline 6443, 0 failures), no new failures; build PR judged against its openspec changes
