@@ -1384,3 +1384,4 @@ cover:launchpad:755175ffm7412:b67d52c3	no PR: lib/Job/*.php already at 48/48 lin
 cover:launchpad:755175ffm7412:1b97f731	PR #1152: 30 tests for 7 Listener classes (cleanup listeners, base, TreeListener); suite 3579->3609 green	session-20261113T011801-de2bfa9d	2026-11-13T01:21:47Z
 cover:launchpad:755175ffm7412:7505aeb4	PR #1153: ActivityRow forRecipient, 7 tests; rest of lib/Activity already covered; pcov unavailable, gaps judged by reading	session-20261113T011737-1f344aca	2026-11-13T01:21:52Z
 cover:launchpad:755175ffm7412:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines (136/136)	session-20261113T004524-55adaa63	2026-11-13T01:21:59Z
+cover:launchpad:755175ffm7412:882bd950	no PR: lib/Search/*.php already at 202/202 lines (24 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:22:21Z
