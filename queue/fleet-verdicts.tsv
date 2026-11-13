@@ -5426,3 +5426,4 @@ stackiq	1853	6c6a10a787564c52f8a5de4dd09eb6eff383a0cb	GREEN	worker-21	3203 tests
 dossiq	6330	fd9bc4b8b91b2442afe6360a33362dd132d7c984	GREEN	worker-45	15233 tests, baseline 15226 with 19 failures (13 inherited cases), no new failures
 dossiq	6331	b0ed1a7d33abac0895c2008099a631ea3d48d3fb	GREEN	worker-45	15233 tests, baseline 15226 with 19 failures (13 inherited cases), no new failures
 dossiq	6332	5954e6c122610971523ff81cfec95bba09f335a1	GREEN	worker-45	15233 tests, baseline 15226 with 19 failures (13 inherited cases), no new failures
+larpinq	1011	4df9687afb6cd18f6b2774816b55a1d48006e5b5	REVERIFY	worker-06	renamed 4 PHP tests (*BehaviourTest) and the bulk edit spec so they no longer add/add with 1010/1012/1018; trial merge with all three clean, php 751 ok, vitest 318 ok; new head c34753f471932a0a2a97ee03252497931604e6ae, verify it
