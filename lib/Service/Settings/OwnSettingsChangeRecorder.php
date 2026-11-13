@@ -79,6 +79,7 @@ class OwnSettingsChangeRecorder {
 		'@flow_run_retention_days',
 		'@flow_audit_enabled',
 		'@flow_kill_switch',
+		'@audit.readEventsVisibleTo',
 	];
 
 	/**

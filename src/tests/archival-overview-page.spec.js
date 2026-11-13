@@ -78,7 +78,9 @@ describe('the Archival page', () => {
 		}
 		for (const s of strings.filter((x) => typeof x === 'string')) {
 			expect([s, nl[s]]).toEqual([s, expect.any(String)])
-			expect(nlJs).toContain(JSON.stringify(s) + ':')
+			// A key in either layout: the Transifex one (`"key" : "value"`) that
+			// the l10n writer emits, or the compact one a hand-appended line has.
+			expect([JSON.stringify(s) + ':', JSON.stringify(s) + ' :'].some((key) => nlJs.includes(key))).toBe(true)
 		}
 		expect(nl.Archiving).toBe('Archivering')
 	})
