@@ -3262,3 +3262,4 @@ cover:humaniq:a18a13fb:1b97f731	PR humaniq#1103: 17 tests on 4 untested listener
 verify:filinq:2044:28826748	GREEN 2044; 6304 tests OK vs baseline 6251	session-20261113T072715-cf04db4e	2026-11-13T07:47:40Z
 fix:dossiq:6327:64c67820	failed: needs owner decision - the named behaviour changes are the PR's purpose and additive (v1 aliases, problem details only on new /api/v1 paths, unversioned error bodies unchanged, extra headers, public OpenAPI doc); no path-based auth bypass (ZGW excluded from aliases, mandate hints match v1); removing them empties the PR	session-20261113T074529-55a84d1d	2026-11-13T07:47:46Z
 gap:planninq:oas:burn1	already done	session-20261113T074533-3e2a2da6	2026-11-13T07:47:55Z
+cover:opencatalogi:fc83bfb1:60c2c265	PR #2584: lib/Controller 93.01% -> 95.45% lines, 23 tests in 4 files, suite 5144 -> 5167, 0 new failures	session-20261113T071636-117504ad	2026-11-13T07:48:11Z
