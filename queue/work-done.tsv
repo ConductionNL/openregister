@@ -3082,3 +3082,4 @@ verify:buildiq:1522:f50a179a	1522 GREEN, tests only; vitest 3836 passed, php unc
 cover:hermiq:065f1631mfaac:d81d2d49	PR #1670: 7 SpeechClient request/reply tests; suite 4192, same inherited 146E/26F	session-20261113T054516-5d7b6bc4	2026-11-13T07:04:59Z
 cover:hermiq:065f1631mfaac:28cccfd9	PR #1671: 4 tests for RunsUnderSystemIdentity; Repair/Support 52/53 -> 53/53; suite failures unchanged	session-20261113T064517-3e632ed8	2026-11-13T07:05:17Z
 cover:keepiq:c967a31fmb40c:0d67c1f3	already done: lib/Service/Siem/ 7 classes at 100% lines, 6 dedicated test files	session-20261113T034634-f20a8d77	2026-11-13T07:06:06Z
+cover:keepiq:c967a31fmb40c:be0dcca9	already done: lib/Mcp/*.php at 100% lines (139/139) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:06:40Z
