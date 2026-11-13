@@ -3107,3 +3107,4 @@ cover:dossiq:f8a113c5m7e79:f0c02922	already done: lib/Service/External 401/401 l
 cover:hermiq:065f1631mfaac:59826f43	already done: lib/Settings/*.php at 100% lines (18/18) on development beeb8ec1; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:14:29Z
 cover:hermiq:065f1631mfaac:34763eb4	already done: lib/Middleware/*.php at 100% lines (10/10) on development beeb8ec1; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:14:46Z
 cover:dossiq:f8a113c5m7e79:bf05c668	already done: lib/BulkAction at 225/232 lines (97%) on development c76a0372; only label/description getters uncovered, no PR	session-20261113T064519-30004ad4	2026-11-13T07:15:10Z
+verify:integriq:3494:4498c894	GREEN #3494, #3495: tests only, unit 7727 vs baseline 7630, no new failures	session-20261113T051705-4f5ad12a	2026-11-13T07:15:22Z
