@@ -3244,3 +3244,4 @@ gap:larpinq:tcr2:burn1	PR #1012: 8 test files, 32 tests, suite 694->726 green	se
 gap:launchpad:tcr1:burn1	PR #1174: 8 test files, 48 tests (suite 3741->3789, 0 failures)	session-20261113T073916-e9f11dfa	2026-11-13T07:44:25Z
 cover:larpinq:c4471360:60c2c265	PR #1014: 7 phpunit tests, Controller 92.3->99.1%	session-20261113T051709-e616bf69	2026-11-13T07:44:30Z
 cover:larpinq:c4471360:1b97f731	PR #1013: listener fail-soft/ignore paths, 8 tests in 4 files, uncovered 19->4 stmts; suite 697->705 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:44:29Z
+cover:filinq:7a9ef677mb01f:jsd48eb217	PR #2046: 33 vitest tests for anonymization store; src/store/modules 86.5->98.6% statements; vitest 718->751, all pass	session-20261113T072713-f866e896	2026-11-13T07:44:56Z
