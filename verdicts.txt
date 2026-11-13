@@ -3027,3 +3027,4 @@
 10311 fff14172227486329328a918b4471ea7fd32d7d3 APPROVE Tests only (5 new Repair test files, no lib changes); merged with main: Repair 372 OK, Architecture, Rules, Contract green.
 10313 0e88b49f326eb4e4c72ac581c6af7553337c19f7 APPROVE Tests only, no production change. New test 16 tests pass; Rbac 1233 and Architecture 2364 green on PR merged with main; php -l clean.
 10308 e91bf9cafaa29328781933a7893855f30aeca059 APPROVE Partial build of send-at-on-the-messaging-leaf (2.1, 2.3) as the change asks: additive table, store, sweep and 5-min job; claim is compare-and-set. phpstan clean; Architecture, Rules, Notification, Notifications and job tests green on merge with main.
+10304 23e91967c4dbb65e07a73ac13fb77c5f38c6b54f APPROVE docblock @spec tags on the six ObjectsController CRUD methods and two search UI handlers plus tasks ticked; no code change; phpstan clean; Architecture, Contract, Rules, Controller green
