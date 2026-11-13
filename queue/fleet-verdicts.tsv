@@ -5913,3 +5913,4 @@ buildiq\t1543\t22709fae85f7d2171ac636f1737ab76c7a0afc42\tGREEN\tworker-36\t2820 
 portaliq\t2402\t60d0c02009190d6ce03c23c8ab18fdfaccf827ac\tGREEN\tworker-41\ttest-only (SettingsSectionTest), tree 4855 pass, no production change
 portaliq\t2403\te912f9ebb1f2345329e0d86c5749747e32c1f854\tGREEN\tworker-41\ttest-only (PortalOverviewEdgesTest), tree 4855 pass, no production change
 portaliq\t2404\t2bd67109e534d02a009d28cdd5ce668ab52616fb\tGREEN\tworker-41\ttest-only (AdminSettingsTest), tree 4855 pass, no production change
+versioniq	677	4040041e4aa48804e6e535b690495842b3dedeb5	GREEN	worker-48	tests only (@uses/#[UsesClass] metadata in 40 test files, no other line); unit suite tests/phpunit-unit-only.xml 1547 tests before and after, the same 2 inherited golden-install failures, none new; neither phpunit config sets beStrictAboutCoverageMetadata, so coverage is unchanged (5663/5823) but nothing breaks
