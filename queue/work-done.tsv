@@ -1459,3 +1459,4 @@ cover:shillinq:801aab65:d76b2f72	PR opened: 9 tests closing Guard gaps (Cashflow
 cover:filinq:8ecceb86:5833c33f	PR #1998: +3 SupportedTypeProbe tests (version/provenance); dir otherwise fully covered; suite 5499->5502 OK	session-20261113T011731-be978a55	2026-11-13T01:36:17Z
 verify:filinq:1984:d4341fee	8 GREEN (1984-1992), tests-only, 5499->5650 OK	session-20261113T011731-be978a55	2026-11-13T01:38:12Z
 cover:keepiq:d76c2121m70b5:aae6d66c	already done: lib/Exception/*.php 30/30 statements covered on development; the 14 untested classes hold no executable statements, so no PR	session-20261113T004519-b6b86685	2026-11-13T01:38:17Z
+cover:filinq:8ecceb86:45998467	PR #1999: Classification 176/192 -> 186/192 statements, +17 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:38:26Z
