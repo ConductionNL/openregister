@@ -40,6 +40,7 @@ final class ObjectDeleteRequest {
 	 * @param bool       $retentionSweep Whether the call comes from the retention sweep.
 	 * @param IUser|null $currentUser    Explicit acting user, or null for the session user.
 	 * @param bool       $scoped         Whether the caller supplied both register and schema.
+	 * @param \Closure|null $reach       Whether the delete may change an object it reaches, by uuid; null for no limit.
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
@@ -50,6 +51,7 @@ final class ObjectDeleteRequest {
 		public readonly bool $retentionSweep,
 		public readonly ?IUser $currentUser,
 		public readonly bool $scoped,
+		public readonly ?\Closure $reach=null,
 	) {
 	}//end __construct()
 

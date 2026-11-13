@@ -177,6 +177,10 @@ class EndpointLog extends Entity implements JsonSerializable {
 		$jsonFields = $this->getJsonFields();
 
 		foreach ($object as $key => $value) {
+			if (HydrationKey::isFieldName(key: $key) === false) {
+				continue;
+			}
+
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = [];
 			}

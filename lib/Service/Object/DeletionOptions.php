@@ -42,6 +42,8 @@ final class DeletionOptions {
 	 * @param ObjectEntity|null $preResolved      An already-fetched entity for the uuid; used only when its uuid matches and
 	 *                                            both scope values are concrete entities.
 	 * @param bool              $permanent        Destroy the row instead of tombstoning it (see DeleteObject::deleteObject()).
+	 * @param string|null       $actingUserId     The user the delete acts for; null resolves the session user.
+	 * @param \Closure|null     $reach            Whether the delete may change an object it reaches, by uuid; null for no limit.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Named option fields with defaults.
 	 *
@@ -52,6 +54,8 @@ final class DeletionOptions {
 		public readonly bool $scoped=false,
 		public readonly ?ObjectEntity $preResolved=null,
 		public readonly bool $permanent=false,
+		public readonly ?string $actingUserId=null,
+		public readonly ?\Closure $reach=null,
 	) {
 	}//end __construct()
 
