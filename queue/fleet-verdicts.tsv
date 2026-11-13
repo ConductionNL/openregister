@@ -6132,3 +6132,4 @@ pipelinq	3770	a16a86140e199739ea7b2b82f170b67950fd29f4	GREEN	worker-21	tree 3769
 pipelinq	3771	dc8a207a97e2a6468d64acef75f988ac9ed8c4ee	GREEN	worker-21	tree 3769+3770+3771: php unit 7194 tests, 5 failures = baseline (inherited, none new); vitest 647 files / 4858 tests passed; tests-only
 integriq	3524	650f8d30b9ec8230fdf5b2228b9fd4f2101c68c5	GREEN	worker-35	unit 8232 run (baseline 8222, E2 F2-3 inherited incl. flaky golden sync test); tests only, no new failures
 integriq	3526	b3a0637f0165892c648864ead5966c03069eb472	GREEN	worker-35	unit 8232 run same as baseline; vitest 159 files/2128 tests all pass; tests only
+portaliq	2443	4322f3ac1ef3423b13baca3b34799b91c46b8460	GREEN	worker-21	unit 4926 tests (baseline 4914, 0 failures); implements T05 of resident-identity-in-forms (yivi brokered provider, filtered attributes); envelope checks unchanged
