@@ -4814,3 +4814,4 @@ build:openregister:instance-hardening-controls	partial: PR #10176 ticks 5.3 (env
 build:openregister:near-duplicate-documents-by-text	failed: too big for one task: new TextSignature entity+migration+MinHash service (1.x), grouping service + endpoint (2.x), dedup text rule (3.x); split per section, 1.x first	session-20261113T104527-c302106c	2026-11-13T12:22:35Z
 build:openregister:flow-engine-docs	partial: PR #10177 flows.md + README/workflow-automation + doc-lint test; sharing (not built) and live spot-check left	session-20261113T101609-bc51215d	2026-11-13T12:23:01Z
 cover:pipelinq:7f9dc8e6m916f:0a24f15f	already covered: lib/Service/Letter 100% (160/160) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T12:22:54Z
+review:openregister:10157:ebbe1b8b	APPROVE	session-20261113T071631-5a3cc070	2026-11-13T12:23:14Z
