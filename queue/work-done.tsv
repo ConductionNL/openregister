@@ -5701,3 +5701,4 @@ cover:hermiq:065f1631me44a:js0be8c659	PR #1697: 17 vitest tests over 6 modals, s
 cover:learniq:e6498dddm0533:80b3d955	PR #2471: 5 tests, lib/Service/Catalogue 211/222 -> 219/222 lines; suite 6402->6407, same 1 inherited failure	session-20261113T172349-00278d9d	2026-11-13T17:49:02Z
 cover:learniq:e6498dddm0533:c914a974	PR #2472: 8 tests (CourseTemplateSkeleton, CourseTemplateBuild); suite 6402->6410, no new failures	session-20261113T172325-6eb25015	2026-11-13T17:49:06Z
 cover:opencatalogi:fc83bfb1:38e80a9f	PR #2594: 3 tests for AttachDocuments metadata branches (MigrateCms already fully exercised); suite 5254->5257, same 2 inherited failures	session-20261113T171203-c5a044de	2026-11-13T17:49:29Z
+cover:opencatalogi:fc83bfb1:9a7aca2d	PR #2593: 8 tests, Publication 99.09->99.64% (queued 94.11 was stale)	session-20261113T171213-10021a1d	2026-11-13T17:49:24Z
