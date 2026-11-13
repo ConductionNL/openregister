@@ -1421,3 +1421,4 @@ cover:learniq:1ae7757em6be5:jsea7197ec	already done: src/utils at 99.6% lines on
 cover:decidiq:13261b1bmcfc2:js00fe026a	PR #2104: 4 service modules, 5 vitest tests; suite 2625 -> 2630; src/services lines 85.3% -> 100%	session-20261112T234653-57d11a5b	2026-11-13T01:27:03Z
 cover:filinq:8ecceb86:aae6d66c	PR #1988: +15 tests for 8 lib/Exception classes; suite 5499->5514 OK	session-20261113T011731-ba9dcd4a	2026-11-13T01:27:17Z
 verify:hermiq:1642:b55b2b2e	1642 GREEN (tests-only; +10 tests, no new failures vs baseline 145E/26F)	session-20261113T011801-de2bfa9d	2026-11-13T01:27:19Z
+cover:filinq:8ecceb86:aba6f390	PR #1989: EntitySearchLog/Gate/Catalogue scope tests (+16); suite 5499->5515, no failures	session-20261113T011731-f3798045	2026-11-13T01:27:23Z
