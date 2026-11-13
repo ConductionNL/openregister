@@ -2595,4 +2595,5 @@ cover:buildiq:9930949bm5861:1b97f731	PR #1513: Listener already 90.52% under php
 review:openregister:10106:b7607f51	APPROVE: tests-only spec, 16/16 jest green merged with main	session-20261113T054516-5d7b6bc4	2026-11-13T05:59:52Z
 cover:filinq:7a9ef677m5ffe:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines on development 4ff0b7c1b (pcov), no PR	session-20261113T054516-469bb7f6	2026-11-13T06:00:13Z
 verify:integriq:3482:4d08eabe	3482 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:00:27Z
+cover:decidiq:a5f973bbma14b:60c2c265	PR #2116: 146 tests, 9 controllers to 100%, lib/Controller 81.5->93.8%, suite 3398->3544 OK	session-20261113T054517-26499007	2026-11-13T06:00:40Z
 verify:integriq:3410:a84047f9	3410 GREEN: 0 new failures, route table unchanged, additive headers	session-20261113T054519-189b2666	2026-11-13T06:00:57Z
