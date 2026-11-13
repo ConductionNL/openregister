@@ -2856,3 +2856,4 @@ cover:stackiq:df113dffm5ac4:c2bb21fa	already above target: lib/Service/Stackiq/*
 cover:stackiq:df113dffm5ac4:f4b2f7af	already done: lib/Service/ArchiMate/ at 99.02% (202/204, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:34:40Z
 cover:stackiq:df113dffm5ac4:b5905f71	PR stackiq#1845: FederationService +7 tests, lib/Service/Federation/ 362->384/388 stmts, suite 3126->3133 OK	session-20261113T061518-90540a48	2026-11-13T06:34:56Z
 cover:pipelinq:7f9dc8e6m1e6e:js3f7698d2	PR #3689: 7 vitest tests, PipelineCard.vue 87->95% (board left to open -2 branch); 3893->3900 pass	session-20261113T054516-469bb7f6	2026-11-13T06:35:16Z
+measure:integriq:20261113h06	php/js pct: 88.97 74.8 (commit 46d1bb08; unit suite 7280 tests, 2 errors on development)	session-20261113T034634-f20a8d77	2026-11-13T06:35:15Z
