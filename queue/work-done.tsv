@@ -6453,4 +6453,5 @@ build:filinq:filinq-nl-locale-parity	PR #2055: all 14 tasks (nl parity gate, 46 
 cover:pipelinq:7f9dc8e6m8ce9:81b1241f	already done: lib/Portal/*.php at 100% statements (556/556) on development	session-20261113T175400-7ec3993f	2026-11-13T19:53:33Z
 cover:pipelinq:7f9dc8e6m8ce9:0a8f160f	already done: lib/Service/Sla at 212/212 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:53:46Z
 build:filinq:filinq-policy-controller-test-coverage	PR #2056: 61 tests (service RBAC matrix + StandingConsentController), all tasks ticked; suite 6443->6504 OK	session-20261113T192700-f21ebd18	2026-11-13T19:54:11Z
+cover:pipelinq:7f9dc8e6m8ce9:09cc8f24	already done: lib/Service/Cti at 368/368 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:53:58Z
 cover:dossiq:069ee2d6mbd37:js5794e9fc	PRs #6446 (node+panels, 20 tests) and #6448 (WorkflowEditor, 25 tests); settings dir 73.7%->~85% combined; suite only inherited capabilityComparison failure	session-20261113T192700-55dce75a	2026-11-13T19:54:09Z
