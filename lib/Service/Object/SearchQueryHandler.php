@@ -515,21 +515,31 @@ class SearchQueryHandler {
 			'executionType' => $_executionType,
 		];
 
-		// Register the deferred flush once per request; it runs after the
-		// response has been generated so the write cost is off the hot path.
-		// The callback is a closure rather than the `[$this, 'flushSearchTrails']`
-		// array form it replaced: a string method name is invisible to every
-		// static tool, so renaming the flush would break the registration with
-		// no error anywhere — trails would just stop being written.
-		if ($this->trailFlushRegistered === false) {
-			$this->trailFlushRegistered = true;
-			register_shutdown_function(
-				function (): void {
-					$this->flushSearchTrails();
-				}
-			);
-		}
+		$this->deferTrailFlush();
 	}//end logSearchTrail()
+
+	/**
+	 * Register the deferred flush once per request.
+	 *
+	 * It runs after the response has been generated, so the write cost is off
+	 * the hot path. The callback is a closure because a string method name is
+	 * invisible to every static tool: renaming the flush would stop the trails
+	 * with no error anywhere.
+	 *
+	 * @return void
+	 */
+	private function deferTrailFlush(): void {
+		if ($this->trailFlushRegistered === true) {
+			return;
+		}
+
+		$this->trailFlushRegistered = true;
+		register_shutdown_function(
+			function (): void {
+				$this->flushSearchTrails();
+			}
+		);
+	}//end deferTrailFlush()
 
 	/**
 	 * Flush buffered search-trail entries to storage
@@ -544,41 +554,60 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/search-trail-recording/spec.md
 	 */
 	public function flushSearchTrails(): int {
-		$persisted = 0;
 		$entries = $this->searchTrailBuffer;
 
 		// Clear the buffer up front so re-entrant calls never double-write.
 		$this->searchTrailBuffer = [];
 
-		foreach ($entries as $entry) {
-			try {
-				// The mapper extracts the search term from query['_search'] into
-				// the search_term column that the popular-terms stats aggregate.
-				$this->searchTrailService->createSearchTrail(
-					query: $entry['query'],
-					measured: new SearchMeasurement(
-						resultCount: $entry['resultCount'],
-						totalResults: $entry['totalResults'],
-						responseTime: $entry['responseTime'],
-						executionType: $entry['executionType']
-					)
-				);
-				$persisted++;
-			} catch (\Throwable $e) {
-				// Log the error but never fail: the trail is best-effort.
-				$this->logger->warning(
-					message: '[SearchQueryHandler] Failed to record search trail',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $persisted;
+		return count(array_filter($entries, fn (array $entry): bool => $this->persistedTrail(entry: $entry)));
 	}//end flushSearchTrails()
+
+	/**
+	 * Write one buffered trail, never failing: the trail is best-effort.
+	 *
+	 * The mapper extracts the search term from query['_search'] into the
+	 * search_term column that the popular-terms stats aggregate.
+	 *
+	 * @param array<string, mixed> $entry The buffered trail.
+	 *
+	 * @return bool Whether it was written.
+	 */
+	private function persistedTrail(array $entry): bool {
+		try {
+			$this->searchTrailService->createSearchTrail(
+				query: $entry['query'],
+				measured: new SearchMeasurement(
+					resultCount: $entry['resultCount'],
+					totalResults: $entry['totalResults'],
+					responseTime: $entry['responseTime'],
+					executionType: $entry['executionType']
+				)
+			);
+			return true;
+		} catch (\Throwable $e) {
+			$this->warn(message: '[SearchQueryHandler] Failed to record search trail', failure: $e);
+			return false;
+		}
+	}//end persistedTrail()
+
+	/**
+	 * Log a failure the search carries on from.
+	 *
+	 * @param string     $message The log message.
+	 * @param \Throwable $failure What went wrong.
+	 *
+	 * @return void
+	 */
+	private function warn(string $message, \Throwable $failure): void {
+		$this->logger->warning(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $failure->getMessage(),
+			]
+		);
+	}//end warn()
 
 	/**
 	 * Resolve the effective search-trail recording mode.
@@ -611,27 +640,30 @@ class SearchQueryHandler {
 	 */
 	private function resolveRecordingMode(): string {
 		try {
-			$retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-			if (($retentionSettings['searchTrailsEnabled'] ?? true) === false) {
-				return 'none';
-			}
-
-			$mode = $retentionSettings['searchTrailRecordingMode'] ?? '_search';
-			if (in_array($mode, ['all', '_search', 'none'], true) === true) {
-				return $mode;
-			}
-
-			return '_search';
+			return $this->recordingModeIn(settings: $this->settingsService->getRetentionSettingsOnly());
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[SearchQueryHandler] Failed to read recording mode, defaulting to _search',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->warn(message: '[SearchQueryHandler] Failed to read recording mode, defaulting to _search', failure: $e);
 			return '_search';
-		}//end try
+		}
 	}//end resolveRecordingMode()
+
+	/**
+	 * The recording mode the retention settings name.
+	 *
+	 * @param array<string, mixed> $settings The retention settings.
+	 *
+	 * @return string `all`, `_search` or `none`.
+	 */
+	private function recordingModeIn(array $settings): string {
+		if (($settings['searchTrailsEnabled'] ?? true) === false) {
+			return 'none';
+		}
+
+		$mode = ($settings['searchTrailRecordingMode'] ?? '_search');
+		if (in_array($mode, ['all', '_search', 'none'], true) === true) {
+			return $mode;
+		}
+
+		return '_search';
+	}//end recordingModeIn()
 }//end class
