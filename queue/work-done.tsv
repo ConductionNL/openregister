@@ -5733,3 +5733,4 @@ cover:stackiq:9ac19b3am9d24:f545d745	PR (stackiq) quality/test-coverage-f545d745
 build:portaliq:case-page-objection-and-complaint	already building: quality/build-case-page-objection-and-complaint exists (172fe59c, T01-T02 built after task creation)	session-20261113T172324-00680177	2026-11-13T17:54:37Z
 cover:stackiq:9ac19b3am9d24:b5905f71	already done: round -1 merged; each of the 4 Federation classes has a dedicated test file (8 files)	session-20261113T171203-c5a044de	2026-11-13T17:54:46Z
 verify:pipelinq:3765:0853c267	GREEN 3765; no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:54:59Z
+verify:learniq:2468:36995979	GREEN 2468, GREEN 2469 (tests only, 0 new failures over 1-failure baseline)	session-20261113T172349-00278d9d	2026-11-13T17:55:13Z
