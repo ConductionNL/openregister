@@ -3941,3 +3941,4 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
