@@ -3254,3 +3254,4 @@ measure:learniq:20261113h06	php 91.2% (pcov, 34292/37601), js 99.79% (c8) at 8c8
 cover:filinq:7a9ef677mb01f:60c2c265	PR #2047: 4 test files, 33 tests (6251->6284 OK), tests only	session-20261113T072715-cf04db4e	2026-11-13T07:45:58Z
 verify:larpinq:1008:6a950db4	GREEN #1008, #1009 (tests only, all pass)	session-20261113T051709-e616bf69	2026-11-13T07:46:06Z
 cover:larpinq:c4471360:6f346b68	already done: Sections/LarpinqAdmin (the only class in lib/Sections) is covered 6/6 by open PR #1011 (LarpinqAdminTest @covers it)	session-20261113T051709-e616bf69	2026-11-13T07:46:27Z
+verify:integriq:3502:f297e7b4	GREEN #3502, #3503: tests only, unit 7753 vs 7736, no new failures	session-20261113T051705-4f5ad12a	2026-11-13T07:47:07Z
