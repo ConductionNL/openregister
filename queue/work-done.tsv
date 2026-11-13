@@ -4687,3 +4687,4 @@ build:openregister:external-register-view-leaf	failed: blocked on the three open
 verify:learniq:2463:61f436f8	GREEN: +6 tests, failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T11:59:55Z
 cover:keepiq:c967a31fm1bed:e372e6ff	already done: lib/Event/ 43/43 = 100%	session-20261113T051703-1b54bfba	2026-11-13T12:00:09Z
 cover:keepiq:c967a31fm1bed:05630945	already done: lib/Middleware/Support/ 54/59 = 91.5% >= 90	session-20261113T051703-1b54bfba	2026-11-13T12:00:24Z
+build:openregister:cross-app-semantic-references	partial: PR #10151 ticks 2.2, 3.3 (already covered by passing PropertySemanticReferenceValidatorTest + SemanticTypeResolverTest, 27 tests). Left: 1.1 write-time IRI rejection + 1.2 test, 4.1/4.3 OCS semanticProviders payload, cross-repo 5.x nextcloud-vue + 6.x shillinq/pipelinq	session-20261113T091527-72c58830	2026-11-13T12:00:37Z
