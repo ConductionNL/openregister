@@ -4114,3 +4114,6 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
+Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
+Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files

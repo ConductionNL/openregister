@@ -353,9 +353,11 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// `[<TYPE>: <entity_id>]` placeholders, so a re-run is idempotent.
 		$skippedValues = [];
 		$entityRows = [];
+		$grounds = [];
 		if ($fileId > 0) {
 			$skippedValues = $this->redaction->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
 			$entityRows = $this->redaction->entityRelationMapper->findEntityIdsByValueForFile($fileId);
+			$grounds = $this->groundsByValue(fileId: $fileId);
 		}
 
 		// Scope-local placeholder numbering (Decision 1 + 3): per document by
@@ -368,7 +370,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		$replacements = $this->replacementsFor(
 			entities: $request->entities,
-			lookup: new PlaceholderLookup(skippedValues: $skippedValues, entityRows: $entityRows, translator: $translator)
+			lookup: new PlaceholderLookup(
+				skippedValues: $skippedValues,
+				entityRows: $entityRows,
+				translator: $translator,
+				grounds: $grounds,
+				maskForms: ($this->redaction->fileSettings?->maskForms() ?? [])
+			)
 		);
 		$anonymizedFileName = $this->anonymizedNameFor(node: $node);
 
@@ -505,28 +513,92 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * An entity with a stable row on the file gets its scope-local number,
 	 * recorded in the placeholder map against the global entity id; any other
-	 * entity gets its key, or a random UUID prefix when it has none.
+	 * entity gets its key, or a random UUID prefix when it has none. The
+	 * relation's exception grounds follow the number (`[PERSOON: 3; 5.1.2e]`),
+	 * and a mask form set for the entity type replaces the placeholder with
+	 * the masked value, its grounds after it in brackets.
 	 *
 	 * @param array{text?: string, entityType?: string, key?: string} $entity The entity.
-	 * @param PlaceholderLookup                                       $lookup Entity rows and numbering.
+	 * @param PlaceholderLookup                                       $lookup Entity rows, numbering, grounds and mask forms.
 	 *
-	 * @return string The placeholder, e.g. `[PERSOON: 3]`.
+	 * @return string The placeholder, e.g. `[PERSOON: 3]`, or the masked value.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	private function placeholderFor(array $entity, PlaceholderLookup $lookup): string {
-		$localizedType = $this->localizeEntityType(entityType: ($entity['entityType'] ?? 'UNKNOWN'));
-		$row = $lookup->rowFor(text: ($entity['text'] ?? ''));
-		if ($row === null) {
-			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-			return '[' . $localizedType . ': ' . $key . ']';
+		$entityType = ($entity['entityType'] ?? 'UNKNOWN');
+		$localizedType = $this->localizeEntityType(entityType: $entityType);
+		$text = ($entity['text'] ?? '');
+		$grounds = $lookup->groundsFor(text: $text);
+		$row = $lookup->rowFor(text: $text);
+
+		// A mask form set for the type replaces the placeholder (REQ-PIS-010);
+		// a mask that would show too much yields null and the placeholder stays.
+		$masked = MaskForm::apply(value: trim((string) $text), form: $lookup->maskFormFor(entityType: (string) $entityType));
+		if ($masked !== null) {
+			$emitted = PlaceholderText::masked(masked: $masked, grounds: $grounds);
+			if ($row !== null) {
+				$this->lastPlaceholderMap[(string)$row['id']] = $emitted;
+			}
+
+			return $emitted;
 		}
 
-		$placeholder = '[' . $localizedType . ': ' . $lookup->translator->translate(entityId: $row['id']) . ']';
+		if ($row === null) {
+			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+			return PlaceholderText::placeholder(label: $localizedType, number: (string) $key, grounds: $grounds);
+		}
+
+		$placeholder = PlaceholderText::placeholder(
+			label: $localizedType,
+			number: (string) $lookup->translator->translate(entityId: $row['id']),
+			grounds: $grounds
+		);
 		$this->lastPlaceholderMap[(string)$row['id']] = $placeholder;
 
 		return $placeholder;
 	}//end placeholderFor()
+
+	/**
+	 * The exception grounds of each detected value on a file, from the
+	 * relations' stored `bases` (REQ-PIS-011).
+	 *
+	 * A value with several relations carries the grounds of all of them, each
+	 * once, in the order the relations and their bases are stored. A failed
+	 * read prints no grounds; the placeholder itself still redacts the value.
+	 *
+	 * @param int $fileId The source file id.
+	 *
+	 * @return array<string, array<int, string>> Trimmed value to grounds.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
+	 */
+	private function groundsByValue(int $fileId): array {
+		try {
+			$rows = $this->redaction->entityRelationMapper->findEntitiesForAnonymization($fileId);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: reading the exception grounds failed, placeholders carry none',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		$grounds = [];
+		foreach ($rows as $row) {
+			$value = trim((string) ($row['entity_value'] ?? ''));
+			$rowGrounds = PlaceholderText::groundsOf(bases: ($row['bases'] ?? null));
+			if ($value === '' || $rowGrounds === []) {
+				continue;
+			}
+
+			$grounds[$value] = array_values(array_unique(array_merge(($grounds[$value] ?? []), $rowGrounds)));
+		}
+
+		return $grounds;
+	}//end groundsByValue()
 
 	/**
 	 * The output name of an anonymised copy: `<name>_anonymized.<ext>`.
@@ -1270,7 +1342,8 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	/**
 	 * Map residual needles back to entity records via the placeholder map.
 	 *
-	 * Placeholders have the form `[<TYPE>: <id>]`; anything else yields type
+	 * Placeholders have the form `[<TYPE>: <id>]` or `[<TYPE>: <id>; <ground>, ...]`;
+	 * anything else (a masked value among them) yields type
 	 * `UNKNOWN` and an empty id. Logs stay PII-free (ADR-005); the text is
 	 * carried only to the authenticated anonymise response for the
 	 * operator's review/iterate UI.
@@ -1286,9 +1359,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			$placeholder = $replacements[$needle] ?? '';
 			$type = 'UNKNOWN';
 			$id = '';
-			if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $m) === 1) {
-				$type = trim($m[1]);
-				$id = trim($m[2]);
+			$parts = PlaceholderText::parse(placeholder: $placeholder);
+			if ($parts !== null) {
+				$type = $parts['type'];
+				$id = $parts['id'];
 			}
 
 			$records[] = ['text' => (string)$needle, 'type' => $type, 'id' => $id];
