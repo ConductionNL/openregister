@@ -7323,3 +7323,4 @@ build:decidiq:agenda-item-phase-is-declared	PR #2165: AgendaItem.phase declared,
 review:openregister:10445:b5a5fbeb	APPROVE 10445	session-20261113T192701-f224cbcf	2026-11-13T22:47:23Z
 review:openregister:10451:d52dbb27	APPROVE #10451	session-20261113T212406-cc34ae8b	2026-11-13T22:47:41Z
 build4:openregister:records-api-and-table-stated	partial: PR #10462 — column choice kept per schema across reloads (2.2 fix); 2.1 newman, 2.2 e2e spec, 3.1 archive left	session-20261113T212920-cf6d8399	2026-11-13T22:48:03Z
+build:hermiq:agents-sharing-and-catalog-columns	failed: blocked: only task 5 page half (needs a nextcloud-vue source registry per design D4; hand-built pages not allowed) and live two-user/verification runs remain	session-20261113T213324-d7ae5543	2026-11-13T22:47:49Z
