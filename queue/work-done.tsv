@@ -3841,3 +3841,4 @@ cover:hermiq:065f1631m249e:b97b9aec	no PR: lib/Service/Approval/ already 198/203
 build:dossiq:hydra-gates-green-on-development	nothing to build in dossiq: only 1.4 open, which is a schema vendoring change in ConductionNL/.github (out of repo)	session-20261113T091529-c3067ba9	2026-11-13T09:23:07Z
 cover:keepiq:c967a31fm1147:dfaef732	already done: lib/Notification/*.php 394/396 = 99.5% >= 90	session-20261113T051703-1b54bfba	2026-11-13T09:23:20Z
 cover:dossiq:069ee2d6m7275:74111b6d	already done: -1 and -2 on development (PR #6229 took lib/Service/Status to 99.8%); queued coverage 89.34 is stale	session-20261113T084523-b4140bcd	2026-11-13T09:23:15Z
+build:dossiq:case-views-shared-with-a-team	partial: PR #6354 example shared view (task 4) + static finding for task 1; task 2 waits on a nextcloud-vue share-group prop, 1/3/5 live/e2e/after 2	session-20261113T084525-9d890807	2026-11-13T09:23:35Z
