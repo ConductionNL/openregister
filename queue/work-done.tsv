@@ -2985,3 +2985,4 @@ cover:decidiq:a5f973bbmb22b:be0dcca9	PR decidiq#2117: McpActionItemTools relatio
 cover:hermiq:065f1631mfaac:js0b44ffaf	already done: src/icons/openGemeentenIcons.js 100% lines on development (merged -1 branch)	session-20261113T053904-36dcee67	2026-11-13T06:48:01Z
 verify:buildiq:1515:bfb3cb57	4 GREEN (1515-1518), tests only; php 2659 no new failures, vitest 3841 passed	session-20261113T061516-58aa7364	2026-11-13T06:48:13Z
 cover:hermiq:065f1631mfaac:17d367ab	already done: lib/Controller/Settings/ 100% lines (334/334) on development, no PR	session-20261113T063948-afebd30c	2026-11-13T06:48:17Z
+cover:filinq:7a9ef677m5ffe:5833c33f	already done: lib/Service/Office/ 127/127 lines (100.0%) on development 90be525f5; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:48:29Z
