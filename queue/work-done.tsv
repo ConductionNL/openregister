@@ -6852,3 +6852,4 @@ build:opencatalogi:opencatalogi-delegate-broadcast-to-or-webhooks	failed: blocke
 build:decidiq:agenda-paper-watermark	partial: PR #2147, task 2 + task 1 schema/widget; seed (no closed session in example set) and 3-5 (wait on filinq stamp) left	session-20261113T185324-28e07ab2	2026-11-13T21:04:41Z
 build:integriq:fetch-file-skip-empty-document-id	nothing to build: the only open box is a post-release live check on a WOO environment	session-20261113T202612-d04bbf77	2026-11-13T21:04:50Z
 build:hermiq:contextagent-provider	already done: provider, trait, service, registration and both tests on development (15 tests pass); only the tasks.md boxes are unticked	session-20261113T202607-6c22f6b2	2026-11-13T21:04:47Z
+verify:opencatalogi:2624:9d8daee4	GREEN all 7 (2624-2630): unit 5265 vs 5254 baseline, same 2 inherited failures; vitest 887 pass	session-20261113T195351-a32c6d55	2026-11-13T21:05:19Z
