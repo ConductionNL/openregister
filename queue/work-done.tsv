@@ -5807,4 +5807,6 @@ cover:pipelinq:7f9dc8e6m16db:95a79563	PR #3767: +1 test SchemaLifecycleGraph con
 build:portaliq:publication-page-all-details	PR #2436: tasks 1.1-1.3, 2.1 done (All details table, labels, links, tests); 1.4 board drawing left; node suite 2477->2480, same 2 inherited failures	session-20261113T172334-4b3b027b	2026-11-13T18:05:28Z
 build:portaliq:nldesign-theme-integration	nothing left to build in code: 2.2/2.4 blocked on 2.6 (tracked in portal-theme-blocks-and-contributed-pages), 3.3 browser, 5.1 theme app repo, 5.2 at archive	session-20261113T171153-e1c17962	2026-11-13T18:05:33Z
 build:portaliq:steps-highlight	nothing to build in portaliq: tasks 1-3 done; task 4 is learniq's (cross-repo)	session-20261113T172328-c860ad55	2026-11-13T18:05:41Z
+build:portaliq:sign-in-with-an-email-link	nothing left to build here: only task 14 open, which is in learniq and waits on a security review	session-20261113T171153-e1c17962	2026-11-13T18:06:03Z
 build:portaliq:supplier-portal	nothing buildable: open tasks T10/T11 are in procest, T13 remainder is a live Playwright e2e, T14 is a human security review; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:05:58Z
+measure:portaliq:20261113h18	php 94.91% (no JS unit runner) @5bad077	session-20261113T171149-8b9ea523	2026-11-13T18:06:12Z
