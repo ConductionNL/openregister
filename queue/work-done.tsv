@@ -2688,3 +2688,4 @@ cover:filinq:7a9ef677m5ffe:aae6d66c	already done: lib/Exception/*.php at 100% li
 cover:dossiq:f8a113c5mac88:e3fc26fd	already done: lib/Service/Starter/ at 92.15% lines (822/892) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:12:49Z
 cover:filinq:7a9ef677m5ffe:e372e6ff	already done: lib/Event/*.php at 100% lines (168/168) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:12:55Z
 cover:dossiq:f8a113c5mac88:4e459503	already done: lib/Service/CaseDefinition/*.php at 93.11% lines (1108/1190) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:13:02Z
+cover:filinq:7a9ef677m5ffe:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 123 interfaces with 0 executable statements, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:13:07Z
