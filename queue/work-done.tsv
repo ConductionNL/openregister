@@ -3670,3 +3670,4 @@ verify:launchpad:1182:6ebd9ec5	GREEN #1182 #1183 #1184 (3933 tests, 0 new failur
 measure:dossiq:20261113h08	php 89.34% (88579/99144), js 87.41% (10555/12074) at 629b047c	session-20261113T051703-1b54bfba	2026-11-13T08:58:15Z
 cover:stackiq:9ac19b3am6096:d528dcf0	already done: lib/Dashboard/*.php at 12/12 statements (100%) on development today; no PR	session-20261113T080556-d189f150	2026-11-13T08:58:20Z
 cover:dossiq:f8a113c5m7e79:d214aba4	PR #6340: 11 tests, lib/Service/Queue/*.php 85.4->96.2% (MentionQueueRecords 0->100, PersonalAgendaItemService 39->100); suite 15331->15342, same 19 inherited failures	session-20261113T080549-20301834	2026-11-13T08:58:31Z
+cover:learniq:e6498dddmc027:2baf2b6e	no PR: lib/Proctoring/*.php already fully covered on development (FlagReview 76/76 lines, pcov; FlagWrite and ProvidesProctoring have no executable statements)	session-20261113T080549-dde3ba19	2026-11-13T08:58:31Z
