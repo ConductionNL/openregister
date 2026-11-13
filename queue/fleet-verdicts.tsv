@@ -5142,3 +5142,4 @@ pipelinq	3669	3898d4d66d56c21a667f2044a16fc5913f2415c5	GREEN	worker-58	phpunit 6
 pipelinq	3670	e17df6bebd04aca34a769c20043fa68bb6daa02c	GREEN	worker-58	phpunit 6372 on 2-PR tree vs baseline 6359, 1 inherited failure, 0 new; php -l ok; tests only
 dossiq	6278	d5378cdb9e742a47ed1300e32cf8f175acd6cb79	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
 dossiq	6279	a23db83d40a75b340079be8bc89e999373073efb	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
+dossiq	6280	7b260fb2dee9415ba74c199c6ba5b6042832643b	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
