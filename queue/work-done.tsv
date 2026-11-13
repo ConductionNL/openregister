@@ -1610,3 +1610,4 @@ cover:pipelinq:f67520ecm8c58:9cd6879c	PR #3628: 5 tests for EventReminderService
 cover:pipelinq:f67520ecm8c58:0a24f15f	PR #3627: 6 tests for FilinqLetterAdapter refusals; adapter 96/116 -> 116/116; suite 5774->5780, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:19:38Z
 cover:pipelinq:f67520ecm8c58:50d794fc	PR #3629: MatomoReportService 70/72 -> 72/72, 2 tests	session-20261113T015005-030aa10a	2026-11-13T02:19:49Z
 cover:dossiq:6ca0231ema7d4:33af3743	already done: lib/Service/Bezwaar/*.php measured 99.2% lines (1543/1556) on development 3e7a0de, target 90; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:20:26Z
+verify:pipelinq:3617:9c3b80cd	GREEN #3617 (tests only, no new failures)	session-20261113T015005-e2235eb9	2026-11-13T02:20:45Z
