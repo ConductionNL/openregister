@@ -3895,5 +3895,6 @@ build:dossiq:social-domain-consent-and-safeguards	failed: change needs re-scopin
 build:dossiq:case-costs-reported-per-iv3-taakveld	partial: PR #6362 tasks 3,6; 1-2 wait on shillinq catalogue, 4 needs nextcloud-vue resource valueField	session-20261113T091527-72c58830	2026-11-13T09:29:24Z
 verify:shillinq:2910:3191e515	GREEN shillinq#2910	session-20261113T074533-5d842142	2026-11-13T09:29:23Z
 build:dossiq:portal-contact-channel-follows-the-resident	already done: built on development (e9ae03eeb6, 0852b2a313); open tasks are the live pass 3.1 and the pre-push check 4.1	session-20261113T091531-dc489d35	2026-11-13T09:29:35Z
+cover:hermiq:065f1631m249e:dfaef732	already done: lib/Notification/*.php at 100% (pcov; suite has 146 errors/26 failures inherited)	session-20261113T072715-8f8a14e9	2026-11-13T09:29:47Z
 verify:keepiq:1748:6313cf30	1/1 GREEN (1748): clean merge, lint ok, phpunit +8 all pass, vitest 6246 pass; behaviour-preserving extraction	session-20261113T044737-f37de8e3	2026-11-13T09:29:53Z
 build:dossiq:translatable-titles-read-as-text	already done: code tasks 1.1-2.1 built on development (8dff89556); 2.2 is an operator step (run occ dossiq:workflows:migrate-to-flows after upgrade), not code; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:30:00Z
