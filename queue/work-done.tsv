@@ -4499,3 +4499,4 @@ build:pipelinq:services-and-resources-at-a-glance	partial: PR #3746 task 1.1 (el
 verify:dossiq:6403:8c1ed7ed	GREEN 6403: tests-only, +6 tests, 0 new failures (19 inherited)	session-20261113T074533-3e2a2da6	2026-11-13T11:24:17Z
 cover:pipelinq:7f9dc8e6m84dd:bc26df70	already done: lib/Service/Labels at 100% on development; no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:24:29Z
 build:openregister:api-test-coverage	failed: every open task is a Newman/API integration suite (CRUD per resource group, error codes, auth matrix, GraphQL, MCP, webhooks, tenancy, performance, concurrency) that needs a live instance; no unit-testable code to build in a worker	session-20261113T083916-59f10a3b	2026-11-13T11:24:33Z
+cover:pipelinq:7f9dc8e6m84dd:7505aeb4	already done: lib/Activity/*.php is 100% (66/66 statements, 36 tests) on development; no PR	session-20261113T104523-578f6e7a	2026-11-13T11:24:32Z
