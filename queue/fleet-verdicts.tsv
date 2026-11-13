@@ -6095,3 +6095,4 @@ shillinq	2951	4ef8f4aef62a87779eb14069f82e01fc3972baf6	GREEN	worker-41	unit 1039
 keepiq	1761	27bb4b668bd2b6b6ce8d2c14e90aa36c053d0176	GREEN	worker-21	unit 4862 tests (baseline 4854, 0 failures, 241 skipped), no new failures; tests-only
 portaliq	2449	f132ffcee8ed7f1b0a2c22ef38b6a2893baed827	GREEN	worker-24	phpunit 4921 run, baseline 4914 OK, 0 new failures (2 new skips need OpenRegister); check:l10n-js ok; adds a report-owner write guard per publication-error-reports-and-withheld-notices
 portaliq	2450	1e7c63b353dfd2c9c625d0ef6568ee6fe477bd71	CONFLICT	worker-24	conflicts after 2449 in tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version bump)
+portaliq	2451	5377377c6d044526703808c2f899140524c8baa4	CONFLICT	worker-24	conflicts after 2449 in l10n/en.js, en.json, nl.js, nl.json (keys appended at the catalogue end)
