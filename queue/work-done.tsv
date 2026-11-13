@@ -4241,3 +4241,19 @@ cover:dossiq:069ee2d6m7275:34763eb4	PR #6389: +2 tests, ZgwAuthMiddleware 111->1
 review:openregister:10122:e0498191	APPROVE: tests-only frontend spec, 8/8 pass, eslint clean	session-20261113T084521-fd8a31c7	2026-11-13T10:29:03Z
 verify:shillinq:2913:f704ae2a	8 PRs GREEN (tests-only; no new failures)	session-20261113T064518-860c039d	2026-11-13T10:30:17Z
 cover:humaniq:a18a13fb:0f859653	PR #1108: +4 tests, lib/Flow 218->228/239 (rest are literal getters)	session-20261113T081040-5e814df2	2026-11-13T10:31:38Z
+merge:hermiq:1529:c91d8a03	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1644:42717a9c	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1645:d2f2477b	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1653:f4a946e3	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1658:d5089cd7	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1659:837561a4	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1666:95ee314c	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1670:cb500efc	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1672:e8445c02	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1673:3938d9a5	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1674:6b6e02be	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1675:74fa3eaa	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1676:5e2ca218	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1679:11e43d64	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1681:2d2cae27	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+merge:hermiq:1682:abba1de1	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
