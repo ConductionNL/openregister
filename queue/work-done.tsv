@@ -4929,3 +4929,4 @@ review:openregister:10171:8a15efcd	APPROVE	session-20261113T071631-5a3cc070	2026
 build:openregister:registry-subscriptions	already done: 1.x/2.x/4.1 on main; 3.1 list lenses deferred in tasks.md pending DB-backed tests, 4.2 is live e2e	session-20261113T104530-961e9992	2026-11-13T12:37:43Z
 build:openregister:records-validate-without-saving	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:37:45Z
 build:openregister:rbac-department-role-matrix	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:37:52Z
+build:openregister:remove-solr-and-publishing	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:37:58Z
