@@ -35,6 +35,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccountProperty;
@@ -88,19 +91,25 @@ class UserServiceAccountPropertyCreationTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$this->service = new UserService(
-			$this->userManager,
-			$this->userSession,
-			$this->config,
-			$this->groupManager,
-			$this->accountManager,
-			$this->logger,
-			$this->createMock(OrganisationService::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAvatarManager::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ISecureRandom::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserDirectory(
+				userManager: $this->userManager,
+				groupManager: $this->groupManager,
+				accountManager: $this->accountManager,
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $this->userSession,
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->logger
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				secureRandom: $this->createMock(ISecureRandom::class)
+			),
+			organisationService: $this->createMock(OrganisationService::class)
 		);
 	}//end setUp()
 

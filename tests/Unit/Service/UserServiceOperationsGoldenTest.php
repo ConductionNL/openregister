@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccountManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatar;
@@ -73,19 +76,25 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$this->random = $this->createMock(ISecureRandom::class);
 		$this->random->method('generate')->willReturnCallback(static fn (int $length): string => str_repeat('k', $length));
 		$this->service = new UserService(
-			$this->userManager,
-			$this->createMock(IUserSession::class),
-			$this->config,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAccountManager::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationServiceInterface::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->avatarManager,
-			$this->audit,
-			$this->random,
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserDirectory(
+				userManager: $this->userManager,
+				groupManager: $this->createMock(IGroupManager::class),
+				accountManager: $this->createMock(IAccountManager::class),
+				avatarManager: $this->avatarManager
+			),
+			platform: new UserPlatform(
+				userSession: $this->createMock(IUserSession::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->audit,
+				secureRandom: $this->random
+			),
+			organisationService: $this->createMock(OrganisationServiceInterface::class)
 		);
 	}
 

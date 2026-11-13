@@ -21,6 +21,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -62,19 +65,25 @@ class UserServicePreferencesCharacterisationTest extends TestCase {
 		$this->user->method('getUID')->willReturn('jan');
 
 		$this->service = new UserService(
-			$this->createMock(IUserManager::class),
-			$this->createMock(IUserSession::class),
-			$this->config,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAccountManager::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAvatarManager::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ISecureRandom::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserDirectory(
+				userManager: $this->createMock(IUserManager::class),
+				groupManager: $this->createMock(IGroupManager::class),
+				accountManager: $this->createMock(IAccountManager::class),
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $this->createMock(IUserSession::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				secureRandom: $this->createMock(ISecureRandom::class)
+			),
+			organisationService: $this->createMock(OrganisationService::class)
 		);
 	}//end setUp()
 
