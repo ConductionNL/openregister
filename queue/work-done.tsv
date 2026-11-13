@@ -5371,3 +5371,4 @@ cover:launchpad:fb10c50fm2d1d:js78214db1	already done: src/components (top level
 build2:openregister:settings-change-audit	partial: PR #10271 (1.1b, 1.1c; 2.1 blocked on audit-log-page, 3.1 e2e, 3.2b needs preferences writer)	session-20261113T124805-1586d4f8	2026-11-13T13:58:41Z
 cover:stackiq:9ac19b3amc14f:60c2c265	PR #1881: +34 tests, lib/Controller/*.php 93.2%->97.8%, overall 87.39->87.94	session-20261113T134531-53f143d2	2026-11-13T13:58:56Z
 verify:versioniq:678:99e9570c	GREEN #678: tests only, no new failures	session-20261113T081048-4978ac57	2026-11-13T13:59:04Z
+cover:stackiq:9ac19b3amc14f:34763eb4	already done: lib/Middleware/*.php at 100% lines (57/57); no PR	session-20261113T134531-53f143d2	2026-11-13T13:59:16Z
