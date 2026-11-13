@@ -1308,3 +1308,4 @@ verify:keepiq:1707:2be1dd61	GREEN: test-only, vitest 5475->5523 all passing	sess
 cover:pipelinq:f67520ecm9d2c:js5794e9fc	PR #3611 (-2): 24 tests TagManager/ProductCategoryManager/PaymentSettingsForm; settings 72.3->78.8% alone, 78.1->84.5% with existing -1	session-20261112T234653-efce95ba	2026-11-13T01:07:18Z
 review:openregister:10072:3ca94e55	APPROVE: @uses-only test change; required suites green on PR+main	session-20261112T231645-3f0591a5	2026-11-13T01:07:24Z
 review:openregister:10074:f4e7068d	APPROVE: docblock-only @uses metadata, suites green (Controller errors inherited)	session-20261113T004527-ec0338ee	2026-11-13T01:07:56Z
+review:hermiq:1487:fd5c6f50	GREEN: behaviour-preserving move, failure set identical to development	session-20261112T231637-60fd49c4	2026-11-13T01:08:05Z
