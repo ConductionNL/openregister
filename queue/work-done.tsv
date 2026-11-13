@@ -3505,3 +3505,4 @@ cover:openregister:7350e3efmea52:jsd6ceb60f	already done: batch -1 merged; src/s
 verify:learniq:2439:8774cedc	2439 GREEN	session-20261113T081055-3901e400	2026-11-13T08:37:44Z
 cover:dossiq:f8a113c5m7e79:5ebe3eb6	already done: lib/Service/Mcp 100% covered by its own tests (246/246 statements)	session-20261113T080551-294c2aa6	2026-11-13T08:37:56Z
 cover:learniq:e6498dddmc027:aae6d66c	PR #2448: 3 tests, lib/Exception/*.php 16/18 -> 18/18	session-20261113T080552-2a8a5ff1	2026-11-13T08:38:24Z
+cover:integriq:92114ab0m658d:63512d7f	PR #3513: 15 tests, IdpBrokerConfig/TrustLevelMapper/SubjectPseudonymService to 100%; suite 7982->7997, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:38:57Z
