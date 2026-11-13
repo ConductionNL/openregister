@@ -6549,3 +6549,4 @@ verify:integriq:3534:9423c819	3534 GREEN; 8222->8256 tests, failure set identica
 cover:dossiq:069ee2d6mbd37:67583626	already done: lib/Service/Lifecycle/*.php at 883/893 98.9 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:35Z
 verify:filinq:2053:15844216	GREEN 2053,2056,2057; BLOCK 2058 (editor path skips write guards); CONFLICT 2054,2055,2059	session-20261113T185324-28e07ab2	2026-11-13T20:07:53Z
 review:openregister:10318:87733f80	APPROVE: tests green on merge with main, phpstan clean	session-20261113T195351-5d22eaae	2026-11-13T20:08:07Z
+cover:dossiq:069ee2d6mbd37:3ee9dda7	already done: lib/Service/Custody/*.php at 99.84% (628/629) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:11Z
