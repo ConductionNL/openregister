@@ -3112,3 +3112,4 @@ verify:hermiq:1670:cb500efc	GREEN 1670, GREEN 1671 (4187->4198, no new failures)
 cover:hermiq:065f1631mfaac:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5) on development beeb8ec1; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:16:05Z
 gap:humaniq:19:4c6ff92f	already done (lizard -C 30: no function over CCN 30 on development 791176d5; max 27)	session-20261113T071640-3ba6da34	2026-11-13T07:17:17Z
 cover:dossiq:f8a113c5m7e79:52aafbe5	PR dossiq#6319: 7 tests + 1 metadata fix, Vth 319->355/355 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:17:26Z
+verify:dossiq:6315:fcd7fc7c	GREEN #6315, #6316 (tests only, no new failures)	session-20261113T051709-e616bf69	2026-11-13T07:17:29Z
