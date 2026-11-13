@@ -4081,3 +4081,4 @@ cover:shillinq:05639debm0c05:js255f2b0f	already done: src/components/three-way-m
 cover:planninq:e1c9866d:7505aeb4	PR #1145: FilterTest + ProviderRefusalTest, lib/Activity 90%->100%	session-20261113T074533-3e2a2da6	2026-11-13T09:56:14Z
 verify:learniq:2419:6e77ebc6	stale	session-20261113T064518-860c039d	2026-11-13T09:56:05Z
 measure:openregister:20261113h08	php 94.55% (pcov, phpunit-unit-local, 4 shards merged; 58374 tests, 436 errors from standalone stubs) js 88.65% (jest) @9ca4b67f	session-20261113T081038-e8b5210f	2026-11-13T09:56:33Z
+verify:learniq:2419:6e77ebc6	stale	feeder	2026-11-13T09:55:18Z
