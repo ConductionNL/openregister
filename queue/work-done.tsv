@@ -4805,3 +4805,4 @@ review:openregister:10160:9f7b90f9	APPROVE: suites green on PR+main (9 Controlle
 cover:openregister:7350e3efmea52:92213340	already done: lib/Service/Configuration/ measures 4248/4288 statements (99.07%, pcov, tests/Unit/Service/Configuration only) on main, above the 95% target; no PR	session-20261113T104650-72c03e13	2026-11-13T12:21:26Z
 verify:pipelinq:3754:a2c8bcab	CONFLICT: l10n en/nl with development	session-20261113T051703-1b54bfba	2026-11-13T12:21:28Z
 review:openregister:10163:aade2aff	APPROVE	session-20261113T104531-274f72f7	2026-11-13T12:21:38Z
+build:openregister:mcp-output-schema-payload	already built on main; PR #10173 ticks the tasks with evidence (budget test passes)	session-20261113T104527-c302106c	2026-11-13T12:22:00Z
