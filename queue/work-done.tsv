@@ -1586,4 +1586,5 @@ cover:pipelinq:f67520ecm8c58:jsa5192f20	PR pipelinq#3618 (branch -2; -1 already 
 cover:pipelinq:f67520ecm8c58:js00fe026a	already done: open PR on quality/test-coverage-js-00fe026a-1 (e9f50310) already covers these src/services gaps (9 specs); no duplicate opened	session-20261112T234655-793f46ee	2026-11-13T02:15:44Z
 cover:pipelinq:f67520ecm8c58:js4570fd16	failed: permission (lang=js needs npm ci, refused in this session)	session-20261113T015005-e2235eb9	2026-11-13T02:15:40Z
 cover:pipelinq:f67520ecm8c58:23d187f5	already done: lib/Service/Store at 82/86 statements (95.3%), above the 90% target	session-20261113T015005-e2235eb9	2026-11-13T02:15:56Z
+cover:pipelinq:f67520ecm8c58:ab7f3595	PR #3620: MessageDispatchTrait 23/35 -> 34/35, 8 tests; rest of dir fully covered	session-20261113T015005-030aa10a	2026-11-13T02:16:08Z
 cover:pipelinq:f67520ecm8c58:89d1fbd3	PR #3619: 10 tests (KeywordTargetService, KeywordAnalysisService, HtmlTextExtractor); KeywordTargetService 27->34/34; suite 5774->5784, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:16:06Z
