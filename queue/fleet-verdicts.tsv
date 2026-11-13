@@ -5455,3 +5455,4 @@ portaliq	2376	06bdb3c4f5c93d745ee683b5e92e0d1e29e7a096	REVERIFY	worker-23	merged
 integriq	3507	da5ccdb713500d1e8ecffbe5f8a840fc80f63092	GREEN	worker-38	unit 7888 run on tree, baseline 7861 with 2 errors+2 failures inherited, no new failures; tests only
 integriq	3509	7566b41da4b39fe951c6385dc597f3dd14dafc8f	GREEN	worker-38	unit 7888 run on tree, baseline 7861 with 2 errors+2 failures inherited, no new failures; tests only
 launchpad	1175	b36da8bea115f254ee4bb314c4813f9d51087e9f	GREEN	worker-44	PHP unit 3741 (baseline 3741, 0 fail; no PHP touched); vitest 2032 pass on tree; tests only
+portaliq	2378	2e83ccc2821ad1d8c485cb80ea628fd46a818072	GREEN	worker-27	tree 2378-2381: 4579 tests, 0 failures; baseline 4527, 0 failures; no new failures; tests only, additive
