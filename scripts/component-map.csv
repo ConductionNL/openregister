@@ -2507,6 +2507,7 @@ Service/Integration/IntegrationRegistry.php,118,Service,Integrations,Integration
 Service/Integration/LeafBundle.php,29,Service,Integrations,Integrations/Service/Integration/LeafBundle.php,0,454,Integrations
 Service/Integration/LeafDescriptor.php,98,Service,Integrations,Integrations/Service/Integration/LeafDescriptor.php,180,299,Integrations
 Service/Integration/LeafRegistry.php,172,Service,Integrations,Integrations/Service/Integration/LeafRegistry.php,0,147,Integrations
+Service/Integration/LeafRenderModeParity.php,42,Service,Integrations,Integrations/Service/Integration/LeafRenderModeParity.php,0,,Integrations
 Service/Integration/PaginatedResult.php,48,Service,Integrations,Integrations/Service/Integration/PaginatedResult.php,0,,Integrations
 Service/Integration/PropertyReferenceTypeValidator.php,65,Service,Integrations,Integrations/Service/Integration/PropertyReferenceTypeValidator.php,0,,Integrations
 Service/Integration/PropertySemanticReferenceValidator.php,68,Service,Integrations,Integrations/Service/Integration/PropertySemanticReferenceValidator.php,0,,Integrations
