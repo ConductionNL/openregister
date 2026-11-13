@@ -3767,3 +3767,4 @@ cover:shillinq:05639debmd8ee:5e523ac6	already done: lib/Reporting/Feed 100% line
 cover:keepiq:c967a31fm1147:aae6d66c	already done: all 11 exceptions with methods have their own test (batch -1 merged); the other 14 declare no methods; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:13:44Z
 verify:dossiq:6341:3f763da8	GREEN 6341, 6342, 6343 (php 0 new failures; vitest 1 inherited failure)	session-20261113T080549-20301834	2026-11-13T09:14:24Z
 cover:hermiq:065f1631m249e:1b97f731	already done: lib/Listener/*.php 432/466 lines (92.7%) under the full unit suite on development, target 90; branch -1 merged; no PR	session-20261113T072713-f866e896	2026-11-13T09:14:51Z
+gap:stackiq:16:614b0a03	PR #1865: npm refresh within ranges (nextcloud-vue and icons held back), SBOM regenerated; unit 2344/2344, build ok, lint unchanged	session-20261113T081038-e8b5210f	2026-11-13T09:14:56Z
