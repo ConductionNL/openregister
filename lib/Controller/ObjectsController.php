@@ -5618,16 +5618,65 @@ class ObjectsController extends Controller {
 	 */
 	private function moveEnds(array $source, array $target): array|null {
 		$registers = $this->services->store->registerMapper;
-		$schemas = $this->services->store->schemaMapper;
 		try {
+			$fromRegister = $registers->find($source[0]);
+			$toRegister = $registers->find($target[0]);
 			return [
-				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
-				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+				'from' => ['register' => $fromRegister, 'schema' => $this->schemaInRegister(schemaRef: $source[1], register: $fromRegister)],
+				'to' => ['register' => $toRegister, 'schema' => $this->schemaInRegister(schemaRef: $target[1], register: $toRegister)],
 			];
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end moveEnds()
+
+	/**
+	 * A schema reference resolved inside the register the caller named.
+	 *
+	 * A slug is looked up among the register's own schemas first: the global
+	 * `find()` matches `LOWER(slug)` across every register and returns whichever
+	 * row its tie-break orders first, so a generic slug such as `agent` landed in
+	 * another app's register. A numeric id or a uuid is no slug and goes straight
+	 * to `find()`, as does a slug the register does not carry (the pattern of
+	 * `ObjectService::setSchema()`, class (b) of register-scoped-schema-slug-resolution).
+	 *
+	 * @param string|int    $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register the caller named, when known.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(string|int $schemaRef, ?Register $register): Schema {
+		$schemas = $this->services->store->schemaMapper;
+		if ($register !== null && is_string($schemaRef) === true && is_numeric($schemaRef) === false) {
+			$scoped = $schemas->findBySlugInIds(slug: $schemaRef, schemaIds: ($register->getSchemas() ?? []));
+			if ($scoped !== null) {
+				return $scoped;
+			}
+		}
+
+		return $schemas->find($schemaRef);
+	}//end schemaInRegister()
+
+	/**
+	 * The register a reference names, or null when it cannot be read.
+	 *
+	 * @param string|int $registerRef The register's id, uuid or slug.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function registerOrNull(string|int $registerRef): ?Register {
+		try {
+			return $this->services->store->registerMapper->find($registerRef);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOrNull()
 
 	/**
 	 * The answer to a move that ran.
@@ -6615,7 +6664,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
+		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
 		$mayDeleteSource = $permissions->hasPermission(
