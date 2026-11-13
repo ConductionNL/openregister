@@ -4915,3 +4915,4 @@ build:openregister:register-scoped-slug-resolution	failed: worker rules forbid b
 build:openregister:platform-cloud-federation-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:17Z
 build:openregister:relations-that-travel-and-what-they-expose	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:24Z
 build:openregister:records-tree-view	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:30Z
+build:openregister:reimport-real-register-configuration	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:36Z
