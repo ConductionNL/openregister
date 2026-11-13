@@ -7248,3 +7248,4 @@ build:learniq:school-documents-on-the-portal	failed: blocked by depends_on repor
 build:learniq:simple-today-dashboard	already done: every task is ticked; the 3 open lines sit under 'Not in this change'	session-20261113T202603-6c9ef72f	2026-11-13T22:39:01Z
 build:learniq:governance-four-eyes-on-approved-data	failed: nothing buildable; open items are 2.1b (Playwright on a deployed instance) and 3.2 close-out which waits on it	session-20261113T202603-6c9ef72f	2026-11-13T22:39:15Z
 verify:pipelinq:3798:4ef2080f	GREEN 3798: 7418 tests, 0 failures (baseline 7396/0)	session-20261113T215342-fabaa836	2026-11-13T22:39:14Z
+build:learniq:ai-disclosure-for-every-user	PR #2502: disclosure in the footer for every role, AiDisclosureText schema (admin/compliance write), edit mode gated incl. policy editor; left: Playwright check, matrix/archive	session-20261113T212414-df8c34e5	2026-11-13T22:39:37Z
