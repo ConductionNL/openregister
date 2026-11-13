@@ -2759,6 +2759,7 @@ cover:pipelinq:7f9dc8e6m1e6e:2cc09f74	already done: lib/Service/Marketing/Transp
 cover:pipelinq:7f9dc8e6m1e6e:ab7f3595	already done: pcov on development (today) shows lib/Service/Provider at 100% lines in every class except MessageDispatchTrait 97.1% (34/35); nothing meaningful left	session-20261113T053904-36dcee67	2026-11-13T06:22:22Z
 merge:buildiq:1498:ab948ba1	merge-local over 2 buildiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:22:34Z
 merge:buildiq:1514:88371e89	merge-local over 2 buildiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:22:34Z
+cover:keepiq:c967a31fm0090:6925f818	already done: lib/SetupCheck/ShareQuarantineScanPending 100% lines with a dedicated test class	session-20261113T034634-f20a8d77	2026-11-13T06:22:41Z
 cover:pipelinq:7f9dc8e6m1e6e:50cc8442	already done: pcov on development (today) shows every lib/Util class at 100% lines	session-20261113T053904-36dcee67	2026-11-13T06:22:41Z
 cover:shillinq:05639debmd8ee:c1054022	PR opened: 8 tests for DunningStageChoice; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:22:44Z
 measure:hermiq:20261113h06	php 88.65% (pcov; suite 4185 tests, 172 err/fail on development); js skipped (npm ci refused)	session-20261113T061518-90540a48	2026-11-13T06:22:43Z
