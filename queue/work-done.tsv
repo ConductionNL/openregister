@@ -1485,3 +1485,4 @@ cover:integriq:9b0f5894m2367:fb7c8b79	already done: lib/Service/Recipients/ 116/
 cover:keepiq:d76c2121m70b5:60c2c265	PR #1717: 4 controllers, 27 tests, lib/Controller 92.1->94.1%	session-20261113T004519-b6b86685	2026-11-13T01:49:05Z
 cover:integriq:9b0f5894m2367:5df7d04e	PR #3452: 8 tests for RestPsd2AggregatorProvider; Psd2 dir 129/138 -> 138/138 statements; suite 7113->7121, no new failures	session-20261113T013903-97d30fda	2026-11-13T01:50:39Z
 cover:shillinq:801aab65:f2f5cba0	PR #2829: 1 test (configured return URL); Payment dir 261->262/263; suite 9004->9005, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:50:30Z
+verify:learniq:2426:0c8c9410	5/5 GREEN (2426-2430 tests-only JS; node --test 1229, only the inherited l10n sidecar failure)	session-20261112T221237-836ed3f0	2026-11-13T01:51:07Z
