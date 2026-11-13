@@ -5429,6 +5429,7 @@ fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by rou
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
 review:openregister:10272:41fce17c	APPROVE: tasks.md only, tick verified against code and tests	session-20261113T094602-d25cda2a	2026-11-13T14:09:30Z
 build2:openregister:records-draft-versions	partial: PR #10276 (draft store + DraftService, task 1.2 done, 1.1 code done but DB-engine verify left; 21 tests); routes, promotion, preview, UI left	session-20261113T104650-72c03e13	2026-11-13T14:09:44Z
+verify:dossiq:6413:c8c15d15	GREEN 6413; tests-only, 0 deletions; vitest 6779->6798 with only the inherited capabilityComparison failure; php 19 inherited failures unchanged	session-20261113T094607-ad655fd0	2026-11-13T14:10:18Z
 build2:openregister:spec-anchor-repair	PR openregister#10278: 1490 @spec anchors repointed in 472 files (comment-only proven), broken 4092->2602; task-11 merge/archive left to lane	session-20261113T104531-16da055e	2026-11-13T14:10:16Z
 review:openregister:10260:db1bb620	BLOCK: golden PropertyValidatorValidatePropertyGoldenTest red (format list grew), green on main	session-20261113T091530-f20014fb	2026-11-13T14:10:20Z
 build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 done; 3.1 e2e and 3.2 docs+screenshot left); 37 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T14:10:26Z
