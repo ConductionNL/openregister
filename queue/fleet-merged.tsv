@@ -658,3 +658,5 @@ filinq	2000	8d1bee14b81aee23cf87d25fce8ec98ae5308ac9	MERGED	merge-local	GATE OK 
 filinq	2001	8dd695546fc0602aa504877f4372885295e45896	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2002	6de4a7190a7e94449876d34db27b26803fbe191e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2003	a1575be5d9c7f7a6b52341cfd95e918b193cb31a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+thematiq	1660	29d2f8f752354a21e785d3549b52ecdb722d711a	RED	merge-local	GATE RED checker floor: adrvalidator: warn -> fail
+thematiq	1662	20a34d0033f2e68531e7c89c25c7d515a7f84465	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
