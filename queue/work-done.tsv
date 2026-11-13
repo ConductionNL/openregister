@@ -6303,3 +6303,4 @@ cover:buildiq:70b3e29em7beb:js0be8c659	already above target: src/modals/* 690/72
 cover:decidiq:a5f973bbm5a4d:7505aeb4	already done: lib/Activity/*.php 100% (79/79) at 40e4458 (current head)	session-20261113T182349-7e3632fd	2026-11-13T19:21:02Z
 build3:openregister:platform-caldav-backend	partial: PR #10302 tasks 1.1-1.6, 2.2 (27 tests; Calendar, Service/Calendar, AppInfo, Dav, Architecture green); full unit suite before/after not completed in container (60k tests); 2.1 e2e, 2.3 CLI, 3.x hand-overs left	session-20261113T181000-9baff50f	2026-11-13T19:21:17Z
 cover:decidiq:a5f973bbm5a4d:d528dcf0	already covered: lib/Dashboard/*.php at 100% lines (65/65) after quality/test-coverage-d528dcf0-1 merged; no PR	session-20261113T182351-b6448081	2026-11-13T19:21:19Z
+cover:decidiq:a5f973bbm5a4d:d39f9857	already done: lib/Support/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T19:21:41Z
