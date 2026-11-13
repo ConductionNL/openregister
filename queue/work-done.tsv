@@ -1510,3 +1510,4 @@ cover:shillinq:801aab65:dec5cec8	PR opened: 4 tests closing all Sms gaps (SmsSen
 review:openregister:8948:23d6bb7e	APPROVE: lib unchanged since approval, all gate suites pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:59:19Z
 verify:buildiq:1489:34d3c3fb	1489 GREEN (tests-only, +11 tests, no new failures)	session-20261113T015003-f68021a4	2026-11-13T01:59:31Z
 review:openregister:10087:aedf78ee	APPROVE: tests only, all suites green merged with main	session-20261113T015002-115b579d	2026-11-13T01:59:40Z
+review:openregister:10085:9093b33a	APPROVE: docblock-only @uses, tests green	session-20261113T015002-81190344	2026-11-13T01:59:42Z
