@@ -3398,3 +3398,4 @@ cover:dossiq:f8a113c5m7e79:9825f52a	PR #6333: 14 tests (WorkflowDefinitionReposi
 verify:learniq:2438:30de700c	GREEN #2438 (6116 tests, 0 new failures)	session-20261113T081038-e8b5210f	2026-11-13T08:16:48Z
 gap:opencatalogi:risky:burn2	PR #2586: risky 7->0, coverage 93.78->94.10%	session-20261113T081048-4978ac57	2026-11-13T08:16:59Z
 cover:buildiq:70b3e29emc723:0d8702e3	no PR: lib/Resources/template/ 71.4% (391/548); uncovered = scaffold files (template tests/bootstraps/routes/templates, ~120 stmts), fixed-path file-error branches and Server::get-bound flow seeding that need a live container; real classes otherwise covered	session-20261113T080546-98207a87	2026-11-13T08:16:54Z
+cover:buildiq:70b3e29emc723:6891a8ac	already done: lib/Service/Dashboard/ at 97.2% (137/141) on development; no PR	session-20261113T080546-98207a87	2026-11-13T08:17:08Z
