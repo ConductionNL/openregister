@@ -83,7 +83,12 @@
 - [x] 3.2a Unit tests for the diff and the masking: 11 cases, including the
       no-op save, type juggling, add and remove, the introduced-versus-removed
       secret, the system actor and the fail-soft write.
-- [ ] 3.2b The preferences exclusion, which needs `GenericPreferencesController`
+- [x] 3.2b The preferences exclusion, which needs `GenericPreferencesController`
       to route through a writer it does not call yet. Chain verification for
       these rows is covered by `RevealChainIntegrityTest` in openregister#3886:
       they are ordinary rows on the same chain, sealed by the same mapper pass.
+      Done the other way round: nothing needs to route preferences through the
+      writer to prove they stay out of it. `tests/Unit/AppHost/PreferencesAreNotAuditedTest.php`
+      pins that `GenericPreferencesController` cannot reach
+      `SettingsChangeAuditor` or `AuditTrailMapper`, and that a preference
+      write or clear touches only the user's own values, never app config.
