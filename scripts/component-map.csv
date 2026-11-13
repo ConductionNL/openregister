@@ -92,6 +92,7 @@ BackgroundJob/CasePlanTimerRearmJob.php,43,BackgroundJob,Work,Work/BackgroundJob
 BackgroundJob/ConfigurationCheckJob.php,179,BackgroundJob,Configuration,Configuration/BackgroundJob/ConfigurationCheckJob.php,0,,Configuration
 BackgroundJob/ConnectionSeamReportJob.php,78,BackgroundJob,Compliance,Compliance/BackgroundJob/ConnectionSeamReportJob.php,0,,Compliance
 BackgroundJob/ConsistencyCheckJob.php,33,BackgroundJob,Configuration,Configuration/BackgroundJob/ConsistencyCheckJob.php,0,,Configuration
+BackgroundJob/ContextChatSubmissionJob.php,,BackgroundJob,,,,,Integrations
 BackgroundJob/DbalIntrospectionJob.php,62,BackgroundJob,Service,Service/BackgroundJob/DbalIntrospectionJob.php,0,,Core
 BackgroundJob/DeferredObjectEventJob.php,80,BackgroundJob,Service,Service/BackgroundJob/DeferredObjectEventJob.php,0,,Core
 BackgroundJob/DestructionCheckJob.php,213,BackgroundJob,Compliance,Compliance/BackgroundJob/DestructionCheckJob.php,0,,Compliance
