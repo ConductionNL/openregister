@@ -3573,3 +3573,4 @@ cover:stackiq:9ac19b3am5ac4:59826f43	already done: lib/Settings/*.php 11/11 = 10
 cover:buildiq:70b3e29embf07:d39f9857	no PR: lib/Support/*.php has 3 uncovered lines (pcov), all defensive guards (preg_replace returning non-string, bind() of an array returning non-array)	session-20261113T080549-dde3ba19	2026-11-13T08:45:30Z
 verify:stackiq:1858:ee695c32	1858,1859 GREEN (3237 tests); CmdbExportImportServiceTest golden flakes on random uuids (inherited)	session-20261113T072715-8f8a14e9	2026-11-13T08:45:33Z
 cover:buildiq:70b3e29embf07:aae6d66c	no PR: lib/Exception/*.php already fully covered (64/64 lines, pcov at 8fa03037)	session-20261113T080549-dde3ba19	2026-11-13T08:45:47Z
+gap:buildiq:16:614b0a03	no change: advisory only (no score effect); a dependency refresh means committing composer.lock, which workers must not do - leave to a maintainer sweep	session-20261113T080549-dde3ba19	2026-11-13T08:46:01Z
