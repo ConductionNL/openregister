@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use OCA\OpenRegister\Migration\Version1Date20261113140000;
+use OCA\OpenRegister\Migration\Version1Date20261113140100;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
@@ -25,13 +25,13 @@ use PHPUnit\Framework\TestCase;
 /**
  * Both columns are added, the classification is indexed, and an instance that already has them is left alone.
  *
- * @covers \OCA\OpenRegister\Migration\Version1Date20261113140000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261113140100
  */
-class Version1Date20261113140000Test extends TestCase {
+class Version1Date20261113140100Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	private function change(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261113140000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
+		return (new Version1Date20261113140100())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
 	}
 
 	public function testBothColumnsAreAddedWithTheClassificationIndex(): void {

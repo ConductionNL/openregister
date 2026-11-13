@@ -1,9 +1,14 @@
 <?php
 
 /**
- * OpenRegister Migration Version1Date20261113140000
+ * The text disclosure table and the per-step outcomes of an anonymisation run.
  *
- * Adds the data classification and the catalogue block to schemas.
+ * `openregister_text_disclosures` holds one row per external call that
+ * carried a document's text (service, host, moment, byte count; never the
+ * text). `openregister_anonymisation_log.steps` holds, per run, the outcome
+ * of every content-altering step as JSON.
+ *
+ * Idempotent: the table and the column are created only when absent.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -11,15 +16,13 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
- *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/modelling-type-catalogue-metadata/design.md
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
 
 declare(strict_types=1);
@@ -33,10 +36,9 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Nullable `classification` (a column, so a list can filter on it) and
- * `catalogue` (json) on `openregister_schemas` (D-1).
+ * Create the text disclosure table and the anonymisation log's steps column.
  *
- * @spec openspec/changes/modelling-type-catalogue-metadata/design.md
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
 class Version1Date20261113140000 extends SimpleMigrationStep {
 
@@ -49,7 +51,7 @@ class Version1Date20261113140000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/modelling-type-catalogue-metadata/design.md
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -57,29 +59,34 @@ class Version1Date20261113140000 extends SimpleMigrationStep {
 		 */
 
 		$schema = $schemaClosure();
-		if ($schema->hasTable('openregister_schemas') === false) {
-			return null;
+
+		if ($schema->hasTable('openregister_text_disclosures') === false) {
+			$table = $schema->createTable('openregister_text_disclosures');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+			$table->addColumn('file_id', Types::BIGINT, ['notnull' => false]);
+			$table->addColumn('source_type', Types::STRING, ['notnull' => true, 'length' => 32]);
+			$table->addColumn('source_id', Types::BIGINT, ['notnull' => true]);
+			$table->addColumn('service', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('host', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('disclosed_at', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('bytes', Types::BIGINT, ['notnull' => true, 'default' => 0]);
+
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['file_id'], 'idx_or_txtdisc_file');
+			$table->addIndex(['source_type', 'source_id'], 'idx_or_txtdisc_source');
+
+			$output->info('Created openregister_text_disclosures table');
 		}
 
-		$table   = $schema->getTable('openregister_schemas');
-		$changed = false;
-		if ($table->hasColumn('classification') === false) {
-			$table->addColumn('classification', Types::STRING, ['notnull' => false, 'length' => 32]);
-			$table->addIndex(['classification'], 'idx_or_schemas_classification');
-			$changed = true;
+		if ($schema->hasTable('openregister_anonymisation_log') === true) {
+			$log = $schema->getTable('openregister_anonymisation_log');
+			if ($log->hasColumn('steps') === false) {
+				$log->addColumn('steps', Types::TEXT, ['notnull' => false]);
+				$output->info('Added steps to openregister_anonymisation_log');
+			}
 		}
-
-		if ($table->hasColumn('catalogue') === false) {
-			$table->addColumn('catalogue', Types::JSON, ['notnull' => false]);
-			$changed = true;
-		}
-
-		if ($changed === false) {
-			return null;
-		}
-
-		$output->info('Added classification and catalogue to openregister_schemas');
 
 		return $schema;
+
 	}//end changeSchema()
 }//end class

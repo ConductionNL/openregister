@@ -76,7 +76,15 @@ class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInte
 		'object.created',
 		'object.updated',
 		'object.deleted',
+		'object.transitioned',
 	];
+
+	/**
+	 * The lists a `transition` filter may hold, each matched against the transition's own value.
+	 *
+	 * @var array<int, string>
+	 */
+	public const TRANSITION_LISTS = ['actions', 'from', 'to'];
 
 	/**
 	 * The node type.
@@ -138,7 +146,7 @@ class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInte
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function configKeys(): array {
-		return ['event', 'register', 'schema', 'scope'];
+		return ['event', 'register', 'schema', 'scope', 'transition', 'changedFields'];
 	}//end configKeys()
 
 	/**
@@ -220,7 +228,109 @@ class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInte
 		}
 
 		$this->assertScope(config: $config);
+		$this->assertTransition(config: $config);
+		$this->assertChangedFields(config: $config);
 	}//end validateConfig()
+
+	/**
+	 * A `transition` filter belongs to `object.transitioned` and holds only non-empty lists of names.
+	 *
+	 * @param array<string, mixed> $config The trigger config.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the filter is on another event or malformed.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-object-trigger-can-start-a-flow-on-a-state-change
+	 */
+	private function assertTransition(array $config): void {
+		if (array_key_exists('transition', $config) === false) {
+			return;
+		}
+
+		$this->assertFilterEvent(config: $config, key: 'transition', event: 'object.transitioned');
+
+		$filter = $config['transition'];
+		if (is_array($filter) === false || ($filter !== [] && array_is_list($filter) === true)) {
+			throw new InvalidArgumentException(
+				'A "transition" filter is an object of lists: {"actions": [..], "from": [..], "to": [..]}. '
+				. 'An empty object starts the flow on every transition.'
+			);
+		}
+
+		foreach ($filter as $list => $names) {
+			if (in_array($list, self::TRANSITION_LISTS, true) === false) {
+				throw new InvalidArgumentException(
+					sprintf('A "transition" filter has no "%s" list; it holds: %s.', $list, implode(', ', self::TRANSITION_LISTS))
+				);
+			}
+
+			$this->assertNameList(names: $names, key: 'transition.' . $list);
+		}
+	}//end assertTransition()
+
+	/**
+	 * A `changedFields` list belongs to `object.updated` and names properties as strings.
+	 *
+	 * @param array<string, mixed> $config The trigger config.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the list is on another event or malformed.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function assertChangedFields(array $config): void {
+		if (array_key_exists('changedFields', $config) === false) {
+			return;
+		}
+
+		$this->assertFilterEvent(config: $config, key: 'changedFields', event: 'object.updated');
+		$this->assertNameList(names: $config['changedFields'], key: 'changedFields');
+	}//end assertChangedFields()
+
+	/**
+	 * Refuse a filter on an event that cannot carry it.
+	 *
+	 * @param array<string, mixed> $config The trigger config.
+	 * @param string               $key    The filter key.
+	 * @param string               $event  The one event the filter belongs to.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the trigger names another event.
+	 */
+	private function assertFilterEvent(array $config, string $key, string $event): void {
+		if (trim((string)($config['event'] ?? '')) !== $event) {
+			throw new InvalidArgumentException(
+				sprintf('"%s" filters %s only; this trigger names "%s".', $key, $event, trim((string)($config['event'] ?? '')))
+			);
+		}
+	}//end assertFilterEvent()
+
+	/**
+	 * Refuse a list that is empty, not a list, or holds anything but non-blank strings.
+	 *
+	 * @param mixed  $names The list.
+	 * @param string $key   The key it sits under, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the list is not a non-empty list of names.
+	 */
+	private function assertNameList(mixed $names, string $key): void {
+		if (is_array($names) === false || $names === [] || array_is_list($names) === false) {
+			throw new InvalidArgumentException(
+				sprintf('"%s" must be a non-empty list of names. Leave it out to match every value.', $key)
+			);
+		}
+
+		foreach ($names as $name) {
+			if (is_string($name) === false || trim($name) === '') {
+				throw new InvalidArgumentException(sprintf('"%s" holds only non-blank names.', $key));
+			}
+		}
+	}//end assertNameList()
 
 	/**
 	 * Refuse a missing event, or one the engine never fires.
