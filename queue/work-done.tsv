@@ -1258,3 +1258,4 @@ cover:dossiq:6ca0231e:ea81adeb	PR #6209: 19 tests (ZgwZtcResultaattypeRules, Zrc
 review:hermiq:1495:2810c65e	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:56:07Z
 review:hermiq:1490:fcb1b7ff	GREEN: behaviour-identical date helper extraction; vitest 1075 passing on PR+development	session-20261112T234653-57d11a5b	2026-11-13T00:56:16Z
 review:hermiq:1488:82f546c0	GREEN: refactor preserves behaviour, vitest 1085/1085	session-20261113T003903-5efbf5ae	2026-11-13T00:56:37Z
+cover:keepiq:d76c2121m70b5:js0023cfc7	PR #1710: 8 dialogs, 51 tests, src/dialogs lines 77.7->87.0%	session-20261113T004519-b6b86685	2026-11-13T00:56:42Z
