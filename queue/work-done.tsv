@@ -2868,6 +2868,7 @@ cover:buildiq:9930949bmc723:34763eb4	already done: lib/Middleware/*.php (ApiCont
 verify:integriq:3485:42d2a02c	3485,3492 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:36:07Z
 cover:buildiq:9930949bmc723:aae6d66c	already done: lib/Exception/*.php at 100% lines (64/64) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:36:12Z
 cover:buildiq:9930949bmc723:38e80a9f	already above target: lib/Command/*.php measures 99.71% (348/349) with strict metadata on development fc2670d; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:36:10Z
+cover:buildiq:9930949bmc723:390adfb9	already done: lib/Capabilities.php 11/11 covered (CapabilitiesCheckTest, -1 merged)	session-20261113T051709-e616bf69	2026-11-13T06:36:42Z
 cover:buildiq:9930949bmc723:9d3a1784	already done pending #1516: with its unit-bootstrap fix lib/BackgroundJob/*.php is 230/245 statements (>=85%); the low figure comes from development's broken phpunit-unit.xml bootstrap; no PR	session-20261113T061518-90540a48	2026-11-13T06:36:22Z
 cover:buildiq:9930949bmc723:f545d745	already above target: lib/Repair/*.php measures 96.38% (931/966) with strict metadata on development fc2670d; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:36:28Z
 cover:buildiq:9930949bmc723:6891a8ac	already done: lib/Service/Dashboard 137/141 statements (97.2%) with pcov on development; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:36:47Z
