@@ -1021,6 +1021,7 @@ cover:integriq:9b0f5894m2367:js63512d7f	PR #3430: AtomicCache + IdpAdapterRegist
 cover:integriq:9b0f5894m2367:js05236f09	PR #3427: dir is PHP (no JS), 9 tests for AbstractZgwResourceTranslator guards, ZgwVersion 100% lines; baseline 2 errors + order-dependent golden failure unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:04:49Z
 cover:integriq:9b0f5894m2367:c135a8f0	PR #3431: 10 tests for PDOK WFS/WMS source adapters, no new failures	session-20261112T224529-41d77a96	2026-11-13T00:04:44Z
 cover:integriq:9b0f5894m2367:9bbad86f	already done: the 8 dirs are at 90.1% statements (3890/4317) on development, target 90.0; no PR	session-20261112T231638-72e59130	2026-11-13T00:05:32Z
+fix:stackiq:1726:8b4ce47c	obsolete: #1726 already merged into development at 8b4ce47c (tests only); dockerimage floor is not from this PR's diff, nothing to fix	session-20261112T224529-41d77a96	2026-11-13T00:05:42Z
 fix:stackiq:1780:0a28fb09	test updated for new constructor args; unit 2545 OK; new head e9e2a627, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-13T00:05:49Z
 fix:stackiq:1781:566ac706	conflict resolved (docblock @uses), touched tests green; new head bd8e0ef5	session-20261112T234655-0bdbf2be	2026-11-13T00:06:02Z
 verify:filinq:1976:1806e527	2 GREEN (1976, 1977, tests-only), 5405 tests vs baseline 5318, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T00:06:19Z
