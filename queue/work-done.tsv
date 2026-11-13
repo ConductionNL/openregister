@@ -2912,6 +2912,7 @@ cover:stackiq:df113dffm5ac4:17d367ab	no PR: lib/Controller/Settings already 100%
 cover:integriq:92114ab0m658d:js3ad0f4bb	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:35Z
 cover:integriq:92114ab0m658d:js0023cfc7	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:40Z
 cover:integriq:92114ab0m658d:js9402c870	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:46Z
+cover:hermiq:065f1631mfaac:js06645759	already done: src/components/* measures 88.8% lines on development (target 85); branch -2 still open adds more; 72 files/1205 tests pass	session-20261113T053904-36dcee67	2026-11-13T06:40:53Z
 cover:integriq:92114ab0m658d:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:52Z
 cover:integriq:92114ab0m658d:js0a858bda	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:59Z
 cover:hermiq:065f1631mfaac:js4829b6aa	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:05Z
