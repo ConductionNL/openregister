@@ -2109,3 +2109,4 @@ cover:buildiq:9930949bm5861:38e80a9f	failed: lib/Command already has 5 test clas
 verify:shillinq:2861:dcaaee0a	GREEN #2861: 13 new tests pass, 0 new failures (1 inherited)	session-20261113T041646-adfbb291	2026-11-13T04:23:41Z
 cover:dossiq:6ca0231ema7d4:ceb285b8	PR #6273: 17 tests, lib/Service/Publication 94.4% -> 100% lines; suite 19 inherited failures unchanged	session-20261113T041644-786bb7fc	2026-11-13T04:23:46Z
 verify:pipelinq:3638:ffcb99f2	6/6 GREEN; phpunit 6238 (1 inherited), vitest 3574 pass	session-20261113T041652-f9df3e85	2026-11-13T04:24:40Z
+cover:keepiq:c967a31fm88ca:d3522ea6	PR #1733: 72 mapper query tests, 8 lib/Db mappers 3-12% -> 100% lines; unit suite 4361 -> 4433, 0 failures	session-20261113T034634-f20a8d77	2026-11-13T04:24:44Z
