@@ -5207,3 +5207,4 @@ filinq	2036	c7b0a760fbe432e8a7a599c8d34c43f9c15177c8	GREEN	worker-52	tests only 
 shillinq	2869	c6f5e69eddd0478c7fb0b53f492c9474c1a48661	GREEN	worker-39	php unit 9031 tests (PR touches no PHP), baseline 1 failure inherited; vitest 1343 passed, 0 new failures; tests only
 shillinq	2870	725902d10e2cfdac4608b465568b516920b423ba	GREEN	worker-06	PHP 9031 tests, baseline 1 failure unchanged; vitest 1356/1356 pass; tests only
 buildiq	1514	f6e59a65812a030b9d7779f48cbc1fdab5865e8c	GREEN	worker-01	spec-only; phpunit 2581 run unchanged (1 inherited ExportZipGoldenTest); vitest 386 files/3774 tests pass on development 052640df + PR, 0 new failures
+dossiq	6293	45a8e4961cd1f8917f4fa4c64722a4f9827f1049	GREEN	worker-33	tree of 4 on development 460d401b: 14820 tests run, baseline 14794 with 19 failures (inherited), 0 new failures; tests only
