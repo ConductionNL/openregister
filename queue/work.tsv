@@ -4704,3 +4704,14 @@ measure:hermiq:20261113h10	measure	hermiq	development	queue/coverage/hermiq.json
 measure:keepiq:20261113h10	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T10:45:29Z
 measure:pipelinq:20261113h10	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T10:45:29Z
 measure:stackiq:20261113h10	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T06:46:03Z
+verify:dossiq:6392:abc66d3f	verify	dossiq	development	merge	prs=6392@812f4ba7a5e00b079eb0c7b266cf57f57a9384b5,6393@909919c89f340fb79371cf70018af37cca00a337	2026-11-13T10:50:14Z
+verify:pipelinq:3710:aeefa032	verify	pipelinq	development	merge	prs=3710@1dd8bd4afb32b78416c2554f80738339fe20ba32	2026-11-13T10:50:14Z
+verify:shillinq:2929:59b89db5	verify	shillinq	development	merge	prs=2929@c9a02a763e10ceab8926dd0366b74988bd942b31	2026-11-13T10:50:14Z
+merge:dossiq:6388:eff07d64	merge	dossiq	development	development	prs=6388@d1bb38257e4525eef64d6f5fbb05eb08722ad30a,6389@0107e969878956c3a69eb86cb4e4f2359be10f55	2026-11-13T10:50:14Z
+merge:pipelinq:3707:2d909a29	merge	pipelinq	development	development	prs=3707@52402cf243bd1496262608ab2e76e81cc89c08c5	2026-11-13T10:50:14Z
+merge:hermiq:1644:bd61e03a	merge	hermiq	development	development	prs=1644@5f5443ddef61241bde3570c956879466d61f14e7	2026-11-13T10:50:14Z
+cover:dossiq:069ee2d6m7275:f7dbdab3	cover	dossiq	development	quality/test-coverage-f7dbdab3	lang=php;dirs=lib/Service/CaseType/;focus=uncovered;weight=441;coverage=89.34;target=90.0	2026-08-15T10:03:42Z
+cover:dossiq:069ee2d6m7275:154acb60	cover	dossiq	development	quality/test-coverage-154acb60	lang=php;dirs=lib/Service/Cases/;focus=uncovered;weight=372;coverage=89.34;target=90.0	2026-08-15T10:04:51Z
+cover:pipelinq:7f9dc8e6m916f:8f8dca30	cover	pipelinq	development	quality/test-coverage-8f8dca30	lang=php;dirs=lib/Service/Export/*.php;focus=thin;weight=4130;coverage=84.95;target=90.0	2026-11-13T04:57:42Z
+cover:pipelinq:7f9dc8e6m916f:d4326ecd	cover	pipelinq	development	quality/test-coverage-d4326ecd	lang=php;dirs=lib/Service/Messaging/,lib/Service/PersonLookup/,lib/Service/Settings/,lib/Service/Worklist/;focus=thin;weight=887;coverage=84.95;target=90.0	2026-11-13T05:32:55Z
+cover:pipelinq:7f9dc8e6m916f:8c6788f4	cover	pipelinq	development	quality/test-coverage-8c6788f4	lang=php;dirs=lib/Service/Gdpr/;focus=thin;weight=419;coverage=84.95;target=90.0	2026-11-13T05:40:43Z
