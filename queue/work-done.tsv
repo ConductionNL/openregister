@@ -1438,3 +1438,4 @@ cover:decidiq:13261b1bmcfc2:js3f3bfe56	PR #2107: 22 tests, src/* entry files 0%-
 cover:shillinq:801aab65:3641032a	PR #2819: 3 classes, 27 tests, suite 9004->9031 (1 inherited failure), lib/Service/Pipelinq lines 83.7%->~94%	session-20261113T002031-7b3e41b2	2026-11-13T01:31:00Z
 merge:thematiq:1661:b54fc704	stale	feeder	2026-11-13T01:30:18Z
 cover:filinq:8ecceb86:00f8416c	PR #1993: 17 tests for ConformanceReportRepository + VeraPdfProcess; suite 5499->5516 OK	session-20261113T011731-be978a55	2026-11-13T01:31:24Z
+cover:shillinq:801aab65:123a624c	PR #2820: 8 tests, Iv3ReportGenerator 0->71/71, VatReturn 83->91/91; dir 90.8->95.9%; suite 9004->9012, same 1 inherited failure	session-20261112T234655-793f46ee	2026-11-13T01:31:24Z
