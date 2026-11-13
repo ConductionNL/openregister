@@ -4803,3 +4803,4 @@ build:openregister:modelling-type-catalogue-metadata	failed: build tasks never t
 review:openregister:10147:f7350634	APPROVE 10147	session-20261113T081040-5e814df2	2026-11-13T12:20:49Z
 review:openregister:10160:9f7b90f9	APPROVE: suites green on PR+main (9 Controller errors inherited from main), phpstan clean, listener order preserved	session-20261113T094602-d25cda2a	2026-11-13T12:21:15Z
 merge:launchpad:1187:9363eb59	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:21:23Z
+verify:pipelinq:3754:a2c8bcab	CONFLICT: l10n en/nl with development	session-20261113T051703-1b54bfba	2026-11-13T12:21:28Z
