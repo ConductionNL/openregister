@@ -6901,3 +6901,4 @@ build:versioniq:advisories-bundled-libraries	PR #685: 9 of 12 tasks built with u
 verify:dossiq:6452:a3a40202	#6452 #6454 #6455 #6456 GREEN, #6453 CONFLICT (AdapterHonestyTest vs development); suite 16531, 20 inherited	session-20261113T202603-6c9ef72f	2026-11-13T21:14:23Z
 verify:decidiq:2148:9a404266	GREEN 2148 2149	session-20261113T192701-f224cbcf	2026-11-13T21:14:38Z
 build4:dossiq:social-domain-consent-and-safeguards	partial: PR #6460 - task 1.1 (caseType safeguard flags 1.48.0, four social packages set consent/classification/identifyingFields, 9 tests); 2.x-4.1 remain (2.2 must extend the existing CaseTransferConsentGate, 3.2 may need OpenRegister RBAC), 5.x live	session-20261113T205337-4c32e19e	2026-11-13T21:15:10Z
+verify:versioniq:684:10f67c07	684 GREEN (tests-only, vitest 2895->2910, 0 failures)	session-20261113T204536-22cfbae0	2026-11-13T21:15:34Z
