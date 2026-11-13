@@ -3711,4 +3711,5 @@ cover:pipelinq:7f9dc8e6m916f:28cccfd9	already done: batch -1 merged; lib/Repair/
 cover:pipelinq:7f9dc8e6m916f:6f346b68	already done: lib/Sections/*.php 5/5 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:53Z
 cover:pipelinq:7f9dc8e6m916f:7505aeb4	already done: lib/Activity/*.php at 66/66 statements (100%) on development; no PR	session-20261113T080556-d189f150	2026-11-13T09:04:14Z
 cover:pipelinq:7f9dc8e6m916f:36ac5d07	already done: LineRollUp/LineTotalMath have 31 tests over every branch (LineParent is a value holder); no PR	session-20261113T072715-cf04db4e	2026-11-13T09:04:35Z
+cover:pipelinq:7f9dc8e6m916f:be0dcca9	already done: lib/Mcp (McpAnswer, PipelinqScannableServices) has 9 tests over every branch; batch -1 merged; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:05:11Z
 verify:launchpad:1185:7ded26d1	GREEN 1185 (tests only; 3789 -> 3842 tests, 0 failures)	session-20261113T083916-59f10a3b	2026-11-13T09:05:13Z
