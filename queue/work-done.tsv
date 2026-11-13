@@ -4286,3 +4286,4 @@ cover:openregister:7350e3efmea52:933e2844	already done: 9 dirs 9765/10151 = 96.2
 cover:filinq:7a9ef677mb01f:59d1e403	already done: lib/Service/Signing/ 866/867 (99.9%) >= 95 (measure at 7b9588e4)	session-20261113T051703-1b54bfba	2026-11-13T10:44:23Z
 cover:pipelinq:7f9dc8e6m916f:95a79563	already done: lib/Service/Lifecycle/ 121/134 = 90.3% >= 90 (measure at ebef47bf)	session-20261113T051703-1b54bfba	2026-11-13T10:44:35Z
 merge:planninq:1140:7a33d47a	merge-local over 1 planninq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:44:51Z
+cover:dossiq:069ee2d6m7275:f545d745	PR #6392: +10 tests DeclareNotificationTemplates/RetireOriRegister failure paths; Repair dir 91.95% before; suite 15767 with 19 inherited failures	session-20261113T071633-17de823f	2026-11-13T10:45:54Z
