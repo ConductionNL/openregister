@@ -2672,3 +2672,4 @@ cover:shillinq:05639debmd8ee:jsea7197ec	already done: src/utils/* 574/638 (89.96
 cover:dossiq:f8a113c5mac88:3d4b295b	already done: lib/Service/Settings/ at 91.32% statements (463/507) on development, target 90, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:10:35Z
 cover:keepiq:c967a31fm0090:7ddabe24	no PR: lib/Federation is 1 class, 13/13 lines, 9 tests covering every branch; nothing thin to add	session-20261113T054520-0c8540f8	2026-11-13T06:10:54Z
 verify:shillinq:2870:f9287f99	GREEN 2870 (tests only; vitest 1356 pass; PHP no new failures)	session-20261113T051714-4ad50f31	2026-11-13T06:11:27Z
+cover:filinq:7a9ef677m5ffe:59d1e403	PR #2039: 3 GuardianConsentGuard tests (last reachable Signing lines); suite 6112->6115	session-20261113T054516-469bb7f6	2026-11-13T06:11:36Z
