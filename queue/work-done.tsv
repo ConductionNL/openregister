@@ -5272,3 +5272,4 @@ build2:openregister:flow-trigger-transitions-and-changed-fields	partial: PR #102
 build2:openregister:schema-slug-cross-app-scoping	already built: this is the landed July 2026 change (#2047); all code tasks (migration, findByApplicationAndSlug, findBySlugInIds, register-scoped resolution, self-heal) on main; schema+import tests pass (1171). Only 5.1 (full PHPUnit suite) remains, which can't run to completion in this sleep-bound env	session-20261113T111529-f2ee6930	2026-11-13T13:43:07Z
 verify:portaliq:2401:f21e86b2	GREEN tree 2401,2402,2403,2404,2408 (all tests-only, 4878, 0 failures)	session-20261113T131531-81a20e2a	2026-11-13T13:43:07Z
 review:openregister:10239:a89e4310	APPROVE: additive 403+render hint, RBAC reused, suites green	session-20261113T124802-c7d6f662	2026-11-13T13:43:28Z
+review:openregister:10229:91b334dd	APPROVE: additive owner field/admin-only action; Architecture/Contract/Rbac/touched all OK	session-20261113T064519-30004ad4	2026-11-13T13:43:43Z
