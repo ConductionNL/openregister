@@ -1286,3 +1286,4 @@ merge:larpinq:1000:d76b1030	stale	feeder	2026-11-13T01:00:17Z
 verify:stackiq:1774:e41fcd93	stale	feeder	2026-11-13T01:00:17Z
 merge:filinq:1975:73c62e36	stale	feeder	2026-11-13T01:00:17Z
 cover:launchpad:755175ffm7412:34f5c300	already done: lib/Service/*.php measured 92.4% lines on development (target 85; #1118 merged), no PR	session-20261113T002025-940c220f	2026-11-13T01:01:50Z
+review:stackiq:1704:f55ed033	GREEN: behaviour-preserving refactor; eslint clean; vitest 1910/1910	session-20261113T004521-223ef947	2026-11-13T01:02:12Z
