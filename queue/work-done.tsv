@@ -4023,3 +4023,4 @@ cover:learniq:e6498dddm0533:60c2c265	already done: batch -1 merged; lib/Controll
 cover:dossiq:069ee2d6m7275:c900fa11	already done: lib/Service/Email/Filters 155/157 stmts (98.7%)	session-20261113T091527-72c58830	2026-11-13T09:43:36Z
 merge:learniq:2436:2d10e964	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:43:59Z
 cover:dossiq:069ee2d6m7275:9ece5c6f	already done: lib/Controller/Support 296/299 stmts (99.0%)	session-20261113T091527-72c58830	2026-11-13T09:43:56Z
+cover:dossiq:069ee2d6m7275:67b69054	already done: lib/Service/Conversation/ measured 99.73% lines (374/375) on development; branches -1 and -2 already merged	session-20261113T091530-f20014fb	2026-11-13T09:44:23Z
