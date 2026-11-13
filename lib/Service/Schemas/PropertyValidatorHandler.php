@@ -39,6 +39,9 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
  *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
  *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Thirteen: most are the declaration checks
+ *   (generated identifier, coded choice, reference filter, scoped property, property source,
+ *   error messages), each a static assert on one annotation; the vocabulary is their sum.
  */
 class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 
@@ -919,6 +922,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		ErrorMessagesDeclaration::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**
