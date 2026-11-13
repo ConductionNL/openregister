@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db;
  * Hydrates the using entity from an array through its setters.
  *
  * An empty array given for a json field (see getJsonFields()) is stored as
- * null. Keys without a setter are ignored.
+ * null. Only keys in their exact spelling are hydrated (see HydrationKey).
  */
 trait HydrateEmptyJsonAsNullTrait {
 
@@ -42,7 +42,7 @@ trait HydrateEmptyJsonAsNullTrait {
 		$jsonFields = $this->getJsonFields();
 
 		foreach ($object as $key => $value) {
-			if (HydrationKey::isFieldName(key: $key) === false) {
+			if (HydrationKey::admits(entity: $this, key: $key) === false) {
 				continue;
 			}
 

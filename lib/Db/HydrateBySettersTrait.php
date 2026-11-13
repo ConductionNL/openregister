@@ -39,7 +39,7 @@ trait HydrateBySettersTrait {
 	 */
 	public function hydrate(array $object): static {
 		foreach ($object as $key => $value) {
-			if (HydrationKey::isFieldName(key: $key) === false) {
+			if (HydrationKey::admits(entity: $this, key: $key) === false) {
 				continue;
 			}
 
