@@ -2922,3 +2922,4 @@ cover:hermiq:065f1631mfaac:js0246d36e	failed: permission (npm ci refused in this
 cover:buildiq:9930949bmc723:js4829b6aa	already done: src/views/*.vue 1323/1546 (85.6%) under vitest on development fc2670dab, above the 85 target; suite 3821 passed	session-20261113T061516-58aa7364	2026-11-13T06:41:33Z
 cover:hermiq:065f1631mfaac:js0be8c659	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:40Z
 cover:stackiq:df113dffm5ac4:aae6d66c	no PR: lib/Exception already done (CmdbImportExceptionTest pins all 14 status codes, 500 fallback, message/details/cause; UnsupportedSbomFormatException has no body)	session-20261113T054520-0c8540f8	2026-11-13T06:41:59Z
+verify:stackiq:1842:752410e7	GREEN 1842-1845 (tests only; PHP clean; vitest 2286 pass)	session-20261113T051714-4ad50f31	2026-11-13T06:42:01Z
