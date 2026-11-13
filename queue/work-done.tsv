@@ -2980,3 +2980,4 @@ cover:keepiq:c967a31fmb40c:9d3a1784	already done: lib/BackgroundJob/*.php 406/40
 cover:filinq:7a9ef677m5ffe:d528dcf0	already done: lib/Dashboard/*.php 12/12 lines (100.0%) on development 90be525f5; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:47:33Z
 cover:keepiq:c967a31fmb40c:11ebfefd	already done: lib/Backup/*.php 474/481 (98.54%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:38Z
 cover:keepiq:c967a31fmb40c:aae6d66c	already done: lib/Exception/*.php 30/30 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:47Z
+cover:integriq:92114ab0m658d:aae6d66c	already above target: lib/Exception/*.php measures 98.18% (54/55) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:47:47Z
