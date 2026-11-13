@@ -4794,3 +4794,4 @@ dossiq	6224	f0c51db6befd60e4ebaa809d4738f34b3714cd20	GREEN	worker-12	13811 tests
 dossiq	6225	5a667dcafa8a5873b32617a79fc1c5882a8d6fc3	GREEN	worker-12	13811 tests, baseline 19 failures (13762 tests), 0 new
 integriq	3452	01896db288e337beaf41324efc9df380d39a4e26	GREEN	worker-21	phpunit 7133 run on 3-PR tree (baseline 7113, 2 inherited errors CallServiceTest), 0 new failures; tests-only additions
 integriq	3453	db087d78eb67d185dec7d45146e18bb15b561d21	GREEN	worker-21	phpunit 7133 run on 3-PR tree (baseline 7113, 2 inherited errors CallServiceTest), 0 new failures; tests-only additions
+integriq	3454	8c607a64c37d9b8b088ff3a12379d9f640806db4	GREEN	worker-21	phpunit 7133 run on 3-PR tree (baseline 7113, 2 inherited errors CallServiceTest), 0 new failures; tests-only additions
