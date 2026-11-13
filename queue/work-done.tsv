@@ -2119,3 +2119,4 @@ cover:integriq:92114ab0md8cd:acd8f15d	PR #3472: 19 tests, Outbound/Identity 1094
 verify:shillinq:2856:d28ea56b	5 GREEN (2856-2860): tests-only, 9004->9055 tests, no new failures	session-20261113T033859-c661da78	2026-11-13T04:25:28Z
 review:openregister:10096:3186f335	APPROVE: tests only, all named suites green merged with main	session-20261113T034629-21e68669	2026-11-13T04:25:46Z
 cover:learniq:e6498dddma84a:jsd48eb217	already done: open branch quality/test-coverage-js-d48eb217-1 covers settings.js 84/84; store/modules 100% once merged; no new PR	session-20261113T034628-73e45054	2026-11-13T04:26:05Z
+cover:filinq:7a9ef677mc744:e01e982e	PR #2023: 29 cases for IdTokenValidator + SubjectPseudonymiser (both full), SignerAuth 95.5%->96.7%	session-20261113T031700-0e23c373	2026-11-13T04:26:25Z
