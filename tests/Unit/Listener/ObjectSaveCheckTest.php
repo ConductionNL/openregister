@@ -44,6 +44,8 @@ use RuntimeException;
 #[UsesClass(CodedValueException::class)]
 #[UsesClass(CodedValueWrite::class)]
 #[UsesClass(DependentValueWrite::class)]
+#[UsesClass(Schema::class)]
+#[UsesClass(ObjectEntity::class)]
 final class ObjectSaveCheckTest extends TestCase {
 
 	private function schema(): Schema {

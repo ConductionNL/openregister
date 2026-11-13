@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Listener\GeneratedIdentifierIssueRun
  * @uses   \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses   \OCA\OpenRegister\Event\WriteVetoState
  */
 final class GeneratedIdentifierReservedTest extends TestCase {
 
