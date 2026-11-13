@@ -660,3 +660,41 @@ filinq	2002	6de4a7190a7e94449876d34db27b26803fbe191e	MERGED	merge-local	GATE OK 
 filinq	2003	a1575be5d9c7f7a6b52341cfd95e918b193cb31a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 thematiq	1660	29d2f8f752354a21e785d3549b52ecdb722d711a	RED	merge-local	GATE RED checker floor: adrvalidator: warn -> fail
 thematiq	1662	20a34d0033f2e68531e7c89c25c7d515a7f84465	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1693	44193bc9eecf070881f3df33c1002d339868025b	SKIP	merge-local	GATE UNMEASURED 44193bc9ee does not merge cleanly onto development
+stackiq	1706	5ba0e54b3550a536789ec349d1e6b746e42ab4ee	SKIP	merge-local	GATE UNMEASURED 5ba0e54b35 does not merge cleanly onto development
+stackiq	1667	a3f611b561a45d019cb61c62eb97bb6a557d9d71	SKIP	merge-local	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+stackiq	1694	80a57d10ea21f501a8e13eeebc698c495ba1d4b4	SKIP	merge-local	stack: #1667 was not merged
+stackiq	1603	382a12d9416b6b41ed5855a9bf32cf1c7bccab12	SKIP	merge-local	stack: #1706 was not merged
+stackiq	1679	689e315f853994d1e757f86757da38ca3a3e8fbb	SKIP	merge-local	stack: #1706 was not merged
+stackiq	1689	3fd47a002b37b0a9c7efc7c94e470fff5550db8f	SKIP	merge-local	stack: #1706 was not merged
+stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	SKIP	merge-local	stack: #1706 was not merged
+stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	SKIP	merge-local	stack: #1706 was not merged
+stackiq	1778	b55e8c1b1c37fd9a68073fd5ecb463634542e038	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1779	f466d0f0d7202f23683e77fc7a1b667f663e286d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1782	f2632b2c6745214cddd32bf68ffefc66272f3812	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1780	e9e2a627eb64d574503da5238d5533f3cf2f41c6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1781	bd8e0ef5f023a4b8339a4104e8b9b00e456b6989	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1793	09753a640d187939c7ddc436d76c4b3961134d23	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1794	4b6d860f02ad6960de1ccc22ecb4c75294653f52	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1795	ca303cd3e3333c98953a27841174fddc89eef4d1	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+stackiq	1797	dbbb1e345771182cea8323a119a01b8a82eaf2ba	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1800	8c3047cf15102e7f7193778856abab6f26d4b48d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1595	e53f9c42701baa3bc38b42ceacc44d8b379554ac	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1690	74ea9a64047041a7b643eca5dcfa027ef5be1511	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1751	d0c76539b8580acddc90541d3bad6d42ec2ca736	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1773	27fc542f6b1fdccffaab7d1ba5f89b537feb4397	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1783	5bff9bd49aa9a702848dc1eead32358cb8c71979	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1801	6c7409e778677433c0926405aee5328964cad5f9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1802	31fbd81fb995e2dd526a9108c575605ce306cc55	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1803	4382a2a1a70d142c13f2cf8aa3b4079d4e3b3538	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1804	2dc6125b4b3b4b3d2b34e4221bbc899f63f94edf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1805	fb96956f1c700812f67926a50f05ed3c01c749aa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1806	379b17482337aae248763452222c3b7be4039273	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1807	81313a5dccaf8ece17ab049629f27492ba3f7ec0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1808	537ab5b5cbb933acbe6f6e682cdb0e94077bae41	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1776	9689d864bcdd4256368b0c20767b5adfcad51e4c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1809	32cc34743ecfbfdf53d7d5fe6d9d6f2dfdee1d45	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1810	6a4e84120015127dcb8ea0c3d9ab1e22c4607216	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1811	f9e1f9a5b970394f16aa0c9e4a9cc9ea19fe570c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1812	335e3e7e638e3f392c542381506e0a8690346b43	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	SKIP	merge-local	GATE UNMEASURED 8e311d81de does not merge cleanly onto development
