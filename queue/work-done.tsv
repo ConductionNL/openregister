@@ -2026,3 +2026,4 @@ cover:hermiq:065f1631m7444:0f20d6d0	PR hermiq#1652: 5 tests for TalkTurnDispatch
 cover:hermiq:065f1631m7444:0f859653	already done: lib/Flow/*.php measures 356/391 (91%) with openregister sibling after merged -1 PR, above target 90	session-20261113T024656-2f332446	2026-11-13T04:09:50Z
 cover:keepiq:c967a31fm88ca:aae6d66c	already done: lib/Exception/*.php 30/30 statements covered on development (earlier -1 batch merged); no PR	session-20261113T031701-b518f7f8	2026-11-13T04:10:02Z
 verify:hermiq:1644:42717a9c	GREEN 1644 (tests-only, no new failures)	session-20261113T024653-d22c13a3	2026-11-13T04:10:03Z
+cover:hermiq:065f1631m7444:66a28494	PR #1653: 7 tests, lib/Service/Engine 93.6->95.1% stmts	session-20261113T031704-5a455d65	2026-11-13T04:10:16Z
