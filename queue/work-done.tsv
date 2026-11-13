@@ -2660,3 +2660,4 @@ cover:shillinq:05639debmd8ee:2e7efbf6	already done: lib/Request/*.php 47/47 (100
 cover:shillinq:05639debmd8ee:2befd24e	already done: lib/Service/Asset 551/564 (97.7%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:09:18Z
 cover:filinq:7a9ef677m5ffe:6079ce8f	PR #2038: 20 tests (WizardRepository 100%, WizardService, SubjectErasure edges); suite 6112->6132	session-20261113T054516-469bb7f6	2026-11-13T06:09:27Z
 cover:shillinq:05639debmd8ee:js6cca7802	PRs #2875 (69 tests) and #2879 (46 tests); task dirs stmts 50.1% -> 65.6% / 61.2% each	session-20261113T054516-5d7b6bc4	2026-11-13T06:09:45Z
+cover:dossiq:f8a113c5mac88:6fbba20d	PR #6295: 7 tests for ShippedLedgerTargets; suite 14750->14757, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:09:48Z
