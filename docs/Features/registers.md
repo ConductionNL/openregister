@@ -191,6 +191,31 @@ The deletion process follows these steps:
 4. **Schema Selection**: Carefully select which schemas belong in each register
 5. **Access Control**: Define appropriate access controls for each register
 
+## Reading a Register's Model
+
+`GET /api/registers/{id}/model` returns a register's schemas and the links between them, so the model can be drawn as a diagram. The answer is built from schema definitions only; no object is read.
+
+```json
+{
+  "nodes": [
+    { "id": "1", "slug": "zaak", "title": "Zaak", "external": false, "readable": true,
+      "properties": [{ "name": "documenten", "type": "array" }] }
+  ],
+  "edges": [
+    { "from": "1", "to": "2", "property": "documenten", "cardinality": "many", "inverse": "zaak",
+      "source": "property", "target": "document", "dangling": false }
+  ]
+}
+```
+
+- **Nodes** are the register's schemas. A link to a schema in another register adds that schema as an `external` node. If the caller may not read that schema, the node has no slug, title or properties (`readable: false`).
+- **Edges** come from a property's `$ref` (`one`) or `items.$ref` (`many`), with `inversedBy` as the `inverse` label. A link declared on both ends is returned once.
+- A schema's `x-openregister-relations` entries (`name`, `target`, `cardinality`, `inverseOf`) are edges too, marked `source: "declared"`. A declared relation that repeats a `$ref` property of the same name and target is drawn once.
+- A reference that resolves to no schema is kept as a `dangling` edge with `to: null`, so a broken link shows instead of disappearing.
+- References resolve the way they do on save: by id, uuid, slug or a `#/components/schemas/<slug>` path.
+
+The endpoint applies the same read checks as `GET /api/registers/{id}/schemas`.
+
 ## Relationship to Other Concepts
 
 - **Schemas**: Registers specify which schemas they support, defining what types of objects can be stored

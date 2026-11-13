@@ -3,6 +3,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerManualNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -28,6 +29,16 @@
         "configKeys": {
             "returned": [
                 "next"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "next",
+                    "label": "Afterwards, go to",
+                    "type": "text",
+                    "help": "\"stay\" keeps the person on the record, \"next\" opens the next record in their list, \"list\" returns to the list. Empty means \"stay\"."
+                }
             ]
         },
         "validate": {
@@ -88,6 +99,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerObjectNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -116,6 +128,34 @@
                 "register",
                 "schema",
                 "scope"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "event",
+                    "label": "Event",
+                    "type": "select",
+                    "help": "Which change starts the flow. This trigger fires on an object being created, updated or deleted. There is no \"any\" choice on purpose: a trigger names exactly one event, register and schema, so the flows an object change starts can be found without opening every flow.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/flow/event-catalog"
+                },
+                {
+                    "key": "register",
+                    "label": "Register",
+                    "type": "select",
+                    "help": "There is no \"any\" choice on purpose: a trigger names exactly one event, register and schema, so the flows an object change starts can be found without opening every flow.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/registers"
+                },
+                {
+                    "key": "schema",
+                    "label": "Schema",
+                    "type": "select",
+                    "help": "Which objects of the register the flow is about. To narrow further, set a scope (one property and one value) in the JSON pane.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/schemas"
+                }
             ]
         },
         "validate": {
@@ -191,6 +231,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TriggerScheduleNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -217,6 +258,24 @@
             "returned": [
                 "cron",
                 "runAs"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "cron",
+                    "label": "Schedule (cron)",
+                    "type": "text",
+                    "help": "Five fields: minute, hour, day of month, month, day of week, like \"0 7 * * 1-5\". Only the shape is checked here; when it actually fires is the scheduler's question.",
+                    "required": true
+                },
+                {
+                    "key": "runAs",
+                    "label": "Run as user",
+                    "type": "text",
+                    "help": "The account the scheduled runs act as. Nobody is present when a schedule fires, and the flow's author is never used in its place.",
+                    "required": true
+                }
             ]
         },
         "validate": {

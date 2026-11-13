@@ -182,6 +182,7 @@ class ShippedConfigurationGuard {
 		$upgrade = $run->upgrade;
 		// While an administrator's re-import is in effect, the merge takes
 		// every authorization block from the file (REQ-LCA-003).
+		$baseline = (new GuardedAnnotations())->seededBaseline(baseline: $baseline, live: $upgrade->live);
 		$revisions = new DescriptorRevisions(baseline: $baseline, live: $upgrade->live, incoming: $upgrade->incoming->definition);
 		$result = $this->merge->mergeRevisions(revisions: $revisions, decisions: $run->options->decisions);
 		$this->recordReplaced(upgrade: $upgrade, roots: $result['replacedLocal']);
@@ -409,7 +410,10 @@ class ShippedConfigurationGuard {
 			'app' => $baseline['app'],
 			'appVersion' => $baseline['appVersion'],
 			'recordedAt' => $baseline['recordedAt'],
-			'divergences' => $this->comparator->report(baseline: $baseline['definition'], live: $live),
+			'divergences' => $this->comparator->report(
+				baseline: (new GuardedAnnotations())->seededBaseline(baseline: $baseline['definition'], live: $live),
+				live: $live
+			),
 		];
 	}//end divergenceFor()
 
@@ -441,7 +445,7 @@ class ShippedConfigurationGuard {
 
 		$parts = new DescriptorParts();
 		$flat = [
-			'shipped' => $parts->flatten(descriptor: $baseline['definition']),
+			'shipped' => $parts->flatten(descriptor: (new GuardedAnnotations())->seededBaseline(baseline: $baseline['definition'], live: $request->live)),
 			'live' => $parts->flatten(descriptor: $request->live),
 		];
 

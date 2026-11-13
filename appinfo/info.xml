@@ -60,6 +60,7 @@ Vrij en open source onder de EUPL-licentie.
     <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-registers.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot-objects.png</screenshot>
 
+    <!-- @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-007 -->
     <dependencies>
         <php min-version="8.3" min-int-size="64"/>
         <database min-version="10">pgsql</database>

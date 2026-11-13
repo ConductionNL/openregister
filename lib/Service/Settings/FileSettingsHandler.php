@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -73,6 +74,20 @@ class FileSettingsHandler {
 	public const OPENANONYMISER_PASSWORD_KEY = self::OPENANONYMISER_CREDENTIAL_FIELD;
 
 	/**
+	 * The minimum confidence a detection needs when no organisation setting says otherwise.
+	 *
+	 * @var float
+	 */
+	public const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
+
+	/**
+	 * The file settings key holding the anonymisation settings.
+	 *
+	 * @var string
+	 */
+	public const ANONYMISATION_KEY = 'anonymisation';
+
+	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common
@@ -110,6 +125,7 @@ class FileSettingsHandler {
 		'openAnonymiserPasswordSet' => false,
 		'entityRecognitionEnabled' => false,
 		'entityRecognitionMethod' => 'auto',
+		self::ANONYMISATION_KEY => ['confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
 
@@ -181,6 +197,7 @@ class FileSettingsHandler {
 		$fileSettings[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileSettings)->toArray();
 
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
+		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
 		$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
@@ -231,6 +248,9 @@ class FileSettingsHandler {
 			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
 			return $fileConfig;
+		} catch (ConfidenceThresholdOutOfRangeException $e) {
+			// The caller's value to correct, kept recognisable so the controller answers 400.
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -277,9 +297,103 @@ class FileSettingsHandler {
 		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
+		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);
 
 		return $fileConfig;
 	}//end submittedFileSettings()
+
+	/**
+	 * The minimum confidence a detection needs, from the organisation's file settings.
+	 *
+	 * Read at request time by every detection path, so a changed setting applies
+	 * to the next detection without a restart.
+	 *
+	 * @return float A number between 0 and 1; the default when none is stored.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	public function confidenceThreshold(): float {
+		$stored = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
+		$settings = json_decode($stored, true);
+		if (is_array($settings) === false) {
+			return self::DEFAULT_CONFIDENCE_THRESHOLD;
+		}
+
+		return $this->readableAnonymisation(stored: ($settings[self::ANONYMISATION_KEY] ?? null))['confidenceThreshold'];
+	}//end confidenceThreshold()
+
+	/**
+	 * The anonymisation settings as a read returns them: a stored threshold
+	 * between 0 and 1, else the default.
+	 *
+	 * @param mixed $stored The stored anonymisation settings.
+	 *
+	 * @return array<string, mixed> The settings, with confidenceThreshold a float.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	private function readableAnonymisation(mixed $stored): array {
+		$settings = [];
+		if (is_array($stored) === true) {
+			$settings = $stored;
+		}
+
+		$threshold = ($settings['confidenceThreshold'] ?? null);
+		$settings['confidenceThreshold'] = self::DEFAULT_CONFIDENCE_THRESHOLD;
+		if (self::isThreshold(value: $threshold) === true) {
+			$settings['confidenceThreshold'] = (float) $threshold;
+		}
+
+		return $settings;
+	}//end readableAnonymisation()
+
+	/**
+	 * The anonymisation settings to store from a save: the submitted ones, or the
+	 * stored ones when the save does not name them.
+	 *
+	 * @param array<string, mixed> $fileData The settings being saved.
+	 *
+	 * @return array<string, mixed> The settings to store.
+	 *
+	 * @throws ConfidenceThresholdOutOfRangeException When the threshold is not a number between 0 and 1.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	private function submittedAnonymisation(array $fileData): array {
+		$submitted = ($fileData[self::ANONYMISATION_KEY] ?? null);
+		if (is_array($submitted) === false) {
+			return ['confidenceThreshold' => $this->confidenceThreshold()];
+		}
+
+		if (array_key_exists('confidenceThreshold', $submitted) === false) {
+			$submitted['confidenceThreshold'] = $this->confidenceThreshold();
+		}
+
+		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
+			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');
+		}
+
+		$submitted['confidenceThreshold'] = (float) $submitted['confidenceThreshold'];
+
+		return $submitted;
+	}//end submittedAnonymisation()
+
+	/**
+	 * Whether a value is a number between 0 and 1, bounds included.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isThreshold(mixed $value): bool {
+		if (is_int($value) === false && is_float($value) === false && (is_string($value) === false || is_numeric($value) === false)) {
+			return false;
+		}
+
+		$number = (float) $value;
+
+		return $number >= 0.0 && $number <= 1.0;
+	}//end isThreshold()
 
 	/**
 	 * The instance review default from a settings save, refused when unsound.

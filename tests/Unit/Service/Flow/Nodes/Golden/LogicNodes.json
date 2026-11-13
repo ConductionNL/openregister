@@ -259,6 +259,7 @@
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowEndNode",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -285,6 +286,28 @@
                 "error",
                 "message",
                 "next"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "error",
+                    "label": "End the run as failed",
+                    "type": "boolean",
+                    "help": "Failing is an outcome, not the absence of one: leave this off for an ending the flow expects."
+                },
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "text",
+                    "help": "Written to the run log as the reason the run ended here."
+                },
+                {
+                    "key": "next",
+                    "label": "Afterwards, go to",
+                    "type": "text",
+                    "help": "Overrides the manual trigger's choice for a run that ends here: \"stay\", \"next\" or \"list\". Empty keeps the trigger's choice."
+                }
             ]
         },
         "validate": {
@@ -357,6 +380,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ExplodeNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -383,6 +407,29 @@
                 "path",
                 "as",
                 "keepRecord"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "path",
+                    "label": "List field",
+                    "type": "text",
+                    "help": "The field on each item that holds a list, like \"findings\". Every element becomes an item of its own.",
+                    "required": true
+                },
+                {
+                    "key": "as",
+                    "label": "Name each element",
+                    "type": "text",
+                    "help": "The field each new item carries its element under. Defaults to \"item\"."
+                },
+                {
+                    "key": "keepRecord",
+                    "label": "Keep the rest of the item",
+                    "type": "boolean",
+                    "help": "On by default: each new item also carries the fields of the item it came from."
+                }
             ]
         },
         "validate": {
@@ -474,6 +521,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FilterNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -498,6 +546,17 @@
         "configKeys": {
             "returned": [
                 "condition"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "condition",
+                    "label": "Keep items where",
+                    "type": "textarea",
+                    "help": "A flow expression (JSONLogic), checked for each item; items for which it is false are dropped. A fixed value is refused: it would keep everything or nothing.",
+                    "required": true
+                }
             ]
         },
         "validate": {
@@ -718,6 +777,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\IterateNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\IterateNodeInterface"
@@ -744,6 +804,22 @@
                 "body",
                 "maxIterations",
                 "onLimit"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "maxIterations",
+                    "label": "At most this many passes",
+                    "type": "number",
+                    "help": "A loop that never runs dry repeats its side effects until something stops it; this is that something. Defaults to 100. The batch source and the steps to repeat are edited in the JSON pane."
+                },
+                {
+                    "key": "onLimit",
+                    "label": "When the limit is reached",
+                    "type": "text",
+                    "help": "\"fail\" (the default) ends the run as failed; \"stop\" ends the loop and carries on with what it collected."
+                }
             ]
         },
         "validate": {
@@ -952,6 +1028,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MergeNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -977,6 +1054,22 @@
             "returned": [
                 "mode",
                 "key"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "mode",
+                    "label": "How to combine",
+                    "type": "text",
+                    "help": "\"append\" keeps every item in branch order (the default), \"mergeByKey\" joins the items that share a key into one, \"unique\" keeps only the first item per key."
+                },
+                {
+                    "key": "key",
+                    "label": "Key field",
+                    "type": "text",
+                    "help": "The field items are matched on. Needed for \"mergeByKey\" and \"unique\"; when two branches set the same field, the later branch wins."
+                }
             ]
         },
         "validate": {
@@ -1291,6 +1384,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SubFlowNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SubFlowNodeInterface"
@@ -1317,6 +1411,30 @@
                 "flowId",
                 "wait",
                 "fanOut"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "flowId",
+                    "label": "Flow to run",
+                    "type": "select",
+                    "help": "It receives this step's items and runs as a run of its own, with its own log.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/flows"
+                },
+                {
+                    "key": "wait",
+                    "label": "Wait for it to finish",
+                    "type": "boolean",
+                    "help": "On by default: the flow's result becomes this step's items. Off queues the flow and carries on with the items as they were."
+                },
+                {
+                    "key": "fanOut",
+                    "label": "Run once per item",
+                    "type": "boolean",
+                    "help": "Off by default: the flow runs once with every item."
+                }
             ]
         },
         "validate": {
@@ -1503,6 +1621,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\WaitNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\WaitNodeInterface"
@@ -1527,6 +1646,22 @@
             "returned": [
                 "for",
                 "until"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "for",
+                    "label": "Wait for",
+                    "type": "text",
+                    "help": "A duration like \"30 minutes\" or \"2 days\"; a bare number is seconds. Fill this or \"Wait until\"."
+                },
+                {
+                    "key": "until",
+                    "label": "Wait until",
+                    "type": "text",
+                    "help": "A moment like \"2027-01-31 09:00\" or \"next monday 09:00\". When both are set, this one wins."
+                }
             ]
         },
         "validate": {

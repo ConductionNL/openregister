@@ -4,7 +4,7 @@
 
 - [ ] Human review of the decision: coexist with a documented boundary; reject
       convergence; do not build a bridge now.
-- [ ] Confirm the capability comparison table in `design.md` matches the merged
+- [x] Confirm the capability comparison table in `design.md` matches the merged
       leaf contracts (`LeafDescriptor`, `IntegrationProvider` `app-local`,
       `RegisterLeafProvidersEvent`) and the current `IReferenceProvider` surface.
 - [ ] Confirm the author-facing boundary rule reads cleanly for leaf authors.
@@ -13,7 +13,7 @@
 
 - [ ] Amend ADR-066 decision #6 from *deferred* to *decided: coexist* with the
       status note drafted in `design.md` (hydra change; human governance review).
-- [ ] Add the boundary rule to the leaf-authoring docs
+- [x] Add the boundary rule to the leaf-authoring docs
       (`openregister/docs/Integrations/leaf-system.md`) so authors see it at the
       point of choice.
 - [ ] If and only if a concrete driver appears (an app with an existing
@@ -23,4 +23,4 @@
 
 ## Validation
 
-- [ ] `openspec validate leaf-reference-provider-convergence --strict` passes.
+- [x] `openspec validate leaf-reference-provider-convergence --strict` passes.
