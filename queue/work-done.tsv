@@ -2895,3 +2895,4 @@ cover:stackiq:df113dffm5ac4:js17dfdc2e	PR stackiq#1848: 39 vitest tests on ViewO
 cover:buildiq:9930949bmc723:js20c69fa2	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:38:58Z
 verify:learniq:2418:fa3bbc64	GREEN 2418 (6105 run, 0 new failures)	session-20261113T051704-8c56f5b7	2026-11-13T06:39:01Z
 cover:buildiq:9930949bmc723:js2cb0b4ec	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:15Z
+cover:integriq:92114ab0m658d:js9fcd1176	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:23Z
