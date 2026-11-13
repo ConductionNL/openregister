@@ -4430,3 +4430,4 @@ cover:pipelinq:7f9dc8e6m84dd:e19add4c	already done: lib/Service/Consent/ at 65/6
 build:pipelinq:requests-inbound-to-queue	partial: PR #3734, 1.1/1.2/2.1 built (WhatsApp+SMS into the Queue, follow-ups on the thread's ticket), +15 tests (6760 -> 6775, 1 failure from development); mail, social, routing, page and docs left	session-20261113T083916-59f10a3b	2026-11-13T11:13:07Z
 verify:filinq:2049:cdd472d9	GREEN x4 (2049-2052): +27 PHP tests, vitest green	session-20261113T051703-1b54bfba	2026-11-13T11:13:08Z
 cover:stackiq:9ac19b3am10f3:81b1241f	already done: lib/Portal/PortalContributionProvider.php 23/23 lines (branch -1 merged)	session-20261113T081046-f0858dc4	2026-11-13T11:13:19Z
+cover:dossiq:069ee2d6m7275:65e30692	already done: lib/Service/Intake/ 1900/2001 = 95.0% >= 90 (measure at 629b047c)	session-20261113T051703-1b54bfba	2026-11-13T11:13:39Z
