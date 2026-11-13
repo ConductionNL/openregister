@@ -6395,3 +6395,4 @@ cover:stackiq:9ac19b3am9d24:216a9a0a	PR #1895: LogSafeMessage 7 tests, 3397->340
 review:openregister:10311:fff14172	APPROVE: tests only; Repair 372 OK on merge with main	session-20261113T192651-cb1e4daf	2026-11-13T19:43:17Z
 cover:keepiq:c967a31fm10bf:e372e6ff	already done: lib/Event/*.php at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:43:45Z
 verify:dossiq:6441:da6adcc7	GREEN 6441, GREEN 6442 (tests only, no new failures)	session-20261113T192653-93fd55cc	2026-11-13T19:43:45Z
+cover:shillinq:05639debm7b6b:d33e6ea4	PR #3014: PivotLabelsTest (3 tests), lib/Service/Pivot now 185/185 stmts; suite 10394->10397, 1 inherited failure	session-20261113T192701-f224cbcf	2026-11-13T19:43:55Z
