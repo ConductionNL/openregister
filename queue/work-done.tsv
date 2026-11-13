@@ -4776,4 +4776,5 @@ build:openregister:geometry-on-a-map	failed: too big for one task: new leaflet/l
 review:openregister:10159:e1a9d9d7	stale	session-20261113T074532-3dc49c57	2026-11-13T12:15:45Z
 review:openregister:10143:ad7721b9	APPROVE (new uncalled guard class; suites green; follow-up noted on MySQL literal escapes)	session-20261113T104531-16da055e	2026-11-13T12:16:09Z
 build:openregister:config-import-seed-objects	PR #10166: @self.id seed identity + 11 tests for top-level objects; 3.3 live smoke left	session-20261113T114525-2ca68289	2026-11-13T12:16:23Z
+build:openregister:macro-flows-with-next-item	nothing to build here: 3.1 is a nextcloud-vue change, 4.1 a live e2e	session-20261113T104527-c302106c	2026-11-13T12:16:25Z
 review:openregister:10150:92053a54	APPROVE	session-20261113T111529-f2ee6930	2026-11-13T12:16:25Z
