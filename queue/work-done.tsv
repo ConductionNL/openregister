@@ -3114,3 +3114,4 @@ gap:humaniq:19:4c6ff92f	already done (lizard -C 30: no function over CCN 30 on d
 cover:dossiq:f8a113c5m7e79:52aafbe5	PR dossiq#6319: 7 tests + 1 metadata fix, Vth 319->355/355 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:17:26Z
 verify:dossiq:6315:fcd7fc7c	GREEN #6315, #6316 (tests only, no new failures)	session-20261113T051709-e616bf69	2026-11-13T07:17:29Z
 cover:shillinq:05639debmd8ee:84e9293a	PR #2902: LogPurchaseOrderMailerTest (3 tests); mailer 1->9/9 lines; lib/Service/PurchaseOrder 89.68->96.0%; suite 9400->9403, 1 inherited failure unchanged	session-20261113T044737-f37de8e3	2026-11-13T07:17:32Z
+cover:shillinq:05639debmd8ee:dfaef732	already done: lib/Notification/*.php at 95.29% lines (81/85) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:17:46Z
