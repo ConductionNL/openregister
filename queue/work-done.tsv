@@ -4165,3 +4165,4 @@ cover:shillinq:05639debm0c05:2befd24e	PR #2923: 4 tests, lib/Service/Asset 558/5
 verify:dossiq:6359:daa852c4	GREEN 6359, 6382, 6383: no new failures	session-20261113T081048-4978ac57	2026-11-13T10:08:48Z
 cover:portaliq:b60f3b81:e7fbb139	PR #2390: 27 tests for 5 Plans classes, lib/Service/Plans 96.39->100%, suite 4527->4554 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:09:57Z
 cover:dossiq:069ee2d6m7275:dfaef732	already covered: lib/Notification/*.php 100% (191/191) from its own tests; no PR	session-20261113T081048-4978ac57	2026-11-13T10:10:07Z
+cover:dossiq:069ee2d6m7275:8c6788f4	already done: lib/Service/Gdpr 237/237 lines (the one line a full-suite run read as uncovered, approvePreview, is hit by PlatformDataSubjectRightsTest::testApprovingAPreviewApprovesItOnThePlatform); earlier PRs -1 and -2 merged	session-20261113T081040-5e814df2	2026-11-13T10:10:17Z
