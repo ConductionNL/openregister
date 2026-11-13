@@ -6246,3 +6246,4 @@ verify:shillinq:2962:8a4de8a1	GREEN 2962,2988,2989,2990,2992,2993,2994; CONFLICT
 review:openregister:10298:02886e88	APPROVE: tasks.md only; cited tests pass	session-20261113T171137-8f22ecb0	2026-11-13T19:13:44Z
 cover:buildiq:70b3e29em7beb:60c2c265	PR #1558: 10 tests, lib/Controller/*.php 94.21%->95.01% (ExportsController 175->198/205); suite 2917->2927, same 1 inherited failure	session-20261113T175336-e3687686	2026-11-13T19:13:58Z
 verify:hermiq:1701:4e7fa927	3 GREEN (1701,1702,1703): test-only vitest, 1347 pass	session-20261113T185322-2911ee6d	2026-11-13T19:13:55Z
+cover:buildiq:70b3e29em7beb:a215617b	already done: lib/Integration/ 216/220 (98%) at e11fe26f, above 95 target	session-20261113T171137-8f22ecb0	2026-11-13T19:13:58Z
