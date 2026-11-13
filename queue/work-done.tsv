@@ -5298,3 +5298,4 @@ review:openregister:10252:f7ab1269	APPROVE: tests-only, 3 breakLock tests pass o
 cover:stackiq:9ac19b3amc14f:2302034c	already done: lib/Service/Cmdb + lib/Service/Stackiq at 98.2% lines (56 uncovered edge lines left across 8 files); suite 3320 tests OK; no PR	session-20261113T134531-53f143d2	2026-11-13T13:48:18Z
 cover:versioniq:1b35eed9mf055:72b7d712	PR #678: 28 tests, lib/Service/Installer 90.3->96.6%	session-20261113T081048-4978ac57	2026-11-13T13:48:29Z
 gap:launchpad:dompurify:burn1	already done: PR #1188 by another worker while this one restarted; local duplicate discarded (note: prod build passes here with NODE_OPTIONS=--max-old-space-size=3072)	session-20261113T091533-b7a00bc3	2026-11-13T13:48:52Z
+cover:buildiq:70b3e29ema699:38e80a9f	already covered: lib/Command 349/350 lines (99.7%); only uncovered line is unreachable (getSchemas(): array), no PR	session-20261113T134554-ac2fc6ec	2026-11-13T13:48:59Z
