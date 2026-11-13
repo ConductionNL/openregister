@@ -1221,3 +1221,4 @@ buildiq	1522	0c3880ee840a4c5651628a5abf70210daa683b83	MERGED	merge-local	GATE OK
 decidiq	2078	9c92ad85d3e9164008f1fbdc45d230b535d42e6f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2437	3fbcfb37643f1cf35925da07b278b7b36d89ee8e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2418	651bdf537da526cbf458e3e83aa7990798e7ff71	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2419	6339bf2933eda835ac5522e585535cd86fcf1bc7	SKIP	merge-local	GATE UNMEASURED 6339bf2933 does not merge cleanly onto development
