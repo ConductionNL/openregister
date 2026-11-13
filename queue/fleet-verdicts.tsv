@@ -4421,3 +4421,4 @@ dossiq	6191	d6d28a6c216fb3c18af1d4109cfb180b9463fa8c	GREEN	worker-24	13231 tests
 dossiq	6192	074dda8cf6542cedb9bff39d6d43affac92e78bc	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6193	d84221538903c4a475defb6284e1b2b9ac939c1a	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6194	8a0eeaf35c40e7dc9b64d643fcdd3091d019d1dd	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
+buildiq	1469	32a620ea17cf85a0557a4a262d61bb3d5fb1ccc2	BLOCK	worker-16	php 2326 tests, baseline 2299 with 5 failures and 1292 errors (inherited, same set), 0 new; behaviour change: new global middleware adds headers and rewrites API error bodies for every API route, duplicates routes under /api/v1, new public endpoint - needs human review
