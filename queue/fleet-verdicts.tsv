@@ -6253,3 +6253,4 @@ buildiq	1559	1179f9307d906faaa24f1864ae2eef5384a6f526	GREEN	worker-20	2920 tests
 hermiq	1705	ff5eebe38947790d2a1958e4c50eaad7a07721a5	GREEN	worker-29	tree 4563 tests; baseline 4562 with 172 inherited fails; 0 new failures; test-only
 hermiq	1706	0f12ea39eec58d63ec7641303b372f0152a30f10	GREEN	worker-29	tree 4563 tests; baseline 4562 with 172 inherited fails; 0 new failures; test-only coverage metadata
 shillinq	2976	463e530e5ce4c62bf557a6726e76bb4791cc3644	GREEN	worker-51	builds sales-cancellation + ledger-journal-line-dimensions per specs; phpunit 10420 run, 1 failure = inherited clock-bound PaymentWebhookIntakeCharacterisationTest (red on development); vitest 2295 pass
+shillinq	3011	f3df3b2e7509bbdc38ce96b8b25afb8ab83f4843	CONFLICT	worker-51	conflicts with #2976 in appinfo/info.xml, l10n/en.js, en.json, nl.js, nl.json, tests/fixtures/register-versions.lock.json
