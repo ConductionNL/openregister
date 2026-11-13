@@ -2164,3 +2164,4 @@ cover:integriq:92114ab0m1534:jsd8a9d314	already done: open PR on quality/test-co
 cover:pipelinq:f67520ecmc4ba:8225bf5e	already covered: quality/test-coverage-8225bf5e-1 (run/job/access) is merged; ExportExecutionService has a 7-scenario characterisation test; every other class has dedicated tests; no PR	session-20261113T024654-6600dc41	2026-11-13T04:34:57Z
 cover:pipelinq:f67520ecmc4ba:jsccb0cd24	PR pipelinq#3651: export forms + run detail render spec, 11 tests; src/views/export 80.8%->94.73% statements	session-20261113T031701-b518f7f8	2026-11-13T04:34:54Z
 cover:pipelinq:f67520ecmc4ba:jsd48eb217	PR pipelinq#3652: +5 vitest specs (agentProfiles answer shapes, prospect removal); store modules gaps closed; vitest 3571 -> 3576	session-20261113T034632-47095943	2026-11-13T04:35:05Z
+cover:integriq:92114ab0m1534:2b49da71	already done: lib/Adapters/Slo 736/743 statements covered at development	session-20261113T031700-46f75510	2026-11-13T04:35:18Z
