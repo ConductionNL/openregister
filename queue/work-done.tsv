@@ -4894,3 +4894,5 @@ build:openregister:platform-user-migrator	failed: worker rules forbid build task
 build:openregister:platform-capability	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:08Z
 build:openregister:recompute-and-reindex-on-demand	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:14Z
 build:openregister:property-explicit-reveal	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:20Z
+build:openregister:property-source-vocabulary	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:26Z
+build:openregister:records-copy-with-links	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:34:39Z
