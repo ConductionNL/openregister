@@ -861,3 +861,6 @@ stackiq	1831	aee66dfb34c759e7bc015e4533d1b44807318ee8	MERGED	merge-local	GATE OK
 stackiq	1667	a3f611b561a45d019cb61c62eb97bb6a557d9d71	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1694	80a57d10ea21f501a8e13eeebc698c495ba1d4b4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1158	b474d64daa995219058cd48368336db463978f01	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	merge-local	GATE UNMEASURED fetch failed
+keepiq	1714	79e77cf1f5426117c830b6bf6cd9ca375522645c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1726	8cece26113c4782458f5b99456e8b8bfa752bc17	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
