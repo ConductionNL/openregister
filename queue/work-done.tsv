@@ -4525,3 +4525,4 @@ cover:pipelinq:7f9dc8e6m84dd:js3bd90bcb	PR #3751: admin/marketing/pos components
 review:openregister:10125:07781b73	APPROVE (tests-only; new tests + Architecture green on merge with main)	session-20261113T064518-860c039d	2026-11-13T11:28:25Z
 merge:stackiq:1693:18323ea6	merge-local over 2 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:28:36Z
 merge:stackiq:1870:019ffaca	merge-local over 2 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:28:36Z
+cover:pipelinq:7f9dc8e6m84dd:e372e6ff	already covered: lib/Event/*.php 100% (87/87) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T11:28:42Z
