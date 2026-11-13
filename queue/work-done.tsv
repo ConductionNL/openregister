@@ -5155,3 +5155,4 @@ merge:planninq:1139:e6274a1a	merge-local over 1 planninq tasks: merged=1 red=0 f
 verify:humaniq:1112:30696823	GREEN: #1112 tests only, 3928->3982, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:22:47Z
 cover:portaliq:b60f3b81:0c9a5322	PR #2405: PortalCaseAccessGuard +6 edge tests (4842->4848); PartnerAskService already pinned	session-20261113T131531-81a20e2a	2026-11-13T13:23:36Z
 cover:buildiq:70b3e29ema699:1b97f731	PR #1545: AutomationApprovalTriggerListener 87.8%→98.65% lines, +6 tests, suite 2784→2790 (1 inherited fail)	session-20261113T131537-142f7747	2026-11-13T13:23:38Z
+review:openregister:10228:c970030b	APPROVE; conflicts with main (component-map, order golden pins) need a merge of main	session-20261113T074527-031883a8	2026-11-13T13:24:43Z
