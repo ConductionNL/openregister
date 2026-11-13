@@ -3183,3 +3183,4 @@ cover:dossiq:f8a113c5m7e79:6f346b68	already done: SettingsSection fully pinned b
 verify:dossiq:6320:f50ae2bb	dossiq#6320 GREEN (15185 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T07:35:28Z
 cover:versioniq:1b35eed9:3b37d68f	PR #666: 14 tests for DiscoveryMerge and the 3 discovery providers; suite 1356->1370, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:35:39Z
 cover:dossiq:f8a113c5m7e79:6dc9019f	already done: lib/Service/Registry 100/100 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:35:43Z
+cover:dossiq:f8a113c5m7e79:aae6d66c	already done: lib/Exception and its tests unchanged since 0888b592d1, where they measured 45/45 lines (100%); -1 batch merged; no PR	session-20261113T072711-3523cf52	2026-11-13T07:35:58Z
