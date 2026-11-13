@@ -6551,3 +6551,6 @@ cover:dossiq:069ee2d6mbd37:6a58479a	already done: lib/Service/Support/*.php at 7
 verify:filinq:2053:15844216	GREEN 2053,2056,2057; BLOCK 2058 (editor path skips write guards); CONFLICT 2054,2055,2059	session-20261113T185324-28e07ab2	2026-11-13T20:07:53Z
 review:openregister:10318:87733f80	APPROVE: tests green on merge with main, phpstan clean	session-20261113T195351-5d22eaae	2026-11-13T20:08:07Z
 cover:dossiq:069ee2d6mbd37:3ee9dda7	already done: lib/Service/Custody/*.php at 99.84% (628/629) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:11Z
+cover:dossiq:069ee2d6mbd37:38e80a9f	already done: lib/Command/*.php at 99.59% (734/737) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:24Z
+cover:pipelinq:7f9dc8e6m8ce9:36ac5d07	no PR: lib/Service/LineTotals already 100% lines (LineRollUp 41/41, LineTotalMath 17/17, LineParent 1/1) under 30 tests incl. edge-case suites	session-20261113T195351-a32c6d55	2026-11-13T20:08:49Z
+verify:filinq:2060:d629df5c	GREEN 2060,2062-2066,2068; RED 2061 (deep-link route test); CONFLICT 2067 (register files)	session-20261113T175327-6e4e7f28	2026-11-13T20:08:48Z
