@@ -139,7 +139,7 @@ final class ValidationErrorMessages {
 		}
 
 		return match ($keyword) {
-			'required' => $this->requiredMessage(args: $error->args()),
+			'required' => $this->requiredMessage(args: $error->args(), path: $path),
 			'type' => $this->typeMessage(error: $error, path: $path),
 			'minItems', 'maxItems' => $this->itemCountMessage(error: $error, path: $path),
 			'minLength', 'maxLength' => $this->lengthMessage(error: $error, path: $path),
@@ -181,14 +181,24 @@ final class ValidationErrorMessages {
 	/**
 	 * The message for missing required properties.
 	 *
+	 * A key missing inside a nested object is named by its full path
+	 * (`contactgegevens.email`), so the caller can tell which object lacks it.
+	 *
 	 * @param array<string, mixed> $args The error's arguments.
+	 * @param string               $path The path of the object missing the keys, `root` for the document.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-002
 	 */
-	private function requiredMessage(array $args): string {
+	private function requiredMessage(array $args, string $path='root'): string {
 		$missing = ($args['missing'] ?? []);
 		if (is_array($missing) === false || count($missing) === 0) {
 			return 'Required property is missing';
+		}
+
+		if ($path !== 'root') {
+			$missing = array_map(static fn (mixed $key): string => $path.'.'.$key, $missing);
 		}
 
 		if (count($missing) === 1) {

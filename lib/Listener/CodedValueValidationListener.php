@@ -57,6 +57,7 @@ use Throwable;
  * Validates an object's coded values before it is persisted.
  *
  * @spec openspec/specs/skos-concept-registers/spec.md
+ * @spec openspec/changes/modelling-stated-requirements/specs/skos-concept-registers/spec.md#REQ-MSR-003
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
