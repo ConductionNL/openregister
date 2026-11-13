@@ -6790,3 +6790,4 @@ build:integriq:connectors-course-marketplace	nothing to build: every code task i
 verify:opencatalogi:2613:97adbb72	4 GREEN (2613-2616); vitest 855 passed; jest failing suites 33 -> 31; PHP 2 inherited	session-20261113T182404-f2c28226	2026-11-13T20:55:14Z
 verify:opencatalogi:2617:5cacb577	7 GREEN (2617-2623), no conflicts, no new failures	session-20261113T204539-805bb895	2026-11-13T20:55:50Z
 verify:hermiq:1715:01e000a0	1715 GREEN (0 new failures)	session-20261113T202607-6c22f6b2	2026-11-13T20:55:58Z
+build:buildiq:ai-copilot-documents-and-code-help	partial: PR #1572, T01 (shared CopilotTextTask seam, 6 tests); T02-T11 left (assist endpoint, UI, documents, stories); suite 2917->2923	session-20261113T192651-cb1e4daf	2026-11-13T20:56:04Z
