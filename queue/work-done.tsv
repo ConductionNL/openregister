@@ -5073,6 +5073,7 @@ build2:openregister:fields-a-user-adds-and-choices-a-record-narrows	already buil
 review:openregister:10204:095193e3	APPROVE: new uncalled classes, tests and Architecture green; 6 risky tests noted	session-20261113T101609-bc51215d	2026-11-13T13:06:01Z
 cover:openregister:7350e3efma401:0b640b77	already done: lib/Service/ObjectSource/ at 99.74% (1923/1928) on main after test/coverage-0b640b77-1 merged	session-20261113T124807-b8fee1f0	2026-11-13T13:06:31Z
 build2:openregister:flow-task-inbox-projections	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:07:15Z
+cover:openregister:7350e3efma401:js0b5eefce	PR #10226: object-modal DOM render goldens + TransferMessages (0->100%); dir lines 90.89->92.33, funcs 72.76->79.27	session-20261113T121557-e4ef0d76	2026-11-13T13:07:24Z
 merge:shillinq:2819:4b0f7ec1	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2938:96c3cb02	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2924:99c0bfff	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
