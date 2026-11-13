@@ -7201,3 +7201,4 @@ build4:openregister:query-filter-through-a-reference	partial: PR #10449 applies 
 build4:openregister:platform-share-provider	partial: PR #10450 routes platform-surface shares on object folders through the gate (opt-in + bit mapping); IShareProvider 1.1/1.2, e2e, live verification left	session-20261113T213320-1f5acbff	2026-11-13T22:32:06Z
 review:openregister:10426:6d5c8a8f	APPROVE 10426: opt-in sync header for deferred events, default unchanged	session-20261113T205332-17038cbf	2026-11-13T22:32:24Z
 fix:learniq:2484:d24ba9f3	pushed e9288c776175e1ab9a4a07620c3270db1881308e: pyc files untracked, __pycache__ ignored; REVERIFY recorded	session-20261113T202626-976dcdac	2026-11-13T22:32:31Z
+cover:pipelinq:7f9dc8e6m8ce9:34763eb4	PR #3798: 22 edge-case tests for ApiContractMiddleware (58/58 lines); suite 7328->7350, 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:32:44Z
