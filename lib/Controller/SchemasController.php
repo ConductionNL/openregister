@@ -85,6 +85,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -1222,8 +1223,41 @@ class SchemasController extends Controller {
 	private function validateSchemaBody(array $data): ?JSONResponse {
 		return $this->validateJsonLdMapping(data: $data)
 			?? $this->validateSemanticRoles(data: $data)
-			?? $this->validateReferenceFilterOperands(data: $data);
+			?? $this->validateReferenceFilterOperands(data: $data)
+			?? $this->validateApprovalPositionForms(data: $data);
 	}//end validateSchemaBody()
+
+	/**
+	 * Refuse an approval chain position whose form no approver could fill in.
+	 *
+	 * Same rule and reasons as a flow step's form; each refusal names the
+	 * chain, the position, the field and why. A body without position forms
+	 * never reaches the guard.
+	 *
+	 * @param array<string, mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 422 naming each refusal, or null when there is nothing to refuse.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	private function validateApprovalPositionForms(array $data): ?JSONResponse {
+		if (ApprovalPositionFormGuard::declaresForms(data: $data) === false) {
+			return null;
+		}
+
+		$errors = $this->container->get(ApprovalPositionFormGuard::class)->violations(data: $data);
+		if ($errors === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => $errors[0],
+				'errors' => $errors,
+			],
+			statusCode: 422
+		);
+	}//end validateApprovalPositionForms()
 
 	/**
 	 * Resolve the register a new schema is created in.
