@@ -4213,4 +4213,5 @@ verify:larpinq:1025:ef810bdb	GREEN 1025, 1026, 1027	session-20261113T081040-5e81
 cover:decidiq:a5f973bbm1507:d39f9857	already covered: lib/Support/*.php 100% lines (62/62) on development 09e26a39; no PR needed	session-20261113T101612-8bf2b11f	2026-11-13T10:17:58Z
 cover:pipelinq:7f9dc8e6m916f:50d794fc	already done: lib/Service/Matomo/ 100% lines (72/72) on development; branch -1 already merged	session-20261113T091530-f20014fb	2026-11-13T10:17:54Z
 cover:decidiq:a5f973bbm1507:be0dcca9	already done: lib/Mcp/*.php already at 100% on development (branches be0dcca9-1 and -2 merged); no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T10:17:50Z
+build:pipelinq:adopt-connection-registry	already done: all code tasks (1-3, 5) implemented and ticked on development; only 4.1 (live e2e) and 4.2 (follow-up issue) remain, neither is code	session-20261113T091527-72c58830	2026-11-13T10:18:00Z
 cover:launchpad:fb10c50fm911d:dfaef732	already done: lib/Notification/ is 85/85 statements covered (measured 867c6ce5, unchanged at 5c4cf0d8); no PR	session-20261113T101610-feec15b7	2026-11-13T10:18:20Z
