@@ -2667,3 +2667,4 @@ cover:dossiq:f8a113c5mac88:913a213e	PR #6296: 6 tests for PlannedSeriesLedger::o
 cover:keepiq:c967a31fm0090:f545d745	PR #1743: +8 tests (LegacyRegisterPlanner dataTables, seed skips); suite 4564->4572 OK	session-20261113T054520-0c8540f8	2026-11-13T06:10:16Z
 cover:shillinq:05639debmd8ee:jsd337d873	PR #2880: 51 vitest tests, target dirs 29.9->54.0% lines	session-20261113T051709-e616bf69	2026-11-13T06:10:10Z
 cover:shillinq:05639debmd8ee:js8d946701	PR shillinq#2881: 36 vitest tests (Index load/live/nav, Detail save/delete); src/components/BudgetBBVMapping 49.9%->89.4% lines; vitest 1331->1367 all passing	session-20261113T053904-36dcee67	2026-11-13T06:10:20Z
+cover:dossiq:f8a113c5mac88:8fea83ca	already done: lib/Service/CaseType/*.php at 90.18% statements (1350/1497) on development, target 90, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:10:19Z
