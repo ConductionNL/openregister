@@ -3589,3 +3589,4 @@ cover:stackiq:9ac19b3am6096:59f569b2	already done: lib/Service/Settings/*.php at
 cover:buildiq:70b3e29embf07:f91e7417	no PR: lib/Service/Connection/ at 170/171 lines (pcov); the uncovered line is the single-candidate branch of a fixed two-entry constant	session-20261113T080549-dde3ba19	2026-11-13T08:47:41Z
 cover:stackiq:9ac19b3am6096:007dc1d0	already done: lib/Service/Cmdb/*.php 1491/1520 = 98.1% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:47:48Z
 cover:stackiq:9ac19b3am5ac4:jsea7197ec	already done: src/utils/* at 99.71% lines (vitest 2344 green)	session-20261113T072715-8f8a14e9	2026-11-13T08:48:04Z
+verify:integriq:3513:6811747d	3513 GREEN (8069 tests, no new failures; tests only)	session-20261113T071640-3ba6da34	2026-11-13T08:48:05Z
