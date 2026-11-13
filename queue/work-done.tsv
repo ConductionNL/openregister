@@ -4713,3 +4713,4 @@ cover:shillinq:05639debm0c05:5fe382d1	PR #2938: 11 tests, lib/Service/Import/*.p
 cover:larpinq:c4471360mcb1b:js5794e9fc	already covered: open branch quality/test-coverage-js-5794e9fc-1 (settingsView.spec.js) takes src/views/settings from 17.1% to 100% when applied, 281 tests green; no duplicate PR	session-20261113T074533-3e2a2da6	2026-11-13T12:03:58Z
 build:openregister:file-publication-window	already done: built on main in 6e8bc8f7db; open 6.1 (opencatalogi schema) and 6.2 (a decision) are marked out of this change	session-20261113T101609-bc51215d	2026-11-13T12:04:10Z
 review:openregister:10139:07832807	BLOCK: ComponentDefinitionTest 3 failures (component yaml not regenerated); rest fine	session-20261113T071633-17de823f	2026-11-13T12:04:52Z
+merge:learniq:2436:6a7e5f10	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:05:00Z
