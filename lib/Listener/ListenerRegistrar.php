@@ -589,6 +589,15 @@ final class ListenerRegistrar {
 		// refused with the count and the cap. Updates never count.
 		$context->registerEventListener(ObjectCreatingEvent::class, ObjectQuotaListener::class);
 
+		// Change gates (records-change-held-for-approval): a write touching a
+		// property a chain's `gate.change` names is stored as a pending change
+		// and stopped, so the record stays as it was until a second person
+		// approves. Registered after the validation, constraint and quota
+		// guards, so only a write those would accept is held, and after the
+		// transition gate, so a refused transition is never also held.
+		$context->registerEventListener(ObjectCreatingEvent::class, ChangeGateListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, ChangeGateListener::class);
+
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
 		// is created/updated/deleted, recompute the referenced master's golden

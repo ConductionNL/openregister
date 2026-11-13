@@ -1251,6 +1251,7 @@ Listener/AggregationCacheInvalidationListener.php,51,Listener,Flows,Flows/Listen
 Listener/AnnotationNotificationListener.php,116,Listener,Flows,Flows/Listener/AnnotationNotificationListener.php,0,,Processes
 Listener/ApprovalChainAdvanceListener.php,61,Listener,Flows,Flows/Listener/ApprovalChainAdvanceListener.php,0,,Processes
 Listener/ApprovalChainGateListener.php,213,Listener,Flows,Flows/Listener/ApprovalChainGateListener.php,0,,Processes
+Listener/ChangeGateListener.php,227,Listener,Flows,Flows/Listener/ChangeGateListener.php,0,,Processes
 Listener/ArchivalNominationListener.php,51,Listener,Compliance,Compliance/Listener/ArchivalNominationListener.php,0,374,Compliance
 Listener/AssigneeFollowListener.php,88,Listener,Flows,Flows/Listener/AssigneeFollowListener.php,0,,Processes
 Listener/AssigneeFollowRun.php,,Listener,,,,,Processes
