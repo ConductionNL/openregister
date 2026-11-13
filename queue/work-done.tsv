@@ -6619,3 +6619,4 @@ cover:keepiq:c967a31fm10bf:6925f818	already done: lib/SetupCheck/*.php is 100% l
 fix:filinq:2058:e0070c28	fixed: editor delivery now passes the write gate; new head a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155, REVERIFY recorded	session-20261113T175327-6e4e7f28	2026-11-13T20:15:10Z
 cover:opencatalogi:fc83bfb1:59826f43	PR #2607: OpenCatalogiAdmin 54% to 88% lines, 6 tests; suite 5254 to 5260, same 2 inherited failures	session-20261113T195345-400acccd	2026-11-13T20:15:18Z
 fix:filinq:2061:0c60fc72	fixed: deep-link test reads manifest.d fragments; pushed cbadad25, REVERIFY recorded	session-20261113T195348-92cf741a	2026-11-13T20:15:47Z
+cover:integriq:92114ab0m0593:4f1edf62	PR #3535: 20 tests over 6 Dso classes; dir 96.72%->99.61%; suite 8222->8242, no new failures	session-20261113T192700-55dce75a	2026-11-13T20:16:04Z
