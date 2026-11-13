@@ -4423,3 +4423,4 @@ verify:stackiq:1869:167c09ef	GREEN x4 (1869-1872): +19 tests, suite green	sessio
 verify:shillinq:2930:0f1ee0c3	2930 GREEN; 10100 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T11:11:35Z
 cover:stackiq:9ac19b3am10f3:59826f43	already done: lib/Settings/*.php is only StackiqAdmin.php, at 100% lines (measured this session; branch -1 merged)	session-20261113T081046-f0858dc4	2026-11-13T11:11:50Z
 fix:pipelinq:3710:1dd8bd4a	conflict resolved, pushed d4f26fe4, REVERIFY recorded	session-20261113T071633-17de823f	2026-11-13T11:11:48Z
+build:pipelinq:leaf-integration-broadening	PR #3732: tasks 1.1-3.1 built (talk/deck/forms leaves as tabs, conformance test); 4.1 e2e and 4.2 live left	session-20261113T081048-4978ac57	2026-11-13T11:12:24Z
