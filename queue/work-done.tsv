@@ -2629,3 +2629,4 @@ merge:buildiq:1511:e5bd1f24	merge-local over 1 buildiq tasks: merged=1 red=0 fai
 cover:integriq:92114ab0m1534:a4a15698	PR #3487: 12 tests for PDOK geocoding/WFS HTTP clients; suite 7280->7292, 3 inherited	session-20261113T054519-189b2666	2026-11-13T06:03:50Z
 cover:buildiq:9930949bm5861:js4829b6aa	already done: src/views/* at 85.64% lines (1288/1504) on development f1c5b556, above 85 target (app 88.29%); no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:03:56Z
 verify:decidiq:2114:592205f0	GREEN 2114, 2115: 3398->3473 tests, all pass	session-20261113T054517-06ee2c47	2026-11-13T06:04:12Z
+cover:integriq:92114ab0m1534:a64a0bdb	already done: lib/Service/Tables/ 265/283 lines (93.6%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:04:45Z
