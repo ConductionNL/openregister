@@ -2144,6 +2144,10 @@ Service/Federation/ShareGrantor.php,57,Service,Access,Access/Service/Federation/
 Service/Federation/ShareTargets.php,60,Service,Access,Access/Service/Federation/ShareTargets.php,0,,Core
 Service/FederationShareService.php,116,Service,Integrations,Integrations/Service/FederationShareService.php,4,,Integrations
 Service/FieldEncryptionHandler.php,104,Service,Service,Service/FieldEncryptionHandler.php,0,,Core
+Service/File/AntivirusScan.php,54,Service,Service,Service/File/AntivirusScan.php,0,,Core
+Service/File/AntivirusScannerAdapter.php,167,Service,Service,Service/File/AntivirusScannerAdapter.php,0,,Core
+Service/File/AntivirusScannerInterface.php,43,Service,Service,Service/File/AntivirusScannerInterface.php,0,,Core
+Service/File/ArchiveMemberReader.php,127,Service,Service,Service/File/ArchiveMemberReader.php,0,,Core
 Service/File/CreateFileHandler.php,146,Service,Service,Service/File/CreateFileHandler.php,0,189,Core
 Service/File/DeleteFileHandler.php,71,Service,Service,Service/File/DeleteFileHandler.php,0,329,Core
 Service/File/ExecutableContentDetector.php,141,Service,Service,Service/File/ExecutableContentDetector.php,0,202,Core
@@ -2156,6 +2160,8 @@ Service/File/FilePublishingHandler.php,251,Service,Work,Work/Service/File/FilePu
 Service/File/FileValidationHandler.php,183,Service,Service,Service/File/FileValidationHandler.php,0,138,Core
 Service/File/FileVersioningHandler.php,139,Service,Service,Service/File/FileVersioningHandler.php,0,201,Core
 Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/FolderManagementHandler.php,0,31,Core
+Service/File/MalwareScanGate.php,226,Service,Service,Service/File/MalwareScanGate.php,0,,Core
+Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanRefusal.php,0,,Core
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Core
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Core
