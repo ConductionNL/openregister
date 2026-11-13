@@ -4795,3 +4795,4 @@ build:openregister:incremental-sync-for-api-consumers	partial: PR #10171 does se
 review:openregister:10151:af4ace77	APPROVE: tasks tick only, referenced tests exist	session-20261113T051703-1b54bfba	2026-11-13T12:19:57Z
 build:openregister:mdm-merge-relinks-every-reference	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:11Z
 build:openregister:leaf-mount-render-escape-hatch	partial: PR #10172 server half already on main (tests green), docs + ticks; JS/lib/app/ADR tasks are other repos	session-20261113T121536-3cb7eb71	2026-11-13T12:20:16Z
+build:openregister:modelling-rename-without-loss	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T12:20:17Z
