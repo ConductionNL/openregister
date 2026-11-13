@@ -3040,3 +3040,4 @@ verify:shillinq:2894:4765a5f3	2894 GREEN, 2895 GREEN (tests only; 9333 tests, 1 
 cover:hermiq:065f1631mfaac:d825828c	PR #1669: LiteracyCourse+LiteracyReport, 21 tests, suite 4185->4206 (inherited 146E/26F unchanged)	session-20261113T064518-860c039d	2026-11-13T06:57:25Z
 cover:shillinq:05639debmd8ee:437bbdf7	PR opened: 6 tests for RuleCatalogue counts, Violation; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:58:17Z
 cover:shillinq:05639debmd8ee:b2e6293a	PR #2898: 3 behaviour test files/25 tests for VatBbvLedgerTailChecks, VatChecks, InvoiceMentionsTailChecks; Standards/Checks 86.38->90.02%; suite 9316->9341, 1 inherited failure unchanged	session-20261113T044737-f37de8e3	2026-11-13T06:58:43Z
+cover:dossiq:f8a113c5m7e79:8b886c00	already done: lib/Service/People/*.php at 90.77% lines (895/986) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:58:55Z
