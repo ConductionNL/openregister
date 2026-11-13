@@ -2517,3 +2517,4 @@ merge:integriq:3425:36e6195d	stale	feeder	2026-11-13T05:45:34Z
 cover:shillinq:05639deb:34763eb4	already done: lib/Middleware/*.php 58/59 (98.31%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:46:55Z
 cover:pipelinq:7f9dc8e6mc4ba:0a8f160f	already done: lib/Service/Sla/ at 100% lines (212/212) on development bb7a7d06c; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:47:13Z
 cover:openregister:7350e3efmaea4:js0b5eefce	PR #10106: 12 DOM tests for MigrationObject (65.3->98.9% lines; dir 75.1->78.3%); MergeObject/ViewObject templates remain	session-20261113T051707-6c971ec6	2026-11-13T05:47:23Z
+cover:decidiq:a5f973bbma14b:dfaef732	already done: lib/Notification/*.php at 100% (53/53 statements) on development, 23 non-risky tests	session-20261113T051708-7d5f6071	2026-11-13T05:47:21Z
