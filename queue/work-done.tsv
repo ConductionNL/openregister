@@ -4078,3 +4078,4 @@ cover:learniq:e6498dddm0533:9d3a1784	PR #2462: LtiAgsScorePollJob+EngagementSign
 verify:dossiq:6364:dcc73590	6 GREEN (6364, 6365, 6367-6370), 1 RED (6366: new notificationLabels vitest failure for termResumedAfterPause)	session-20261113T084521-fd8a31c7	2026-11-13T09:55:45Z
 cover:shillinq:05639debm0c05:js6cca7802	PR #2917: +6 vitest specs (58 tests) covering 7 budget/inventory/dashboard/budget-charts components; suite 1775->1833 green, total cov 59.8->61.0%	session-20261113T094602-d25cda2a	2026-11-13T09:55:53Z
 cover:shillinq:05639debm0c05:js255f2b0f	already done: src/components/three-way-match/ 222/236 = 94.1% >= 90	session-20261113T051703-1b54bfba	2026-11-13T09:56:12Z
+verify:learniq:2419:6e77ebc6	stale	session-20261113T064518-860c039d	2026-11-13T09:56:05Z
