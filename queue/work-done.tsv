@@ -6413,9 +6413,16 @@ verify:shillinq:3004:8e0b7472	GREEN 3004 (spec builds; only inherited failure)	s
 cover:opencatalogi:fc83bfb1:34763eb4	PR #2605: 1 test, ApiContractMiddleware 57/57 stmts; suite 5254->5255, 2 inherited failures	session-20261113T192701-f224cbcf	2026-11-13T19:46:31Z
 cover:portaliq:b60f3b81m4ccb:4d777c35	PR portaliq: 9 tests; Notifications 94.18% -> 96.88%	session-20261113T175332-5effc865	2026-11-13T19:46:49Z
 verify:keepiq:1766:c4b3977d	GREEN #1766	session-20261113T172328-c860ad55	2026-11-13T19:46:59Z
+measure:pipelinq:20261113h18	js 92.59% (641 files/4804 tests pass; one unhandled rejection in a CustomerLookupModal test); php skipped (no coverage driver)	session-20261113T190954-c894781f	2026-11-13T19:47:16Z
 cover:dossiq:069ee2d6mbd37:js0023cfc7	PR #6445: 26 tests for 5 dialogs; src/dialogs 91.16%->92.70%; suite 1 inherited failure unchanged	session-20261113T192700-f21ebd18	2026-11-13T19:47:05Z
 cover:keepiq:c967a31fm10bf:0d67c1f3	already done: lib/Service/Siem/ at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:47:15Z
 cover:portaliq:b60f3b81m4ccb:e7fbb139	already done: lib/Service/Plans 693/693 statements covered on development	session-20261113T175332-5effc865	2026-11-13T19:47:22Z
 gap:opencatalogi:19:4c6ff92f	already done: lizard -C 30 -w lib src reports no function over CCN 30 on development (max 26)	session-20261113T192701-f224cbcf	2026-11-13T19:47:30Z
 cover:opencatalogi:fc83bfb1:0e7f2f9f	PR opened: BroadcastResult + TermEngineCall 10 tests, 5254->5264, same 2 inherited failures	session-20261113T192659-0ddb618f	2026-11-13T19:47:37Z
+cover:integriq:92114ab0m0593:2b49da71	already done: lib/Adapters/Slo/*.php measured ~99% (only 7 defensive-guard lines uncovered), above the 95 target	session-20261113T171141-a3907367	2026-11-13T19:47:42Z
 cover:portaliq:b60f3b81m4ccb:e372e6ff	already done: lib/Event 113/114 statements (99%) on development	session-20261113T175332-5effc865	2026-11-13T19:47:37Z
+gap:keepiq:19:4c6ff92f	already done: lizard -C 30 -w finds no function over CCN 30 in keepiq development	session-20261113T172328-c860ad55	2026-11-13T19:47:47Z
+cover:portaliq:b60f3b81m4ccb:5bae1f47	PR #2458: 8 tests over 3 Cms classes; suite 4914->4922, no failures	session-20261113T182349-6568f680	2026-11-13T19:47:59Z
+cover:keepiq:c967a31fm10bf:59826f43	already done: lib/Settings/*.php 28/28 statements covered on ba7cc67b8 with dedicated AdminAreaSettings/AdminSettings tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T19:47:54Z
+build:filinq:document-intake-inbox	nothing to build: 2.2 replaced by another change and waits on integriq's WatchedFileArrivedEvent; 4.3 only screenshots on a live instance left	session-20261113T172328-c860ad55	2026-11-13T19:48:13Z
+verify:opencatalogi:2603:7a157e0f	GREEN 2603	session-20261113T175327-6e4e7f28	2026-11-13T19:48:27Z
