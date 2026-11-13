@@ -5647,3 +5647,4 @@ planninq\t1141\t7f921534a502d800e312feffeb03847a4ff4ffc7\tGREEN\tworker-41\ttree
 planninq\t1142\ta4237981c04f03ba9f7bc998b318ce7e16554a88\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only (dependency repo/guards, finance line, flow history, notification switch, settings override)
 planninq\t1143\t1e28bdba239ec64a5c2c38758a5b339e71a90b2b\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only vitest (case handover, flow, member search, phase files, register projects leaf, response helpers)
 planninq\t1144\t450a536e823032d93a329c4ea4e2b523cfee9a0c\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only (StandardProtocolPaths)
+buildiq	1536	c016cbe958596e3b52964082df7cb2b5e822da18	GREEN	worker-50	vitest 3880 baseline -> 3917 merged, 0 failures both; tests only (4 specs), eslint clean; PHP untouched
