@@ -4029,4 +4029,5 @@ cover:dossiq:069ee2d6m7275:71f63b5c	already done: Remedy, StepConfig, TemplateLi
 cover:buildiq:9930949bmc723:js39373934	PR #1536: page-editor/fields 86.6% -> 93.5%, +37 tests, suite 3895 green	session-20261113T071633-17de823f	2026-11-13T09:44:22Z
 cover:learniq:e6498dddm0533:83cf1abf	already done: lib/Service/Accessibility/ at 136/141 statements (96.5%) on development, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:44:36Z
 cover:dossiq:069ee2d6m7275:bf05c668	already covered: lib/BulkAction/*.php 97.0% (225/232) on development, above 95 target; no PR	session-20261113T081048-4978ac57	2026-11-13T09:45:20Z
+fix:learniq:2419:938831f6	failed: the three named changes are the PR's purpose and match the ApiContractMiddleware/ApiPathAliases already merged on decidiq and hermiq development (unversioned error bodies already left untouched); removing them would drop the feature, needs an owner decision to accept the API contract, no code changed	session-20261113T080556-d189f150	2026-11-13T09:45:29Z
 measure:filinq:20261113h08	php 95.28% (32490/34099), js 99.04% (3093/3123) at 7b9588e4	session-20261113T051703-1b54bfba	2026-11-13T09:45:28Z
