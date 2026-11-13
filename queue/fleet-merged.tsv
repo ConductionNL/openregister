@@ -1520,3 +1520,11 @@ dossiq	6297	02d23732634b8938c2fd3c745e331cbc11d04522	MERGED	merge-local	GATE OK 
 dossiq	6298	ce19e20e4a25a5727f25bf1f4638ca1602a0431d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6299	398fab3260cfdb65c7af81cb1108ec695b902690	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	RED	merge-local	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+planninq	1140	46ed3246c5b00dbf80611a12aa16cfd71d56deef	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1141	7f921534a502d800e312feffeb03847a4ff4ffc7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1142	a4237981c04f03ba9f7bc998b318ce7e16554a88	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1143	1e28bdba239ec64a5c2c38758a5b339e71a90b2b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1144	450a536e823032d93a329c4ea4e2b523cfee9a0c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1145	ea6e1f1d0c045de250e2789ebcbed07b6c33cd9e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1146	e8c6e28af21c534690d02b01df9297457476dbd9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+planninq	1147	c233be05d9daa5589da13ec0cbf7a34ba74104e7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
