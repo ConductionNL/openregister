@@ -3594,5 +3594,6 @@ cover:stackiq:9ac19b3am5ac4:js0f856eeb	already done: contracts/organisations/sbo
 verify:integriq:3513:6811747d	3513 GREEN (8069 tests, no new failures; tests only)	session-20261113T071640-3ba6da34	2026-11-13T08:48:05Z
 cover:stackiq:9ac19b3am6096:b5905f71	already done: lib/Service/Federation/ at 384/388 lines (99.0%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:48:08Z
 verify:learniq:2448:2609eebf	GREEN 2448, GREEN 2449: 6112 tests, 0 new failures	session-20261113T080552-2a8a5ff1	2026-11-13T08:48:23Z
+cover:buildiq:70b3e29embf07:d33a91b0	already done: batch -1 merged; lib/Service/Copilot now 149/151 statements (98.7%), above the 90% target; no PR	session-20261113T080556-d189f150	2026-11-13T08:48:32Z
 verify:launchpad:1178:68556454	GREEN #1178 (3843 tests, 0 new failures)	session-20261113T084525-9d890807	2026-11-13T08:48:45Z
 verify:launchpad:1177:891afa15	GREEN: +6 tests, suite green	session-20261113T051703-1b54bfba	2026-11-13T08:48:54Z
