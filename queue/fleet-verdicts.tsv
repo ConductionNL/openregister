@@ -5548,3 +5548,4 @@ dossiq	6341	b1fe51edc1a1017a4aa4911d352ca67f1e10c160	GREEN	worker-23	phpunit 153
 dossiq	6342	7cc0d42fdba93cbe6b752453ebd41feeec21cec8	GREEN	worker-23	phpunit 15389 on 3-PR tree vs baseline 15374 (19 failures inherited), 0 new; vitest 6511/6512, the 1 failure (capabilityComparison.spec.js) inherited from development; @spec comment and tasks.md tick only
 dossiq	6343	c16d5f4cc180ffd1db62119aa0af1b925aa56beb	GREEN	worker-23	phpunit 15389 on 3-PR tree vs baseline 15374 (19 failures inherited), 0 new; vitest 6511/6512, the 1 failure (capabilityComparison.spec.js) inherited from development; 2 new test files, tests only
 buildiq	1534	d7b0899512ac2d1d5ba2f184f8fb5ff730fb5070	GREEN	worker-21	2752 tests run, baseline 2747 with 1 inherited failure (ExportZipGoldenTest), 0 new failures; tests only
+stackiq	1863	222faabc2fd5cc98e2bfad56b8c300d28b23183e	GREEN	worker-06	vitest 2395 passed on tree (baseline 2344), php 3216 unchanged; tests-only, 0 new failures
