@@ -7005,3 +7005,4 @@ build4:openregister:identity-survives-a-move	partial: PR #10371 (task 2.2 relati
 build4:openregister:external-register-view-leaf	partial: PR #10372 (task 1.1 provider half: openconnector-http provider + tests); 1.2, 2.x, 3.1, widget tests left	session-20261113T205323-cbfd0ec4	2026-11-13T21:49:21Z
 review:openregister:10340:7e1545e6	APPROVE: frontend-only, change task 3.1, jest green, l10n same as main	session-20261113T212411-65b95fd9	2026-11-13T21:49:45Z
 build4:openregister:lifecycle-over-reference-field	PR #10373: task 2.3 reopen audited (graph moves declared, audit transitionKind reopen); 3.2 e2e left	session-20261113T213320-1f5acbff	2026-11-13T21:50:33Z
+review:openregister:10332:063891d5	APPROVE	session-20261113T205330-0e50ee62	2026-11-13T21:50:47Z
