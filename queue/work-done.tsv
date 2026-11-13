@@ -6966,3 +6966,4 @@ review:openregister:10337:b1b19aed	APPROVE 10337	session-20261113T213336-fe5ca7a
 verify:hermiq:1720:0063bbdc	GREEN 1720: 0 new failures (baseline 172 inherited), vitest green	session-20261113T213320-1f5acbff	2026-11-13T21:36:02Z
 build4:openregister:leaf-reference-provider-convergence	no code left: remaining unchecked tasks are human review, an ADR amendment in hydra (governance) and a conditional out-of-scope bridge	session-20261113T202612-d930c905	2026-11-13T21:36:22Z
 verify:dossiq:6465:1b023b9a	GREEN 6465 (0 new failures over 20 baseline)	session-20261113T213311-eb1a0842	2026-11-13T21:36:20Z
+review:openregister:10333:27616380	APPROVE: optional objectUuid on file rows, no access change; touched tests and Contract green, phpstan clean	session-20261113T195351-a32c6d55	2026-11-13T21:36:26Z
