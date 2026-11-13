@@ -6349,3 +6349,4 @@ filinq	2104	7da54a66f38e03bfe08d793a33aa0d33070005fa	CONFLICT	worker-23	conflict
 filinq	2105	3945b89aca168e142be7d36d0f5cbad34d0d145c	CONFLICT	worker-23	conflicts with 2097-2099 in the tree (l10n, filinq_register.json, DocumentProductionSchemaTest); clean against development alone, needs development merged in after those land
 filinq	2058	a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds edit-through-the-open-editor, write gate kept
 filinq	2061	cbadad25da4ec78389f05a6766757855f8ef4554	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds filinq-adopt-buildmanifest-pipeline, check:manifest passes
+filinq	2084	06007f380a5648d80ba61c605aee2d2cf3ff5320	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds signing-cancellation (creator-only cancel per change decision)
