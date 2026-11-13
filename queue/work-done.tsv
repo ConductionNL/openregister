@@ -2121,3 +2121,4 @@ review:openregister:10096:3186f335	APPROVE: tests only, all named suites green m
 cover:learniq:e6498dddma84a:jsd48eb217	already done: open branch quality/test-coverage-js-d48eb217-1 covers settings.js 84/84; store/modules 100% once merged; no new PR	session-20261113T034628-73e45054	2026-11-13T04:26:05Z
 cover:filinq:7a9ef677mc744:e01e982e	PR #2023: 29 cases for IdTokenValidator + SubjectPseudonymiser (both full), SignerAuth 95.5%->96.7%	session-20261113T031700-0e23c373	2026-11-13T04:26:25Z
 cover:filinq:7a9ef677mc744:js450fec42	PR #2024: 31 vitest tests for 3 integration leaf widgets; suite 595->626 passing	session-20261113T041649-bbede304	2026-11-13T04:26:39Z
+verify:buildiq:1503:92635760	3 GREEN (1503-1505); vitest 3457 passed, phpunit unchanged; JS tests only	session-20261113T034632-47095943	2026-11-13T04:27:14Z
