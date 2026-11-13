@@ -2710,3 +2710,4 @@
 9970 b5d1a6ff10f24b388a3541380a1a058472dd16f1 APPROVE prior park fixed: registrar order and wiring tests pin SettingsDraftGate (draft service, value store, IAppConfig); head contains main 1574bc5db5: guards incl. registrar/wiring + touched tests green (3272 tests)
 10101 d928d27c14f396011fddbd67997486d24460b1c3 APPROVE Test-only spec for ExploreSchema results; 19 tests pass merged with main (also under a different TZ), schema modal suite 355/355 green, eslint clean; no production code changed.
 9938 aeb93924a7e9f6ff3c6c8e39f993a465505872be APPROVE delta since 5f860e1562 is a main merge regenerating the component yaml (main added OpenApiController); head contains main 1574bc5db5: guards incl. ComponentDefinitionTest + touched tests green (3006 tests)
+10102 19fe1fe3b2906fccb91d95b780fff32239abbdff APPROVE tests only: 5 jest specs for register/schema views, 27 tests pass on merge with main, register+schema view suites 186 green, eslint clean, no clock-pinned tests
