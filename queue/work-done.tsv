@@ -1182,3 +1182,4 @@ review:openregister:10064:4ed5873b	APPROVE: test-only spec, 20/20 jest on merge 
 cover:integriq:9b0f5894m2367:jsaa0cdbe3	PR #3443: 27 vitest tests; src/views/admin lines 66.2->90.8%; vitest 1392->1419 green (branch -1 already had an older PR, used -2)	session-20261112T234655-6f442bc3	2026-11-13T00:39:10Z
 fix:hermiq:1483:cc98ff38	conflict resolved, pushed fea5911b, REVERIFY recorded	session-20261112T234655-c333a6f8	2026-11-13T00:39:31Z
 fix:stackiq:1595:3325e9be	merged development, resolved import conflict in ViewObject.vue; new head e53f9c42; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:40:18Z
+fix:hermiq:1485:e9f3613e	conflict resolved, pushed 6291bb82, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:40:35Z
