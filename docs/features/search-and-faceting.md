@@ -115,6 +115,22 @@ GET /api/objects/meldingen-register/meldingen?_order[aanmaakdatum]=desc&_order[t
 
 Multiple sort fields are supported. Metadata fields (`_created`, `_updated`, `_name`) are always sortable.
 
+### Indexing a field for filtering and sorting
+
+A record type with many rows stays fast to filter and sort on a field when that field has a database index. Set `indexed: true` on the property:
+
+```json
+"registratiedatum": { "type": "string", "format": "date", "indexed": true }
+```
+
+The magic table gets a btree index on the field's column (`{table}_{column}_sort_idx`) when the table is created, and on the next table sync for an existing table. The field does not become a facet: it is not added to facet responses. A property that is both `indexed` and `facetable` gets one index, the facet's. On PostgreSQL an indexed text field also gets a `lower()` index, because text sorts without regard to letter case.
+
+Switching the index off removes it on the next table sync. A sync drops only indexes that follow the naming convention and that no `indexed`, `facetable` or relation setting asks for any more; an index made by hand stays.
+
+**When to index**: a field people sort or filter on in long lists (a date, a status, a number), on a record type with thousands of rows or more.
+
+**What it costs**: every index makes each write a little slower and takes disk space, and building one on a large table can hold up writes on MariaDB and MySQL while it runs. Run the table sync at a quiet moment, and index only the fields lists actually use. Full-text search inside a value is a different index: `searchable` (PostgreSQL with `pg_trgm`).
+
 ## Pagination
 
 Two pagination modes:
