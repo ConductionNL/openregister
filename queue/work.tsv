@@ -3015,3 +3015,34 @@ cover:filinq:7a9ef677m5ffe:aae6d66c	cover	filinq	development	quality/test-covera
 cover:filinq:7a9ef677m5ffe:e372e6ff	cover	filinq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=2165;coverage=87.5;target=90.0	2026-11-13T03:05:30Z
 measure:launchpad:20261113h06	measure	launchpad	development	queue/coverage/launchpad.json	why=slices need per-directory coverage	2026-11-13T06:10:49Z
 measure:pipelinq:20261113h06	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T06:10:49Z
+verify:dossiq:6297:75308132	verify	dossiq	development	merge	prs=6297@02d23732634b8938c2fd3c745e331cbc11d04522,6298@ce19e20e4a25a5727f25bf1f4638ca1602a0431d,6299@398fab3260cfdb65c7af81cb1108ec695b902690	2026-11-13T06:15:20Z
+verify:buildiq:1515:2e932f04	verify	buildiq	development	merge	prs=1515@f64cdc78ecb9b030eff057ff587c30d684510998,1516@07f773068d0a7062086cacc160312a4a5942ade3	2026-11-13T06:15:20Z
+verify:pipelinq:3687:9aa599c7	verify	pipelinq	development	merge	prs=3687@9ccf26a2a05c80578b3f91b0c601630e96b36ec7	2026-11-13T06:15:20Z
+verify:integriq:3490:aaad3c8d	verify	integriq	development	merge	prs=3490@781879a6dc178141162f484a36769a0d1b709c53	2026-11-13T06:15:20Z
+verify:shillinq:2881:51a8663e	verify	shillinq	development	merge	prs=2881@1b8b6fd05913191413cd976010fb21ef6db4633d,2882@1543994b40a27e33174f9df3ddd6c067c43e85ab	2026-11-13T06:15:20Z
+verify:filinq:2039:7f191b05	verify	filinq	development	merge	prs=2039@fced2a3985448f72008a89b0167f5dd85f0a2b48,2040@5d6287c159854b619cc2f065d99bb3c8d2e3166e	2026-11-13T06:15:20Z
+verify:keepiq:1744:d6a55886	verify	keepiq	development	merge	prs=1744@3bb8b09fd9520402b5e7fd45f15489a52c2b4076	2026-11-13T06:15:20Z
+merge:dossiq:6293:2d658335	merge	dossiq	development	development	prs=6293@45a8e4961cd1f8917f4fa4c64722a4f9827f1049,6294@8b0e4c07ccc4d5871f40a53e780b55bbe7966730,6295@b7529b6eba7a36583a30a983d9c9d77520d1a926,6296@a097f841e1c254229756bbdd81837f2f5f68e42e	2026-11-13T06:15:20Z
+merge:buildiq:1514:88371e89	merge	buildiq	development	development	prs=1514@f6e59a65812a030b9d7779f48cbc1fdab5865e8c	2026-11-13T06:15:20Z
+merge:integriq:3488:fd671dbb	merge	integriq	development	development	prs=3488@25a19db1b9cdbcde1f993993ebe40b63f3373778,3489@81bddb71c9ad89f62072e4a7fc9552462dd9d650	2026-11-13T06:15:20Z
+merge:shillinq:2870:f9287f99	merge	shillinq	development	development	prs=2870@725902d10e2cfdac4608b465568b516920b423ba	2026-11-13T06:15:20Z
+merge:filinq:2037:dab70521	merge	filinq	development	development	prs=2037@78d82ccd53678f5e210155dba6e41e20374fbe79	2026-11-13T06:15:20Z
+cover:dossiq:f8a113c5mac88:e2e021bd	cover	dossiq	development	quality/test-coverage-e2e021bd	lang=php;dirs=lib/Service/Transitions/;focus=uncovered;weight=717;coverage=85.28;target=90.0	2026-08-15T01:20:54Z
+cover:dossiq:f8a113c5mac88:1174c39d	cover	dossiq	development	quality/test-coverage-1174c39d	lang=php;dirs=lib/Service/Support/;focus=uncovered;weight=378;coverage=85.28;target=90.0	2026-08-15T01:26:33Z
+cover:dossiq:f8a113c5mac88:39189253	cover	dossiq	development	quality/test-coverage-39189253	lang=php;dirs=lib/Service/Transitions/*.php;focus=thin;weight=9310;coverage=85.28;target=90.0	2026-08-15T00:42:51Z
+cover:dossiq:f8a113c5mac88:6a58479a	cover	dossiq	development	quality/test-coverage-6a58479a	lang=php;dirs=lib/Service/Support/*.php;focus=thin;weight=4197;coverage=85.28;target=90.0	2026-08-15T00:42:51Z
+cover:integriq:92114ab0m1534:c76ae287	cover	integriq	development	quality/test-coverage-c76ae287	lang=php;dirs=lib/Service/Forms/;focus=thin;weight=1084;coverage=88.01;target=90.0	2026-10-14T03:58:38Z
+cover:integriq:92114ab0m1534:225344a3	cover	integriq	development	quality/test-coverage-225344a3	lang=php;dirs=lib/Sources/Roster/;focus=thin;weight=1066;coverage=88.01;target=90.0	2026-10-14T03:58:56Z
+cover:integriq:92114ab0m1534:3bc85ed6	cover	integriq	development	quality/test-coverage-3bc85ed6	lang=php;dirs=lib/Service/Stuf/;focus=thin;weight=1053;coverage=88.01;target=90.0	2026-10-14T03:59:09Z
+cover:integriq:92114ab0m1534:f342c183	cover	integriq	development	quality/test-coverage-f342c183	lang=php;dirs=lib/Service/UwlrEduV/;focus=thin;weight=1050;coverage=88.01;target=90.0	2026-10-14T03:59:12Z
+cover:integriq:92114ab0m1534:63ce5d61	cover	integriq	development	quality/test-coverage-63ce5d61	lang=php;dirs=lib/PropertySource/Provider/;focus=thin;weight=1039;coverage=88.01;target=90.0	2026-10-14T03:59:23Z
+cover:shillinq:05639debmd8ee:568ec52a	cover	shillinq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=uncovered;weight=4053;coverage=85.47;target=90.0	2026-11-13T00:54:17Z
+cover:shillinq:05639debmd8ee:60c2c265	cover	shillinq	development	quality/test-coverage-60c2c265	lang=php;dirs=lib/Controller/*.php;focus=uncovered;weight=1992;coverage=85.47;target=90.0	2026-11-13T01:11:05Z
+cover:shillinq:05639debmd8ee:9d3a1784	cover	shillinq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=1020;coverage=85.47;target=90.0	2026-11-13T01:27:17Z
+cover:filinq:7a9ef677m5ffe:9ece5c6f	cover	filinq	development	quality/test-coverage-9ece5c6f	lang=php;dirs=lib/Controller/Support/;focus=thin;weight=1454;coverage=87.5;target=90.0	2026-11-13T03:21:52Z
+cover:filinq:7a9ef677m5ffe:1174c39d	cover	filinq	development	quality/test-coverage-1174c39d	lang=php;dirs=lib/Service/Support/;focus=thin;weight=1384;coverage=87.5;target=90.0	2026-11-13T03:23:02Z
+cover:filinq:7a9ef677m5ffe:00f8416c	cover	filinq	development	quality/test-coverage-00f8416c	lang=php;dirs=lib/Service/VeraPdf/;focus=thin;weight=1334;coverage=87.5;target=90.0	2026-11-13T03:23:52Z
+cover:filinq:7a9ef677m5ffe:aba6f390	cover	filinq	development	quality/test-coverage-aba6f390	lang=php;dirs=lib/Service/EntitySearch/;focus=thin;weight=1227;coverage=87.5;target=90.0	2026-11-13T03:25:39Z
+cover:filinq:7a9ef677m5ffe:0906d460	cover	filinq	development	quality/test-coverage-0906d460	lang=php;dirs=lib/Service/BulkSigning/;focus=thin;weight=1123;coverage=87.5;target=90.0	2026-11-13T03:27:23Z
+measure:buildiq:20261113h06	measure	buildiq	development	queue/coverage/buildiq.json	why=slices need per-directory coverage	2026-11-13T04:16:09Z
+measure:hermiq:20261113h06	measure	hermiq	development	queue/coverage/hermiq.json	why=slices need per-directory coverage	2026-11-13T06:15:20Z
