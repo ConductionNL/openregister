@@ -4537,3 +4537,6 @@ stackiq	1690	28600ec18a4194beb174f5b4ff9172a021ba47c7	CONFLICT	merge-local:merge
 stackiq	1704	c0e489945b519227edbe5c0f5099635460f73a0c	CONFLICT	merge-local:merge-gate	does not merge cleanly onto development at merge time; merge development in
 stackiq	1751	5af9cad65724ef8f4d7b3a4d9648c179c6e8310b	CONFLICT	merge-local:merge-gate	does not merge cleanly onto development at merge time; merge development in
 launchpad	1139	a06a3bc03ae70646a97f86da61f3466ff02ef1da	GREEN	worker-35	3552 tests run (+41), baseline 3511 OK/13 skipped, 0 new failures; tests only
+launchpad	1106	379ed362a8602c2cc372333770e6503a615453fd	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	RED	merge-local:merge-gate	GATE RED checker floor: adrvalidator: warn -> fail; secretscanning: pass -> fail; score: 77 -> 74
+launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
