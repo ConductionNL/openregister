@@ -5836,3 +5836,4 @@ cover:pipelinq:7f9dc8e6m16db:f3231970	already covered: lib/Service/ScheduledTask
 cover:stackiq:9ac19b3am9d24:17d367ab	already done: quality/test-coverage-17d367ab-1 merged, lib/Controller/Settings/ at 74/74 statements	session-20261113T172325-6eb25015	2026-11-13T18:08:49Z
 build:portaliq:intake-report-pages	partial: PR #2444 builds T07 (designer warning, excludedPaths in schema), T10 docs, T11; T01 live, T08 detail blocked by nextcloud-vue	session-20261113T175336-b2d7fc7c	2026-11-13T18:08:40Z
 build:portaliq:site-at-the-root-of-a-portal-host	partial: PR #2445 T8 Domains field-list settings + records; T8 return addresses and T7 live left; suite 4914->4915, 0 failures	session-20261113T172349-00278d9d	2026-11-13T18:08:58Z
+cover:stackiq:9ac19b3am9d24:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (205/205) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:08:51Z
