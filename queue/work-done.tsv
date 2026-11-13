@@ -4310,3 +4310,4 @@ cover:filinq:7a9ef677mb01f:519c54f6	PR #2050: +2 tests (EmlBackend FileService r
 build:pipelinq:lead-win-probability-recency	failed: permission (needs Vue edits in LeadList/PipelineBoard checked with eslint+vitest; npm ci is refused in this session). Note: library 2.180.0 already ships extend on index/detail (tasks 1.1/1.2 effectively done)	session-20261113T104529-f43c7561	2026-11-13T10:51:29Z
 cover:opencatalogi:fc83bfb1:f545d745	already done: lib/Repair/*.php 378/387 = 97.7% >= 95	session-20261113T051703-1b54bfba	2026-11-13T10:51:40Z
 cover:hermiq:065f1631m249e:7927b05b	PR #1683: 17 tests, Llm/*.php 96.2%->99.0% local, no new failures	session-20261113T104530-961e9992	2026-11-13T10:51:38Z
+cover:pipelinq:7f9dc8e6m916f:8c6788f4	already done: lib/Service/Gdpr/ 67/68 = 98.5% >= 90 (measure at ebef47bf)	session-20261113T051703-1b54bfba	2026-11-13T10:51:59Z
