@@ -2621,3 +2621,4 @@ cover:integriq:92114ab0m1534:2461af45	PR #3484: 35 phpunit tests, Auth/Idp 89.7-
 cover:integriq:92114ab0m1534:js9fcd1176	PR integriq#3486: 16 vitest tests for SyncReferenceList + SyncMappingPicker; src/views/Synchronization/ 81.2% -> 86.8%; vitest 1796 -> 1812 all pass	session-20261113T051714-4ad50f31	2026-11-13T06:02:00Z
 verify:dossiq:6291:0f971cd1	2/2 GREEN (6291, 6292): clean merge, lint ok, phpunit +20 tests, 19 inherited failures, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:02:36Z
 fix:decidiq:2098:4c96686d	sbom regenerated after merging development; new head a2a5fd1b, REVERIFY queued	session-20261113T054517-06ee2c47	2026-11-13T06:02:46Z
+verify:integriq:3483:3d577824	3483 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:02:57Z
