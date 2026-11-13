@@ -3869,3 +3869,4 @@ build:dossiq:dossiq-decisions-to-decidiq	partial: PR #6356 raises the Woo decisi
 build:dossiq:case-type-rights-enforced	PR #6357: task 3.3 (tenant checklist Mandates set from active mandates), 14 tests; suite 15420->15434, same 19 inherited failures	session-20261113T084521-4cd185d2	2026-11-13T09:26:30Z
 build:dossiq:intake-says-when-the-term-starts	already built: all dossiq code tasks ticked; left 2.1 rest (portaliq screen sentence, live e2e pass)	session-20261113T081048-4978ac57	2026-11-13T09:26:26Z
 build:dossiq:migrate-committees-to-decidiq	nothing buildable: only Task 4 (retire local committee schema) is open and deferred by its own acceptance criterion until the fallback is unreachable on supported installs	session-20261113T081046-f0858dc4	2026-11-13T09:26:46Z
+verify:dossiq:6351:910198bf	6351 GREEN, 6352 GREEN (tasks.md only; 19 inherited failures, none new)	session-20261113T091530-f20014fb	2026-11-13T09:27:01Z
