@@ -1750,3 +1750,5 @@ versioniq	673	c5d12bdd035942275433eab7fbe09f34e29edef1	MERGED	merge-local	GATE O
 versioniq	674	9d4240dd376faadbfe42cb6d484bd08b45b15e0a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	675	f64fa4537861e58b3c103d174b7c00ddb74b4acc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	676	d57f1dccda1378ed8abec3c1c2494ce367390123	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1540	73210916ebfaf905f7e6b2c4193b3465af270e53	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1541	681ca7547f32dc717f7deeec1a9cf0bcecf9d2ed	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
