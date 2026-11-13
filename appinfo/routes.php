@@ -460,6 +460,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // anon health, an intentional improvement over the login-gated bespoke
         // controller) and the standard {status, app, version, checks} shape.
         ['name' => 'AppHost\Controller\GenericHealth#index', 'url' => '/api/health', 'verb' => 'GET'],
+        // Readiness probe (production-observability): 503 while this app's migrations are pending or the
+        // database does not answer, so an orchestrator keeps the pod out of rotation instead of restarting it.
+        ['name' => 'AppHost\Controller\GenericReadiness#index', 'url' => '/api/ready', 'verb' => 'GET'],
         // URN resolution endpoints (RFC 8141 system-independent identifiers).
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],

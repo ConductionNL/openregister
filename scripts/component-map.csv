@@ -4024,3 +4024,4 @@ Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
+AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
