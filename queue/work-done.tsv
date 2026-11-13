@@ -6470,3 +6470,4 @@ build:filinq:hermiq-ai-tooling	partial: PR filinq#2060 builds the signing half (
 build:filinq:filinq-adopt-buildmanifest-pipeline	PR #2061: manifest.d fragments + buildManifest, 0-diff inventory; B-2.2 browser smoke left	session-20261113T185324-28e07ab2	2026-11-13T19:55:53Z
 build:filinq:flow-operations	partial: PR #2062 builds 1.1-1.2 (flowOperationRun schema, server-only writes, demo runs, 7 tests); operations, job and UI (2.x-4.x) left as one piece	session-20261113T175336-b2d7fc7c	2026-11-13T19:56:04Z
 cover:pipelinq:7f9dc8e6m8ce9:a215617b	already done: lib/Integration/*.php at 100% statements (302/302) on development	session-20261113T175400-7ec3993f	2026-11-13T19:56:01Z
+build:filinq:grondslagen-read-from-dossiq	partial: PR (task 1 resolver + vendored dossiq snapshot, 7 tests); tasks 2-6 left	session-20261113T172328-c860ad55	2026-11-13T19:56:16Z
