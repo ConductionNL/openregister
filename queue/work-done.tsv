@@ -3336,3 +3336,4 @@ cover:shillinq:05639debmd8ee:ba63196d	already done: lib/Enums/*.php 23/23 lines 
 merge:learniq:2436:000b57d5	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:58:37Z
 merge:learniq:2418:fa3bbc64	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:58:37Z
 verify:pipelinq:3693:0f407902	GREEN #3693; phpunit 6454->6462, 1 inherited failure, no new	session-20261113T072713-f866e896	2026-11-13T07:58:47Z
+verify:decidiq:2078:28dbe168	stale	feeder	2026-11-13T07:55:11Z
