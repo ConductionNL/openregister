@@ -6893,3 +6893,4 @@ build:opencatalogi:officer-flow-accessibility	partial: PR #2653 report + DocsAcc
 build4:openregister:capability-rows-closing-round	no PR: remaining 2.1 (export/import round trip on an empty instance: Newman/integration) and 3.1 (Playwright) are live tests; 1.1 already merged	session-20261113T185324-28e07ab2	2026-11-13T21:13:20Z
 build:decidiq:action-item-vtodo-migration	PR #2150: tasks 1-4 done (service, delegation folding, occ command, archive-not-delete); optional job + live verification left; suite 3911->3923 OK	session-20261113T205323-cbfd0ec4	2026-11-13T21:13:14Z
 verify:opencatalogi:2638:ba2314d7	GREEN 2638 2639 2640 2641 2642 2644 2646; CONFLICT 2643 2645; no new failures (5316 tests)	session-20261113T205325-28f592a9	2026-11-13T21:13:19Z
+build:integriq:gateway-response-cache-and-problem-errors	partial: PR #3556 tasks 3 and 4 (problem documents) done; tasks 1-2 (response cache) left	session-20261113T205330-0e50ee62	2026-11-13T21:13:28Z
