@@ -2744,3 +2744,4 @@
 10109 37e1e614324a17c6fce72a0336686866a18a3cb6 APPROVE Tests only (6 new ExampleSet test files, 1368 ExampleSet tests OK); Architecture, Rules, Contract green; 4 BulkAtomicSave controller errors come from the local DBAL stub, unrelated to this diff.
 10114 fb0951d09ba450f9df1dab2e0cfb090cf59da32c APPROVE Tests only (3 new jest specs, 24 tests pass on the PR merged with main, eslint clean); no production code changed.
 4641 0919bf4f5ce490a154b727bef92e9bcfb431595b APPROVE integrator IL4: main merge plus one test-only commit: main's new organisation goldens (1 PHP fixture, 3 jest snapshots) re-recorded to the PR's approved defaults (agent_use/llm_use ["*"], object_publish/dashboard_view no longer written); no lib or src code change
+10108 d1168440dced58d1a28b1362aab7dc67af24aeca APPROVE Tests only: lock status and cross-organisation update tests plus uses metadata; Architecture, Rules, Controller, Contract and Service/Object green on PR merged with main.
