@@ -594,3 +594,15 @@ filinq	1972	836eb87dc1c2503cf0bc8a2c57dbfa1471063a0c	MERGED	merge-local	GATE OK 
 launchpad	1108	13cd15b9e1f1ea788c12c68c3963544022bf2bb1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1690	f5feabc390d7e92ed8113c85039b1000e83ad400	SKIP	merge-local	GATE UNMEASURED f5feabc390 does not merge cleanly onto development
 thematiq	1665	ee48871d866a634fd6fec6e35c119485dc8dccd6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1784	6bd483f66f0f093e310357705b430f76f627e8ab	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1785	fb694538d190e7652b9270411ff86d1affd56b9a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1787	92627d15da56e63e2fd85e73a3b5eaf641224bad	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1786	fc45177490fbad05f0ca2a34d05384829646925a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1788	bfec93d2ccd4fc6a297f26f60155d206ef898f70	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1789	f80ba5d8f9ec46221e04762c436dee87f3a1e7e3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1790	aa818309297f212826e5300ee043a76890161487	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1791	95f6cd8fa0b7909a0f7807900af1bb816283b971	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1792	a210b206e6b39587f3b7206ae1703179c164a72b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1796	b4808add109d6dea0df15cdb4784d27869754138	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1799	6794acdf0d2c6d01d5e784ef5f8f141a15183af3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1555	93b1112b3d2eadf2d2ed8724491204bf242a9177	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
