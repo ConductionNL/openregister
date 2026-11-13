@@ -2807,3 +2807,4 @@
 10154 b3c1ea3cbf8458083b8453355ed72f4c9a033d10 BLOCK behaviour change: SLA deadlines and business-hour results for calendars that declare a timezone are now computed on local midnights; SlaCalculator golden expectations move for 11 existing nl-national cases and elapsed-hour offsets change
 10168 27f234c20e64c3a42eb38932e3f00cc355d5acda APPROVE tests only: SourceMapperFindForSystemTest (4) passes merged with main, strict coverage metadata clean; no production code changed
 10149 0a12138367771a48078a92b8a26e71fd784447ac APPROVE tests only (schema shape + PUT org-admin gate); merged with main: new tests 13 OK, Architecture 2358, Contract 21, Rules 296, Controller 9964 all pass
+10172 8acb05a2ea45a85da66fda183e714841a3882fd6 APPROVE docs and task list only; documented renderMode API matches lib on main; leaf tests (7+26+4) and Contract pass merged with main
