@@ -6120,3 +6120,4 @@ shillinq	2953	0df8d693f10db3a3f04bcef5e0a385152343f681	GREEN	worker-39	tests + u
 dossiq	6431	9b1475ac5754de43d361792f626d012fdea1a045	GREEN	worker-33	16571 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
 dossiq	6432	daec3186b606c25251244ed40367f505e0b5ba24	GREEN	worker-33	16571 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
 dossiq	6433	857fa215a2cc1800ccdceff4c789dc163db885db	GREEN	worker-33	16571 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
+portaliq	2427	d256286fe99dd5624de69e220db457e2ecc1a78d	GREEN	worker-01	build page-public-on-purpose matches its tasks 1.1/1.2; node 2486 vs baseline 2477, same 2 inherited fails; phpunit 4914 OK; eslint 0 errors
