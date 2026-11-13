@@ -1229,3 +1229,4 @@ review:openregister:10063:8dedc6f8	APPROVE: test-only, 4/4 pass, eslint clean	se
 verify:decidiq:2087:98dda831	stale	feeder	2026-11-13T00:45:07Z
 merge:stackiq:1595:02c74dd2	stale	feeder	2026-11-13T00:45:07Z
 verify:decidiq:2099:54c1c538	4 GREEN (2099-2102), 3218 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:50:01Z
+fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreachable; secret scanner install refused). Vendored ADR ruleset: only 2 use-problem-schema warnings on openapi.json; secretscanning drop likely inherited (#1117 merged 00:09Z after the gate)	session-20261113T002025-940c220f	2026-11-13T00:50:19Z
