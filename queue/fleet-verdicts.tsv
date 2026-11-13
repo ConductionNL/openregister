@@ -4553,3 +4553,4 @@ integriq	3430	291c09d1b0f38adc1ec0f958dc48d3b276d7678c	GREEN	worker-46	tree of 9
 integriq	3431	93111e4a53358c8b928ae5933a4fe542047e7e36	GREEN	worker-46	tree of 9 tests-only PRs: 7197 tests run, baseline 7113 (2 inherited CallServiceTest errors), 0 new failures
 integriq	3432	574e26a8b7ac2e184e5c1645f6f017d30ed8e002	GREEN	worker-46	tree of 9 tests-only PRs: 7197 tests run, baseline 7113 (2 inherited CallServiceTest errors), 0 new failures
 integriq	3433	b0cda19a78965ea51d7cedb65d96e6747506a40d	GREEN	worker-46	tree of 9 tests-only PRs: 7197 tests run, baseline 7113 (2 inherited CallServiceTest errors), 0 new failures
+stackiq	1780	e9e2a627eb64d574503da5238d5533f3cf2f41c6	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only; previous constructor error fixed
