@@ -3012,3 +3012,4 @@
 10296 40d783e7f6dc73ee9c3a6a10ca5d8b5a74834335 APPROVE tests only: adds use lines and UsesClass/@uses metadata to 19 test files; all 19 green on the PR merged with main, no risky tests; no production code changed
 10298 02886e884d345f37280743ed886af14d12e8c1e0 APPROVE openspec tasks.md only, no code; the ticked tasks match code already on main (LeafRegistry shared-entry refusal) and LeafRegistryTest/LeafDescriptorTest pass (36)
 10294 e0b84a0df7cbff993e7719ba54aaf62d55bf068f APPROVE Tests only (2 new files under tests/Unit/Service/Dbal), no lib change. On the PR merged with main: Service/Dbal 81 tests OK, Architecture 2364 OK.
+10295 ab2e1a66ce381e40187050774b2501959a77c0e8 APPROVE Tests only (4 new test files, 21 tests, real assertions, no clock pinning); all pass merged with main; Architecture 2364 green; no production code changed.
