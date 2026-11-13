@@ -61,6 +61,7 @@ use ReflectionNamedType;
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequest
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequestGuard
  * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLSchemaServices
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class GraphQLServiceGoldenTest extends TestCase {
 
