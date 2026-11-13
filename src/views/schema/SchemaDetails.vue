@@ -354,7 +354,7 @@ export default {
 		 * Open the schema editor, publishing directly or saving to the draft.
 		 *
 		 * @param {boolean} asDraft - True to save the edit as the schema's draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		openEditor(asDraft) {
 			schemaStore.setDraftMode(asDraft)

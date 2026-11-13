@@ -160,7 +160,7 @@ class FolderManagementHandler {
 	 *
 	 * @return FileHandlerSupportInterface|null The facade, or null when it cannot be resolved.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function fileService(): ?FileHandlerSupportInterface {
 		if ($this->fileService !== null || $this->container === null) {
@@ -250,7 +250,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers; nobody gets a share any more.
 	 */
@@ -940,7 +940,7 @@ class FolderManagementHandler {
 	 * @psalm-return   Folder
 	 * @phpstan-return Folder
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getOpenRegisterUserFolder(): Folder {
 		try {
@@ -1045,7 +1045,7 @@ class FolderManagementHandler {
 	 *
 	 * @return Node|null The managed node, or null.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getManagedNodeById(int $nodeId): ?Node {
 		try {
@@ -1068,7 +1068,7 @@ class FolderManagementHandler {
 	 *
 	 * @return bool True when it is under `Open Registers/` in some home.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isManagedNode(Node $node): bool {
 		try {
@@ -1092,7 +1092,7 @@ class FolderManagementHandler {
 	 *
 	 * @return ObjectEntity|null The object, or null when no object owns the file.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {

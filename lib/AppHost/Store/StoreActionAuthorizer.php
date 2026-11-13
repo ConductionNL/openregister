@@ -55,7 +55,7 @@ use Throwable;
  * constructible, no `can()` method, `can()` throwing — is a refusal, and each
  * one is logged with the name that could not be resolved.
  *
- * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
  */
 class StoreActionAuthorizer {
 	/**
@@ -79,7 +79,7 @@ class StoreActionAuthorizer {
 	 *
 	 * @return bool True only when the leaf app's own matrix says yes.
 	 *
-	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
 	 */
 	public function permits(StoreActionCheck $check): bool {
 		$service = $this->leafService(check: $check);

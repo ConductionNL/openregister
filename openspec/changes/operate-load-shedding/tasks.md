@@ -2,8 +2,11 @@
 
 ## 1. Breaker core
 
-- [ ] 1.1 Add `lib/Service/Resilience/CircuitBreaker.php` and `BreakerRegistry.php`: closed, open and half-open states in 10 second buckets on a distributed `IMemcache`, local fallback, fail-open on cache errors, and thresholds from `IAppConfig` with defaults (design D-1, D-8). Verify: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` with a clock fixture covers opening at 5 of 10, staying closed at 4 of 10, one half-open probe, doubling cool-down to 300 seconds, and a throwing cache letting calls through.
-- [ ] 1.2 Add `DependencyUnavailableException` and `lib/Middleware/LoadSheddingMiddleware.php` mapping it to 503 with `Retry-After` and a problem document naming only the dependency class; register it before `ObjectSourceErrorMiddleware`. Verify: `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php` asserts status, header, `Content-Type` and that no host appears in the body.
+- [x] 1.1 Add `lib/Service/Resilience/CircuitBreaker.php` and `BreakerRegistry.php`: closed, open and half-open states in 10 second buckets on a distributed `IMemcache`, local fallback, fail-open on cache errors, and thresholds from `IAppConfig` with defaults (design D-1, D-8). Verify: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` with a clock fixture covers opening at 5 of 10, staying closed at 4 of 10, one half-open probe, doubling cool-down to 300 seconds, and a throwing cache letting calls through.
+- [x] 1.2 Add `DependencyUnavailableException` and `lib/Middleware/LoadSheddingMiddleware.php` mapping it to 503 with `Retry-After` and a problem document naming only the dependency class; register it before `ObjectSourceErrorMiddleware`. Verify: `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php` asserts status, header, `Content-Type` and that no host appears in the body.
+
+>
+> **2026-11-13 (partial build):** tasks 1.1 and 1.2 built — the breaker core (`CircuitBreaker`, `BreakerRegistry`, `BreakerThresholds`, `DependencyUnavailableException`) and `LoadSheddingMiddleware`, registered before `ObjectSourceErrorMiddleware`. No call site is guarded yet (tasks 2.x), the database-pressure meter and `#[Sheddable]` are not added (task 3), and there is no controller, console or docs (tasks 4, 5). Tests: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` and `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php`.
 
 ## 2. Guarded call sites
 

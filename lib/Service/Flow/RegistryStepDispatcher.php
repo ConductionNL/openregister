@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -79,7 +79,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function dispatch(array $step, array $items, array $context): array {
 		return $this->dispatchStep(call: new StepDispatch(step: $step, items: $items, context: $context));
@@ -92,7 +92,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function dispatchStep(StepDispatch $call): array {
 		// Checkpoint on the way IN, so a run whose very first step is the long one
@@ -313,7 +313,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @throws FlowRunExpired When the node overran its configured ceiling.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	private function assertWithinNodeBudget(StepDispatch $call, int $tookMs): void {
 		$config = $call->config();

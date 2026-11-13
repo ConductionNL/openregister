@@ -1195,6 +1195,13 @@
             ],
             "logged": [
                 [
+                    "[ObjectPreviewFormatter] Reference card declaration not resolved",
+                    {
+                        "schemaId": 12,
+                        "exception": "no schema"
+                    }
+                ],
+                [
                     "[ObjectPreviewFormatter] Schema name not resolved",
                     {
                         "schemaId": 12,

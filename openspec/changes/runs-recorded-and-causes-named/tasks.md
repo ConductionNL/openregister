@@ -4,7 +4,12 @@
 
 - [x] 1.1 A closed cause vocabulary on the audit entry, derived from the acting context.
 - [x] 1.2 A cause that is a run carries the run identity.
-- [ ] 1.3 The cause is forwarded into deferred listener jobs with the actor.
+- [x] 1.3 The cause is forwarded into deferred listener jobs with the actor.
+      `ListenerDeferralService` reads `WriteCause::current()` when an entry is deferred (the buffer flushes at
+      shutdown, after every frame is popped) and sends consecutive entries of one cause out as one job;
+      `DeferredListenerContext` carries `cause` and `causeRun` in the job argument (only for a cause other than
+      a person's, so a person's job argument is unchanged); `ActorForwardedJob` runs `runDeferred()` inside
+      `WriteCause::runAs()`, so no subclass changes.
 - [x] 1.4 The audit read and export filter on cause and on run.
 - [x] 1.5 A cause supplied by a client is ignored, and the attempt is recorded.
       The attempt is recorded on the entry itself: `AuditTrailMapper::buildAuditTrail()`
@@ -69,10 +74,9 @@ failure the existing `flow_run` comment already records.
 
 ## Not built here, and named rather than claimed
 
-- **1.3, the cause forwarded into deferred listener jobs.** `ActorForwardedJob`
-  re-establishes the actor and is the right place, but the frame has to be
-  captured at enqueue and restored per job, which touches every subclass. Its
-  own change.
+- **1.3, the cause forwarded into deferred listener jobs.** Built since: the
+  base `ActorForwardedJob` restores the frame around `runDeferred()`, so no
+  subclass needed to change (see the task line above).
 - **Section 2 entirely, the data quality audit.** A `qualityAudit` record, a
   population query, a rule set, a tolerance stored WITH the run, a schedule,
   kept runs and exportable failures. That is a record with a lifecycle, not a

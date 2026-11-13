@@ -85,6 +85,7 @@
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
+		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
 		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener"
@@ -137,6 +138,7 @@
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\HandoffLifecycleListener",
 		"OCA\\OpenRegister\\Listener\\ArchivalNominationListener",
+		"OCA\\OpenRegister\\Listener\\StateEntryFreezeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectUnlockedEvent": [
@@ -185,6 +187,7 @@
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
+		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener"
 	],

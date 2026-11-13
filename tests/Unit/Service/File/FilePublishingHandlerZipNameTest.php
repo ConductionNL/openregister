@@ -39,6 +39,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 class FilePublishingHandlerZipNameTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	/**
 	 * The ZIP paths a test made, removed afterwards.
@@ -81,7 +82,8 @@ class FilePublishingHandlerZipNameTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicObjectFinderInterface::class),
 			fileMapper: $this->createMock(FileMapperInterface::class),
 			logger: new NullLogger(),
-			container: $container
+			container: $container,
+			publishedDigests: $this->passThroughDigests()
 		);
 		$handler->setFileService($files);
 		$object = new ObjectEntity();

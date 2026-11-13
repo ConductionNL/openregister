@@ -149,6 +149,21 @@ A frozen record (`POST /api/objects/{register}/{schema}/{id}/freeze`) refuses ev
 
 The refusal holds on every delete path: the single delete, the bulk delete and a cascade. A cascade that reaches a frozen record is refused as a whole. To delete the record, unfreeze it first (`DELETE /api/objects/{register}/{schema}/{id}/freeze`).
 
+### A lifecycle state can freeze the record on entry
+
+A state in the schema's lifecycle can declare that entering it freezes the record, so the data stops changing when the phase closes, without anybody clicking Freeze:
+
+```json
+"x-openregister-lifecycle": {
+  "field": "status",
+  "states": {
+    "vastgesteld": { "freezesObject": true }
+  }
+}
+```
+
+When a transition moves a record into `vastgesteld`, the record is frozen with `state` set to `vastgesteld`, `by` set to the user who made the move (or `system` for an automatic one), and a `freeze` entry on the audit trail. A record that is already frozen keeps its first freeze. `freezesObject` must be `true` or `false`; any other value is refused when the schema is saved. A state block with `"enabled": false` freezes nothing. Unfreezing works as for a manual freeze.
+
 ## e-Depot Transfer
 
 ### MDTO XML Generation

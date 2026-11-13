@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  * - Local storage only. On any other storage, or with server-side encryption
  *   on, it moves nothing and says why.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFileMigration {
 
@@ -164,7 +164,7 @@ class ObjectFileMigration {
 	 *
 	 * @return array{foldersMoved: int, filesMoved: int, sharesReowned: int, foldersLeft: int, refused: bool}
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function run(): array {
 		$this->tally = ['foldersMoved' => 0, 'filesMoved' => 0, 'sharesReowned' => 0, 'foldersLeft' => 0, 'refused' => false];

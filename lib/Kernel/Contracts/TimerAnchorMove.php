@@ -25,7 +25,7 @@ use DateTimeInterface;
 /**
  * The timer whose anchoring event moved, and the new instant of that event.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 final class TimerAnchorMove {
 

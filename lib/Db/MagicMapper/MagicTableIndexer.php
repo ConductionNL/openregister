@@ -184,6 +184,12 @@ final class MagicTableIndexer {
 		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_relations_gin_idx ON {$full} USING GIN (_relations)");
 		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_live_owner_idx ON {$full} (_owner) WHERE _deleted IS NULL");
 
+		// The name column orders case-insensitively (MagicSearchHandler::addMetadataOrder),
+		// so a lower() expression index keeps that order indexable (REQ-CIO-001).
+		$this->db->executeStatement(
+			"CREATE INDEX IF NOT EXISTS {$table}_name_lower_idx ON {$full} (LOWER(CAST(_name AS TEXT)))"
+		);
+
 		if ($this->trgm->available() === true) {
 			$this->createNameTrigramIndex(run: $run);
 		}
@@ -285,7 +291,61 @@ final class MagicTableIndexer {
 		if (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true) {
 			$this->createSearchableIndex(run: $run);
 		}
+
+		$this->createLowerOrderingIndex(run: $run, propertyConfig: $propertyConfig);
 	}//end createOptInIndexes()
+
+	/**
+	 * Create a `lower()` expression index for an indexed text column on PostgreSQL.
+	 *
+	 * A text property orders case-insensitively
+	 * (MagicSearchHandler::buildPropertySortExpression), so a string column that
+	 * already carries an index (because it is facetable or searchable) gets a
+	 * matching `lower()` btree index, keeping that order indexable. MySQL/MariaDB
+	 * get none: the task scopes the expression index to PostgreSQL (REQ-CIO-001).
+	 *
+	 * @param MagicTableIndexRun $run            The index-creation pass, positioned on the property's column.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function createLowerOrderingIndex(MagicTableIndexRun $run, array $propertyConfig): void {
+		if ($run->isPostgres === false || $this->isTextProperty(propertyConfig: $propertyConfig) === false) {
+			return;
+		}
+
+		$isIndexed = ($propertyConfig['facetable'] ?? false) === true
+			|| (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true);
+		if ($isIndexed === false) {
+			return;
+		}
+
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: 'lower_idx')} ON {$run->fullTableName} "
+				. "(LOWER(CAST({$run->quotedColumn} AS TEXT)))"
+			);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped lower() ordering index',
+				context: ['tableName' => $run->tableName, 'column' => $run->column, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createLowerOrderingIndex()
+
+	/**
+	 * Whether a property is a text property: a `string` that is not a date.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 */
+	private function isTextProperty(array $propertyConfig): bool {
+		return ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
+	}//end isTextProperty()
 
 	/**
 	 * Whether a property is a single object reference that relates objects.

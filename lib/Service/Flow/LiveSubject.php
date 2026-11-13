@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Flow;
  * The live subject a resumed run refreshes its items from
  * ({@see FlowSubjectItems::refreshSubjectProjection()}).
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final class LiveSubject {
 	/**

@@ -67,7 +67,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 *
 	 * @var array<int, string>
 	 */
-	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn'];
+	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved'];
 
 	/**
 	 * A placeholder the format renders: `{seq}`, `{seq:n}`, `{year}` or `{month}`.
@@ -87,11 +87,13 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 * @param string $sequence The counter's name.
 	 * @param string $format The format, with its placeholders.
 	 * @param string $resetOn When the counter restarts.
+	 * @param array<int, string> $reserved The reserved values and patterns.
 	 */
 	private function __construct(
 		private readonly string $sequence,
 		private readonly string $format,
 		private readonly string $resetOn,
+		private readonly array $reserved = [],
 	) {
 	}//end __construct()
 
@@ -143,7 +145,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 			throw self::unknownReset(resetOn: $resetOn, path: $path);
 		}
 
-		$declaration = new self(sequence: $sequence, format: $format, resetOn: $resetOn);
+		$declaration = new self(sequence: $sequence, format: $format, resetOn: $resetOn, reserved: self::reservedOf(raw: $raw, path: $path));
 		self::assertRenderable(declaration: $declaration, path: $path);
 		return $declaration;
 	}//end fromAnnotation()
@@ -250,6 +252,93 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 
 		return ['sequence' => (int)$captured['seq'], 'period' => $this->periodOf(year: ($captured['year'] ?? null))];
 	}//end parse()
+
+	/**
+	 * Whether no sequence may issue this value: it is reserved exactly, or matches a reserved pattern.
+	 *
+	 * A reserved entry written between slashes (`/-0666$/`) is a pattern; any
+	 * other entry is one exact value.
+	 *
+	 * @param string $value A rendered identifier.
+	 *
+	 * @return bool True when the value must be skipped.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
+	 */
+	public function isReserved(string $value): bool {
+		foreach ($this->reserved as $entry) {
+			if (self::isPattern(entry: $entry) === true && preg_match($entry, $value) === 1) {
+				return true;
+			}
+
+			if ($entry === $value) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isReserved()
+
+	/**
+	 * The reserved entries of an annotation, refused when they are not a list of non-empty strings or a pattern does not compile.
+	 *
+	 * @param array  $raw  The annotation.
+	 * @param string $path The property path.
+	 *
+	 * @return array<int, string> The reserved values and patterns.
+	 *
+	 * @throws GeneratedIdentifierException When an entry is unusable.
+	 */
+	private static function reservedOf(array $raw, string $path): array {
+		$reserved = ($raw['reserved'] ?? []);
+		if (is_array($reserved) === false || array_is_list($reserved) === false) {
+			throw self::refusal(message: sprintf('%s.reserved at \'%s\' must be a list of values or /patterns/.', self::ANNOTATION, $path), path: $path);
+		}
+
+		foreach ($reserved as $entry) {
+			self::assertReservedEntry(entry: $entry, path: $path);
+		}
+
+		return $reserved;
+	}//end reservedOf()
+
+	/**
+	 * Refuse one reserved entry that is empty, not a string, or a pattern that does not compile.
+	 *
+	 * @param mixed  $entry The entry.
+	 * @param string $path  The property path.
+	 *
+	 * @return void
+	 *
+	 * @throws GeneratedIdentifierException When the entry is unusable.
+	 */
+	private static function assertReservedEntry(mixed $entry, string $path): void {
+		if (is_string($entry) === false || $entry === '') {
+			throw self::refusal(
+				message: sprintf('%s.reserved at \'%s\' holds an entry that is not a non-empty string.', self::ANNOTATION, $path),
+				path: $path
+			);
+		}
+
+		// The @ keeps a broken pattern from raising a warning; its false return is the refusal.
+		if (self::isPattern(entry: $entry) === true && @preg_match($entry, '') === false) {
+			throw self::refusal(
+				message: sprintf('%s.reserved at \'%s\' holds \'%s\', which is not a valid pattern.', self::ANNOTATION, $path, $entry),
+				path: $path
+			);
+		}
+	}//end assertReservedEntry()
+
+	/**
+	 * Whether a reserved entry is a pattern: written between slashes, at least three characters.
+	 *
+	 * @param string $entry The entry.
+	 *
+	 * @return bool
+	 */
+	private static function isPattern(string $entry): bool {
+		return strlen($entry) >= 3 && str_starts_with($entry, '/') === true && str_ends_with($entry, '/') === true;
+	}//end isPattern()
 
 	/**
 	 * What each kind of placeholder captured; a later group of one kind wins.

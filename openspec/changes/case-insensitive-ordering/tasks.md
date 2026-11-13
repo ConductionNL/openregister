@@ -2,9 +2,9 @@
 
 ## 1. Ordering (REQ-CIO-001)
 
-- [ ] 1.1 In `lib/Db/MagicMapper/MagicSearchHandler.php`, where `_order` is applied, emit `LOWER(col)`, `col`, `_id` for string-typed properties and the string metadata fields, using the query builder's function API so both platforms get valid SQL. Verify: `tests/Unit/Db/MagicMapper/CaseInsensitiveOrderingTest.php::testTheSqlIsLowerThenRawThenIdOnPostgres` and `testTheSqlIsLowerThenRawThenIdOnMySql` (assert the SQL string per platform; both fail today), `testANonStringPropertyKeepsNativeOrdering`, `testTiesAreBrokenByRawValueThenId`.
+- [x] 1.1 In `lib/Db/MagicMapper/MagicSearchHandler.php`, where `_order` is applied, emit `LOWER(col)`, `col`, `_id` for string-typed properties and the string metadata fields, using the query builder's function API so both platforms get valid SQL. Verify: `tests/Unit/Db/MagicMapper/CaseInsensitiveOrderingTest.php::testTheSqlIsLowerThenRawThenIdOnPostgres` and `testTheSqlIsLowerThenRawThenIdOnMySql` (assert the SQL string per platform; both fail today), `testANonStringPropertyKeepsNativeOrdering`, `testTiesAreBrokenByRawValueThenId`.
 - [ ] 1.2 Apply the same rule on the UNION path that orders across schemas, so a multi-schema list sorts the same way. Verify: `CaseInsensitiveOrderingTest::testTheUnionPathOrdersTheSameWay`.
-- [ ] 1.3 Add `lower()` expression indexes beside string indexes in `MagicMapper::createTableIndexes()` on PostgreSQL only. Verify: `tests/Unit/Db/MagicMapperLowerIndexTest.php` asserts the index definitions per platform.
+- [x] 1.3 Add `lower()` expression indexes beside string indexes in `MagicMapper::createTableIndexes()` on PostgreSQL only. Verify: `tests/Unit/Db/MagicMapperLowerIndexTest.php` asserts the index definitions per platform.
 - [ ] 1.4 Through the caller: a Newman request in `tests/newman/` lists a seeded mixed-case fixture via `GET /api/objects/{register}/{schema}?_order[title]=asc` and asserts the order; `tests/e2e/ci/case-insensitive-ordering.spec.ts` sorts the object list by title in the UI and reads the order.
 - [ ] 1.5 MariaDB: if CI has no MariaDB job, run the Newman request once against a MariaDB instance and record the result in the PR body; say plainly if that run did not happen.
 

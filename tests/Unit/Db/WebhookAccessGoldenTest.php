@@ -180,6 +180,7 @@ class WebhookAccessGoldenTest extends TestCase {
 				'secret' => '***',
 				'enabled' => true,
 				'organisation' => 'org',
+				'owner' => null,
 				'filters' => [],
 				'retryPolicy' => 'exponential',
 				'maxRetries' => 3,
@@ -198,7 +199,7 @@ class WebhookAccessGoldenTest extends TestCase {
 			$webhook->jsonSerialize()
 		);
 		$this->assertSame(
-			['id', 'uuid', 'name', 'url', 'method', 'events', 'headers', 'secret', 'enabled', 'organisation', 'filters', 'retryPolicy', 'maxRetries', 'timeout', 'lastTriggeredAt', 'lastSuccessAt', 'lastFailureAt', 'totalDeliveries', 'successfulDeliveries', 'failedDeliveries', 'created', 'updated', 'configuration', 'mapping'],
+			['id', 'uuid', 'name', 'url', 'method', 'events', 'headers', 'secret', 'enabled', 'organisation', 'owner', 'filters', 'retryPolicy', 'maxRetries', 'timeout', 'lastTriggeredAt', 'lastSuccessAt', 'lastFailureAt', 'totalDeliveries', 'successfulDeliveries', 'failedDeliveries', 'created', 'updated', 'configuration', 'mapping'],
 			array_keys($webhook->getFieldTypes())
 		);
 	}//end testSerialisedForm()

@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+ * @spec openspec/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys
 	 *
 	 * @return array<int, string> The accepted config keys — none.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return [];
@@ -101,7 +101,7 @@ class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	public function validateConfig(array $config): void {
 

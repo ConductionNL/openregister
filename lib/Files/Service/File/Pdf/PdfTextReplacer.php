@@ -99,7 +99,7 @@ class PdfTextReplacer {
 	 *                                                       is created when omitted (test seam only —
 	 *                                                       production callers never pass this).
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
@@ -129,7 +129,7 @@ class PdfTextReplacer {
 	 *                                   run when the output cannot be re-read.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function replaceInPdf(string $pdfBytes, RedactionPlan $plan): PdfRedaction {
 		if (count($plan->substitutions) === 0) {

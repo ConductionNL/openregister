@@ -349,7 +349,7 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private static function registerPublishListener(IRegistrationContext $context): void {
 		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
@@ -547,6 +547,12 @@ final class ListenerRegistrar {
 		// it identically and a write path added later cannot skip the table.
 		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
+
+		// A conditionally required property (modelling-required-when-enforced):
+		// the form shows and checks the rule, this refuses a client that skips
+		// the form, on the same two events and for the same reason.
+		$context->registerEventListener(ObjectCreatingEvent::class, RequiredWhenListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, RequiredWhenListener::class);
 
 		// The survey rules (survey-object): fixed anonymity, the version raised
 		// by an edit with answers, required answers, no respondent where promised.
@@ -761,6 +767,10 @@ final class ListenerRegistrar {
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
 		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
+
+		// A state that declares `freezesObject: true` freezes the object on entry,
+		// so a closed phase's data stops changing without anybody clicking Freeze.
+		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()

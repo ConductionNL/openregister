@@ -45,6 +45,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
+use OCA\OpenRegister\Service\File\OcrWords;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -201,10 +202,12 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @param ProvidedTextRequest $request The file, the text, the entity types to detect and the method to record.
 	 *
 	 * @throws NotFoundException If the file does not exist.
+	 * @throws \InvalidArgumentException If the OCR words are not valid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-images-and-image-content-are-detected-through-one-seam-req-ais-001
 	 */
 	public function extractFromProvidedText(ProvidedTextRequest $request): void {
 		$ncFile = $this->sources->storage->fileMapper->getFile($request->fileId);
@@ -216,6 +219,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			source: new ExtractionSource(sourceType: 'file', sourceId: $request->fileId, sourceMeta: $ncFile, method: $request->method),
 			rawText: $request->text
 		);
+		if ($request->words !== null) {
+			// Kept on the metadata chunk, beside the text, for the image seam to locate entities by.
+			$payload['ocr_words'] = OcrWords::normalise(words: $request->words);
+		}
+
 		$text = new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()));
 		$this->indexFilePayload(text: $text, entityTypes: $request->entityTypes);
 	}//end extractFromProvidedText()
@@ -877,13 +885,31 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$chunkData = [
 			'chunk_index' => -1, 'text_content' => $metadataText, 'start_offset' => 0, 'end_offset' => strlen($metadataText), 'language' => null,
 			'language_level' => null, 'language_confidence' => null, 'detection_method' => null, 'overlap_size' => 0,
-			'position_reference' => ['type' => 'metadata'], 'checksum' => $payload['checksum'] ?? null,
+			'position_reference' => $this->metadataPositionReference(payload: $payload), 'checksum' => $payload['checksum'] ?? null,
 		];
 
 		$chunkEntity = $this->hydrateChunkEntity(source: $source, chunkData: $chunkData);
 
 		$this->chunkMapper->insert($chunkEntity);
 	}//end persistMetadataChunk()
+
+	/**
+	 * The metadata chunk's position reference, with the OCR words when the provider gave them.
+	 *
+	 * @param array<string,mixed> $payload Extraction payload.
+	 *
+	 * @return array<string,mixed> The position reference.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-images-and-image-content-are-detected-through-one-seam-req-ais-001
+	 */
+	private function metadataPositionReference(array $payload): array {
+		$reference = ['type' => 'metadata'];
+		if (isset($payload['ocr_words']) === true) {
+			$reference['ocrWords'] = $payload['ocr_words'];
+		}
+
+		return $reference;
+	}//end metadataPositionReference()
 
 	/**
 	 * Prepare metadata content for the metadata chunk.

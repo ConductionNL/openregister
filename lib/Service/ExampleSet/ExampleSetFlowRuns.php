@@ -27,7 +27,7 @@
  * @link https://www.OpenRegister.nl
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Container\ContainerInterface;
 /**
  * Checks and writes the runs of a set's flows, and fills a waiting run's slot.
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 class ExampleSetFlowRuns {
 	/**
@@ -123,7 +123,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function unnamedRefusals(array $fragment): array {
 		$named    = array_map(static fn (mixed $task): string => trim((string) ($task['data']['runUuid'] ?? '')), (array) ($fragment['tasks'] ?? []));
@@ -185,7 +185,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function taskRefusal(array $data, array $context): string {
 		$run  = trim((string) ($data['runUuid'] ?? ''));
@@ -249,7 +249,7 @@ class ExampleSetFlowRuns {
 	 *                                                                             `waitsOn` (waiting run uuid to step),
 	 *                                                                             each present only when it holds something.
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function write(ExampleSetRunsWrite $write): array {
 		$entry = [];
@@ -292,7 +292,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function fill(ExampleSetRunSlot $slot): void {
 		if (trim($slot->runUuid) === '') {

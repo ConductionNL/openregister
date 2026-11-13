@@ -195,10 +195,33 @@ final class LifecycleStateValidator {
 		}
 
 		return array_merge(
+			self::freezesObjectErrors(block: $block, state: $site->state),
 			$this->validateStateFields(block: $block, site: $site),
 			$this->conditions->validateBlock(block: $block, site: $site)
 		);
 	}//end validateStateBlock()
+
+	/**
+	 * The refusal for a `freezesObject` that is present and not a boolean.
+	 *
+	 * A string `"true"` would read as a freeze to a person and as nothing to
+	 * the listener, so it is refused instead of silently ignored.
+	 *
+	 * @param array<string, mixed> $block The state block.
+	 * @param string               $state The state name.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private static function freezesObjectErrors(array $block, string $state): array {
+		if (array_key_exists('freezesObject', $block) === false || is_bool($block['freezesObject']) === true) {
+			return [];
+		}
+
+		$message = sprintf('x-openregister-lifecycle.states."%s".freezesObject must be true or false.', $state);
+		return [self::error(code: 'lifecycle-state-freezes-object-malformed', message: $message)];
+	}//end freezesObjectErrors()
 
 	/**
 	 * Validate one state's `fields` block.

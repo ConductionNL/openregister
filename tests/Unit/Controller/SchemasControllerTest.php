@@ -91,6 +91,14 @@ class SchemasControllerTest extends TestCase {
 	 */
 	private bool $currentUserIsAdmin = true;
 
+	/**
+	 * The actions the signed-in user holds on a schema, for the grant ceiling.
+	 * Every CRUD action by default, so tests about other rules keep their grants.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $heldActions = ['create', 'read', 'update', 'delete'];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -127,11 +135,21 @@ class SchemasControllerTest extends TestCase {
 		);
 		$schemaDeletionService = $this->schemaDeletionService;
 
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			fn (Schema $schema, string $action): bool => in_array($action, $this->heldActions, true)
+		);
+		$grantCeiling = new \OCA\OpenRegister\Service\Authorization\GrantCeiling(groups: $groupManager, permissions: $permissions);
+
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(
-			function ($id) use ($userSession, $groupManager, $schemaDeletionService) {
+			function ($id) use ($userSession, $groupManager, $schemaDeletionService, $grantCeiling) {
 				if ($id === \OCP\IUserSession::class) {
 					return $userSession;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Authorization\GrantCeiling::class) {
+					return $grantCeiling;
 				}
 
 				if ($id === \OCP\IGroupManager::class) {
@@ -380,6 +398,95 @@ class SchemasControllerTest extends TestCase {
 	}//end testAManagerMayChangeOtherRulesAndKeepAMarker()
 
 	/**
+	 * A manager who holds read and update cannot give another group delete; nothing is stored.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testASchemaBlockBeyondTheEditorsRightsIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read', 'update'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$schema->setSlug('publicatie');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(
+			['error' => 'grant-exceeds-granter', 'excess' => [['register' => null, 'schema' => 'publicatie', 'action' => 'delete']]],
+			$result->getData()
+		);
+	}//end testASchemaBlockBeyondTheEditorsRightsIsRefused()
+
+	/**
+	 * A manager who is not an administrator cannot hand on manage.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAManagerCannotGrantManage(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'redactie'], 'read' => ['redactie']]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('manage', $result->getData()['excess'][0]['action']);
+	}//end testAManagerCannotGrantManage()
+
+	/**
+	 * A grant within the manager's rights is stored as before.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAGrantWithinTheEditorsRightsIsStored(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read', 'update'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie', 'archief'], 'update' => ['redactie']]]);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAGrantWithinTheEditorsRightsIsStored()
+
+	/**
+	 * A manager may save a block that already names a right they lack, as long as the save adds nothing.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnUnchangedGrantTheEditorLacksIsKept(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read'];
+		$schema = $this->createRealSchema(1, 'Existing');
+		$schema->setAuthorization(['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['beheer']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['beheer']], 'title' => 'Renamed']);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnUnchangedGrantTheEditorLacksIsKept()
+
+	/**
+	 * An administrator may grant an action they are not listed for.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnAdministratorMayGrantBeyondTheRules(): void {
+		$this->heldActions = [];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'beheer'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnAdministratorMayGrantBeyondTheRules()
+
+	/**
 	 * An administrator may add the marker.
 	 *
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
@@ -410,6 +517,28 @@ class SchemasControllerTest extends TestCase {
 
 		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
 	}//end testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker()
+
+	/**
+	 * An upload over an existing schema cannot give a right the uploader does not hold.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnUploadBeyondTheUploadersRightsIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'update' => ['redactie']]]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$result = $this->controller->uploadUpdate(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('update', $result->getData()['excess'][0]['action']);
+	}//end testAnUploadBeyondTheUploadersRightsIsRefused()
 
 	/**
 	 * A marker sent as JSON text is judged as the block the entity would store.

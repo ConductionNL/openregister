@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCP\IUser;
  * The register, schema and slug a listed object is imported into, the app
  * importing it and the user the save acts as.
  *
- * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ListedSeed
 {
@@ -78,7 +78,7 @@ final class ListedSeed
 	 *
 	 * @return string|null `<registerId>/<schemaId>/<slug>`, or null for an import without an app.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function seedKey(): ?string {
 		if ($this->appId === null || $this->appId === '') {

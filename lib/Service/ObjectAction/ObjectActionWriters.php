@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 /**
  * The writers the action runner holds.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 final class ObjectActionWriters {
 

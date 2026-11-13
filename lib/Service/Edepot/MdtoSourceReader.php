@@ -289,6 +289,41 @@ class MdtoSourceReader {
 	}//end useRestriction()
 
 	/**
+	 * The parties the schema's archival block names for this object, for `betrokkene`.
+	 *
+	 * Read from the evaluated annotation only: `parties` names the record's
+	 * own properties, so the evaluation is where the row's values are read.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{role: string, name: string, id: string|null}> The parties; empty when none is named.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	public function parties(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['parties'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parties = [];
+		foreach ($declared as $party) {
+			if (is_array($party) === false || is_string($party['name'] ?? null) === false || $party['name'] === '') {
+				continue;
+			}
+
+			$id = null;
+			if (isset($party['id']) === true) {
+				$id = (string) $party['id'];
+			}
+
+			$parties[] = ['role' => (string) ($party['role'] ?? ''), 'name' => $party['name'], 'id' => $id];
+		}
+
+		return $parties;
+	}//end parties()
+
+	/**
 	 * Report an ACTIVE legal hold as a use restriction.
 	 *
 	 * @param ObjectEntity $object The object to read.

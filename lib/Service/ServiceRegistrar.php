@@ -330,7 +330,10 @@ final class ServiceRegistrar {
 				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
-				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+				// The per-row `can` list (record-tasks-tab D-4), asked of the
+				// same authorization service every verb's endpoint asks.
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
 			);
 	}//end buildTaskInboxService()
 

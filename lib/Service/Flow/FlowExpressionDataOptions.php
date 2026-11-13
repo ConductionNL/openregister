@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * The optional parts of an expression's data document: position, list size and run metadata.
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 final class FlowExpressionDataOptions {
 	/**

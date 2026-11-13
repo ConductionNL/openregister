@@ -174,8 +174,10 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$schema = $this->schema();
 		$this->params = ['idleDays' => '7', 'scope' => 'nope'];
 		$this->inventory->expects($this->once())->method('inventory')->with($schema, new RuleInventoryOptions(7, null, []))->willReturn([['key' => 'a']]);
+		$conditions = [['name' => 'spoedeisend', 'description' => '', 'declared' => true, 'usedBy' => ['a']]];
+		$this->inventory->expects($this->once())->method('namedConditions')->with($schema)->willReturn($conditions);
 
-		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']]]], $this->pair($this->controller->index('zaak')));
+		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']], 'conditions' => $conditions]], $this->pair($this->controller->index('zaak')));
 	}
 
 	public function testSetEnabledNeedsABooleanAndMapsTheResult(): void {

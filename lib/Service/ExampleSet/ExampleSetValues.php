@@ -276,7 +276,7 @@ class ExampleSetValues {
 	 * @return array<string, array<string, mixed>>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
 		return $this->rows->flowsOf(fragment: $fragment, record: $record);

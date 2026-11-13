@@ -66,6 +66,7 @@ final class AnonymisationLogSerialisationGoldenTest extends TestCase {
 				'sanitization' => ['names' => 2],
 				'replacements' => 4,
 				'durationMs' => 120,
+				'steps' => null,
 				'created' => '2026-03-04T05:06:07+01:00',
 			],
 			$log->jsonSerialize()
