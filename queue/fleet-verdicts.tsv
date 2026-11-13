@@ -5928,3 +5928,4 @@ portaliq	2407	488dfaae971a97d279f7f5db7679148be9e001b6	GREEN	worker-32	unit 4847
 portaliq	2401	19aada71d2e2a4f3555e781b1d659b2580a2751e	GREEN	worker-32	tree verify (2401,2402,2403,2404,2408); baseline 4848, tree 4878, 0 failures; tests-only (StandardProtocolPaths), no production code
 portaliq	2402	60d0c02009190d6ce03c23c8ab18fdfaccf827ac	GREEN	worker-32	tree verify; tests-only (SettingsSection +2), no production code, 0 new failures
 portaliq	2403	e912f9ebb1f2345329e0d86c5749747e32c1f854	GREEN	worker-32	tree verify; tests-only (PortalOverviewEdges +4), no production code, 0 new failures
+portaliq	2404	2bd67109e534d02a009d28cdd5ce668ab52616fb	GREEN	worker-32	tree verify; tests-only (AdminSettings), no production code, 0 new failures
