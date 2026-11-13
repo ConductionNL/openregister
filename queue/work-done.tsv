@@ -4880,3 +4880,4 @@ build:openregister:platform-search-provider	failed: worker rules forbid build ta
 build:openregister:platform-reference-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:40Z
 verify:dossiq:6406:2b3983b3	6406 GREEN (tests only)	session-20261113T064519-30004ad4	2026-11-13T12:32:43Z
 build:openregister:production-observability	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:53Z
+build:openregister:lifecycle-over-reference-field	partial: PR #10189 forms, side moves, reopen + 38 tests; audit kind (2.3) and e2e (3.2) left	session-20261113T114525-2ca68289	2026-11-13T12:33:17Z
