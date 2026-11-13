@@ -7534,3 +7534,4 @@ merge:pipelinq:3782:44f27144	stale	feeder	2026-11-13T23:40:20Z
 merge:pipelinq:3785:e3e10274	stale	feeder	2026-11-13T23:40:20Z
 merge:dossiq:6449:d4d7ba4a	stale	feeder	2026-11-13T23:40:20Z
 merge:dossiq:6452:896d8065	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6135:0df8a4a5	merge3 tree of 51 dossiq PRs: merged=32 red=0 fail=0 skip=1; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-13T23:43:15Z
