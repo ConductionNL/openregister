@@ -1662,3 +1662,4 @@ cover:keepiq:d76c2121m88ca:6f346b68	already done: lib/Sections/SettingsSection 5
 cover:keepiq:d76c2121m88ca:dfaef732	already done: lib/Notification/*.php at 394/396 (99.5%) on development; the 2 uncovered lines are unreachable fallbacks	session-20261113T015002-115b579d	2026-11-13T02:30:12Z
 cover:dossiq:6ca0231ema7d4:cee3e6cf	PR #6241: +12 tests, 8 dirs 85.9%->~99%, suite failures unchanged (19 inherited)	session-20261113T021721-c0a228f1	2026-11-13T02:30:17Z
 cover:keepiq:d76c2121m88ca:js769fa52c	already done: unmerged branch quality/test-coverage-js-769fa52c-1 (cache+service-worker specs) brings src/offline to 99.5% lines / 88% branches; it needs verify+merge, no new PR	session-20261113T021704-7f11f0d9	2026-11-13T02:30:16Z
+cover:integriq:9b0f5894md8cd:f545d745	PR #3457: 17 tests across 5 repair steps; lib/Repair 82.5%->~90%; suite 7113->7130, same 2 inherited errors	session-20261113T011731-be978a55	2026-11-13T02:30:32Z
