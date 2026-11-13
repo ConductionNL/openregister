@@ -6328,3 +6328,4 @@ filinq	2084	06007f380a5648d80ba61c605aee2d2cf3ff5320	GREEN	worker-26	tree of 7 o
 opencatalogi	2608	748e39c2db4c0830d686bb087589058b3c78fbb9	GREEN	worker-17	unit 5258 tests (+4), baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures; tests only
 pipelinq	3782	cff7bf5fcad6d21457f7c15bbe5806ebf13f6d3a	GREEN	worker-48	tests only (6 vitest specs); vitest 4838 passed (baseline 4804), 0 new failures; no PHP changed
 portaliq	2461	e9abc4684989457185c6ce62316db598cd6dbc1e	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
+portaliq	2462	6525b8e73544091996e14bb998a480298fac1efd	GREEN	worker-57	tests only; unit 4925 on tree, baseline 4914 OK, no new failures
