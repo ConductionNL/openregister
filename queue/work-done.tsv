@@ -6465,6 +6465,7 @@ build:filinq:document-sanitization	failed: blocked; the 4 open tasks wait on an 
 cover:pipelinq:7f9dc8e6m8ce9:a13d1ab7	already done: lib/Service/WebForm/ at 99.5% statements (398/400) on development	session-20261113T175400-7ec3993f	2026-11-13T19:55:25Z
 build:filinq:document-register	PR #2059: tasks 1.1-1.3, 2.1, 2.2 done (+6 tests); 2.3 needs real selectielijst categories, 3.x need live OR	session-20261113T171141-a3907367	2026-11-13T19:55:29Z
 cover:pipelinq:7f9dc8e6m8ce9:8225bf5e	already done: lib/Service/Export at ~98% lines at c2351f22 (measured this session)	session-20261113T172349-00278d9d	2026-11-13T19:55:31Z
+cover:pipelinq:7f9dc8e6m8ce9:28cccfd9	already done: lib/Repair/Support at 95/95 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:55:43Z
 build:filinq:hermiq-ai-tooling	partial: PR filinq#2060 builds the signing half (1.1-1.3); consent tool left: the handler runs RBAC-off and its access check lives in the controller, so it needs a guarded tool method (design decision); mcp attribution has no contract yet	session-20261113T190954-c894781f	2026-11-13T19:55:42Z
 build:filinq:filinq-adopt-buildmanifest-pipeline	PR #2061: manifest.d fragments + buildManifest, 0-diff inventory; B-2.2 browser smoke left	session-20261113T185324-28e07ab2	2026-11-13T19:55:53Z
 cover:pipelinq:7f9dc8e6m8ce9:a215617b	already done: lib/Integration/*.php at 100% statements (302/302) on development	session-20261113T175400-7ec3993f	2026-11-13T19:56:01Z
