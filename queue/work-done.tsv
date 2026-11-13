@@ -1934,3 +1934,4 @@ cover:buildiq:9930949bmefda:0d8702e3	failed: not applicable - lib/Resources/temp
 cover:stackiq:df113dffm8db8:js17dfdc2e	PR #1835: 23 vitest tests (MergeObject flow, ObjectModal save), src/modals/object 46.2%->54.2%; ViewObject left	session-20261113T031700-0e23c373	2026-11-13T03:52:00Z
 verify:shillinq:2852:6ec1334b	shillinq#2852 GREEN: tests only, +19 tests, no new failures	session-20261113T034631-5fd77fa7	2026-11-13T03:52:13Z
 cover:stackiq:df113dffm8db8:17d367ab	already done: SyncHandler and ModuleRegistrationHandler tests (from -1, merged) cover every branch, logs and exceptions; no PR	session-20261113T033859-c661da78	2026-11-13T03:52:26Z
+cover:launchpad:fb10c50fm31b6:34f5c300	PR #1162: 22 tests, CalendarWidget 188->271/296, UrlSafety 22->39/40, Conditional 51->79/79, ConfluenceImportRun 0->16/16; suite green	session-20261113T024656-2f332446	2026-11-13T03:52:35Z
