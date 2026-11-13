@@ -6932,3 +6932,4 @@ build4:openregister:apphost-settings-plane	partial: PR #10329, task 3.2 slice (M
 build:hermiq:chat-how-an-answer-came-about	partial: PR #1720 tasks 1-2 (provenance record on both transports, plain-language account); reasoning (3-4) and context meter (5) left; no new failures	session-20261113T205332-17038cbf	2026-11-13T21:22:33Z
 build4:openregister:consolidate-permission-handling	partial: PR #10331 task 1 pins (entity plane per mapper, two bypasses, object-plane pair per verb), tests only; tasks 2-4 left	session-20261113T204542-158476ba	2026-11-13T21:23:14Z
 verify:hermiq:1719:d34eeb6f	GREEN 1719: 4596 tests, 0 new failures, vitest 1313 passed	session-20261113T205332-17038cbf	2026-11-13T21:24:45Z
+build4:openregister:anonymisation-placeholder-id-scope	partial: PR #10332 (9.1-9.4 mask forms + grounds, 23 tests); 9.5 Vue/e2e left	session-20261113T205324-91f6ae17	2026-11-13T21:25:07Z
