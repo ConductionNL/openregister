@@ -6664,3 +6664,4 @@ cover:dossiq:069ee2d6mbd37:f0c02922	already done: lib/Service/External 401/401 s
 cover:dossiq:069ee2d6mbd37:3641032a	already done: lib/Service/Pipelinq 521/521 statements on development	session-20261113T175332-5effc865	2026-11-13T20:30:12Z
 cover:portaliq:b60f3b81m4ccb:0e96d102	PR #2463: 2 tests on EmailLinkTokens, the dir's last 2 uncovered lines; suite 4914 -> 4916 OK	session-20261113T202603-6c9ef72f	2026-11-13T20:30:11Z
 cover:dossiq:069ee2d6mbd37:4c817077	already done: lib/Service/Notification 372/372 statements on development	session-20261113T175332-5effc865	2026-11-13T20:30:30Z
+cover:pipelinq:7f9dc8e6m8ce9:js0be8c659	PR #3785: 8 vitest tests, src/modals 92.95% -> 95.14% stmts, vitest 4812 green	session-20261113T182348-cc1b5fea	2026-11-13T20:30:40Z
