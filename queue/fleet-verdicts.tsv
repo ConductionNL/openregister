@@ -6521,6 +6521,16 @@ learniq	2500	e0c0e415bfa6ef9b8533328c29013a635e1d5dd7	GREEN	worker-26	phpunit 66
 learniq	2501	dd3ee75629911da7f6a3311a14f8ba9bd1cef300	CONFLICT	worker-26	conflicts in tests/Unit/Settings/OpenLearningMaterialRegisterTest.php with an earlier PR of this tree
 learniq	2502	0f24d31de744ac2d9ae2a436df39296c496cdf28	CONFLICT	worker-26	conflicts in l10n/en.json and l10n/nl.json with an earlier PR of this tree
 learniq	2503	f37b4ede90bc97079b5845a8fa5ac390a22ae0a6	GREEN	worker-26	phpunit 6635 on tree vs 6575 baseline, 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS merged
+filinq	2055	9f73dbbad864bd5827ef15e341e7cc1b5d39fb48	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+filinq	2062	baea435f0ea63b1e9b0c164a4655135e5b98fdf6	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+filinq	2069	4cff2e3bcfcf0cf06fa9984b57532aee9e3f8188	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2071	ac22463428ce23bbe434b37db1c82ef3294dc611	CONFLICT	merge3	merges clean on development alone; files: lib/Mcp/FilinqScannableServices.php 
+filinq	2074	38456639505319b2cf210ecbd471f6b1a8451645	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+filinq	2078	4eb138c688d1fe9a30e5c818585b6493c0081880	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+filinq	2085	25d925f4d837270d1f83cbba89a0a47258cfbdc3	CONFLICT	merge3	merges clean on development alone; files: docs/authorization-decisions.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json tests/unit/Settings/SchemaAuthorizationCoverageTest.php 
+filinq	2098	fc7ce3c42df6b89414df284016be402d36eb0b2f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+filinq	2099	697ea860f396fab0bca86de18aa7254eea16fc1f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/Grounds/RefusalGroundsResolver.php lib/Settings/filinq_register.json tests/unit/Service/Grounds/RefusalGroundsResolverTest.php 
+filinq	2106	666af67d1d38a988f17704649274dfb76141ee3e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/SigningController.php lib/Service/SigningService.php lib/Settings/filinq_register.json 
 pipelinq	3794	f9a20787f751cb737595c0282606c64b07809bb8	GREEN	worker-57	two build-time polyfill deps moved to devDependencies + sbom; npm ci ok, vitest 4868 passed, webpack build compiles, PHP 7500 no failures
 filinq	2092	b63f6794deb56f40aa623e97833a692f49d2ac82	REVERIFY	worker-50	merged development in; DetectionRequest/AgentflowTarget value objects cut params, McCabe>5 units split; floor now PASS (complexity 4.48->4.51, interfacing 2.86->2.86); unit 6662 tests green; new head 244f94ad62119ad6f16e4bc90caa9d79759117dc, verify it
 filinq	2077	619ea4467fe6f296b93b02b38887434aa0ef3bbc	GREEN	worker-50	unit 6626 tests (baseline 6612, 0 failures), no new failures; build of intake-mailbox-archive-import 2.1/2.2 (new splitter classes, escaped readpst args, in-memory zip reads)
