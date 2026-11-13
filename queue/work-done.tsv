@@ -4153,3 +4153,4 @@ merge:integriq:3518:39d66136	merge-local over 1 integriq tasks: merged=1 red=0 f
 cover:shillinq:05639debm0c05:e763166c	PR (e763166c-2): PublicSectorRecords + bookValue direct tests, 9 tests; inherited 1F only	session-20261113T064518-860c039d	2026-11-13T10:06:16Z
 gap:integriq:risky:burn2	not applicable: beStrictAboutCoverageMetadata is false in phpunit-unit.xml and phpunit.xml, so no coverage is discarded (PHP 93.19%); only 2 risky tests, both assertion-free and already erroring on development. Turning strict on would mark 256 risky and read 87.84% until their @uses are added - a decision, not a gap fix	session-20261113T091533-b7a00bc3	2026-11-13T10:06:28Z
 verify:integriq:3523:24253660	3523 GREEN; 8150 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T10:07:09Z
+fix:dossiq:6366:88c769f1	fixed: label + en/nl strings added, vitest green beyond inherited; new head 92d7b0dc	session-20261113T084521-fd8a31c7	2026-11-13T10:07:41Z
