@@ -5511,3 +5511,4 @@ integriq	3512	ea4bbc8b27f9f267a03697dcc05a5357d0b1fe18	GREEN	worker-18	tests-onl
 launchpad	1176	f91e9600a8313081c560a4087c61ad361089c85e	GREEN	worker-57	3789 tests (with pcov), baseline 3789 green, 0 new failures; risky 2->0; test metadata only
 launchpad	1179	3dcfbab072b4b22a5223c8fd1758c00688c6d41d	GREEN	worker-44	PHP unit 3789 (baseline, 0 fail; no PHP touched); vitest 2122 pass on tree; spec files only
 integriq	3514	8ff3bb4311ccd271cba5d885157a990fd72910cb	GREEN	worker-18	tests-only (11 new tests pass); tree 8065 run, same 2 errors + 2 failures as development baseline (CallServiceTest, JobsControllerTest), 0 new failures
+dossiq	6335	e418f20a1d7411c69f9662210217cacb0368646d	GREEN	worker-45	15333 tests (baseline 15331, 19 inherited failures), no new failures; tests only
