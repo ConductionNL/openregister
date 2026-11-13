@@ -95,6 +95,20 @@ final class RematerialiseRun {
 	public int $failed = 0;
 
 	/**
+	 * Every failure, with the object's id and the reason, in the order they happened.
+	 *
+	 * @var list<array{id: string, reason: string}>
+	 */
+	public array $failures = [];
+
+	/**
+	 * Whether the caller may update an object; null when the run is the system's (occ).
+	 *
+	 * @var (\Closure(\OCA\OpenRegister\Db\ObjectEntity): bool)|null
+	 */
+	public ?\Closure $mayUpdate = null;
+
+	/**
 	 * The register the rows live in.
 	 *
 	 * @var Register
@@ -153,6 +167,21 @@ final class RematerialiseRun {
 			static fn ($spec): bool => is_array($spec) === true && ($spec['fallback'] ?? false) === true
 		);
 	}//end fallbacks()
+
+	/**
+	 * Count a failure and keep its object id and reason.
+	 *
+	 * @param string $id     The object's uuid.
+	 * @param string $reason Why it failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/recompute-and-reindex-on-demand/specs/computed-fields/spec.md#requirement-computed-fields-are-re-derived-on-demand-over-a-selection-req-rrd-001
+	 */
+	public function fail(string $id, string $reason): void {
+		$this->failed++;
+		$this->failures[] = ['id' => $id, 'reason' => $reason];
+	}//end fail()
 
 	/**
 	 * The command's exit code: failure when anything failed.
