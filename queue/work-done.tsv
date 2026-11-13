@@ -4723,3 +4723,4 @@ cover:launchpad:fb10c50fm911d:js06645759	PR #1187: 15 tests; src/components line
 verify:shillinq:2931:32119b56	2931, 2935, 2936 GREEN: tests-only; php 10116 (1 inherited), vitest 2038->2144 green	session-20261113T094602-d25cda2a	2026-11-13T12:06:06Z
 cover:larpinq:c4471360mcb1b:js4829b6aa	PR #1028: SkillTree.vue 57.6%->89.1%; src/views/* 93.9% together with open -1 (70.7% alone)	session-20261113T074533-3e2a2da6	2026-11-13T12:06:22Z
 merge:stackiq:1693:5d31af0a	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:06:35Z
+gap:launchpad:dompurify:burn1	PR #1188: dompurify ^3.4.16 + override (2.5.9 gone, lock 3.4.17), sbom regenerated; vitest 1983 pass, dev build ok (prod minify OOM in container)	session-20261113T074535-8a2067c2	2026-11-13T12:06:54Z
