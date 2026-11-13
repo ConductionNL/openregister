@@ -1977,7 +1977,9 @@ cover:keepiq:d76c2121m88ca:js4829b6aa	PR #1728: 121 view tests (SecretList 47->9
 cover:hermiq:755cdfe7m7444:05cc1463	PR hermiq#1646: 4 tests for TalkBridgeStatus room rows; suite 146 errors/26 failures inherited, unchanged	session-20261113T024654-6600dc41	2026-11-13T04:01:57Z
 cover:keepiq:d76c2121m88ca:js06645759	already done: src/components/* is at 86.5% lines under vitest on development (target 85%)	session-20261113T021703-063c80f1	2026-11-13T04:02:06Z
 verify:integriq:3465:71d8d2d6	GREEN 3465	session-20261113T015005-030aa10a	2026-11-13T04:02:19Z
+cover:hermiq:065f1631m7444:9d3a1784	already done: lib/BackgroundJob/*.php measured 107/108 stmts after the merged -1 PR	session-20261113T024656-2f332446	2026-11-13T04:02:48Z
 cover:hermiq:065f1631m7444:1b97f731	already covered: every lib/Listener class has dedicated tests (81 across 12 files); no coverage driver here to find the remaining lines; no PR	session-20261113T024654-6600dc41	2026-11-13T04:02:48Z
 cover:keepiq:d76c2121m88ca:34f5c300	already done: app PHP coverage 86.96% (lib/Service/*.php 87.05%) on development, above 85 target; earlier -1 branch merged. Remaining gaps (ShareQuarantineScanner, Passkey) are DB/3rdparty tests skipped in plain unit runs	session-20261113T034634-857dbcc2	2026-11-13T04:02:51Z
 merge:filinq:2004:9eb1e5cc	merge-local over 2 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:02:50Z
 merge:filinq:2012:eadd06cc	merge-local over 2 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:02:50Z
+cover:pipelinq:f67520ecm8c58:34f5c300	PR pipelinq#3638: 45 tests, BrpCache/CostReconciliation/OptOut/LoyaltyAccount services to ~100%	session-20261113T031704-4f12cb78	2026-11-13T04:02:55Z
