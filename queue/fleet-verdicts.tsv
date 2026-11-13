@@ -5310,3 +5310,4 @@ hermiq	1667	f86d7d3bbb513c69f3d4c0134407851766fa99fd	GREEN	worker-13	phpunit 423
 hermiq	1668	b3ba64e5fdbc4000ee7fa1662154027b580c60ad	GREEN	worker-13	phpunit 4231 tests on tree, baseline 4185 with 172 inherited errors/failures, 0 new; tests only
 hermiq	1669	d27dac36f6d3b04644ab479dbaa1ebe30534a119	GREEN	worker-13	phpunit 4231 tests on tree, baseline 4185 with 172 inherited errors/failures, 0 new; tests only
 buildiq	1522	0c3880ee840a4c5651628a5abf70210daa683b83	GREEN	worker-49	php 2632 = baseline (1 inherited ExportZipGoldenTest); vitest 3836 passed; tests only
+dossiq	6306	ce1960223700d552c45ee8e7c23723346244e832	GREEN	worker-36	phpunit 15016 run (baseline 15006), 19 baseline failures, 0 new; vitest 876 files, 1 inherited failure (capabilityComparison.spec.js, red on development); tests-only diff
