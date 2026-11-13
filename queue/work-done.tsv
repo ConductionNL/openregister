@@ -4579,3 +4579,4 @@ build:openregister:calendar-change-recomputes-timers	substantially built, 1.2b d
 build:openregister:case-insensitive-ordering	failed: build tasks are for fleet apps only; WORKER.md says never build openregister	session-20261113T081040-5e814df2	2026-11-13T11:40:11Z
 review:openregister:10129:67b89824	BLOCK: format filter on the exports page is ignored by the API (not in controller FILTER_KEYS / mapper FILTER_COLUMNS); jest spec 4/4, lint clean	session-20261113T072706-2eaa6a81	2026-11-13T11:40:26Z
 cover:keepiq:c967a31fm1bed:ecbab48a	already done: lib/Service/ShareSave/ at 100% on development (siblings -1/-2 merged); no PR	session-20261113T074533-3e2a2da6	2026-11-13T11:41:22Z
+cover:keepiq:c967a31fm1bed:2c3e981f	already done: lib/Service/ShareSync/ at 100% on development 4932b8a9 (sibling -1 merged); no PR	session-20261113T074533-3e2a2da6	2026-11-13T11:41:46Z
