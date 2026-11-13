@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "8fa0303778caf78c4426faa7e669b469e9db2bce",
- "measured_at": "2026-11-13T08:30:09Z",
+ "commit": "3c9234da157aaa7efd937c5b8d76f99c38182171",
+ "measured_at": "2026-11-13T10:50:00Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.48,
-  "statements": 19653,
-  "covered": 17389,
+  "pct": 90.42,
+  "statements": 19667,
+  "covered": 17783,
   "dirs": {
    "lib/": [
     11,
@@ -26,7 +26,7 @@
    ],
    "lib/Controller/": [
     3352,
-    2897
+    3063
    ],
    "lib/Dashboard/": [
     81,
@@ -46,7 +46,7 @@
    ],
    "lib/Listener/": [
     538,
-    487
+    522
    ],
    "lib/Mcp/": [
     31,
@@ -54,19 +54,19 @@
    ],
    "lib/Mcp/Handler/": [
     808,
-    775
+    802
    ],
    "lib/Middleware/": [
     59,
-    58
+    59
    ],
    "lib/Middleware/Support/": [
     60,
-    53
+    55
    ],
    "lib/Repair/": [
     915,
-    895
+    913
    ],
    "lib/Resources/template/": [
     3,
@@ -98,7 +98,7 @@
    ],
    "lib/Resources/template/lib/Service/": [
     150,
-    132
+    133
    ],
    "lib/Resources/template/lib/Settings/": [
     9,
@@ -137,8 +137,8 @@
     0
    ],
    "lib/Service/": [
-    11267,
-    9766
+    11281,
+    9910
    ],
    "lib/Service/Automation/": [
     9,
@@ -175,9 +175,9 @@
   }
  },
  "js": {
-  "pct": 91.32,
+  "pct": 92.42,
   "statements": 13627,
-  "covered": 12444,
+  "covered": 12594,
   "dirs": {
    "src/": [
     185,
@@ -185,7 +185,7 @@
    ],
    "src/components/": [
     690,
-    646
+    656
    ],
    "src/components/agents/": [
     28,
@@ -213,7 +213,7 @@
    ],
    "src/components/page-editor/fields/": [
     1378,
-    1192
+    1299
    ],
    "src/components/runtime/": [
     218,
@@ -221,7 +221,7 @@
    ],
    "src/components/schema-editor/": [
     805,
-    771
+    779
    ],
    "src/components/store/": [
     94,
@@ -261,7 +261,7 @@
    ],
    "src/modals/": [
     726,
-    665
+    690
    ],
    "src/router/": [
     1,
