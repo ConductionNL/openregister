@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Golden test of SftpTransport over a phpseclib3 stub.
+ * Golden test of SftpTransport over a phpseclib4 stub.
  *
- * Every test runs in a separate process, so the stub replaces the real phpseclib3
+ * Every test runs in a separate process, so the stub replaces the real phpseclib4
  * there and no test opens a network connection.
  *
  * @category Tests
@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
-use phpseclib3\Net\SFTP;
+use phpseclib4\Net\SFTP;
 use Psr\Log\AbstractLogger;
 use Stringable;
 
@@ -84,7 +84,7 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end tearDown()
 
 	/**
-	 * Build the transport over the phpseclib3 stub.
+	 * Build the transport over the phpseclib4 stub.
 	 *
 	 * @return SftpTransport The transport.
 	 */

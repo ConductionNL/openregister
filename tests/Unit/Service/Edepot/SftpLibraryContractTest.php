@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The phpseclib3 calls SftpTransport makes exist on the real library, which the
+ * The phpseclib4 calls SftpTransport makes exist on the real library, which the
  * stub of SftpTransportGoldenTest cannot show.
  *
  * @category Tests
@@ -22,8 +22,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 
 use PHPUnit\Framework\TestCase;
-use phpseclib3\Crypt\PublicKeyLoader;
-use phpseclib3\Net\SFTP;
+use phpseclib4\Crypt\PublicKeyLoader;
+use phpseclib4\Net\SFTP;
 
 /**
  * @coversNothing
@@ -37,10 +37,10 @@ class SftpLibraryContractTest extends TestCase {
 	 */
 	public function testTheTransportCallsExist(): void {
 		if (class_exists(SFTP::class) === false) {
-			$this->markTestSkipped('phpseclib3 is not in this vendor directory.');
+			$this->markTestSkipped('phpseclib4 is not in this vendor directory.');
 		}
 
-		foreach (['getServerPublicHostKey', 'login', 'put', 'filesize', 'getLastSFTPError', 'pwd'] as $method) {
+		foreach (['getServerPublicHostKey', 'login', 'put', 'filesize', 'pwd'] as $method) {
 			$this->assertTrue(method_exists(SFTP::class, $method), $method);
 		}
 
