@@ -6911,3 +6911,4 @@ build:opencatalogi:oai-pmh-endpoint	PR #2654: changed-since route (6.1-6.3), 14 
 build4:openregister:api-explorer-in-the-app	partial: PR #10326 apiSamples curl/fetch generator + spec (2.3, 2.5); GraphiQL bundle (1.x) and RegisterApi page (2.1/2.2/2.4, needs 37-locale strings) left	session-20261113T204542-158476ba	2026-11-13T21:16:17Z
 build:opencatalogi:diwoo-metadata-on-the-publication	partial: PR #2655 does 1.1, 2.1, 2.2, 3.1 and 3.2 (lists from XSD, vocabulary, documentsoorten route, schema fields + l10n); 15 tests; suite 5254->5269, failures 2->1; listener/sitemap/announce/migration left	session-20261113T204539-e70be1ed	2026-11-13T21:16:22Z
 verify:buildiq:1571:5d54ffc0	GREEN #1571: phpunit 2917 (1 inherited), vitest 4084 pass	session-20261113T202619-0d7929e0	2026-11-13T21:16:35Z
+verify:buildiq:1575:4454957e	GREEN 1575: phpunit 2937 (baseline 2917, no new failures), vitest 4095	session-20261113T192651-cb1e4daf	2026-11-13T21:17:09Z
