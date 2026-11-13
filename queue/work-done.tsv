@@ -4073,3 +4073,4 @@ cover:shillinq:05639debm0c05:js4dad1dd8	PR #2915: 28 tests, import+settings view
 cover:integriq:92114ab0m158b:js9fcd1176	PR #3520: 35 tests, src/views/Synchronization 86.8->93.3% lines (3 low components 28-38% -> 67-77%, rest is template)	session-20261113T091527-72c58830	2026-11-13T09:55:11Z
 cover:larpinq:c4471360m4538:d39f9857	PR #1023: FleetAppId 12 tests, suite 697->709 OK	session-20261113T094617-36f80607	2026-11-13T09:55:19Z
 cover:integriq:92114ab0m158b:60c2c265	PR #3522: 41 tests over 7 controllers, lib/Controller 90.66->92.82%	session-20261113T081048-4978ac57	2026-11-13T09:55:18Z
+verify:dossiq:6364:dcc73590	6 GREEN (6364, 6365, 6367-6370), 1 RED (6366: new notificationLabels vitest failure for termResumedAfterPause)	session-20261113T084521-fd8a31c7	2026-11-13T09:55:45Z
