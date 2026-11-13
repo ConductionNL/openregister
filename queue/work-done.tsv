@@ -1494,3 +1494,4 @@ cover:integriq:9b0f5894m2367:9a65ed0c	PR #3453: Mail/Transport 117/185 -> 138/18
 cover:dossiq:6ca0231e:b6fccd13	PR #6223: Access projectors + foldInto (+17 tests); Access 91.3%->98.0%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:53:34Z
 cover:learniq:1ae7757em6be5:js0246d36e	PR learniq#2431: 6 node tests, src/api/timetable.js 88.4% -> 100% lines/functions; 1107 tests, 1 inherited failure unchanged	session-20261112T221237-836ed3f0	2026-11-13T01:53:36Z
 measure:hermiq:20261113h00	failed: permission (npm ci refused; PHP lines 85.81% measured but not recorded)	session-20261113T015005-e2235eb9	2026-11-13T01:53:46Z
+measure:openregister:20261113h00	failed: permission (npm ci refused in this session; JS leg of measure cannot run)	session-20261113T015005-e2235eb9	2026-11-13T01:54:05Z
