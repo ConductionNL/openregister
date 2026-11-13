@@ -13,7 +13,7 @@ Kind: code. Size M. Row: portaliq `int-address-lookup`.
 
 ## 3. Lookup
 
-- [ ] 3.1 Add `lib/Service/Bag/BagAddressLookup.php` with `find()` per design D4, skipping withdrawn addresses. Verify: `tests/Unit/Service/Bag/BagAddressLookupTest.php` covers normalised input, several additions, and no match.
+- [x] 3.1 Add `lib/Service/Bag/BagAddressLookup.php` with `find()` per design D4, skipping withdrawn addresses. Verify: `tests/Unit/Service/Bag/BagAddressLookupTest.php` covers normalised input, several additions, and no match.
 - [ ] 3.2 Add `lib/Controller/BagAddressController.php` and the route `GET /api/bag/addresses`, public, no CSRF, throttled. Verify: gate `route-auth` passes; `tests/Integration/bag-address-lookup.postman_collection.json` covers a hit, a 404 and the throttle.
 
 ## 4. Docs

@@ -216,6 +216,7 @@ Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
+Controller/BagAddressController.php,55,Controller,Integrations,Integrations/Controller/BagAddressController.php,0,,Integrations
 Controller/BookmarkLinksController.php,138,Controller,Integrations,Integrations/Controller/BookmarkLinksController.php,0,,Integrations
 Controller/BulkController.php,536,Controller,Access,Access/Controller/BulkController.php,0,,Core
 Controller/BulkJobsController.php,329,Controller,Flows,Flows/Controller/BulkJobsController.php,0,,Processes
@@ -1821,6 +1822,7 @@ Service/AuthorizationAuditService.php,112,Service,Compliance,Compliance/Service/
 Service/AuthorizationService.php,198,Service,Integrations,Integrations/Service/AuthorizationService.php,8,,Integrations
 Service/AvgComplianceService.php,175,Service,Compliance,Compliance/Service/AvgComplianceService.php,0,,Compliance
 Service/AvgRetentionService.php,237,Service,Compliance,Compliance/Service/AvgRetentionService.php,0,,Compliance
+Service/Bag/BagAddressLookup.php,129,Service,Integrations,Integrations/Service/Bag/BagAddressLookup.php,0,,Integrations
 Service/BookmarkDraft.php,24,Service,Integrations,Integrations/Service/BookmarkDraft.php,0,,Integrations
 Service/BookmarkLinkService.php,293,Service,Integrations,Integrations/Service/BookmarkLinkService.php,0,,Integrations
 Service/BulkActionRegistry.php,75,Service,Flows,Flows/Service/BulkActionRegistry.php,0,328,Processes
