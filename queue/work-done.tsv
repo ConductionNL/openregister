@@ -1006,3 +1006,4 @@ cover:filinq:8ecceb86:6079ce8f	PR #1978: 5 Signing/Wizard classes, 30 tests; sui
 cover:integriq:9b0f5894m2367:js42ff7c91	failed: lang=js but lib/Service/Lti/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-13T00:00:57Z
 cover:integriq:9b0f5894m2367:jsee14dc38	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-13T00:01:12Z
 cover:integriq:9b0f5894m2367:js7a0fde91	failed: lang=js but dirs points into lib/ (PHP only); task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-13T00:01:22Z
+cover:integriq:9b0f5894m2367:jsd3522ea6	failed: lang=js but dirs=lib/Db/*.php is PHP only; task payload inconsistent	session-20261112T234655-793f46ee	2026-11-13T00:01:43Z
