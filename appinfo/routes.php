@@ -687,6 +687,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // read-only check into a patch of a non-existent object. It is registered far
         // below (the objects block), so this entry must stay ABOVE it, here.
         ['name' => 'duplicate#check', 'url' => '/api/objects/{register}/{schema}/dedup-check', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
+        // Recompute the calculated fields of a selection (REQ-RRD-001).
+        ['name' => 'objectRecompute#recompute', 'url' => '/api/objects/{register}/{schema}/recompute', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         // Dismissal surface: a pair a person reviewed and ruled NOT the same.
         // Under the literal /duplicates/ prefix, so unlike the check above these
         // cannot collide with the object routes at all.

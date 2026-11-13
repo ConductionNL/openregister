@@ -2,12 +2,16 @@
 
 ## 1. On demand over a selection (REQ-RRD-001, row 4.17)
 
-- [ ] 1.1 Extract `lib/Service/Calculation/CalculationRematerialiser.php` from `RematerialiseCalculationsCommand` with a `Selection` value (ids or filters) and `RecomputeResult`; the command calls it. Verify: `tests/Unit/Service/Calculation/CalculationRematerialiserTest.php::testASelectionTouchesOnlyItsObjects`, `testCommandAndEndpointProduceTheSameCounts`; the existing command test keeps passing.
-- [ ] 1.2 `ObjectsController::recompute()` at `POST /api/objects/{register}/{schema}/recompute` (`#[NoAdminRequired]`, update check per object in the service), synchronous to 500, queued run above. Verify: `tests/Unit/Controller/RecomputeEndpointTest.php::testCountsAreReturned` (fails today: no route), `testADryRunWritesNothing`, `testAnObjectTheCallerMayNotUpdateIsFailedNotWritten`, `testAboveFiveHundredARunIsQueued`; hydra gates route-auth, no-admin-idor and route-reachability pass.
+- [x] 1.1 Extract `lib/Service/Calculation/CalculationRematerialiser.php` from `RematerialiseCalculationsCommand` with a `Selection` value (ids or filters) and `RecomputeResult`; the command calls it. Verify: `tests/Unit/Service/Calculation/CalculationRematerialiserTest.php::testASelectionTouchesOnlyItsObjects`, `testCommandAndEndpointProduceTheSameCounts`; the existing command test keeps passing.
+- [x] 1.2 `ObjectsController::recompute()` at `POST /api/objects/{register}/{schema}/recompute` (`#[NoAdminRequired]`, update check per object in the service), synchronous to 500, queued run above. Verify: `tests/Unit/Controller/RecomputeEndpointTest.php::testCountsAreReturned` (fails today: no route), `testADryRunWritesNothing`, `testAnObjectTheCallerMayNotUpdateIsFailedNotWritten`, `testAboveFiveHundredARunIsQueued`; hydra gates route-auth, no-admin-idor and route-reachability pass.
+Build note (1.2): the route is served by a dedicated `ObjectRecomputeController::recompute()`, so `ObjectsController`'s constructor and factories are unchanged. Above 500 objects it queues `CalculationRecomputeJob` (a `RecordedQueuedJob`, listed on the operations console with the caller as actor) and answers 202 with `{run}`; the run row does not carry the counts yet (the job logs them), because the run recorder has no field for a job's result.
+
 - [ ] 1.3 The bulk action on the object list. Verify: `tests/e2e/ci/recompute-selection.spec.ts` changes a calculation's expression on a fixture schema, filters, runs the action and reads the counts.
 - [ ] 1.4 Through the route: a Newman request posts `ids` for three fixture objects with a stale value and asserts `touched` 3.
 
 ## 2. Parent to child (REQ-RRD-002, row 9.15)
+
+Build note: open. `ReferencedCalculationListener` + `ReferencedCalculationRefresher` already re-save the referrers of an updated object synchronously (up to 200 per dependency) when a read field changed; section 2 moves that to a deduplicated recorded run and is a separate step.
 
 - [ ] 2.1 `lib/Service/Calculation/CalculationDependencyMap.php`: from every schema's calculations, which relation and which properties of which target schema they read. Verify: `tests/Unit/Service/Calculation/CalculationDependencyMapTest.php::testARefReadIsMapped`, `testAnAggregateReadIsMapped`.
 - [ ] 2.2 `lib/Listener/CalculationDependencyListener.php` on `ObjectUpdatedEvent`, registered in `lib/AppInfo/Application.php`, queuing `CalculationChildRecomputeJob` (`RecordedQueuedJob`) deduped per parent. Verify: `tests/Unit/Listener/CalculationDependencyListenerTest.php::testAReadPropertyChangeQueuesOneRun`, `testAnUnreadPropertyChangeQueuesNothing`, `testRunsAreDedupedPerParent`, constructing the real `ObjectUpdatedEvent` with real `ObjectEntity` objects (fails today: no listener).

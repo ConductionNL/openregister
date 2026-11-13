@@ -3941,3 +3941,9 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Service/Calculation/CalculationRematerialiser.php,,Service,,,,,Processes
+Service/Calculation/RecomputeSelection.php,,Service,,,,,Processes
+Service/Calculation/RecomputeResult.php,,Service,,,,,Processes
+Service/Calculation/RecomputeAccess.php,,Service,,,,,Processes
+BackgroundJob/CalculationRecomputeJob.php,,BackgroundJob,,,,,Processes
+Controller/ObjectRecomputeController.php,,Controller,,,,,Processes
