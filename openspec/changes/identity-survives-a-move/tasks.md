@@ -7,7 +7,7 @@
 
 ## 2. Addresses
 
-- [ ] 2.1 Resolver follows the pointer row and adds `@self.movedTo`; pointer pruned after one year.
+- [x] 2.1 Resolver follows the pointer row and adds `@self.movedTo`; pointer pruned after one year. Built without a new table: the `moved` audit entry MoveObject writes names both addresses and when, so it is the pointer. `MovedObjectLookup` reads it on a miss only (no change to the read path every object takes), and `ObjectsController::show()` re-reads the object through show() at its new address, so purpose binding, RBAC and rendering of that address apply, then adds `@self.movedTo`. The one-year window is a filter on the entry's date rather than a prune. Tests: `MovedObjectLookupTest` (6), `ObjectsControllerMovedAddressTest` (2).
 - [ ] 2.2 Relation deep links rewritten on move.
 
 ## 3. Tests

@@ -241,6 +241,8 @@ class UserController extends Controller {
 	 * @return JSONResponse A JSON response containing login result and user information
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-002
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-004
 	 */
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {

@@ -47,7 +47,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 *
 	 * @var array<int, string>
 	 */
-	public const GUARDED_KEYS = ['properties', 'required', 'authorization'];
+	public const GUARDED_KEYS = ['properties', 'required', 'authorization', GuardedAnnotations::PART];
 
 	/**
 	 * Constructor.
@@ -217,6 +217,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 			'properties' => $schema->getProperties(),
 			'required' => $schema->getRequired(),
 			'authorization' => ($schema->getAuthorization() ?? []),
+			GuardedAnnotations::PART => (new GuardedAnnotations())->ofStored(configuration: $schema->getConfiguration()),
 		];
 	}//end live()
 
@@ -269,6 +270,9 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 		match ($top) {
 			'properties' => $schema->setProperties($value),
 			'required' => $schema->setRequired($value),
+			GuardedAnnotations::PART => $schema->setConfiguration(
+				(new GuardedAnnotations())->intoStored(configuration: $schema->getConfiguration(), guarded: $value)
+			),
 			default => $schema->setAuthorization($value),
 		};
 	}//end writePart()

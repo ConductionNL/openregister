@@ -72,6 +72,13 @@ final class ScheduledReportRun {
 	public ?string $emailFailureReason = null;
 
 	/**
+	 * What the recipient expansion left out (members without an address, overflow), for the run record.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $recipientNotes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ScheduledReport $report The report being run.

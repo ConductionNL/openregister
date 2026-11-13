@@ -207,12 +207,13 @@ class LeafRegistry implements LeafRegistryInterface {
 	}//end isDisabledOrUnknown()
 
 	/**
-	 * Judge a render surface whose app ships no shared bundle: refuse a claim, report silence.
+	 * Judge a render surface whose app ships no shared bundle: refuse a claim, report only silence.
 	 *
 	 * @param LeafDescriptor $descriptor   The leaf.
 	 * @param string         $providingApp The providing app.
 	 *
-	 * @return bool False when the leaf claims the shared entry; true otherwise.
+	 * @return bool False when the leaf claims the shared entry; true otherwise, whether it declared
+	 *              another strategy or stayed silent.
 	 */
 	private function judgeMissingBundle(LeafDescriptor $descriptor, string $providingApp): bool {
 		// 🔴 NOW THE REFUSAL IS SOUND, BECAUSE IT ONLY JUDGES A CLAIM.
@@ -231,13 +232,20 @@ class LeafRegistry implements LeafRegistryInterface {
 		// and registered, exactly as #3955 left it, because "has not said" is
 		// not "says shared entry". Refusing silence would re-create the #3954
 		// failure for every descriptor written before this declaration existed.
+		//
+		// A leaf that DID say how it loads, `own-script` or `already-present`,
+		// is not silent: it has stated the strategy the platform cannot check,
+		// so there is nothing to refuse and nothing to report. Only a leaf
+		// whose load strategy is null gets the "has not said how" error.
 		if ($descriptor->claimsSharedEntry() === true) {
 			$this->logRefusedSharedEntry(descriptor: $descriptor, providingApp: $providingApp);
 
 			return false;
 		}
 
-		$this->logUndeclaredLoadStrategy(descriptor: $descriptor, providingApp: $providingApp);
+		if ($descriptor->getLoadStrategy() === null) {
+			$this->logUndeclaredLoadStrategy(descriptor: $descriptor, providingApp: $providingApp);
+		}
 
 		return true;
 	}//end judgeMissingBundle()
@@ -266,6 +274,9 @@ class LeafRegistry implements LeafRegistryInterface {
 
 	/**
 	 * Report a leaf whose app ships no shared bundle and has not said how it loads.
+	 *
+	 * Called only for a leaf whose load strategy is null: one that declared
+	 * `own-script` or `already-present` has said how it loads.
 	 *
 	 * @param LeafDescriptor $descriptor   The leaf.
 	 * @param string         $providingApp The app that provides it.

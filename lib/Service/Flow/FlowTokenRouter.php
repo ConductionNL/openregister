@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Decides which exit a token takes, and which items travel with it.
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowTokenRouter {
 	/**
@@ -56,7 +56,7 @@ class FlowTokenRouter {
 	/**
 	 * Constructor.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct() {
 		$this->graph = new FlowGraph();
@@ -76,7 +76,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array The step config, or an empty array when no node matches.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function stepFor(array $flow, string $transitionName): array {
 		foreach (($flow['nodes'] ?? []) as $node) {
@@ -114,7 +114,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string> The output places that receive the token.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function takenExits(FlowNodeExits $exits, FlowStepOutput $output): array {
 		$items = $output->items;
@@ -132,7 +132,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<int, string> The output places this firing should mark.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function exitsTaken(FlowExitChoice $choice): array {
 		$node = $this->stepFor(flow: $choice->exits->flow, transitionName: $choice->exits->nodeId);
@@ -160,7 +160,7 @@ class FlowTokenRouter {
 	 *
 	 * @return FlowNodeExits The node's exits.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function exitsOf(array $flow, object $transition): FlowNodeExits {
 		$candidates = array_map(static fn ($t): string => (string)$t, $transition->getTos());
@@ -175,7 +175,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string> The output places that receive the token.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function chooseExit(FlowExitChoice $choice, array $exits): array {
 		$tagged = null;
@@ -219,7 +219,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string> The places.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function targetsOfExit(FlowNodeExits $exits, mixed $exit): array {
 		if (is_array($exit) === false) {
@@ -236,7 +236,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array|null The guard, or null for a default exit.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function guardOf(array $exit): ?array {
 		$condition = ($exit['condition'] ?? null);
@@ -365,7 +365,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<int, string> The places, in edge order, without duplicates.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function placesForExit(FlowNodeExits $exits, string $exitId): array {
 		$places = [];
@@ -388,7 +388,7 @@ class FlowTokenRouter {
 	 *
 	 * @return bool True for a well-formed edge leaving that node.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function edgeLeavesNode(mixed $edge, string $nodeId): bool {
 		if (is_array($edge) === false) {
@@ -407,7 +407,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<int, string> The targets.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function targetsAmong(array $edge, array $candidates): array {
 		$places = [];
@@ -433,7 +433,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array|null The guard, or null when the path is unconditional.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function conditionReaching(array $flow, string $nodeId): ?array {
 		foreach (($flow['edges'] ?? []) as $edge) {
@@ -457,7 +457,7 @@ class FlowTokenRouter {
 	 *
 	 * @return bool True when the node is among the edge's targets.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function edgeReaches(mixed $edge, string $nodeId): bool {
 		if (is_array($edge) === false) {
@@ -476,7 +476,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array|null The guard, or null when the exit is the default.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function exitCondition(array $flow, array $edge): ?array {
 		$exitId = trim((string)($edge['fromExit'] ?? ''));
@@ -513,7 +513,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string, mixed>|null The exit.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function declaredExit(array $source, string $exitId): ?array {
 		foreach (($source['exits'] ?? []) as $exit) {
@@ -541,7 +541,7 @@ class FlowTokenRouter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function keepOnlyTakenExits(FlowWalkHop|FlowStreamHop $hop, array $taken): void {
 		$tos = array_map(static fn ($t): string => (string)$t, $hop->transition->getTos());

@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
+use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
@@ -763,8 +764,32 @@ class SchemasController extends Controller {
 			$schemaArr['stats'] = $this->singleSchemaStats(schemaArr: $schemaArr);
 		}
 
-		return new JSONResponse(data: $schemaArr);
+		return new JSONResponse(data: $this->inRequestedLanguage(schemaArr: $schemaArr));
 	}//end showSchema()
+
+	/**
+	 * The schema with each property's title in the language the read asks for.
+	 *
+	 * A read with `_lang` or `Accept-Language` answers `title` from the
+	 * property's `titles`; a read without either returns the schema as stored.
+	 *
+	 * @param array $schemaArr The serialised schema.
+	 *
+	 * @return array The schema.
+	 *
+	 * @spec openspec/changes/modelling-field-names-per-language/specs/schema-property-exploration/spec.md
+	 */
+	private function inRequestedLanguage(array $schemaArr): array {
+		$language = PropertyTitles::requestedLanguage(
+			langParam: $this->request->getParam(key: '_lang'),
+			acceptLanguage: $this->request->getHeader(name: 'Accept-Language')
+		);
+		if ($language === null) {
+			return $schemaArr;
+		}
+
+		return PropertyTitles::projected(schema: $schemaArr, language: $language);
+	}//end inRequestedLanguage()
 
 	/**
 	 * Whether the caller is anonymous and the authorization grants the `public` group no read.
