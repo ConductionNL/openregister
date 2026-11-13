@@ -1,7 +1,7 @@
 {
  "app": "openregister",
  "commit": "5af71ed907d6a6ef8de4a50bde19f710f5489e0b",
- "measured_at": "2026-11-13T04:37:56Z",
+ "measured_at": "2026-11-13T04:39:32Z",
  "php": {
   "tool": "pcov",
   "pct": 91.08,
@@ -1270,5 +1270,443 @@
    ]
   }
  },
- "js": null
+ "js": {
+  "pct": 86.99,
+  "statements": 16347,
+  "covered": 14220,
+  "dirs": {
+   "src/": [
+    248,
+    246
+   ],
+   "src/components/": [
+    54,
+    54
+   ],
+   "src/components/access-links/": [
+    46,
+    30
+   ],
+   "src/components/cards/": [
+    366,
+    350
+   ],
+   "src/components/files-sidebar/": [
+    57,
+    56
+   ],
+   "src/components/i18n/": [
+    61,
+    60
+   ],
+   "src/components/migrationPack/": [
+    61,
+    59
+   ],
+   "src/components/object-relations/": [
+    135,
+    129
+   ],
+   "src/components/register/": [
+    7,
+    6
+   ],
+   "src/components/rules/": [
+    157,
+    149
+   ],
+   "src/components/schema/": [
+    20,
+    20
+   ],
+   "src/components/shared/": [
+    50,
+    50
+   ],
+   "src/components/tables/": [
+    47,
+    46
+   ],
+   "src/components/tabs/": [
+    53,
+    52
+   ],
+   "src/components/userSettings/": [
+    75,
+    74
+   ],
+   "src/components/workflow/": [
+    34,
+    34
+   ],
+   "src/composables/": [
+    179,
+    153
+   ],
+   "src/dialogs/": [
+    7,
+    6
+   ],
+   "src/dialogs/avg/": [
+    56,
+    56
+   ],
+   "src/dialogs/mail/": [
+    21,
+    9
+   ],
+   "src/dialogs/migrationPack/": [
+    40,
+    38
+   ],
+   "src/dialogs/settings/": [
+    2,
+    2
+   ],
+   "src/entities/": [
+    14,
+    14
+   ],
+   "src/entities/application/": [
+    17,
+    17
+   ],
+   "src/entities/auditTrail/": [
+    17,
+    17
+   ],
+   "src/entities/configuration/": [
+    27,
+    27
+   ],
+   "src/entities/database/": [
+    21,
+    21
+   ],
+   "src/entities/object/": [
+    21,
+    21
+   ],
+   "src/entities/organisation/": [
+    19,
+    19
+   ],
+   "src/entities/register/": [
+    19,
+    19
+   ],
+   "src/entities/schema/": [
+    20,
+    20
+   ],
+   "src/entities/source/": [
+    17,
+    17
+   ],
+   "src/entities/view/": [
+    11,
+    11
+   ],
+   "src/integrations/": [
+    8,
+    8
+   ],
+   "src/integrations/builtin/": [
+    14,
+    13
+   ],
+   "src/mail-sidebar/": [
+    29,
+    29
+   ],
+   "src/mail-sidebar/components/": [
+    268,
+    267
+   ],
+   "src/mail-sidebar/composables/": [
+    105,
+    104
+   ],
+   "src/modals/": [
+    6,
+    6
+   ],
+   "src/modals/account/": [
+    0,
+    0
+   ],
+   "src/modals/agent/": [
+    21,
+    19
+   ],
+   "src/modals/application/": [
+    104,
+    96
+   ],
+   "src/modals/configuration/": [
+    532,
+    444
+   ],
+   "src/modals/deleted/": [
+    104,
+    87
+   ],
+   "src/modals/endpoint/": [
+    35,
+    35
+   ],
+   "src/modals/file/": [
+    120,
+    68
+   ],
+   "src/modals/github/": [
+    86,
+    86
+   ],
+   "src/modals/logs/": [
+    181,
+    151
+   ],
+   "src/modals/mdm/": [
+    105,
+    87
+   ],
+   "src/modals/object/": [
+    1195,
+    822
+   ],
+   "src/modals/objectAuditTrail/": [
+    42,
+    30
+   ],
+   "src/modals/organisation/": [
+    435,
+    352
+   ],
+   "src/modals/register/": [
+    227,
+    187
+   ],
+   "src/modals/schema/": [
+    901,
+    724
+   ],
+   "src/modals/settings/": [
+    464,
+    447
+   ],
+   "src/modals/settings/llm/": [
+    2,
+    2
+   ],
+   "src/modals/settings/vectorization/": [
+    30,
+    29
+   ],
+   "src/modals/shared/": [
+    19,
+    19
+   ],
+   "src/modals/source/": [
+    126,
+    99
+   ],
+   "src/modals/view/": [
+    92,
+    86
+   ],
+   "src/modals/webhook/": [
+    226,
+    223
+   ],
+   "src/navigation/": [
+    12,
+    12
+   ],
+   "src/reference/": [
+    21,
+    19
+   ],
+   "src/services/": [
+    834,
+    832
+   ],
+   "src/shims/": [
+    0,
+    0
+   ],
+   "src/sidebars/": [
+    61,
+    60
+   ],
+   "src/sidebars/dashboard/": [
+    38,
+    32
+   ],
+   "src/sidebars/deleted/": [
+    68,
+    48
+   ],
+   "src/sidebars/entities/": [
+    17,
+    0
+   ],
+   "src/sidebars/logs/": [
+    305,
+    255
+   ],
+   "src/sidebars/register/": [
+    87,
+    79
+   ],
+   "src/sidebars/search/": [
+    457,
+    406
+   ],
+   "src/store/": [
+    361,
+    357
+   ],
+   "src/store/modules/": [
+    1854,
+    1849
+   ],
+   "src/store/modules/object-relations/": [
+    53,
+    52
+   ],
+   "src/views/": [
+    32,
+    32
+   ],
+   "src/views/Endpoint/": [
+    41,
+    25
+   ],
+   "src/views/accessLink/": [
+    41,
+    22
+   ],
+   "src/views/account/": [
+    0,
+    0
+   ],
+   "src/views/account/sections/": [
+    137,
+    75
+   ],
+   "src/views/agents/": [
+    29,
+    25
+   ],
+   "src/views/application/": [
+    67,
+    35
+   ],
+   "src/views/avg/": [
+    167,
+    91
+   ],
+   "src/views/configuration/": [
+    72,
+    53
+   ],
+   "src/views/dashboard/": [
+    170,
+    127
+   ],
+   "src/views/deleted/": [
+    139,
+    105
+   ],
+   "src/views/entities/": [
+    97,
+    55
+   ],
+   "src/views/files/": [
+    57,
+    38
+   ],
+   "src/views/flows/": [
+    312,
+    273
+   ],
+   "src/views/integration/": [
+    9,
+    9
+   ],
+   "src/views/logs/": [
+    292,
+    255
+   ],
+   "src/views/migrationPack/": [
+    537,
+    520
+   ],
+   "src/views/object/": [
+    217,
+    119
+   ],
+   "src/views/operations/": [
+    74,
+    59
+   ],
+   "src/views/organisation/": [
+    96,
+    66
+   ],
+   "src/views/quality/": [
+    161,
+    143
+   ],
+   "src/views/register/": [
+    253,
+    197
+   ],
+   "src/views/reports/": [
+    153,
+    142
+   ],
+   "src/views/roadmap/": [
+    1,
+    1
+   ],
+   "src/views/schema/": [
+    188,
+    157
+   ],
+   "src/views/schemas/": [
+    0,
+    0
+   ],
+   "src/views/search/": [
+    162,
+    145
+   ],
+   "src/views/settings/": [
+    4,
+    4
+   ],
+   "src/views/settings/sections/": [
+    952,
+    796
+   ],
+   "src/views/source/": [
+    43,
+    28
+   ],
+   "src/views/task/": [
+    80,
+    80
+   ],
+   "src/views/templates/": [
+    12,
+    12
+   ],
+   "src/views/webhooks/": [
+    128,
+    128
+   ]
+  }
+ }
 }
