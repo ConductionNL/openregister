@@ -3258,6 +3258,10 @@ Service/Export/,,Service,,,,,Configuration
 Service/ExternalLink/,,Service,,,,,Core
 Service/Federation/,,Service,,,,,Core
 Service/File/,,Service,,,,,Core
+Service/File/ArchiveBounds.php,,Service,,,,,Core
+Service/File/ArchiveListing.php,,Service,,,,,Core
+Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Core
+Service/File/ArchiveWalk.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance

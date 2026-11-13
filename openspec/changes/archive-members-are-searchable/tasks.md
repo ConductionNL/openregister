@@ -2,7 +2,7 @@
 
 ## 1. Enumeration (REQ-AMS-001)
 
-- [ ] 1.1 Add `lib/Service/File/ArchiveMemberEnumerator.php` and `ArchiveListing`, with the four bounds as file settings returned by `GET /api/settings/files`. Verify: `tests/Unit/Service/File/ArchiveMemberEnumeratorTest.php::testMembersAreListedWithTypeAndSize`, `testARatioOverTheBoundStopsEnumeration`, `testTooManyMembersStops`, `testATraversalPathIsRefused`, `testANestedZipIsListedOneLevelDeep`, `testAnEncryptedMemberIsListedAsEncrypted`, all over generated fixtures (fail today: the class does not exist).
+- [x] 1.1 Add `lib/Service/File/ArchiveMemberEnumerator.php` and `ArchiveListing`, with the four bounds as file settings returned by `GET /api/settings/files`. Verify: `tests/Unit/Service/File/ArchiveMemberEnumeratorTest.php::testMembersAreListedWithTypeAndSize`, `testARatioOverTheBoundStopsEnumeration`, `testTooManyMembersStops`, `testATraversalPathIsRefused`, `testANestedZipIsListedOneLevelDeep`, `testAnEncryptedMemberIsListedAsEncrypted`, all over generated fixtures (fail today: the class does not exist).
 
 ## 2. Extraction and search (REQ-AMS-002)
 
@@ -17,7 +17,7 @@
 
 ## 4. Shared with the malware scan
 
-- [ ] 4.1 Expose the enumerator as a service `upload-malware-scan` reuses. Verify: if that change has landed, its `ArchiveScanTest` uses this class; otherwise the PR body names the class for it.
+- [x] 4.1 Expose the enumerator as a service `upload-malware-scan` reuses. Verify: if that change has landed, its `ArchiveScanTest` uses this class; otherwise the PR body names the class for it.
 
 ## V. Verification and done
 
