@@ -135,8 +135,13 @@ class Bootstrap {
 	/**
 	 * Register all standard AppHost plumbing for a leaf app.
 	 *
-	 * @param IRegistrationContext $context  The leaf app's registration context.
-	 * @param LeafAdoption         $adoption The leaf app id (e.g. 'petstore') and its optional overrides:
+	 * Takes a LeafAdoption (as `$adoption`, or positionally in place of `$appId`) or the app id
+	 * and options array of the published contract; a LeafAdoption wins.
+	 *
+	 * @param IRegistrationContext     $context  The leaf app's registration context.
+	 * @param string|LeafAdoption|null $appId    The leaf app id, or the adoption.
+	 * @param array<string, mixed>     $options  The overrides listed under `$adoption`.
+	 * @param LeafAdoption|null        $adoption The leaf app id (e.g. 'petstore') and its optional overrides:
 	 *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
 	 *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
 	 *                                      namespaces are not derivable from the app id (petstore →
@@ -161,9 +166,17 @@ class Bootstrap {
 	 *
 	 * @return void
 	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
+	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
 	 */
-	public static function register(IRegistrationContext $context, LeafAdoption $adoption): void {
+	public static function register(
+		IRegistrationContext $context,
+		string|LeafAdoption|null $appId = null,
+		array $options = [],
+		?LeafAdoption $adoption = null,
+	): void {
+		$adoption = self::adoptionOf(appId: $appId, options: $options, adoption: $adoption);
 		self::registerPlanes(leaf: new LeafRegistration(context: $context, appId: $adoption->appId), adoption: $adoption);
 		self::registerExtras(context: $context, adoption: $adoption);
 	}//end register()
@@ -235,16 +248,57 @@ class Bootstrap {
 	 * The controller namespace is the adoption's `controllerNamespace`
 	 * override, else its `namespace` plus `\Controller`.
 	 *
-	 * @param IRegistrationContext $context  Leaf registration context.
-	 * @param LeafAdoption         $adoption Leaf app id and namespace (e.g. `['namespace' => 'OCA\Decidiq']`).
+	 * Takes a LeafAdoption (as `$adoption`, or positionally in place of `$appId`) or the app id and
+	 * controller namespace of the published contract; a LeafAdoption wins.
+	 *
+	 * @param IRegistrationContext     $context      Leaf registration context.
+	 * @param string|LeafAdoption|null $appId        Leaf app id, or the adoption.
+	 * @param string|null              $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`);
+	 *                                               derived from the app id when null.
+	 * @param LeafAdoption|null        $adoption     Leaf app id and namespace (e.g. `['namespace' => 'OCA\Decidiq']`).
 	 *
 	 * @return void
 	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
+	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
 	 */
-	public static function aliasStoreController(IRegistrationContext $context, LeafAdoption $adoption): void {
+	public static function aliasStoreController(
+		IRegistrationContext $context,
+		string|LeafAdoption|null $appId = null,
+		?string $controllerNs = null,
+		?LeafAdoption $adoption = null,
+	): void {
+		$adoption = self::adoptionOf(appId: $appId, options: [], adoption: $adoption);
 		(new LeafRegistration(context: $context, appId: $adoption->appId))->aliasStoreController(
-			controllerNs: $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller')
+			controllerNs: ($controllerNs ?? $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller'))
 		);
 	}//end aliasStoreController()
+
+	/**
+	 * The adoption a call names, built from the app id and options when it names none.
+	 *
+	 * @param string|LeafAdoption|null $appId    The app id, or the adoption.
+	 * @param array<string, mixed>     $options  The overrides.
+	 * @param LeafAdoption|null        $adoption The adoption.
+	 *
+	 * @return LeafAdoption The adoption.
+	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
+	 */
+	private static function adoptionOf(string|LeafAdoption|null $appId, array $options, ?LeafAdoption $adoption): LeafAdoption {
+		if ($appId instanceof LeafAdoption) {
+			return ($adoption ?? $appId);
+		}
+
+		if ($adoption !== null) {
+			return $adoption;
+		}
+
+		if ($appId === null) {
+			throw new \InvalidArgumentException('Bootstrap needs an app id or a LeafAdoption.');
+		}
+
+		return new LeafAdoption(appId: $appId, options: $options);
+	}//end adoptionOf()
 }//end class

@@ -623,6 +623,43 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findTrail()
 
 	/**
+	 * Audit trails matching filters, search and sort, from an offset; every match when the limit is null.
+	 *
+	 * The published listing call; findTrail() takes the same as one ListQuery.
+	 *
+	 * @param int|null    $limit   The page size, or null for every match.
+	 * @param int|null    $offset  The offset.
+	 * @param array|null  $filters Column filters.
+	 * @param array|null  $sort    Column => direction.
+	 * @param string|null $search  A term to search the changed field for.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function findAll(
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $sort = ['created' => 'DESC'],
+		string|null $search = null,
+	): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_audit_trails');
+
+		$this->applyFindFilters(qb: $qb, filters: ($filters ?? []));
+		$this->applyChangedSearch(qb: $qb, search: $search);
+		$this->applyFindSort(qb: $qb, sort: ($sort ?? []));
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
 	 * Add the search on the changed field, when a search term is provided.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
@@ -2179,6 +2216,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function actionChartData(AuditStatisticsScope $scope): array {
 		return $this->actionStatistics()->actionChart(scope: $scope);
 	}//end actionChartData()
+
+	/**
+	 * Chart data for audit trail actions over time, by separate arguments.
+	 *
+	 * The published call; actionChartData() takes the same as one AuditStatisticsScope.
+	 *
+	 * @param \DateTime|null $from       Start of the window.
+	 * @param \DateTime|null $till       End of the window.
+	 * @param int|null       $registerId Optional register to filter by.
+	 * @param int|null       $schemaId   Optional schema to filter by.
+	 *
+	 * @return ((int[]|string)[]|(int|string))[][]
+	 *
+	 * @psalm-return array{labels: list<array-key>,
+	 *     series: list<array{data: list<int>, name: string}>}
+	 */
+	public function getActionChartData(
+		?\DateTime $from = null,
+		?\DateTime $till = null,
+		?int $registerId = null,
+		?int $schemaId = null,
+	): array {
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->from = $from;
+		$scope->till = $till;
+
+		return $this->actionChartData(scope: $scope);
+	}//end getActionChartData()
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
