@@ -7392,3 +7392,4 @@ build:humaniq:a-time-entry-can-be-booked-to-a-day	already done: all code tasks t
 fix:filinq:2092:b63f6794	fixed floor RED: params via value objects, complex units split; floor PASS; suite green; new head 244f94ad62119ad6f16e4bc90caa9d79759117dc	session-20261113T205323-a7434fd6	2026-11-13T22:54:29Z
 review:openregister:10454:af44ae3e	APPROVE (independent diff read by a fresh agent; own PR): suites green, one nit noted	session-20261113T212414-55623216	2026-11-13T22:54:51Z
 build:hermiq:models-provider-connections	partial: PR #1751 builds Task 1 (openai-compatible provider, OpenAI base URL, keyless transport with egress check); tasks 2-6 left	session-20261113T215344-82e3aea0	2026-11-13T22:55:03Z
+review:openregister:10455:94c05895	APPROVE 10455: scheduled send with read/author/update guards, send-now unchanged	session-20261113T205332-17038cbf	2026-11-13T22:55:05Z
