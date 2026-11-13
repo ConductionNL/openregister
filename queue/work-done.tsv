@@ -5407,3 +5407,4 @@ merge:pipelinq:3602:8969c50d	merge-local over 2 pipelinq tasks: merged=0 red=0 f
 merge:versioniq:678:99e9570c	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:04:48Z
 review:openregister:10265:1caf04d7	APPROVE #10265 (reveal audit visibility; tightens gating, green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T14:05:09Z
 review:openregister:10240:fd961afd	APPROVE 10240	session-20261113T114527-9a216dd1	2026-11-13T14:07:53Z
+cover:buildiq:70b3e29ema699:js0be8c659	PR #1552: 4 modals (AutomationTestPanel, LinkRepo, PermissionHistory, Permissions) to 100%; src/modals 92.4%->97.9%; +15 vitest tests, suite 4010 pass	session-20261113T131537-142f7747	2026-11-13T14:08:20Z
