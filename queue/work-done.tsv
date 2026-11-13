@@ -1163,3 +1163,4 @@ cover:stackiq:8cfacb29m2f4b:jsd48eb217	PR #1803: 2 modules, 22 tests, vitest 188
 cover:integriq:9b0f5894m2367:js971eca14	PR #3441: AddEndpointRuleModal vitest spec, 11 tests; vitest 1392->1403 OK	session-20261112T231639-4c562de9	2026-11-13T00:35:33Z
 cover:buildiq:8ca317f6m6d54:390adfb9	already done: lib/*.php (Capabilities) at 11/11 statements on development	session-20261112T231640-f6dda86c	2026-11-13T00:35:59Z
 cover:buildiq:8ca317f6m6d54:9d3a1784	already done: AppHealthSampleCleanup and RuleExecutionLogCleanup have 4 test files; they read 0% here only because OpenRegister contract interfaces are absent in a bare container (1303 env errors), other jobs 158/171	session-20261112T231640-f6dda86c	2026-11-13T00:36:31Z
+cover:stackiq:8cfacb29m2f4b:js0023cfc7	PR #1804: 5 vitest tests rendering ManageUserGroupsDialog (58.7% -> 97.8% stmts); vitest 1880->1885 green; noted template prop-name defect in PR	session-20261112T231633-96ffe7b8	2026-11-13T00:36:43Z
