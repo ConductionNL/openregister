@@ -1451,3 +1451,4 @@ merge:portaliq:2370:5ff6f0c9	merge-local over 5 portaliq tasks: merged=3 red=0 f
 merge:portaliq:2367:bb257705	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
 cover:openregister:7350e3efm0e99:047af40e	PR openregister#10085: added missing @uses to 3 SharedSchema test classes (9 risky -> 0); SchemaTableMigrator 53->147/147, dir 229->323/331 (97.6%)	session-20261112T221237-836ed3f0	2026-11-13T01:34:45Z
 cover:shillinq:801aab65:a215617b	PR #2821: 3 leaf providers, 13 tests; lib/Integration 84.8% -> 96.9%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T01:34:50Z
+review:openregister:10082:a518e4f3	APPROVE: metadata only, Timer 374 pass, risky 85->0	session-20261112T231640-f6dda86c	2026-11-13T01:35:00Z
