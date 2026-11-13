@@ -2637,3 +2637,4 @@ merge:learniq:2434:a42c4889	merge-local over 6 learniq tasks: merged=8 red=1 fai
 merge:learniq:2433:e68ae7e8	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
 merge:learniq:2436:3be84c67	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
 cover:shillinq:05639debmd8ee:js6d6735a6	PR shillinq#2871: 31 tests; src/views/bookings 25.64%->89.28%	session-20261113T031701-b518f7f8	2026-11-13T06:04:52Z
+verify:buildiq:1513:e5136f22	GREEN 1513 (no new failures; fixes 1382 errors when no openregister sibling)	session-20261113T041646-2c1d764f	2026-11-13T06:05:05Z
