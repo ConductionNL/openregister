@@ -308,7 +308,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 		$reference = new Reference($referenceText);
 		$reference->setTitle($richData['title']);
 		$reference->setDescription($richData['description']);
-		$reference->setImageUrl($richData['icon_url']);
+		$reference->setImageUrl($richData['image_url'] ?? $richData['icon_url']);
 		$reference->setUrl($richData['url']);
 		$reference->setRichObject('openregister-object', $richData);
 
@@ -328,19 +328,107 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 */
 	private function richData(array $parsed, array $objectData): array {
 		$selfData = $objectData['@self'];
+		$card = $this->declaredCard(schemaId: $parsed['schemaId']);
+		$image = $card?->image(objectData: $objectData);
 
-		return [
+		$rich = [
 			'id' => $parsed['uuid'],
-			'title' => $this->extractTitle(objectData: $objectData, selfData: $selfData),
-			'description' => $this->extractDescription(objectData: $objectData),
+			'title' => ($card?->title(objectData: $objectData) ?? $this->extractTitle(objectData: $objectData, selfData: $selfData)),
+			'description' => $this->cardDescription(card: $card, objectData: $objectData, parsed: $parsed),
 			'schema' => ['id' => $parsed['schemaId'], 'title' => $this->resolveSchemaName(schemaId: $parsed['schemaId'])],
 			'register' => ['id' => $parsed['registerId'], 'title' => $this->resolveRegisterName(registerId: $parsed['registerId'])],
 			'url' => $this->resolveObjectUrl(parsed: $parsed, selfData: $selfData),
 			'icon_url' => $this->resolveDeepLinkOrDefaultIconUrl(registerId: $parsed['registerId'], schemaId: $parsed['schemaId']),
 			'updated' => $selfData['updated'] ?? '',
-			'properties' => $this->extractPreviewProperties(objectData: $objectData),
+			'properties' => $this->cardProperties(card: $card, objectData: $objectData),
 		];
+
+		// Only a declared image adds the key: an undeclared schema's card keeps
+		// the shape every existing consumer reads.
+		if ($image !== null) {
+			$rich['image_url'] = $image;
+		}
+
+		return $rich;
 	}//end richData()
+
+	/**
+	 * The card this schema declares, or null when it declares none.
+	 *
+	 * A schema that cannot be loaded reads as declaring none: the dull default
+	 * is the right failure for something that renders in a chat window.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return ReferenceCardDeclaration|null The declaration.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	private function declaredCard(int $schemaId): ?ReferenceCardDeclaration {
+		try {
+			return ReferenceCardDeclaration::of(
+				schema: $this->sources->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)
+			);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Reference card declaration not resolved',
+				context: ['schemaId' => $schemaId, 'exception' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end declaredCard()
+
+	/**
+	 * The card's description: the declared summary rows, else the object's own
+	 * summary or description. A declared card with neither falls back to the
+	 * schema's name, which is what the card of an undeclared schema shows
+	 * beside its title through `schema.title` of the rich object.
+	 *
+	 * @param ReferenceCardDeclaration|null $card       The declaration, or null.
+	 * @param array<string, mixed>          $objectData The rendered object.
+	 * @param array<string, mixed>          $parsed     The parsed reference.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	private function cardDescription(?ReferenceCardDeclaration $card, array $objectData, array $parsed): string {
+		if ($card !== null) {
+			$rows = $card->summaryRows(objectData: $objectData);
+			if ($rows !== []) {
+				return implode(
+					' · ',
+					array_map(static fn (array $row): string => $row['label'] . ': ' . $row['value'], $rows)
+				);
+			}
+		}
+
+		$described = $this->extractDescription(objectData: $objectData);
+		if ($described !== '' || $card === null) {
+			return $described;
+		}
+
+		return $this->resolveSchemaName(schemaId: $parsed['schemaId']);
+	}//end cardDescription()
+
+	/**
+	 * The card's rows: the declared summary properties, else the first few the object fills.
+	 *
+	 * @param ReferenceCardDeclaration|null $card       The declaration, or null.
+	 * @param array<string, mixed>          $objectData The rendered object.
+	 *
+	 * @return array<int, array{label: string, value: string}> The rows.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	private function cardProperties(?ReferenceCardDeclaration $card, array $objectData): array {
+		$rows = ($card?->summaryRows(objectData: $objectData) ?? []);
+		if ($rows !== []) {
+			return $rows;
+		}
+
+		return $this->extractPreviewProperties(objectData: $objectData);
+	}//end cardProperties()
 
 	/**
 	 * The absolute object URL: the registered deep link, else the show route.
