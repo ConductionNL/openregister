@@ -1843,7 +1843,8 @@
             "calendar",
             "talk",
             "deck",
-            "draft"
+            "draft",
+            "formerSlugs"
         ]
     },
     "Source": {

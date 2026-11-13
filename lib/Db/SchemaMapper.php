@@ -929,7 +929,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Finds schemas by slug
 	 *
 	 * Searches for schemas matching the given slug with optional
-	 * multi-tenancy and RBAC filtering.
+	 * multi-tenancy and RBAC filtering. When no schema carries the slug now,
+	 * the first page falls back to the schemas renamed away from it, so a
+	 * current slug always wins over a former one.
 	 *
 	 * @param string $slug The slug to search for
 	 * @param ListQuery $query The page: its limit and offset
@@ -941,6 +943,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-return list<Schema>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
 	public function findBySlug(
 		string $slug,
@@ -955,8 +959,52 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$qb->setMaxResults($query->limit)
 			->setFirstResult($query->offset ?? 0);
 
-		return array_values($this->fetchSchemas(qb: $qb));
+		$schemas = array_values($this->fetchSchemas(qb: $qb));
+		if ($schemas !== [] || ($query->offset ?? 0) > 0) {
+			return $schemas;
+		}
+
+		return $this->findByFormerSlug(slug: $slug, query: $query, multitenancy: $_multitenancy);
 	}//end findBySlug()
+
+	/**
+	 * The schemas that answered to a slug before they were renamed.
+	 *
+	 * Only asked when no schema carries the slug now, so a current slug always
+	 * wins over a former one. The LIKE narrows the rows; the exact match is made
+	 * on the decoded list.
+	 *
+	 * @param string    $slug         The slug.
+	 * @param ListQuery $query        The limit.
+	 * @param bool      $multitenancy Whether the organisation filter applies.
+	 *
+	 * @return array<int, Schema> The renamed schemas.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	private function findByFormerSlug(string $slug, ListQuery $query, bool $multitenancy): array {
+		if ($slug === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->like(
+					'former_slugs',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter((string)json_encode($slug)) . '%', IQueryBuilder::PARAM_STR)
+				)
+			);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
+
+		$schemas = array_filter(
+			$this->fetchSchemas(qb: $qb),
+			static fn (Schema $schema): bool => in_array($slug, ($schema->getFormerSlugs() ?? []), true)
+		);
+
+		return array_slice(array_values($schemas), 0, $query->limit);
+	}//end findByFormerSlug()
 
 	/**
 	 * The query for the rows with exactly this slug.

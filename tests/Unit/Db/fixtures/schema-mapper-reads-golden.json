@@ -211,7 +211,59 @@
             "#1 andWhere(isNull(organisation))",
             "#1 setMaxResults(10)",
             "#1 setFirstResult(0)",
-            "#1 executeQuery()"
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p2 = %%, 2",
+            "#2 expr.like(former_slugs, :p2, NULL)",
+            "#2 where(like(former_slugs, :p2, NULL))",
+            "#2 expr.isNull(organisation)",
+            "#2 andWhere(isNull(organisation))",
+            "#2 executeQuery()"
+        ]
+    },
+    "slug none, former slug hit": {
+        "outcome": [
+            "schema 7"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p2 = %%, 2",
+            "#2 expr.like(former_slugs, :p2, NULL)",
+            "#2 where(like(former_slugs, :p2, NULL))",
+            "#2 expr.isNull(organisation)",
+            "#2 andWhere(isNull(organisation))",
+            "#2 executeQuery()"
+        ]
+    },
+    "slug none, former slug miss": {
+        "outcome": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p2 = %%, 2",
+            "#2 expr.like(former_slugs, :p2, NULL)",
+            "#2 where(like(former_slugs, :p2, NULL))",
+            "#2 executeQuery()"
         ]
     },
     "all defaults": {

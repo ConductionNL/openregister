@@ -118,6 +118,13 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * The `renameSchema` operation, which changes the schema rather than its objects.
+	 *
+	 * @var SchemaSlugRename
+	 */
+	private readonly SchemaSlugRename $slugRename;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMigrationPlanner $planner Pure transform engine.
@@ -131,6 +138,7 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 		$this->runEntryMapper = $runs->runEntryMapper;
 		$this->schemaMapper   = $runs->schemaMapper;
 		$this->objectService  = $runs->objectService;
+		$this->slugRename     = new SchemaSlugRename(runs: $runs);
 	}//end __construct()
 
 	/**
@@ -143,6 +151,10 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function validatePlan(array $plan): array {
+		if (SchemaSlugRename::isSlugRename(plan: $plan) === true) {
+			return SchemaSlugRename::problems(plan: $plan);
+		}
+
 		return $this->planner->validatePlan($plan);
 	}//end validatePlan()
 
@@ -157,6 +169,11 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function previewSample(MigrationRequest $request, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array {
+		if (SchemaSlugRename::isSlugRename(plan: $request->plan) === true) {
+			// A slug rename changes no object: its preview is the one change it makes.
+			return [$this->slugRename->preview(request: $request)];
+		}
+
 		$objects = $this->loadSample(request: $request, sampleSize: $sampleSize);
 
 		return array_map(fn (ObjectEntity $object): array => $this->previewPair(object: $object, plan: $request->plan), $objects);
@@ -176,6 +193,10 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function startMigration(MigrationRequest $request, ?string $startedBy = null): SchemaRun {
+		if (SchemaSlugRename::isSlugRename(plan: $request->plan) === true) {
+			return $this->slugRename->run(request: $request, startedBy: $startedBy);
+		}
+
 		$this->assertValidPlan(plan: $request->plan);
 		$this->assertNoActiveRun(schemaId: $request->schemaId);
 		$scope = ['schemaId' => $request->schemaId, 'registerId' => $request->registerId];
@@ -240,6 +261,9 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	public function rollback(int $runId, ?string $startedBy = null): SchemaRun {
 		$run = $this->runMapper->find($runId);
 		$this->assertRollbackable(run: $run, runId: $runId);
+		if (SchemaSlugRename::isSlugRename(plan: ($run->getPlan() ?? [])) === true) {
+			return $this->rollBackSlugRename(run: $run);
+		}
 
 		$batch = new SchemaRunBatch(run: $run, schema: $this->schemaMapper->find($run->getSchemaId()), emptyReport: []);
 		$entries = $this->runEntryMapper->findByRun(runId: $runId, filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_MIGRATED));
@@ -256,6 +280,26 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 
 		return $run;
 	}//end rollback()
+
+	/**
+	 * Undo a slug rename run and persist it as rolled back.
+	 *
+	 * @param SchemaRun $run The slug rename run.
+	 *
+	 * @return SchemaRun The run.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-record-type-can-be-renamed-without-breaking-its-links
+	 */
+	private function rollBackSlugRename(SchemaRun $run): SchemaRun {
+		$tally  = $this->slugRename->rollback(run: $run);
+		$report = ($run->getReport() ?? []);
+		$report['rollback'] = $tally;
+		$run->setReport($report);
+		$run->setState(SchemaRun::STATE_ROLLED_BACK);
+		$this->runMapper->save($run);
+
+		return $run;
+	}//end rollBackSlugRename()
 
 	/**
 	 * Add the rollback counts to the run's report and persist it as rolled back.
