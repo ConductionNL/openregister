@@ -3332,3 +3332,4 @@ cover:planninq:e1c9866d:befc51b3	PR #1141: 7 phpunit tests, Timetabling 444->447
 verify:shillinq:2900:beca6da5	2900 GREEN, 2907 GREEN; 0 new failures	session-20261113T074531-ad7036dd	2026-11-13T07:57:50Z
 verify:keepiq:1747:2aeac449	GREEN keepiq#1747 (phpunit 4564 OK, openapi --check ok)	session-20261113T072713-bdbc6044	2026-11-13T07:57:57Z
 verify:integriq:3506:3a3b7fa0	3506 GREEN (7747 tests, baseline 7736 with 5 inherited, 0 new)	session-20261113T074529-55a84d1d	2026-11-13T07:58:20Z
+cover:shillinq:05639debmd8ee:ba63196d	already done: lib/Enums/*.php 23/23 lines (100%) with pcov on development e678c8ef9 after PR #2852 merged; no PR	session-20261113T072711-3523cf52	2026-11-13T07:58:24Z
