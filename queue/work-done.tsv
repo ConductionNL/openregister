@@ -6945,4 +6945,5 @@ gap:openregister:mainred:20261113212207	PR #10335: test stubbed fetch() only, NC
 build4:openregister:automation-run-records	partial: PR #10336 (Newman collection for automation-records, CI-excluded until first live pass; openspec validate --strict green); left: live Newman run, tell buildiq	session-20261113T212414-df8c34e5	2026-11-13T21:28:13Z
 verify:dossiq:6457:dc2fae28	4 GREEN (6457-6460); 16599 tests, 20 inherited failures, none new	session-20261113T182404-f2c28226	2026-11-13T21:28:18Z
 verify:opencatalogi:2654:853dc57b	2654 GREEN; 2655 CONFLICT (l10n catalogues vs 2654); 0 new failures	session-20261113T212408-9b94abf8	2026-11-13T21:28:42Z
+build4:openregister:feature-toggle-surface	already done in openregister: no openregister code task left; 1.1, 2.1, 2.2 and 3.2b belong to nextcloud-vue, 1.3b to each leaf app's page controller, 3.1 is browser e2e that needs 2.1/2.2; no PR	session-20261113T182404-f2c28226	2026-11-13T21:29:04Z
 verify:versioniq:685:7881db9e	GREEN #685: php 1609 (2 baseline fails), vitest 2910 pass	session-20261113T204606-0d8f1c54	2026-11-13T21:29:01Z
