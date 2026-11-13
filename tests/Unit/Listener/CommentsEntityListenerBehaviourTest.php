@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
+use OCA\OpenRegister\Service\CommentsCollectionCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\EventDispatcher\Event;
@@ -55,7 +56,7 @@ class CommentsEntityListenerBehaviourTest extends TestCase {
 				)
 			);
 
-		(new CommentsEntityListener($mapper, $logger))->handle($event);
+		(new CommentsEntityListener($mapper, $logger, $this->createMock(CommentsCollectionCatalog::class)))->handle($event);
 
 		return $captured;
 	}
@@ -89,7 +90,7 @@ class CommentsEntityListenerBehaviourTest extends TestCase {
 		$mapper->expects($this->never())->method('find');
 		$event = $this->createMock(Event::class);
 
-		(new CommentsEntityListener($mapper, $this->createMock(LoggerInterface::class)))->handle($event);
+		(new CommentsEntityListener($mapper, $this->createMock(LoggerInterface::class), $this->createMock(CommentsCollectionCatalog::class)))->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
 	}

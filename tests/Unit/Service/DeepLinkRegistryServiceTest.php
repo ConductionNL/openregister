@@ -334,4 +334,53 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 		$this->assertNull($result);
 	}
+	/**
+	 * Every registration is listed once, in the order it was added; a duplicate claim is not.
+	 *
+	 * @return void
+	 */
+	public function testRegistrationsListEachClaimOnceInOrder(): void {
+		$this->service->add(new DeepLinkRegistration('dossiq', 'zaken', 'zaak', '/apps/dossiq/#/zaken/{uuid}'));
+		$this->service->add(new DeepLinkRegistration('pipelinq', 'crm', 'lead', '/apps/pipelinq/#/leads/{uuid}'));
+		$this->service->add(new DeepLinkRegistration('procest', 'zaken', 'zaak', '/apps/procest/#/cases/{uuid}'));
+
+		$listed = array_map(
+			static fn (DeepLinkRegistration $registration): string => $registration->appId . ':' . $registration->registerSlug . '::' . $registration->schemaSlug,
+			$this->service->registrations()
+		);
+
+		$this->assertSame(['dossiq:zaken::zaak', 'pipelinq:crm::lead'], $listed);
+	}
+
+	/**
+	 * The app that claimed a register and schema is named by their ids; an unclaimed pair names none.
+	 *
+	 * @return void
+	 */
+	public function testResolveAppIdNamesTheClaimingApp(): void {
+		$this->service->add(new DeepLinkRegistration('dossiq', 'zaken', 'zaak', '/apps/dossiq/#/zaken/{uuid}'));
+
+		$register = new Register();
+		$idProp = (new \ReflectionClass($register))->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($register, 3);
+		$register->setSlug('zaken');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+
+		$schemas = [];
+		foreach ([7 => 'zaak', 8 => 'besluit'] as $id => $slug) {
+			$schema = new Schema();
+			$sIdProp = (new \ReflectionClass($schema))->getProperty('id');
+			$sIdProp->setAccessible(true);
+			$sIdProp->setValue($schema, $id);
+			$schema->setSlug($slug);
+			$schemas[] = $schema;
+		}
+
+		$this->schemaMapper->method('findAll')->willReturn($schemas);
+
+		$this->assertSame('dossiq', $this->service->resolveAppId(3, 7));
+		$this->assertNull($this->service->resolveAppId(3, 8));
+		$this->assertNull($this->service->resolveAppId(99, 7));
+	}
 }

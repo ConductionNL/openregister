@@ -59,4 +59,25 @@ interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 	 */
 	public function requestRegistrations(?IEventDispatcher $dispatcher = null): void;
 
+	/**
+	 * Every registration, one per claimed (register, schema) combination.
+	 *
+	 * @return array<int,DeepLinkRegistration> The registrations, in the order they were added.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.1
+	 */
+	public function registrations(): array;
+
+	/**
+	 * The app that claimed a register and schema.
+	 *
+	 * @param int $registerId The register's id.
+	 * @param int $schemaId   The schema's id.
+	 *
+	 * @return string|null The claiming app's id, or null when no app claimed the pair.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.2
+	 */
+	public function resolveAppId(int $registerId, int $schemaId): ?string;
+
 }//end interface
