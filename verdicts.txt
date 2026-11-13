@@ -2741,3 +2741,4 @@
 10107 66169fa8c3c9a7e6efc8901648876bef670c2b56 APPROVE Tests only; 4 test files, no lib change. Merged with main: ObjectSource 376 OK, Architecture 2355, Rules 296, Controller 9934, Contract 21 all pass.
 10110 f669aeef0e5c5358aee301a2aca992a42e4ea47d APPROVE Tests only (9 ExampleSet test files, @uses metadata + 33 new tests); on main merge ExampleSet 1286 OK, Architecture/Rules/Contract OK; Controller 9 env-bound DB errors unrelated
 9926 d15392e05259505d971fd52d707d82c251cba5fc APPROVE integrator IL4: main merge on top of 938c6f35; conflicts only in component-map rows (union) and the regenerated sigrid.components.yaml
+10109 37e1e614324a17c6fce72a0336686866a18a3cb6 APPROVE Tests only (6 new ExampleSet test files, 1368 ExampleSet tests OK); Architecture, Rules, Contract green; 4 BulkAtomicSave controller errors come from the local DBAL stub, unrelated to this diff.
