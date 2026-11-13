@@ -4687,3 +4687,4 @@ hermiq	1636	1324ea29929d9cdedb303fb6b9f68d6aacf0f7f9	GREEN	worker-31	tests-only;
 keepiq	1709	ff28e2f3a9c3d2a17d76bf87c947de26f677e711	GREEN	worker-34	tree of 4 test-only PRs (new vitest specs): vitest 5659 vs baseline 5475, all passing; PHP unit 3727, 0 failures
 keepiq	1710	73d72ae3d371a1a6f366767dc26e51043c0bd83b	GREEN	worker-34	tree of 4 test-only PRs (new vitest specs): vitest 5659 vs baseline 5475, all passing; PHP unit 3727, 0 failures
 keepiq	1711	62d6cbca7f516a2da5c0c5655ccd6d6b0c3bdebf	GREEN	worker-34	tree of 4 test-only PRs (new vitest specs): vitest 5659 vs baseline 5475, all passing; PHP unit 3727, 0 failures
+hermiq	1534	a68a0c8cdedc00397c7464bce6cfcecaa54cdf0e	GREEN	worker-05:review	behaviour-preserving refactor (delivery/webhook state moved into objects; same order, messages, fallbacks, retry bounds); unit 3842 tests, baseline 3840, no new failures (171 inherited); DeliveryService tests 44 OK; phpstan clean
