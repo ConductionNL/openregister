@@ -6130,3 +6130,4 @@ larpinq	1030	5bab73d02ae1857746bf66732941e60cc8405379	GREEN	worker-01	tests only
 pipelinq	3769	a01a92d97b5dde806e65818d90d0e9b21de05363	GREEN	worker-21	tree 3769+3770+3771: php unit 7194 tests, 5 failures = baseline (inherited, none new); vitest 647 files / 4858 tests passed; tests-only
 pipelinq	3770	a16a86140e199739ea7b2b82f170b67950fd29f4	GREEN	worker-21	tree 3769+3770+3771: php unit 7194 tests, 5 failures = baseline (inherited, none new); vitest 647 files / 4858 tests passed; tests-only
 pipelinq	3771	dc8a207a97e2a6468d64acef75f988ac9ed8c4ee	GREEN	worker-21	tree 3769+3770+3771: php unit 7194 tests, 5 failures = baseline (inherited, none new); vitest 647 files / 4858 tests passed; tests-only
+integriq	3524	650f8d30b9ec8230fdf5b2228b9fd4f2101c68c5	GREEN	worker-35	unit 8232 run (baseline 8222, E2 F2-3 inherited incl. flaky golden sync test); tests only, no new failures
