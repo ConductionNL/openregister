@@ -6273,3 +6273,4 @@ dossiq	6444	d2390741beba8173e8d59c01e11d3c0cd703bf58	GREEN	worker-29	tree 16545 
 shillinq	3014	d48233634c2056466edb729f998612588eee6f7b	GREEN	worker-51	tests only; phpunit 10397 run (baseline 10394), 1 failure = inherited clock-bound PaymentWebhookIntakeCharacterisationTest
 stackiq	1895	c3663e04a77c8e8941c73d169bda79a222e90379	GREEN	worker-06	tests only; unit 3404 on tree, baseline 3397 with 0 failures, 0 new failures
 opencatalogi	2604	e5081b5596c890f18eef83aceb44586bacfca9ac	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
+opencatalogi	2605	1865cf88cfc31f7ca42f7396ff9ade3555a8de2d	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
