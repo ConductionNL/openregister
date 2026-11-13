@@ -1041,3 +1041,4 @@ cover:filinq:8ecceb86:efa2a923	PR #1982: 2 EventListener classes, 7 tests; suite
 cover:filinq:8ecceb86:6ebcfc9b	already done: lib/Service/Editing has no subdirectories; same files covered by PR #1980 (91.3% -> 96.2%)	session-20261112T234653-57d11a5b	2026-11-13T00:09:34Z
 cover:integriq:9b0f5894m2367:js81d0803d	PR #3434: Service/Consumer 86.7->95.6% (bridge 88->102/108), 9 tests; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:09:53Z
 cover:learniq:1ae7757e:js0023cfc7	PR #2424: 24 tests for dialogNotice.js + dialogRequests.js (0->100% lines); suite 1101->1125, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:10:01Z
+cover:stackiq:8cfacb29m2f4b:f545d745	PR stackiq#1795: 10 tests for 3 Repair classes, suite 2539->2549 OK	session-20261112T231645-3f0591a5	2026-11-13T00:10:08Z
