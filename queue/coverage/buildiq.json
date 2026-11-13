@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "8c85aaa07ce6cd452eb253135bdc6a576fbdad94",
- "measured_at": "2026-11-13T01:57:46Z",
+ "commit": "5f5f87c67fc36c647bfe4b43908e2da59a015653",
+ "measured_at": "2026-11-13T04:14:14Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.12,
+  "pct": 80.56,
   "statements": 19516,
-  "covered": 15636,
+  "covered": 15723,
   "dirs": {
    "lib/": [
     11,
@@ -26,7 +26,7 @@
    ],
    "lib/Controller/": [
     3334,
-    2519
+    2535
    ],
    "lib/Dashboard/": [
     81,
@@ -130,11 +130,11 @@
    ],
    "lib/Service/": [
     11267,
-    9163
+    9233
    ],
    "lib/Service/Automation/": [
     9,
-    8
+    9
    ],
    "lib/Service/Connection/": [
     171,
@@ -167,17 +167,17 @@
   }
  },
  "js": {
-  "pct": 79.32,
-  "statements": 13504,
-  "covered": 10711,
+  "pct": 84.68,
+  "statements": 13524,
+  "covered": 11452,
   "dirs": {
    "src/": [
-    179,
-    159
+    185,
+    171
    ],
    "src/components/": [
     690,
-    561
+    568
    ],
    "src/components/agents/": [
     28,
@@ -185,11 +185,11 @@
    ],
    "src/components/applicationDetail/": [
     308,
-    226
+    293
    ],
    "src/components/applicationDetail/widgets/": [
     260,
-    221
+    235
    ],
    "src/components/copilot/": [
     63,
@@ -201,27 +201,27 @@
    ],
    "src/components/page-editor/": [
     1685,
-    1344
+    1441
    ],
    "src/components/page-editor/fields/": [
     1378,
-    999
+    1024
    ],
    "src/components/runtime/": [
     218,
-    178
+    194
    ],
    "src/components/schema-editor/": [
     805,
-    535
+    572
    ],
    "src/components/store/": [
     94,
-    70
+    87
    ],
    "src/components/tabs/": [
     116,
-    81
+    108
    ],
    "src/components/walkthrough-editor/": [
     284,
@@ -229,11 +229,11 @@
    ],
    "src/composables/": [
     778,
-    751
+    753
    ],
    "src/dialogs/": [
     2022,
-    1424
+    1624
    ],
    "src/dialogs/CreateApplicationWizard/": [
     205,
@@ -249,19 +249,19 @@
    ],
    "src/mixins/": [
     206,
-    190
+    194
    ],
    "src/modals/": [
     726,
-    488
+    615
    ],
    "src/router/": [
     1,
     1
    ],
    "src/services/": [
-    1210,
-    1174
+    1224,
+    1210
    ],
    "src/services/manifestValidation/": [
     479,
@@ -277,7 +277,7 @@
    ],
    "src/views/": [
     1543,
-    1200
+    1253
    ]
   }
  }
