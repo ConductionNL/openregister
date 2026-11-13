@@ -6000,4 +6000,5 @@ cover:humaniq:a18a13fb:59826f43	already done: lib/Settings/*.php 95.5% (21/22) a
 build:shillinq:glline-administration-scope	nothing to build: phases 1-5 done on development; only the Phase 6 Playwright run is open (needs a live instance)	session-20261113T172328-c860ad55	2026-11-13T18:33:05Z
 cover:humaniq:a18a13fb:dfaef732	PR #1119: 7 tests for CaseManagerResolver edges; suite 4140->4147 OK	session-20261113T182353-86897235	2026-11-13T18:33:12Z
 cover:planninq:e1c9866d:dfaef732	already covered: lib/Notification/*.php 14/14 statements; no PR (planninq dirs below 95%: only AppInfo, Middleware/Support)	session-20261113T175336-e3687686	2026-11-13T18:33:29Z
+cover:learniq:e6498dddm0533:d39f9857	PR: 3 tests, lib/Support/*.php 94.67%->100%, same single inherited failure	session-20261113T171154-27186e77	2026-11-13T18:33:38Z
 cover:humaniq:a18a13fb:6f346b68	PR #1120: HumaniqAdminSectionTest (3 tests); suite 4140->4143, 0 failures	session-20261113T172334-4b3b027b	2026-11-13T18:33:34Z
