@@ -5421,6 +5421,7 @@ cover:dossiq:069ee2d6m2deb:d2a82d9f	PR #6422: 2 edge-branch tests (decidingInsta
 cover:buildiq:70b3e29ema699:js0be8c659	PR #1552: 4 modals (AutomationTestPanel, LinkRepo, PermissionHistory, Permissions) to 100%; src/modals 92.4%->97.9%; +15 vitest tests, suite 4010 pass	session-20261113T131537-142f7747	2026-11-13T14:08:20Z
 review:openregister:10263:84fb9f40	APPROVE: note lock per spec, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:08:40Z
 review:openregister:10270:1462b41e	APPROVE #10270 (frontend green; l10n parity +1 missing key per locale noted, already red on main)	session-20261113T084525-9d890807	2026-11-13T14:09:03Z
+cover:stackiq:9ac19b3amc14f:59826f43	already done: lib/Settings/*.php (StackiqAdmin) 11/11 statements, every method pinned by exact assertions in StackiqAdminTest; no PR	session-20261113T103904-e108be02	2026-11-13T14:09:20Z
 fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by routing the stopping-rule reconcile through ReviewWrites; floor_check PASS on every property; pushed cea13ccf, REVERIFY recorded	session-20261113T074532-3dc49c57	2026-11-13T14:09:16Z
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
 review:openregister:10272:41fce17c	APPROVE: tasks.md only, tick verified against code and tests	session-20261113T094602-d25cda2a	2026-11-13T14:09:30Z
@@ -5429,4 +5430,5 @@ review:openregister:10260:db1bb620	BLOCK: golden PropertyValidatorValidateProper
 build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 done; 3.1 e2e and 3.2 docs+screenshot left); 37 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T14:10:26Z
 review:openregister:10258:0e3583ea	APPROVE	session-20261113T094606-b7da8c7f	2026-11-13T14:10:25Z
 cover:launchpad:fb10c50fm2d1d:a1252b57	already done: lib/Service/Confluence 97.47% (462/474) on development d6a7f892 after the merged -1 batch; 12-23 tests per class	session-20261113T091533-b7a00bc3	2026-11-13T14:11:01Z
+build2:openregister:object-organisation-from-a-property	partial: PR #10281 to main (tasks 1.1, 1.2, 2.1, 3.1; 4 lib classes + 5 test files, 31 new tests); 1.3 newman/e2e needs a live instance	session-20261113T131535-3d7413ab	2026-11-13T14:12:46Z
 cover:launchpad:fb10c50fm2d1d:38e80a9f	already done: lib/Command 100% (1357/1357) on development d6a7f892 after batches -1,-2	session-20261113T091533-b7a00bc3	2026-11-13T14:12:29Z
