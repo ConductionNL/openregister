@@ -2022,3 +2022,4 @@ cover:keepiq:c967a31fm88ca:05630945	PR keepiq#1731: +37 tests (StandardProtocolP
 cover:hermiq:065f1631m7444:5597bc7b	already done: lib/Service/Workspace/ measures 761/812 (93.7%) with openregister sibling after merged -1 PR, above target 90	session-20261113T024656-2f332446	2026-11-13T04:08:51Z
 cover:integriq:92114ab0md8cd:ee14dc38	PR #3468: lib/Adapters/Berichtenbox 355/393 -> 387/393, 8 tests	session-20261113T015005-030aa10a	2026-11-13T04:08:55Z
 cover:shillinq:05639deb:8cf3c826	PR opened: 4 SepaPain001Generator fallback tests (CSV already covered); suite 9004->9008, 1 inherited failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:09:21Z
+cover:hermiq:065f1631m7444:0f20d6d0	PR hermiq#1652: 5 tests for TalkTurnDispatcher provider detection + failure paths (TalkBridgeStatus rooms in hermiq#1646); 146/26 inherited unchanged	session-20261113T024654-6600dc41	2026-11-13T04:09:27Z
