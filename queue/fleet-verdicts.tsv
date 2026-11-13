@@ -5416,3 +5416,4 @@ larpinq	1016	9b7761159959758a4c12e9c45862efa9f8a91561	GREEN	worker-06	php 697 (b
 larpinq	1017	b0161448ec2e7060c61b2d7751bf5f19146cd53c	GREEN	worker-06	php 697 (baseline 697, 0 fail); vitest 401 on tree (baseline 264); tests-only, 0 new failures
 larpinq	1018	141f69ae9ef05facdc795d49d36cf5f4cd309454	GREEN	worker-06	php 697 (baseline 697, 0 fail); vitest 401 on tree (baseline 264); tests-only, 0 new failures
 pipelinq	3694	93cdbede425f26b5da6fcfdc897c8861cc7a0286	GREEN	worker-47	6469 tests run (+15), baseline 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; extract-method refactors, same order/messages
+humaniq	1105	9f5cc5d1e5844d49c03e4958aa3af8e1c0ecddba	GREEN	worker-21	3877 tests run (all 3 merged), baseline 3834 OK, 0 new failures; tests-only diff
