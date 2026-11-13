@@ -3897,3 +3897,5 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Service/Lifecycle/GraphMoveCatalogue.php,402,Service,Flows,Flows/Service/Lifecycle/GraphMoveCatalogue.php,0,,Processes
+Service/Lifecycle/LifecycleGraphMovesValidator.php,314,Service,Flows,Flows/Service/Lifecycle/LifecycleGraphMovesValidator.php,0,,Processes
