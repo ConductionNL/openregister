@@ -6961,3 +6961,4 @@ build4:openregister:app-declared-credential-providers	partial: PR #10343 - 3.1 a
 review:openregister:10336:f6b65967	APPROVE: docs, specs and an excluded Newman collection only; merges clean	session-20261113T213325-5a151438	2026-11-13T21:34:56Z
 build4:openregister:capability-rows-stated-requirements	partial: PR #10344 task 2.1 URN follows moved trail (+5 tests, no new failures vs main); 3.1/3.2 checksum left	session-20261113T202619-0d7929e0	2026-11-13T21:35:11Z
 build4:openregister:ai-translation-with-a-glossary	partial: PR #10345 tasks 1.1 and 2.2 (glossary register + repair step, provider resolver, draft-on-miss, encrypted skip, seam report); 3.1/3.2/4.1 frontend+docs left, 4.2 e2e left	session-20261113T202612-d930c905	2026-11-13T21:35:31Z
+verify:pipelinq:3789:2322258a	GREEN #3789 (gitleaks allowlist only; 5 inherited unit failures)	session-20261113T213335-001b7417	2026-11-13T21:35:27Z
