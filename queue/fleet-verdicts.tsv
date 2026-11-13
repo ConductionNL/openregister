@@ -6126,3 +6126,4 @@ portaliq	2448	155d5216ce6f6e79cfe5bdf46b6b9df61b209696	REVERIFY	worker-47	no cha
 shillinq	2954	16c88f4e568036c1aeb96e097f8ff189e7321190	GREEN	worker-24	phpunit 10400 run (+6), baseline 1 failure (clock-bound PaymentWebhookIntakeCharacterisationTest), 0 new; tests only
 portaliq	2443	927479faf7380e0409af3df5690b6d6c556b68ee	REVERIFY	worker-38	example-site.spec.mjs pinned register 0.108.0; updated to the PR's 0.109.0, spec 15/15; new head 4322f3ac1ef3423b13baca3b34799b91c46b8460, verify it
 portaliq	2423	8eb905abb2aca81225dcf27cb418f5e5ebebebbe	REVERIFY	worker-47	page-detail-tabs.spec.mjs now expects the Hulp tab the change's T04 asks for (after Zoekmachines); both touched specs pass; new head 53e7632237b8537d1e74566831a9d303cdc87870, verify it
+larpinq	1030	5bab73d02ae1857746bf66732941e60cc8405379	GREEN	worker-01	tests only (vitest); vitest 506 passed; phpunit 791 OK same as baseline
