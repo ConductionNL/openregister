@@ -8,7 +8,8 @@
 
 ## 1b. Backend: `manage` in `@self.can`
 
-- [ ] 1.2 `lib/Service/Object/RenderObject.php` `applyUpdateRightMarker`: add `manage` from `ObjectScopeResolver::admitsUnconditionally` with the caller's uid and groups, the object's owner and authorization, the same call `WatcherService::requireManage` makes (design D-6); `false` when the decision throws. Verify: `tests/Unit/Service/Object/RenderObjectCanMarkerTest.php` covers owner (true), admin (true), RBAC editor who is not owner (false, and `WatcherService::addWatcher` refuses the same caller), no extend (no `can`).
+- [x] 1.2 `lib/Service/Object/RenderObject.php` `applyUpdateRightMarker`: add `manage` from `ObjectScopeResolver::admitsUnconditionally` with the caller's uid and groups, the object's owner and authorization, the same call `WatcherService::requireManage` makes (design D-6); `false` when the decision throws. Verify: `tests/Unit/Service/Object/RenderObjectCanMarkerTest.php` covers owner (true), admin (true), RBAC editor who is not owner (false, and `WatcherService::addWatcher` refuses the same caller), no extend (no `can`).
+  - Built: `RenderObject::mayManage()` beside `update` in `setRightsMarker()`. The cases are in `tests/Unit/Service/Object/RenderObjectUpdateRightTest.php`, which already renders `@self.can` (owner, admin, owning group true; non-owning editor false and refused by `WatcherService::addWatcher`; a decision that cannot be taken reads false; no extend, no `can`).
 - [ ] 1.3 Newman: `GET .../objects/{register}/{schema}/{id}?_extend=@self.can` as owner and as a non-owning editor; assert `manage` true and false, and that `PUT .../watchers/{userId}` agrees for both.
 
 ## 2. Record page (`src/views/object/ObjectDetails.vue`)
