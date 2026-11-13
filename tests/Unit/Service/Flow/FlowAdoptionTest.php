@@ -77,6 +77,14 @@ use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
  * @uses \OCA\OpenRegister\Db\Flow\TriggerLookup
  * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class FlowAdoptionTest extends TestCase {
 

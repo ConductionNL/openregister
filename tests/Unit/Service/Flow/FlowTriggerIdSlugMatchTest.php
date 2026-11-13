@@ -83,6 +83,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
  * @uses \OCA\OpenRegister\Service\Flow\FlowTrigger
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class FlowTriggerIdSlugMatchTest extends TestCase {
 
