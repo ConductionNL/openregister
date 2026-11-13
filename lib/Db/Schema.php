@@ -1653,6 +1653,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'orphanCleanup': (bool) Soft-delete a child the parent owns through an inverse
 	 *   relation when the parent stops referencing it. Default false: the child stays.
+	 * - 'platformSharing': (bool) Offer this schema's objects for sharing through the
+	 *   platform's own sharing surface. Default false: not offered.
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
 	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
 	 *   a file property of this schema, unless the property sets its own.
