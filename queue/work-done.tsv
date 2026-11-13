@@ -1851,3 +1851,4 @@ cover:stackiq:8cfacb29m8db8:jsd48eb217	PR #1825: 12 vitest tests (settings impor
 cover:buildiq:8ca317f6mefda:js047e1779	PR #1498: 35 tests, 4 components; dirs 90.4->95.8% stmts	session-20261113T031704-5a455d65	2026-11-13T03:33:30Z
 cover:buildiq:9930949bmefda:d528dcf0	already covered: lib/Dashboard has 31 behavioural tests across all 4 classes (visibility, id derivation, golden); no PR	session-20261113T024654-6600dc41	2026-11-13T03:33:35Z
 cover:stackiq:df113dffm8db8:81b1241f	already done: lib/Portal 23/23 statements covered (17 tests, quality/test-coverage-81b1241f-1 merged)	session-20261113T031700-0e23c373	2026-11-13T03:33:55Z
+cover:stackiq:df113dffm8db8:38e80a9f	already done: lib/Command 282/282 statements covered by 28 tests (quality/test-coverage-38e80a9f-1 merged)	session-20261113T031700-0e23c373	2026-11-13T03:34:19Z
