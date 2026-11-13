@@ -1024,3 +1024,4 @@ cover:integriq:9b0f5894m2367:9bbad86f	already done: the 8 dirs are at 90.1% stat
 fix:stackiq:1726:8b4ce47c	obsolete: #1726 already merged into development at 8b4ce47c (tests only); dockerimage floor is not from this PR's diff, nothing to fix	session-20261112T224529-41d77a96	2026-11-13T00:05:42Z
 fix:stackiq:1780:0a28fb09	test updated for new constructor args; unit 2545 OK; new head e9e2a627, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-13T00:05:49Z
 fix:stackiq:1781:566ac706	conflict resolved (docblock @uses), touched tests green; new head bd8e0ef5	session-20261112T234655-0bdbf2be	2026-11-13T00:06:02Z
+verify:filinq:1976:1806e527	2 GREEN (1976, 1977, tests-only), 5405 tests vs baseline 5318, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T00:06:19Z
