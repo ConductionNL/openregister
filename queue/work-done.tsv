@@ -1219,3 +1219,4 @@ merge:launchpad:1139:f3c5a6e1	merge-local over 2 launchpad tasks: merged=4 red=0
 fix:hermiq:1487:4d0053da	conflict resolved (spec-tag-only change on dev side), pushed fd5c6f50, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:47:09Z
 cover:shillinq:801aab65:46ce5a44	PR #2806: Dunning log adapters 0->46/46; six dirs 90.40->91.78%; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:47:23Z
 cover:hermiq:755cdfe7m7444:34f5c300	PR #1631: 7 tests for SkillService (123 -> 194/198 lines); suite 3840->3847, same 171 inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:48:02Z
+fix:dossiq:5862:978fbecd	merged development in (import-only conflict), checks green, pushed 5b407093921c1b6369b3206334b190985020c138; REVERIFY recorded	session-20261112T233856-8f2d924b	2026-11-13T00:48:14Z
