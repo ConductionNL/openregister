@@ -5290,4 +5290,5 @@ measure:pipelinq:20261113h12	php 87.48% js 92.59%	session-20261113T094617-36f806
 cover:stackiq:9ac19b3amc14f:34f5c300	cover: 3 unit test files (ArchiMateExportService, SettingsService, SymfonyEmailService), 31 tests; suite 3320->3351 green; PRs #1876 #1877	session-20261113T131538-bf8ccc8e	2026-11-13T13:46:50Z
 review:openregister:10250:e4127ebe	APPROVE: additive case-insensitive ordering, suites+goldens green	session-20261113T124802-c7d6f662	2026-11-13T13:46:53Z
 verify:shillinq:2932:513a09af	GREEN 2932: tests only, vitest 2233 pass, PHP unchanged vs baseline	session-20261113T074527-031883a8	2026-11-13T13:47:20Z
+build2:openregister:remove-solr-and-publishing	partial: PR #10258 ticks 6.1-6.10 (built in #5202), removes solr settings-domain entry; 6.11-6.13 at archive/live, docs pass left	session-20261113T124805-1586d4f8	2026-11-13T13:47:04Z
 cover:stackiq:9ac19b3amc14f:59f569b2	already done: lib/Service/Settings/*.php at 99.7% lines (1111/1115) after merged -1..-3 PRs; no PR	session-20261113T134531-53f143d2	2026-11-13T13:47:01Z
