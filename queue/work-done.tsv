@@ -5884,3 +5884,4 @@ verify:shillinq:2948:4e717601	shillinq #2948-#2950 GREEN: 10486 PHP tests 0 new 
 cover:hermiq:065f1631me44a:3a63cc27	already done: lib/Service/ReportSimilarity at 322/323 lines (99.7%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:16:13Z
 verify:keepiq:1759:8cb123ef	GREEN 1759; vitest 6350 ok, phpunit 4854 ok	session-20261113T171153-e1c17962	2026-11-13T18:16:15Z
 cover:hermiq:065f1631me44a:7d9a7607	already done: lib/Service/Config 48/48 and lib/Service/Translation 19/19 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:16:30Z
+cover:hermiq:065f1631me44a:b97b9aec	already done: lib/Service/Approval at 198/203 lines (97.5%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:16:42Z
