@@ -142,6 +142,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use PhpOffice\PhpSpreadsheet\Writer\Ods;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -5786,6 +5787,7 @@ class ObjectsController extends Controller {
 			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
+			'ods' => $this->odsExport(export: $export),
 			default => $this->excelExport(export: $export),
 		};
 	}//end export()
@@ -5994,6 +5996,35 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'excel', content: $content);
 	}//end excelExport()
+
+	/**
+	 * Export as ODS (OpenDocument spreadsheet).
+	 *
+	 * The same spreadsheet the Excel export builds, so the headers, the
+	 * relation names and the RBAC filtering are identical; only the writer
+	 * differs.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md
+	 */
+	private function odsExport(ObjectExport $export): DataDownloadResponse {
+		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$writer = new Ods($spreadsheet);
+		ob_start();
+		$writer->save('php://output');
+		$content = ob_get_clean();
+
+		$rowCount = $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'ods', rowCount: $rowCount));
+
+		return $export->download(format: 'ods', content: $content);
+	}//end odsExport()
 
 	/**
 	 * The refusal for this caller's export, or null when they may take it.
