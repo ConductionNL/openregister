@@ -6179,3 +6179,4 @@ shillinq	2975	66d3ac29a4fc7616a46b49a9ca5656757d02ef05	CONFLICT	worker-01	confli
 shillinq	2976	e39d3257908bc68538d0d547ad07f37dc3c36a5f	CONFLICT	worker-01	conflicts after 2972 in l10n/en,nl .json/.js and tests/fixtures/register-versions.lock.json
 shillinq	2977	add92d1a9615675ed8838a619350029ac6201f10	CONFLICT	worker-01	conflicts after 2972 in tests/fixtures/register-versions.lock.json
 shillinq	2978	20802e6d5d076072917fa17a9d67578e676b8e40	GREEN	worker-01	build inventory-receipt-cost-layers per its change; phpunit tree 10421 vs baseline 10394, same 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), 0 new
+opencatalogi	2598	ad8fac967470e61839e043913caf3d058685bff1	GREEN	worker-01	tests only; phpunit 5276 vs baseline 5254, same 2 inherited failures, 0 new
