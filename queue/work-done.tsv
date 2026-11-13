@@ -1286,3 +1286,4 @@ merge:larpinq:1000:d76b1030	stale	feeder	2026-11-13T01:00:17Z
 verify:stackiq:1774:e41fcd93	stale	feeder	2026-11-13T01:00:17Z
 merge:filinq:1975:73c62e36	stale	feeder	2026-11-13T01:00:17Z
 cover:launchpad:755175ffm7412:34f5c300	already done: lib/Service/*.php measured 92.4% lines on development (target 85; #1118 merged), no PR	session-20261113T002025-940c220f	2026-11-13T01:01:50Z
+cover:openregister:7350e3efm0e99:jsa8ac8042	PR #10079: 13 jest tests for EntitiesTab, lines 90.2% -> 100%, suite 7485 -> 7498 green	session-20261113T002028-bc0aa910	2026-11-13T01:02:14Z
