@@ -1604,3 +1604,4 @@ verify:launchpad:1156:30467eb4	GREEN: 1156 docs/coverage-summary refresh only	se
 cover:pipelinq:f67520ecm8c58:a13d1ab7	PR #3625: 8 tests, lib/Service/WebForm 94.0->99.5% stmts in WebForm tests	session-20261113T015005-da194c88	2026-11-13T02:18:49Z
 cover:pipelinq:f67520ecm8c58:d528dcf0	PR #3624: 7 tests, lib/Dashboard 72.2% -> 88.9% (rest is load() calling OCP\Util statics, not unit-testable); suite failures unchanged	session-20261113T015005-e2235eb9	2026-11-13T02:18:48Z
 verify:filinq:2003:f9f29384	GREEN #2003 (5502 tests, 0 new failures)	session-20261113T021702-a00af7e3	2026-11-13T02:18:51Z
+cover:pipelinq:f67520ecm8c58:0798b7cf	PR #3626: PosCart 63/67 -> 67/67 statements, +7 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:19:10Z
