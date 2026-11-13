@@ -195,6 +195,13 @@ class ObjectsController extends Controller {
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
 
 	/**
+	 * Whether show() is already reading an object at the address it moved to.
+	 *
+	 * @var bool
+	 */
+	private bool $followingMove = false;
+
+	/**
 	 * The container.
 	 *
 	 * @var ContainerInterface
@@ -3044,11 +3051,13 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = $this->foundForShow(show: $show, read: $read);
 			if ($objectEntity === null) {
-				return $this->absentObject(show: $show, read: $read);
+				return ($this->movedShow(show: $show, read: $read) ?? $this->absentObject(show: $show, read: $read));
 			}
 
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
-		} catch (DoesNotExistException|NotAuthorizedException $exception) {
+		} catch (DoesNotExistException $exception) {
+			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
+		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
 			return $this->ambiguousIdentifierResponse(id: $show->id);
@@ -3076,6 +3085,101 @@ class ObjectsController extends Controller {
 			_multitenancy: $read->scoped
 		);
 	}//end foundForShow()
+
+	/**
+	 * The object at its new address, when the address asked for is one it moved away from.
+	 *
+	 * Only on a miss, so the read path of every object stays as it was. The
+	 * object is read again THROUGH show() at its new address, so the purpose
+	 * binding, RBAC, redaction and rendering of that address apply, not those
+	 * of the address it left. One hop only: an address that resolves to
+	 * another moved address is not followed further.
+	 *
+	 * @param ObjectShow        $show The object asked for and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's scope.
+	 *
+	 * @return JSONResponse|null The object with `@self.movedTo`, a refusal at the new address, or null when it did not move from here.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	private function movedShow(ObjectShow $show, ObjectReadOptions $read): ?JSONResponse {
+		if ($this->followingMove === true) {
+			return null;
+		}
+
+		try {
+			$lookup = $this->container->get(\OCA\OpenRegister\Service\Object\MovedObjectLookupInterface::class);
+		} catch (\Throwable $e) {
+			// No lookup is no answer: the miss stays the miss it was.
+			return null;
+		}
+
+		if (($lookup instanceof \OCA\OpenRegister\Service\Object\MovedObjectLookupInterface) === false) {
+			return null;
+		}
+
+		try {
+			$to = $lookup->movedFrom(
+				identifier: $show->id,
+				register: (string)$show->resolved['register'],
+				schema: (string)$show->resolved['schema'],
+				scoped: $read->scoped
+			);
+			if ($to === null) {
+				return null;
+			}
+
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $to['register'], schema: $to['schema']),
+				objectService: $show->services->objects
+			);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return null;
+		}
+
+		$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$this->followingMove = true;
+		try {
+			$response = $this->shownObject(
+				show: new ObjectShow(id: $to['uuid'], path: [$to['register'], $to['schema']], resolved: $resolved, services: $show->services)
+			);
+		} finally {
+			$this->followingMove = false;
+		}
+
+		return $this->withMovedTo(response: $response, movedTo: $to);
+	}//end movedShow()
+
+	/**
+	 * Name the new address on a found object, so the caller can update what it holds.
+	 *
+	 * @param JSONResponse                                                       $response The answer at the new address.
+	 * @param array{register: string, schema: string, uuid: string, movedAt: string} $movedTo  The new address.
+	 *
+	 * @return JSONResponse The answer, with `@self.movedTo` when it carries the object.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	private function withMovedTo(JSONResponse $response, array $movedTo): JSONResponse {
+		$data = $response->getData();
+		if ($response->getStatus() !== Http::STATUS_OK || is_array($data) === false || is_array($data['@self'] ?? null) === false) {
+			return $response;
+		}
+
+		$data['@self']['movedTo'] = [
+			'register' => $movedTo['register'],
+			'schema'   => $movedTo['schema'],
+			'id'       => $movedTo['uuid'],
+			'movedAt'  => $movedTo['movedAt'],
+		];
+		$response->setData($data);
+
+		return $response;
+	}//end withMovedTo()
 
 	/**
 	 * The 404 for an object find() did not return.
@@ -5679,6 +5783,7 @@ class ObjectsController extends Controller {
 		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
 		return match ($type) {
 			'csv' => $this->csvExport(export: $export),
+			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
 			default => $this->excelExport(export: $export),
@@ -5763,6 +5868,25 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'csv', content: $content);
 	}//end csvExport()
+
+	/**
+	 * Export as TSV.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function tsvExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToTsv(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'tsv', rowCount: $this->countCsvExportRows(csv: $content)));
+
+		return $export->download(format: 'tsv', content: $content);
+	}//end tsvExport()
 
 	/**
 	 * Export as JSON.

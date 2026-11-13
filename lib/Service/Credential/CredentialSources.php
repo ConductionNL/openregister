@@ -40,11 +40,13 @@ final readonly class CredentialSources {
 	 * @param ObjectOperationsInterface $objectService   OR object CRUD (loads credential metadata).
 	 * @param CredentialStore           $credentialStore Secret store leaf (reads the injected secret).
 	 * @param ProviderCatalogue         $catalogue       Read-only provider catalogue (host-lock + rules).
+	 * @param DeclaredProviderResolver|null $declared   Admission of app-declared providers; null admits none.
 	 */
 	public function __construct(
 		public ObjectOperationsInterface $objectService,
 		public CredentialStore $credentialStore,
 		public ProviderCatalogue $catalogue,
+		public ?DeclaredProviderResolver $declared = null,
 	) {
 	}//end __construct()
 }//end class

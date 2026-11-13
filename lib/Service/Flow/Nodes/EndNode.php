@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
  * Stops the run, optionally as an error.
  */
 class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
-	IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree
 {
 	/**
 	 * The step type.
@@ -97,6 +98,38 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 		// flow with two endings.
 		return ['error', 'message', 'next'];
 	}//end configKeys()
+
+	/**
+	 * Whether this ending is a failure, its message, and where the person goes afterwards.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'error',
+				'label' => $this->l10n->t('End the run as failed'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Failing is an outcome, not the absence of one: leave this off for an ending the flow expects.'),
+			],
+			[
+				'key' => 'message',
+				'label' => $this->l10n->t('Message'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Written to the run log as the reason the run ended here.'),
+			],
+			[
+				'key' => 'next',
+				'label' => $this->l10n->t('Afterwards, go to'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Overrides the manual trigger\'s choice for a run that ends here: "stay", "next" or "list". Empty keeps the trigger\'s choice.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Nothing to REQUIRE — a stop with no message is a fine clean stop.

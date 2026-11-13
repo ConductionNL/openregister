@@ -168,6 +168,55 @@ Private views (default) are only visible to you.
 
 **Why this separation?** Views are designed to be query filters that can be exposed as API endpoints. UI preferences are personal and session-specific.
 
+### Presentation: table, kanban, calendar or gallery
+
+A view also carries how it renders, under `presentation.viewType`. A view without a
+presentation renders as a `table`, exactly as every view did before presentations
+existed.
+
+| viewType | What it draws | What it declares |
+| --- | --- | --- |
+| `table` | Rows and columns | nothing |
+| `kanban` | Columns of cards by a field's value | `kanban.groupByField` |
+| `calendar` | Records on a date, or over a period | `calendar.dateField`, optionally `calendar.endDateField` |
+| `gallery` | A grid of cards with a cover picture | `gallery.titleField`, optionally `gallery.coverField`, `gallery.cardFields`, `gallery.cardSize` |
+
+#### The gallery
+
+A gallery suits records people recognise by a picture: buildings, assets, products,
+locations. Each card shows a cover image, a title and a few chosen fields.
+
+- **`titleField`** (required): the property shown as the card's title.
+- **`coverField`**: the property the cover picture comes from. It must be a file
+  property, a list of files, or a string of `format: image`. Left out, the schema's
+  own `objectImageField` is the cover. A record with no picture, or whose picture
+  the viewer may not read, shows the schema's icon instead.
+- **`cardFields`**: up to four more properties to show on the card.
+- **`cardSize`**: `small`, `medium` or `large`.
+
+Every field a gallery names must be a property of the view's schema, and the save is
+refused with the field named when it is not. A `coverField` that is a text property
+is refused the same way, since it cannot produce a picture.
+
+```bash
+POST /api/views
+Content-Type: application/json
+
+{
+  "name": "Panden op foto",
+  "query": { "registers": [1], "schemas": [7] },
+  "presentation": {
+    "viewType": "gallery",
+    "gallery": {
+      "coverField": "foto",
+      "titleField": "adres",
+      "cardFields": ["bouwjaar", "gebruiksdoel"],
+      "cardSize": "medium"
+    }
+  }
+}
+```
+
 ### Data Sources
 
 Views can specify which data source to use:
