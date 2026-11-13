@@ -4181,5 +4181,6 @@ cover:openregister:7350e3efmea52:7a62cd5d	PR #10120: 7 tests, Service/Dbal 92.2%
 cover:openregister:7350e3efmea52:516a028c	PR #10121: 23 tests over 5 SchemaMapper classes; dir 71.8->79.8% (standalone pcov), no new failures	session-20261113T081038-e8b5210f	2026-11-13T10:12:17Z
 verify:stackiq:1867:6770aa5b	1867 GREEN: tests only, suite 3270 no failures	session-20261113T074532-3dc49c57	2026-11-13T10:12:20Z
 cover:portaliq:b60f3b81:11ce03ab	PR #2392: 18 tests for Theme (3 new files + 2 extended), lib/Service/Theme 97.7->100%, suite 4527->4545 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:12:23Z
+cover:decidiq:a5f973bbm1507:f545d745	already done: lib/Repair/*.php at 100% (803/803) on development a2b22454; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:12:33Z
 cover:portaliq:b60f3b81:7a286478	PR #2393: covered 5 untested lib/Service/Identity classes (RegisteredDetailsShape, PortalAccountLookup, MandateParties, ContactOverview, ContactAddressValues), each 0%->100%, 40 tests; dir 91.01%->93.99%, below 95 target as the rest is in large existing-test services	session-20261113T091531-f9ad21ac	2026-11-13T10:12:31Z
 cover:dossiq:069ee2d6m7275:5706f9f2	PR #6386: 4 Notes classes, 15 tests (dir 13 -> 28), lines already 100%, 19 inherited failures unchanged	session-20261113T084525-9d890807	2026-11-13T10:12:48Z
