@@ -5913,3 +5913,4 @@ buildiq\t1543\t22709fae85f7d2171ac636f1737ab76c7a0afc42\tGREEN\tworker-36\t2820 
 portaliq\t2402\t60d0c02009190d6ce03c23c8ab18fdfaccf827ac\tGREEN\tworker-41\ttest-only (SettingsSectionTest), tree 4855 pass, no production change
 portaliq\t2403\te912f9ebb1f2345329e0d86c5749747e32c1f854\tGREEN\tworker-41\ttest-only (PortalOverviewEdgesTest), tree 4855 pass, no production change
 portaliq\t2404\t2bd67109e534d02a009d28cdd5ce668ab52616fb\tGREEN\tworker-41\ttest-only (AdminSettingsTest), tree 4855 pass, no production change
+portaliq	2400	93a719a60a694bf60eeac6f06b9e7c1b32f2c368	GREEN	worker-32	unit 4848 tests (baseline 4842, 0 fail), 0 new failures; tests-only (+6 EmailLink fail-closed tests), no production code
