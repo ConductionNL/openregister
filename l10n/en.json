@@ -1,5 +1,6 @@
 {
     "translations": {
+        "LICENSE_PLATE": "LICENSE_PLATE",
         "Marketplace": "Marketplace",
         "%1$s %2$s created": "%1$s %2$s created",
         "{schema} {title} created": "{schema} {title} created",

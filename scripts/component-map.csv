@@ -3985,6 +3985,11 @@ Service/Flow/FlowNodeRightsGuardInterface.php,101,Service,Flows,Flows/Service/Fl
 Service/Flow/FlowNodeRightRefused.php,66,Service,Flows,Flows/Service/Flow/FlowNodeRightRefused.php,0,,Processes
 Service/Flow/IFlowNodeRequiresRight.php,69,Service,Flows,Flows/Service/Flow/IFlowNodeRequiresRight.php,0,,Processes
 Repair/InitializeFlowNodeRights.php,88,Repair,Platform,Platform/Repair/InitializeFlowNodeRights.php,0,,Platform
+Exception/UnknownPatternSetException.php,6,Exception,Exception,Exception/UnknownPatternSetException.php,0,,Kernel
+Files/Service/TextExtraction/PatternSet/JurisdictionPatternSets.php,75,Files,Files,Files/Service/TextExtraction/PatternSet/JurisdictionPatternSets.php,0,,Files
+Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,61,Files,Files,Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,0,,Files
+Formats/LicensePlateNlFormat.php,47,Formats,Formats,Formats/LicensePlateNlFormat.php,0,,Kernel
+Service/Settings/EntityPatternSetSetting.php,46,Service,Configuration,Configuration/Service/Settings/EntityPatternSetSetting.php,0,,Configuration
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core

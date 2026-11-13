@@ -80,6 +80,8 @@ class RiskLevelService implements RiskLevelServiceInterface {
 		EntityRecognitionHandler::ENTITY_TYPE_IBAN => self::RISK_HIGH,
 		EntityRecognitionHandler::ENTITY_TYPE_PERSON => self::RISK_MEDIUM,
 		EntityRecognitionHandler::ENTITY_TYPE_PHONE => self::RISK_MEDIUM,
+		// A plate identifies a person through the RDW register, like a phone number.
+		EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE => self::RISK_MEDIUM,
 		EntityRecognitionHandler::ENTITY_TYPE_ADDRESS => self::RISK_MEDIUM,
 		EntityRecognitionHandler::ENTITY_TYPE_LOCATION => self::RISK_LOW,
 		EntityRecognitionHandler::ENTITY_TYPE_ORGANIZATION => self::RISK_LOW,
