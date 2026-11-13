@@ -13,7 +13,7 @@
 ## 3. Stamping
 
 - [x] 3.1 Read `FlowRunContext::current()` in `AuditTrailMapper::buildAuditTrail()` and stamp the three fields; verify BOTH `createAuditTrail()` and the batched `insertAuditTrails()` produce stamped rows from the one change (verified: lib/Db/AuditTrailMapper.php, lib/Db/AuditFlowAttribution.php, tests/Unit/Db/AuditFlowAttributionTest.php)
-- [ ] 3.2 Apply the same stamp in `createAuditTrailEntry()` and `createToolInvocationEntry()`; verify a retention entry written during a run is attributed, and that a write made by a leaf app called from inside a node is stamped identically to the node's own write without that app referencing any flow API
+- [x] 3.2 Apply the same stamp in `createAuditTrailEntry()` and `createToolInvocationEntry()`; verify a retention entry written during a run is attributed, and that a write made by a leaf app called from inside a node is stamped identically to the node's own write without that app referencing any flow API (verified: lib/Db/AuditTrailMapper.php `insertHashChained()` applies the attributions before the INSERT for both entry points, the tool one being `recordToolInvocation()`; tests/Unit/Db/AuditTrailEntryFlowAttributionTest.php pins the stamped row and the bound INSERT values inside a run, and none outside one. `createAuditTrailEntry()` is the API leaf apps call, and it takes no flow argument)
 
 ## 4. Hash chain (ADR-003 Rule 4)
 
@@ -40,7 +40,7 @@
 
 ## 6. Read surfaces
 
-- [ ] 6.1 Add `GET /api/flow-runs/{uuid}/objects` returning objects grouped by node with action and step, reusing the visibility rule `FlowRunController::resume()` applies; verify a caller who may not read the run is refused without learning the run exists, a suspended run reports what it has touched so far, and a run that wrote nothing returns an empty collection rather than an error (code exists, test missing: lib/Controller/FlowRunController.php)
+- [x] 6.1 Add `GET /api/flow-runs/{uuid}/objects` returning objects grouped by node with action and step, reusing the visibility rule `FlowRunController::resume()` applies; verify a caller who may not read the run is refused without learning the run exists, a suspended run reports what it has touched so far, and a run that wrote nothing returns an empty collection rather than an error (verified: lib/Controller/FlowRunController.php; refusal without leaking the run in tests/Unit/Controller/FlowRunObjectsGoldenTest.php, the suspended run, the empty run and the caller without a session in tests/Unit/Controller/FlowRunObjectsEdgesTest.php)
 - [ ] 6.2 Add a `flowRun` filter to the audit-trail query and expose the three fields in the audit-trail serialisation; verify filtering returns only that run's rows and a pruned run's rows still read
 
 ## 7. Frontend
