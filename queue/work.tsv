@@ -5615,3 +5615,9 @@ review:openregister:10216:e73d099a	review	openregister	main	10216	sha=e73d099a67
 verify:buildiq:1542:8d1ecaef	verify	buildiq	development	merge	prs=1542@741d037cfa7d8b50ec6310b1d7ca1785b1923a7d	2026-11-13T12:55:09Z
 merge:pipelinq:3754:2d53b5e5	merge	pipelinq	development	development	prs=3754@9eeea22badc492ed37aafbd84c5ba3ff0ac256a3,3755@6b2c8043680c332640b7da29c3ac0cc18c7aa654	2026-11-13T12:55:09Z
 measure:stackiq:20261113h12	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T08:55:36Z
+review:openregister:10212:01dfee0f	review	openregister	main	10212	sha=01dfee0f5e4b70d3237f564ca364c244f30f28d0;last_approved=;title=fix(logging): a missing register and a leaf that says how it loads are not logged as errors	2026-11-13T13:00:21Z
+review:openregister:10217:99472195	review	openregister	main	10217	sha=9947219560d469a31bc5d182f9dddafc452070f1;last_approved=;title=test(openregister): cover organisation member list and remove-user dialog	2026-11-13T13:00:21Z
+review:openregister:10218:44eb7da6	review	openregister	main	10218	sha=44eb7da6148aee132e8f96632c817542a423474c;last_approved=;title=test(openregister): render the schema modals in their states	2026-11-13T13:00:21Z
+cover:pipelinq:7f9dc8e6m84dd:a3bb9eeb	cover	pipelinq	development	quality/test-coverage-a3bb9eeb	lang=php;dirs=lib/Service/Portal/*.php;focus=thin;weight=6635;coverage=86.73;target=90.0	2026-11-13T08:54:38Z
+measure:keepiq:20261113h12	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T13:00:21Z
+measure:pipelinq:20261113h12	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T13:00:21Z
