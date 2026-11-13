@@ -1496,3 +1496,4 @@ cover:learniq:1ae7757em6be5:js0246d36e	PR learniq#2431: 6 node tests, src/api/ti
 measure:hermiq:20261113h00	failed: permission (npm ci refused; PHP lines 85.81% measured but not recorded)	session-20261113T015005-e2235eb9	2026-11-13T01:53:46Z
 measure:openregister:20261113h00	failed: permission (npm ci refused in this session; JS leg of measure cannot run)	session-20261113T015005-e2235eb9	2026-11-13T01:54:05Z
 cover:integriq:9b0f5894m2367:8454d011	PR #3454: 3 tests for RuleRegistrar; lib/Rule/*.php 116/121 -> 121/121; suite 7113->7116, no new failures	session-20261113T013903-97d30fda	2026-11-13T01:54:51Z
+measure:integriq:20261113h00	php 88.01% js 72.18% @8420a0dd	session-20261113T011743-bdeb8a13	2026-11-13T01:54:58Z
