@@ -6546,3 +6546,4 @@ cover:dossiq:069ee2d6mbd37:a97b9ee7	already done: lib/Service/Money/*.php at 835
 cover:dossiq:069ee2d6mbd37:28cccfd9	already done: lib/Repair/Support/ at 174/174 100.0 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:21Z
 verify:integriq:3534:9423c819	3534 GREEN; 8222->8256 tests, failure set identical to baseline	session-20261113T192700-55dce75a	2026-11-13T20:07:24Z
 cover:dossiq:069ee2d6mbd37:67583626	already done: lib/Service/Lifecycle/*.php at 883/893 98.9 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:35Z
+cover:dossiq:069ee2d6mbd37:6a58479a	already done: lib/Service/Support/*.php at 710/719 98.7 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:41Z
