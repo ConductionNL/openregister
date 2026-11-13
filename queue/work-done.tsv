@@ -3154,3 +3154,4 @@ gap:decidiq:dompurify:burn1	failed: permission (verify of open PR #2120 carrying
 gap:filinq:spdx:burn1	PR #2043: SPDX headers added to 6 files (2 lib, 4 tests)	session-20261113T072713-f866e896	2026-11-13T07:29:00Z
 cover:shillinq:05639debmd8ee:ba4eff5a	PR #2904: Peppol log adapter behaviour, 6 tests, suite 9460->9466 (inherited 1F unchanged)	session-20261113T064518-860c039d	2026-11-13T07:29:14Z
 fix:shillinq:2900:0a5d50ed	conflict resolved, pushed 451b1bee176ae59c087d57bd16267d8693e30f0b, REVERIFY recorded	session-20261113T071633-17de823f	2026-11-13T07:29:16Z
+review:openregister:10015:fb43e991	APPROVE: tests-only metadata, suites match main	session-20261113T071631-5a3cc070	2026-11-13T07:29:22Z
