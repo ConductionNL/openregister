@@ -6605,3 +6605,7 @@ integriq	3543	aaeb1f5d9dc1b0e4de7476e6901b446174c9e14d	CONFLICT	merge3	merges cl
 integriq	3546	95fa7eb644975cdf5d614d79337033061f191477	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json openapi.json 
 integriq	3551	a7b3ae533ada5f5f63e2e5b0240d52b01b9c7731	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json openapi.json 
 integriq	3556	c479514657eb8eb37b2d66375774fb84698c7dc2	CONFLICT	merge3	merges clean on development alone; files: lib/Service/EndpointService.php 
+humaniq	1025	a9ec65cd2303c28414b2a2ce4734b889c83dcd5d	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
+humaniq	1029	a8575e17355a3083c95cc32a036a2f82e7010e19	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
+humaniq	1030	4e04b394e56c758e0a154a2734470d412302efa7	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
+humaniq	1031	f88eeb1ed1d23d855c5decb3b750537502cfd0ca	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
