@@ -1,16 +1,16 @@
 {
  "app": "launchpad",
- "commit": "91492abcaa93298402349f3a9e5f540e0a710877",
- "measured_at": "2026-11-12T22:50:46Z",
+ "commit": "d2a99e945cb079bc41f033f26c993e2223bfbdad",
+ "measured_at": "2026-11-13T02:00:24Z",
  "php": {
   "tool": "pcov",
-  "pct": 84.03,
+  "pct": 89.16,
   "statements": 21987,
-  "covered": 18476,
+  "covered": 19604,
   "dirs": {
    "lib/Activity/": [
     337,
-    320
+    333
    ],
    "lib/Activity/Settings/": [
     22,
@@ -22,19 +22,19 @@
    ],
    "lib/BackgroundJob/": [
     136,
-    128
+    136
    ],
    "lib/Command/": [
     1357,
-    1308
+    1354
    ],
    "lib/Controller/": [
     4607,
-    3953
+    4219
    ],
    "lib/Db/": [
     2102,
-    791
+    1070
    ],
    "lib/Event/": [
     6,
@@ -42,43 +42,43 @@
    ],
    "lib/Exception/": [
     55,
-    48
+    55
    ],
    "lib/Job/": [
     48,
-    47
+    48
    ],
    "lib/Listener/": [
     267,
-    241
+    267
    ],
    "lib/Notification/": [
     85,
-    83
+    85
    ],
    "lib/Repair/": [
     313,
-    266
+    279
    ],
    "lib/Search/": [
     202,
-    190
+    202
    ],
    "lib/Service/": [
     11530,
-    10328
+    10652
    ],
    "lib/Service/Cleanup/": [
     42,
-    26
+    42
    ],
    "lib/Service/Confluence/": [
     474,
-    417
+    462
    ],
    "lib/Service/Connection/": [
     172,
-    157
+    172
    ],
    "lib/Service/InitialState/": [
     0,
@@ -86,7 +86,7 @@
    ],
    "lib/Settings/": [
     55,
-    0
+    55
    ],
    "lib/Support/": [
     46,
@@ -95,9 +95,9 @@
   }
  },
  "js": {
-  "pct": 66.2,
+  "pct": 73.78,
   "statements": 7243,
-  "covered": 4795,
+  "covered": 5344,
   "dirs": {
    "src/": [
     44,
@@ -113,7 +113,7 @@
    ],
    "src/components/Widgets/Renderers/": [
     1302,
-    921
+    1121
    ],
    "src/components/Workspace/": [
     324,
@@ -145,11 +145,11 @@
    ],
    "src/modals/": [
     638,
-    381
+    545
    ],
    "src/services/": [
     526,
-    317
+    502
    ],
    "src/stores/": [
     715,
