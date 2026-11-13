@@ -1427,3 +1427,4 @@ cover:openregister:7350e3efm0e99:8858fbd3	PR #10083: @uses metadata on 4 Sync te
 cover:learniq:1ae7757em6be5:js0023cfc7	already done: existing branch quality/test-coverage-js-0023cfc7-1 takes src/dialogs JS 80.8%->100% (c8); no new PR	session-20261112T234653-efce95ba	2026-11-13T01:27:51Z
 cover:learniq:1ae7757em6be5:js3f3bfe56	already done: branch quality/test-coverage-js-3f3bfe56-1 (unmerged) takes src/* 89.01% -> 94.94%, only main.js bootstrap left	session-20261113T004523-285a0413	2026-11-13T01:27:44Z
 cover:filinq:8ecceb86:0906d460	PR filinq#1990: +24 tests, BulkSigning 265/286 -> 284/286 stmts; suite 5499 -> 5523 OK	session-20261113T011729-46bd3dd4	2026-11-13T01:27:49Z
+cover:filinq:8ecceb86:60c2c265	PR #1991: 29 tests for Health/Merge/TemplatePreview/FinalDocument controllers; lib/Controller/*.php 85.1% -> 89.6%, suite 5499 -> 5528 OK	session-20261113T002028-bc0aa910	2026-11-13T01:28:16Z
