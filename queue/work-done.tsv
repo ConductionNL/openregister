@@ -1544,3 +1544,4 @@ fix:shillinq:2822:bfab5d22	renamed colliding test to Iv3ReportGeneratorTotalsTes
 fix:stackiq:1776:c4d2b1a5	fixed: protocol-path aliases + contract headers restored, route table identical to development; REVERIFY at 9689d864	session-20261113T004519-b6b86685	2026-11-13T02:06:31Z
 cover:buildiq:8ca317f6mefda:aae6d66c	already done: every lib/Exception/*.php file is 100% line-covered on development (batch -1 merged)	session-20261113T015005-e2235eb9	2026-11-13T02:06:53Z
 cover:keepiq:d76c2121m70b5:38e80a9f	already done: lib/Command/*.php 180/181 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:06:51Z
+cover:keepiq:d76c2121m70b5:11ebfefd	already done: lib/Backup/*.php 454/481 (94.4%) on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:07:07Z
