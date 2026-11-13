@@ -7209,3 +7209,4 @@ measure:shillinq:20261113h22	php 91.6% (pcov, 1 inherited failure), js 85.33% (v
 verify:learniq:2489:85b194ce	GREEN #2489	session-20261113T202603-6c9ef72f	2026-11-13T22:33:40Z
 verify:portaliq:2475:55352372	2475 GREEN	session-20261113T204551-fafe539e	2026-11-13T22:34:01Z
 build:learniq:attendance-warns-before-the-threshold	partial: PR #2493 (T1,T5; T2 change-wiring only)	session-20261113T202611-3b383b96	2026-11-13T22:34:23Z
+review:openregister:10424:6922cd65	APPROVE: additive admin-only settings field + occ command; suites green	session-20261113T204539-805bb895	2026-11-13T22:34:35Z
