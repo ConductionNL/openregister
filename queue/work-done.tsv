@@ -1991,4 +1991,5 @@ cover:shillinq:801aab65:6f346b68	PR #2858: SettingsSectionTest +4; lib/Sections 
 cover:hermiq:065f1631m7444:34f5c300	PR hermiq#1648: 19 tests for AuditTrailVersionHistory, GitHubRepoTarget, MemoryLookup; 146 errors/26 failures inherited, unchanged	session-20261113T024654-6600dc41	2026-11-13T04:04:50Z
 cover:hermiq:755cdfe7m7444:b2c9296a	PR #1649: 14 tests for LlphantChatCall/ContextAssembler/ConversationTitleWriter; suite 4187 OK -> 4201 OK (with openregister sibling)	session-20261113T034629-21e68669	2026-11-13T04:04:56Z
 cover:hermiq:065f1631m7444:65e30692	already done: lib/Service/Intake/ is 288/288 stmts with an openregister checkout beside the app; the reported gap is IntakeToolGrant tests erroring when the measurement runs without that sibling	session-20261113T024656-2f332446	2026-11-13T04:05:20Z
+cover:pipelinq:f67520ecm8c58:9d3a1784	PR #3639: 33 tests over 5 jobs; lib/BackgroundJob 72.4% -> 89.0%; 1 inherited failure	session-20261113T031700-211f0599	2026-11-13T04:05:20Z
 verify:launchpad:1157:d4eea45a	launchpad 1157,1158,1159,1162,1163,1164 GREEN (tests only); 1165 CONFLICT with 1157	session-20261113T034631-5fd77fa7	2026-11-13T04:05:31Z
