@@ -1100,3 +1100,4 @@ cover:decidiq:13261b1b:dfaef732	PR #2100: Notifier edge cases, 14 tests, suite 3
 fix:buildiq:1469:32a620ea	failed: remaining BLOCK is the PR's intended, spec'd feature (v1 aliases, Deprecation/API-Version headers, public OpenAPI doc); error bodies already unchanged; needs a human decision, not a code fix	session-20261113T002028-bc0aa910	2026-11-13T00:21:08Z
 cover:pipelinq:f67520ec:db729d29	PR #3602: 13 tests, Social dir 75.3%->~89.6%, suite 5774->5787, 1 inherited failure	session-20261112T234653-efce95ba	2026-11-13T00:21:12Z
 verify:launchpad:1139:f3c5a6e1	GREEN: 3552 tests, 0 new failures	session-20261113T002025-940c220f	2026-11-13T00:21:53Z
+merge:launchpad:1106:2a148841	merge-local over 7 launchpad tasks: merged=16 red=3 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:22:27Z
