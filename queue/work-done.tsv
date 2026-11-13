@@ -4821,3 +4821,4 @@ review:openregister:10154:b3c1ea3c	BLOCK: intended but existing-output-changing 
 review:openregister:10166:f81d25a0	skipped: PR head ea4117fc already merged into main; task sha superseded, no verdict	session-20261113T044737-f37de8e3	2026-11-13T12:24:26Z
 merge:shillinq:2819:c4032723	merge-local over 1 shillinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:24:38Z
 build:openregister:extended-field-types-range-and-image	partial: PR #10179 (7/8 tasks; 1.4 range filter needs a live API test)	session-20261113T114527-9a216dd1	2026-11-13T12:25:00Z
+review:openregister:10168:27f234c2	APPROVE: tests only, 4 tests pass merged with main	session-20261113T101609-bc51215d	2026-11-13T12:25:08Z
