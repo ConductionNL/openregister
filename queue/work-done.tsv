@@ -5283,3 +5283,4 @@ merge:pipelinq:3602:ff4529ab	merge-local over 1 pipelinq tasks: merged=0 red=0 f
 cover:buildiq:70b3e29ema699:d39f9857	already done: lib/Support/*.php at 99.23% lines (386/389) on development, target 95; no PR	session-20261113T074535-8a2067c2	2026-11-13T13:45:14Z
 review:openregister:10244:0dd96122	APPROVE: additive catalogue metadata, RBAC unchanged, suites green	session-20261113T124802-c7d6f662	2026-11-13T13:45:16Z
 review:openregister:10242:2c3f0b42	APPROVE: test-only, new test passes, Flow failures inherited from main	session-20261113T064519-30004ad4	2026-11-13T13:45:23Z
+merge:versioniq:677:91541efd	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:46:16Z
