@@ -1088,3 +1088,4 @@ cover:openregister:7350e3ef:jsd6f4e3d9	PR openregister#10063: TrailUserDateField
 cover:learniq:1ae7757e:js3f3bfe56	PR #2426: 14 tests for display/settings/pinia/registry/icons; src/*.js lines 0->70.79% (main.js needs webpack); suite 1101->1115, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:17:10Z
 cover:dossiq:6ca0231e:e3fc26fd	PR #6207: 7 tests, StarterStore 68->102/102, lib/Service/Starter 88.3%->92.2% (pcov); no new failures	session-20261112T224529-41d77a96	2026-11-13T00:18:06Z
 cover:decidiq:13261b1bmcfc2:34f5c300	PR #2099: 9 classes, 42 tests, suite 3116->3158, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:17:56Z
+cover:pipelinq:f67520ec:db729d29	PR #3602: 13 tests, Social dir 75.3%->~89.6%, suite 5774->5787, 1 inherited failure	session-20261112T234653-efce95ba	2026-11-13T00:18:27Z
