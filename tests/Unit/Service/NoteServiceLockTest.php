@@ -158,6 +158,7 @@ class NoteServiceLockTest extends TestCase {
 		$this->assertSame('note-locked', $this->stored['verb']);
 		$this->assertTrue($note['locked']);
 		$this->assertSame('sanne', $note['lockedBy']);
+		$this->assertSame('sanne', $note['lockedByDisplayName'], 'a locker without an account reads as their id');
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $note['lockedAt']);
 		$this->assertSame('internal', $this->stored['meta']['visibility'], 'the lock keeps the other metadata');
 	}
@@ -258,6 +259,7 @@ class NoteServiceLockTest extends TestCase {
 
 		$this->assertFalse($note['locked']);
 		$this->assertNull($note['lockedBy']);
+		$this->assertNull($note['lockedByDisplayName']);
 		$this->assertNull($note['lockedAt']);
 	}
 
