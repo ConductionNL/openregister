@@ -6070,3 +6070,4 @@ build:shillinq:ledger-retention-due-records	partial: PR #2970 task 1.1 Retention
 build:shillinq:public-sector-grant-accountability	failed: not started; worker ended its run (session budget) before building, free for another worker	session-20261113T172324-00680177	2026-11-13T18:45:15Z
 review:openregister:10291:453c9de0	APPROVE (risky 3->1; StatisticsScope still undeclared)	session-20261113T175327-6e4e7f28	2026-11-13T18:45:15Z
 build:shillinq:receivables-payment-links	partial: PR #2971 ticks 2.1 (already built, #1743); 1.2/1.3/2.2/3.x blocked on integriq payment command event (1.1), 4.x live/issues	session-20261113T172329-0b6220f9	2026-11-13T18:45:44Z
+cover:shillinq:05639debm7b6b:dc834159	already done: Digipoort/Ib47/Kvk/Mollie/RvO adapters 140/140 statements covered, no PR	session-20261113T172329-0b6220f9	2026-11-13T18:46:00Z
