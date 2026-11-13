@@ -6702,3 +6702,4 @@ fix:filinq:2096:69a1c822	failed: #2054/#2092 not on development yet (dev still 9
 verify:shillinq:3017:a6b73051	2 GREEN (3017,3018); vitest 1 inherited failure (dunningNextRun), new specs 38/38	session-20261113T182404-f2c28226	2026-11-13T20:35:35Z
 cover:shillinq:05639debm3747:e587f75a	already done: lib/PaymentRun/*.php measures 98.81% (499/505) on development b0ed3e448; no PR	session-20261113T182404-f2c28226	2026-11-13T20:35:58Z
 verify:filinq:2106:0fbd9fde	GREEN 2106; CONFLICT 2107 (filinq_register.json vs #2106); unit 6469 green	session-20261113T202612-d04bbf77	2026-11-13T20:36:25Z
+fix:filinq:2091:4eeb1d07	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:36:37Z
