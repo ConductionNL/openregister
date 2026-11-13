@@ -4717,3 +4717,4 @@ review:openregister:10139:07832807	BLOCK: ComponentDefinitionTest 3 failures (co
 merge:learniq:2436:6a7e5f10	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:05:00Z
 review:openregister:10136:0fa85d99	APPROVE (behaviour-preserving extraction; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:05:06Z
 build:openregister:flow-powerful-steps-need-a-right	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:05:21Z
+cover:shillinq:05639debm0c05:568ec52a	PR #2926: 30 tests, 7 lifecycle guards to 100% statements (2 were untested); suite failures unchanged (1 inherited clock test)	session-20261113T094607-7b89fdae	2026-11-13T12:05:56Z
