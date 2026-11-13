@@ -2727,3 +2727,4 @@
 9939 d002c71bc944a83bd65b3891bfb68ccc1d1aadd3 APPROVE integrator: main merge on top of 043d8823, conflicts only in component-map rows (union) and the regenerated sigrid.components.yaml
 9926 938c6f35cf57b4f9f507b8084f9b43a6ab9f52d6 APPROVE integrator: main merge on top of 90382814, conflicts only in component-map rows (union) and the regenerated sigrid.components.yaml
 9939 525239453b71102be5f07c45166200b68977a40c APPROVE integrator: main merge on top of 043d8823, conflicts only in component-map rows (union) and the regenerated sigrid.components.yaml
+4641 414ed9a35da40f32192618c87e1c3daeda920ec1 APPROVE integrator IL4: main merge on top of 8c55a53e; conflicts only in info.xml: main's KeyAuditHashChain install step and this branch's OpenSpecialRightsToEveryone install step both kept.
