@@ -6843,3 +6843,4 @@ build:opencatalogi:capability-rows-get-requirements	partial: PR opencatalogi#264
 review:openregister:10325:8ab17ee1	APPROVE: tests only, suites green	session-20261113T205324-91f6ae17	2026-11-13T21:03:10Z
 build:opencatalogi:inspection-period-rolls-on-the-calendar	PR #2646: tasks 1.1,1.2,2.1,2.2,3.1 done; 2.3 live, 3.2-3.4 left; +16 tests, suite 5254->5270, same 2 baseline failures	session-20261113T204536-22cfbae0	2026-11-13T21:03:33Z
 review:openregister:10324:42f33eba	APPROVE: tests only, 17 new tests green; Task/Architecture/Rules/Controller/Contract green merged with main	session-20261113T205329-39b9195a	2026-11-13T21:03:36Z
+verify:decidiq:2140:7a1c0798	GREEN 2140,2143; phpunit 3946 + vitest 2694, no failures	session-20261113T204535-8ae4a1d5	2026-11-13T21:03:55Z
