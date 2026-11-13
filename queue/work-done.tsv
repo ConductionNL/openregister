@@ -2389,3 +2389,4 @@ cover:dossiq:f8a113c5mac88:60c2c265	PR dossiq#6284: 72 tests for 8 untested cont
 merge:keepiq:1724:afdbbef0	merge-local over 1 keepiq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:25:09Z
 cover:dossiq:f8a113c5mac88:bedd4a8d	already done: Drafts/ 175/177 lines (98.9%) on development after quality/test-coverage-bedd4a8d-1 merged; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:25:41Z
 review:openregister:10100:a45ac656	APPROVE: docblock-only coverage metadata, suites green	session-20261113T051705-4f5ad12a	2026-11-13T05:26:22Z
+cover:dossiq:f8a113c5mac88:ab2de1d0	PR #6285: 15 edge tests for ObligationDeclaration, ObligationService; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:26:25Z
