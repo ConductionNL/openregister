@@ -5744,3 +5744,4 @@ cover:pipelinq:7f9dc8e6m16db:ab7f3595	already done: lib/Service/Provider 99.7% l
 cover:pipelinq:7f9dc8e6m16db:38e80a9f	already done: round -1 merged; every command has a test file covering each branch (checked the thinnest four by hand)	session-20261113T171203-c5a044de	2026-11-13T17:55:58Z
 build:portaliq:a-message-names-its-record-and-links-its-action	PR #2420: task 3 already delivered by inbox-reply-with-attachments, ticked; task 5 needs learniq	session-20261113T175327-6e4e7f28	2026-11-13T17:56:23Z
 build:portaliq:intake-conditional-questions-and-drafts	failed: blocked: T06-T08 wait on openregister or-form-and-journey-registry tasks 2-3 (still open on main); T09 needs openspec CLI	session-20261113T172328-c860ad55	2026-11-13T17:56:21Z
+build:portaliq:link-field-qr-code	already done: built on development (9eea75b9), T1-T9 ticked; the only open task T10 is a learniq follow-up, not buildable in portaliq	session-20261113T171203-c5a044de	2026-11-13T17:56:31Z
