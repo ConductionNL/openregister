@@ -4238,3 +4238,4 @@ verify:dossiq:6386:06b4874c	GREEN 6386	session-20261113T081040-5e814df2	2026-11-
 verify:dossiq:6387:6da890fa	GREEN 6387	session-20261113T081040-5e814df2	2026-11-13T10:24:51Z
 cover:dossiq:069ee2d6m7275:63eef43f	PR #6388: 4 tests for MandaatRepository::save and MandaatRegistryService::save, Mandaat/ 134->142/142 (100%), suite 19 inherited failures	session-20261113T084521-fd8a31c7	2026-11-13T10:27:40Z
 cover:dossiq:069ee2d6m7275:34763eb4	PR #6389: +2 tests, ZgwAuthMiddleware 111->116/116, lib/Middleware fully covered	session-20261113T081040-5e814df2	2026-11-13T10:28:17Z
+review:openregister:10122:e0498191	APPROVE: tests-only frontend spec, 8/8 pass, eslint clean	session-20261113T084521-fd8a31c7	2026-11-13T10:29:03Z
