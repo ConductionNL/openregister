@@ -28,6 +28,7 @@ use RuntimeException;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\LinkedEntityEnricher
+ * @uses \OCA\OpenRegister\Service\Object\LinkedEntityQuery
  */
 class LinkedEntityEnricherCalendarGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/linked-entity-enricher-calendar-golden.json';
