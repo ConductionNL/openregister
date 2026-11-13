@@ -3945,3 +3945,4 @@ build:dossiq:woo-review-triage	failed: remaining code item (wooDeliveredSet priv
 build:dossiq:locations-card-board	PR #6370: task 2.1 example case-location on the open Lindelaan request, 3 tests; no failures beyond the 19 inherited	session-20261113T084521-4cd185d2	2026-11-13T09:35:15Z
 cover:dossiq:069ee2d6m7275:b12f5203	already done: lib/Service/Import at 99.4% lines (492/495) under the full unit suite on development; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T09:35:35Z
 verify:dossiq:6353:a9f80a11	BLOCK 6353 (feature removal), GREEN 6354, BLOCK 6355 (user-visible title changes); no new test failures	session-20261113T080549-20301834	2026-11-13T09:36:09Z
+measure:versioniq:20261113h08	php 92.82, js 74.17 at 2083424e (PHP via tests/phpunit-unit-only.xml, 1356 tests, 2 failing; phpunit not in require-dev, run with a borrowed phpunit 10.5)	session-20261113T071636-117504ad	2026-11-13T09:36:17Z
