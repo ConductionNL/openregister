@@ -3134,3 +3134,4 @@ cover:keepiq:c967a31fmb40c:6f346b68	already done: lib/Sections/*.php at 100% lin
 cover:keepiq:c967a31fmb40c:ca1d90c4	already done: lib/Attribute/*.php at 100% lines (5/5) at 8a5d84f3; the 89.12 is the app-wide figure	session-20261113T071636-117504ad	2026-11-13T07:22:50Z
 cover:dossiq:f8a113c5m7e79:dfaef732	already done: lib/Notification 191/191 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:22:54Z
 verify:dossiq:6317:73469cb8	6317 GREEN, 6318 GREEN; 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:22:55Z
+cover:keepiq:c967a31fmb40c:7ddabe24	already done: lib/Federation/*.php 13/13 covered	session-20261113T051709-e616bf69	2026-11-13T07:23:05Z
