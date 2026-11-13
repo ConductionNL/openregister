@@ -1,12 +1,12 @@
 {
  "app": "launchpad",
- "commit": "7a18021a5ff15fbbd5705aea9bc165beed80c00f",
- "measured_at": "2026-11-13T06:16:16Z",
+ "commit": "867c6ce5847844432409a8d275dee935f0e12dd7",
+ "measured_at": "2026-11-13T09:42:59Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.52,
+  "pct": 92.53,
   "statements": 22125,
-  "covered": 20470,
+  "covered": 20472,
   "dirs": {
    "lib/Activity/": [
     337,
@@ -74,7 +74,7 @@
    ],
    "lib/Service/": [
     11530,
-    10796
+    10798
    ],
    "lib/Service/Cleanup/": [
     42,
@@ -103,9 +103,9 @@
   }
  },
  "js": {
-  "pct": 92.45,
+  "pct": 94.2,
   "statements": 7243,
-  "covered": 6696,
+  "covered": 6823,
   "dirs": {
    "src/": [
     44,
@@ -117,11 +117,11 @@
    ],
    "src/components/Widgets/": [
     234,
-    205
+    213
    ],
    "src/components/Widgets/Renderers/": [
     1302,
-    1210
+    1233
    ],
    "src/components/Workspace/": [
     324,
@@ -133,11 +133,11 @@
    ],
    "src/components/admin/": [
     1056,
-    980
+    1002
    ],
    "src/components/admin/tabs/": [
     233,
-    173
+    227
    ],
    "src/composables/": [
     378,
@@ -149,7 +149,7 @@
    ],
    "src/dialogs/": [
     267,
-    246
+    247
    ],
    "src/modals/": [
     638,
@@ -161,7 +161,7 @@
    ],
    "src/stores/": [
     715,
-    684
+    703
    ],
    "src/utils/": [
     132,
