@@ -2668,3 +2668,4 @@ cover:keepiq:c967a31fm0090:f545d745	PR #1743: +8 tests (LegacyRegisterPlanner da
 cover:shillinq:05639debmd8ee:jsd337d873	PR #2880: 51 vitest tests, target dirs 29.9->54.0% lines	session-20261113T051709-e616bf69	2026-11-13T06:10:10Z
 cover:dossiq:f8a113c5mac88:8fea83ca	already done: lib/Service/CaseType/*.php at 90.18% statements (1350/1497) on development, target 90, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:10:19Z
 cover:shillinq:05639debmd8ee:jsea7197ec	already done: src/utils/* 574/638 (89.96%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:10:32Z
+cover:dossiq:f8a113c5mac88:3d4b295b	already done: lib/Service/Settings/ at 91.32% statements (463/507) on development, target 90, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:10:35Z
