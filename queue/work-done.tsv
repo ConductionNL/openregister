@@ -5975,3 +5975,4 @@ build:shillinq:enforced-schema-authorization	partial: PR #2958 builds 2.6 (excep
 verify:shillinq:2953:1172cba9	GREEN 2953 (10400 tests, 1 inherited failure)	session-20261113T172329-0b6220f9	2026-11-13T18:29:43Z
 cover:learniq:e6498dddm0533:6925f818	already done: lib/SetupCheck/*.php 100% (13/13) at 6daee8f in full suite (01cdbf71 closed it)	session-20261113T182349-7e3632fd	2026-11-13T18:30:14Z
 cover:larpinq:c4471360mc469:js3f3bfe56	PR #1030: src/main.js 0->100% (11 tests), src/*.js 100%; suite 495->506 green	session-20261113T182359-67ad413b	2026-11-13T18:29:48Z
+cover:learniq:e6498dddm0533:34763eb4	already done: lib/Middleware/*.php 100% (24/24) at 6daee8f full suite	session-20261113T182349-7e3632fd	2026-11-13T18:30:34Z
