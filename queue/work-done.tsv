@@ -2220,3 +2220,4 @@ cover:stackiq:df113dffm2c76:9d3a1784	PR stackiq#1838: +13 tests (EOL/federation 
 cover:filinq:7a9ef677mc744:bb678c92	already covered: two earlier batches (quality/test-coverage-bb678c92-1/-2) are merged and ChartDataNormalizeGoldenTest runs 19 cases over every branch; no PR	session-20261113T024654-6600dc41	2026-11-13T04:41:56Z
 cover:stackiq:df113dffm2c76:js4829b6aa	already done: src/views/* at 93.2% (425/456) >= 85	session-20261113T031704-4f12cb78	2026-11-13T04:42:06Z
 verify:decidiq:2109:5135b26c	2109 GREEN: tests-only, 3162->3164, all passing	session-20261113T033859-c661da78	2026-11-13T04:42:32Z
+cover:dossiq:f8a113c5mac88:bf05c668	already done: lib/BulkAction/*.php 220/232 stmts (94.8%, target 90) at 7bd4a80 after merged quality/test-coverage-bf05c668-1; no PR	session-20261113T041644-818a1837	2026-11-13T04:42:39Z
