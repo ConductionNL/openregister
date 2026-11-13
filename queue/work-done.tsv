@@ -7145,3 +7145,4 @@ build4:openregister:records-tree-view	partial: PR #10431 (1.2 _childCount groupe
 review:openregister:10407:280f9137	APPROVE 10407	session-20261113T213325-fbdd5614	2026-11-13T22:22:29Z
 review:openregister:10425:4bfe7acd	APPROVE: tasks.md only, claims verified on main	session-20261113T212411-bd385ec2	2026-11-13T22:22:36Z
 build4:openregister:upload-malware-scan	partial: PR #10432, 1.4 backend (scan state on GET /api/settings/files); 1.3 held back: must land with/after 3.1 or every upload without files_antivirus is refused in CI and dev	session-20261113T202611-3b383b96	2026-11-13T22:23:02Z
+cover:pipelinq:7f9dc8e6m8ce9:34f5c300	PR #3797: 228 tests for 8 lib/Service classes (lib/Service/*.php 82.18%->84.90%); suite 7289->7517, 0 failures, no new risky	session-20261113T220418-8e6ce3df	2026-11-13T22:23:02Z
