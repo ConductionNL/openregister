@@ -4819,3 +4819,4 @@ build:openregister:capability-rows-verified-a	partial: PR #10178 (build/capabili
 review:openregister:10167:e33911f8	APPROVE: docs/decision only, no code/behaviour/access/test change; spec trims preserve meaning	session-20261113T091527-72c58830	2026-11-13T12:23:52Z
 review:openregister:10154:b3c1ea3c	BLOCK: intended but existing-output-changing SLA calculation; phpstan clean, Timer suite 381 OK	session-20261113T044737-f37de8e3	2026-11-13T12:24:05Z
 review:openregister:10166:f81d25a0	skipped: PR head ea4117fc already merged into main; task sha superseded, no verdict	session-20261113T044737-f37de8e3	2026-11-13T12:24:26Z
+merge:shillinq:2819:c4032723	merge-local over 1 shillinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:24:38Z
