@@ -8119,3 +8119,15 @@ review:openregister:10407:280f9137	review	openregister	main	10407	sha=280f913703
 review:openregister:10408:2f41b5ed	review	openregister	main	10408	sha=2f41b5ed70731b204f2280ead2ceabd81fae6507;last_approved=;title=feat(openregister): build records-bulk-transition	2026-11-13T22:10:29Z
 review:openregister:10409:020562fe	review	openregister	main	10409	sha=020562fe2a9fc653d8ae2cb9d9a5cd2791e29ca1;last_approved=;title=feat(openregister): build schema-breaking-change-notice	2026-11-13T22:10:29Z
 verify:pipelinq:3794:89770a80	verify	pipelinq	development	merge	prs=3794@08d129aa6de7572843d94a3c537badb2ecf81fce	2026-11-13T22:10:29Z
+review:openregister:10410:806dd185	review	openregister	main	10410	sha=806dd185b319504c55afe1a2c20761c80b222a40;last_approved=;title=feat(openregister): build near-duplicate-documents-by-text	2026-11-13T22:15:10Z
+review:openregister:10411:87ce5acb	review	openregister	main	10411	sha=87ce5acba1dc1c7ccc51400255fa3f857419b18c;last_approved=;title=feat(openregister): build settings-change-audit	2026-11-13T22:15:10Z
+review:openregister:10412:50618ebe	review	openregister	main	10412	sha=50618ebe6cc90efff79732fafb1117830ab50474;last_approved=;title=feat(openregister): build object-write-at-instance-floor	2026-11-13T22:15:10Z
+review:openregister:10413:c5be2b14	review	openregister	main	10413	sha=c5be2b14532fd1f35c8f26ca80a491063d07611d;last_approved=;title=feat(openregister): build mdm-merge-relinks-every-reference (relink, reverse, preview)	2026-11-13T22:15:10Z
+review:openregister:10414:88c34433	review	openregister	main	10414	sha=88c34433f6b9ade4ae4987a66d7c7407c2f760f4;last_approved=;title=feat(openregister): build records-saved-templates	2026-11-13T22:15:10Z
+review:openregister:10415:9eb41f27	review	openregister	main	10415	sha=9eb41f2753611a6bad4d51508b690124db97282d;last_approved=;title=feat(openregister): build records-copy-with-links	2026-11-13T22:15:10Z
+review:openregister:10416:984be222	review	openregister	main	10416	sha=984be222efd2f547f326a5dd04de582294ad8362;last_approved=;title=feat(openregister): build published-file-digest	2026-11-13T22:15:10Z
+review:openregister:10417:cc118c1d	review	openregister	main	10417	sha=cc118c1dc1c2e033b4819156c4ca183c2d7a4933;last_approved=;title=feat(openregister): build store-over-federated-config	2026-11-13T22:15:10Z
+review:openregister:10418:ce809510	review	openregister	main	10418	sha=ce8095102732dc8b4c1d1718016ab89e93290e2b;last_approved=;title=feat(openregister): build local-changes-to-app-shipped-configuration	2026-11-13T22:15:10Z
+review:openregister:10419:36e12994	review	openregister	main	10419	sha=36e1299417a99da6236cb27e4052840165145866;last_approved=;title=feat(openregister): build platform-collaboration-resources	2026-11-13T22:15:10Z
+review:openregister:10420:a2f7d239	review	openregister	main	10420	sha=a2f7d239875a540dfb251afed345f1fc054d32d7;last_approved=;title=feat(openregister): build platform-reference-provider	2026-11-13T22:15:10Z
+verify:pipelinq:3795:f810ec60	verify	pipelinq	development	merge	prs=3795@62e20cea22a8ac842cea61d6d66be4e37e8bff3e	2026-11-13T22:15:10Z
