@@ -8107,3 +8107,15 @@ review:openregister:10396:baaef040	review	openregister	main	10396	sha=baaef04042
 review:openregister:10397:ad134761	review	openregister	main	10397	sha=ad134761edc4be5bf2c0df161821141594f149df;last_approved=;title=feat(openregister): build files-create-from-url	2026-11-13T22:05:36Z
 review:openregister:10398:a56acc57	review	openregister	main	10398	sha=a56acc57737f6c7de5b4e886fab90ff5eb23b12e;last_approved=;title=feat(openregister): build object-archive-state (withdrawn timeline entries)	2026-11-13T22:05:36Z
 measure:shillinq:20261113h22	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T22:05:36Z
+review:openregister:10399:350560f4	review	openregister	main	10399	sha=350560f4167cee7a6f69068a72ada9c3e8b11a82;last_approved=;title=feat(openregister): build rbac-department-role-matrix	2026-11-13T22:10:29Z
+review:openregister:10400:6b4e43f3	review	openregister	main	10400	sha=6b4e43f357a5551fb77d2d1c40b5ec007dfe49d9;last_approved=;title=feat(openregister): build operate-load-shedding	2026-11-13T22:10:29Z
+review:openregister:10401:feb858f5	review	openregister	main	10401	sha=feb858f52ea819041e80887849a97292cdc39f98;last_approved=;title=feat(openregister): build records-gallery-view	2026-11-13T22:10:29Z
+review:openregister:10402:4f7718c8	review	openregister	main	10402	sha=4f7718c8732e798d6f41a217d93d5b59a38b87de;last_approved=;title=feat(openregister): build flow-trigger-transitions-and-changed-fields	2026-11-13T22:10:29Z
+review:openregister:10403:d5fb7763	review	openregister	main	10403	sha=d5fb7763c41f7930ef58e818ecd5c8b0345df6cf;last_approved=;title=feat(openregister): build modelling-property-index-switch	2026-11-13T22:10:29Z
+review:openregister:10404:690dd38d	review	openregister	main	10404	sha=690dd38d6fa30995bfef7ff22f88698c60dd2610;last_approved=;title=feat(openregister): build record-star-follow-and-unread-on-screen	2026-11-13T22:10:29Z
+review:openregister:10405:e7d049dd	review	openregister	main	10405	sha=e7d049dd7d4aa95a5a26d74381542fa453ad2903;last_approved=;title=feat(openregister): build remove-solr-and-publishing (tick 1.6 and 3.3)	2026-11-13T22:10:29Z
+review:openregister:10406:9663a34c	review	openregister	main	10406	sha=9663a34c186ae9bab8be598d9e3412171e96f265;last_approved=;title=feat(openregister): build rapportage-bi-export	2026-11-13T22:10:29Z
+review:openregister:10407:280f9137	review	openregister	main	10407	sha=280f913703de8ee64dfe09f2082e90d251d9b92d;last_approved=;title=feat(openregister): build record-tasks-tab (Tasks tab on the record page)	2026-11-13T22:10:29Z
+review:openregister:10408:2f41b5ed	review	openregister	main	10408	sha=2f41b5ed70731b204f2280ead2ceabd81fae6507;last_approved=;title=feat(openregister): build records-bulk-transition	2026-11-13T22:10:29Z
+review:openregister:10409:020562fe	review	openregister	main	10409	sha=020562fe2a9fc653d8ae2cb9d9a5cd2791e29ca1;last_approved=;title=feat(openregister): build schema-breaking-change-notice	2026-11-13T22:10:29Z
+verify:pipelinq:3794:89770a80	verify	pipelinq	development	merge	prs=3794@08d129aa6de7572843d94a3c537badb2ecf81fce	2026-11-13T22:10:29Z
