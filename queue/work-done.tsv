@@ -1967,3 +1967,4 @@ cover:dossiq:6ca0231ema7d4:a97b9ee7	PR #6268: 23 tests over PayoutReader, CasePa
 cover:keepiq:d76c2121m88ca:js0023cfc7	PR #1727: 12 vitest tests (ImportWizardDialog steps, KeyGeneratorModal controls), src/dialogs 87.1%->89.4%	session-20261113T031700-0e23c373	2026-11-13T04:01:23Z
 cover:shillinq:801aab65:7cb249c8	PR #2856: 8 GlLineResultStamps edge tests; suite 9004->9012, 1 inherited clock-bound failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:01:32Z
 cover:hermiq:755cdfe7m7444:7927b05b	PR #1645: 5 tests, ProviderFactory 706->716/759 (rest of dir ~100%); 172 inherited failures unchanged	session-20261113T024656-2f332446	2026-11-13T04:01:35Z
+verify:launchpad:1160:4e9d5c37	launchpad#1160 GREEN, #1161 GREEN: JS tests only, vitest 1662->1709 all pass	session-20261113T034631-5fd77fa7	2026-11-13T04:01:46Z
