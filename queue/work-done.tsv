@@ -5258,3 +5258,4 @@ cover:buildiq:70b3e29ema699:9d3a1784	PR #1550: 11 tests on job failure paths; li
 verify:humaniq:1112:368fc74d	GREEN+GREEN: #1112 and #1113 tests only, 3928->4039, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:40:56Z
 merge:portaliq:2284:b0b995b8	merge-local over 2 portaliq tasks: merged=1 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:41:13Z
 merge:portaliq:2400:8ad3016b	merge-local over 2 portaliq tasks: merged=1 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:41:13Z
+cover:portaliq:b60f3b81:67b29613	PR #2409: PublicAssistantChannel/PublicSourceScope/PersonalDetailsFilter edge paths (5 tests); dir 93.2%->100%	session-20261113T091531-f9ad21ac	2026-11-13T13:41:17Z
