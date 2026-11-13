@@ -64,6 +64,13 @@ class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 	public const ACTION_REPORT = 'report';
 
 	/**
+	 * What joins an identity's values into an object's `@self.key`.
+	 *
+	 * @var string
+	 */
+	public const KEY_SEPARATOR = ':';
+
+	/**
 	 * The constraints a schema configuration declares.
 	 *
 	 * Each is `{name, properties, action}`. A constraint naming no property,
@@ -94,6 +101,151 @@ class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 
 		return array_merge($legacy, $this->declaredConstraints(declared: ($configuration[self::CONFIG_KEY] ?? null)));
 	}//end constraints()
+
+	/**
+	 * The schema's identity: the declared `refuse` constraint that says `identity: true`.
+	 *
+	 * Only a well-formed `refuse` constraint can be the identity, because a
+	 * `report` constraint lets duplicates through and a key that can match two
+	 * records is not a key. When the declaration is refused at save (two
+	 * identities, or identity on `report`) this reads the first valid one, so a
+	 * stored schema never answers with an identity it does not enforce.
+	 *
+	 * @param array<string,mixed>|null $configuration The schema's configuration block.
+	 *
+	 * @return array{name:string,properties:array<int,string>,action:string}|null The identity, or null when none is declared.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function identity(?array $configuration): ?array {
+		$declared = ($configuration[self::CONFIG_KEY] ?? null);
+		if (is_array($declared) === false) {
+			return null;
+		}
+
+		foreach ($declared as $key => $entry) {
+			$constraint = $this->declaredConstraint(key: $key, entry: $entry);
+			if ($constraint !== null
+				&& $constraint['action'] === self::ACTION_REFUSE
+				&& $this->declaresIdentity(entry: $entry) === true
+			) {
+				return $constraint;
+			}
+		}
+
+		return null;
+	}//end identity()
+
+	/**
+	 * Why a schema's identity declaration must be refused at save, if it must.
+	 *
+	 * An identity on a `report` constraint, and a second identity on one schema,
+	 * are each refused with the name of the constraint that breaks the rule.
+	 *
+	 * @param array<string,mixed>|null $configuration The schema's configuration block.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusals, empty when the declaration is sound.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function identityRefusals(?array $configuration): array {
+		$declared = ($configuration[self::CONFIG_KEY] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$refusals = [];
+		$identity = null;
+		foreach ($declared as $key => $entry) {
+			$constraint = $this->declaredConstraint(key: $key, entry: $entry);
+			if ($constraint === null || $this->declaresIdentity(entry: $entry) === false) {
+				continue;
+			}
+
+			$refusal = $this->identityRefusal(constraint: $constraint, identity: $identity);
+			if ($refusal !== null) {
+				$refusals[] = $refusal;
+				continue;
+			}
+
+			$identity = $constraint['name'];
+		}
+
+		return $refusals;
+	}//end identityRefusals()
+
+	/**
+	 * The refusal of one constraint that declares itself the identity, or null when it may.
+	 *
+	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
+	 * @param string|null $identity The name of the identity accepted so far, if any.
+	 *
+	 * @return array{code:string,message:string}|null The refusal.
+	 */
+	private function identityRefusal(array $constraint, ?string $identity): ?array {
+		if ($constraint['action'] !== self::ACTION_REFUSE) {
+			return [
+				'code' => 'identity-on-report',
+				'message' => sprintf(
+					'The constraint "%s" cannot be the identity: its action is "%s", and only a "refuse" constraint keeps a key unique.',
+					$constraint['name'],
+					$constraint['action']
+				),
+			];
+		}
+
+		if ($identity !== null) {
+			return [
+				'code' => 'identity-declared-twice',
+				'message' => sprintf(
+					'The constraint "%s" cannot be the identity: "%s" already is, and a schema has at most one.',
+					$constraint['name'],
+					$identity
+				),
+			];
+		}
+
+		return null;
+	}//end identityRefusal()
+
+	/**
+	 * Whether a declared entry says `identity: true`.
+	 *
+	 * @param mixed $entry The declared entry.
+	 *
+	 * @return bool True only for a literal boolean true.
+	 */
+	private function declaresIdentity(mixed $entry): bool {
+		return is_array($entry) === true && ($entry['identity'] ?? false) === true;
+	}//end declaresIdentity()
+
+	/**
+	 * The key of an object under an identity: its values joined in declared order.
+	 *
+	 * @param array{name:string,properties:array<int,string>,action:string} $identity The identity constraint.
+	 * @param array<string,mixed> $object The object data.
+	 *
+	 * @return string|null The key, or null when one of the values is absent, empty or not scalar.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function keyOf(array $identity, array $object): ?string {
+		$values = $this->filledValues(properties: $identity['properties'], object: $object);
+		if ($values === null) {
+			return null;
+		}
+
+		$parts = [];
+		foreach ($values as $value) {
+			if (is_scalar($value) === false) {
+				return null;
+			}
+
+			$parts[] = (string)$value;
+		}
+
+		return implode(self::KEY_SEPARATOR, $parts);
+	}//end keyOf()
 
 	/**
 	 * The declared constraints that are well formed, in declaration order.

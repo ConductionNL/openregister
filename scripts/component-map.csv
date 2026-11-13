@@ -3979,6 +3979,10 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
+Listener/IdentityGuardListener.php,,Listener,,,,,Core
+Service/Object/ObjectKeyResolver.php,,Service,,,,,Core
+Service/Schemas/IdentityRewriteScope.php,,Service,,,,,Core
 Listener/RequiredWhenListener.php,,Listener,,,,,Processes
 Service/Schemas/RequiredWhenDeclaration.php,,Service,,,,,Core
 Db/MagicMapper/ConditionGroup.php,78,Db,Service,Service/Db/MagicMapper/ConditionGroup.php,0,,Core
@@ -4080,3 +4084,9 @@ Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/Rule
 Service/Object/ObjectSaveCheck.php,8,Service,Service,Service/Object/ObjectSaveCheck.php,0,,Core
 Service/Object/ObjectSaveChecks.php,26,Service,Service,Service/Object/ObjectSaveChecks.php,0,,Core
 Service/Object/SampleValidationErrors.php,48,Service,Service,Service/Object/SampleValidationErrors.php,0,,Core
+Service/Configuration/SeedReport.php,166,Service,Configuration,Configuration/Service/Configuration/SeedReport.php,0,,Configuration
+Service/Configuration/SeedDirectoryImporter.php,164,Service,Configuration,Configuration/Service/Configuration/SeedDirectoryImporter.php,0,,Configuration
+Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirectory.php,0,,Platform
+BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
+Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
+Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration
