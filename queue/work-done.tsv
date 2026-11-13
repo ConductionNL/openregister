@@ -3447,3 +3447,4 @@ cover:openregister:7350e3efmea52:913a213e	PR openregister#10113: @uses metadata 
 cover:integriq:92114ab0m658d:36cd350f	PR #3510: 16 tests, Ebms2 and XmlDsigLookup to 100%, signer 99.2%; suite 7805->7821, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:25:10Z
 verify:buildiq:1526:5b109492	1526 GREEN: refactor, 0 new failures; overlaps #1525 (same methods)	session-20261113T080546-98207a87	2026-11-13T08:25:24Z
 cover:portaliq:b60f3b81:1b97f731	partial: PR #2382 Listener 38.3%->44.0% (ChangeMessageWriter, PortalAccountClaimListener new); rest needs OpenRegister event classes (51 tests skip without PORTALIQ_OPENREGISTER_LIB); suite 4527->4536	session-20261113T081043-b24589a6	2026-11-13T08:25:51Z
+verify:buildiq:1527:00579cff	1527 GREEN, 1528 GREEN: tests-only, 2707 tests, 0 new failures	session-20261113T080546-98207a87	2026-11-13T08:26:06Z
