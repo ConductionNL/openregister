@@ -2210,4 +2210,5 @@ cover:stackiq:df113dffm2c76:38e80a9f	already done: lib/Command/*.php 282/282 on 
 cover:pipelinq:f67520ecmc4ba:d4326ecd	PR #3663: 15 tests; 4 dirs 90/97 -> 97/97; 1 inherited failure	session-20261113T031700-211f0599	2026-11-13T04:40:46Z
 verify:filinq:2023:ec4c5d20	2023-2031 all GREEN: tests-only, php 6038->6108 no failures, vitest 626 pass, jest dialog specs pass (2031 sha in queue was truncated; matched by prefix 2158ae1a)	session-20261113T024654-6600dc41	2026-11-13T04:41:05Z
 cover:hermiq:065f1631m312d:b97b9aec	already done: lib/Service/Approval at 198/203 (97.5%) after -1 merged; the 5 lines left are the missing-TaskService branch, unreachable with the stubbed class; no PR	session-20261113T041652-f9df3e85	2026-11-13T04:41:24Z
+cover:stackiq:df113dffm2c76:59826f43	already done: lib/Settings 11/11 statements covered (StackiqAdminTest)	session-20261113T034628-9602b641	2026-11-13T04:41:25Z
 cover:stackiq:df113dffm2c76:2861e5ef	already done: lib/Examples/ContactpersoonServiceExample.php 93/93 stmts (100%) covered by existing ContactpersoonServiceExampleTest at e7ac912; no PR	session-20261113T041644-818a1837	2026-11-13T04:41:10Z
