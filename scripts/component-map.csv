@@ -2885,6 +2885,7 @@ Service/PropertyAccessRequest.php,30,Service,Flows,Flows/Service/PropertyAccessR
 Service/PropertyRbacHandler.php,375,Service,Flows,Flows/Service/PropertyRbacHandler.php,6,53,Processes
 Service/Quality/DedupAnnotationValidator.php,87,Service,Service,Service/Quality/DedupAnnotationValidator.php,0,,Core
 Service/Quality/QualityAnnotationValidator.php,80,Service,Service,Service/Quality/QualityAnnotationValidator.php,0,,Core
+Service/Quality/QualityAuditEvaluator.php,329,Service,Compliance,Compliance/Service/Quality/QualityAuditEvaluator.php,0,,Core
 Service/Quality/QualityScorer.php,153,Service,Compliance,Compliance/Service/Quality/QualityScorer.php,0,,Core
 Service/Quality/QualityStatisticsService.php,221,Service,Compliance,Compliance/Service/Quality/QualityStatisticsService.php,0,,Core
 Service/Quality/UniqueHintChecker.php,100,Service,Service,Service/Quality/UniqueHintChecker.php,0,,Core
