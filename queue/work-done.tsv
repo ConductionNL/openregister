@@ -2466,3 +2466,4 @@ cover:openregister:7350e3efmaea4:js76b76dfb	PR #10102: 5 mount specs, 27 tests; 
 cover:openregister:7350e3efmaea4:js5794e9fc	PR #10103: 35 jest tests (PermissionMatrix, LlmConfiguration); src/views/settings lines 85.2% -> 92.7%	session-20261113T051705-4f5ad12a	2026-11-13T05:37:31Z
 cover:hermiq:065f1631m312d:716923f8	already done: lib/Service/Credential/ 83/87 lines (95.4%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:37:29Z
 cover:hermiq:065f1631m312d:9c1d94a2	PR #1666: 4 edge tests for OpenRegisterManageableOrganisations; suite inherited 146E/26F unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:37:43Z
+cover:keepiq:c967a31fm0090:f91e7417	already done: lib/Service/Connection 2 classes at 100% lines, 4 dedicated test files	session-20261113T034634-f20a8d77	2026-11-13T05:38:41Z
