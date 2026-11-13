@@ -6551,3 +6551,191 @@ cover:openregister:7350e3efma401:053b65e7	cover	openregister	main	test/coverage-
 cover:openregister:7350e3efma401:9b457b26	cover	openregister	main	test/coverage-9b457b26	lang=php;dirs=lib/Service/Flow/;focus=uncovered;weight=792;coverage=94.96;target=95.0	2026-11-13T18:50:31Z
 cover:openregister:7350e3efma401:516a028c	cover	openregister	main	test/coverage-516a028c	lang=php;dirs=lib/Db/SchemaMapper/;focus=uncovered;weight=582;coverage=94.96;target=95.0	2026-11-13T18:54:01Z
 measure:learniq:20261113h18	measure	learniq	development	queue/coverage/learniq.json	why=slices need per-directory coverage	2026-11-13T19:05:24Z
+fix:shillinq:2983:ccfb2777	fix	shillinq	development	2983	sha=ccfb277757d8bd739a309823a6d51433be48392f;verdict=CONFLICT;branch=quality/build-ledger-open-item-clearing;reason=conflicts with #2982 in appinfo/info.xml and tests/fixtures/register-versions.lock.json (and #2986 in info.xml): register version bumps	2026-11-13T19:11:09Z
+fix:shillinq:2987:82328584	fix	shillinq	development	2987	sha=82328584f9c6ec33310e1ca6ea26c10dd51dc617;verdict=CONFLICT;branch=quality/build-sales-webshop-orders;reason=conflicts with #2982 in tests/fixtures/register-versions.lock.json (and #2982/#2986 in appinfo/info.xml): register version bumps	2026-11-13T19:11:09Z
+review:openregister:10297:2e036b1d	review	openregister	main	10297	sha=2e036b1d648b6fc734ebc60e86a4efb3ea820cf4;last_approved=;title=feat(openregister): build platform-cloud-federation-provider	2026-11-13T19:11:09Z
+review:openregister:10298:02886e88	review	openregister	main	10298	sha=02886e884d345f37280743ed886af14d12e8c1e0;last_approved=;title=feat(openregister): build a-leaf-that-cannot-render-refuses-to-register	2026-11-13T19:11:09Z
+verify:dossiq:6439:73fe2fd7	verify	dossiq	development	merge	prs=6439@9f29fc401ab3a5fcdc1835dceed3bbdab42e0928,6440@2b9db35b48798ef9e7fb58ce57f96ced6c0e3899	2026-11-13T19:11:09Z
+verify:hermiq:1704:1871ae9e	verify	hermiq	development	merge	prs=1704@ead6a7644fddc7a723e558392eba839fd177bd51	2026-11-13T19:11:09Z
+verify:shillinq:2986:51102f19	verify	shillinq	development	merge	prs=2986@6f8ebc0f2c03f194a60a2bc16dc7e1496fc165d1,3002@6f0aa114932de9971cf99f6d79b20557d3e9215a,3003@594db7339e002d088d7d72e285a37a97d5a32134,3004@7d6918f86920b501fb52f578004638b2522c93bb,3005@7df04548317c3840c8d73ca62d249ae5c8b9a33b,3006@917592f5d91cfead0f35eefa9f64665fca17fb97,3007@d6ce6195433039c39dfaa1081c50d0ba9de04029,3008@67bfab3c589314a313679e734fe76f4aa7d961b7	2026-11-13T19:11:09Z
+verify:portaliq:2453:84a2fd65	verify	portaliq	development	merge	prs=2453@f7762ad2ddffaf3fe4486590a077e1bfda77099b,2454@b5b155d1fcbec298b813ea3854f3f906471b4c0f,2455@6d00ae0c7d45547e9962477bea8bea3a25b0a379,2456@d02059087c182fc4abf7c54958b11b7bba1b8c5f	2026-11-13T19:11:09Z
+verify:opencatalogi:2600:f07aa357	verify	opencatalogi	development	merge	prs=2600@7874d6b1e0c0bbd61fdf605846cb0bab4a393c94,2601@6ee1c99a2e9e365c470249360be68b988f4b2114,2602@31ebaa9bf0a9edb09143ff15da05be9df036d32d	2026-11-13T19:11:09Z
+merge:dossiq:6437:fa435424	merge	dossiq	development	development	prs=6437@cd04bfd97b20addafada54909cf1c29073486fd8,6438@d1a49871e4a1298671ac40e6373fa2d2b0cfbeb5	2026-11-13T19:11:09Z
+merge:hermiq:1699:db842efa	merge	hermiq	development	development	prs=1699@2ae2caf440e7bfbec653b58f1d65bf6b6974bcf5,1700@8969148dada668b6fb003ec90a55da96e542ccfa	2026-11-13T19:11:09Z
+merge:shillinq:2979:6bf82f5c	merge	shillinq	development	development	prs=2979@73734071f6ef63e433a5c650de3d5b88436f5545,2980@f4b2004e70a13f01ce7b8e539c1dafa61b78fbcc,2981@a52bfb1d2cbd62bfe94fb47f94b199fb6290c2ed,2982@98b433dd0ad18dd5161a5c6d97a4c39209f72e7d,2984@837b6ee1e09fb4542e793b7bc1b4dd9e491f0c64,2985@909231b1333dfe9da084190b2be86a283a1f46ec	2026-11-13T19:11:09Z
+merge:opencatalogi:2599:6fde261c	merge	opencatalogi	development	development	prs=2599@3c9a93dfe19f76cfb948befa4ebdb724047118fd	2026-11-13T19:11:09Z
+cover:planninq:e1c9866dm2ac2:js8a19c098	cover	planninq	development	quality/test-coverage-js-8a19c098	lang=js;dirs=src/store/*;focus=uncovered;weight=882;coverage=88.25;target=90.0	2026-11-13T17:11:56Z
+cover:planninq:e1c9866dm2ac2:jsea7197ec	cover	planninq	development	quality/test-coverage-js-ea7197ec	lang=js;dirs=src/utils/*;focus=uncovered;weight=90;coverage=88.25;target=90.0	2026-11-13T17:25:08Z
+fix:shillinq:2991:94f3e87c	fix	shillinq	development	2991	sha=94f3e87cee61912106213a9f67488d34e1396964;verdict=CONFLICT;branch=quality/build-sales-invoice-sending;reason=conflicts in appinfo/info.xml and tests/fixtures/register-versions.lock.json after 2962/2988-2990 in the tree	2026-11-13T19:15:15Z
+fix:shillinq:2997:f8b1536b	fix	shillinq	development	2997	sha=f8b1536b3e0d47ad15cf54e5c718600fb0a83f5d;verdict=CONFLICT;branch=quality/build-tax-cbcr-and-pillar2-returns;reason=conflicts in the tree in appinfo/info.xml and tests/fixtures/register-versions.lock.json (version bump of an earlier tree PR), clean vs development	2026-11-13T19:15:15Z
+fix:shillinq:2998:433dff3d	fix	shillinq	development	2998	sha=433dff3d17522ac5d5267b8edacc1dfa9ed311e5;verdict=CONFLICT;branch=quality/build-platform-help-agent;reason=conflicts in the tree in tests/fixtures/register-versions.lock.json (earlier tree PR's lock entry), clean vs development	2026-11-13T19:15:15Z
+fix:shillinq:3000:1c89b1e9	fix	shillinq	development	3000	sha=1c89b1e98a76606609d06fa1d3c73e90fe419e9a;verdict=CONFLICT;branch=quality/build-tax-vat-rates-and-deductibility;reason=conflicts in the tree in tests/fixtures/register-versions.lock.json (earlier tree PR's lock entry), clean vs development	2026-11-13T19:15:15Z
+fix:shillinq:3002:6f0aa114	fix	shillinq	development	3002	sha=6f0aa114932de9971cf99f6d79b20557d3e9215a;verdict=CONFLICT;branch=quality/build-reporting-financial-statements;reason=conflicts in the tree in openapi.json (earlier tree PR's paths), clean vs development	2026-11-13T19:15:15Z
+review:openregister:10299:497daabc	review	openregister	main	10299	sha=497daabc5ba2619bc479c58cc2df0aeeb314af26;last_approved=;title=test(openregister): cover schema register reads, reference normaliser and configuration fields	2026-11-13T19:15:15Z
+verify:buildiq:1557:8c5543ce	verify	buildiq	development	merge	prs=1557@72678ec4dd71f10d1f96f6b77ffe1661ae55c4c8,1558@bbb34aa76ebdafc0a09365269b40e4f13fdaa3f8	2026-11-13T19:15:15Z
+verify:shillinq:3009:114d5dcb	verify	shillinq	development	merge	prs=3009@7342e5558e4fae638320532ab6ee0e11699f3138,3010@d5daca5350e079d897a60e1490f94ef5f6c0b81d	2026-11-13T19:15:15Z
+merge:hermiq:1701:4e7fa927	merge	hermiq	development	development	prs=1701@05a5aec93a37c870ab9a253de1aa4e542bd84c7f,1702@695dd3dc15c6bfc831c739430f92dac72098efc5,1703@31e5fd3c839ae4044a4180229d7f7ee7fbaa9d04	2026-11-13T19:15:15Z
+merge:shillinq:2962:c5491a5c	merge	shillinq	development	development	prs=2962@5e1ba47ad11e4978201bc69604a3facfc4078de5,2988@531f47d2b3347f8f8efb7657233d085ddb836b01,2989@d7989a2d6a1423d14ba6bdc088e4a9c1b7e89877,2990@7c228bdc3a20a916f3adedb081c9c14f49d72fa5,2992@764414e08ed6ab6fc3004ca0ba518eca3a8ab0f8,2993@0555adba82ab0656828cef11983ad3d08696b985,2994@2c7bd3aef3c5cec37461b7ad29a811bf17da6910,2995@9ace9c6de72b2398231a11e3cbd8515a75575c57,2996@c8bf209f8503b2d563208844cd9	2026-11-13T19:15:15Z
+fix:shillinq:3003:594db733	fix	shillinq	development	3003	sha=594db7339e002d088d7d72e285a37a97d5a32134;verdict=CONFLICT;branch=quality/build-receivables-provider-payouts;reason=conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR), clean vs development	2026-11-13T19:20:22Z
+fix:shillinq:3004:7d6918f8	fix	shillinq	development	3004	sha=7d6918f86920b501fb52f578004638b2522c93bb;verdict=CONFLICT;branch=quality/build-tax-icp-and-reverse-charge;reason=conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR), clean vs development	2026-11-13T19:20:22Z
+fix:shillinq:3005:7df04548	fix	shillinq	development	3005	sha=7df04548317c3840c8d73ca62d249ae5c8b9a33b;verdict=CONFLICT;branch=quality/build-platform-custom-record-types;reason=conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR), clean vs development	2026-11-13T19:20:22Z
+fix:shillinq:3006:917592f5	fix	shillinq	development	3006	sha=917592f5d91cfead0f35eefa9f64665fca17fb97;verdict=CONFLICT;branch=quality/build-platform-mobile-pwa;reason=conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR), clean vs development	2026-11-13T19:20:22Z
+fix:shillinq:3007:d6ce6195	fix	shillinq	development	3007	sha=d6ce6195433039c39dfaa1081c50d0ba9de04029;verdict=CONFLICT;branch=quality/build-sales-einvoice-exchange;reason=conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR), clean vs development	2026-11-13T19:20:22Z
+review:openregister:10300:03e8599e	review	openregister	main	10300	sha=03e8599ea017b84e69b2735ee40acab3362370d8;last_approved=;title=feat(openregister): build platform-team-resource-provider	2026-11-13T19:20:22Z
+review:openregister:10301:4aa49108	review	openregister	main	10301	sha=4aa49108647c7c19261e8be98fb3e28b64a9a292;last_approved=;title=feat(openregister): build platform-share-provider	2026-11-13T19:20:22Z
+verify:buildiq:1559:da7aa15b	verify	buildiq	development	merge	prs=1559@1179f9307d906faaa24f1864ae2eef5384a6f526	2026-11-13T19:20:22Z
+verify:hermiq:1705:3a5448de	verify	hermiq	development	merge	prs=1705@ff5eebe38947790d2a1958e4c50eaad7a07721a5,1706@0f12ea39eec58d63ec7641303b372f0152a30f10	2026-11-13T19:20:22Z
+verify:shillinq:2976:e674df87	verify	shillinq	development	merge	prs=2976@463e530e5ce4c62bf557a6726e76bb4791cc3644,3011@f3df3b2e7509bbdc38ce96b8b25afb8ab83f4843,3012@ce91534dff4e9707d2151b721d859a24e8c6541b	2026-11-13T19:20:22Z
+verify:keepiq:1766:c4b3977d	verify	keepiq	development	merge	prs=1766@29392dd8d5e961a6523799c57be9ddc3bf6affcd	2026-11-13T19:20:22Z
+merge:dossiq:6439:73fe2fd7	merge	dossiq	development	development	prs=6439@9f29fc401ab3a5fcdc1835dceed3bbdab42e0928,6440@2b9db35b48798ef9e7fb58ce57f96ced6c0e3899	2026-11-13T19:20:22Z
+merge:buildiq:1557:8c5543ce	merge	buildiq	development	development	prs=1557@72678ec4dd71f10d1f96f6b77ffe1661ae55c4c8,1558@bbb34aa76ebdafc0a09365269b40e4f13fdaa3f8	2026-11-13T19:20:22Z
+merge:hermiq:1704:1871ae9e	merge	hermiq	development	development	prs=1704@ead6a7644fddc7a723e558392eba839fd177bd51	2026-11-13T19:20:22Z
+merge:integriq:3531:86b57bbc	merge	integriq	development	development	prs=3531@67f8d31a01b3671546814b86ce97472b90f957ec	2026-11-13T19:20:22Z
+merge:shillinq:2986:e9c62571	merge	shillinq	development	development	prs=2986@6f8ebc0f2c03f194a60a2bc16dc7e1496fc165d1,2996@c8bf209f8503b2d563208844cd9f45e764e0681c,2999@41e2b881188cd459a344258064bf46cb212df8e3,3001@01fbc5007e8360646e3e7840e47e21d18382c82e	2026-11-13T19:20:22Z
+merge:portaliq:2453:84a2fd65	merge	portaliq	development	development	prs=2453@f7762ad2ddffaf3fe4486590a077e1bfda77099b,2454@b5b155d1fcbec298b813ea3854f3f906471b4c0f,2455@6d00ae0c7d45547e9962477bea8bea3a25b0a379,2456@d02059087c182fc4abf7c54958b11b7bba1b8c5f	2026-11-13T19:20:22Z
+cover:stackiq:9ac19b3am9d24:407c4b68	cover	stackiq	development	quality/test-coverage-407c4b68	lang=php;dirs=lib/Service/Registration/;focus=thin;weight=738;coverage=88.76;target=90.0	2026-07-16T17:54:07Z
+cover:dossiq:069ee2d6mbd37:3b1fd60e	cover	dossiq	development	quality/test-coverage-3b1fd60e	lang=php;dirs=lib/Review/*.php;focus=uncovered;weight=165;coverage=91.76;target=95.0	2026-08-15T16:03:50Z
+cover:dossiq:069ee2d6mbd37:8f99c0f1	cover	dossiq	development	quality/test-coverage-8f99c0f1	lang=php;dirs=lib/Woo/*.php;focus=uncovered;weight=87;coverage=91.76;target=95.0	2026-08-15T16:05:08Z
+cover:dossiq:069ee2d6mbd37:ea81adeb	cover	dossiq	development	quality/test-coverage-ea81adeb	lang=php;dirs=lib/Service/Zgw/*.php;focus=thin;weight=9352;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:39189253	cover	dossiq	development	quality/test-coverage-39189253	lang=php;dirs=lib/Service/Transitions/*.php;focus=thin;weight=9310;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:e7fd1c43	cover	dossiq	development	quality/test-coverage-e7fd1c43	lang=php;dirs=lib/Service/Intake/*.php;focus=thin;weight=8369;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:8fea83ca	cover	dossiq	development	quality/test-coverage-8fea83ca	lang=php;dirs=lib/Service/CaseType/*.php;focus=thin;weight=6695;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:23f6b1f1	cover	dossiq	development	quality/test-coverage-23f6b1f1	lang=php;dirs=lib/Service/Cases/*.php;focus=thin;weight=6278;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:d2a82d9f	cover	dossiq	development	quality/test-coverage-d2a82d9f	lang=php;dirs=lib/Service/Termijn/*.php;focus=thin;weight=6009;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:33af3743	cover	dossiq	development	quality/test-coverage-33af3743	lang=php;dirs=lib/Service/Bezwaar/*.php;focus=thin;weight=5682;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:b6fccd13	cover	dossiq	development	quality/test-coverage-b6fccd13	lang=php;dirs=lib/Service/Access/*.php;focus=thin;weight=5162;coverage=91.76;target=95.0	2026-08-15T15:16:35Z
+cover:dossiq:069ee2d6mbd37:js5794e9fc	cover	dossiq	development	quality/test-coverage-js-5794e9fc	lang=js;dirs=src/views/settings/;focus=uncovered;weight=1557;coverage=92.31;target=95.0	2026-08-15T16:13:38Z
+cover:dossiq:069ee2d6mbd37:js0023cfc7	cover	dossiq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=666;coverage=92.31;target=95.0	2026-08-15T16:28:29Z
+cover:dossiq:069ee2d6mbd37:js0be8c659	cover	dossiq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=153;coverage=92.31;target=95.0	2026-08-15T16:37:02Z
+cover:buildiq:70b3e29em7beb:f91e7417	cover	buildiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=708;coverage=91.18;target=95.0	2026-09-14T15:20:00Z
+cover:buildiq:70b3e29em7beb:b65a63c3	cover	buildiq	development	quality/test-coverage-b65a63c3	lang=php;dirs=lib/Service/GitHub/;focus=thin;weight=695;coverage=91.18;target=95.0	2026-09-14T15:20:13Z
+cover:buildiq:70b3e29em7beb:d528dcf0	cover	buildiq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=691;coverage=91.18;target=95.0	2026-09-14T15:20:17Z
+cover:buildiq:70b3e29em7beb:be0dcca9	cover	buildiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=402;coverage=91.18;target=95.0	2026-09-14T15:25:06Z
+cover:buildiq:70b3e29em7beb:05630945	cover	buildiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=372;coverage=91.18;target=95.0	2026-09-14T15:25:36Z
+cover:buildiq:70b3e29em7beb:34763eb4	cover	buildiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=342;coverage=91.18;target=95.0	2026-09-14T15:26:06Z
+cover:buildiq:70b3e29em7beb:568ec52a	cover	buildiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=270;coverage=91.18;target=95.0	2026-09-14T15:27:18Z
+cover:buildiq:70b3e29em7beb:390adfb9	cover	buildiq	development	quality/test-coverage-390adfb9	lang=php;dirs=lib/*.php;focus=thin;weight=101;coverage=91.18;target=95.0	2026-09-14T15:30:07Z
+cover:hermiq:065f1631md84f:dfaef732	cover	hermiq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=367;coverage=91.32;target=95.0	2026-11-13T15:34:05Z
+cover:hermiq:065f1631md84f:d81d2d49	cover	hermiq	development	quality/test-coverage-d81d2d49	lang=php;dirs=lib/Service/Speech/;focus=thin;weight=351;coverage=91.32;target=95.0	2026-11-13T15:34:21Z
+cover:hermiq:065f1631md84f:e372e6ff	cover	hermiq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=239;coverage=91.32;target=95.0	2026-11-13T15:36:13Z
+cover:hermiq:065f1631md84f:9c1d94a2	cover	hermiq	development	quality/test-coverage-9c1d94a2	lang=php;dirs=lib/Tenant/*.php;focus=thin;weight=238;coverage=91.32;target=95.0	2026-11-13T15:36:14Z
+cover:hermiq:065f1631md84f:d39f9857	cover	hermiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=205;coverage=91.32;target=95.0	2026-11-13T15:36:47Z
+cover:hermiq:065f1631md84f:568ec52a	cover	hermiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=163;coverage=91.32;target=95.0	2026-11-13T15:37:29Z
+cover:hermiq:065f1631md84f:59826f43	cover	hermiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=146;coverage=91.32;target=95.0	2026-11-13T15:37:46Z
+cover:hermiq:065f1631md84f:6f346b68	cover	hermiq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=94;coverage=91.32;target=95.0	2026-11-13T15:38:38Z
+cover:integriq:92114ab0m0593:2461af45	cover	integriq	development	quality/test-coverage-2461af45	lang=php;dirs=lib/Auth/Idp/*.php;focus=thin;weight=3748;coverage=93.54;target=95.0	2026-10-14T17:03:26Z
+cover:integriq:92114ab0m0593:2fbf11bd	cover	integriq	development	quality/test-coverage-2fbf11bd	lang=php;dirs=lib/Service/Objecten/*.php;focus=thin;weight=3566;coverage=93.54;target=95.0	2026-10-14T17:03:26Z
+cover:integriq:92114ab0m0593:2b49da71	cover	integriq	development	quality/test-coverage-2b49da71	lang=php;dirs=lib/Adapters/Slo/*.php;focus=thin;weight=3516;coverage=93.54;target=95.0	2026-10-14T17:03:26Z
+cover:shillinq:05639debm7b6b:dec5cec8	cover	shillinq	development	quality/test-coverage-dec5cec8	lang=php;dirs=lib/Service/Sms/;focus=thin;weight=922;coverage=92.34;target=95.0	2026-11-13T16:26:04Z
+cover:shillinq:05639debm7b6b:50cc8442	cover	shillinq	development	quality/test-coverage-50cc8442	lang=php;dirs=lib/Util/*.php;focus=thin;weight=878;coverage=92.34;target=95.0	2026-11-13T16:26:48Z
+cover:shillinq:05639debm7b6b:38e80a9f	cover	shillinq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=848;coverage=92.34;target=95.0	2026-11-13T16:27:18Z
+cover:shillinq:05639debm7b6b:d33e6ea4	cover	shillinq	development	quality/test-coverage-d33e6ea4	lang=php;dirs=lib/Service/Pivot/;focus=thin;weight=840;coverage=92.34;target=95.0	2026-11-13T16:27:26Z
+cover:decidiq:a5f973bbm5a4d:dfaef732	cover	decidiq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=284;coverage=92.41;target=95.0	2026-11-13T16:40:55Z
+cover:portaliq:b60f3b81m4ccb:5bae1f47	cover	portaliq	development	quality/test-coverage-5bae1f47	lang=php;dirs=lib/Service/Cms/*.php;focus=thin;weight=4310;coverage=94.91;target=95.0	2026-11-13T18:25:40Z
+cover:portaliq:b60f3b81m4ccb:4d777c35	cover	portaliq	development	quality/test-coverage-4d777c35	lang=php;dirs=lib/Service/Notifications/*.php;focus=thin;weight=3079;coverage=94.91;target=95.0	2026-11-13T18:25:40Z
+cover:portaliq:b60f3b81m4ccb:e7fbb139	cover	portaliq	development	quality/test-coverage-e7fbb139	lang=php;dirs=lib/Service/Plans/;focus=thin;weight=2386;coverage=94.91;target=95.0	2026-11-13T18:35:54Z
+cover:portaliq:b60f3b81m4ccb:e372e6ff	cover	portaliq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=1886;coverage=94.91;target=95.0	2026-11-13T18:44:14Z
+cover:keepiq:c967a31fm10bf:2c3e981f	cover	keepiq	development	quality/test-coverage-2c3e981f	lang=php;dirs=lib/Service/ShareSync/;focus=thin;weight=931;coverage=92.04;target=95.0	2026-11-13T16:07:59Z
+cover:keepiq:c967a31fm10bf:a4b15ae4	cover	keepiq	development	quality/test-coverage-a4b15ae4	lang=php;dirs=lib/Event/Audit/;focus=thin;weight=879;coverage=92.04;target=95.0	2026-11-13T16:08:51Z
+cover:keepiq:c967a31fm10bf:0d67c1f3	cover	keepiq	development	quality/test-coverage-0d67c1f3	lang=php;dirs=lib/Service/Siem/;focus=thin;weight=858;coverage=92.04;target=95.0	2026-11-13T16:09:12Z
+cover:keepiq:c967a31fm10bf:38e80a9f	cover	keepiq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=729;coverage=92.04;target=95.0	2026-11-13T16:11:21Z
+cover:keepiq:c967a31fm10bf:be0dcca9	cover	keepiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=714;coverage=92.04;target=95.0	2026-11-13T16:11:36Z
+cover:keepiq:c967a31fm10bf:f91e7417	cover	keepiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=685;coverage=92.04;target=95.0	2026-11-13T16:12:05Z
+cover:keepiq:c967a31fm10bf:e372e6ff	cover	keepiq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=599;coverage=92.04;target=95.0	2026-11-13T16:13:31Z
+cover:keepiq:c967a31fm10bf:59826f43	cover	keepiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=492;coverage=92.04;target=95.0	2026-11-13T16:15:18Z
+cover:keepiq:c967a31fm10bf:05630945	cover	keepiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=364;coverage=92.04;target=95.0	2026-11-13T16:17:26Z
+cover:opencatalogi:fc83bfb1:b5905f71	cover	opencatalogi	development	quality/test-coverage-b5905f71	lang=php;dirs=lib/Service/Federation/;focus=thin;weight=471;coverage=94.11;target=95.0	2026-11-13T18:19:51Z
+cover:opencatalogi:fc83bfb1:05630945	cover	opencatalogi	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=364;coverage=94.11;target=95.0	2026-11-13T18:21:38Z
+cover:opencatalogi:fc83bfb1:34763eb4	cover	opencatalogi	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=348;coverage=94.11;target=95.0	2026-11-13T18:21:54Z
+cover:opencatalogi:fc83bfb1:0e7f2f9f	cover	opencatalogi	development	quality/test-coverage-0e7f2f9f	lang=php;dirs=lib/Service/Broadcast/,lib/Service/Term/;focus=thin;weight=239;coverage=94.11;target=95.0	2026-11-13T18:23:43Z
+cover:openregister:7350e3efma401:919f90c0	cover	openregister	main	test/coverage-919f90c0	lang=php;dirs=lib/Service/Rbac/;focus=uncovered;weight=489;coverage=94.96;target=95.0	2026-11-13T19:10:36Z
+cover:openregister:7350e3efma401:1b97f731	cover	openregister	main	test/coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=393;coverage=94.96;target=95.0	2026-11-13T19:12:12Z
+measure:pipelinq:20261113h18	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T19:20:22Z
+measure:stackiq:20261113h18	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T15:21:09Z
+fix:shillinq:3008:67bfab3c	fix	shillinq	development	3008	sha=67bfab3c589314a313679e734fe76f4aa7d961b7;verdict=CONFLICT;branch=quality/build-iv3-report-takes-case-costs-by-case-type;reason=conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR), clean vs development	2026-11-13T19:22:01Z
+review:openregister:10302:31a54a69	review	openregister	main	10302	sha=31a54a69e2abc1b520cdab11673f4d9465a27a89;last_approved=;title=feat(openregister): build platform-caldav-backend	2026-11-13T19:22:01Z
+merge:opencatalogi:2600:f07aa357	merge	opencatalogi	development	development	prs=2600@7874d6b1e0c0bbd61fdf605846cb0bab4a393c94,2601@6ee1c99a2e9e365c470249360be68b988f4b2114,2602@31ebaa9bf0a9edb09143ff15da05be9df036d32d	2026-11-13T19:22:01Z
+build:filinq:anonymization-review-workbench	build	filinq	development	anonymization-review-workbench	change=anonymization-review-workbench;open=16	2026-11-13T19:25:06Z
+build:filinq:archiefwet-retention-engine	build	filinq	development	archiefwet-retention-engine	change=archiefwet-retention-engine;open=13	2026-11-13T19:25:06Z
+build:filinq:competitor-parity-2026-09	build	filinq	development	competitor-parity-2026-09	change=competitor-parity-2026-09;open=4	2026-11-13T19:25:06Z
+build:filinq:connect-document-webhooks	build	filinq	development	connect-document-webhooks	change=connect-document-webhooks;open=4	2026-11-13T19:25:06Z
+build:filinq:connect-openapi-documentation	build	filinq	development	connect-openapi-documentation	change=connect-openapi-documentation;open=9	2026-11-13T19:25:06Z
+build:filinq:diwoo-documentsoort-to-opencatalogi	build	filinq	development	diwoo-documentsoort-to-opencatalogi	change=diwoo-documentsoort-to-opencatalogi;open=3	2026-11-13T19:25:06Z
+build:filinq:document-chart-embedding	build	filinq	development	document-chart-embedding	change=document-chart-embedding;open=13	2026-11-13T19:25:06Z
+build:filinq:document-editing-tools	build	filinq	development	document-editing-tools	change=document-editing-tools;open=1	2026-11-13T19:25:06Z
+build:filinq:document-intake-inbox	build	filinq	development	document-intake-inbox	change=document-intake-inbox;open=1	2026-11-13T19:25:06Z
+build:filinq:document-register	build	filinq	development	document-register	change=document-register;open=9	2026-11-13T19:25:06Z
+build:filinq:document-rich-editing	build	filinq	development	document-rich-editing	change=document-rich-editing;open=18	2026-11-13T19:25:06Z
+build:filinq:document-sanitization	build	filinq	development	document-sanitization	change=document-sanitization;open=4	2026-11-13T19:25:06Z
+build:filinq:document-waarmerk-certification	build	filinq	development	document-waarmerk-certification	change=document-waarmerk-certification;open=14	2026-11-13T19:25:06Z
+build:filinq:documents-in-and-out-of-the-building	build	filinq	development	documents-in-and-out-of-the-building	change=documents-in-and-out-of-the-building;open=2	2026-11-13T19:25:06Z
+build:filinq:edit-through-the-open-editor	build	filinq	development	edit-through-the-open-editor	change=edit-through-the-open-editor;open=9	2026-11-13T19:25:06Z
+build:filinq:extraction-model-filled-fields	build	filinq	development	extraction-model-filled-fields	change=extraction-model-filled-fields;open=8	2026-11-13T19:25:06Z
+build:filinq:extraction-receipt-photo-and-invoice-agent	build	filinq	development	extraction-receipt-photo-and-invoice-agent	change=extraction-receipt-photo-and-invoice-agent;open=8	2026-11-13T19:25:06Z
+build:filinq:filinq-adopt-buildmanifest-pipeline	build	filinq	development	filinq-adopt-buildmanifest-pipeline	change=filinq-adopt-buildmanifest-pipeline;open=10	2026-11-13T19:25:06Z
+build:filinq:filinq-nl-locale-parity	build	filinq	development	filinq-nl-locale-parity	change=filinq-nl-locale-parity;open=14	2026-11-13T19:25:06Z
+build:filinq:filinq-policy-controller-test-coverage	build	filinq	development	filinq-policy-controller-test-coverage	change=filinq-policy-controller-test-coverage;open=10	2026-11-13T19:25:06Z
+build:filinq:filinq-route-auth-explicit-attributes	build	filinq	development	filinq-route-auth-explicit-attributes	change=filinq-route-auth-explicit-attributes;open=4	2026-11-13T19:25:06Z
+build:filinq:finish-half-built-capabilities	build	filinq	development	finish-half-built-capabilities	change=finish-half-built-capabilities;open=4	2026-11-13T19:25:06Z
+build:filinq:fix-dossier-grondslagen-route-mismatch	build	filinq	development	fix-dossier-grondslagen-route-mismatch	change=fix-dossier-grondslagen-route-mismatch;open=1	2026-11-13T19:25:06Z
+build:filinq:flow-operations	build	filinq	development	flow-operations	change=flow-operations;open=14	2026-11-13T19:25:06Z
+build:filinq:forms-as-documents	build	filinq	development	forms-as-documents	change=forms-as-documents;open=3	2026-11-13T19:25:06Z
+build:filinq:generate-draft-and-attended-edit	build	filinq	development	generate-draft-and-attended-edit	change=generate-draft-and-attended-edit;open=7	2026-11-13T19:25:06Z
+build:filinq:generate-store-in-case-system	build	filinq	development	generate-store-in-case-system	change=generate-store-in-case-system;open=1	2026-11-13T19:25:06Z
+build:filinq:generated-document-names-its-template-version	build	filinq	development	generated-document-names-its-template-version	change=generated-document-names-its-template-version;open=2	2026-11-13T19:25:06Z
+build:filinq:grondslagen-read-from-dossiq	build	filinq	development	grondslagen-read-from-dossiq	change=grondslagen-read-from-dossiq;open=6	2026-11-13T19:25:06Z
+build:filinq:hermiq-ai-tooling	build	filinq	development	hermiq-ai-tooling	change=hermiq-ai-tooling;open=11	2026-11-13T19:25:06Z
+build:filinq:image-redaction	build	filinq	development	image-redaction	change=image-redaction;open=15	2026-11-13T19:25:06Z
+build:filinq:intake-acknowledge-and-stamp	build	filinq	development	intake-acknowledge-and-stamp	change=intake-acknowledge-and-stamp;open=5	2026-11-13T19:25:06Z
+build:filinq:intake-base-registry-enrichment	build	filinq	development	intake-base-registry-enrichment	change=intake-base-registry-enrichment;open=5	2026-11-13T19:25:06Z
+build:filinq:intake-mailbox-archive-import	build	filinq	development	intake-mailbox-archive-import	change=intake-mailbox-archive-import;open=7	2026-11-13T19:25:06Z
+build:filinq:intake-paper-archive-digitisation	build	filinq	development	intake-paper-archive-digitisation	change=intake-paper-archive-digitisation;open=6	2026-11-13T19:25:06Z
+build:filinq:intake-pdf-password-removal	build	filinq	development	intake-pdf-password-removal	change=intake-pdf-password-removal;open=4	2026-11-13T19:25:06Z
+build:filinq:intake-worklist-deadline-and-duplicates	build	filinq	development	intake-worklist-deadline-and-duplicates	change=intake-worklist-deadline-and-duplicates;open=5	2026-11-13T19:25:06Z
+build:filinq:leaf-integrations	build	filinq	development	leaf-integrations	change=leaf-integrations;open=4	2026-11-13T19:25:06Z
+build:filinq:letter-email-sending	build	filinq	development	letter-email-sending	change=letter-email-sending;open=9	2026-11-13T19:25:06Z
+build:filinq:llm-entity-detection-provider	build	filinq	development	llm-entity-detection-provider	change=llm-entity-detection-provider;open=10	2026-11-13T19:25:06Z
+build:filinq:mcp-generation-tools	build	filinq	development	mcp-generation-tools	change=mcp-generation-tools;open=6	2026-11-13T19:25:06Z
+build:filinq:migrate-signing-to-or-tasks	build	filinq	development	migrate-signing-to-or-tasks	change=migrate-signing-to-or-tasks;open=10	2026-11-13T19:25:06Z
+build:filinq:multi-tenant-hardening	build	filinq	development	multi-tenant-hardening	change=multi-tenant-hardening;open=14	2026-11-13T19:25:06Z
+build:filinq:office-charts-and-images	build	filinq	development	office-charts-and-images	change=office-charts-and-images;open=4	2026-11-13T19:25:06Z
+build:filinq:office-suite-portability	build	filinq	development	office-suite-portability	change=office-suite-portability;open=15	2026-11-13T19:25:06Z
+build:filinq:office-template-authoring	build	filinq	development	office-template-authoring	change=office-template-authoring;open=15	2026-11-13T19:25:06Z
+build:filinq:one-signing-rail-for-the-fleet	build	filinq	development	one-signing-rail-for-the-fleet	change=one-signing-rail-for-the-fleet;open=20	2026-11-13T19:25:06Z
+build:filinq:pdfua-verapdf-matterhorn	build	filinq	development	pdfua-verapdf-matterhorn	change=pdfua-verapdf-matterhorn;open=16	2026-11-13T19:25:06Z
+build:filinq:portal-signing-actions	build	filinq	development	portal-signing-actions	change=portal-signing-actions;open=1	2026-11-13T19:25:06Z
+build:filinq:propose-grondslag-per-entity-type	build	filinq	development	propose-grondslag-per-entity-type	change=propose-grondslag-per-entity-type;open=2	2026-11-13T19:25:06Z
+build:filinq:redaction-at-scale	build	filinq	development	redaction-at-scale	change=redaction-at-scale;open=15	2026-11-13T19:25:06Z
+build:filinq:redaction-four-eyes-setting	build	filinq	development	redaction-four-eyes-setting	change=redaction-four-eyes-setting;open=13	2026-11-13T19:25:06Z
+build:filinq:redaction-guarantees-from-the-engine	build	filinq	development	redaction-guarantees-from-the-engine	change=redaction-guarantees-from-the-engine;open=4	2026-11-13T19:25:06Z
+build:filinq:scan-intake-from-a-watched-folder	build	filinq	development	scan-intake-from-a-watched-folder	change=scan-intake-from-a-watched-folder;open=10	2026-11-13T19:25:06Z
+build:filinq:scan-intake-with-separator-sheets	build	filinq	development	scan-intake-with-separator-sheets	change=scan-intake-with-separator-sheets;open=2	2026-11-13T19:25:06Z
+build:filinq:share-document-links	build	filinq	development	share-document-links	change=share-document-links;open=6	2026-11-13T19:25:06Z
+build:filinq:signature-verification-portal	build	filinq	development	signature-verification-portal	change=signature-verification-portal;open=8	2026-11-13T19:25:06Z
+build:filinq:signer-consent-notifications-to-email-leaf	build	filinq	development	signer-consent-notifications-to-email-leaf	change=signer-consent-notifications-to-email-leaf;open=5	2026-11-13T19:25:06Z
+build:filinq:signing-accept-only-recipient	build	filinq	development	signing-accept-only-recipient	change=signing-accept-only-recipient;open=7	2026-11-13T19:25:06Z
+build:filinq:signing-cancellation	build	filinq	development	signing-cancellation	change=signing-cancellation;open=14	2026-11-13T19:25:06Z
+build:filinq:signing-field-validation	build	filinq	development	signing-field-validation	change=signing-field-validation;open=6	2026-11-13T19:25:06Z
+build:filinq:specify-capability-rows	build	filinq	development	specify-capability-rows	change=specify-capability-rows;open=11	2026-11-13T19:25:06Z
+build:filinq:template-library-leaf	build	filinq	development	template-library-leaf	change=template-library-leaf;open=6	2026-11-13T19:25:06Z
+build:filinq:templates-employer-statement	build	filinq	development	templates-employer-statement	change=templates-employer-statement;open=4	2026-11-13T19:25:06Z
+build:filinq:templates-house-style-from-thematiq	build	filinq	development	templates-house-style-from-thematiq	change=templates-house-style-from-thematiq;open=4	2026-11-13T19:25:06Z
+build:filinq:tmlo-mdto-metadata	build	filinq	development	tmlo-mdto-metadata	change=tmlo-mdto-metadata;open=12	2026-11-13T19:25:06Z
+build:filinq:whole-collection-integrity-scan	build	filinq	development	whole-collection-integrity-scan	change=whole-collection-integrity-scan;open=7	2026-11-13T19:25:06Z
+build:filinq:woo-hand-off-files-its-category	build	filinq	development	woo-hand-off-files-its-category	change=woo-hand-off-files-its-category;open=4	2026-11-13T19:25:06Z
+build:filinq:woo-metadata-worklist	build	filinq	development	woo-metadata-worklist	change=woo-metadata-worklist;open=4	2026-11-13T19:25:06Z
+build:filinq:woo-request-workflow	build	filinq	development	woo-request-workflow	change=woo-request-workflow;open=5	2026-11-13T19:25:06Z
+build:filinq:work-content-search	build	filinq	development	work-content-search	change=work-content-search;open=3	2026-11-13T19:25:06Z
+build:filinq:work-document-notes	build	filinq	development	work-document-notes	change=work-document-notes;open=1	2026-11-13T19:25:06Z
+build:filinq:work-stamp-text-on-every-page	build	filinq	development	work-stamp-text-on-every-page	change=work-stamp-text-on-every-page;open=5	2026-11-13T19:25:06Z
+build:filinq:zgw-document-bridge	build	filinq	development	zgw-document-bridge	change=zgw-document-bridge;open=11	2026-11-13T19:25:06Z
+review:openregister:10303:609b6aef	review	openregister	main	10303	sha=609b6aef09e859ef1f6f7361ed654e0267e4144b;last_approved=;title=test(openregister): cover condition group leaves	2026-11-13T19:25:22Z
+review:openregister:10304:23e91967	review	openregister	main	10304	sha=23e91967c4dbb65e07a73ac13fb77c5f38c6b54f;last_approved=;title=feat(openregister): build records-api-and-table-stated	2026-11-13T19:25:22Z
+review:openregister:10305:322d15db	review	openregister	main	10305	sha=322d15db43072ad0ce5f9d517cf2b0943307f5f5;last_approved=;title=feat(openregister): build object-files-follow-object-access	2026-11-13T19:25:22Z
+review:openregister:10306:f567fb82	review	openregister	main	10306	sha=f567fb82fd7c824ea2cbc1b09a203a2f28deac08;last_approved=;title=feat(openregister): build rbac-department-role-matrix	2026-11-13T19:25:22Z
+review:openregister:10307:94131617	review	openregister	main	10307	sha=941316172aace9112cbc1b919e67837bf6268b66;last_approved=;title=feat(openregister): build platform-collaboration-resources	2026-11-13T19:25:22Z
+verify:buildiq:1560:88a91f8a	verify	buildiq	development	merge	prs=1560@62e96c456e45c0a6a5e1d2be6a932fb7c0308746	2026-11-13T19:25:22Z
+verify:integriq:3532:880ced72	verify	integriq	development	merge	prs=3532@42115361ad6bcea53be7c9485a2560d4d7d8b641,3533@34eb717e4b900085d726c1f1f7d60bc57deb5e7b	2026-11-13T19:25:22Z
+verify:planninq:1152:27e8c71c	verify	planninq	development	merge	prs=1152@3e1252f69acd76e050b3027306829a2c57f0a8f7	2026-11-13T19:25:22Z
+merge:decidiq:2130:3b601c40	merge	decidiq	development	development	prs=2130@8f7a28fa222c1beba24bf1c9cf60a7479f2bc780,2131@66d02dbcd4bbd73b4f865564b7313073f93a5096	2026-11-13T19:25:22Z
+cover:stackiq:9ac19b3am9d24:bc982e61	cover	stackiq	development	quality/test-coverage-bc982e61	lang=php;dirs=lib/Kernel/Contracts/;focus=thin;weight=2128;coverage=88.76;target=90.0	2026-07-16T17:35:55Z
