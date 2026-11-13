@@ -4570,3 +4570,4 @@ integriq	3434	be50d2b1dd36d073c31d16428072ee92e2ac270f	GREEN	worker-15	tree of 5
 integriq	3435	5be5ccc63a8f82c6ae58408f3cd0cd63796fe005	GREEN	worker-15	tree of 5: 7186 tests (baseline 7113), baseline 2 errors + 1 failure inherited, 0 new failures; tests-only additions
 integriq	3436	f11be81d4ac9d0544f72a01af257cb346fa0daf4	GREEN	worker-15	tree of 5: 7186 tests (baseline 7113), baseline 2 errors + 1 failure inherited, 0 new failures; tests-only additions
 integriq	3437	5fb0e4c204062c2cf51c8f7639de78013a4d1666	GREEN	worker-15	tree of 5: 7186 tests (baseline 7113), baseline 2 errors + 1 failure inherited, 0 new failures; tests-only additions
+pipelinq	3600	c413638dffaa8e34515eb6b3340fc0b633bd842e	GREEN	worker-32	PHP 5801 tests on tree (baseline 5774, 1 inherited failure), vitest 3189 passed, 0 new failures; tests only
