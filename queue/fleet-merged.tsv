@@ -823,3 +823,11 @@ keepiq	1722	8ac69bcaebdaffe50cde3cc9e762417f0d84558d	MERGED	merge-local	GATE OK 
 keepiq	1723	36395f41a44b5f893b854cd07951a53a669d415b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1724	1bde1e7f033608591baa8a14b0e592fb78350742	RED	merge-local	GATE RED checker floor: secretscanning: pass -> fail
 keepiq	1725	81ab9037e6ed95b780b7de8d6bc373d5fd9ec33b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1157	83fef2b2021e4af4294c2d4fd3d4e20c23a696bd	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1158	b474d64daa995219058cd48368336db463978f01	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+launchpad	1159	0813cad9e080f20c7a79e8f80c2a5084ee3e74b3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1160	fe8607310237fd7c1c4158e05d0ad0c2ea1cbff2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1161	f01f5009e5db85c554a2cf7bb85b0d7ad3b5b687	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1162	be98cb09992bee941df224c13247969f6d7cd606	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1163	c2a776fc4507977ff85803695dbb1920e3f058ca	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1164	38654e80a1d0c19961d912cd8ed7b33228cdb13d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
