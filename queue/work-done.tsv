@@ -3697,5 +3697,6 @@ cover:pipelinq:7f9dc8e6m916f:a215617b	already done: lib/Integration/*.php at 302
 build:dossiq:admin-message-and-portal-texts	partial: PR #6342 (1.1 spec tags; 1.2 e2e left unchecked)	session-20261113T084523-b4140bcd	2026-11-13T09:02:38Z
 verify:larpinq:1011:a60973d8	GREEN 1011; phpunit 709 OK vs 697, vitest 284 pass	session-20261113T072715-cf04db4e	2026-11-13T09:02:38Z
 cover:buildiq:70b3e29embf07:be0dcca9	already done: lib/Mcp/*.php at 100% (BuildiqToolProvider 31/31 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:02:47Z
+cover:learniq:e6498dddmf689:34f5c300	PR #2460: @uses metadata in 44 tests (80 risky->2) + 10 new tests; lib/Service/*.php 90.2->94.1%, lib 91.5->94.0%	session-20261113T081038-e8b5210f	2026-11-13T09:02:56Z
 cover:buildiq:70b3e29embf07:6891a8ac	already done: quality/test-coverage-6891a8ac-1 exists; lib/Service/Dashboard 97.2% (137/141) on development	session-20261113T081043-b24589a6	2026-11-13T09:03:02Z
 cover:pipelinq:7f9dc8e6m916f:0798b7cf	already done: lib/Service/PosCart/ at 67/67 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:08Z
