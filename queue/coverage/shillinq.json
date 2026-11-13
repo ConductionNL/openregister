@@ -1,19 +1,19 @@
 {
  "app": "shillinq",
- "commit": "b0ed3e448088bea21acf3cc6f4c9118374771d1c",
- "measured_at": "2026-11-13T20:02:44Z",
+ "commit": "8790805a469b030acdae905e0f16720579423dc5",
+ "measured_at": "2026-11-13T22:33:24Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.34,
-  "statements": 79866,
-  "covered": 73745,
+  "pct": 91.6,
+  "statements": 80581,
+  "covered": 73813,
   "dirs": {
    "lib/AppInfo/": [
-    269,
-    197
+    72,
+    70
    ],
    "lib/BackgroundJob/": [
-    1727,
+    1728,
     1712
    ],
    "lib/BackgroundJob/Support/": [
@@ -21,8 +21,8 @@
     12
    ],
    "lib/Budget/": [
-    237,
-    237
+    235,
+    234
    ],
    "lib/Command/": [
     208,
@@ -33,7 +33,7 @@
     9374
    ],
    "lib/Dashboard/": [
-    158,
+    164,
     156
    ],
    "lib/Enums/": [
@@ -45,24 +45,48 @@
     96
    ],
    "lib/Guard/": [
-    1933,
+    2080,
     1913
    ],
    "lib/Integration/": [
-    256,
+    259,
     256
    ],
+   "lib/Kernel/": [
+    4,
+    3
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Exception/": [
+    22,
+    22
+   ],
+   "lib/Kernel/Model/": [
+    140,
+    137
+   ],
+   "lib/Kernel/Support/": [
+    32,
+    32
+   ],
    "lib/Lifecycle/": [
-    6921,
-    6268
+    7071,
+    6293
    ],
    "lib/Lifecycle/Action/": [
     616,
     587
    ],
    "lib/Listener/": [
-    2842,
+    2845,
     2702
+   ],
+   "lib/Listener/Registration/": [
+    335,
+    102
    ],
    "lib/Middleware/": [
     59,
@@ -78,10 +102,10 @@
    ],
    "lib/PaymentPlan/": [
     513,
-    495
+    492
    ],
    "lib/PaymentRun/": [
-    505,
+    509,
     499
    ],
    "lib/PaymentRun/Generator/": [
@@ -89,20 +113,20 @@
     208
    ],
    "lib/Portal/": [
-    157,
+    158,
     157
    ],
    "lib/Repair/": [
-    3923,
+    3924,
     3140
    ],
    "lib/Repair/Support/": [
-    113,
-    113
+    81,
+    81
    ],
    "lib/Reporting/": [
-    342,
-    340
+    346,
+    339
    ],
    "lib/Reporting/Feed/": [
     30,
@@ -125,16 +149,16 @@
     5
    ],
    "lib/Service/": [
-    32533,
-    29318
+    32776,
+    29378
    ],
    "lib/Service/Asset/": [
     564,
     562
    ],
    "lib/Service/Bank/": [
-    681,
-    637
+    677,
+    633
    ],
    "lib/Service/BbvMigration/": [
     102,
@@ -149,8 +173,8 @@
     475
    ],
    "lib/Service/Dunning/": [
-    825,
-    809
+    812,
+    797
    ],
    "lib/Service/EInvoice/": [
     349,
@@ -173,8 +197,8 @@
     74
    ],
    "lib/Service/External/DepositPayment/": [
-    89,
-    89
+    88,
+    88
    ],
    "lib/Service/External/Digipoort/": [
     24,
@@ -237,16 +261,16 @@
     283
    ],
    "lib/Service/Payment/": [
-    263,
-    262
+    258,
+    257
    ],
    "lib/Service/Peppol/": [
     65,
     65
    ],
    "lib/Service/Pipelinq/": [
-    817,
-    774
+    694,
+    653
    ],
    "lib/Service/Pivot/": [
     185,
@@ -277,8 +301,8 @@
     256
    ],
    "lib/Service/Sales/": [
-    477,
-    444
+    473,
+    440
    ],
    "lib/Service/Seed/": [
     70,
@@ -339,9 +363,9 @@
   }
  },
  "js": {
-  "pct": 84.31,
+  "pct": 85.33,
   "statements": 7503,
-  "covered": 6326,
+  "covered": 6402,
   "dirs": {
    "src/": [
     3,
@@ -357,7 +381,7 @@
    ],
    "src/components/BudgetBBVMapping/": [
     457,
-    427
+    439
    ],
    "src/components/Dashboard/": [
     45,
@@ -381,7 +405,7 @@
    ],
    "src/components/budget-charts/": [
     171,
-    141
+    171
    ],
    "src/components/cluster-overview/": [
     10,
@@ -401,7 +425,7 @@
    ],
    "src/components/inventory/": [
     327,
-    278
+    311
    ],
    "src/components/invoice/": [
     95,
@@ -457,7 +481,7 @@
    ],
    "src/integrations/": [
     405,
-    369
+    370
    ],
    "src/manifest.d/": [
     4,
