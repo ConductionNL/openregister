@@ -5650,3 +5650,4 @@ cover:versioniq:1b35eed9mf055:60c2c265	PR #683: Controller/*.php 97.4%->100%, 21
 verify:versioniq:680:a39b70e9	680 GREEN; 681 GREEN	session-20261113T171150-996cf694	2026-11-13T17:32:07Z
 verify:versioniq:682:c913ecfa	682 GREEN (1622 tests, 2 inherited failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T17:32:22Z
 cover:pipelinq:7f9dc8e6m16db:a3bb9eeb	already done: lib/Service/Portal/*.php at 99.6% stmt coverage on development (10 uncovered, defensive/getter only); no PR	session-20261113T172328-c860ad55	2026-11-13T17:32:31Z
+cover:pipelinq:7f9dc8e6mcebb:e0a30dd2	PR #3763: AbstractPaymentAdapter 7 tests, dir now ~98% lines (rest env-only branches); suite 7194->7201, same 5 inherited failures	session-20261113T172349-00278d9d	2026-11-13T17:32:29Z
