@@ -4464,3 +4464,4 @@ cover:dossiq:069ee2d6m7275:39189253	already done: lib/Service/Transitions 1836/1
 verify:dossiq:6404:833ee3bc	GREEN: +40 tests, failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T11:19:41Z
 cover:dossiq:069ee2d6m7275:e2e021bd	already done: lib/Service/Transitions (recursive) 1836/1843 (99.6%); same 7 defensive skip lines as the non-recursive task, earlier PR -1 exists	session-20261113T081040-5e814df2	2026-11-13T11:19:50Z
 cover:pipelinq:7f9dc8e6m84dd:jsc02c1b68	PR #3740: 9 vitest tests, views requests/settings/widgets 89.5%->90.3% lines	session-20261113T074533-3e2a2da6	2026-11-13T11:19:52Z
+build:openregister:a-configuration-import-500s-on-a-descriptor-with-objects	already done: built on main in ae5a4760c3 (idsOf + Throwable catch, tests); only 3.1 left, which the change marks out of scope	session-20261113T101609-bc51215d	2026-11-13T11:20:26Z
