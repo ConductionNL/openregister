@@ -5740,3 +5740,4 @@ pipelinq	3714	f820e3c86c88852bb271cc32e3a94e52a6cd9def	CONFLICT	worker-09	confli
 pipelinq	3716	66d021c181872a3086c13e62d215cb2cae544f9f	CONFLICT	worker-09	l10n en/nl conflict with 3713 earlier in the tree
 pipelinq	3713	102b99c87bb4a3eab6d9a470c5833413314a50c8	GREEN	worker-09	tree 3713>3715>3717 merged clean; php 6760 -> 6801 tests, no new failures (1 inherited); vitest 4294/4294; build marketing-campaign-on-client, matches its spec
 pipelinq	3715	db6d58bba8d39272ea70d272d6e1be85cb66bd51	GREEN	worker-09	tree 3713>3715>3717 merged clean; php 6760 -> 6801 tests, no new failures (1 inherited); vitest 4294/4294; tests only
+pipelinq	3717	03e5986f3b5d92241837cc4665cd7401162b95fd	GREEN	worker-09	tree 3713>3715>3717 merged clean; php 6760 -> 6801 tests, no new failures (1 inherited); vitest 4294/4294; build brp-monitor-moves-to-integriq repair step, matches its change
