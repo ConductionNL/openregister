@@ -1334,6 +1334,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             // and the timers, silently, which is what closing and refiling
             // does today.
         ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // A copy is a new identity with its own trail (records-copy-with-links).
+        ['name' => 'objects#copy', 'url' => '/api/objects/{register}/{schema}/{id}/copy', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
