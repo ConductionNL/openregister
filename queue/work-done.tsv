@@ -6181,4 +6181,5 @@ cover:opencatalogi:fc83bfb1:c6b640c3	PR #2599: one provider test (RegisterMapper
 build3:openregister:property-source-vocabulary	already done: all code tasks landed on main in #3952; 2.1/2.2 are out of scope by design (integriq/dossiq side)	session-20261113T185325-0c24b185	2026-11-13T19:04:29Z
 verify:buildiq:1556:376f1fde	1556 GREEN (tests only; vitest 4102 pass; phpunit inherited ExportZipGolden red)	session-20261113T175400-7ec3993f	2026-11-13T19:04:28Z
 build:shillinq:iv3-report-takes-case-costs-by-case-type	partial: PR #3008, tasks 1-4,6,8,9 done (catalogue, cost source, Iv3 section, per-type report, 24 tests); 5,10 UI and 7,11 live left; suite 10420, 1 inherited failure	session-20261113T182348-cc1b5fea	2026-11-13T19:04:36Z
+cover:decidiq:a5f973bbm5a4d:34f5c300	PR #2130: ActionItemWriter 87/87, 11 tests; lib/Service/*.php 90.34% -> 90.69% (target 95 needs more batches)	session-20261113T172329-5f4feaba	2026-11-13T19:04:52Z
 measure:humaniq:20261113h18	php 96.12% (24879/25882, pcov, 4140 tests); js not measured (node --test, no vitest/jest)	session-20261113T175336-e3687686	2026-11-13T19:05:03Z
