@@ -35,8 +35,9 @@ interface OdtWriterInterface {
 	/**
 	 * Write the HTML as an A4 ODT package.
 	 *
-	 * @param string $html      Export section or report HTML.
-	 * @param bool   $landscape Landscape A4 when true, portrait A4 otherwise.
+	 * @param string             $html       Export section or report HTML.
+	 * @param bool               $landscape  Landscape A4 when true, portrait A4 otherwise.
+	 * @param OdtHouseStyle|null $houseStyle The organisation's house style, or null for the plain layout.
 	 *
 	 * @return string The ODT bytes.
 	 *
@@ -44,5 +45,5 @@ interface OdtWriterInterface {
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function fromHtml(string $html, bool $landscape): string;
+	public function fromHtml(string $html, bool $landscape, ?OdtHouseStyle $houseStyle = null): string;
 }//end interface

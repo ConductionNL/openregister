@@ -2172,6 +2172,7 @@ Service/Export/ExportRightService.php,98,Service,Configuration,Configuration/Ser
 Service/Export/ExportRunRecorder.php,147,Service,Configuration,Configuration/Service/Export/ExportRunRecorder.php,0,182,Configuration
 Service/Export/ExportValueRenderer.php,78,Service,Configuration,Configuration/Service/Export/ExportValueRenderer.php,0,,Configuration
 Service/Export/Odt/HtmlToOdt.php,103,Service,Configuration,Configuration/Service/Export/Odt/HtmlToOdt.php,0,,Configuration
+Service/Export/Odt/OdtHouseStyle.php,72,Service,Configuration,Configuration/Service/Export/Odt/OdtHouseStyle.php,0,,Configuration
 Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Service/Export/Odt/OdtTableBuilder.php,0,,Configuration
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration

@@ -45,6 +45,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\Export\DocumentStyleReader;
+use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -158,6 +160,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
 	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per export, that it revealed audited values.
+	 * @param DocumentStyleReader|null $documentStyle Reads the organisation's house style for PDF output, when thematiq offers one.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -170,6 +173,7 @@ class ExportService implements ObjectExporterInterface {
 		PropertyRbacHandler $propertyRbacHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
 		private readonly ?ProcessRevealAuditInterface $processAudit = null,
+		private readonly ?DocumentStyleReader $documentStyle = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -421,14 +425,15 @@ class ExportService implements ObjectExporterInterface {
 		// Excel/CSV pipeline.
 		$this->contextRegister = $request->register;
 
+		$uid = $request->currentUser?->getUID();
 		if ($request->register !== null && $request->schema === null) {
-			return $this->renderPdfDocument(sections: $this->buildPdfSectionsForRegister(request: $request));
+			return $this->renderPdfDocument(sections: $this->buildPdfSectionsForRegister(request: $request), uid: $uid);
 		}
 
 		$objects = $this->fetchObjectsForExport(request: $request);
 		$this->guardPdfRowCap(rowCount: count($objects));
 
-		return $this->renderPdfDocument(sections: [$this->buildPdfSection(request: $request, objects: $objects)]);
+		return $this->renderPdfDocument(sections: [$this->buildPdfSection(request: $request, objects: $objects)], uid: $uid);
 	}//end pdfFor()
 
 	/**
@@ -454,7 +459,8 @@ class ExportService implements ObjectExporterInterface {
 
 		$this->guardPdfRowCap(rowCount: count($table->rows));
 
-		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)]);
+		// No Nextcloud user asked for this table: the instance default house style applies.
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: null);
 	}//end renderTableToPdf()
 
 	/**
@@ -639,18 +645,29 @@ class ExportService implements ObjectExporterInterface {
 	 * The sections are written as one ODT, each section on a new page, and the
 	 * office server converts it to PDF.
 	 *
-	 * @param string[] $sections Escaped HTML fragments, one per schema section.
+	 * The requesting user's house style, when thematiq offers one, colours the
+	 * table header and adds the footer lines; without one the layout is the
+	 * plain one, and a profile that cannot be read never fails the export.
+	 *
+	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
+	 * @param string|null $uid      The requesting user, or null for the instance default house style.
 	 *
 	 * @return string Raw PDF bytes.
 	 *
 	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
 	 */
-	private function renderPdfDocument(array $sections): string {
+	private function renderPdfDocument(array $sections, ?string $uid): string {
 		if ($this->officeConverter === null) {
 			throw new OfficeServerRequiredException();
 		}
 
-		$odt = (new OdtWriter())->fromHtml(html: implode('', $sections), landscape: true);
+		$odt = (new OdtWriter())->fromHtml(
+			html: implode('', $sections),
+			landscape: true,
+			houseStyle: OdtHouseStyle::fromProfile(profile: $this->documentStyle?->forUser(uid: $uid))
+		);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);
 	}//end renderPdfDocument()
