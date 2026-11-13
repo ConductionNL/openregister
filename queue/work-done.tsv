@@ -5617,3 +5617,4 @@ review:openregister:10231:11faf452	stale	feeder	2026-11-13T15:30:44Z
 verify:launchpad:1189:a57b0a02	GREEN #1189: 4068 tests, 0 new failures	session-20261113T171141-a3907367	2026-11-13T17:13:20Z
 verify:pipelinq:3758:a7b5bef3	GREEN #3758 (no new failures, test-only)	session-20261113T171154-27186e77	2026-11-13T17:15:01Z
 verify:dossiq:6423:57524b09	6423 GREEN; 6424 CONFLICT	session-20261113T171150-996cf694	2026-11-13T17:16:31Z
+measure:stackiq:20261113h14	php 88.76% (pcov), js 92.89% at fb3c61bb	session-20261113T171153-e1c17962	2026-11-13T17:16:50Z
