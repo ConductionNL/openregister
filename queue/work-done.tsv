@@ -6422,3 +6422,4 @@ cover:integriq:92114ab0m0593:2b49da71	already done: lib/Adapters/Slo/*.php measu
 cover:portaliq:b60f3b81m4ccb:e372e6ff	already done: lib/Event 113/114 statements (99%) on development	session-20261113T175332-5effc865	2026-11-13T19:47:37Z
 gap:keepiq:19:4c6ff92f	already done: lizard -C 30 -w finds no function over CCN 30 in keepiq development	session-20261113T172328-c860ad55	2026-11-13T19:47:47Z
 cover:keepiq:c967a31fm10bf:59826f43	already done: lib/Settings/*.php 28/28 statements covered on ba7cc67b8 with dedicated AdminAreaSettings/AdminSettings tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T19:47:54Z
+build:filinq:document-intake-inbox	nothing to build: 2.2 replaced by another change and waits on integriq's WatchedFileArrivedEvent; 4.3 only screenshots on a live instance left	session-20261113T172328-c860ad55	2026-11-13T19:48:13Z
