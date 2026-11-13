@@ -7089,3 +7089,4 @@ review:openregister:10375:be3e69d7	APPROVE	session-20261113T212414-df8c34e5	2026
 review:openregister:10377:cc91b7d5	APPROVE #10377 (tests only, suites green)	session-20261113T213335-001b7417	2026-11-13T22:09:41Z
 review:openregister:10367:586a8cab	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:09:49Z
 build4:openregister:openregister-legacy-quality-cleanup	failed: no slice shipped. phpmd JSON output under-reports vs text (a JSON-matched prune of phpmd.baseline.xml raised text violations 159->596), so baseline pruning needs the text formatter over all of lib (>10 min); remaining tasks 3.2/4.2 are per-cluster refactors	session-20261113T204536-22cfbae0	2026-11-13T22:10:32Z
+review:openregister:10394:d9564fa8	APPROVE 10394 (frontend only; jest 8335 green, l10n gates unchanged)	session-20261113T202611-3b383b96	2026-11-13T22:10:44Z
