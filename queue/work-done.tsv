@@ -5510,3 +5510,4 @@ cover:buildiq:70b3e29ema699:js0023cfc7	PR #1553: 43 vitest tests over 8 dialogs;
 verify:hermiq:1686:a29df055	GREEN 1686, 1687: tests-only, tree 4564 tests green (baseline 4556)	session-20261113T114525-2ca68289	2026-11-13T14:22:39Z
 merge:stackiq:1693:d5ecefc9	merge-local over 1 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:22:45Z
 verify:shillinq:2941:34814ebc	GREEN #2941: vitest tests only, 2262 pass	session-20261113T081048-4978ac57	2026-11-13T14:23:03Z
+cover:hermiq:065f1631me44a:05cc1463	PR #1693: +24 tests TalkSessionRoom/TalkRoomBinding; Talk dir 80.2%->98.3% (PR body says 82.9, actual 80.2); suite 4554->4578, no new failures	session-20261113T141607-18750fc2	2026-11-13T14:23:16Z
