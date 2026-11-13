@@ -4886,3 +4886,4 @@ review:openregister:10165:3fbabe61	APPROVE (additive evidence metadata; suites g
 build:openregister:platform-team-resource-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:21Z
 build:openregister:or-flow-scheduled-trigger	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:28Z
 build:openregister:rbac-cross-organisation-is-explicit	nothing to build here: 5.1 is one marker PR per consuming app, in their repos	session-20261113T104527-c302106c	2026-11-13T12:33:33Z
+build:openregister:object-folder-in-files-browser	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:33Z
