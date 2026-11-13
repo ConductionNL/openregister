@@ -3030,6 +3030,7 @@ Service/Schemas/FacetResultCacheClearer.php,33,Service,Service,Service/Schemas/F
 Service/Schemas/GeneratedIdentifierDeclaration.php,214,Service,Service,Service/Schemas/GeneratedIdentifierDeclaration.php,0,,Core
 Service/Schemas/GeneratedIdentifierException.php,18,Service,Service,Service/Schemas/GeneratedIdentifierException.php,0,,Core
 Service/Schemas/PropertySourceDeclaration.php,109,Service,Service,Service/Schemas/PropertySourceDeclaration.php,0,,Core
+Service/Schemas/PropertyTitles.php,80,Service,Service,Service/Schemas/PropertyTitles.php,0,,Core
 Service/Schemas/PropertySourceException.php,5,Service,Service,Service/Schemas/PropertySourceException.php,0,,Core
 Service/Schemas/PropertyValidatorHandler.php,756,Service,Service,Service/Schemas/PropertyValidatorHandler.php,2,28,Core
 Service/Schemas/PropertyVocabulary.php,136,Service,Service,Service/Schemas/PropertyVocabulary.php,0,,Core
