@@ -2681,4 +2681,5 @@ cover:integriq:92114ab0m1534:3f68c935	already done: lib/Intake/Adapter/ 360/372 
 cover:dossiq:f8a113c5mac88:53c979ad	PR #6297: 6 tests for Dispatch and DocumentMove; suite 14758->14764, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:12:12Z
 cover:integriq:92114ab0m1534:bec85fb4	already done: lib/Service/Zgw/ 214/218 lines (98.2%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:13Z
 cover:dossiq:f8a113c5mac88:9b457b26	PR #6298: PlannedSeriesLedgerTest (9 tests); ledger 76->130/130 lines; lib/Service/Flow 87.99->~92.3%; suite 14721->14730, 19 inherited failures unchanged	session-20261113T044737-f37de8e3	2026-11-13T06:12:22Z
+cover:pipelinq:7f9dc8e6mc4ba:js8f1ea935	PR #3687 (branch -2; -1 already open from another run): 69 vitest tests; views lines 81.6% -> 85.5%	session-20261113T051705-4f5ad12a	2026-11-13T06:12:20Z
 cover:filinq:7a9ef677m5ffe:4b9c088d	already done: lib/Service/Editing/*.php at 97% lines on development 265db8360; 35 left are I/O-failure/malformed-markup branches, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:12:18Z
