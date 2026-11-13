@@ -35,15 +35,30 @@ st_sync() {
 	return 3
 }
 
-# Commit what is staged and push; on a race fetch + merge and push again. 0 pushed, 1 nothing to commit, 3 conflict.
+# Commit what is staged and push; on a race fetch + merge and push again at once. 0 pushed, 1 nothing to commit,
+# 2 retries exhausted (commit stays local), 3 conflict. The jittered backoff sits BEFORE the fetch, never between
+# fetch and push: the time from fetch to push is the window in which another writer can win the race.
+_st_jitter() { python3 -c "import random,sys,time;time.sleep(random.uniform(0,float(sys.argv[1])))" "$1"; }
 _st_push() {
-	local msg=$1
+	local msg=$1 i
 	_g diff --cached --quiet && return 1
 	_g commit -q -m "$msg" -m "$TRAILER" || return 2
-	for _ in $(seq 1 40); do
+	for i in $(seq 1 "${ST_PUSH_TRIES:-150}"); do
 		_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>/dev/null && return 0
+		[ "$i" -gt 2 ] && _st_jitter "$(awk -v i="$i" 'BEGIN {v = 0.05 * i; print (v > 0.8) ? 0.8 : v}')"
 		st_sync || return 3
-		python3 -c "import random,time;time.sleep(random.uniform(0.1,1.0))"
+	done
+	return 2
+}
+
+# Pushes local commits that are not on the remote yet (a deferred done row). 0 = nothing left local.
+_st_flush() {
+	local i
+	for i in $(seq 1 "${ST_PUSH_TRIES:-150}"); do
+		st_sync || return 3
+		[ -z "$(_g rev-list "origin/$ST_BRANCH..HEAD" 2>/dev/null | head -1)" ] && return 0
+		_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>/dev/null && return 0
+		[ "$i" -gt 2 ] && _st_jitter 0.8
 	done
 	return 2
 }
@@ -72,37 +87,61 @@ st_log() { st_append log.txt "$(date -u +%FT%TZ) $ST_ME $*"; }
 
 _lease_field() { sed -n "s/^$2=//p" "$ST/leases/$1.lease" 2>/dev/null; }
 
-lease_acquire() {
-	local name=$1 ttl=${2:-240} f exp holder
-	f="leases/$name.lease"
-	st_sync || return 2
-	if [ -f "$ST/$f" ]; then
-		holder=$(_lease_field "$name" holder); exp=$(_lease_field "$name" expires_epoch)
-		if [ "$holder" != "$ST_ME" ] && [ "${exp:-0}" -gt "$(_now)" ]; then return 1; fi
-	fi
+# Writes the lease file for NAME into the work tree and stages it (no commit).
+_lease_stage() {
+	local name=$1 ttl=$2 f="leases/$1.lease"
+	mkdir -p "$ST/leases"
 	printf 'holder=%s\nstarted=%s\nexpires_epoch=%s\nexpires=%s\n' "$ST_ME" "$(date -u +%FT%TZ)" \
 		"$(( $(_now) + ttl * 60 ))" "$(date -u -d "+$ttl min" +%FT%TZ)" > "$ST/$f"
 	_g add "$f"
-	if ! _st_push "lease: $name taken by $ST_ME"; then
-		# Lost a race or the push failed: drop the local attempt and read the remote truth.
-		_g merge --abort 2>/dev/null; _g fetch -q origin "$ST_BRANCH"; _g reset -q --hard "origin/$ST_BRANCH"
-	fi
-	[ "$(_lease_field "$name" holder)" = "$ST_ME" ] || return 1
-	_g fetch -q origin "$ST_BRANCH"
-	[ "$(_g show "origin/$ST_BRANCH:$f" 2>/dev/null | sed -n 's/^holder=//p')" = "$ST_ME" ]
 }
 
+# 0 = NAME is free or ours (expired or absent counts as free), 1 = someone else holds it. Reads the local tree.
+_lease_free() {
+	local holder exp
+	[ -f "$ST/leases/$1.lease" ] || return 0
+	holder=$(_lease_field "$1" holder); exp=$(_lease_field "$1" expires_epoch)
+	[ "$holder" = "$ST_ME" ] || [ "${exp:-0}" -le "$(_now)" ]
+}
+
+# Drops the unpushed commits made since PRE (our own attempt plus merges of remote state), then reads the remote truth.
+# Earlier unpushed commits (a verdict, a release) stay: PRE is the HEAD from before this attempt.
+_st_undo_to() {
+	_g merge --abort 2>/dev/null
+	_g reset -q --hard "$1"
+	st_sync
+}
+
+# lease_acquire NAME [MINUTES] [nosync]: nosync skips the opening fetch when the caller has just synced.
+# Extra staged changes (see task_claim) go out in the same commit. A successful push is the proof of ownership:
+# two writers creating or changing the same lease file always conflict, so no read-back fetch is needed.
+lease_acquire() {
+	local name=$1 ttl=${2:-240} pre
+	if [ "${3:-}" != nosync ]; then st_sync || return 2; fi
+	_lease_free "$name" || return 1
+	pre=$(_g rev-parse HEAD)
+	_lease_stage "$name" "$ttl"
+	if ! _st_push "lease: $name taken by $ST_ME"; then
+		_st_undo_to "$pre"
+		return 1
+	fi
+	[ "$(_lease_field "$name" holder)" = "$ST_ME" ]
+}
+
+# 0 = renewed or still ours with more than three quarters of MINUTES left (then nothing is written); 1 = lost.
 lease_renew() {
-	local name=$1 ttl=${2:-240}
+	local name=$1 ttl=${2:-240} exp
 	st_sync || return 1
 	[ "$(_lease_field "$name" holder)" = "$ST_ME" ] || return 1
-	lease_acquire "$name" "$ttl"
+	exp=$(_lease_field "$name" expires_epoch)
+	[ "$(( ${exp:-0} - $(_now) ))" -gt "$(( ttl * 45 ))" ] && return 0
+	lease_acquire "$name" "$ttl" nosync
 }
 
 lease_release() {
 	local name=$1 f="leases/$1.lease"
 	st_sync || return 2
-	[ "$(_lease_field "$name" holder)" = "$ST_ME" ] || return 0
+	if [ "$(_lease_field "$name" holder)" != "$ST_ME" ]; then _st_flush; return 0; fi
 	_g rm -q "$f"
 	# Never reset here: unpushed verdict commits would be lost. A failed release stays local and goes out with the next write; the lease expires anyway.
 	_st_push "lease: $name released by $ST_ME" || _g merge --abort 2>/dev/null
