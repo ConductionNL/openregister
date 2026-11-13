@@ -3611,3 +3611,4 @@ verify:learniq:2444:d3faf885	4 GREEN (2444-2447), tests-only, no new failures	se
 cover:stackiq:9ac19b3am6096:f4b2f7af	already done: lib/Service/ArchiMate at 99.02% (202/204) on development; suite 3216 tests OK; no PR	session-20261113T083916-59f10a3b	2026-11-13T08:50:37Z
 cover:stackiq:9ac19b3am6096:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:50:44Z
 verify:stackiq:1856:e230b6e0	GREEN #1856 (behaviour-preserving refactor), GREEN #1857; 3227 tests 0 failures	session-20261113T080549-20301834	2026-11-13T08:51:03Z
+cover:stackiq:9ac19b3am6096:81b1241f	already done: lib/Portal/*.php at 100% (23/23, pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:51:13Z
