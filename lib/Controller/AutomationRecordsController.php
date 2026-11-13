@@ -36,6 +36,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Throwable;
 
 /**
  * `GET /api/automation-records`: notification and lifecycle-action run
@@ -72,7 +73,7 @@ class AutomationRecordsController extends Controller {
 	 * Query: `kind` (notification|lifecycle-action), `key` (prefix), `schema`,
 	 * `object`, `since`, `until`, `limit` (max 500), `offset`.
 	 *
-	 * @return JSONResponse `results`, `limit` and `offset`; 401 when nobody is signed in.
+	 * @return JSONResponse `results`, `limit` and `offset`; 401 when nobody is signed in; 500 when the store fails.
 	 *
 	 * @spec openspec/changes/automation-run-records/specs/notificatie-engine/spec.md#requirement-every-dispatch-of-a-declared-notification-leaves-a-readable-record
 	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md#requirement-every-lifecycle-action-reached-leaves-an-outcome-record
@@ -85,10 +86,16 @@ class AutomationRecordsController extends Controller {
 		}
 
 		$filter = AutomationRecordFilter::fromParams(params: $this->request->getParams());
+		try {
+			$results = $this->records->find($filter);
+		} catch (Throwable $e) {
+			unset($e);
+			return new JSONResponse(data: ['error' => 'Automation records could not be read'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
 
 		return new JSONResponse(
 			data: [
-				'results' => $this->records->find($filter),
+				'results' => $results,
 				'limit'   => $filter->limit,
 				'offset'  => $filter->offset,
 			]

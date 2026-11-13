@@ -186,4 +186,14 @@ final class AutomationRecordServiceTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['results' => [$record], 'limit' => 5, 'offset' => 10], $response->getData());
 	}
+
+	public function testAStoreFailureIsAPlainServerError(): void {
+		$this->signIn('admin', true);
+		$this->mapper->method('findFiltered')->willThrowException(new \RuntimeException('connection lost'));
+
+		$response = (new AutomationRecordsController($this->createMock(IRequest::class), $this->service(), $this->session))->index();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['error' => 'Automation records could not be read'], $response->getData());
+	}
 }
