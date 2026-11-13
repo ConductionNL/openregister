@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "e4a96a07ffe1c8e5cc63eab8da0113b68eb972f8",
- "measured_at": "2026-11-13T13:19:23Z",
+ "commit": "fb3c61bb07202fb76b350a2244eb18dd23d402c8",
+ "measured_at": "2026-11-13T17:16:41Z",
  "php": {
   "tool": "pcov",
-  "pct": 87.39,
+  "pct": 88.76,
   "statements": 31757,
-  "covered": 27752,
+  "covered": 28186,
   "dirs": {
    "lib/AppInfo/": [
     564,
@@ -22,7 +22,7 @@
    ],
    "lib/Controller/": [
     3839,
-    3579
+    3754
    ],
    "lib/Controller/Settings/": [
     74,
@@ -58,7 +58,7 @@
    ],
    "lib/Repair/": [
     1234,
-    1229
+    1234
    ],
    "lib/Sections/": [
     6,
@@ -66,7 +66,7 @@
    ],
    "lib/Service/": [
     18342,
-    15244
+    15498
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -107,9 +107,9 @@
   }
  },
  "js": {
-  "pct": 91.96,
+  "pct": 92.89,
   "statements": 8835,
-  "covered": 8125,
+  "covered": 8207,
   "dirs": {
    "src/": [
     91,
@@ -225,11 +225,11 @@
    ],
    "src/views/settings/": [
     207,
-    180
+    190
    ],
    "src/views/settings/sections/": [
     1486,
-    1348
+    1420
    ],
    "src/views/widgets/": [
     26,
