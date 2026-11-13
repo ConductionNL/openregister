@@ -4648,3 +4648,4 @@ stackiq	1805	fb96956f1c700812f67926a50f05ed3c01c749aa	GREEN	worker-37	tests only
 stackiq	1806	379b17482337aae248763452222c3b7be4039273	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 stackiq	1807	81313a5dccaf8ece17ab049629f27492ba3f7ec0	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 launchpad	1142	20d93893f225f36b22b1efc07fc78d44204398f4	GREEN	worker-04	phpunit 3579 = baseline 3579, 0 new failures; vitest 1249 vs baseline 1188, 0 failures; tests-only diff
+keepiq	1707	2dfcbc25ad436e000660ee49ca6dee90d2da63c1	GREEN	worker-34	test-only (7 new vitest specs); vitest 5523 vs baseline 5475, all passing; PHP unit 3727 tests, 0 failures
