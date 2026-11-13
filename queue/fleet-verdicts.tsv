@@ -6312,3 +6312,4 @@ pipelinq	3778	c45902dd29b570712e4c29a503cfea9fb4d12d9f	GREEN	worker-40	unit 7226
 pipelinq	3779	4f6953c3dd83758485802934b6033e8cfb4ff1c5	GREEN	worker-40	unit 7226 tests (baseline 7194), same 5 inherited failures, no new; tests only, additive
 pipelinq	3775	f51d730c0de16b7eed2005c725957ac361d41eee	GREEN	worker-48	tests only; phpunit 7210 run (baseline 7194, 5 inherited fails), 0 new
 pipelinq	3776	cc390b533b6160f0b8b1bf6d906e7182f808bc9b	GREEN	worker-48	tests only; phpunit 7210 run (baseline 7194, 5 inherited fails), 0 new
+filinq	2058	e0070c28ced4857edebfd48ed5208691858f1ee9	REVERIFY	worker-58	editor-delivery branch now runs EditSessionService::assertAgentMayEdit (same refusals and update permission as a direct write) before reading or delivering; 4 tests added; unit 6472 tests 0 failures; new head a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155, verify it
