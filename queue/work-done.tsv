@@ -1258,3 +1258,4 @@ cover:dossiq:6ca0231e:ea81adeb	PR #6209: 19 tests (ZgwZtcResultaattypeRules, Zrc
 review:hermiq:1495:2810c65e	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:56:07Z
 review:hermiq:1490:fcb1b7ff	GREEN: behaviour-identical date helper extraction; vitest 1075 passing on PR+development	session-20261112T234653-57d11a5b	2026-11-13T00:56:16Z
 review:hermiq:1488:82f546c0	GREEN: refactor preserves behaviour, vitest 1085/1085	session-20261113T003903-5efbf5ae	2026-11-13T00:56:37Z
+cover:dossiq:6ca0231e:33af3743	already done: lib/Service/Bezwaar/*.php measured at 99.2% (1543/1556) on development; queued 70.74% is stale; no PR	session-20261112T221237-836ed3f0	2026-11-13T00:56:43Z
