@@ -1,12 +1,12 @@
 {
  "app": "hermiq",
- "commit": "beeb8ec1cb99580ea9dcba2475cdf6f9e58c4bec",
- "measured_at": "2026-11-13T06:22:33Z",
+ "commit": "66af8e4595e2923541b681fe2331c62bc4d8f418",
+ "measured_at": "2026-11-13T08:44:33Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.65,
-  "statements": 34262,
-  "covered": 30374,
+  "pct": 88.68,
+  "statements": 34381,
+  "covered": 30489,
   "dirs": {
    "lib/AppInfo/": [
     27,
@@ -49,8 +49,12 @@
     329
    ],
    "lib/Middleware/": [
-    10,
-    10
+    69,
+    68
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    57
    ],
    "lib/Notification/": [
     74,
@@ -186,5 +190,79 @@
    ]
   }
  },
- "js": null
+ "js": {
+  "pct": 86.98,
+  "statements": 6529,
+  "covered": 5679,
+  "dirs": {
+   "src/": [
+    75,
+    73
+   ],
+   "src/api/": [
+    554,
+    554
+   ],
+   "src/components/": [
+    555,
+    495
+   ],
+   "src/components/CnAgentChatTab/": [
+    75,
+    65
+   ],
+   "src/components/CnAgentRunsWidget/": [
+    104,
+    97
+   ],
+   "src/components/settings/": [
+    135,
+    135
+   ],
+   "src/dialogs/": [
+    182,
+    161
+   ],
+   "src/dialogs/agents/": [
+    117,
+    94
+   ],
+   "src/icons/": [
+    1,
+    1
+   ],
+   "src/llm/": [
+    2,
+    2
+   ],
+   "src/modals/": [
+    1661,
+    1260
+   ],
+   "src/services/": [
+    3,
+    3
+   ],
+   "src/store/": [
+    6,
+    6
+   ],
+   "src/store/modules/": [
+    26,
+    1
+   ],
+   "src/utils/": [
+    399,
+    399
+   ],
+   "src/views/": [
+    1311,
+    1148
+   ],
+   "src/widgets/": [
+    1323,
+    1185
+   ]
+  }
+ }
 }
