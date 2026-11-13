@@ -13,6 +13,7 @@
             "b@example.org"
         ],
         "status": "confirmed",
+        "reminderMinutesBefore": null,
         "objectUuid": "obj-9",
         "registerId": 3,
         "schemaId": 4
@@ -28,6 +29,7 @@
         "description": "",
         "attendees": [],
         "status": null,
+        "reminderMinutesBefore": null,
         "objectUuid": null,
         "registerId": null,
         "schemaId": null
@@ -45,6 +47,7 @@
             "b@example.org"
         ],
         "status": "tentative",
+        "reminderMinutesBefore": null,
         "objectUuid": null,
         "registerId": null,
         "schemaId": null
